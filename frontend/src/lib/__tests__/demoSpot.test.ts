@@ -30,6 +30,12 @@ test('default build: the switch is off, so the terminal never asks and never cha
   expect(hook).toContain(".catch(() => { if (cached?.token === token) cached = null; return 'silent' as const; });");
 });
 
+test('the server picks the ledger: ordinary Balance funds keep the ordinary terminal; demo only without them', () => {
+  const hook = read('lib/demoSpot.ts');
+  expect(hook).toContain("(!access.enabled || access.ledger === 'spot' ? 'off'");
+  expect(hook).toContain(": (access.ledger ?? (access.admitted ? 'demo' : 'none')) === 'demo' ? 'trader' : 'silent')");
+});
+
 test('only ordinary pairs use the demo ledger; test markets, listings and VTA keep their own paths', () => {
   expect(isDemoSpotPair('BTC/USDT')).toBe(true);
   expect(isDemoSpotPair('ETH/USDT')).toBe(true);
@@ -80,6 +86,7 @@ test('no customer-facing «demo» or «unavailable» wording is added', () => {
     // Comments and module paths are not shown to anyone.
     const text = read(file).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').replace(/^import .*$/gm, '');
     const literals = text.match(/'[^'\n]*'|"[^"\n]*"|`[^`]*`/g) ?? [];
-    expect(literals.filter(literal => /демо|demo|недоступ|unavailable|coming soon/i.test(literal))).toEqual([]);
+    // 'demo' alone is the server's ledger value, never rendered.
+    expect(literals.filter(literal => literal !== "'demo'" && /демо|demo|недоступ|unavailable|coming soon/i.test(literal))).toEqual([]);
   }
 });

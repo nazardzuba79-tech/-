@@ -142,14 +142,19 @@ describe('demo trading routes', () => {
 describe('demo Spot for admin-credited USER accounts (Issue #592)', () => {
   const order = { pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '100', quantity: '1' };
   const placed = { order: { id: 'o1', price: { toString: () => '100' }, originalQuantity: { toString: () => '1' }, remainingQuantity: { toString: () => '1' }, status: 'OPEN' }, trades: [] };
-  function accounts(rows: Record<string, { role: 'ADMIN' | 'USER'; blockedAt?: Date | null; credited?: boolean }>) {
+  function accounts(rows: Record<string, { role: 'ADMIN' | 'USER'; blockedAt?: Date | null; credited?: boolean; balance?: { asset: string; available: string; locked: string }[] }>) {
     return {
       user: { findUnique: jest.fn(async ({ where: { id } }: any) => rows[id] ? { id, role: rows[id].role, blockedAt: rows[id].blockedAt ?? null } : null) },
       auditLog: { findFirst: jest.fn(async ({ where }: any) => rows[where.userId]?.credited && where.action === 'DEMO_BALANCE_ADJUSTED' ? { id: 'credit' } : null) },
+      balance: { findMany: jest.fn(async ({ where }: any) => rows[where.userId]?.balance ?? []) },
     };
   }
   const people = { admin: { role: 'ADMIN' as const }, tester: { role: 'USER' as const, credited: true }, unfunded: { role: 'USER' as const },
-    blocked: { role: 'USER' as const, credited: true, blockedAt: new Date() } };
+    blocked: { role: 'USER' as const, credited: true, blockedAt: new Date() },
+    // Funded earlier through an ordinary Balance adjustment: keeps the ordinary terminal.
+    legacy: { role: 'USER' as const, balance: [{ asset: 'USDT', available: '100', locked: '0' }] },
+    both: { role: 'USER' as const, credited: true, balance: [{ asset: 'BTC', available: '0', locked: '0.1' }] },
+    nrxOnly: { role: 'USER' as const, balance: [{ asset: 'NRX', available: '5', locked: '0' }] } };
   function app(enabled: boolean, demoTrading: any = { placeOrder: jest.fn().mockResolvedValue(placed) }, isSpotPair = jest.fn(async (pair: string) => pair === 'BTC/USDT')) {
     const server = express(); server.use(express.json());
     server.use('/api/v1', demoTradingRouter(accounts(people) as any, demoTrading, {} as any, { enabled: () => enabled, isSpotPair }));
@@ -165,7 +170,9 @@ describe('demo Spot for admin-credited USER accounts (Issue #592)', () => {
     }
     expect((await post(server, 'admin')).status).toBe(201);
     expect(demoTrading.placeOrder).toHaveBeenCalledTimes(1);
-    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('tester'))).body).toEqual({ enabled: false, admitted: false });
+    for (const who of ['tester', 'legacy', 'unfunded']) {
+      expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader(who))).body).toEqual({ enabled: false, admitted: false, ledger: 'spot' });
+    }
   });
 
   it('flag ON: an admin-credited USER trades on the demo ledger under their own identity', async () => {
@@ -173,7 +180,7 @@ describe('demo Spot for admin-credited USER accounts (Issue #592)', () => {
     const res = await post(server, 'tester', { ...order, userId: 'someone-else' });
     expect(res.status).toBe(201);
     expect(demoTrading.placeOrder).toHaveBeenCalledWith(expect.objectContaining({ userId: 'tester', pair: 'BTC/USDT' }));
-    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('tester'))).body).toEqual({ enabled: true, admitted: true });
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('tester'))).body).toEqual({ enabled: true, admitted: true, ledger: 'demo' });
   });
 
   it('flag ON: no admin credit, a blocked account or no session is refused before the ledger is reached', async () => {
@@ -189,8 +196,17 @@ describe('demo Spot for admin-credited USER accounts (Issue #592)', () => {
     }
     expect((await request(server).delete('/api/v1/demo/orders/o1').set('Authorization', authHeader('unfunded'))).status).toBe(403);
     expect(demoTrading.placeOrder).not.toHaveBeenCalled();
-    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('unfunded'))).body).toEqual({ enabled: true, admitted: false });
-    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('blocked'))).body).toEqual({ enabled: true, admitted: false });
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('unfunded'))).body).toEqual({ enabled: true, admitted: false, ledger: 'none' });
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('blocked'))).body).toEqual({ enabled: true, admitted: false, ledger: 'none' });
+  });
+
+  it('flag ON: an account holding ordinary Balance funds keeps the ordinary terminal — earlier Balance credits are not silently disabled', async () => {
+    const { server } = app(true);
+    const access = async (who: string) => (await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader(who))).body;
+    expect(await access('legacy')).toEqual({ enabled: true, admitted: false, ledger: 'spot' });
+    expect(await access('both')).toEqual({ enabled: true, admitted: true, ledger: 'spot' }); // reserved funds count too
+    expect(await access('nrxOnly')).toEqual({ enabled: true, admitted: false, ledger: 'none' }); // test assets are not ordinary funds
+    expect(await access('admin')).toEqual({ enabled: true, admitted: true, ledger: 'demo' });
   });
 
   it('flag ON: a tester may trade only pairs the real Spot terminal lists; the admin sandbox is unchanged', async () => {

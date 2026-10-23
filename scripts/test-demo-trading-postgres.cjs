@@ -28,6 +28,7 @@ const { transferWalletBalance } = require('../src/services/WalletTransferService
 const { ordersRouter } = require('../src/api/routes/orders');
 const { demoTradingRouter } = require('../src/api/routes/demoTrading');
 const { withdrawalsRouter } = require('../src/api/routes/withdrawals');
+const { balancesRouter } = require('../src/api/routes/balances');
 
 function run(bin, args, stdio = 'pipe') { return spawnSync(bin, args, { cwd: root, encoding: 'utf8', stdio, timeout: 120000, windowsHide: true }); }
 function freePort() { return new Promise(resolve => { const server = net.createServer(); server.listen(0, '127.0.0.1', () => { const port = server.address().port; server.close(() => resolve(port)); }); }); }
@@ -57,7 +58,7 @@ async function main() {
     for (const name of fs.readdirSync(path.join(root, 'prisma/migrations')).sort()) {
       const file = path.join(root, 'prisma/migrations', name, 'migration.sql'); if (fs.existsSync(file)) await sql.query(fs.readFileSync(file, 'utf8'));
     }
-    const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', [TRADER]: 'USER', [TRADER2]: 'USER' };
+    const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', both: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', [TRADER]: 'USER', [TRADER2]: 'USER' };
     for (const [id, role] of Object.entries(people)) {
       await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`, [id, `${id.replace(/[^a-z0-9]/gi, "")}@example.invalid`, role]);
     }
@@ -71,6 +72,7 @@ async function main() {
     const demoProxy = new Proxy({}, { get: (_target, key) => (...args) => demo[key](...args) }); // swapped on "restart"
     const app = express(); app.use(express.json());
     app.use('/api/v1', ordersRouter(prisma, realEngine, { getTicker: async () => ({ lastPrice: '100000' }) }));
+    app.use('/api/v1', balancesRouter(prisma));
     app.use('/api/v1', demoTradingRouter(prisma, demoProxy, undefined, { enabled: () => enabled, isSpotPair: async pair => spotPairs.has(pair) }));
     // The native Cross wallet is valued from DemoBalance (PrismaNativeRepository); this reader stands in for that valuation.
     app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: async actor => actor.userId === TRADER
@@ -101,10 +103,10 @@ async function main() {
     const limit = (side, price, quantity, pair = 'BTC/USDT') => ({ pair, side, type: 'LIMIT', price: String(price), quantity: String(quantity) });
 
     // ── Owner/admin credits, as today: two different admin operations ──────────────
-    for (const who of ['funded', TRADER2]) {
+    for (const who of ['funded', 'both', TRADER2]) {
       await adjust.adjustOnce({ userId: who, asset: 'USDT', amount: '100', reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() });
     }
-    for (const [who, asset, amount] of [['tester', 'USDT', '50'], ['maker', 'BTC', '0.01'], ['blocked', 'USDT', '50'], [TRADER, 'USDT', '100']]) {
+    for (const [who, asset, amount] of [['tester', 'USDT', '50'], ['maker', 'BTC', '0.01'], ['blocked', 'USDT', '50'], ['both', 'USDT', '50'], [TRADER, 'USDT', '100']]) {
       await demo.topUp({ userId: who, asset, amount, performedByAdminId: 'admin', note: 'synthetic demo credit' });
     }
     await prisma.user.update({ where: { id: 'blocked' }, data: { blockedAt: new Date() } });
@@ -133,14 +135,22 @@ async function main() {
     });
 
     // ── Acceptance with DEMO_SPOT_ENABLED=true ───────────────────────────────────
-    const realBefore = await realState();
+    let realBefore = await realState();
     enabled = true;
-    await check('access: admin-credited USER admitted; no credit, blocked or anonymous are not', async () => {
-      assert.deepEqual((await api('GET', '/demo/spot/access', 'tester')).body, { enabled: true, admitted: true });
-      assert.deepEqual((await api('GET', '/demo/spot/access', 'unfunded')).body, { enabled: true, admitted: false });
-      assert.deepEqual((await api('GET', '/demo/spot/access', 'blocked')).body, { enabled: true, admitted: false });
-      assert.deepEqual((await api('GET', '/demo/spot/access', 'funded')).body, { enabled: true, admitted: false }); // a Balance credit is not a demo credit
+    await check('access and terminal ledger: demo credit → demo; ordinary Balance funds keep the ordinary terminal (as before); nothing → silent', async () => {
+      const access = async who => (await api('GET', '/demo/spot/access', who)).body;
+      assert.deepEqual(await access('tester'), { enabled: true, admitted: true, ledger: 'demo' });
+      assert.deepEqual(await access('unfunded'), { enabled: true, admitted: false, ledger: 'none' });
+      assert.deepEqual(await access('blocked'), { enabled: true, admitted: false, ledger: 'none' });
+      // Funded earlier through an ordinary Balance adjustment: not silently disabled, no migration.
+      assert.deepEqual(await access('funded'), { enabled: true, admitted: false, ledger: 'spot' });
+      assert.deepEqual(await access('both'), { enabled: true, admitted: true, ledger: 'spot' });
       assert.equal((await api('GET', '/demo/spot/access')).status, 401);
+      // With the Balance funds the ordinary order path works exactly as before.
+      const real = await api('POST', '/orders', 'funded', limit('BUY', 100000, 0.0001));
+      assert.equal(real.status, 201);
+      assert.equal((await api('DELETE', '/orders/' + real.body.order.id, 'funded')).status, 204);
+      realBefore = await realState(); // from here on only demo trading runs
     });
     await check('zero allocation: every order route is refused before the ledger; nothing is created or granted', async () => {
       for (const body of [limit('BUY', 100000, 0.0001), { pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: '0.0001' }]) {
@@ -299,7 +309,7 @@ async function main() {
       enabled = false;
       const r = await api('POST', '/demo/orders', 'tester', limit('BUY', 100000, 0.0001));
       assert.equal(r.status, 403); assert.equal(r.body.error, 'Admin access required');
-      assert.deepEqual((await api('GET', '/demo/spot/access', 'tester')).body, { enabled: false, admitted: false });
+      assert.deepEqual((await api('GET', '/demo/spot/access', 'tester')).body, { enabled: false, admitted: false, ledger: 'spot' });
       assert.deepEqual(await demoBal('tester', 'BTC'), { available: '0.00049', locked: '0' });
       enabled = true;
     });

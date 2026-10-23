@@ -7,7 +7,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { VtaDemoSales, VtaDemoError } from '../../services/testMarkets/VtaDemoSales';
-import { demoSpotEnabled, demoSpotRole } from '../../services/demoSpotAccess';
+import { demoSpotEnabled, demoSpotLedger, demoSpotRole } from '../../services/demoSpotAccess';
 
 const priceString = z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'must be > 0');
 
@@ -68,7 +68,11 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
   /** What the Spot terminal needs to choose its ledger. Never refuses a signed-in caller. */
   router.get('/demo/spot/access', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const on = enabled();
-    res.json({ enabled: on, admitted: on && (await demoSpotRole(prisma, req.userId!, true)) !== null });
+    res.json({
+      enabled: on,
+      admitted: on && (await demoSpotRole(prisma, req.userId!, true)) !== null,
+      ledger: await demoSpotLedger(prisma, req.userId!, on),
+    });
   }));
 
   router.get('/demo/vta', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {

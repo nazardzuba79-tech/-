@@ -54,11 +54,19 @@ ID with other terms is refused (409 `REQUEST_CONFLICT`). The terminal keeps the 
 (network error, 5xx) and releases it on any definite answer. Without a `requestId` (old clients) behaviour is as
 before.
 
+**Which ledger the terminal uses (server-decided, `GET /demo/spot/access` → `ledger`):**
+- flag off → `spot` for everyone (as before);
+- the account holds ordinary `Balance` funds (any non-test asset, available or reserved — e.g. an earlier admin
+  Balance adjustment) → `spot`: **orders work exactly as before**; nothing is moved, migrated or created;
+- otherwise, admitted to demo Spot (admin demo credit) → `demo`;
+- otherwise → `none` (silent no-op).
+An account holding both keeps the ordinary terminal; its demo funds stay on the demo ledger, unused there.
+
 **Terminal (frontend, `VITE_DEMO_SPOT_ENABLED`, default off):** the ordinary Spot terminal on ordinary pairs:
-- admitted account: balances, orders, open orders, history and assets from the demo ledger; LIMIT/MARKET tabs only;
-  insufficient funds shows the existing «Недостаточно USDT на балансе.»;
-- account without an admin credit (or access not yet known): Buy/Sell stay clickable and **nothing is sent or
-  shown**; balance reads 0.00;
+- `demo`: balances, orders, open orders, history and assets from the demo ledger; LIMIT/MARKET tabs only;
+  insufficient funds shows the existing «Недостаточно USDT на балансе.»; orders survive a reload;
+- `none` (or access not yet known): Buy/Sell stay clickable and **nothing is sent or shown**; balance reads 0.00;
+- `spot`: the ordinary terminal and ledger, unchanged;
 - test markets, listings and VTA keep their own paths; no «demo»/«unavailable» wording is added;
 - the frontend flag alone activates nothing: with the server flag off the terminal stays on the ordinary ledger.
 

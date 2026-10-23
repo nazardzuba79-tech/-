@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 
 const PAIRS = ['BTC/USDT', 'ETH/USDT'];
 const CANDLES = Array.from({ length: 120 }, (_, i) => ({ time: Math.floor(Date.now() / 60000) * 60 - (120 - i) * 60, open: 99900, high: 100200, low: 99800, close: 100000, volume: 12 }));
-const REAL = [/^\/api\/v1\/demo\//, /^\/api\/v1\/orders(\/|$)/, /^\/api\/v1\/withdrawals/];
+const REAL = [/^\/api\/v1\/demo\//, /^\/api\/v1\/orders(\/|$)/, /^\/api\/v1\/withdrawals/, /^\/api\/v1\/balances$/];
 
 async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
   const qa = createRequire(path.resolve(root, process.env.DEMO_QA_DEPS || 'output/demo-qa-deps/package.json'));
@@ -44,7 +44,6 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
       if (url.origin !== origin) return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"external network disabled in QA"}' });
       if (request.method() !== 'GET') { calls.push(`UNEXPECTED ${request.method()} ${p}`); return route.fulfill({ status: 403, body: '{}' }); }
       if (p === '/api/v1/me') return reply({ id: who, email: `${who}@example.invalid`, displayName: 'QA', kycStatus: 'APPROVED', role: 'USER', isAdmin: false });
-      if (p === '/api/v1/balances') return reply([]);
       if (p.includes('private-trading/access')) return reply({ allowed: false });
       if (p.includes('support/conversations/mine')) return reply({ conversation: null });
       if (p.includes('assets/icons')) return reply({ assets: {} });
@@ -137,6 +136,8 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
         const locked = await demoBal('tester', 'USDT');
         assert.equal(Number(locked.locked) - Number(before.locked), 9);
         const row = await prisma.demoOrder.findFirst({ where: { userId: 'tester', status: 'OPEN', price: '90000' } });
+        // A reload keeps the order: it is read back from the demo ledger.
+        await page.reload({ waitUntil: 'domcontentloaded' }); await page.locator('.spot-terminal').waitFor();
         if (mobile) await page.locator('#mobile-trade-account').click();
         await page.locator('#spot-tab-open').click();
         await page.locator(`[data-order-id="${row.id}"]`).waitFor();
@@ -196,12 +197,35 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
       await page.screenshot({ path: path.join(out, 'demo-market-history-1440.png') }); report.screenshots.push('demo-market-history-1440.png');
       await context.close();
     }
+    // 4b. An account funded earlier through an ordinary Balance adjustment keeps the ordinary
+    //     terminal with both flags on: five families, real /orders, its own open orders; reload keeps them.
+    {
+      const { page, context, calls, errors, mobile, accessAnswers } = await open('funded', 1440);
+      assert.equal(await settledFamilies(page, mobile, 5), 5);
+      assert.deepEqual(accessAnswers, [{ enabled: true, admitted: false, ledger: 'spot' }]);
+      await page.waitForFunction(() => /USDT/.test(document.querySelector('form.order-form-content .available-balance .amount')?.textContent ?? '')
+        && !/^0\.00/.test((document.querySelector('form.order-form-content .available-balance .amount')?.textContent ?? '').trim()), null, { timeout: 15000 });
+      await limitOrder(page, 90000, 0.0001); await settle(page);
+      assert.deepEqual(posts(calls), ['POST /api/v1/orders']);
+      const real = await prisma.order.findFirst({ where: { userId: 'funded', status: 'OPEN', price: '90000' } });
+      assert.ok(real, 'placed on the ordinary Spot ledger');
+      await page.reload({ waitUntil: 'domcontentloaded' }); await page.locator('.spot-terminal').waitFor();
+      await page.locator('#spot-tab-open').click();
+      await page.locator(`[data-order-id="${real.id}"]`).waitFor();
+      await page.locator(`[data-order-id="${real.id}"] button`).click();
+      await page.locator(`[data-order-id="${real.id}"]`).waitFor({ state: 'detached' });
+      assert.ok(calls.includes(`DELETE /api/v1/orders/${real.id}`));
+      assert.deepEqual(calls.filter(c => /^(POST|DELETE) \/api\/v1\/demo\//.test(c)), [], 'never the demo ledger');
+      assert.deepEqual(errors, []);
+      await page.screenshot({ path: path.join(out, 'spot-ledger-funded-1440.png') }); report.screenshots.push('spot-ledger-funded-1440.png');
+      await context.close();
+    }
     // 5. Frontend flag alone activates nothing: server flag off → the ordinary ledger, no demo order.
     {
       setEnabled(false);
       const { page, context, calls, errors, mobile, accessAnswers } = await open('tester', 1440);
       assert.equal(await settledFamilies(page, mobile, 5), 5);
-      assert.deepEqual(accessAnswers, [{ enabled: false, admitted: false }], 'the server answered: off');
+      assert.deepEqual(accessAnswers, [{ enabled: false, admitted: false, ledger: 'spot' }], 'the server answered: off');
       await limitOrder(page, 90000, 0.0001); await settle(page);
       assert.deepEqual(posts(calls), ['POST /api/v1/orders'], 'server flag off: ordinary /orders (refused: no Balance)');
       assert.deepEqual(errors, []);
@@ -210,8 +234,9 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
     }
     report.groups.push(
       'no admin credit (1440, 390): Buy clickable; no order request, toast or error line; balance 0.00; no demo ledger read',
-      'admitted tester (1440, 390): LIMIT + MARKET only; LIMIT reserves exactly on the demo ledger; cancel from the open-orders row restores it; never the real ledger',
+      'admitted tester (1440, 390): LIMIT + MARKET only; LIMIT reserves exactly on the demo ledger; the order survives a reload; cancel from the open-orders row restores it; never the real ledger',
       'lost response after commit (1440): pressing Buy again reuses the request ID and returns the same order — one order, one reserve',
+      'Balance-funded account (earlier admin Balance credit), both flags on: ordinary terminal, real /orders, open order survives a reload and cancels — never the demo ledger',
       'MARKET fills resting demo depth; history shows the FILLED order; assets from the demo ledger; over-balance shows «Недостаточно USDT», nothing placed',
       'server flag off with the build flag on: five ordinary families, Buy goes to /orders (the frontend flag alone activates nothing)');
     return report;
