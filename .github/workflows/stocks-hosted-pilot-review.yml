@@ -65,4 +65,5 @@ jobs:
             echo 'FAIL: synthetic local simulator was accepted with hosted pilot'; exit 1
           fi
       - name: No release/production authority
-        run: echo "Code-only: no market feed permissions, financial flags, credentials, migrations, or deployment"
+        run: |
+          echo "Code-only: no market feed permissions, financial flags, credentials, migrations, or deployment"
