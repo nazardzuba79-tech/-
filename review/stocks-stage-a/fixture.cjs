@@ -20,10 +20,14 @@ async function main(){
     require('node:child_process').execFileSync(process.execPath,['/app/node_modules/prisma/build/index.js','db','push','--skip-generate','--schema','/app/prisma/schema.prisma'],{env:{...process.env,DATABASE_URL:cfg.url,DIRECT_URL:cfg.url},stdio:'pipe'});
     const passwordHash=await require('/app/node_modules/bcrypt').hash(cfg.password,10);
     for(const id of cfg.users){await db.user.create({data:{id,email:id+'@example.invalid',passwordHash,referralCode:crypto.randomBytes(10).toString('hex'),role:'USER',country:'US'}});await db.demoBalance.create({data:{userId:id,asset:'USDT',available:'0',locked:'0'}});}
-    const tables=await db.$queryRawUnsafe(`SELECT to_regclass('public."StocksTestAccount"') AS a,to_regclass('public."StocksTestReceipt"') AS r,to_regclass('public."StocksTestAudit"') AS u`);assert.deepEqual(tables[0],{a:null,r:null,u:null});
+    const tables=await db.$queryRawUnsafe(`SELECT to_regclass('public."StocksTestAccount"')::text AS a,to_regclass('public."StocksTestReceipt"')::text AS r,to_regclass('public."StocksTestAudit"')::text AS u`);assert.deepEqual(tables[0],{a:null,r:null,u:null});
   }
   if(process.argv[2]==='revoke')await db.session.updateMany({where:{userId:cfg.users[0],revokedAt:null},data:{revokedAt:new Date()}});
   assert.equal(await db.auditLog.count({where:{action:{not:'SESSION_REVOKED'}}}),0,'no financial or unrelated audit writes');
   console.log(JSON.stringify({fingerprint:await fingerprint(),pg:(await db.$queryRawUnsafe('SELECT version() AS v'))[0].v,connections:(await db.$queryRawUnsafe('SELECT COUNT(*)::int AS n FROM pg_stat_activity'))[0].n}));
 }
-main().catch(e=>{console.error(e.code||e.message);process.exitCode=1;}).finally(()=>db.$disconnect());
+main().catch(e=>{
+  let error=JSON.stringify({code:e.code,message:e.message,meta:e.meta,stack:e.stack});
+  for(const secret of [cfg.url,cfg.password,encodeURIComponent(cfg.password)])error=error.split(secret).join('[fixture-secret-redacted]');
+  console.error(error.replace(/postgres(?:ql)?:\/\/[^\s"'<>]+/gi,'[fixture-pg-url-redacted]'));process.exitCode=1;
+}).finally(()=>db.$disconnect());
