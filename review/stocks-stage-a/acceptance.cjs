@@ -19,7 +19,9 @@ async function run({OUT,cleanups,users,password,fixture,apiOrigin,docker,api,gat
   checks.forgeryReplayAndPrivateAuthorityDenied=true;
   // Independent container on the run's internal bridge sees no host-loopback listeners.
   const probe=`const net=require('net');(async()=>{for(const p of [4437,4438,13020])await new Promise((r,j)=>{const s=net.connect(p,'host.docker.internal');s.setTimeout(3000,()=>{s.destroy();j(Error('TIMEOUT_NOT_PROOF'))});s.once('connect',()=>{s.destroy();j(Error('PRIVATE_PORT_EXPOSED '+p))});s.once('error',e=>['ECONNREFUSED','EACCES','EPERM','ENETUNREACH'].includes(e.code)?r():j(e));});console.log('PRIVATE_PORTS_DENIED');})().catch(e=>{console.error(e.message);process.exitCode=1;});`;
-  assert.match(docker(['run','--rm','--network',JSON.parse(docker(['inspect',api]))[0].HostConfig.NetworkMode,'--add-host','host.docker.internal:host-gateway',NODE,'node','-e',probe]),/PRIVATE_PORTS_DENIED/);checks.privatePortsDenied=true;
+  const databaseNetwork=Object.keys(JSON.parse(docker(['inspect',pg]))[0].NetworkSettings.Networks)[0];
+  const hostBridge=JSON.parse(docker(['network','inspect',databaseNetwork]))[0].IPAM.Config[0].Gateway;
+  assert.match(docker(['run','--rm','--network',databaseNetwork,'--add-host','host.docker.internal:'+hostBridge,NODE,'node','-e',probe]),/PRIVATE_PORTS_DENIED/);checks.privatePortsDenied=true;
   const {chromium}=require(process.env.QA_PLAYWRIGHT_MODULE||'playwright');const browser=await chromium.launch();cleanups.push(()=>browser.close());
   const browserErrors=[];
   const dist=path.resolve('frontend/dist');

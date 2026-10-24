@@ -4,6 +4,7 @@ on:
     types: [labeled]
 permissions:
   contents: read
+  actions: read
 jobs:
   isolated-stage-a:
     if: github.event.pull_request.number == 613 && github.event.action == 'labeled' && github.event.label.name == 'stocks-stage-a-20261024-checked' && github.event.pull_request.head.repo.full_name == github.repository
@@ -46,6 +47,13 @@ jobs:
           mkdir -p output
           node /tmp/stage-a-browser/node_modules/wrangler/bin/wrangler.js pages functions build frontend/functions --project-directory frontend --outdir output/pages-worker --output-routes-path output/pages-generated-routes.json --compatibility-date 2026-09-09
           npm run build --prefix frontend
+      - name: Obtain exact already-built immutable candidate (no new Docker build)
+        uses: actions/download-artifact@v4
+        with:
+          name: stocks-stage-a-d823ca2934aadf2bee1ba66157e0b94083776a13
+          run-id: 40090062852
+          github-token: ${{ github.token }}
+          path: output/stocks-stage-a-build
       - name: One isolated actual-bootstrap / Pages TLS / browser / 180s plus 180s comparison
         run: node review/stocks-stage-a/run.cjs
       - name: Preserve actual result and full redacted diagnostics even on early failure
