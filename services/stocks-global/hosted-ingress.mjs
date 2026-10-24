@@ -69,8 +69,9 @@ export async function createHostedIngress({ origin, gatewayPort, port = 4438, tr
       upstream.end(body);
     }catch(error){
       upstream?.destroy();
-      res.writeHead(error.code==='ROUTE_NOT_FOUND'?404:403,{'content-type':'application/json','cache-control':'no-store'});
-      res.end(JSON.stringify({error:['HOST_FORBIDDEN','ORIGIN_FORBIDDEN','ROUTE_NOT_FOUND','REQUEST_TOO_LARGE'].includes(error.code)?error.code:'REQUEST_REJECTED'}));
+      const busy=error.code==='ACCOUNT_BUSY';
+      res.writeHead(busy?503:error.code==='ROUTE_NOT_FOUND'?404:403,{'content-type':'application/json','cache-control':'no-store',...(busy?{'retry-after':'1'}:{})});
+      res.end(JSON.stringify({error:['HOST_FORBIDDEN','ORIGIN_FORBIDDEN','ROUTE_NOT_FOUND','REQUEST_TOO_LARGE','ACCOUNT_BUSY'].includes(error.code)?error.code:'REQUEST_REJECTED',...(busy?{retryAfterMs:1000}:{})}));
     }
   });
   server.keepAliveTimeout=5000;server.requestTimeout=15000;server.headersTimeout=10000;

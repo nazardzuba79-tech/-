@@ -39,6 +39,10 @@ jobs:
         with:
           node-version: '22.23.3'
           cache: npm
+      - name: Obtain the existing disposable fixture's pinned base schema (no production audit)
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
       - name: Install locked app and existing Worker tools; temporary local-only Pages builder
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
@@ -52,11 +56,9 @@ jobs:
           npx prisma generate
           npm run build
       - name: Compile the actual Pages file-based router (no deploy)
-        run: >-
-          node /tmp/stocks-pages-tools/node_modules/wrangler/bin/wrangler.js
-          pages functions build frontend/functions --project-directory frontend
-          --outdir output/pages-worker --output-routes-path output/pages-generated-routes.json
-          --compatibility-date 2026-09-09
+        run: |
+          mkdir -p output
+          node /tmp/stocks-pages-tools/node_modules/wrangler/bin/wrangler.js pages functions build frontend/functions --project-directory frontend --outdir output/pages-worker --output-routes-path output/pages-generated-routes.json --compatibility-date 2026-09-09
       - name: Signed transport, same-origin policy and unchanged private ingress
         run: >-
           node --test

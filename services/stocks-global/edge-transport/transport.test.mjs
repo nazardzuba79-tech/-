@@ -105,10 +105,11 @@ test('nonce admission is bounded, never evicts a live proof; no replay window fr
 test('actual signed ingress reuses the unchanged exact-origin/loopback gateway contract', async t => {
   const received = []; const backend = http.createServer((req, res) => { received.push({ host: req.headers.host, origin: req.headers.origin, auth: req.headers.authorization, proof: Object.keys(req.headers).some(k => k.startsWith(PROOF)) }); res.setHeader('content-type', 'application/json'); res.end('{"catalogue":[]}'); });
   await new Promise(resolve => backend.listen(0, '127.0.0.1', resolve)); t.after(() => { backend.closeAllConnections(); return new Promise(resolve => backend.close(resolve)); });
-  const ingress = await createHostedIngress({ origin: APP, gatewayPort: backend.address().port, port: 0, transport: createPagesTransport({ publicOrigin: APP, apiOrigin: API, key: KEY }) }); t.after(() => ingress.close());
+  const ingress = await createHostedIngress({ origin: APP, gatewayPort: backend.address().port, port: 0, transport: createPagesTransport({ publicOrigin: APP, apiOrigin: API, key: KEY, maxNonces:1 }) }); t.after(() => ingress.close());
   assert.equal(ingress.server.address().address, '127.0.0.1');
   const send = headers => new Promise((resolve, reject) => { const req = http.request({ host: '127.0.0.1', port: ingress.port, path: '/__stocks_global/catalogue', headers }, res => { res.resume(); res.on('end', () => resolve(res.statusCode)); }); req.on('error', reject); req.end(); });
   const headers = signed(); assert.equal(await send(headers), 200); assert.equal(await send(headers), 403);
   assert.equal(await send({ host: new URL(API).host, origin: APP, authorization: TOKEN }), 403);
+  assert.equal(await send(signed()),503,'nonce admission must report bounded unavailability, not an auth failure');
   assert.deepEqual(received, [{ host: '127.0.0.1:' + backend.address().port, origin: 'http://127.0.0.1:' + backend.address().port, auth: TOKEN, proof: false }]);
 });

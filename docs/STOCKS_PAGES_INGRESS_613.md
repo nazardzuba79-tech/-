@@ -84,6 +84,7 @@ The private authority URL must point to the existing loopback-published API serv
 Install the existing root/frontend and `workers/market-edge` lockfiles; use pinned Wrangler4.148.0 only as a temporary build tool. Compile the real Pages folder:
 
 ```sh
+mkdir -p output
 wrangler pages functions build frontend/functions --project-directory frontend \
   --outdir output/pages-worker --output-routes-path output/pages-generated-routes.json \
   --compatibility-date 2026-09-09
