@@ -1,5 +1,7 @@
 # Stocks #613 — current production gates (2026-10-24)
 
+First catalogue-only launch now uses [STOCKS_613_PRODUCTION_GO_NO_GO.md](STOCKS_613_PRODUCTION_GO_NO_GO.md), which separates Stage A from future Demo Trading. The migration/funded-account gates below are retained historical integration evidence, not a requirement to apply financial DDL merely for catalogue viewing.
+
 This is the single integration checklist; detailed proposed commands/rollback remain in [the infrastructure runbook](STOCKS_613_INFRA_MIGRATIONS_REVIEW.md). No production settings, SQL, credentials, accounts, balances, orders or history changed during this code-only integration. Read-only statuses below reuse the actual 2026-10-24 receipts; they are not a new broad audit or deployment acceptance.
 
 | Gate | Actual status / evidence | Safe automatic work now | Separate permission/access required |
