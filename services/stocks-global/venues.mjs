@@ -8,6 +8,7 @@
 // stays off until the operator enables it explicitly (see venuesFromEnv).
 import { check } from './engine.mjs';
 import { VENUE_CATALOG } from './catalog.mjs';
+import { LIVE_REST_ADAPTERS } from './live-rest.mjs';
 
 const str = v => { check(typeof v === 'string' && v.length > 0 && v !== 'null', 'INVALID_DATA'); return v; };
 const ms = v => { const n = Number(v); check(Number.isSafeInteger(n) && n > 0, 'INVALID_DATA'); return n; };
@@ -18,6 +19,7 @@ const GATE = 'https://api.gateio.ws/api/v4';
 const MEXC = 'https://api.mexc.com/api/v3';
 
 export const VENUES = {
+  ...LIVE_REST_ADAPTERS,
   // Gate spot (xStocks: AAPLX_USDT ...). Instrument: GET /spot/currency_pairs/{pair}; 404/400 for
   // an unknown pair. Ticker: GET /spot/tickers?currency_pair=. Book: GET /spot/order_book with
   // `id` (sequence) and `update` (ms). Candles: GET /spot/candlesticks, rows ascending as
@@ -86,7 +88,9 @@ export const VENUES = {
 export function venuesFromEnv(env = process.env) {
   const list = s => String(s ?? '').split(',').map(v => v.trim()).filter(Boolean);
   const enabled = list(env.STOCKS_VENUES_ENABLED), confirmed = new Set(list(env.STOCKS_VENUE_RIGHTS_CONFIRMED));
-  check(enabled.every(v => VENUES[v]), 'VENUE_UNKNOWN');
+  // Legacy REST configuration remains unchanged. New WS-only providers require
+  // STOCKS_LIVE_WS_VENUES, not silent activation through this older switch.
+  check(enabled.every(v => ['gate','mexc'].includes(v)), 'VENUE_UNKNOWN');
   check(enabled.every(v => confirmed.has(v)), 'DATA_RIGHTS_UNVERIFIED');
   return enabled;
 }

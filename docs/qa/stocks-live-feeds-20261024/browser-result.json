@@ -1,0 +1,26 @@
+{
+  "mode": "public-live-market-view-only",
+  "checks": [
+    "actual Bybit quote and existing chart visible",
+    "desktop chart stays inside its panel",
+    "Market/Limit BUY/SELL buttons are silent NO-OP",
+    "selected exact identity MEXC:TSLAXUSDT",
+    "selected exact identity OKX:XTSLA-USDT",
+    "selected exact identity KRAKEN:TSLAxUSD",
+    "selected exact identity BITGET:RTSLAUSDT",
+    "390px chart has no page overflow",
+    "zero financial POST, zero page exceptions",
+    "hidden tab stops quote/history polling",
+    "ordinary login route still required without a session"
+  ],
+  "pageErrors": [],
+  "financialRequests": [],
+  "externalRequestsBlocked": 21,
+  "screenshots": [
+    "desktop-1440-bybit.png",
+    "desktop-1440-bitget.png",
+    "mobile-390-chart.png",
+    "mobile-390-trade.png",
+    "mobile-390-catalogue.png"
+  ]
+}

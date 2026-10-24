@@ -177,7 +177,7 @@ export class MarketHub {
       // not retained a second time, and all users share one normalization.
       if(i.provider==='bybit'){const period={ '1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1D':'D' }[interval];const j=await this.request(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${i.sourceSymbol}&interval=${period}&limit=${limit}${end?'&end='+end:''}`);check(j.retCode===0&&j.result?.symbol===i.sourceSymbol,'INVALID_CANDLES');rows=j.result.list;}
       else if(i.provider==='binance'){rows=await this.request(`https://${this.binanceHost}/api/v3/klines?symbol=${i.sourceSymbol}&interval=${interval==='1D'?'1d':interval}&limit=${limit}${end?'&endTime='+end:''}`);}
-      else if(VENUES[i.provider]){const v=VENUES[i.provider];rows=v.parseHistory(await this.request(v.historyUrl(i,interval,Math.min(limit,v.maxRows),end)),i);}
+      else if(VENUES[i.provider]){const v=VENUES[i.provider];rows=v.parseHistory(await this.request(v.historyUrl(i,interval,Math.min(limit,v.maxRows),end)),i,Math.min(limit,v.maxRows));}
       else {const period={'1m':1,'1h':60,'1D':24}[interval];const till=new Date(end||this.now()).toISOString().slice(0,10);const from=new Date((end||this.now())-(interval==='1D'?360:interval==='1h'?14:2)*86400000).toISOString().slice(0,10);const j=await this.request(`https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${i.sourceSymbol}/candles.json?iss.meta=off&interval=${period}&from=${from}&till=${till}`);rows=tables(j,'candles');}
       const started=performance.now();const normalized=parseCandles(rows,i.provider,this.now());for(const candle of normalized)Object.freeze(candle);
       const bounded=i.provider!=='moex'&&rows.length<=limit,ordered=bounded&&nativeOrder(rows,i.provider);

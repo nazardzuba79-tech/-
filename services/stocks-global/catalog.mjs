@@ -1,3 +1,4 @@
+import { LIVE_CATALOG } from './live-catalog.mjs';
 // Instrument identity includes venue and asset. Never merge AAPLB, AAPLX, or MOEX equities.
 // Canonical identity = issuer + token (asset) + venue (provider) + quote currency. The issuer
 // names the tokenised product: 'xstocks' (Backed xStocks: AAPLX on Bybit/Gate/MEXC, AAPLx on
@@ -41,7 +42,7 @@ export const SOURCE_PRIORITY = {
   SPY:['GATE:SPYX_USDT','MEXC:SPYXUSDT'],
   QQQ:['GATE:QQQX_USDT'],
 };
-export const instrument = id => CATALOG.find(i => i.id === id) ?? VENUE_CATALOG.find(i => i.id === id);
+export const instrument = id => CATALOG.find(i => i.id === id) ?? VENUE_CATALOG.find(i => i.id === id) ?? LIVE_CATALOG.find(i => i.id === id);
 // Ranked rows for one underlying with each source's own verified state. `rows` is a catalogue()
 // result; ids absent from it (venue not enabled, not configured) are reported, never replaced.
 export function rankedSources(ticker, rows) {

@@ -1,0 +1,161 @@
+{
+  "startedAt": "2026-10-24T14:56:10.898Z",
+  "finishedAt": "2026-10-24T14:56:45.807Z",
+  "node": "v22.23.3",
+  "mode": "public-read-only-no-trading",
+  "metrics": {
+    "connections": 10,
+    "reconnects": 0,
+    "frames": 1376,
+    "rejected": 0,
+    "stale": 0,
+    "subscriptions": 31
+  },
+  "results": [
+    {
+      "id": "BYBIT:AAPLXUSDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853777217,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "BINANCE:AAPLBUSDT",
+      "quote": "QUOTE_UNAVAILABLE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "BYBIT:TSLAXUSDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853780397,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "BINANCE:TSLABUSDT",
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    },
+    {
+      "id": "GATE:AAPLX_USDT",
+      "quote": "QUOTE_UNAVAILABLE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    },
+    {
+      "id": "GATE:TSLAX_USDT",
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    },
+    {
+      "id": "MEXC:AAPLXUSDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853792736,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    },
+    {
+      "id": "MEXC:TSLAXUSDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853793145,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "OKX:XAAPL-USDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853793369,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "OKX:XTSLA-USDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853793076,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "KUCOIN:AAPLX-USDT",
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    },
+    {
+      "id": "KUCOIN:TSLAX-USDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853795261,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "KRAKEN:AAPLxUSD",
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "KRAKEN:TSLAxUSD",
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "BINGX:AAPLX-USDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853801631,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "BINGX:TSLAX-USDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853801631,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": true
+    },
+    {
+      "id": "BITGET:RAAPLUSDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853802612,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    },
+    {
+      "id": "BITGET:RTSLAUSDT",
+      "quote": "PASS",
+      "quoteTimestamp": 1792853802891,
+      "historyRows": 300,
+      "historyError": null,
+      "nativeWsCandleObserved": false
+    }
+  ],
+  "errors": []
+}
