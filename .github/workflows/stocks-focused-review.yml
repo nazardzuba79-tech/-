@@ -12,6 +12,8 @@ on:
       - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
+      - 'frontend/src/lib/__tests__/stockOrderPanel.test.ts'
+      - 'frontend/src/pages/stocks/StockOrderPanel.tsx'
       - '.github/workflows/stocks-focused-review.yml'
   workflow_dispatch: {}
 
@@ -95,10 +97,13 @@ jobs:
           src/api/routes/__tests__/stocksTestCash.test.ts
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
+          frontend/src/lib/__tests__/stockOrderPanel.test.ts
       - name: Confirm no production activation by source defaults
         shell: bash
         run: |
           node -e "const fs=require('fs');const route=fs.readFileSync('src/api/routes/stocksTestCash.ts','utf8');if(!route.includes(\"process.env.STOCKS_TEST_CASH_ENABLED === 'true'\")||!route.includes('if (!enabled) return router'))process.exit(1)"
+          # The second gate: order execution stays refused unless STOCKS_ORDER_EXECUTION_ENABLED is exactly 'true'.
+          node -e "const fs=require('fs');const route=fs.readFileSync('src/api/routes/stocksTestCash.ts','utf8');if(!route.includes(\"process.env.STOCKS_ORDER_EXECUTION_ENABLED === 'true'\")||!route.includes(\"if (!orderExecutionEnabled) return res.status(403).json({ error: 'ACCOUNT_TRADING_DISABLED' })\"))process.exit(1)"
       - name: Review evidence (synthetic, no customer information)
         if: always()
         uses: actions/upload-artifact@v4

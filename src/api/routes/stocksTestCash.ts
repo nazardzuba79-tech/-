@@ -5,12 +5,15 @@ import { timingSafeEqual } from 'crypto';
 import { resolve } from 'path';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
-interface Config { enabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
+interface Config { enabled?: boolean; orderExecutionEnabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
 interface Actor { issuer:string;subject:string;userId:string;sessionId:string;expiresAt:number }
 interface Authority { execute(actor:Actor,type:string,input?:unknown,options?:{signal?:AbortSignal;occurrenceId?:string}):Promise<any>; metrics():unknown }
 export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, injected?: Authority): Router {
   const router = Router(), enabled = config.enabled ?? process.env.STOCKS_TEST_CASH_ENABLED === 'true';
   if (!enabled) return router;
+  // Visibility and wallet reads never grant stock order execution. Owner-approved trading
+  // requires a second explicit server gate, independent of the catalogue gate (default OFF).
+  const orderExecutionEnabled = config.orderExecutionEnabled ?? process.env.STOCKS_ORDER_EXECUTION_ENABLED === 'true';
   const issuer = config.issuer ?? process.env.STOCKS_IDENTITY_ISSUER;
   const gatewayKey = config.gatewayKey ?? process.env.STOCKS_TEST_CASH_GATEWAY_KEY;
   const secret = config.secret ?? process.env.JWT_SECRET;
@@ -36,6 +39,7 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   // No role promotion or change to Funding/real Wallet routes is involved.
   router.get('/stocks-test-cash/wallet', auth, async (req: AuthedRequest, res) => { try { const value=await authority.execute(actor(req),'readView'); res.set('Cache-Control','no-store').json({ asset:'USDT',...value.wallets.USDT,authorityCash:value.authorityCash }); } catch (error) { failure(res,error); } });
   router.post('/stocks-test-cash/command', auth, async (req: AuthedRequest, res) => {
+    if (!orderExecutionEnabled) return res.status(403).json({ error: 'ACCOUNT_TRADING_DISABLED' });
     try {
       const supplied = req.headers['x-stocks-authority-key'];
       if (typeof supplied !== 'string' || Buffer.byteLength(supplied) !== Buffer.byteLength(gatewayKey) || !timingSafeEqual(Buffer.from(supplied),Buffer.from(gatewayKey))) return res.status(403).json({error:'AUTH_REQUIRED'});

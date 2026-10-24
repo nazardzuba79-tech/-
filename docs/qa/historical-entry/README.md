@@ -43,6 +43,11 @@ Two causes, both in the frontend hit-test:
 * `market-tab-armed-<w>.png` — the same bar through «Рыночный»: `type: MARKET`, no price, the bar
   attached; position entry 0.004, mark 0.0538; closed again. The selected price reaches the existing
   Long/Short on both tabs.
+* `tpsl-<side>-<w>.png` — Issue #565 follow-up (main `a7593324`): TP/SL armed on the historical position
+  from its row (LONG TP 0.06 / SL 0.05, SHORT TP 0.05 / SL 0.06, checked against the 0.0538 near-live price);
+  the entry stays 0.004 and the mode HISTORICAL_DEMO. The «Цена ликвид.» cell is the engine's estimate: the
+  SHORT shows 6.6506; for the LONG no price above zero empties this cross account, so the engine answers none
+  and the row shows «—».
 * `indicator-pane-control-1440.png` — RSI added (a third pane); a click inside it with the picker armed
   picks nothing. The phone keeps the indicator menus in the chart-workspace sheet, so this control runs
   on 1440 only; the rule is one code path (`paneIndex ≠ 0`), also in `chartTrading.test.ts`.
