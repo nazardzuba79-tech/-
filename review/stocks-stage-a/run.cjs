@@ -18,6 +18,7 @@ function envFile(name,data){const f=path.join(work,name+'.env');fs.writeFileSync
 function fixture(mode){return JSON.parse(docker(['run','--rm','--network',network,'--mount','type=bind,src='+work+',dst=/fixture,readonly','--entrypoint','node',report.images.api.tag,'/fixture/fixture.cjs',mode],{timeout:120000}));}
 function processCount(){return require('./process-count.cjs').count(docker(['top',api,'-eo','pid,args']));}
 async function main(){
+  assert.deepEqual(process.argv.slice(2),['--functional-only'],'the one benchmark was consumed in run40092455308; no repeat load is authorized');
   assert.equal(process.platform,'linux');assert.equal(process.versions.node,'22.23.3');assert.equal(process.env.GITHUB_ACTIONS,'true');assert.equal(process.env.RUNNER_ENVIRONMENT,'github-hosted');assert.equal(process.env.ImageOS,'ubuntu24');assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
   assert.ok(!process.env.DOCKER_HOST&&!process.env.DOCKER_CONTEXT);assert.equal(docker(['context','show']),'default');
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
@@ -75,7 +76,7 @@ async function main(){
   pg='stocks-stage-a-pg-'+id;api='stocks-stage-a-api-'+id;gateway='stocks-stage-a-gateway-'+id;
   runContainer(pg,['--network',network,'--network-alias','db','--cpus','0.25','--memory','512m','--env-file',envFile('pg',{POSTGRES_USER:'neondb_owner',POSTGRES_PASSWORD:password,POSTGRES_DB:'voltex_stage'}),PG]);
   await waitFor(pg,()=>require('./pg-ready.cjs').ready(docker,pg));
-  const before=fixture('setup');report.before=before;
+  const initial=fixture('setup');report.preBootstrap=initial;
   const pgIP=JSON.parse(docker(['inspect',pg]))[0].NetworkSettings.Networks[network].IPAddress;
   const apiEnv=envFile('api',{VOLTEX_RUNTIME_MODE:'production',VOLTEX_RELEASE_SHA:OVERLAY,NODE_OPTIONS:'--require /fixture/net-boundary.cjs',STAGE_A_PG_IP:pgIP});
   stage('isolation-attested-before-start',{databaseNetworkInternal:true,transportBridgeEgressDrop:true,ephemeralPgOnly:true,fixtureUsers:2,productionSecrets:false,paidResources:false,externalEgress:'owned Docker bridge DOCKER-USER DROP + inherited Node socket/DNS fence',dbName:'voltex_stage (fresh fixture, fixed by actual bootstrap)',runtimeMode:'production inside isolated CI only'});
@@ -91,18 +92,29 @@ async function main(){
   }
   assert.equal(JSON.stringify(report.health).includes(OVERLAY),true,'actual bootstrap release identity');
   report.processes=processCount();stage('actual-production-bootstrap-and-unchanged-launcher',report.processes);
+  // Do not alter/disable the original timer or hide its cold-start side effects.
+  // Catalogue interactions are compared only AFTER the existing API is ready and warm.
+  await pause(25000);let before,last;
+  for(let i=0;i<30;i++){const snapshot=fixture('snapshot');if(snapshot.expectedCopyScenarioIds&&last===JSON.stringify(snapshot.fingerprint)){before=snapshot;break;}last=JSON.stringify(snapshot.fingerprint);await pause(1000);}
+  assert.ok(before,'EXISTING_API_WARMUP_NOT_STABLE');
+  report.bootstrapInitialisation=require('./bootstrap-baseline.cjs').verifyInitialisation(initial,before);report.before=before;stage('existing-crypto-bootstrap-recorded-financial-baseline-stable',report.bootstrapInitialisation);
   const gatewayEnv=envFile('gateway',{NODE_ENV:'production',STOCKS_TEST_CASH_AUTHORITY_URL:'http://127.0.0.1:13020/api/v1/stocks-test-cash',STOCKS_IDENTITY_ISSUER:configuration.STOCKS_IDENTITY_ISSUER,STOCKS_TEST_CASH_GATEWAY_KEY:key,STOCKS_TRADE_PRINCIPALS:JSON.stringify(principals),STOCKS_GLOBAL_PORT:'4437',STOCKS_PUBLIC_ORIGIN:'https://app.example.invalid',STOCKS_PAGES_INGRESS_ENABLED:'true',STOCKS_API_INGRESS_ORIGIN:'https://api.example.invalid',STOCKS_EDGE_TRANSPORT_KEY:'ab'.repeat(32),STOCKS_MARKET_DATA_ENABLED:'false',STOCKS_WS_ENABLED:'false',STOCKS_ORDER_EXECUTION_ENABLED:'false'});
   runContainer(gateway,['--network','host','--cpus','0.25','--memory','256m','--pids-limit','64','--env-file',gatewayEnv,report.images.gateway.tag]);
   await waitFor(gateway,()=>{try{return command('curl',['--silent','--fail','http://127.0.0.1:4437/__stocks_global/health']).length>0;}catch{return false;}});
   const acceptance=require('./acceptance.cjs');
   const result=await acceptance.run({OUT,cleanups,users,password,fixture,apiOrigin:'http://127.0.0.1:13020',docker,api,gateway,pg,NODE});
   report.acceptance=result;stage('pages-workerd-nginx-tls-browser-and-financial-fences',result.checks);
-  // Exactly one predeclared 180s + 180s comparison. No retry or adaptive workload.
-  report.performance=await require('./benchmark.cjs').run({OUT,tokens:result.tokens,startReaders:result.startReaders,proxy:result.proxy,docker,api,gateway,pg});
+  // The sole authorized comparison is immutable evidence. Never rerun it to obtain a better result.
+  const measured=JSON.parse(fs.readFileSync('output/stocks-stage-a-build/benchmark-summary.json','utf8'));
+  const measuredRun=JSON.parse(fs.readFileSync('output/stocks-stage-a-build/result.json','utf8'));
+  assert.equal(measuredRun.head,'4e81fe8bde2120d7fd6669f5724540e4857ba06a');assert.equal(measuredRun.provenance.overlay,OVERLAY);
+  assert.equal(measured.manifest.phaseMs,180000);assert.equal(measured.manifest.threshold,1.05);assert.equal(measured.manifest.readers,2);
+  report.performance={...measured,reusedMeasuredEvidence:{run:40092455308,source:measuredRun.head,repeated:false}};
+  for(const f of ['benchmark-summary.json','benchmark-manifest.json','benchmark-crypto-only.json','benchmark-crypto-plus-two-stocks.json'])fs.copyFileSync(path.join('output/stocks-stage-a-build',f),path.join(OUT,f));
   report.after=fixture('snapshot');assert.deepEqual(report.after.fingerprint,before.fingerprint,'all non-identity financial/history rows unchanged');
   docker(['stop','--time','12',api]);assert.equal(JSON.parse(docker(['inspect',api]))[0].State.Running,false);
   docker(['start',api]);await waitFor(api,()=>{try{return command('curl',['--silent','--fail','http://127.0.0.1:13020/health']).includes(OVERLAY);}catch{return false;}});processCount();stage('same-immutable-image-stop-restart-smoke',{productionPreviousImageRollback:'NOT_EXECUTED; existing live digest/config retained, no production operation'});
-  report.result=report.performance.result==='PASS'?'PASS':report.performance.result;
+  report.functionalResult='PASS';report.result=report.performance.result==='PASS'?'PASS':report.performance.result;
 }
 main().catch(e=>{report.result='FAIL';report.error=redact(e.stack||e.message);console.error(report.error);}).finally(async()=>{
   for(const fn of cleanups.reverse())try{await fn();}catch(e){report.cleanupError=redact(e.message);}

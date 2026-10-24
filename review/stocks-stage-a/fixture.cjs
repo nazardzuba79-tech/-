@@ -24,7 +24,10 @@ async function main(){
   }
   if(process.argv[2]==='revoke')await db.session.updateMany({where:{userId:cfg.users[0],revokedAt:null},data:{revokedAt:new Date()}});
   assert.equal(await db.auditLog.count({where:{action:{not:'SESSION_REVOKED'}}}),0,'no financial or unrelated audit writes');
-  console.log(JSON.stringify({fingerprint:await fingerprint(),pg:(await db.$queryRawUnsafe('SELECT version() AS v'))[0].v,connections:(await db.$queryRawUnsafe('SELECT COUNT(*)::int AS n FROM pg_stat_activity'))[0].n}));
+  const {PERFORMANCE_SCENARIOS}=require('/app/dist/services/copyTrading/CopyPerformanceService.js');
+  const expectedIds=Object.values(PERFORMANCE_SCENARIOS).flatMap(({id})=>[id,id+':marketplace']).sort();
+  const actualIds=(await db.copyPerformanceScenario.findMany({select:{id:true},orderBy:{id:'asc'}})).map(r=>r.id);
+  console.log(JSON.stringify({fingerprint:await fingerprint(),expectedCopyScenarioIds:JSON.stringify(actualIds)===JSON.stringify(expectedIds),pg:(await db.$queryRawUnsafe('SELECT version() AS v'))[0].v,connections:(await db.$queryRawUnsafe('SELECT COUNT(*)::int AS n FROM pg_stat_activity'))[0].n}));
 }
 main().catch(e=>{
   let error=JSON.stringify({code:e.code,message:e.message,meta:e.meta,stack:e.stack});

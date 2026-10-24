@@ -1,5 +1,14 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const {verify,OVERLAY}=require('./provenance.cjs');
+test('cold crypto bootstrap never excuses changed balances/orders/history or later Stocks writes',()=>{
+ const {verifyInitialisation}=require('./bootstrap-baseline.cjs');
+ const before={fingerprint:{CopyPerformanceScenario:{count:0,hash:'empty'},DemoBalance:{count:2,hash:'cash'},Order:{count:1,hash:'history'}}};
+ const after=structuredClone(before);after.fingerprint.CopyPerformanceScenario={count:4,hash:'original-source-generated'};after.expectedCopyScenarioIds=true;
+ assert.equal(verifyInitialisation(before,after).allOtherTablesIdentical,true);
+ for(const table of ['DemoBalance','Order']){const bad=structuredClone(after);bad.fingerprint[table].hash='mutated';assert.throws(()=>verifyInitialisation(before,bad),/unexpected bootstrap table change/);}
+ const bad=structuredClone(after);bad.expectedCopyScenarioIds=false;assert.throws(()=>verifyInitialisation(before,bad),/original immutable-source/);
+ const source=fs.readFileSync(path.join(__dirname,'run.cjs'),'utf8');assert.match(source,/assert\.deepEqual\(report\.after\.fingerprint,before\.fingerprint/);assert.doesNotMatch(source,/require\('\.\/benchmark\.cjs'\)\.run/);
+});
 test('process census keeps Docker-required PID field and rejects duplicate or missing API/collector',()=>{
  const {count}=require('./process-count.cjs');const ps='PID COMMAND\n1 node /opt/operations/runtime-bootstrap.cjs\n10 /usr/local/bin/node scripts/start-render-single-service.cjs\n20 /usr/local/bin/node dist/marketDataCollector.js\n30 /usr/local/bin/node dist/index.js\n';
  assert.deepEqual(count(ps),{api:1,collector:1});

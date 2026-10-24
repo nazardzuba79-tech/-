@@ -50,12 +50,12 @@ jobs:
       - name: Obtain exact already-built immutable candidate (no new Docker build)
         uses: actions/download-artifact@v4
         with:
-          name: stocks-stage-a-d823ca2934aadf2bee1ba66157e0b94083776a13
-          run-id: 40090062852
+          name: stocks-stage-a-4e81fe8bde2120d7fd6669f5724540e4857ba06a
+          run-id: 40092455308
           github-token: ${{ github.token }}
           path: output/stocks-stage-a-build
-      - name: One isolated actual-bootstrap / Pages TLS / browser / 180s plus 180s comparison
-        run: node review/stocks-stage-a/run.cjs
+      - name: Isolated functional continuation; preserve the sole measured benchmark verdict without repeating load
+        run: node review/stocks-stage-a/run.cjs --functional-only
       - name: Preserve actual result and full redacted diagnostics even on early failure
         if: always()
         uses: actions/upload-artifact@v4
