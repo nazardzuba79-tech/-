@@ -56,6 +56,8 @@ real REST candles. No native candle or missing volume is fabricated.
   `15min` interval grammar. Bitget UTA v3 public spot-category ticker/kline only;
   no restricted `reality-orderbook`, API key or private channel. Venue-reported
   volume and platform turnover are kept distinct, not invented token turnover.
+- Confirmed expired-demand revival defect fixed with RED -> GREEN regression:
+  catalogue refresh neither revives expired viewers nor extends active leases.
 - Process-shared demand leases, at most 512 owners and 256 history interests;
   no per-viewer sockets. Bybit subscription requests are capped at ten arguments;
   MEXC connections are sharded at 30 requested channels, with finite catalog size.
@@ -71,7 +73,7 @@ real REST candles. No native candle or missing volume is fabricated.
 
 ## Verification
 
-- Node **22.23.3**: 39 new market-contract tests PASS plus 25 existing focused
+- Node **22.23.3**: 41 new market-contract tests PASS plus 25 existing focused
   release/default-OFF/history/projection/forged-finance regressions PASS.
 - Frontend TypeScript and production build PASS with the full existing
   `VITE_API_URL=https://api.voltextech.net/api/v1` and execution explicitly OFF.

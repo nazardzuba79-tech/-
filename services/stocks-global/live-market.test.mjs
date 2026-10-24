@@ -115,3 +115,11 @@ test('metadata is shared and failed/nonexistent sources do not substitute; histo
     await assert.rejects(h.quote('BINANCE:AAPLBUSDT'),/SOURCE_UNAVAILABLE/);
   }finally{h.close();}
 });
+test('metadata refresh must not resurrect an expired viewer demand',async()=>{
+  let now=100000;const h=new LiveMarketHub({liveVenues:['bybit'],now:()=>now,feedOptions:{WebSocketImpl:FakeSocket},fetchImpl:async()=>new Response(JSON.stringify(metadata.bybit))});
+  try{h.setStockDemand('disconnected-reader','BYBIT:AAPLXUSDT');now+=12001;await h.catalogue();assert.equal(h.pendingDemand.size,0);assert.equal(h.feed.owners.size,0);assert.equal(h.feed.connections.size,0);}finally{h.close();}
+});
+test('metadata admission never extends the original active viewer lease',async()=>{
+  let now=100000;const h=new LiveMarketHub({liveVenues:['bybit'],now:()=>now,feedOptions:{WebSocketImpl:FakeSocket},fetchImpl:async()=>new Response(JSON.stringify(metadata.bybit))});
+  try{h.setStockDemand('active-reader','BYBIT:AAPLXUSDT');now+=1000;await h.catalogue();assert.equal(h.feed.owners.get('active-reader').until,112000);assert.equal(h.pendingDemand.get('active-reader').until,112000);}finally{h.close();}
+});
