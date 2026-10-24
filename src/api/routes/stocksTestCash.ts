@@ -38,10 +38,15 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
       try {
         const users = await prisma.user.findMany({ where: { id: { in: bindings.map((p: {subject:string}) => p.subject) }, blockedAt: null }, select: { id: true } });
         if (users.length !== 2) throw Error('BINDINGS_UNVERIFIED');
-        // Resolve the required schema without reading private rows.
-        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAccount" WHERE false');
-        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestReceipt" WHERE false');
-        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAudit" WHERE false');
+        // Catalogue-only identity uses the existing User/Session authority and
+        // never reads financial accounts. Do not require trading DDL or cash
+        // merely to view the terminal. Wallet/command authority still requires
+        // all three tables, even while its separate execution gate is OFF.
+        if (enabled) {
+          await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAccount" WHERE false');
+          await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestReceipt" WHERE false');
+          await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAudit" WHERE false');
+        }
         // «Trading» means order execution: the gateway grants canTrade from this alone, so test-cash
         // wallets without the second gate leave every account a silent viewer (owner policy, #558).
         res.json({ version: 1, authority: 'postgres', tradingEnabled: enabled && orderExecutionEnabled, issuer, principalsDigest: principalsDigest(bindings) });
