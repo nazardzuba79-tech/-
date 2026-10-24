@@ -28,10 +28,10 @@ Request to the chosen provider must identify VOLTEX/operator/territories, privat
 
 - Reused base proof:29 successful workflows plus real legacy SQLite FAIL;72 targeted and4893 frontend tests; PG Node22/24 contract, Pages/Nginx TLS and standard login/logout/revocation. These results belong to baseecbc, not the new review HEAD.
 - Existing demand/shared-stream bounds:12s viewer leases,16s history leases,512 owners,256 history interests,64 quote waiters; MEXC30-topic shards, bounded reconnect and unchanged five-second quote admission. No per-user sockets or hidden polling. Source-only budget0.25CPU/256MiB/64PIDs/1024FDs is not validated production capacity.
-- Confirmed root defect: CMD automatically migrates. The new build-time root gate rejects either Stocks/NativeFunding directory before npm lifecycle/build, with no DB imports or bypass flag. It preserves the running API and legacy contexts without those files. Old images are not retrofitted.
-- Future build must explicitly use unchanged services/stocks-global/Dockerfile.release target gateway, exact44+2-byte preparation, pinned Node22.23.3 and verified source/image digest. No migration/seed/reset command. Current API/collector are retained.
+- Root defect corrected for ordinary API builds: root Dockerfile is now pinned Node22, schema-only (no bundled migration directory), with the retained guard before dependency lifecycle and again in runtime. Startup is exactly node dist/index.js with an empty inherited entrypoint; no Prisma migration shell. The checkout may contain protected SQL without breaking this safe API image. Current production is not changed.
+- Future API path: root Dockerfile, ordinary checkout, default runtime target; render.yaml selects this API command and autoDeployTrigger off. Gateway remains unchanged services/stocks-global/Dockerfile.release target gateway with exact44+2-byte preparation. Both use pinned Node22.23.3 and require source/image attestation. Existing API/collector source and launcher are retained; no extra collector is spawned.
 - Recovered only the saved HTTP/1.1 test Nginx keep-alive correction from b05cb4a4/bdd9f44b; peer-derived headers and uncached authorization remain. No production Nginx change.
-- New local checks only: Node22 root gate6/6 and transport contract4/4 PASS; RED-to-GREEN receipts retained. No Docker/Nginx/PG/browser/full suite or benchmark repeated; no app TypeScript changed.
+- Local follow-up checks: Node22 targeted20/20 PASS, including API/Render/dual-image contract7, root guard6, source-integrity3 and recovered proxy4; API defect RED receipts retained. Future YAML passed the current official Render JSON Schema. The existing exact-head infra CI now builds/inspects both API and Gateway on isolated ubuntu24.04; actual results are reported in #613. No local Docker/Nginx/browser or benchmark rerun; no app TypeScript changed.
 
 ## Performance: still NO-GO
 
@@ -42,10 +42,12 @@ A separately approved SMALL isolated canary is possible: same free disposable en
 ## Minimum owner decisions and operations
 
 1. Obtain written zero-fee rights for the chosen source/symbol/audience and caching; otherwise leave all providers OFF.
-2. Review the narrow root/p95 patch; separately authorize exact-source image attestation and the small isolated canary. Do not waive performance gates.
+2. Review the corrected API/Gateway package and exact-source isolated Docker CI; a small canary still requires separate approval. Do not waive performance gates.
 3. Reuse/confirm backup/restore evidence. If schema needs changes, separately approve only original hash-pinned additive SQL, manual execution and verification; never root-CMD migrations/reset/seed.
 4. Approve immutable gateway digest, existing PostgreSQL authority configuration, independent Pages HMAC credential and private4437/4438 routing/resource budget. Preserve crypto API/collector; any missing compatible authority needs separate API rollout approval.
 5. Approve one licensed read-only source and catalogue visibility. Preserve full VITE_API_URL; keep both execution flags and cash operations OFF for everyone. No new accounts/balances/entitlements.
 6. On canary failure restore only prior Stocks Pages/gateway image/config and turn data/visibility OFF. No reverse SQL or crypto restart.
 
 Verdict: code review candidate with two narrow safeguards; **not an approved production installation or public-data launch**. External data permission is the next decisive gate; no further exchange implementation is scheduled.
+
+Minimal provider permission request: [DRAFT, NOT SENT](STOCKS_DATA_PERMISSION_REQUEST.md).

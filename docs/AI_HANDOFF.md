@@ -7093,3 +7093,13 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - New Node22 tests10/10 PASS with both RED receipts. Base ecbc CI29 PASS + known legacy SQLite FAIL reused, not rerun or claimed for this HEAD. No Docker/Nginx/PG/browser/full suite rerun.
 - Short nine-provider terms/fee/permission table and minimal owner operations in docs/STOCKS_613_FIRST_LAUNCH.md. No provider currently has a verified VOLTEX commercial display grant; private pilot is not an automatic exception. Data/trading flags remain OFF.
 - Remaining: provider written zero-fee permission, exact future image/topology/schema readiness and existing p95 FAIL/INCONCLUSIVE. Only separately approved isolated small canary proposed; not executed. No production/config/DB/balance/account/TYVN/ECLAVO changes or paid resources.
+
+
+## Codex — 2026-10-24 — ordinary API Docker correction and #613 release package
+
+- Fresh #613 ecbc23edcaa2a3eec5203906c57a7de09f1dca0c, main98261cc8, review39aaf4c8; Claude read-only finding6387292112 confirmed root guard would block future ordinary Render API builds. No concurrent Claude source change.
+- Root Dockerfile now builds a migration-free, schema-only pinned Node22 API directly from checkout; retained guard runs before lifecycle and in runtime. Empty inherited entrypoint, exec node dist/index.js; SQL directories are not copied. Collector launcher/artifacts included but not auto-spawned. Gateway recipe bytes unchanged.
+- render.yaml keeps exchange-api identity/region/plan/context, matches safe API command and explicitly disables automatic deploy. Current Render/service/Hetzner config untouched; YAML validated against current official schema.
+- Existing exact-head isolated infra workflow extended with API build/inspect/no-network module checks and receipt/archive, alongside unchanged Gateway/migration-byte checks. No new deployment trigger, secrets, paid runner or benchmark.
+- Node22 targeted20/20 PASS; Root/API defect RED receipt saved. Production source/financial rules, SQL bytes, balances/auth/Wallet/Spot/Futures/Listings/Native and collector source unchanged. Existing core PG release contract remains required in CI.
+- docs/STOCKS_DATA_PERMISSION_REQUEST.md is the minimum zero-fee permission request, NOT SENT; no repeated venue research or source activation. Data rights, p95/50+2 and approved live installation remain blockers.

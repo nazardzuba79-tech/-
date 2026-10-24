@@ -1,53 +1,46 @@
-FROM node:20-alpine AS builder
+# Ordinary VOLTEX API image. SQL execution is an explicitly separate operation.
+# Build from the normal checkout: no staged migration package is required.
+FROM node:22.23.3-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 AS build
 WORKDIR /app
-# Prisma's engine needs to detect OpenSSL to pick the right binary — Alpine
-# doesn't ship it by default, and without it Prisma silently guesses wrong
-# and crashes at runtime ("Could not parse schema engine response").
-RUN apk add --no-cache openssl
-COPY package*.json ./
-COPY prisma ./prisma
-# This legacy image must never auto-apply the two separately approved feature migrations.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json tsconfig.json ./
+# Schema generation is offline. Never copy prisma/migrations into the API image.
+COPY prisma/schema.prisma ./prisma/schema.prisma
 COPY scripts/qa/stocks-root-image-gate.cjs /opt/voltex/stocks-root-image-gate.cjs
 RUN node /opt/voltex/stocks-root-image-gate.cjs
-RUN npm ci
-COPY tsconfig.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN node node_modules/prisma/build/index.js generate
 COPY src ./src
-RUN npx prisma generate
-RUN npm run build
+COPY services/stocks-global ./services/stocks-global
+COPY services/stocks-simulator/engine.mjs ./services/stocks-simulator/engine.mjs
+COPY scripts/qa/stocks-runtime-closure.cjs ./scripts/qa/
+COPY Dockerfile ./Dockerfile
+COPY scripts/start-render-single-service.cjs ./scripts/start-render-single-service.cjs
+RUN node -e "console.log(JSON.stringify(require('./scripts/qa/stocks-runtime-closure.cjs').verifyClosure(process.cwd(), require('node:fs').readFileSync('Dockerfile', 'utf8'))))" \
+    && node node_modules/typescript/bin/tsc -p tsconfig.json
 
-FROM node:20-alpine
+FROM node:22.23.3-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 AS runtime
+ARG REVIEW_SOURCE_SHA=unattested
+LABEL org.opencontainers.image.revision=${REVIEW_SOURCE_SHA}
 WORKDIR /app
 ENV NODE_ENV=production
-# Render (Frankfurt) reaching Neon (us-east-2) over IPv6 silently stalls
-# after the TCP handshake instead of failing fast — confirmed by the DB
-# itself answering the same advisory-lock query in ~230ms when run
-# directly against it, while every migrate deploy attempt from this
-# container hung for exactly Prisma's 10s ceiling. Forces Node's DNS
-# resolution (used by both `prisma migrate deploy` and the running app's
-# own DB queries) to prefer IPv4, avoiding the broken path.
+# Preserve the API's existing IPv4 connection preference.
 ENV NODE_OPTIONS="--dns-result-order=ipv4first"
-RUN apk add --no-cache openssl
-COPY package*.json ./
-COPY prisma ./prisma
-RUN npm ci --omit=dev
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/dist ./dist
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && chown node:node /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build /app/services/stocks-global ./services/stocks-global
+COPY --from=build /app/services/stocks-simulator/engine.mjs ./services/stocks-simulator/engine.mjs
+COPY --from=build --chown=node:node /app/prisma/schema.prisma ./prisma/schema.prisma
+COPY --from=build --chown=node:node /app/scripts/start-render-single-service.cjs ./scripts/start-render-single-service.cjs
+COPY --from=build /opt/voltex/stocks-root-image-gate.cjs /opt/voltex/stocks-root-image-gate.cjs
+RUN node /opt/voltex/stocks-root-image-gate.cjs
+USER node
+# Clear the base-image wrapper: startup is exactly the exec-form API command.
+ENTRYPOINT []
 EXPOSE 3000
-# Neon's free tier suspends its compute after a few minutes idle — the
-# first connection after a deploy often has to wake it up, which can take
-# longer than the ~10s Prisma allows to acquire its migration advisory
-# lock (P1002). That's a cold-start latency problem, separate from (and on
-# top of) DIRECT_URL avoiding the pooled-connection lock issue: a failed
-# first attempt has already reached and woken the compute, so retrying
-# lands on an awake database. Fails loudly (exit 1) instead of silently
-# starting the app against an unmigrated schema if every attempt fails.
-CMD ["sh", "-c", "\
-  n=0; \
-  until npx prisma migrate deploy; do \
-    n=$((n+1)); \
-    if [ $n -ge 6 ]; then echo 'prisma migrate deploy failed after 6 attempts'; exit 1; fi; \
-    echo \"prisma migrate deploy failed (attempt $n/6) — retrying in 5s, likely just waking the DB...\"; \
-    sleep 5; \
-  done; \
-  node dist/index.js \
-"]
+# API only. Existing production bootstrap manages its existing collector.
+CMD ["node", "dist/index.js"]
