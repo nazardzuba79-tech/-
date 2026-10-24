@@ -2,6 +2,9 @@ name: Stocks 613 additive migrations and immutable review image
 on:
   push:
     branches: [codex/stocks613-infra-migrations-20261024]
+  # No path filter: every new head of #613 must re-run the complete contract.
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -9,6 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   additive-ddl-and-image:
+    if: github.event_name == 'push' || github.event.pull_request.number == 613
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -17,8 +21,8 @@ jobs:
       STOCKS_ORDER_EXECUTION_ENABLED: 'false'
       STOCKS_TEST_CASH_ENABLED: 'false'
       STOCKS_MARKET_DATA_ENABLED: 'false'
-      SOURCE_SHA: ${{ github.sha }}
-      CONTROL_SHA: ${{ github.sha }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CONTROL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       NODE_IMAGE: node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
     services:
       postgres:
@@ -34,24 +38,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
           cache: npm
-      - name: Exact source and narrow review delta (no deployment credentials)
-        run: |
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          git merge-base --is-ancestor 4189ef756f1f0f769354a389bd2113572ab7f478 HEAD
-          git diff --exit-code 4189ef756f1f0f769354a389bd2113572ab7f478 HEAD -- prisma src frontend services/stocks-simulator services/stocks-global/authority-adapter.mjs services/stocks-global/server.mjs
-          node - <<'NODE'
-          const cp = require('node:child_process');
-          const allowed = new Set(['.github/workflows/stocks613-infra-review.yml','scripts/qa/stocks613-migration-rehearsal.cjs','scripts/qa/stocks613-infra.test.cjs','services/stocks-global/healthcheck.cjs','services/stocks-global/Dockerfile.release','deploy/stocks-pages-gateway.compose.yaml.example','docs/STOCKS_613_INFRA_MIGRATIONS_REVIEW.md','docs/AI_HANDOFF.md']);
-          const changed = cp.execFileSync('git',['diff','--name-only','4189ef756f1f0f769354a389bd2113572ab7f478','HEAD'],{encoding:'utf8'}).trim().split('\n');
-          if (changed.some(p => !allowed.has(p))) throw Error('UNREVIEWED_SOURCE_DELTA');
-          if (process.versions.node !== '22.23.3') throw Error('NODE_VERSION_MISMATCH');
-          NODE
+      - name: Exact source and mode-specific integrity (no deployment credentials)
+        run: node scripts/qa/stocks613-infra-source.cjs
       - name: Locked dependencies and necessary tools only
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
@@ -62,7 +57,7 @@ jobs:
         run: |
           mkdir -p output
           set -o pipefail
-          node --test scripts/qa/stocks613-infra.test.cjs 2>&1 | tee output/infra-tests.tap
+          node --test scripts/qa/stocks613-infra.test.cjs scripts/qa/stocks613-infra-source.test.cjs 2>&1 | tee output/infra-tests.tap
       - name: Verify original 44+2 SQL bytes and create build context
         run: node scripts/qa/stocks-build-only-prepare.cjs "$GITHUB_WORKSPACE" /tmp/stocks613-package
       - name: Apply only original additive SQL to EMPTY synthetic PostgreSQL
