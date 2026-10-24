@@ -7103,3 +7103,5 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - Existing exact-head isolated infra workflow extended with API build/inspect/no-network module checks and receipt/archive, alongside unchanged Gateway/migration-byte checks. No new deployment trigger, secrets, paid runner or benchmark.
 - Node22 targeted20/20 PASS; Root/API defect RED receipt saved. Production source/financial rules, SQL bytes, balances/auth/Wallet/Spot/Futures/Listings/Native and collector source unchanged. Existing core PG release contract remains required in CI.
 - docs/STOCKS_DATA_PERMISSION_REQUEST.md is the minimum zero-fee permission request, NOT SENT; no repeated venue research or source activation. Data rights, p95/50+2 and approved live installation remain blockers.
+
+- ac285877 first infra CI stopped before Docker at a NEW test pinning Windows CRLF checkout hash. Corrected to byte-exact Git blob comparison with ecbc and canonical eee685d0... hash; no EOL normalization, SQL/checker change or runtime patch. Target API contract7/7 PASS locally; original CI FAIL retained.
