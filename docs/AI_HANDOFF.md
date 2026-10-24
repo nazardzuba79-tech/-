@@ -7083,3 +7083,13 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - Node22.23.3 focused72/72, migration/health9/9 and exact-head/source guard3/3 PASS (initial local js-yaml resolution error preserved; existing dependency path used). Browser1440/390 checks actual nine-source menu/REST responses, upstream reconnect, no overflow, zero financial POST and zero page exceptions. Local reader is not a production account; hosted PG auth remains a separate CI check.
 - Evidence and current 11/18 fresh snapshot in docs/qa/stocks-live-feeds-20261024/integration; 55 metadata identities,18 cumulative complete wire identities. Future OFF-only configuration and release blockers in docs/STOCKS_WS_613_INTEGRATION.md.
 - Deployment preflight: Pages prod/preview disabled, both Render workspace previews off/no canonical branch, Work Northflank closure reused. No prod/config/data/SQL/account/order/collector/TYVN/ECLAVO changes, no50+2/p95 run. Exact-head remote CI and known legacy SQLite FAIL must be reported independently.
+
+
+## Codex — 2026-10-24 — first real Stocks launch preparation
+
+- Fresh main98261cc80117e0961f8ebca84499ec2cb3f0e3b4 / #613 ecbc23edcaa2a3eec5203906c57a7de09f1dca0c; review branch codex/stocks613-release-prep-20261024. No canonical/main changes.
+- Narrow root Docker build gate prevents bundling protected Stocks/NativeFunding SQL into the legacy auto-migrating image. Attested Node22 release recipe and original SQL untouched; running API/collector unaffected.
+- Recovered only the saved HTTP/1.1 test proxy/helper contract from b05cb4a4 (original bdd9f44b), not telemetry or new benchmarks. Test support remains test-only; no Nginx production config change.
+- New Node22 tests10/10 PASS with both RED receipts. Base ecbc CI29 PASS + known legacy SQLite FAIL reused, not rerun or claimed for this HEAD. No Docker/Nginx/PG/browser/full suite rerun.
+- Short nine-provider terms/fee/permission table and minimal owner operations in docs/STOCKS_613_FIRST_LAUNCH.md. No provider currently has a verified VOLTEX commercial display grant; private pilot is not an automatic exception. Data/trading flags remain OFF.
+- Remaining: provider written zero-fee permission, exact future image/topology/schema readiness and existing p95 FAIL/INCONCLUSIVE. Only separately approved isolated small canary proposed; not executed. No production/config/DB/balance/account/TYVN/ECLAVO changes or paid resources.

@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { benchmarkApiProxy } from './benchmark-proxy.mjs';
 
 export const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 export const APP = 'https://app.example.invalid', API = 'https://api.example.invalid', KEY = 'ab'.repeat(32);
@@ -42,8 +43,9 @@ export async function originProxy(t, ingressPort, { apiOrigin, preserveClientIp 
     dir = await mkdtemp(join(tmpdir(), 'voltex-stocks-edge-')); port = await ephemeralPort();
     execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', join(dir, 'key.pem'), '-out', join(dir, 'cert.pem'), '-days', '1', '-subj', '/CN=api.example.invalid', '-addext', 'subjectAltName=DNS:api.example.invalid'], { stdio: 'ignore' });
     const snippet = (await readFile(resolve(ROOT, 'deploy/stocks-pages-ingress.location.conf.example'), 'utf8')).replace('127.0.0.1:4438', '127.0.0.1:' + ingressPort);
-    const ordinaryApi=apiOrigin?`proxy_pass ${apiOrigin}; proxy_set_header Host $host; ${preserveClientIp ? 'proxy_set_header X-Forwarded-For $remote_addr;' : ''}`:'return 404;';
-    const config = `pid ${dir}/nginx.pid; error_log ${dir}/error.log; events { worker_connections 64; } http { access_log off; server { listen 127.0.0.1:${port} ssl; server_name api.example.invalid; ssl_certificate ${dir}/cert.pem; ssl_certificate_key ${dir}/key.pem; ${snippet}\n location / { ${ordinaryApi} } } }`;
+    const benchmarkProxy = apiOrigin && preserveClientIp ? benchmarkApiProxy(apiOrigin) : null;
+    const ordinaryApi=benchmarkProxy?.location ?? (apiOrigin?`proxy_pass ${apiOrigin}; proxy_set_header Host $host;`:'return 404;');
+    const config = `pid ${dir}/nginx.pid; error_log ${dir}/error.log; events { worker_connections 64; } http { access_log off; ${benchmarkProxy?.upstream ?? ''} server { listen 127.0.0.1:${port} ssl; server_name api.example.invalid; ssl_certificate ${dir}/cert.pem; ssl_certificate_key ${dir}/key.pem; ${snippet}\n location / { ${ordinaryApi} } } }`;
     await writeFile(join(dir, 'nginx.conf'), config); ca = await readFile(join(dir, 'cert.pem'));
     execFileSync('nginx', ['-t', '-p', dir, '-c', join(dir, 'nginx.conf')], { stdio: 'ignore' });
     child = spawn('nginx', ['-p', dir, '-c', join(dir, 'nginx.conf'), '-g', 'daemon off;'], { stdio: 'ignore' });

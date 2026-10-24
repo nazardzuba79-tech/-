@@ -6,6 +6,9 @@ WORKDIR /app
 RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY prisma ./prisma
+# This legacy image must never auto-apply the two separately approved feature migrations.
+COPY scripts/qa/stocks-root-image-gate.cjs /opt/voltex/stocks-root-image-gate.cjs
+RUN node /opt/voltex/stocks-root-image-gate.cjs
 RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
