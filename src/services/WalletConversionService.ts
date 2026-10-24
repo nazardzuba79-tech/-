@@ -4,6 +4,9 @@ import BigNumber from 'bignumber.js';
 import { KrakenMarketDataService } from './KrakenMarketDataService';
 import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
+import { demoSpotEnabled, demoSpotLedger, demoWithdrawalGuardEnabled } from './demoSpotAccess';
+import { demoLiquidityConfig, liquidityAccountRefusal } from './DemoLiquidity';
+import { DEMO_SPOT_LEDGER } from './SpotBookTransaction';
 
 // Isolated decimal context: never change the arithmetic of other services.
 const Decimal = BigNumber.clone({ DECIMAL_PLACES: 80, ROUNDING_MODE: BigNumber.ROUND_DOWN });
@@ -140,50 +143,87 @@ export class KrakenConversionPrices implements ConversionPrices {
   }
 }
 
+/**
+ * Where a conversion settles: the same ledger the Spot terminal trades this account on (demoSpotLedger).
+ * - 'spot': `Balance`, backed by the operator-verified reserves above.
+ * - 'demo': `DemoBalance` only, as a swap with the Demo Liquidity account's already-credited DemoBalance
+ *   (Issue #592). Both sides stay demo: nothing is minted, `Balance` is never read for funds or written,
+ *   and value only moves between two demo accounts, so every asset's DemoBalance total is unchanged.
+ *   Demo funds stay non-withdrawable: a demo ledger exists only while DEMO_SPOT_ENABLED is on, which
+ *   forces the withdrawal guard on (demoWithdrawalGuardEnabled), and withdrawals hold `Balance` only.
+ * An account with neither (no ordinary funds, not admitted to demo) stays on 'spot', where it holds nothing.
+ */
+export type ConversionLedger = 'spot' | 'demo';
+/** Committed receipts, one action per ledger; the reserve exposure counts the 'spot' one only. */
+const RECEIPT_ACTIONS = ['WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED'];
+/** Quotes stored before the demo ledger existed carry no `ledger`; they were Balance quotes. */
+const ledgerOf = (quote: { ledger?: unknown }): ConversionLedger => quote.ledger === 'demo' ? 'demo' : 'spot';
+
 /** `fromPriceUsd` is the market's bid for the source, `toPriceUsd` its ask for the destination (USD per unit). */
 export interface ConversionQuote {
   quoteId: string; fromAsset: string; toAsset: string; fromAmount: string; toAmount: string;
   fromPriceUsd: string; toPriceUsd: string; fee: '0'; source: 'kraken'; pricing: 'bid-ask'; fetchedAt: number; expiresAt: number;
+  ledger: ConversionLedger;
 }
 export interface ConversionReceipt extends ConversionQuote { status: 'APPLIED'; operationId: string; createdAt: string }
 
 type Db = Pick<PrismaClient, 'user'> | Prisma.TransactionClient;
+type Reader = PrismaClient | Prisma.TransactionClient;
 
 export class WalletConversionService {
   constructor(private prisma: PrismaClient, private prices: ConversionPrices, private now = Date.now,
     private admitted: Map<string, number> = parseConversionAssets(DEFAULT_CONVERSION_ASSETS)!,
-    private limits: ConversionLimits = DEFAULT_CONVERSION_LIMITS) {}
+    private limits: ConversionLimits = DEFAULT_CONVERSION_LIMITS,
+    /** Demo Spot, Demo Liquidity and withdrawal-guard settings, read on every call. */
+    private env: NodeJS.ProcessEnv = process.env) {}
   /** The source valued at its market bid, in USD. */
   private usd(quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd'>) { return new Decimal(quote.fromAmount).times(quote.fromPriceUsd); }
-  /** Size and backing that do not depend on other conversions: the single limit, a configured reserve, market depth. */
-  private async admit(quote: Pick<ConversionQuote, 'fromAsset' | 'toAsset' | 'fromAmount' | 'toAmount' | 'fromPriceUsd'>) {
+  /** Size and backing that do not depend on other conversions: the single limit, a configured reserve ('spot'), market depth. */
+  private async admit(quote: Pick<ConversionQuote, 'fromAsset' | 'toAsset' | 'fromAmount' | 'toAmount' | 'fromPriceUsd' | 'ledger'>) {
     if (this.usd(quote).gt(this.limits.maxUsd)) throw new ConversionError('LIMIT_EXCEEDED');
-    if (!this.limits.reserves.has(quote.toAsset)) throw new ConversionError('RESERVE_UNVERIFIED');
+    // A demo conversion is backed by the liquidity account's DemoBalance instead (demoBacking).
+    if (quote.ledger === 'spot' && !this.limits.reserves.has(quote.toAsset)) throw new ConversionError('RESERVE_UNVERIFIED');
     for (const [asset, amount, side] of [[quote.fromAsset, quote.fromAmount, 'bid'], [quote.toAsset, quote.toAmount, 'ask']] as const) {
       if (asset === 'USD') continue;
       const depth = await this.prices.depth(asset, side);
       if (depth === null || new Decimal(depth).lt(amount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
     }
   }
+  private async ledger(db: Reader, userId: string): Promise<ConversionLedger> {
+    return await demoSpotLedger(db, userId, demoSpotEnabled(this.env)) === 'demo' ? 'demo' : 'spot';
+  }
   /**
-   * Committed conversions of this account in the last 24 hours, valued as at their quotes. A typed query, so
-   * the time window is compared exactly as Prisma wrote `createdAt` (no session time-zone dependence).
+   * The Demo Liquidity account that answers a demo conversion. None (fail closed) while Demo Liquidity is
+   * off or misconfigured, while the withdrawal guard is off, for that account itself, or while it may not
+   * back quotes (blocked, not a USER, a native trading account, holding ordinary Balance). Its per-order
+   * cap applies on top of the conversion limits. `lockRows` inside the demo book transaction, as a demo fill.
+   */
+  private async demoBacking(db: Reader, userId: string, quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd'>, lockRows: boolean) {
+    const { config } = demoLiquidityConfig(this.env);
+    if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
+    if (this.usd(quote).gt(config.maxOrderQuote)) throw new ConversionError('LIMIT_EXCEEDED');
+    if (await liquidityAccountRefusal(db, config.accountId, lockRows, this.env)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
+    return config.accountId;
+  }
+  /**
+   * Committed conversions of this account in the last 24 hours (both ledgers), valued as at their quotes. A typed
+   * query, so the time window is compared exactly as Prisma wrote `createdAt` (no session time-zone dependence).
    */
   private async dailyUsed(db: Pick<Prisma.TransactionClient, 'auditLog'>, userId: string) {
-    const rows = await db.auditLog.findMany({ where: { userId, action: 'WALLET_CONVERTED', createdAt: { gt: new Date(this.now() - 86_400_000) } }, select: { metadata: true } });
+    const rows = await db.auditLog.findMany({ where: { userId, action: { in: RECEIPT_ACTIONS }, createdAt: { gt: new Date(this.now() - 86_400_000) } }, select: { metadata: true } });
     return rows.reduce((sum, row) => sum.plus(this.usd(row.metadata as unknown as ConversionQuote)), new Decimal(0));
   }
-  /** Net amount of `asset` all conversions have created so far: credited minus debited. */
+  /** Net amount of `asset` all Balance conversions have created so far: credited minus debited. */
   private async exposure(db: Pick<Prisma.TransactionClient, '$queryRaw'>, asset: string) {
     const rows = await db.$queryRaw<{ value: string | null }[]>`SELECT (COALESCE(SUM(CASE WHEN metadata->>'toAsset' = ${asset} THEN (metadata->>'toAmount')::numeric END), 0)
       - COALESCE(SUM(CASE WHEN metadata->>'fromAsset' = ${asset} THEN (metadata->>'fromAmount')::numeric END), 0))::text AS value
       FROM "AuditLog" WHERE action = 'WALLET_CONVERTED'`;
     return new Decimal(rows[0]?.value ?? '0');
   }
-  /** Daily limit and reserve against everything already committed (authoritative only under the confirm locks). */
+  /** Daily limit, and for Balance the reserve, against everything already committed (authoritative only under the confirm locks). */
   private async withinTotals(db: Pick<Prisma.TransactionClient, 'auditLog' | '$queryRaw'>, userId: string, quote: ConversionQuote) {
     if ((await this.dailyUsed(db, userId)).plus(this.usd(quote)).gt(this.limits.dailyUsd)) throw new ConversionError('DAILY_LIMIT_EXCEEDED');
-    if ((await this.exposure(db, quote.toAsset)).plus(quote.toAmount).gt(this.limits.reserves.get(quote.toAsset)!)) throw new ConversionError('RESERVE_EXHAUSTED');
+    if (quote.ledger === 'spot' && (await this.exposure(db, quote.toAsset)).plus(quote.toAmount).gt(this.limits.reserves.get(quote.toAsset)!)) throw new ConversionError('RESERVE_EXHAUSTED');
   }
   private fresh(feed: { fetchedAt: number }) {
     if (!Number.isFinite(feed.fetchedAt) || feed.fetchedAt > this.now() || this.now() - feed.fetchedAt > MAX_AGE) throw new ConversionError('PRICE_UNAVAILABLE');
@@ -196,9 +236,14 @@ export class WalletConversionService {
     const user = await db.user.findUnique({ where: { id: userId }, select: { blockedAt: true } });
     if (!user || user.blockedAt) throw new ConversionError('ACCOUNT_BLOCKED');
   }
+  /** Available funds of one ledger only: a demo account sees its DemoBalance, never Balance, and the reverse. */
+  private async available(ledger: ConversionLedger, userId: string) {
+    const where = { where: { userId }, select: { asset: true, available: true } };
+    return ledger === 'demo' ? this.prisma.demoBalance.findMany(where) : this.prisma.balance.findMany(where);
+  }
   async assets(userId: string) {
     const feed = await this.prices.read(); this.fresh(feed);
-    const balances = await this.prisma.balance.findMany({ where: { userId }, select: { asset: true, available: true } });
+    const balances = await this.available(await this.ledger(this.prisma, userId), userId);
     return [...feed.bid.keys()].filter(asset => this.supported(asset) && validPrice(feed.bid.get(asset)) && validPrice(feed.ask.get(asset))).sort().map(asset => ({ asset, kind: FIAT.has(asset) ? 'fiat' : 'crypto',
       scale: this.admitted.get(asset)!, available: balances.find(b => b.asset === asset)?.available.toString() ?? '0' }));
   }
@@ -216,22 +261,30 @@ export class WalletConversionService {
     const fromAmount = new Decimal(amount).toFixed();
     const toAmount = new Decimal(fromAmount).times(fromPrice).div(toPrice).decimalPlaces(this.admitted.get(toAsset)!, Decimal.ROUND_DOWN).toFixed();
     if (!AMOUNT.test(toAmount) || !new Decimal(toAmount).isGreaterThan(0)) throw new ConversionError('INVALID_CONVERSION');
-    const balance = await this.prisma.balance.findUnique({ where: { userId_asset: { userId, asset: fromAsset } } });
+    const ledger = await this.ledger(this.prisma, userId);
+    const key = { where: { userId_asset: { userId, asset: fromAsset } } };
+    const balance = ledger === 'demo' ? await this.prisma.demoBalance.findUnique(key) : await this.prisma.balance.findUnique(key);
     if (!balance || new Decimal(balance.available.toString()).lt(fromAmount)) throw new ConversionError('INSUFFICIENT_BALANCE');
     const quote: ConversionQuote = { quoteId: randomUUID(), fromAsset, toAsset, fromAmount, toAmount,
-      fromPriceUsd, toPriceUsd, fee: '0', source: 'kraken', pricing: 'bid-ask', fetchedAt: feed.fetchedAt, expiresAt: feed.fetchedAt + MAX_AGE };
+      fromPriceUsd, toPriceUsd, fee: '0', source: 'kraken', pricing: 'bid-ask', fetchedAt: feed.fetchedAt, expiresAt: feed.fetchedAt + MAX_AGE, ledger };
     // Refuse early what cannot be confirmed; the confirm re-checks all of it under its locks.
     await this.admit(quote);
+    if (ledger === 'demo') {
+      const accountId = await this.demoBacking(this.prisma, userId, quote, false);
+      const inventory = await this.prisma.demoBalance.findUnique({ where: { userId_asset: { userId: accountId, asset: toAsset } } });
+      if (!inventory || new Decimal(inventory.available.toString()).lt(toAmount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
+    }
     await this.withinTotals(this.prisma, userId, quote);
-    // Quote is server-owned and binds user, intent and price. Does NOT reserve/debit money.
+    // Quote is server-owned and binds user, intent, price and ledger. Does NOT reserve/debit money.
     await this.prisma.auditLog.create({ data: { id: quote.quoteId, userId, action: 'WALLET_CONVERSION_QUOTED', metadata: { ...quote } } });
     return quote;
   }
   private receipt(row: { id: string; createdAt: Date; metadata: Prisma.JsonValue }): ConversionReceipt {
-    return { ...(row.metadata as unknown as ConversionQuote), status: 'APPLIED', operationId: row.id, createdAt: row.createdAt.toISOString() };
+    const quote = row.metadata as unknown as ConversionQuote;
+    return { ...quote, ledger: ledgerOf(quote), status: 'APPLIED', operationId: row.id, createdAt: row.createdAt.toISOString() };
   }
   async status(userId: string, quoteId: string): Promise<ConversionReceipt | null> {
-    const row = await this.prisma.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: 'WALLET_CONVERTED' } });
+    const row = await this.prisma.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: { in: RECEIPT_ACTIONS } } });
     return row ? this.receipt(row) : null;
   }
   async confirm(userId: string, quoteId: string): Promise<ConversionReceipt> {
@@ -239,7 +292,8 @@ export class WalletConversionService {
     const applied = await this.status(userId, quoteId); if (applied) return applied;
     const record = await this.prisma.auditLog.findFirst({ where: { id: quoteId, userId, action: 'WALLET_CONVERSION_QUOTED' } });
     if (!record) throw new ConversionError('QUOTE_NOT_FOUND');
-    const quote = record.metadata as unknown as ConversionQuote;
+    const stored = record.metadata as unknown as ConversionQuote;
+    const quote: ConversionQuote = { ...stored, ledger: ledgerOf(stored) };
     // Fetch outside the transaction, but decide known rejection ONLY after the
     // receipt lock: a concurrent first attempt may still be committing.
     let feed: ConversionFeed | undefined;
@@ -250,16 +304,19 @@ export class WalletConversionService {
     try { await this.admit(quote); } catch (error) { admitError = error; }
     return this.prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`wallet-conversion:${userId}`}, 0))`;
-      const previous = await tx.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: 'WALLET_CONVERTED' } });
+      const previous = await tx.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: { in: RECEIPT_ACTIONS } } });
       if (previous) return this.receipt(previous);
       if (this.now() >= quote.expiresAt) throw new ConversionError('QUOTE_EXPIRED');
       // Re-checked at execution: an admission list changed by a restart, a block set after the quote.
       if (!this.supported(quote.fromAsset) || !this.supported(quote.toAsset)) throw new ConversionError('UNSUPPORTED_ASSET');
       await this.notBlocked(tx, userId);
+      // An account funded with Balance, or admitted to demo, after its quote settles nothing on the other ledger.
+      if (await this.ledger(tx, userId) !== quote.ledger) throw new ConversionError('QUOTE_CHANGED');
       if (!feed) throw feedError || new ConversionError('PRICE_UNAVAILABLE');
       this.fresh(feed);
       if (feed.bid.get(quote.fromAsset) !== quote.fromPriceUsd || feed.ask.get(quote.toAsset) !== quote.toPriceUsd) throw new ConversionError('QUOTE_CHANGED');
       if (admitError) throw admitError;
+      if (quote.ledger === 'demo') return this.settleDemo(tx, userId, quoteId, quote);
       // One lock over every account's conversions: the reserve check and this receipt commit together, so
       // concurrent conversions into one asset can never jointly exceed its reserve. Taken after the account
       // lock, in this order everywhere, so the two locks cannot deadlock.
@@ -275,5 +332,26 @@ export class WalletConversionService {
       const receipt = await tx.auditLog.create({ data: { id: `conversion:${quoteId}`, userId, action: 'WALLET_CONVERTED', metadata: { ...quote } } });
       return this.receipt(receipt);
     }, { maxWait: 10_000, timeout: 20_000 });
+  }
+  /**
+   * The demo swap, inside the confirm transaction and after the account lock. The demo book lock serializes it
+   * with every demo Spot order and liquidity fill (nothing takes these two locks in the reverse order). Each
+   * debit is conditional on committed available funds, so neither account can go below zero; the user pays
+   * exactly what the liquidity account receives and the reverse, so no DemoBalance total changes.
+   */
+  private async settleDemo(tx: Prisma.TransactionClient, userId: string, quoteId: string, quote: ConversionQuote) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${DEMO_SPOT_LEDGER.lock}, 0))`;
+    await this.withinTotals(tx, userId, quote);
+    const accountId = await this.demoBacking(tx, userId, quote, true);
+    const take = async (owner: string, asset: string, amount: string) => (await tx.demoBalance.updateMany({
+      where: { userId: owner, asset, available: { gte: amount } }, data: { available: { decrement: amount } } })).count === 1;
+    const give = (owner: string, asset: string, amount: string) => tx.demoBalance.upsert({ where: { userId_asset: { userId: owner, asset } },
+      create: { userId: owner, asset, available: amount }, update: { available: { increment: amount } } });
+    if (!await take(userId, quote.fromAsset, quote.fromAmount)) throw new ConversionError('INSUFFICIENT_BALANCE');
+    if (!await take(accountId, quote.toAsset, quote.toAmount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
+    await give(accountId, quote.fromAsset, quote.fromAmount);
+    await give(userId, quote.toAsset, quote.toAmount);
+    const receipt = await tx.auditLog.create({ data: { id: `conversion:${quoteId}`, userId, action: 'WALLET_DEMO_CONVERTED', metadata: { ...quote } } });
+    return this.receipt(receipt);
   }
 }

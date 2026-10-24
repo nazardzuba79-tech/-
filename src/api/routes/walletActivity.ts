@@ -7,7 +7,8 @@ import { asyncRoute } from '../asyncRoute';
 import { AuthedRequest, requireAuth } from '../middleware/auth';
 import { ConversionError, WalletConversionService } from '../../services/WalletConversionService';
 
-/** Owner-filtered projection only. Never expose admin reasons, identities, balances or demo activity. */
+/** Owner-filtered projection only. Never expose admin reasons, identities, balances or demo top-ups.
+ * The account's own conversions are listed on either ledger; a DemoBalance one carries `ledger: 'demo'`. */
 export function walletActivityRouter(prisma: PrismaClient, conversion: WalletConversionService, conversionEnabled = false): Router {
   const router = Router();
   router.use('/wallet/activity', asyncRoute(requireAuth(prisma)));
@@ -16,7 +17,7 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
     keyGenerator: req => (req as AuthedRequest).userId!, message: { code: 'RATE_LIMITED' } });
   router.get('/wallet/activity', asyncRoute(async (req: AuthedRequest, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const rows = await prisma.auditLog.findMany({ where: { userId: req.userId!, action: { in: ['BALANCE_ADJUSTED', 'WALLET_CONVERTED'] } },
+    const rows = await prisma.auditLog.findMany({ where: { userId: req.userId!, action: { in: ['BALANCE_ADJUSTED', 'WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED'] } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 100, select: { id: true, action: true, metadata: true, createdAt: true } });
     const items = rows.flatMap(row => {
       const m = row.metadata;
@@ -30,7 +31,7 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
       if (['fromAsset', 'toAsset', 'fromAmount', 'toAmount'].some(k => typeof m[k] !== 'string')) return [];
       if (![m.fromAmount, m.toAmount].every(value => new BigNumber(value as string).isFinite() && new BigNumber(value as string).gt(0))) return [];
       return [{ id: row.id, kind: 'conversion', asset: m.fromAsset as string, amount: new BigNumber(m.fromAmount as string).negated().toFixed(),
-        toAsset: m.toAsset as string, toAmount: m.toAmount as string, createdAt: row.createdAt.toISOString() }];
+        toAsset: m.toAsset as string, toAmount: m.toAmount as string, ledger: row.action === 'WALLET_DEMO_CONVERTED' ? 'demo' : 'spot', createdAt: row.createdAt.toISOString() }];
     });
     res.json(items);
   }));

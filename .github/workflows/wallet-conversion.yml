@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'src/services/WalletConversionService.ts'
+      - 'src/services/DemoLiquidity.ts'
+      - 'src/services/demoSpotAccess.ts'
+      - 'src/services/SpotBookTransaction.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'src/api/routes/withdrawals.ts'
       - 'src/services/WithdrawalService.ts'
       - 'src/services/WalletPortfolioService.ts'
       - 'src/services/WalletMutation.ts'
@@ -73,6 +78,9 @@ jobs:
         env:
           WALLET_QA_BROWSER: '1'
         run: node scripts/test-wallet-conversion-postgres.cjs
+      # Demo-credited funds (Issue #592): DemoBalance only, against the Demo Liquidity inventory, never Balance or a withdrawal.
+      - name: Demo-ledger conversion on a second disposable PostgreSQL
+        run: node scripts/test-wallet-conversion-demo-postgres.cjs
       # The same checks against a production-style build WITHOUT the flag: Convert stays inert and asks nothing.
       - name: Frontend build without the conversion flag (default OFF)
         run: npx vite build --outDir ../output/wallet-off-dist --emptyOutDir
@@ -92,3 +100,5 @@ jobs:
             output/wallet-conversion/*.json
             output/wallet-conversion/*.png
             output/wallet-conversion/*.log
+            output/wallet-conversion-demo/*.json
+            output/wallet-conversion-demo/*.log

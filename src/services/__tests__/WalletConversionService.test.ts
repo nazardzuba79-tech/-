@@ -31,7 +31,7 @@ function fixture(available = '100', fetchedAt = NOW, blockedAt: Date | null = nu
   // SOL has a real Kraken book but is not on the admission list.
   const prices = { read: jest.fn().mockResolvedValue({ fetchedAt, ...book([['USD', '1', '1'], ['EUR', '1.24', '1.25'], ['BTC', '59000', '60000'], ['USDT', '0.997', '0.998'], ['SOL', '150', '150.1']]) }),
     depth: jest.fn().mockResolvedValue('1000000000') };
-  return { prisma, prices, committed, service: new WalletConversionService(prisma, prices, () => NOW, parseConversionAssets(DEFAULT_CONVERSION_ASSETS)!, configured) };
+  return { prisma, prices, committed, service: new WalletConversionService(prisma, prices, () => NOW, parseConversionAssets(DEFAULT_CONVERSION_ASSETS)!, configured, {}) };
 }
 describe('wallet conversion pricing and admission', () => {
   test('prices on the actual USD bid/ask (never the last trade), inverse fiat pairs, depegged stablecoin; no synthetic, crossed or wide books', async () => {
@@ -132,7 +132,7 @@ describe('wallet conversion pricing and admission', () => {
     prisma.auditLog.create.mockClear();
     await expect(service.quote('customer', 'USD', 'EUR', '10.01')).rejects.toMatchObject({ code: 'DAILY_LIMIT_EXCEEDED' });
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
-    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({ where: { userId: 'customer', action: 'WALLET_CONVERTED', createdAt: { gt: new Date(NOW - 86_400_000) } }, select: { metadata: true } });
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({ where: { userId: 'customer', action: { in: ['WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED'] }, createdAt: { gt: new Date(NOW - 86_400_000) } }, select: { metadata: true } });
   });
   test('no reserve, no credit: an asset without an operator-verified reserve is never a destination', async () => {
     const { service, prisma } = fixture('100', NOW, null, limits('EUR:1000'));
@@ -200,5 +200,67 @@ describe('wallet conversion pricing and admission', () => {
     const { service, prices } = fixture();
     prices.read.mockResolvedValue({ fetchedAt: NOW, ...book([['USD', '1', '1'], ['EUR', price, price]]) });
     await expect(service.quote('customer', 'USD', 'EUR', '1')).rejects.toMatchObject({ code: 'PRICE_UNAVAILABLE' });
+  });
+});
+
+describe('demo-ledger conversion (Issue #592 demo funds)', () => {
+  const LIQ = '00000000-0000-4000-8000-00000000c0de';
+  const DEMO_ENV = { DEMO_SPOT_ENABLED: 'true', DEMO_LIQUIDITY_ENABLED: 'true', DEMO_LIQUIDITY_ACCOUNT_ID: LIQ, DEMO_LIQUIDITY_PAIRS: 'BTC/USDT' };
+  // 'tester' holds only demo-credited USDT (a DEMO_BALANCE_ADJUSTED audit, no Balance); LIQ holds the demo inventory.
+  function demoFixture(env: Record<string, string> = DEMO_ENV, demo: Record<string, Record<string, string>> = { tester: { USDT: '50' }, [LIQ]: { BTC: '1', USDT: '0' } }) {
+    const row = (userId: string, asset: string) => demo[userId]?.[asset] === undefined ? null : { userId, asset, available: demo[userId][asset], locked: '0' };
+    const prisma = {
+      balance: { findUnique: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) },
+      demoBalance: { findUnique: jest.fn(async ({ where }: any) => row(where.userId_asset.userId, where.userId_asset.asset)),
+        findMany: jest.fn(async ({ where }: any) => Object.keys(demo[where.userId] ?? {}).map(asset => row(where.userId, asset))) },
+      user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER', blockedAt: null }) }, $transaction: jest.fn(),
+      auditLog: { create: jest.fn().mockResolvedValue({}), findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue({ id: 'credit' }) },
+      $queryRaw: jest.fn().mockResolvedValue([{ value: '0' }]),
+    } as any;
+    const prices = { read: jest.fn().mockResolvedValue({ fetchedAt: NOW, ...book([['USD', '1', '1'], ['BTC', '59000', '60000'], ['USDT', '0.997', '0.998']]) }),
+      depth: jest.fn().mockResolvedValue('1000000000') };
+    // No operator reserve at all: a demo conversion never depends on one.
+    return { prisma, service: new WalletConversionService(prisma, prices, () => NOW, parseConversionAssets(DEFAULT_CONVERSION_ASSETS)!, limits(''), env) };
+  }
+  test('reads and quotes DemoBalance only, at the same bid/ask and 0% fee; Balance is never read for funds', async () => {
+    const { service, prisma } = demoFixture();
+    expect((await service.assets('tester')).find(a => a.asset === 'USDT')?.available).toBe('50');
+    const q = await service.quote('tester', 'USDT', 'BTC', '50');
+    expect(q).toMatchObject({ ledger: 'demo', fromAmount: '50', toAmount: '0.00083083', fromPriceUsd: '0.997', toPriceUsd: '60000', fee: '0' });
+    expect(prisma.balance.findUnique).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({ data: { id: q.quoteId, userId: 'tester', action: 'WALLET_CONVERSION_QUOTED', metadata: q } });
+  });
+  test('more than the demo funds is refused before any write', async () => {
+    const { service, prisma } = demoFixture();
+    await expect(service.quote('tester', 'USDT', 'BTC', '50.000001')).rejects.toMatchObject({ code: 'INSUFFICIENT_BALANCE' });
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+  test.each([
+    ['Demo Liquidity off', { ...DEMO_ENV, DEMO_LIQUIDITY_ENABLED: 'false' }, undefined, 'INSUFFICIENT_LIQUIDITY'],
+    ['inventory short of the destination', DEMO_ENV, { tester: { USDT: '50' }, [LIQ]: { BTC: '0.0008' } }, 'INSUFFICIENT_LIQUIDITY'],
+    ['no inventory row at all', DEMO_ENV, { tester: { USDT: '50' } }, 'INSUFFICIENT_LIQUIDITY'],
+    ['above the liquidity per-order cap', { ...DEMO_ENV, DEMO_LIQUIDITY_MAX_ORDER_QUOTE: '40' }, undefined, 'LIMIT_EXCEEDED'],
+  ])('fails closed: %s', async (_name, env, demo, code) => {
+    const { service, prisma } = demoFixture(env as Record<string, string>, demo as any);
+    await expect(service.quote('tester', 'USDT', 'BTC', '50')).rejects.toMatchObject({ code });
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+  test('the liquidity account cannot convert against itself', async () => {
+    const { service, prisma } = demoFixture(DEMO_ENV, { [LIQ]: { BTC: '1', USDT: '50' } });
+    await expect(service.quote(LIQ, 'USDT', 'BTC', '50')).rejects.toMatchObject({ code: 'INSUFFICIENT_LIQUIDITY' });
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+  test('the liquidity account holding ordinary Balance backs nothing', async () => {
+    const { service, prisma } = demoFixture();
+    prisma.balance.findMany.mockImplementation(async ({ where }: any) => where.userId === LIQ ? [{ asset: 'USD', available: '1', locked: '0' }] : []);
+    await expect(service.quote('tester', 'USDT', 'BTC', '50')).rejects.toMatchObject({ code: 'INSUFFICIENT_LIQUIDITY' });
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+  test('an account with ordinary Balance stays on Balance even when admitted to demo', async () => {
+    const { service, prisma } = demoFixture();
+    prisma.balance.findMany.mockResolvedValue([{ asset: 'USD', available: '10', locked: '0' }]);
+    prisma.balance.findUnique.mockResolvedValue({ available: '10', locked: '0' });
+    await expect(service.quote('tester', 'USDT', 'BTC', '5')).rejects.toMatchObject({ code: 'RESERVE_UNVERIFIED' });
+    expect(prisma.demoBalance.findUnique).not.toHaveBeenCalled();
   });
 });

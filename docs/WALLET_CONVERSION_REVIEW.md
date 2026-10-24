@@ -110,7 +110,7 @@ appear in customer history.
 ledger with their receipts; nothing is reversed automatically, and no database restore is ever part of a
 rollback.
 
-## Which ledger this is (code on main `9265e997`) and the owner's demo-only policy
+## Which ledger this is (code on main `98261cc8`) and the owner's demo-only policy
 
 Owner statement of 2026-10-23 (Issue #558): VOLTEX currently holds **no real customer funds**; balances are
 issued by the owner/admin to the team and approved testers, and registration grants nothing. The table name
@@ -119,10 +119,9 @@ issued by the owner/admin to the team and approved testers, and registration gra
 - **Two admin credit paths.** `/admin/users/:id/balance-adjustments` (and the older `adjust-balance`) credit
   `Balance` (`BalanceAdjustmentService` → `mutateSpotBalance`), the ledger standard Spot orders reserve and
   spend (`OrderService`); confirmed deposits, banking rewards and listing owner allocation also write it.
-  `/admin/users/:id/demo-topup` credits `DemoBalance`, a separate ledger used by the admin-only
-  `/demo/orders`. Conversion reads and writes only `Balance` and never touches `DemoBalance`. Which ledger
-  owner-issued tester funds belong in, and how ordinary testers trade them, is being reconciled in
-  Issue #592; until then this PR stays Draft and OFF.
+  `/admin/users/:id/demo-topup` credits `DemoBalance`, the separate ledger of demo Spot (Issue #592). An account converts on the ledger the Spot terminal trades it on
+  (`demoSpotLedger`): an account holding ordinary `Balance` converts on `Balance` only and its `DemoBalance`
+  is never touched; a demo-ledger account converts on `DemoBalance` only (section *Demo-credited funds*).
 - **Registration** creates no `Balance` (no balance write in `src/api/routes/auth.ts`); an account without
   issued funds is refused before any write (PostgreSQL check *account without owner/admin-issued funds*).
 - **Withdrawals** (`WithdrawalService.requestWithdrawal`): any positive non-test `Balance` can be put into a
@@ -132,6 +131,40 @@ issued by the owner/admin to the team and approved testers, and registration gra
   bid/ask, so its market value can only go down; the result is subject to exactly the same manual request
   as the source was. Whether owner-issued balances should be requestable for withdrawal at all is a
   question about `WithdrawalService` on main, outside this PR, for the owner to decide.
+
+## Demo-credited funds (`DemoBalance`, Issue #592)
+
+Testers credited through **Демо-пополнение** (`/admin/users/:id/demo-topup`) hold `DemoBalance` only. Their
+conversion is the same service, quote, limits and receipt flow, settled on the demo ledger:
+
+- **Who.** Only an account for which `demoSpotLedger` returns `'demo'`: Demo Spot is on, the account holds no
+  ordinary `Balance` funds, and it is admitted (an ADMIN, or a USER with a `DEMO_BALANCE_ADJUSTED` credit),
+  not blocked. Every other account converts on `Balance`, as before (with no `Balance` it converts nothing).
+  The ledger is stored in the quote and re-read inside the confirmation: a change refuses (`QUOTE_CHANGED`).
+- **Counterparty.** The existing Demo Liquidity account (`DEMO_LIQUIDITY_ACCOUNT_ID`) and its demo-credited
+  inventory. The user's source moves to that account and the destination moves from it to the user, in one
+  transaction; each debit is conditional on committed funds. Nothing is minted, no second ledger exists,
+  `Balance` is never read for funds or written, and every asset's `DemoBalance` total stays unchanged.
+- **Price.** The same Kraken bid for the source and ask for the destination, 0% VOLTEX fee, same rounding
+  (down, to the destination's places). The Demo Liquidity spread does not apply.
+- **Limits.** The same 1000 USD per conversion and 5000 USD per 24 h (current settings, both ledgers counted
+  together), plus the Demo Liquidity per-order cap (`DEMO_LIQUIDITY_MAX_ORDER_QUOTE`). No operator reserve
+  is needed or used: the inventory itself is the backing, so a short inventory refuses
+  (`INSUFFICIENT_LIQUIDITY`) and demo receipts never count towards `Balance` reserve exposure.
+- **Fail closed** (`INSUFFICIENT_LIQUIDITY`): Demo Liquidity off or misconfigured, withdrawal guard off,
+  the liquidity account converting itself, or that account blocked, not a USER, a native trading account, or
+  holding ordinary `Balance` (the same rule as a demo Spot fill, rows read `FOR SHARE`).
+- **Serialization.** Under the account lock, then the `demo-spot-book` advisory lock that every demo Spot
+  order and liquidity fill takes, so conversions and demo orders on one balance never overdraw it.
+- **Receipt and history.** `AuditLog` `WALLET_DEMO_CONVERTED` with id `conversion:<quoteId>`, recovered and
+  replayed exactly like a `Balance` receipt; `GET /wallet/activity` lists it with `ledger: 'demo'`.
+- **No cash-out.** A demo ledger exists only while `DEMO_SPOT_ENABLED` is on, which forces the withdrawal
+  guard on. A withdrawal holds `Balance` only, which the demo result never reaches; a native Cross wallet
+  valued from `DemoBalance` is refused (`DEMO_FUNDS_NOT_WITHDRAWABLE`). Listing and simulation assets (VTA,
+  NRX, AITH, every managed listing) are never admitted on either ledger.
+
+Disposable PostgreSQL acceptance: `scripts/test-wallet-conversion-demo-postgres.cjs` (CI job *Wallet
+conversion safety*).
 
 ## Risks and open decisions (not code defects; production NO-GO until decided)
 
@@ -150,6 +183,7 @@ npm ci --ignore-scripts && npm ci --ignore-scripts --prefix frontend && npx pris
 npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 playwright@1.63.0
 npx jest --runInBand --runTestsByPath src/services/__tests__/WalletConversionService.test.ts frontend/src/lib/__tests__/walletConversion.test.ts
 WALLET_QA_PG_BIN="$(pg_config --bindir)" node scripts/test-wallet-conversion-postgres.cjs   # PostgreSQL only
+WALLET_QA_PG_BIN="$(pg_config --bindir)" node scripts/test-wallet-conversion-demo-postgres.cjs   # demo ledger, PostgreSQL only
 (cd frontend && VITE_WALLET_CONVERSION_ENABLED=true npx vite build) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
 (cd frontend && npx vite build --outDir ../output/wallet-off-dist) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 WALLET_QA_EXPECT_OFF=1 WALLET_QA_DIST=output/wallet-off-dist node scripts/test-wallet-conversion-postgres.cjs
 ```
