@@ -1,0 +1,33 @@
+{
+  "mode": "public-live-market-view-only",
+  "checks": [
+    "actual Bybit quote and existing chart visible",
+    "native WS candle received without increasing historical REST polling",
+    "real upstream Bybit socket loss reconnects and recovers complete quotes while React remains mounted",
+    "desktop chart stays inside its panel",
+    "Market/Limit BUY/SELL buttons are silent NO-OP",
+    "React source selection and native 5m history: BINANCE:TSLABUSDT",
+    "React source selection and native 5m history: BYBIT:TSLAXUSDT",
+    "React source selection and native 5m history: GATE:TSLAX_USDT",
+    "React source selection and native 5m history: MEXC:TSLAXUSDT",
+    "React source selection and native 5m history: OKX:XTSLA-USDT",
+    "React source selection and native 5m history: KUCOIN:TSLAX-USDT",
+    "React source selection and native 5m history: KRAKEN:TSLAxUSD",
+    "React source selection and native 5m history: BINGX:TSLAX-USDT",
+    "React source selection and native 5m history: BITGET:RTSLAUSDT",
+    "390px chart has no page overflow",
+    "zero financial POST, zero page exceptions",
+    "hidden tab stops quote/history polling",
+    "ordinary login route still required without a session"
+  ],
+  "pageErrors": [],
+  "financialRequests": [],
+  "externalRequestsBlocked": 9,
+  "screenshots": [
+    "desktop-1440-bybit.png",
+    "desktop-1440-bitget.png",
+    "mobile-390-chart.png",
+    "mobile-390-trade.png",
+    "mobile-390-catalogue.png"
+  ]
+}

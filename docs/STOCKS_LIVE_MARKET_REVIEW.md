@@ -1,7 +1,7 @@
 # Tokenized-equity public market review — 2026-10-24
 
 Base: Draft #613, `aeaf20f973e2ffa4c810ecee9e19d049b76d5de7`.
-Review branch: `codex/stocks-live-equity-feeds-20261024`. Stacked on #613, not main.
+Integration: reviewed #614 `54bff04ea633200b39a81683af77f0cd9c786069` plus narrow fixes, fast-forward into existing Draft #613; never main.
 Owner work order: https://github.com/nazardzuba79-tech/-/issues/561#issuecomment-6385057130
 
 The existing Professional B terminal now reads shared public WebSocket quotes,
@@ -17,10 +17,10 @@ remain default OFF. Native USD display readiness never authorizes USDT orders.
 |---|---|---|
 | Binance | 13 bStocks: AAPLB, NVDAB, TSLAB, MSFTB, AMZNB, GOOGLB, METAB, NFLXB, AVGOB, COINB, MSTRB, AMDB, INTCB, each quoted in USDT | AAPLBUSDT, TSLABUSDT |
 | Bybit | 7 xStocks: AAPLX, NVDAX, TSLAX, AMZNX, GOOGLX, METAX, COINX, each USDT | AAPLXUSDT, TSLAXUSDT |
-| Gate | AAPLX_USDT, NVDAX_USDT, TSLAX_USDT, SPYX_USDT, QQQX_USDT | TSLAX_USDT full quote; AAPLX_USDT native candle observed but no complete quote in the bounded capture |
+| Gate | AAPLX_USDT, NVDAX_USDT, TSLAX_USDT, SPYX_USDT, QQQX_USDT | AAPLX_USDT and TSLAX_USDT complete ticker captured; sparse updates can still become stale |
 | MEXC | AAPLXUSDT, NVDAXUSDT, TSLAXUSDT, SPYXUSDT; separately AAPLONUSDT, NVDAONUSDT, TSLAONUSDT, SPYONUSDT, QQQONUSDT | AAPLXUSDT, TSLAXUSDT; Ondo identities metadata-verified, not exercised live |
 | OKX | XAAPL-USDT, XNVDA-USDT, XTSLA-USDT, XSPY-USDT, XQQQ-USDT, its distinct unified tokenized spot product | XAAPL-USDT, XTSLA-USDT |
-| KuCoin | AAPLX-USDT, TSLAX-USDT | Both complete price/BBO; AAPLX 24h volume not observed in captured WS data |
+| KuCoin | AAPLX-USDT, TSLAX-USDT | Both complete price/BBO; actual AAPLX snapshot volume 45.644, with bid/ask/sizes |
 | Kraken | AAPLxUSD, NVDAxUSD, TSLAxUSD, SPYxUSD, QQQxUSD; v2 symbols AAPLx/USD etc. | AAPLx/USD, TSLAx/USD; USD stays USD, no assumed stablecoin peg |
 | BingX | AAPLX-USDT, NVDAX-USDT, TSLAX-USDT, SPYX-USDT | AAPLX-USDT, TSLAX-USDT |
 | Bitget | RAAPLUSDT, RNVDAUSDT, RTSLAUSDT, RSPYUSDT, RQQQUSDT; see exact machine-readable list below | RAAPLUSDT, RTSLAUSDT, UTA v3 public `spot` topic; distinct rToken share-equivalent, not xStocks |
@@ -30,16 +30,11 @@ The authoritative exact ids are in
 [catalogue-final.json](qa/stocks-live-feeds-20261024/catalogue-final.json):
 **55 metadata-confirmed, online identities across nine venues**. Metadata
 admission is not a claim that all 55 were simultaneously streamed.
-**17 exact venue/symbol combinations have captured full WS last/bid/ask**;
+**18 exact venue/symbol combinations have captured full WS last/bid/ask**;
 18 requested combinations have genuine 300-row REST history after the explicit
 KuCoin history-window correction. The capture never substitutes another venue.
 
-The final sequential live probe honestly recorded 12/18 fresh complete quotes
-at their individual sample times; the others were QUOTE_STALE/QUOTE_UNAVAILABLE.
-Earlier authentic captured frames establish the 17 combinations above. A socket
-acknowledgement alone is not quote coverage. Bitget native WS candle updates
-were not observed in the bounded window, despite successful subscriptions and
-real REST candles. No native candle or missing volume is fabricated.
+The integration probe (16:23:52–16:24:29 UTC) recorded **11/18 fresh complete quotes** at individual sample times; others were QUOTE_STALE/QUOTE_UNAVAILABLE. All 18 REST paths returned 300 genuine bars; 13 had native WS bars in this window. Earlier public captures plus the gap capture establish 18 complete combinations, not 55 simultaneously fresh streams. ACKs are never prices. Bitget native rToken candle events remain unobserved. The confirmed UTA object-parser defect is fixed using the official schema; missing 1m volume is unavailable and fails OHLCV admission, never zero-filled. No missing market field is fabricated.
 
 ## Protocol and resource boundaries
 
@@ -77,7 +72,7 @@ real REST candles. No native candle or missing volume is fabricated.
 
 ## Verification
 
-- Node **22.23.3**: 45 new market-contract tests PASS plus 25 existing focused
+- Node **22.23.3**: 47 market-contract tests PASS plus 25 existing focused
   release/default-OFF/history/projection/forged-finance regressions PASS.
 - Unchanged frontend plain-language suite: 12/12 PASS; transport implementation
   wording removed from the product UI without changing its assertions.
@@ -123,7 +118,7 @@ public endpoint worked. The older REST switch remains restricted to Gate/MEXC.
 No production visibility, finance or provider flag was changed.
 
 Commercial redistribution/display rights remain **UNCONFIRMED for all nine**.
-Backpack product eligibility, remaining native-candle/volume capture gaps,
+Backpack product eligibility and Bitget native rToken candle capture,
 deployment approval and existing 50 viewers + 2 traders / crypto p95 <= +5%
 acceptance remain release blockers. This is a market-code review candidate,
 not production activation or proof of real stock ownership.
@@ -138,3 +133,12 @@ Official protocol references: [Binance](https://github.com/binance/binance-spot-
 [BingX](https://github.com/BingX-API/api-ai-skills/blob/main/skills/spot-ws-market/api-reference.md),
 [Bitget](https://www.bitget.com/docs/uta/websocket/public/Tickers-Channel),
 [Backpack](https://docs.backpack.exchange/).
+
+## Integration findings and exact regression evidence
+
+- Gate AAPLX: actual `spot.tickers` at source 1792858983602 contains last 346.77, bid 346.58 and ask 346.85. No parser change was justified. Sparse updates still become stale after the unchanged five-second deadline.
+- KuCoin AAPLX: actual `/market/snapshot:AAPLX-USDT` at 1792858980847 includes vol 45.644, buy 347.93, sell 347.94 and sizes. The old parser discarded snapshot BBO, making fresh snapshots depend on a sparse ticker. The captured-frame test fails before the mapping and passes after it. Older statistics cannot retimestamp newer BBO/trades.
+- Bitget: official UTA kline objects use start/open/high/low/close/volume, unlike REST arrays. The old decoder produced NaN. The official-schema RED→GREEN test preserves source fields. Official 1m rToken pushes omit volume; incomplete OHLCV stays unavailable. No actual rToken kline push was observed, so native acceptance is UNCONFIRMED.
+- Authentic incremental evidence: `services/stocks-global/fixtures/live-public-20261024/integration-gap-wire.json`. Public-only, no credentials/accounts. The separate official-example test is schema evidence, never labelled a captured live price.
+- Browser QA clicks the actual source menu for all nine venues, checks real 5m REST responses, and forces one upstream Bybit disconnect/reconnect with React mounted. Desktop 1440/mobile 390: no overflow, hidden polling stops, zero financial POST. Normal PostgreSQL login/revocation is separately checked in hosted CI; the local reader is not a production session.
+- Future configuration and remaining gates: [STOCKS_WS_613_INTEGRATION.md](STOCKS_WS_613_INTEGRATION.md).

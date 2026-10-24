@@ -143,3 +143,21 @@ test('metadata admission never extends the original active viewer lease',async()
   let now=100000;const h=new LiveMarketHub({liveVenues:['bybit'],now:()=>now,feedOptions:{WebSocketImpl:FakeSocket},fetchImpl:async()=>new Response(JSON.stringify(metadata.bybit))});
   try{h.setStockDemand('active-reader','BYBIT:AAPLXUSDT');now+=1000;await h.catalogue();assert.equal(h.feed.owners.get('active-reader').until,112000);assert.equal(h.pendingDemand.get('active-reader').until,112000);}finally{h.close();}
 });
+
+// Official UTA v3 Candlestick Channel uses objects, not REST candle arrays.
+// This protocol-shape fixture is the official example, not a captured market price.
+test('Bitget UTA native candle object maps OHLCV; missing rToken volume is never invented',()=>{
+  const frame={arg:{instType:'spot',topic:'kline',symbol:'RAAPLUSDT',interval:'15m'},action:'update',ts:1736370735556,data:[{start:'1710518400000',open:'276670',high:'400005',low:'276670',close:'400005',volume:'0.423',turnover:'148190.38375'}]};
+  const [e]=decodeFrame('bitget',Buffer.from(JSON.stringify(frame)),false);
+  assert.deepEqual([e.symbol,e.interval,e.time,e.open,e.high,e.low,e.close,e.volume],['RAAPLUSDT','15m',1710518400,276670,400005,276670,400005,0.423]);
+  frame.arg.interval='1m';delete frame.data[0].volume;delete frame.data[0].turnover;
+  assert.ok(Number.isNaN(decodeFrame('bitget',Buffer.from(JSON.stringify(frame)),false)[0].volume),'volume unavailable, never zero-filled');
+});
+
+test('captured Gate AAPLX complete ticker and KuCoin AAPLX 24h snapshot supply their own BBO',()=>{
+  const frames=JSON.parse(readFileSync(new URL('./fixtures/live-public-20261024/integration-gap-wire.json',import.meta.url)));
+  const gate=frames.find(f=>f.venue==='gate'),kucoin=frames.find(f=>f.venue==='kucoin');
+  const [g]=decodeFrame('gate',Buffer.from(gate.base64,'base64'),gate.binary);assert.equal(g.last,'346.77');assert.equal(g.bid,'346.58');assert.equal(g.ask,'346.85');
+  const [k]=decodeFrame('kucoin',Buffer.from(kucoin.base64,'base64'),kucoin.binary);assert.equal(k.volume,45.644);assert.equal(k.bid,347.93);assert.equal(k.ask,347.94);assert.equal(k.bidSize,0.003);assert.equal(k.askSize,0.002);
+  const f=new LiveEquityFeed({now:()=>k.timestamp});try{f.admit({venue:'kucoin',items:[instrument('KUCOIN:AAPLX-USDT')],intervals:new Set(),generation:1,role:'public'},k);assert.equal(f.read('KUCOIN:AAPLX-USDT').last,'347.79');}finally{f.close();}
+});

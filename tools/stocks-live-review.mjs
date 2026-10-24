@@ -6,7 +6,7 @@ import { LIVE_PROVIDERS } from '../services/stocks-global/live-catalog.mjs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 if(!process.argv.includes('--public-read-only')||process.env.NODE_ENV==='production')throw Error('LOCAL_PUBLIC_REVIEW_ONLY');
-const hub=new LiveMarketHub({liveVenues:LIVE_PROVIDERS});
+const hub=new LiveMarketHub({liveVenues:LIVE_PROVIDERS,feedOptions:{onEvent:event=>process.send?.({type:"public-feed-event",event})}});
 const port=Number(process.env.STOCKS_REVIEW_PORT||4484);
 if(!Number.isInteger(port)||port<1024||port>65535)throw Error('LOCAL_PORT_INVALID');
 const app=await createServer({port,financialEnabled:false,hub,autoPoll:false,
@@ -15,3 +15,8 @@ const app=await createServer({port,financialEnabled:false,hub,autoPoll:false,
   dist:resolve('frontend/dist')});
 console.log(JSON.stringify({url:`http://127.0.0.1:${app.port}/stocks`,financialEnabled:false,mode:'local-public-market-view-only',authentication:'browser-test-session-only; normal production login unchanged'}));
 let closing=false;const stop=async()=>{if(closing)return;closing=true;await app.close();hub.close();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);
+
+// IPC exists only when a local test forks this developer-only launcher. There is
+// no HTTP control route, production entrypoint import, or authentication bypass.
+process.on('message',message=>{if(message?.type!=='reconnect-one-public-feed'||message.venue!=='bybit')return;const c=[...hub.feed.connections.values()].find(c=>c.venue==='bybit'&&c.open);if(c)c.ws.terminate();});
+process.send?.({type:'review-ready',port:app.port});
