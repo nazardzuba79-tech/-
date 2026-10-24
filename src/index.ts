@@ -6,7 +6,7 @@ import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
+import { createStocksAuthorityIngress, stocksAuthorityIngressConfig } from './api/middleware/stocksAuthorityIngress';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from './matching-engine/MatchingEngine';
 import { ordersRouter } from './api/routes/orders';
@@ -226,16 +226,8 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));
 app.use('/api/v1/me/avatar', express.json({ limit: '1mb' }));
 app.use(express.json({ limit: '100kb' }));
 
-app.use(
-  rateLimit({
-    windowMs: 60_000,
-    limit: 120,
-    standardHeaders: true,
-    legacyHeaders: false,
-    // The deposit-address copy note has its own, smaller limits.
-    skip: isDepositCopyEventRequest,
-  })
-);
+const stocksAuthorityIngress = createStocksAuthorityIngress(stocksAuthorityIngressConfig(), isDepositCopyEventRequest);
+app.use(stocksAuthorityIngress.middleware);
 // Every successful write re-checks the sleeping background loops (rate
 // limited): the net under a work-creating path that forgot its wake().
 app.use(background.activityMiddleware());
@@ -351,6 +343,9 @@ async function start() {
   background.start();
   liquidationStreamService.start();
 
+  // Bind the opt-in private authority listener before opening the public API.
+  // It is loopback-only and does not replace any JWT/session/PG authorization.
+  await stocksAuthorityIngress.listen(app);
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
   depositWatchScheduler.start();
   liveReferenceCollector?.start();

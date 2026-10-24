@@ -1,0 +1,84 @@
+# INACTIVE REVIEW TEMPLATE. Do not copy to .github/workflows or publish without
+# separate owner approval and a fresh check of external deployment triggers.
+# Label-only avoids workflow_dispatch registration on main and never runs on push.
+name: Stocks native browser QA (owner opt-in)
+on:
+  pull_request:
+    types: [labeled]
+permissions:
+  contents: read
+jobs:
+  browser:
+    if: >-
+      github.event.label.name == 'owner-approved-stocks-browser-qa' &&
+      github.actor == 'nazardzuba79-tech' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'review/stocks-native-browser-qa-20261021'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SOURCE_SHA: 5ed0d70b9efd1b2922d9e234fd2546be1468fbfb
+      CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
+      STOCKS_BROWSER_EVIDENCE: ${{ runner.temp }}/stocks-browser-evidence
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact reviewed source and QA-only diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CONTROL_SHA"
+          git merge-base --is-ancestor "$SOURCE_SHA" HEAD
+          python3 - <<'PY'
+          import subprocess, os
+          files = subprocess.check_output(['git','diff','--name-only',os.environ['SOURCE_SHA'],'HEAD'],text=True).splitlines()
+          allowed = ('review/stocks-native-browser-20261021/',)
+          exact = {'docs/AI_HANDOFF.md','.github/workflows/stocks-native-browser-qa.yml'}
+          assert all(f.startswith(allowed) or f in exact for f in files), files
+          PY
+          mkdir -p "$STOCKS_BROWSER_EVIDENCE"
+          printf 'source=%s\ncontrol=%s\n' "$SOURCE_SHA" "$CONTROL_SHA" > "$STOCKS_BROWSER_EVIDENCE/source.txt"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Locked dependencies without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Bundle only the local hosted frontend (no backend build or tests)
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+          VITE_API_URL: /api/v1
+        working-directory: frontend
+        run: node node_modules/vite/bin/vite.js build
+      - name: Isolated pinned Playwright and Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix /tmp/voltex-stocks-browser-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/voltex-stocks-browser-qa/node_modules/playwright/cli.js install chromium --with-deps --only-shell 2>&1 | tee "$STOCKS_BROWSER_EVIDENCE/chromium-install.txt"
+      - name: One native browser attempt, server and browser in same namespace
+        env:
+          STOCKS_PLAYWRIGHT_MODULE: /tmp/voltex-stocks-browser-qa/node_modules/playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          node review/stocks-native-browser-20261021/run.cjs 2>&1 | tee "$STOCKS_BROWSER_EVIDENCE/attempt.txt"
+      - name: Evidence hashes
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$STOCKS_BROWSER_EVIDENCE" ]; then
+            cd "$STOCKS_BROWSER_EVIDENCE"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > SHA256SUMS
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-browser-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/stocks-browser-evidence/
+          if-no-files-found: error
+          retention-days: 7

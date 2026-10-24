@@ -10,6 +10,7 @@ import { openAccountWorker } from './account-worker.mjs';
 import { executeAccountCommand } from './account-commands.mjs';
 import { identityResolver } from './identity.mjs';
 import { createAuthorityAdapter } from './authority-adapter.mjs';
+import { isReleaseAuthority } from './release-authority.mjs';
 import { MarketHub } from './market.mjs';
 import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
@@ -133,7 +134,13 @@ export function createQuoteReader({hub,now=Date.now,sourceAllowed=()=>{},monoton
   };
   return quote;
 }
-export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+export async function createServer({financialEnabled=false,port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+  // Separate from visibility/principal admission; no environment truthiness or
+  // legacy canTrade metadata can activate matching. Explicit isolated tests opt in.
+  check(typeof financialEnabled==='boolean','AUTH_CONFIG_INVALID');
+  check(process.env.NODE_ENV !== 'production' ||
+    (isReleaseAuthority(accountAuthority) && !accountsPath && !dataPath && !authenticate),
+  'STOCKS_RELEASE_PG_AUTHORITY_REQUIRED');
   const twoTraderMode=tradePrincipals!==undefined;
   const mayTrade=twoTraderMode?twoTraderPolicy(tradePrincipals):null;
   if(twoTraderMode)ownerOnlyMode=true;
@@ -143,12 +150,13 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   check(!ownerOnlyMode || ((accountsPath||accountAuthority) && (twoTraderMode || typeof tradeOwnerSubject === 'string' && /^[A-Za-z0-9_.:@-]{1,128}$/.test(tradeOwnerSubject))),'AUTH_CONFIG_INVALID');
   check(accountsPath||accountAuthority||dataPath,'LOCAL_LEDGER_PATH_REQUIRED');
   const accounts=accountAuthority??(accountsPath?await openAccountWorker(accountsPath,{...accountWorkerOptions,now,diagnostics:accountDiagnostics}):null);
-  const legacy=accounts?null:await openStore(dataPath,{now});
+  const legacy=accounts||!financialEnabled?null:await openStore(dataPath,{now});
   const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),backgroundFlights=new WeakMap(),historyWire=new WeakMap();
   Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteObservations:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
-  const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},readiness:{},observed:new Set(),observedQuotes:new Map(),ownerMayTrade:!ownerOnlyMode,token:randomBytes(32).toString('hex')});
+  const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},readiness:{},observed:new Set(),observedQuotes:new Map(),ownerMayTrade:financialEnabled&&!ownerOnlyMode,token:randomBytes(32).toString('hex')});
   if(legacy)contexts.set('legacy',context({read:()=>legacy.read(),execute:(command,input)=>command==='interests'?Promise.resolve(executeAccountCommand(legacy.read(),command,input,now())):legacy.transact((s,t)=>executeAccountCommand(s,command,input,t))},'legacy'));
+  else if(!accounts)contexts.set('legacy',context(null,'legacy'));
   const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
   const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
   let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
@@ -164,7 +172,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     return Object.keys(readiness).length?{readiness}:{};
   };
-  const status=async(ctx,committed,signal)=>{const snapshot=committed??(accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()));hub.setStockOrders?.(ctx.id,snapshot.orders??[]);const invalid={};if(hub.quoteValid){snapshot.quotes={...snapshot.quotes};for(const[id,q]of Object.entries(snapshot.quotes))if(!hub.quoteValid(q,id)){delete snapshot.quotes[id];invalid[id]='QUOTE_UNAVAILABLE';}}return{...snapshot,...(accounts?{account:accountView(ctx)}:{}),catalogue,errors:{...ctx.errors,...invalid},...readinessView(ctx),metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}};};
+  const status=async(ctx,committed,signal)=>{const snapshot=committed??(!financialEnabled||accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()));hub.setStockOrders?.(ctx.id,snapshot.orders??[]);const invalid={};if(hub.quoteValid){snapshot.quotes={...snapshot.quotes};for(const[id,q]of Object.entries(snapshot.quotes))if(!hub.quoteValid(q,id)){delete snapshot.quotes[id];invalid[id]='QUOTE_UNAVAILABLE';}}return{...snapshot,...(accounts?{account:accountView(ctx)}:{}),catalogue,errors:{...ctx.errors,...invalid},...readinessView(ctx),metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}};};
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async(req,signal)=>{
     if(!accounts)return contexts.get('legacy');
@@ -180,7 +188,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     const ctx=contexts.get(id);ctx.accessed=now();ctx.principal=principal;
     // Every request rechecks the trusted identity. Client-provided roles never authorize trade.
-    ctx.ownerMayTrade = twoTraderMode?mayTrade(principal):!ownerOnlyMode || principal.subject === tradeOwnerSubject;
+    ctx.ownerMayTrade = financialEnabled && (twoTraderMode?mayTrade(principal):!ownerOnlyMode || principal.subject === tradeOwnerSubject);
     return ctx;
   };
   const requireAccount=async ctx=>{
@@ -201,7 +209,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const release=ctx=>{hub.releaseStockDemand?.(ctx.id);ctx.demandAbort.abort();ctx.demandEpoch++;ctx.lease=0;ctx.readiness={};ctx.observed.clear();};
   // Wallet marks are response-only: never feed the order matcher.
   async function portfolio(ctx,signal){
-    const viewer=accounts&&ownerOnlyMode&&!ctx.ownerMayTrade;
+    const viewer=!financialEnabled||accounts&&ownerOnlyMode&&!ctx.ownerMayTrade;
     const view=viewer?{schema:2,revision:0,serverTime:now(),positions:{},quotes:{}}:accounts?await ctx.store.execute('portfolioView',undefined,{signal}):null;check(view,'AUTH_REQUIRED');
     const errors={};
     const ids=[...new Set(Object.values(view.positions).map(p=>p.instrumentId))];
@@ -270,7 +278,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
           let observedView;const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,authorize);else if(changed)refreshInBackground(ctx);}}
           let view=await status(ctx,observedView,readAbort.signal);
           // Read-only users share market data, never the owner matcher or ledger.
-          if(ownerOnlyMode&&!ctx.ownerMayTrade&&id){
+          if(!ctx.ownerMayTrade&&id){
             try{const q=await quote(id,{signal:readAbort.signal});if(readAbort.signal.aborted)return;
               view=projectViewerQuote(view,id,q,now());delete view.errors[id];
             }catch(e){if(readAbort.signal.aborted)return;delete view.quotes[id];view.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}
@@ -300,6 +308,9 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       }
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');
+      // Refuse every financial/observation command before body, CSRF token,
+      // account binding or authority work; enforced even for both trusted traders.
+      check(financialEnabled,'ACCOUNT_TRADING_DISABLED');
       if(accounts && ownerOnlyMode && [API+'orders',API+'cancel',API+'balances',API+'refresh'].includes(u.pathname)) check(ctx.ownerMayTrade === true,'AUTH_REQUIRED');
       if(twoTraderMode&&u.pathname===API+'balances')throw new SimError('BALANCE_EDIT_DISABLED');
       const supplied=req.headers['x-stocks-token'];check(typeof supplied==='string'&&Buffer.byteLength(supplied)===Buffer.byteLength(ctx.token)&&timingSafeEqual(Buffer.from(supplied),Buffer.from(ctx.token)),'TOKEN_REQUIRED');check(req.headers['content-type']?.startsWith('application/json'),'JSON_REQUIRED');
@@ -326,14 +337,17 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   }catch(e){if(res.destroyed)return;if(!res.headersSent){
     // Advisory minimum wait for a manual read probe, never permission to replay
     // a trade. Unknown mutation outcomes deliberately have no retry hint.
-    const retryAfterMs=e instanceof SimError?(e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;
-    send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
+    const retryAfterMs=e instanceof SimError?(e.code==='AUTH_RATE_LIMIT'?(Number.isInteger(e.retryAfterMs)?Math.max(1000,Math.min(60000,e.retryAfterMs)):60000):e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;
+    send(res,e.code==='ACCOUNT_TRADING_DISABLED'?403:e.code==='AUTH_RATE_LIMIT'?429:e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
   }else res.end();}finally{cleanupRequest?.();}};
   const server=http.createServer((req,res)=>accountAuthority?accountAuthority.runWithRequest(req,()=>handle(req,res)):handle(req,res));
-  server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.maxConnections=128;
+  // Node 22 native fetch subtracts a 2000 ms keep-alive safety margin. Advertising
+  // exactly 2 s makes every response non-reusable. Keep the normal 5 s HTTP idle
+  // window; request deadlines, admission bounds and per-request auth stay intact.
+  server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=5000;server.maxConnections=128;
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{await accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;
-  const timer=autoPoll&&!ownerOnlyMode?setInterval(()=>{
+  const timer=financialEnabled&&autoPoll&&!ownerOnlyMode?setInterval(()=>{
     if(tick||closing)return;const interested=[...contexts.values()].filter(ctx=>now()-ctx.lease<12000);if(!interested.length)return;
     if(now()-lastCatalogue>60000)void loadCatalogue().catch(()=>{});
     tick=(async()=>{
@@ -346,12 +360,13 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  check(process.env.NODE_ENV!=='production','STOCKS_RELEASE_ENTRYPOINT_REQUIRED');
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;
   const authority=process.env.STOCKS_TEST_CASH_AUTHORITY_URL?createAuthorityAdapter({endpoint:process.env.STOCKS_TEST_CASH_AUTHORITY_URL,issuer:process.env.STOCKS_IDENTITY_ISSUER,gatewayKey:process.env.STOCKS_TEST_CASH_GATEWAY_KEY}):undefined;
   check(accountsPath||authority||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');
   check(accountsPath||authority||process.env.STOCKS_LEGACY_SINGLE_OWNER_REVIEW==='true','AUTH_CONFIG_INVALID');
   const authenticate=accountsPath?identityResolver({endpoint:process.env.STOCKS_IDENTITY_ENDPOINT,issuer:process.env.STOCKS_IDENTITY_ISSUER}):undefined;
-  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),hub:createStocksRuntimeMarket({enabled:process.env.STOCKS_BINANCE_WS_ENABLED ?? 'false',authorityMode:Boolean(authority)}),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,accountAuthority:authority,authenticate,tradePrincipals:accountsPath||authority?configuredTraders(process.env.STOCKS_TRADE_PRINCIPALS):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
+  const app=await createServer({financialEnabled:process.env.STOCKS_ORDER_EXECUTION_ENABLED==='true',port:Number(process.env.STOCKS_GLOBAL_PORT||4437),hub:createStocksRuntimeMarket({enabled:process.env.STOCKS_BINANCE_WS_ENABLED ?? 'false',authorityMode:Boolean(authority)}),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,accountAuthority:authority,authenticate,tradePrincipals:accountsPath||authority?configuredTraders(process.env.STOCKS_TRADE_PRINCIPALS):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
   console.log('Stocks local preview http://127.0.0.1:'+app.port+'/stocks/BYBIT%3AAAPLXUSDT');
   let stopping=false;const stop=async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);
 }

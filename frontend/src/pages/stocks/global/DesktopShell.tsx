@@ -91,10 +91,10 @@ export function DesktopQuotes({ asset, quote, fills, now, ready }: {
     {tab === 'quote' ? <>
       <div className="vxg-pro-book-tools"><span aria-hidden="true">▥ ▤ ▥</span><span>Bid / Ask</span></div>
       <div className="vxg-pro-book-labels"><span>{s("Цена,")} {asset?.currency || '—'}</span><span>{s("Объём")}</span></div>
-      <div className="vxg-pro-book-side"><small>{s("Лучшая продажа · Ask")}</small><div className="down"><strong>{number(quote?.ask, 6)}</strong><span>—</span></div></div>
+      <div className="vxg-pro-book-side"><small>{s("Лучшая продажа · Ask")}</small><div className="down"><strong>{number(quote?.ask, 6)}</strong><span>{number(quote?.askSize, 8)}</span></div></div>
       <div className="vxg-pro-mid"><strong className={quote?.change24h != null && quote.change24h < 0 ? 'down' : 'up'}>{number(quote?.last, 6)}</strong><small>{asset?.currency || '—'}</small></div>
-      <div className="vxg-pro-book-side"><small>{s("Лучшая покупка · Bid")}</small><div className="up"><strong>{number(quote?.bid, 6)}</strong><span>—</span></div></div>
-      <p className="vxg-pro-depth-note">{s("Доступна верхняя котировка. Глубина рынка и объёмы заявок не предоставлены.")}</p>
+      <div className="vxg-pro-book-side"><small>{s("Лучшая покупка · Bid")}</small><div className="up"><strong>{number(quote?.bid, 6)}</strong><span>{number(quote?.bidSize, 8)}</span></div></div>
+      {!quote?.bidSize&&!quote?.askSize&&<p className="vxg-pro-depth-note">{s("Доступна верхняя котировка. Глубина рынка и объёмы заявок не предоставлены.")}</p>}
       <dl className="vxg-pro-provenance"><dt>{s("Источник")}</dt><dd>{asset?.provider.toUpperCase() || '—'}</dd><dt>{s("Инструмент")}</dt><dd>{asset?.sourceSymbol || '—'}</dd><dt>{s("Валюта цены")}</dt><dd>{asset?.currency || '—'}</dd></dl>
     </> : <div className="vxg-pro-executions"><small>{asset?.asset || '—'}</small>{executions.length ? executions.map(fill => <article key={fill.id}>
       <span className={fill.side === 'BUY' ? 'up' : 'down'}>{fill.side === 'BUY' ? '↑' : '↓'} {number(fill.nativePrice, 6)}<small>{asset?.currency}</small></span>

@@ -1,0 +1,8 @@
+# Program-only actual-bootstrap evidence is byte-attested, including line endings.
+review/stocks-stage-a/runtime-bootstrap.cjs -text
+
+# Preserve upstream MEXC schema/license bytes on Windows as well as Linux.
+services/stocks-global/vendor/mexc-proto/* -text
+# These two pinned upstream schemas intentionally end in a blank line.
+services/stocks-global/vendor/mexc-proto/PublicAggreBookTickerV3Api.proto whitespace=-blank-at-eof
+services/stocks-global/vendor/mexc-proto/PublicBookTickerV3Api.proto whitespace=-blank-at-eof

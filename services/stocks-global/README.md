@@ -40,6 +40,12 @@ Open `http://127.0.0.1:4437/stocks/BYBIT%3AAAPLXUSDT`. The service binds only `1
 - Native US candle intervals: 1m, 5m, 15m, 30m, 1h, 4h, 1D. Initial 300 bars, older pages on demand, frontend capped at 1,500 bars. Binance Apple currently has only 73 daily bars.
 - MOEX adapter declares only native 1m, 1h and 1D; other intervals are not offered. Its current bounded date-window fetch is not a complete historical archive/paginator and requires live validation before claiming Russia support.
 
+### Venue adapters and read-only discovery (2026-10-20)
+
+`venues.mjs` holds one adapter per additional venue (Gate and MEXC xStocks for AAPL, NVDA, TSLA, SPY, QQQ; no MSFT xStocks/USDT pair exists on them). `catalog.mjs` carries the issuer family on every row (`xstocks`, `bstocks`, `moex`), the venue rows in `VENUE_CATALOG`, and `SOURCE_PRIORITY`, a per-underlying display order that never substitutes one source for another. A `MarketHub` lists and reads a venue only when constructed with `venues: ['gate', 'mexc']`; by default nothing changes and venue reads answer `DATA_RIGHTS_UNVERIFIED` without a request. `binanceHost: 'data-api.binance.vision'` selects Binance's documented public-market-data host for the existing Binance adapter (`api.binance.com` stays the default). `venuesFromEnv()` reads `STOCKS_VENUES_ENABLED` and refuses any venue not also in `STOCKS_VENUE_RIGHTS_CONFIRMED`; the runtime factories are not wired to it.
+
+`node services/stocks-global/discover-venues.mjs <evidence-directory>` is the bounded, unauthenticated, read-only discovery of nine venues (Bybit, Binance, Bitget, BingX, Gate, MEXC, KuCoin, OKX, Kraken): one metadata read per venue, one ticker and one candle read per listed watch-list symbol, no retry, raw bodies kept. Its output is evidence of technical availability only. Fixtures for the tests are captured venue bodies listed in `testing/fixtures/venues/FIXTURES.md`. Findings, terms and the first-launch recommendation: `docs/STOCKS_MARKET_DATA_DISCOVERY_20261020.md`.
+
 ## Conversion and session rules
 
 USDT is the native quote unit for the selected US tokens. There is no assumption that USDT equals USD. USDC uses an observed Binance USDC/USDT trade: `USDC price = USDT price / USDT per USDC`. Rate timestamp is checked independently (maximum 180 seconds). Buys round upward and sells downward to eight decimals.

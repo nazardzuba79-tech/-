@@ -7,13 +7,16 @@ services:
     # Render doesn't allow changing an existing service's region via
     # Blueprint sync, so this field must always mirror reality, not an
     # aspiration; a mismatch here is what was making every sync fail
+    # Root now builds only the migration-free Node22 API, never the Gateway.
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    dockerCommand: node dist/index.js
+    autoDeployTrigger: off
     envVars:
       - key: DATABASE_URL
         sync: false # set manually — paste your Neon POOLED connection string
       - key: DIRECT_URL
-        sync: false # set manually — paste your Neon DIRECT (non-pooled) connection string; required for `prisma migrate deploy` to acquire its advisory lock reliably, see prisma/schema.prisma
+        sync: false # set manually — paste your Neon DIRECT (non-pooled) connection string; reserved for separately approved operator work, never used for automatic startup migrations
       - key: JWT_SECRET
         sync: false # set manually ONCE in the Render dashboard, e.g. `openssl rand -hex 32` — do NOT use generateValue here: every Blueprint sync it can be regenerated, which silently invalidates every logged-in session (this is what was logging users out). Once you set a fixed value here, never change it — it must stay the same across every future deploy.
       - key: API_KEY_ENCRYPTION_SECRET
