@@ -45,8 +45,15 @@ async function run({OUT,cleanups,users,password,fixture,apiOrigin,docker,api,gat
     await page.locator('a[href*="/stocks/"]').first().waitFor({timeout:30000});await page.screenshot({path:path.join(OUT,'catalogue-'+width+'.png')});
     await page.goto(APP+'/stocks/BYBIT%3AAAPLXUSDT');await page.locator('.vxg-plot').waitFor({timeout:30000});
     if(width===390)await page.locator('.vxg-mobile-tabs button').filter({hasText:'Торговля'}).click();
-    for(const side of ['Купить','Продать'])for(const type of ['Market','Limit']){await page.locator('.vxg-sides button').filter({hasText:side}).click();await page.locator('.vxg-order-types button').filter({hasText:type}).click();if(type==='Limit')await page.getByLabel('Цена',{exact:true}).fill('99');await page.getByLabel('Количество',{exact:true}).fill('0.1');const draft=await page.locator('.vxg-ticket form input').evaluateAll(xs=>xs.map(x=>x.value));await page.locator('.vxg-submit').click();await page.getByLabel('Количество',{exact:true}).press('Enter');await pause(100);assert.deepEqual(await page.locator('.vxg-ticket form input').evaluateAll(xs=>xs.map(x=>x.value)),draft);}
-    assert.equal(financialPosts,0,'BUY/SELL must emit no financial POST');assert.equal(await page.locator('.vxg-error,.vxg-success').count(),0);
+    // Feed-OFF must honestly display its admission status, rather than fake a
+    // usable price to satisfy a zero-message assertion meant for trade actions.
+    const unavailable=page.locator('.vxg-ticket .vxg-error[role="status"]');await unavailable.waitFor();
+    assert.equal((await unavailable.textContent()).trim(),'Источник данных недоступен');
+    const feedback=()=>page.locator('.vxg-error,.vxg-success').allTextContents();
+    const initialFeedback=await feedback();
+    await page.screenshot({path:path.join(OUT,'terminal-before-'+width+'.png')});
+    for(const side of ['Купить','Продать'])for(const type of ['Market','Limit']){await page.locator('.vxg-sides button').filter({hasText:side}).click();await page.locator('.vxg-order-types button').filter({hasText:type}).click();if(type==='Limit')await page.getByLabel('Цена',{exact:true}).fill('99');await page.getByLabel('Количество',{exact:true}).fill('0.1');const draft=await page.locator('.vxg-ticket form input').evaluateAll(xs=>xs.map(x=>x.value));await page.locator('.vxg-submit').click();await page.getByLabel('Количество',{exact:true}).press('Enter');await pause(100);assert.deepEqual(await page.locator('.vxg-ticket form input').evaluateAll(xs=>xs.map(x=>x.value)),draft);assert.deepEqual(await feedback(),initialFeedback,'no click-induced feedback');}
+    assert.equal(financialPosts,0,'BUY/SELL must emit no financial POST');assert.equal(await page.locator('.vxg-error[role="alert"],.vxg-success').count(),0,'no auth/connection/overload/trade alerts or success notice');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no horizontal page overflow');
     await page.screenshot({path:path.join(OUT,'terminal-'+width+'.png')});await context.close();
   }
