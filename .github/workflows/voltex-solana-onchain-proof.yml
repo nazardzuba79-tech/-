@@ -54,7 +54,7 @@ jobs:
               evidence.signatureCount=rows.length;
               for(const row of rows){
                 if(row?.err!==null||!row.signature||!Number.isSafeInteger(row.slot))continue;
-                const tx=await rpc('getTransaction',[row.signature,{encoding:'json',commitment:'finalized',maxSupportedTransactionVersion:0}]);
+                const tx=await rpc('getTransaction',[row.signature,{encoding:'json',commitment:'finalized',maxSupportedTransactionVersion:1}]);
                 if(tx?.meta?.err!==null||tx?.slot!==row.slot)continue;
                 const stack=[];
                 for(const log of tx.meta.logMessages??[]){
