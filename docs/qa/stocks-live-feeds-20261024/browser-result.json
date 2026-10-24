@@ -2,6 +2,7 @@
   "mode": "public-live-market-view-only",
   "checks": [
     "actual Bybit quote and existing chart visible",
+    "native WS candle received without increasing historical REST polling",
     "desktop chart stays inside its panel",
     "Market/Limit BUY/SELL buttons are silent NO-OP",
     "selected exact identity MEXC:TSLAXUSDT",

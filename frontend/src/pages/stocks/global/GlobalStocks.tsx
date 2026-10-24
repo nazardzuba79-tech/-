@@ -126,8 +126,12 @@ export default function GlobalStocks(){
       finally{if(current())setLoading(false);}
     })??Promise.resolve({kind:'failed'});
   },[id,interval,pause]);
-  const liveChart = state?.quotes[id]?.transport === 'websocket';
-  useEffect(()=>{historyGeneration.current++;setCandles([]);setChartError('');const stop=startVisibleStockPolling(()=>void history(),liveChart?3000:15000);return()=>{historyGeneration.current++;circuit.current.cancelRecovery();stop();};},[history,liveChart]);
+  useEffect(()=>{historyGeneration.current++;setCandles([]);setChartError('');const stop=startVisibleStockPolling(()=>void history(),15000);return()=>{historyGeneration.current++;circuit.current.cancelRecovery();stop();};},[history]);
+  // Native bars ride the existing quote response. Do not turn a last price into
+  // OHLC, increase REST polling, or repaint an unchanged native observation.
+  useEffect(()=>{const live=state?.quotes[id]?.nativeCandles?.[interval];if(!live)return;
+    setCandles(old=>{const last=old[old.length-1];if(last&&(live.time<last.time||(['time','open','high','low','close','volume'] as const).every(k=>last[k]===live[k])))return old;return mergeStockCandles(old,[live]);});
+  },[state,id,interval]);
   const recover=()=>void circuit.current.recover(()=>poll(true),()=>history(undefined,true));
   const retrySeconds=overload?Math.max(0,Math.ceil((overload.retryAt-now)/1000)):0;
   const choose=(a:Asset)=>{setMenu(false);setQuantity('');setLimit('');setMessage(null);setError('');setIntervalValue(a.timeframes.includes(interval)?interval:a.timeframes[0]);navigate('/stocks/'+encodeURIComponent(a.id));};

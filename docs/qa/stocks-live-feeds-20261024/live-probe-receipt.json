@@ -1,29 +1,29 @@
 {
-  "startedAt": "2026-10-24T14:56:10.898Z",
-  "finishedAt": "2026-10-24T14:56:45.807Z",
+  "startedAt": "2026-10-24T15:37:13.692Z",
+  "finishedAt": "2026-10-24T15:37:49.957Z",
   "node": "v22.23.3",
   "mode": "public-read-only-no-trading",
   "metrics": {
     "connections": 10,
     "reconnects": 0,
-    "frames": 1376,
+    "frames": 1436,
     "rejected": 0,
     "stale": 0,
-    "subscriptions": 31
+    "subscriptions": 26
   },
   "results": [
     {
       "id": "BYBIT:AAPLXUSDT",
-      "quote": "PASS",
-      "quoteTimestamp": 1792853777217,
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
     },
     {
       "id": "BINANCE:AAPLBUSDT",
-      "quote": "QUOTE_UNAVAILABLE",
-      "quoteTimestamp": null,
+      "quote": "PASS",
+      "quoteTimestamp": 1792856247695,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
@@ -31,18 +31,18 @@
     {
       "id": "BYBIT:TSLAXUSDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853780397,
+      "quoteTimestamp": 1792856247881,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
     },
     {
       "id": "BINANCE:TSLABUSDT",
-      "quote": "QUOTE_STALE",
-      "quoteTimestamp": null,
+      "quote": "PASS",
+      "quoteTimestamp": 1792856245631,
       "historyRows": 300,
       "historyError": null,
-      "nativeWsCandleObserved": false
+      "nativeWsCandleObserved": true
     },
     {
       "id": "GATE:AAPLX_USDT",
@@ -54,8 +54,8 @@
     },
     {
       "id": "GATE:TSLAX_USDT",
-      "quote": "QUOTE_STALE",
-      "quoteTimestamp": null,
+      "quote": "PASS",
+      "quoteTimestamp": 1792856252773,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": false
@@ -63,15 +63,15 @@
     {
       "id": "MEXC:AAPLXUSDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853792736,
+      "quoteTimestamp": 1792856254336,
       "historyRows": 300,
       "historyError": null,
-      "nativeWsCandleObserved": false
+      "nativeWsCandleObserved": true
     },
     {
       "id": "MEXC:TSLAXUSDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853793145,
+      "quoteTimestamp": 1792856254745,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
@@ -79,7 +79,7 @@
     {
       "id": "OKX:XAAPL-USDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853793369,
+      "quoteTimestamp": 1792856255046,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
@@ -87,7 +87,7 @@
     {
       "id": "OKX:XTSLA-USDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853793076,
+      "quoteTimestamp": 1792856255270,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
@@ -102,8 +102,8 @@
     },
     {
       "id": "KUCOIN:TSLAX-USDT",
-      "quote": "PASS",
-      "quoteTimestamp": 1792853795261,
+      "quote": "QUOTE_STALE",
+      "quoteTimestamp": null,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
@@ -127,7 +127,7 @@
     {
       "id": "BINGX:AAPLX-USDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853801631,
+      "quoteTimestamp": 1792856265138,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": true
@@ -135,15 +135,15 @@
     {
       "id": "BINGX:TSLAX-USDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853801631,
+      "quoteTimestamp": 1792856266150,
       "historyRows": 300,
       "historyError": null,
-      "nativeWsCandleObserved": true
+      "nativeWsCandleObserved": false
     },
     {
       "id": "BITGET:RAAPLUSDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853802612,
+      "quoteTimestamp": 1792856266738,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": false
@@ -151,7 +151,7 @@
     {
       "id": "BITGET:RTSLAUSDT",
       "quote": "PASS",
-      "quoteTimestamp": 1792853802891,
+      "quoteTimestamp": 1792856267094,
       "historyRows": 300,
       "historyError": null,
       "nativeWsCandleObserved": false

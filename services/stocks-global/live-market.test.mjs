@@ -9,7 +9,7 @@ import { LiveEquityFeed } from './live-feed.mjs';
 import { LiveMarketHub } from './live-market.mjs';
 import { confirmLiveInstrument, LIVE_REST_ADAPTERS } from './live-rest.mjs';
 import { parseCandles, MarketHub } from './market.mjs';
-import { instrument } from './catalog.mjs';
+import { instrument, CATALOG } from './catalog.mjs';
 import { LIVE_PROVIDERS, UNSUPPORTED_LIVE_PRODUCTS } from './live-catalog.mjs';
 import { createReleaseMarket } from './release-market.mjs';
 const wire=JSON.parse(readFileSync(new URL('./fixtures/live-public-20261024/wire.json',import.meta.url)));
@@ -87,12 +87,32 @@ test('native Kraken USD never obtains a made-up USDT or RUB conversion',async()=
   const now=100000,id='KRAKEN:AAPLxUSD',h=new LiveMarketHub({liveVenues:['kraken'],now:()=>now,fetchImpl:()=>{throw Error('UNEXPECTED_NETWORK');}});
   try{h.catalogueAt=now;h.verified.set(id,{exists:true,online:true});h.feed.owners.set('test-reader',{id,until:now+12000});h.feed.quotes.set(id,{bid:'100',ask:'101',last:'100.5',timestamp:now,receivedAt:now,generation:1});const q=await h.quote(id);assert.equal(q.nativeCurrency,'USD');assert.deepEqual(q.prices,{});assert.deepEqual(q.fx,{});}finally{h.close();}
 });
+test('native OHLC rides the quote response without deriving bars or changing execution prices',async()=>{
+  const now=100000,id='BYBIT:AAPLXUSDT',h=new LiveMarketHub({liveVenues:['bybit'],now:()=>now});
+  try{h.catalogueAt=now;h.verified.set(id,{exists:true,online:true});h.feed.owners.set('test-reader',{id,until:now+12000});h.feed.quotes.set(id,{bid:'100',ask:'101',last:'100.5',timestamp:now,receivedAt:now,generation:1});h.feed.candles.set(id+'|15m',{time:90,open:1,high:3,low:1,close:2,volume:4});const q=await h.quote(id,{includeUsdc:false});assert.deepEqual(q.nativeCandles['15m'],{time:90,open:1,high:3,low:1,close:2,volume:4});assert.deepEqual(q.prices.USDT,{buy:'101',sell:'100'});assert.equal(q.last,'100.5');}finally{h.close();}
+});
 test('concurrent readers reuse one immutable REST+WS page and never mutate backfill',async t=>{
   const now=100000,id='BYBIT:AAPLXUSDT',base={candles:Object.freeze([Object.freeze({time:90,open:1,high:2,low:1,close:2,volume:3})])};
   t.mock.method(MarketHub.prototype,'history',async()=>base);const h=new LiveMarketHub({liveVenues:['bybit'],now:()=>now});
   try{t.mock.method(h.feed,'history',()=>{});h.catalogueAt=now;h.verified.set(id,{exists:true,online:true});h.feed.candles.set(id+'|15m',{time:90,open:1,high:3,low:1,close:3,volume:4,receivedAt:now});const a=await h.history(id),b=await h.history(id);assert.equal(a,b);assert.equal(a.candles[0].close,3);assert.equal(base.candles[0].close,2);assert.ok(Object.isFrozen(a.candles));}finally{h.close();}
 });
 class FakeSocket extends EventEmitter {static created=[];constructor(url){super();this.url=url;this.sent=[];FakeSocket.created.push(this);}send(x){this.sent.push(x);}ping(){}terminate(){this.terminated=true;}}
+test('Binance sends one bounded control batch for 13 different readers, not 13 simultaneous messages',async()=>{
+  FakeSocket.created=[];const f=new LiveEquityFeed({now:()=>100000,WebSocketImpl:FakeSocket});
+  try{const selected=CATALOG.filter(i=>i.provider==='binance');for(const i of selected)f.demand('reader:'+i.id,i.id);await Promise.resolve();assert.equal(FakeSocket.created.length,1);const ws=FakeSocket.created[0];ws.emit('open');assert.equal(ws.sent.length,1);const message=JSON.parse(ws.sent[0]);assert.equal(message.params.length,26);assert.equal(new Set(message.params).size,26);}finally{f.close();}
+});
+test('adding and removing an instrument updates the shared socket without restarting another reader',async()=>{
+  FakeSocket.created=[];const f=new LiveEquityFeed({now:()=>100000,WebSocketImpl:FakeSocket});
+  try{f.demand('alice','BINANCE:AAPLBUSDT');await Promise.resolve();const ws=FakeSocket.created[0];ws.emit('open');const c=f.connections.values().next().value;f.admit(c,bbo(100000));
+    f.demand('bob','BINANCE:TSLABUSDT');await new Promise(r=>setTimeout(r,330));assert.equal(FakeSocket.created.length,1);assert.equal(ws.terminated,undefined);assert.equal(f.read(ids[0]).bid,'100.10');assert.ok(ws.sent.map(s=>JSON.parse(s)).some(m=>m.method==='SUBSCRIBE'&&m.params.includes('tslabusdt@ticker')));
+    f.release('bob');await new Promise(r=>setTimeout(r,330));assert.equal(ws.terminated,undefined);assert.equal(FakeSocket.created.length,1);assert.ok(ws.sent.map(s=>JSON.parse(s)).some(m=>m.method==='UNSUBSCRIBE'&&m.params.includes('tslabusdt@ticker')));assert.ok(f.valid(ids[0],c.generation));
+  }finally{f.close();}
+});
+test('MEXC shards at 30 actual channels per socket and batches each public subscription',async()=>{
+  FakeSocket.created=[];const f=new LiveEquityFeed({now:()=>100000,WebSocketImpl:FakeSocket});
+  try{for(const id of ['MEXC:AAPLXUSDT','MEXC:NVDAXUSDT','MEXC:TSLAXUSDT','MEXC:SPYXUSDT']){f.demand(id,id);for(const t of instrument(id).timeframes)f.history(id,t);}await Promise.resolve();assert.equal(f.connections.size,2);assert.equal(FakeSocket.created.length,2);for(const c of f.connections.values()){c.ws.emit('open');assert.ok(c.plan.size<=30);assert.equal(c.ws.sent.length,1);assert.ok(JSON.parse(c.ws.sent[0]).params.length<=30);}}
+  finally{f.close();}
+});
 test('two readers share one connection, demand expiry/release closes it and clears generation',async()=>{
   FakeSocket.created=[];let now=100000;const f=new LiveEquityFeed({now:()=>now,WebSocketImpl:FakeSocket});
   try{f.demand('alice',ids[0]);f.demand('bob',ids[0]);await Promise.resolve();assert.equal(FakeSocket.created.length,1);const ws=FakeSocket.created[0];ws.emit('open');assert.equal(ws.sent.length,1);

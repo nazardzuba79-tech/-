@@ -27,7 +27,8 @@ export class LiveMarketHub extends MarketHub {
     // Read only an existing lease; a request must not create immortal demand.
     check([...this.feed.owners.values()].some(d=>d.id===id&&d.until>this.now()),'QUOTE_UNAVAILABLE');check(this.waiters<64,'SOURCE_BUSY');this.waiters++;let q;
     try{const deadline=performance.now()+2200;for(;;){try{q=this.feed.read(id);break;}catch(e){if(performance.now()>=deadline)throw e;await pause(40);}}}finally{this.waiters--;}
-    q={...q,instrumentId:id,provider:i.provider,nativeCurrency:i.currency,verified:true,capacity:'1.00000000',multiplier:meta.multiplier??null,delaySeconds:0,eventId:`${i.sourceSymbol}:${q.generation}:${q.timestamp}`,streamGeneration:q.generation,marketOpen:true,prices:{},fx:{},transport:'websocket'};
+    const nativeCandles={};for(const interval of i.timeframes){const c=this.feed.candle(id,interval);if(c){const {time,open,high,low,close,volume}=c;nativeCandles[interval]={time,open,high,low,close,volume};}}
+    q={...q,instrumentId:id,provider:i.provider,nativeCurrency:i.currency,verified:true,capacity:'1.00000000',multiplier:meta.multiplier??null,delaySeconds:0,eventId:`${i.sourceSymbol}:${q.generation}:${q.timestamp}`,streamGeneration:q.generation,marketOpen:true,prices:{},fx:{},transport:'websocket',nativeCandles};
     if(i.currency==='USDT')q.prices.USDT={buy:q.ask,sell:q.bid};
     // Native USD is not a stablecoin peg. No invented USD/USDT or RUB conversion.
     return includeUsdc&&i.currency==='USDT'?this.withUsdcPrices(q):q;

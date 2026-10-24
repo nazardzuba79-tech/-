@@ -34,7 +34,7 @@ admission is not a claim that all 55 were simultaneously streamed.
 18 requested combinations have genuine 300-row REST history after the explicit
 KuCoin history-window correction. The capture never substitutes another venue.
 
-The final sequential live probe honestly recorded 11/18 fresh complete quotes
+The final sequential live probe honestly recorded 12/18 fresh complete quotes
 at their individual sample times; the others were QUOTE_STALE/QUOTE_UNAVAILABLE.
 Earlier authentic captured frames establish the 17 combinations above. A socket
 acknowledgement alone is not quote coverage. Bitget native WS candle updates
@@ -61,20 +61,26 @@ real REST candles. No native candle or missing volume is fabricated.
 - Process-shared demand leases, at most 512 owners and 256 history interests;
   no per-viewer sockets. Bybit subscription requests are capped at ten arguments;
   MEXC connections are sharded at 30 requested channels, with finite catalog size.
+- Confirmed Binance subscription burst fixed RED -> GREEN (13 simultaneous
+  controls became one 26-topic batch). Controls are paced at 300ms with room
+  for provider PONG; adding/removing symbols uses subscribe/unsubscribe on the
+  existing socket and preserves other readers. No provider limit was raised.
 - Fixed public endpoints, 256 KiB quote/wire/decompression bound, bounded retry
   with exponential backoff, heartbeat/connect deadlines, generation invalidation
   on disconnect/reset and strict source/symbol/time/BBO checks.
 - Native WS candles merge only with same-instrument/timeframe REST data. No
   synthesized gaps or quote-derived OHLC. Existing bounded/coalesced history
   requests remain; at most 32 immutable merged pages also reuse HTTP JSON caches.
-- Hidden tabs release demand and stop polling. Selected WS chart reads use the
-  same three-second UI cadence; cached history does not multiply provider REST
-  requests per user. No 50+2 or p95 workload was run or declared passed.
+- Hidden tabs release demand and stop polling. Native WS bars ride the existing three-second quote response; historical
+  REST reads keep their original 15-second cadence, with no extra provider
+  polling per user. No 50+2 or p95 workload was run or declared passed.
 
 ## Verification
 
-- Node **22.23.3**: 41 new market-contract tests PASS plus 25 existing focused
+- Node **22.23.3**: 45 new market-contract tests PASS plus 25 existing focused
   release/default-OFF/history/projection/forged-finance regressions PASS.
+- Unchanged frontend plain-language suite: 12/12 PASS; transport implementation
+  wording removed from the product UI without changing its assertions.
 - Frontend TypeScript and production build PASS with the full existing
   `VITE_API_URL=https://api.voltextech.net/api/v1` and execution explicitly OFF.
   Existing large-bundle warning remains, not suppressed.

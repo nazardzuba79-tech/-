@@ -21,6 +21,27 @@ export function subscriptions(venue, instruments, intervals=['15m'], op='subscri
   if(venue==='kucoin')return syms.flatMap(s=>[{id:s+'-ticker',type:op,topic:'/market/ticker:'+s,privateChannel:false,response:true},{id:s+'-stats',type:op,topic:'/market/snapshot:'+s,privateChannel:false,response:true},...intervals.map(t=>({id:s+'-'+t,type:op,topic:'/market/candles:'+s+'_'+ku[t],privateChannel:false,response:true}))]);
   throw Error('VENUE_UNKNOWN');
 }
+// Atomize exact requested topics, then batch only protocol-compatible controls.
+// This permits demand changes on the existing socket instead of reconnecting
+// every reader, and never subscribes the Cartesian product of unused intervals.
+export function subscriptionPlan(venue,items,role='public') {
+  const requests=role==='business'?[{op:'subscribe',args:items.flatMap(i=>i.liveIntervals.map(t=>({channel:'candle'+(t==='1h'?'1H':t==='4h'?'4H':t==='1D'?'1Dutc':t),instId:i.sourceSymbol})))}]:items.flatMap(i=>subscriptions(venue,[i],i.liveIntervals));
+  const plan=new Map();
+  for(const r of requests){const field=Array.isArray(r.params)?'params':Array.isArray(r.args)?'args':null;
+    const atoms=field?r[field].map(value=>({...r,[field]:[value]})):[r];
+    for(const subscribe of atoms){const key=field?field+':'+JSON.stringify(subscribe[field][0]):venue==='gate'?subscribe.channel+':'+JSON.stringify(subscribe.payload):venue==='kraken'?JSON.stringify(subscribe.params):subscribe.dataType??subscribe.topic;
+      if(typeof key!=='string')throw Error('SUBSCRIPTION_INVALID');
+      const unsubscribe={...subscribe};if(venue==='binance')unsubscribe.method='UNSUBSCRIBE';else if(venue==='mexc')unsubscribe.method='UNSUBSCRIPTION';else if(venue==='gate')unsubscribe.event='unsubscribe';else if(venue==='kraken')unsubscribe.method='unsubscribe';else if(venue==='bingx')unsubscribe.reqType='unsub';else if(venue==='kucoin')unsubscribe.type='unsubscribe';else unsubscribe.op='unsubscribe';
+      plan.set(key,{key,subscribe,unsubscribe});
+    }
+  }return plan;
+}
+export function controlBatch(venue,entries,subscribe) {
+  const limit=venue==='binance'?1024:venue==='mexc'?30:['bybit','okx','bitget'].includes(venue)?10:1;
+  const selected=entries.slice(0,limit),packets=selected.map(a=>subscribe?a.subscribe:a.unsubscribe),first=packets[0];if(!first)throw Error('SUBSCRIPTION_EMPTY');
+  let packet={...first};for(const field of ['params','args'])if(Array.isArray(first[field]))packet[field]=packets.flatMap(p=>p[field]);if(venue==='gate')packet.time=Math.floor(Date.now()/1000);
+  return {packet,selected};
+}
 function candle(symbol,interval,time,o,h,l,c,v,timestamp){return{type:'candle',symbol,interval,time:Number(time),open:Number(o),high:Number(h),low:Number(l),close:Number(c),volume:Number(v),timestamp:Number(timestamp)};}
 function quote(symbol,timestamp,data){return{type:'quote',symbol,timestamp:Number(timestamp),...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined&&v!==null&&v!==''))};}
 export function decodeFrame(venue,input,binary=false) {
