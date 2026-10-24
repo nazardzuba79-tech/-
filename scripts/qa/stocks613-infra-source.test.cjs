@@ -21,6 +21,11 @@ test('every new #613 PR head runs the complete migration/image job, with exact c
   assert.doesNotMatch(JSON.stringify(workflow), /secrets\.|continue-on-error|workflow_dispatch|docker push|wrangler deploy/);
   const stages = job.steps.filter(s => /Exact source|Guard and liveness|Verify original|Apply only|Build immutable/.test(s.name || ''));
   assert.equal(stages.length, 5); assert.ok(stages.every(s => !s.if)); // No skipped admission/rehearsal/build on target PR.
+  const docker = fs.readFileSync(path.join(root,'services/stocks-global/Dockerfile.release'),'utf8');
+  const pin = 'node:22.23.3-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392';
+  assert.match(docker, new RegExp('^FROM '+pin+' AS build$', 'm'));
+  assert.match(docker, new RegExp('^FROM '+pin+' AS runtime$', 'm'));
+  assert.doesNotMatch(docker, /ARG NODE_IMAGE|FROM \$\{/); // No mutable tag or build-arg image substitution.
 });
 const event = sha => ({ number: 613, pull_request: { head: { sha, repo: { full_name: 'nazardzuba79-tech/-' } }, base: { ref: 'main' } } });
 const env = sha => ({ GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: 'nazardzuba79-tech/-', GITHUB_SHA: 'f'.repeat(40), SOURCE_SHA: sha, CONTROL_SHA: sha });

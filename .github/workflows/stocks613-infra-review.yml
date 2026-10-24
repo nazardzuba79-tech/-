@@ -67,7 +67,7 @@ jobs:
       - name: Build immutable gateway only; never push an image or execute migrations
         run: |
           set -o pipefail
-          docker build --build-arg NODE_IMAGE="$NODE_IMAGE" --build-arg REVIEW_SOURCE_SHA="$SOURCE_SHA" --target gateway -f /tmp/stocks613-package/context/services/stocks-global/Dockerfile.release -t stocks613-review:"$SOURCE_SHA" /tmp/stocks613-package/context 2>&1 | tee output/docker-build.log
+          docker build --build-arg REVIEW_SOURCE_SHA="$SOURCE_SHA" --target gateway -f /tmp/stocks613-package/context/services/stocks-global/Dockerfile.release -t stocks613-review:"$SOURCE_SHA" /tmp/stocks613-package/context 2>&1 | tee output/docker-build.log
           docker image inspect stocks613-review:"$SOURCE_SHA" > output/docker-image-inspect.json
           docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 256m --cpus 0.25 --pids-limit 64 --entrypoint node stocks613-review:"$SOURCE_SHA" -e 'if(process.versions.node!=="22.23.3")process.exit(1); require("./node_modules/@prisma/client"); console.log(process.versions.node)'
           node - <<'NODE'
