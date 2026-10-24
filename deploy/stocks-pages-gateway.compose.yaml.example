@@ -1,0 +1,25 @@
+# SOURCE ONLY; never auto-loaded by production Compose. No paid service.
+# Future owner-approved choice: one Node22 gateway/ingress process in the HOST
+# network namespace so host Nginx can reach its existing loopback listeners.
+services:
+  stocks-catalogue-review:
+    profiles: [stocks-review-only]
+    image: ${STOCKS_REVIEWED_IMAGE:?reviewed immutable Node22 image digest required}
+    entrypoint: [node, services/stocks-global/release-entrypoint.mjs]
+    network_mode: host
+    restart: 'no'
+    read_only: true
+    user: '1000:1000'
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    env_file: ["${STOCKS_APPROVED_ENV_FILE:?separately approved private environment required}"]
+    environment:
+      NODE_ENV: production
+      STOCKS_PUBLIC_ORIGIN: https://voltextech.net
+      STOCKS_API_INGRESS_ORIGIN: https://api.voltextech.net
+      STOCKS_GLOBAL_PORT: '4437'
+      STOCKS_INGRESS_PORT: '4438'
+      STOCKS_PAGES_INGRESS_ENABLED: 'false'
+      STOCKS_MARKET_DATA_ENABLED: 'false'
+      STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+    # No ports, database volume, SQLite path, seed, migration or restart of API.

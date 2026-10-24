@@ -2,10 +2,14 @@
 // of the gateway, market clients and any possible local ledger implementation.
 import { openReleaseAuthority } from './release-authority.mjs';
 import { createHostedIngress, publicOrigin } from './hosted-ingress.mjs';
+import { createPagesTransport } from './edge-transport/verifier.mjs';
 
 try {
   const origin=process.env.STOCKS_PUBLIC_ORIGIN;
   if(origin)publicOrigin(origin);
+  // No secret is provisioned here; unset is the existing same-host contract.
+  const transport=process.env.STOCKS_PAGES_INGRESS_ENABLED==='true'
+    ?createPagesTransport({publicOrigin:origin,apiOrigin:process.env.STOCKS_API_INGRESS_ORIGIN,key:process.env.STOCKS_EDGE_TRANSPORT_KEY}):undefined;
   const { config, authority } = await openReleaseAuthority();
   const { createServer } = await import('./server.mjs');
   const { createReleaseMarket } = await import('./release-market.mjs');
@@ -19,7 +23,7 @@ try {
   });
   let ingress;
   try {
-    if(origin)ingress=await createHostedIngress({origin,gatewayPort:app.port,port:Number(process.env.STOCKS_INGRESS_PORT??4438)});
+    if(origin)ingress=await createHostedIngress({origin,gatewayPort:app.port,port:Number(process.env.STOCKS_INGRESS_PORT??4438),transport});
   } catch(error) { await app.close(); throw error; }
   console.log('STOCKS_RELEASE_LISTENING ' + app.port);
   let stopping = false;

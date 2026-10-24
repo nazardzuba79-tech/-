@@ -29,10 +29,11 @@ export function validateHostedRequest(req, origin) {
   check(!Object.keys(req.headers).some(key=>key.startsWith('x-forwarded-') || key==='forwarded'),'HOST_FORBIDDEN');
   return url.pathname + url.search;
 }
-export async function createHostedIngress({ origin, gatewayPort, port = 4438 }) {
+export async function createHostedIngress({ origin, gatewayPort, port = 4438, transport }) {
   const publicUrl = publicOrigin(origin);
   check(Number.isInteger(gatewayPort)&&gatewayPort>0&&gatewayPort<=65535,'HOSTED_PORT_INVALID');
   check(Number.isInteger(port)&&port>=0&&port<=65535&&port!==gatewayPort,'HOSTED_PORT_INVALID');
+  check(transport===undefined||typeof transport==='function','HOSTED_ORIGIN_INVALID');
   const agent = new http.Agent({keepAlive:true,maxSockets:80,maxFreeSockets:8});
   let inflight=0;
   const server = http.createServer(async(req,res)=>{
@@ -45,9 +46,13 @@ export async function createHostedIngress({ origin, gatewayPort, port = 4438 }) 
     inflight++;res.once('close',()=>inflight--);
     let upstream;
     try {
-      const path=validateHostedRequest(req,publicUrl),chunks=[];let size=0;
+      // The optional signed Pages transport authenticates the API-host hop,
+      // not the user. Direct same-host review keeps the existing early checks.
+      check(['127.0.0.1','::ffff:127.0.0.1','::1'].includes(req.socket.remoteAddress),'HOST_FORBIDDEN');
+      let path=transport?undefined:validateHostedRequest(req,publicUrl);const chunks=[];let size=0;
       for await(const chunk of req){size+=chunk.length;check(size<=16384,'REQUEST_TOO_LARGE');chunks.push(chunk);}
       const body=Buffer.concat(chunks);
+      if(transport){await transport(req,body);path=validateHostedRequest(req,publicUrl);}
       // Only the browser's normal JWT and the existing per-view/CSRF fences
       // cross this boundary. Never accept authority credentials from a browser.
       const headers={host:'127.0.0.1:'+gatewayPort,origin:'http://127.0.0.1:'+gatewayPort};
