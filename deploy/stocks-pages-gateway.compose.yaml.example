@@ -12,6 +12,13 @@ services:
     user: '1000:1000'
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
+    # Provisional review budget, NOT a passed 50+2 capacity claim.
+    cpus: '0.25'
+    mem_limit: 256m
+    pids_limit: 64
+    tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
+    ulimits:
+      nofile: {soft: 1024, hard: 1024}
     env_file: ["${STOCKS_APPROVED_ENV_FILE:?separately approved private environment required}"]
     environment:
       NODE_ENV: production
