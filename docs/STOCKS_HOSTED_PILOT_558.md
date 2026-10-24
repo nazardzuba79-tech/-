@@ -75,7 +75,12 @@ pre-COMMIT fences remain authoritative.
 | Extra venues (#561) | `STOCKS_VENUES_ENABLED=gate,mexc,…` **and** `STOCKS_VENUE_RIGHTS_CONFIRMED=<same list>` | Only with market data on. Each venue must also be in the operator's data-rights attestation, otherwise the API refuses to start (`DATA_RIGHTS_UNVERIFIED`). A venue left out gets no request; its rows stay hidden and its instruments answer `DATA_RIGHTS_UNVERIFIED`. The attestation records a confirmed licence; it is not one. |
 | Binance host (#561) | `STOCKS_BINANCE_HOST=data-api.binance.vision` | Optional: Binance's documented public market-data host (same paths). Any other value refuses to start. |
 
-Hosted frontend: use normal same-origin `VITE_API_URL=/api/v1`. Do not set
+Hosted frontend: keep the existing production `VITE_API_URL` exactly as it is (the public frontend and the
+API are separate hosts; `frontend/src/lib/api.ts` needs the full API URL there). Do not switch it to the
+relative `/api/v1` unless real same-origin API forwarding is proven. `GlobalStocks` calls the relative
+`/__stocks_global/*`; routing that path from the public frontend host to the trusted-ingress adapter below
+was only exercised in an emulated local edge and is **NOT_VERIFIED** on production hosting (release
+blocker; topology owned by the separate Codex task on #613). Do not set
 `VITE_STOCKS_GLOBAL_SIMULATOR`, `VITE_STOCKS_SIMULATOR`,
 `VITE_STOCKS_WIDGET_PREVIEW` or `VITE_STOCKS_ORIGIN`; a mixed hosted/fixture or
 cross-origin build is rejected.
