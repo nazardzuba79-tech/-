@@ -1,0 +1,57 @@
+name: Stocks Stage A actual bootstrap and two-reader coexistence
+on:
+  pull_request:
+    types: [labeled]
+permissions:
+  contents: read
+jobs:
+  isolated-stage-a:
+    if: github.event.pull_request.number == 613 && github.event.action == 'labeled' && github.event.label.name == 'stocks-stage-a-20261024-checked' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      STOCKS_EDGE_NGINX_TEST: 'true'
+      STAGE_A_OUT: output/stocks-stage-a
+      QA_PLAYWRIGHT_MODULE: /tmp/stage-a-browser/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Exact overlay provenance and required synthetic-only guards
+        run: |
+          node --test review/stocks-stage-a/guards.test.cjs
+          node review/stocks-stage-a/provenance.cjs
+      - name: Locked test tooling only
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+          npm install --prefix /tmp/stage-a-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0 wrangler@4.148.0
+          node /tmp/stage-a-browser/node_modules/playwright/cli.js install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends nginx openssl
+      - name: Compile real Pages router and isolated frontend (execution remains OFF)
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+          VITE_STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+          VITE_API_URL: https://api.example.invalid/api/v1
+        run: |
+          mkdir -p output
+          node /tmp/stage-a-browser/node_modules/wrangler/bin/wrangler.js pages functions build frontend/functions --project-directory frontend --outdir output/pages-worker --output-routes-path output/pages-generated-routes.json --compatibility-date 2026-09-09
+          npm run build --prefix frontend
+      - name: One isolated actual-bootstrap / Pages TLS / browser / 180s plus 180s comparison
+        run: node review/stocks-stage-a/run.cjs
+      - name: Preserve actual result and full redacted diagnostics even on early failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-stage-a-${{ github.event.pull_request.head.sha }}
+          path: output/stocks-stage-a
+          retention-days: 5
+          if-no-files-found: error

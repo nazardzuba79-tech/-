@@ -35,14 +35,14 @@ export async function pagesWorker(t, { bindings = ENV, outbound }) {
 // Explicit isolated DNS mapping only. With STOCKS_EDGE_NGINX_TEST=true this
 // talks through a real Nginx TLS vhost, checks its synthetic CA and SNI name.
 // Never opens a public port or fetches any production/provider hostname.
-export async function originProxy(t, ingressPort, { apiOrigin } = {}) {
+export async function originProxy(t, ingressPort, { apiOrigin, preserveClientIp = false } = {}) {
   const requests = []; const realNginx = process.env.STOCKS_EDGE_NGINX_TEST === 'true';
   let server, child, dir, port, ca;
   if (realNginx) {
     dir = await mkdtemp(join(tmpdir(), 'voltex-stocks-edge-')); port = await ephemeralPort();
     execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', join(dir, 'key.pem'), '-out', join(dir, 'cert.pem'), '-days', '1', '-subj', '/CN=api.example.invalid', '-addext', 'subjectAltName=DNS:api.example.invalid'], { stdio: 'ignore' });
     const snippet = (await readFile(resolve(ROOT, 'deploy/stocks-pages-ingress.location.conf.example'), 'utf8')).replace('127.0.0.1:4438', '127.0.0.1:' + ingressPort);
-    const ordinaryApi=apiOrigin?`proxy_pass ${apiOrigin}; proxy_set_header Host $host;`:'return 404;';
+    const ordinaryApi=apiOrigin?`proxy_pass ${apiOrigin}; proxy_set_header Host $host; ${preserveClientIp ? 'proxy_set_header X-Forwarded-For $remote_addr;' : ''}`:'return 404;';
     const config = `pid ${dir}/nginx.pid; error_log ${dir}/error.log; events { worker_connections 64; } http { access_log off; server { listen 127.0.0.1:${port} ssl; server_name api.example.invalid; ssl_certificate ${dir}/cert.pem; ssl_certificate_key ${dir}/key.pem; ${snippet}\n location / { ${ordinaryApi} } } }`;
     await writeFile(join(dir, 'nginx.conf'), config); ca = await readFile(join(dir, 'cert.pem'));
     execFileSync('nginx', ['-t', '-p', dir, '-c', join(dir, 'nginx.conf')], { stdio: 'ignore' });
@@ -57,7 +57,8 @@ export async function originProxy(t, ingressPort, { apiOrigin } = {}) {
     }); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); port = server.address().port;
     t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
   }
-  const localFetch = async (request, allowApi=false) => {
+  const localFetch = async (request, allowApi=false, localAddress) => {
+    if(localAddress)assert.ok(preserveClientIp && /^127\.0\.0\.[23]$/.test(localAddress),'only two actual loopback client source addresses');
     const url = new URL(request.url); assert.equal(url.origin, API, 'no external network/provider access');
     assert.ok(url.pathname.startsWith('/__stocks_global/') || allowApi && url.pathname.startsWith('/api/v1/'));
     const headers = Object.fromEntries(request.headers); headers.host = url.host;
@@ -65,11 +66,11 @@ export async function originProxy(t, ingressPort, { apiOrigin } = {}) {
     const body=request.body===null?undefined:Buffer.from(await request.arrayBuffer());
     return new Promise((resolve, reject) => {
       const client = realNginx ? https : http;
-      const req = client.request({ host: '127.0.0.1', port, path: url.pathname + url.search, method: request.method, headers,
+      const req = client.request({ host: '127.0.0.1', port, path: url.pathname + url.search, method: request.method, headers, ...(localAddress ? {localAddress} : {}),
         ...(realNginx ? { servername: url.hostname, ca, rejectUnauthorized: true } : {}) }, response => {
         const chunks = []; response.on('data', c => chunks.push(c)); response.on('end', () => resolve(new Response(Buffer.concat(chunks), { status: response.statusCode, headers: response.headers })));
       }); req.on('error', reject); req.end(body);
     });
   };
-  return { outbound:request=>localFetch(request), tlsFetch:request=>localFetch(request,true), requests, mode: realNginx ? 'real Nginx TLS + pinned synthetic CA/SNI' : 'HTTP local stand-in (Nginx/TLS NOT_RUN)' };
+  return { outbound:request=>localFetch(request), tlsFetch:request=>localFetch(request,true), requestFrom:(request,address)=>localFetch(request,true,address), requests, mode: realNginx ? 'real Nginx TLS + pinned synthetic CA/SNI' : 'HTTP local stand-in (Nginx/TLS NOT_RUN)' };
 }

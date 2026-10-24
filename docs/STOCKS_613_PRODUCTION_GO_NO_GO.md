@@ -1,5 +1,17 @@
 # Stocks #613 — first read-only production launch: GO / NO-GO
 
+## Current owner-authorized Stage A acceptance (24 October)
+
+The reviewed9db0b4f2/3894 change is being integrated into this same Draft PR. A permanent real-PG regression derived from Claude's6383359139 checks the compiled API and actual Gateway release child after removing only the three Stocks tables in a separately acknowledged disposable database. It never removes production tables or relaxes financial-mode schema requirements.
+
+`review/stocks-stage-a/provenance.cjs` is a separate strict contract for API overlayd71821c7 (parent production89c3ac00, Stocks3894caea, treedf214f1e). It does not override the original f97-based packager/source guards. Historical44+2 SQL is byte-verified and packaged only; the new Stage A environment applies only the preserved production-base Prisma schema to an empty CI-owned PostgreSQL18.6. No financial Stocks DDL is required for catalogue-only startup.
+
+The one label-controlled `Stocks Stage A actual bootstrap and two-reader coexistence` workflow uses standard free ubuntu24, exact PR HEAD, immutable Node22.23.3/PG image pins and no repository/production secrets. It runs the actual byte-attested runtime-bootstrap and unchanged production launcher, one API/one collector. A separate test-only inherited network fence plus an internal Docker network blocks collector/provider external effects. Generated disposable `voltex_stage` is named by the unchanged actual bootstrap; it is never the live database. API/Gateway image IDs, complete redacted stdout/stderr and result receipts are retained even on early failure. API→PG uses the actual bootstrap's connection contract; do not describe this as a new verification of production PostgreSQL TLS.
+
+The new functional acceptance and one180s crypto-only +180s identical crypto/two-real-UI-readers comparison are **PENDING**, not PASS, until actual run artifacts exist. No50+2 is authorized. The benchmark keeps real3000ms state/15000ms history polling, at most60 observed authority requests per rolling minute, unchanged120 public quota, feeds/financeOFF. Actual Nginx TCP peer source addresses preserve two ordinary crypto-client IPs; no forged header grants a quota bypass. Per-endpoint p95 must remain≤1.05 with an adequate confidence bound; insufficient samples/confidence mean INCONCLUSIVE. This isolated small dataset is not a production capacity guarantee.
+
+Installation remains NO-GO until the resulting exact-head evidence, live compatibility, privately approved two existing bindings/credentials, unapplied Pages/Nginx routing and rollback package are reviewed. Data-display rights and live sources remain unapproved/unavailable; financial migrations, funded DemoBalance and50+2 trading acceptance belong to Stage B, not a prerequisite to a no-prices read-only catalogue. No production state has changed.
+
 2026-10-24; **NO-GO for installation now.** Safe preparation below is complete; no production deployment, SQL, restore, credentials, balances, accounts or feature settings were changed. No old green suites, Docker builds or50+2 load were repeated.
 
 ## Exact candidates and retained evidence
