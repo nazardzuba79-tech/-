@@ -2,6 +2,16 @@ name: Stocks Pages ingress (isolated, zero activation)
 on:
   push:
     branches: [codex/stocks613-pages-ingress-20261024]
+  pull_request:
+    paths:
+      - frontend/edge/stocks-pages.mjs
+      - frontend/functions/__stocks_global/**
+      - frontend/public/_routes.json
+      - services/stocks-global/edge-transport/**
+      - services/stocks-global/hosted-ingress.mjs
+      - services/stocks-global/release-entrypoint.mjs
+      - deploy/stocks-pages-*
+      - .github/workflows/stocks-pages-ingress-review.yml
   workflow_dispatch: {}
 permissions:
   contents: read
