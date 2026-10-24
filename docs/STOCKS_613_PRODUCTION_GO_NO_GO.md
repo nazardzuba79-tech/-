@@ -1,0 +1,126 @@
+# Stocks #613 — first read-only production launch: GO / NO-GO
+
+2026-10-24; **NO-GO for installation now.** Safe preparation below is complete; no production deployment, SQL, restore, credentials, balances, accounts or feature settings were changed. No old green suites, Docker builds or50+2 load were repeated.
+
+## Exact candidates and retained evidence
+
+| Component | Pin / state |
+|---|---|
+| main / current Draft #613 | `98261cc80117e0961f8ebca84499ec2cb3f0e3b4` / `73b8a57daa6a7956d04f1c7a0d01e4704d502886` |
+| New catalogue-readiness code fix | `3894caea32048a6f5cdbfd046900d0b41743d699`; separate review branch `codex/stocks613-readonly-launch-20261024`; not yet integrated into #613 |
+| Actual live API / local image | `89c3ac003b44a6a0e7630d2ecbe5d7164e85b683` / `sha256:10e66b427b7941fc49335a7fc251c55e6c93a0415e45897f2518798c6e5acc7a` |
+| Curated API overlay, local review only | `d71821c7fdb6df7f097b247269166aca1c4554f7`, tree `df214f1eaa0220910c07d28b3f5130c966772520`, parent live89c3ac00; Stocks source3894caea |
+| Reusable immutable Gateway image | source73b8a57d, **config ID** `sha256:6ca3ba3717c83f148e9d4190f8b21db452042a1c580590d3a08ff860b1ac4ad6`; archive SHA256 `13e5046fcd65e55371c6fdef8c52455ad30071f6bd31b087c91d72daf772601f` |
+| Pages rollback pointer | deployment `9dbc9e80-d1d7-44a8-b688-8f3061e2a2a3`, source `a7593324be9118cfda91ee8fc6bad0b6ff3acba9`; previous successful `b99e368a-7c65-49e9-8e90-3c96c96e3bc6` |
+
+Gateway image/archive were previously downloaded and independently verified; no registry publication or installation occurred. A config ID/archive hash is **not** a registry digest. Its Gateway runtime is unchanged by the API-only fix; the old image's **API target must not be substituted** for the new overlay. Prior exact-head acceptance: [34PASS, deploymentSKIP, genuine unsupported SQLiteFAIL](https://github.com/nazardzuba79-tech/-/pull/613#issuecomment-6382829018). That is73b8 evidence, not new-candidate CI.
+
+The deployed API is not an ancestor of #613. A wholesale #613 API image would change Native/Futures/listing/Wallet code too. The prepared local overlay instead changes only four `src` paths: Stocks router, Stocks ingress middleware, `src/index.ts` Stocks hooks and opt-in prepared-key support in `auth.ts`. All other API source, collector, existing financial modules, listing source, `src/buildCommit.ts`, single-service launcher, Prisma schema, lockfiles and TS config are byte-identical to live89c3ac00. Approved Stocks modules/package helpers and the two unexecuted SQL payloads are included. This is packaging of existing code, not another Stocks implementation or PR.
+
+Overlay TypeScript and the three new compiled-router tests PASS on Node22.23.3. Locked local dependencies/current generated client were reused; a fresh image build with the preserved production schema and an actual-bootstrap start are **NOT_RUN**. This overlay's production ancestry differs from the generic f97-based build guard: **do not bypass that guard or claim its CI applies**. A future targeted build wrapper must attest base89c3+Stocks3894+exact overlay tree and reuse the original byte-checked SQL package from its approved Stocks source. Verified incremental overlay bundle SHA256: `40ca5fc4857f31eac9aacf6e84c1f6954a3718829b30b69fedf14d731c85505f`, requires live89c3ac00. Operator evidence/bundles are retained outside Git in `stocks-613-firstlaunch-evidence-20261024`; no private bootstrap bytes or credentials were published.
+
+## Current production facts
+
+- At10:26UTC API healthy, same start2026-10-23 16:30UTC/restarts0; exactly one API and one `marketDataCollector.js`. Node22.23.3, Linux/amd64, PG18.6 Debian12. Existing networks `voltex-cutover_database` and `voltex-cutover_egress`; only host127.0.0.1:13020→API3000. No3001/4437/4438 listener or Gateway. No running container was changed.
+- Private runtime-bootstrap SHA256 `1a76646d2a0987b9560cb70d2cabe870656b9eab1d7e698d764b2a9aee631866`; live single-service launcher SHA256 `3fd808e84f20f64d2c007a2c5d52380f676b41fc8b8bed7c741ed2d2a908bffe`. Keep their existing one-API/one-collector mechanism; reconcile release identity/config under a separate approved rollout. Hash/static inspection is not a new positive-bootstrap test or proof against dynamically assembled migration commands.
+- Nginx config SHA256 `3b8ddd4dca1cfecc58373225915e79fca08e2a707100357571f92fc78671ff69`, syntax valid, workerwww-data, no Stocks route. Host Node installation is unnecessary.
+- Bounded READ ONLY PG check:44 finished migrations,0 unresolved; all historical names/checksums retained. Three Stocks authority tables and NativeFundingModel absent. Existing User/Session/DemoBalance exist; app role is not superuser/CREATEDB/CREATEROLE. No balances were read. JWT/encryption secrets are present; Stocks issuer/principals/gateway/internal keys and all Stocks flags are unset. Private operator admin/R2 credential files exist with root0600; admin credentials were not used to alter or authenticate a new DB session.
+- Stocks-specific bindings are **not configured**. A targeted READ ONLY check of the already configured `PRIVATE_TRADING_OWNER_ID` plus `PRIVATE_TRADING_TEST_USER_IDS` found3 distinct selectors but only2 existing/unblocked users: the owner and one existing tester; one old test selector has no matching user. Thus an existing two-user pair is available without account creation, but the private correspondence to the agreed owner/Ksenia pair must be confirmed before copying it into Stocks. Do not copy the stale selector, create its missing account or modify the crypto allowlist. No IDs/emails/names/balances were exported. Current launcher still requires two existing/unblocked bindings for startup metadata, while all authenticated users are viewers with executionOFF; no funded balance is required for A.
+
+## A and B have different requirements
+
+| Requirement | A — authenticated catalogue/terminal | B — future Demo Trading |
+|---|---|---|
+| Original Stocks three-table migration | **Not needed after3894caea**: identity/readiness uses existing User/Session, no wallet/command access | Required and separately approved/rehearsed |
+| NativeFundingModel migration | Not needed; do not apply it to satisfy a financial preflight | Not referenced by the Stocks authority itself. Existing financial pilot preflight additionally requires it; resolve that policy/dependency separately, never fabricate an applied row or apply unrelated DDL solely for PASS |
+| Existing positive DemoBalance | **Not required or read** | Existing USDT balance/reserve, authority registration, financial invariants and private two-trader permission required; no automatic funding |
+| Backups / restore | Current encrypted backups verified; no database/schema migration in A. Same-backup full restore remains an explicit recovery-readiness gap for owner/operator acceptance, not an invented runtime/DDL dependency | Corresponding full restore and approved migration/checksum/ledger procedure required before SQL/financial activation |
+| Quotes/licence | ProvidersOFF; populated static instrument catalogue, real unavailable states, no prices/candles fabricated | Verified licensed quotes, provenance, session/freshness/FX plus all financial gates required |
+| Visibility / execution | Canonical `VITE_STOCKS_CATALOGUE_VISIBLE` only; every user silent, execution/dataOFF | New separate owner approval; no activation in this task |
+| Capacity | Small bounded no-finance coexistence acceptance still missing; old50+2 evidence is not replaced | Original50+2 and crypto p95<=+5% remain mandatory/unverified |
+
+Readiness fix: only catalogue-only (`STOCKS_TEST_CASH_ENABLED=false`) skips the three financial schema probes. Enabling cash authority still probes all three even if execution isOFF. Genuine binding lookup, PostgreSQL authority, JWT/session/revocation and all financial denials remain intact. RED503→GREEN200 was demonstrated with the actual compiled router and deliberately unavailable financial storage; a financial configuration still returns503. These are mocked-storage integration tests, **not a new actual-PG missing-table runtime proof**. Node22's existing legacy-module import emits an experimental SQLite warning; no SQLite store/fallback is opened or permitted. Backend compilePASS; new tests3/3, changed-CI source-contract37/37; no old broad suite rerun.
+
+The resulting Stage A is a catalogue and terminal with explicit unavailable market data, **not a fully launched quoted/tradable Stocks product**. Source names/pairs are reference metadata; price/change/volume/history stay unavailable. Do not advertise quotes or working trading.
+
+## Verified backups and one restore procedure — not executed
+
+| Artifact | Actual bytes / UTC / ciphertext SHA256 |
+|---|---|
+| `/opt/voltex-precutover/backups/local-20261024T032311Z/database.dump.enc` |244934106 /03:24:34 /`844a5b0fb76d365f9c8cd79e68f270a5a898757e544e7006fbfdbf879460c211` |
+| `/opt/voltex-precutover/offsite/r2-20261024T062902Z/database.tar.enc` |245555200 /06:30:29 /`02ae3b92db25ef4a1906ea4454429e25670f6acf6a64d334a2b97203828b7401` |
+
+Local ciphertext matches its retention receipt; offsite ciphertext matches complete/retention receipts. Uploaded receipt exists; established boto3/IPv4 HEAD returned200 for ciphertext, encryption metadata and complete receipt, with matching byte lengths and SHA256 metadata. This verifies presence/metadata, **not downloaded bytes, decryption or restore**. A preliminary standalone signer403 was not treated as a permission finding; the established workflow succeeded. No backup/upload was created. Local manifest records64 tables; the59-table synthetic migration rehearsal does not certify that production backup.
+
+Newest discovered restore comparison is2026-10-02 18:09UTC (`comparison-voltex_cutover_r2_restore_20261002.json`, allMatch=true). It does not cover either2026-10-24 snapshot. Private RSA decryption-key availability for these artifacts is **NOT_VERIFIED**; the host has the public encryption key and private operator credentials, not proof of a usable restore key.
+
+After **separate restore/environment approval**, use the existing private operator workflow, not public Actions or a second backup system:
+
+1. Pin one exact encrypted snapshot+metadata+manifest, privately obtain the already-authorized decrypt key; reject a stale/pruned/different artifact. Verify ciphertext using `sha256sum` before and after existing remote retrieval. Never upload a production dump/key to GitHub.
+2. Use an existing secure isolated Linux operator environment with PG18.6 and no production connection/credentials, collector or quote feeds. Proposed caps: PG0.25CPU/768MiB, decrypt/restore client0.25CPU/256MiB, I/O4MiB/s/32IOPS where supported,20min watchdog, one restore job. Proposed scratch cap8GiB is acceptable only if measured restored data/indexes plus encrypted/plaintext artifacts fit with2GiB reserve; otherwise STOP/review, never silently grow it. Require enforceable quota/isolation;245MB ciphertext does not bound restored size. If these controls/private key/storage are unavailable, STOP before creating a resource. No environment/volume/key was created here, and no Windows Docker installation or new server is proposed.
+3. For the local custom-dump artifact, the existing crypto interface is `node <verified-backup-crypto.cjs> decrypt <database.dump.enc> <private-scratch/database.dump> <existing-private-key-file>`. Verify authenticated decryption/plaintext receipt and `pg_restore --list` format first; neither listing nor `--file=/dev/null` proves restoration.
+4. Restore once with PG18.6 `pg_restore --exit-on-error --dbname=<owned-isolated-destination> <verified-dump>`. Reject production host/DB/DSNs in the wrapper. Role/ACL/extension prerequisites must be prepared only in that destination; `--no-owner --no-privileges` is merely portability testing and cannot certify original security metadata.
+5. Compare all64 tables, schemas, constraints/indexes, sequence state and required ownership/grants to **the same snapshot**, using the existing manifest mechanism; export counts/hashes only. Record actual RPO/RTO and any failure. Do not run services or financial commands against restored private identities.
+
+For later B only, rehearse the unchanged Stocks migration on that restored clone, then obtain separate production SQL approval. Original44-byte/42LF+2raw ledger relation and any resolve procedure must be approved without rewriting old checksums. Do not run generic46-file `migrate deploy`; apply/record only explicitly approved pending migrations, with2s lock/10s statement timeout and verified partial-failure handling. NativeFundingModel is separate. Keep the existing financial pilot preflight unchanged; its failures are not a reason to mutate A's DB.
+
+## One Stage-A network choice; no hidden private-port exposure
+
+For the **initial bounded read-only canary**, reuse the existing host-loopback deployment example: one restricted Gateway container in host network namespace, bind only127.0.0.1:4437/4438; authority URL `http://127.0.0.1:13020/api/v1/stocks-test-cash`, i.e. existing host-loopback API port. Keep private3001 opt-in **unset** in this variant: a host-network Gateway cannot reach the API container's127.0.0.1:3001. Do not publish3001 or weaken provenance headers. API→PG uses the existing client/role/pool.
+
+Exact path: `voltextech.net Pages Function → HTTPS api.voltextech.net Nginx → host127.0.0.1:4438 → Gateway127.0.0.1:4437 → host127.0.0.1:13020 → API3000 → existing PG`. With private port unset, also leave `STOCKS_AUTHORITY_REQUESTS_PER_MINUTE` unset. Gateway uses explicit data/execution=false and WS=false; venue/host overrides stay unset, not the string "false". No DB credential goes into Gateway or browser.
+
+This uses the unchanged public120/60s quota for that internal source IP, **not** the protected240 private quota. It is a bounded-canary choice, not an all-users capacity guarantee. All signed/user/session checks remain; no cached user decision. Future B/private240 uses the previously reviewed API-shared namespace and a separately reviewed production ingress bridge. The old `review/stocks-private-pg-tls/unix-proxy.cjs` is fixture-only (fixture Host, no new HMAC forwarding): **do not install it as a production proxy** or silently replace the host-network example with it.
+
+Host Nginx adds only the Stocks path, forwards the existing allowlisted HMAC/JWT/Origin/Host/CSRF/view headers to4438, and hides `/api/v1/stocks-test-cash` from the public vhost. Use a case-insensitive authority-path deny and verify case/encoded variants against real Nginx before rollout; leave all other API routes unchanged. Stage A still denies wallet/command at the server even if a transport deny is bypassed. No Nginx/Compose/network setting was changed here.
+
+## Traffic/resources and minimum remaining acceptance
+
+At10:26UTC host2CPU/3819MiB RAM,2609MiB available,13GiB free. This is headroom, not a measured safe capacity. Gateway proposed0.25CPU/256MiB/64pids/1024FD/read-only root/16MiB tmpfs, restart:no; no DB client or migration/seed. Existing API/collector resource settings are not altered. Health every30s is process liveness only, no PG query. Readiness is one startup binding read; financial matching/observation interval is absent with financialEnabled=false. Ordinary session validation still runs on **every** read, with existing lastSeen touch no more often than5min; do not claim zero database writes from normal auth.
+
+Visible catalogue polls once/min; visible terminal state once/3s (20identity/min), plus history/switch/reconnect requests. Hidden tabs stop polling. At6 continuously open terminals the public internal-IP120/min envelope is already consumed before overhead; private240 alone would not certify50readers either. Preserve overload429/Retry-After UI/backoff and maxInflight80; never increase limits or cache access decisions to make it pass.
+
+Old Windows crypto p95+14.3481% FAIL / earlier1CPU failure remain historical failures ([existing plan](STOCKS_PRIVATE_PILOT_20261017.md)); they neither prove nor disprove this no-finance envelope. No measured RAM/CPU-per-reader or existing-server capacity guarantee is available. No server enlargement is justified/purchased.
+
+**Next single bounded test requires approval, not a50+2 rerun:** standard free isolated Ubuntu runner or an existing secure operator environment, fresh synthetic pre-Stocks User/Session schema, no production backup/keys/accounts/providers. Pin overlayAPI+Gateway image/source. Enforce DB0.25CPU/512MiB, API0.5CPU/512MiB, Gateway0.25CPU/256MiB, TLS/test tooling<=128MiB (proposed total1CPU/~1.4GiB; not measured requirements). Verify actual bootstrap/one collector with external effects denied, then paired crypto baseline vs+2read-only users at the unmodified browser intervals, <=60authority requests/min including switches,3min each; verify30s hidden-tab silence. Record all error codes, CPU/RSS/SQL calls, financial writes0 and per-critical-endpoint crypto p95 ratio<=1.05. No PASS from averaging, altered quotes/limits or mock timings. This only admits a measured small envelope; wider authenticated exposure needs its own accepted read-only envelope, and B still needs the original50+2. No such test/resource was started here.
+
+## Cloudflare: actual state and minimal future changes
+
+At10:23UTC projectvoltex-exchange/custom domainvoltextech.net, rootfrontend/build`npm run build`/outputdist, compatibility2026-09-09, production auto-deployOFF/previewsnone, fail_open=true. Full `VITE_API_URL=https://api.voltextech.net/api/v1` preserved. Canonical visibility/execution/proxy/API-ingress flags unset; transport secret absent. DNS A responses use Cloudflare addresses, Worker routes GET200/empty. DNS-record GET403 and rulesets GET403 were attempted once; **NOT_VERIFIED**, no permission expansion. Required access/operator evidence: zone-scoped [DNS Read](https://developers.cloudflare.com/api/typescript/resources/dns/subresources/records/methods/list/) and the relevant read-only ruleset category such as Transform Rules Read/Select Configuration Read, per [Rulesets API](https://developers.cloudflare.com/api/resources/rulesets/methods/list/). No Write/Global API key is needed for inspection.
+
+Current frontend `/__stocks_global/catalogue` returnsHTML200 fallback; API counterpart404. Therefore the new Function/ingress is **not active**. Local real-router/isolated workerd acceptance is green73b8 evidence, not a Pages-account build. A DNS change is not presumed necessary: reuse the already active domains/TLS after denied metadata is independently verified.
+
+Minimal approved future Pages configuration: maintain root/full API URL/all unrelated Workers/routes; set fail_open=false, server-only public/API origins+matching transport secret, proxy explicittrue, frontend canonical visibility true only at final canary step; frontend and server execution false, providers false. No new VITE identity/API-origin workaround. Keep auto-deployOFF/previewsnone; make one exact-source controlled account build/deployment after separate approval. Validate only `/__stocks_global/*` is intercepted. Current/previous successful deployment IDs above provide rollback pointers, not a permission to roll back now.
+
+## Ordered future operations and checks — all require separate approval
+
+1. Review/integrate3894caea into #613 without a new PR. Approve the curated API-overlay source/closure and source-to-image receipt; build it with its preserved production Prisma schema and original bootstrap/launcher. Reuse the verified Gateway image. STOP on any source/lock/startup/collector drift; do not build/deploy the whole newer #613 API as a substitute.
+2. Approve **one** isolated Stage-A positive/bootstrap/coexistence test above. Separately decide/approve the private current-backup restore rehearsal; absence is not falsely marked PASS. Both are currently NOT_RUN.
+3. Privately confirm the two genuine existing bindings (counts/unblocked only), approve issuer/gateway/transport provisioning, exact API/Gateway configuration, image installation/distribution and rollback receipts. No new accounts/balances; do not require a positive DemoBalance. Keep `STOCKS_CATALOGUE_ENABLED=true`, cash/execution/data false; proposed host-loopback variant leaves private-port settings unset.
+4. Approve a controlled API image/config change preserving bootstrap/launcher/one collector and **no migration command**. Afterward verify `/health` exact approved API identity, unchanged primary-module hashes and one API/one collector. Execute no production migration for A. If safe migration-free startup cannot be proved, STOP before replacing the current API.
+5. Approve start of only the pinned restricted Gateway. Afterward check (read-only commands):
+   ```sh
+   docker image inspect --format '{{.Id}} {{.Os}}/{{.Architecture}}' <approved-image>
+   curl -fsS --max-time 5 http://127.0.0.1:13020/health
+   curl -fsS --max-time 5 http://127.0.0.1:4437/__stocks_global/health
+   ss -lnt | grep -E ':(3001|4437|4438) '
+   ```
+   Require exact images, healthok/accounts=true, no wildcard/private-port internet access and no second collector. Unsigned ingress must refuse; privileged readiness/binding checks use the existing private wrapper without echoing keys/IDs. Recheck44 ledger and absent financial tables: A must not create them.
+6. Approve the path-scoped Nginx include, test with `nginx -t`, then approved reload. Require normal Login/Spot/Futures/Wallet unchanged, authority path denied through TLS (including variants), signed transport positive and forged/replayed proof denied. Preserve config hash/backup. No broad proxy route.
+7. Approve minimal fail-closed/secret/origin Pages changes and one exact account build/deployment; keep visibilityOFF until signed transport proves JSON/no HTML fallback. Check:
+   ```sh
+   curl -sS -D - -o /dev/null https://voltextech.net/__stocks_global/catalogue
+   curl -sS -D - -o /dev/null https://api.voltextech.net/api/v1/stocks-test-cash/readiness
+   ```
+   Expect401 JSON for unauthenticated Pages catalogue once enabled and404 for public authority. Use the private browser acceptance for valid user catalogue/terminal/logout/revocation; never paste bearer tokens into logs or command history.
+8. Approve canonical visibility for the measured limited read-only envelope. Existing users see instrument metadata/unavailable prices; all BUY/SELL Market/Limit click/Enter remain silent. Require forged financial POST403, balances/positions/history unchanged, provider calls0, no new browser/API errors, no unexpected rate amplification. Do not call this live market data or broaden beyond measured capacity.
+
+Immediate STOP: wrong image/source, wildcard/external private port, unexpected collector/DB/financial operation, auth/revocation failure, HTML fallback, forged/replayed acceptance, licence bypass, OOM/unhealthy, exceeded request budget, any transaction/state discrepancy or crypto p95>1.05. Retain sanitized errors; no random hotfixes/retries or limit increases.
+
+**Fast rollback after a separately approved install:** visibility/proxyOFF, return Pages to saved9dbc9e80 pointer, stop only new Gateway, restore prior Nginx include after syntax check. If the API changed, use saved image10e66b42/config/unchanged bootstrap to restore that API only and confirm one collector/health. No whole-DB restore, DROP, seed, balance reset or history rewrite to undo this nonfinancial rollout. Recheck defaultOFF settings and ordinary exchange flows.
+
+## Decision / exact next completed stage
+
+Code preparation and actual backup/offsite/schema/config checks are complete. **No immediate catalogue activation is authorized or technically accepted yet.** A no longer needs trading DDL or funded accounts after the small fix, but still needs its source integration, a built/verified production-compatible API overlay, genuine private startup bindings, minimum measured coexistence envelope and explicit image/Nginx/Pages/credential approvals. DNS/ruleset visibility and same-backup restore/key readiness remain honestly unverified. All shared authorization/resource/transport risks remain gates; none is hidden behind tradingOFF.
+
+The next completed stage is **one approved build/positive startup/coexistence acceptance of the curated no-finance API+existing Gateway, without Stocks financial tables or real accounts/providers**, using only an existing/free isolated environment. It does not deploy or authorize production. After PASS, request one concrete bounded Stage-A installation/config/visibility approval. B is a separate future decision; its funds, migrations/licence/freshness/50+2 gates stay closed.
