@@ -26,6 +26,7 @@ jobs:
       - name: Exact overlay provenance and required synthetic-only guards
         run: |
           node --test review/stocks-stage-a/guards.test.cjs
+          STOCKS_EDGE_NGINX_TEST=false node --test review/stocks-stage-a/transport-deadline.test.cjs
           node review/stocks-stage-a/provenance.cjs
       - name: Locked test tooling only
         run: |

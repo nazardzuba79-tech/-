@@ -1,5 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const {verify,OVERLAY}=require('./provenance.cjs');
+test('PG readiness requires the actual fixture database over TCP, not init-only socket acceptance',()=>{
+ const {ready}=require('./pg-ready.cjs');let args;
+ assert.equal(ready(a=>{args=a;return 'accepting connections';},'fixture'),false);
+ assert.ok(args.includes('127.0.0.1'));assert.ok(args.includes('SELECT current_database()'));
+ assert.equal(ready(()=>{throw Error('temporary init server/no fixture DB');},'fixture'),false);
+ assert.equal(ready(()=>'postgres','fixture'),false);
+ assert.equal(ready(()=>'voltex_stage','fixture'),true);
+});
 test('overlay exactly preserves production base outside four reviewed source hooks',()=>{const receipt=verify(path.resolve(__dirname,'../..'));assert.equal(receipt.overlay,OVERLAY);assert.equal(receipt.changed,164);});
 test('benchmark rejects observed degradation and refuses low-sample PASS',()=>{const {compare}=require('./benchmark.cjs');const rows=(ms,n=90)=>Array.from({length:n},(_,i)=>({at:i*2000,ms}));assert.equal(compare(rows(100),rows(106)).result,'FAIL');assert.equal(compare(rows(100),rows(100)).result,'PASS');assert.equal(compare(rows(100,20),rows(100,20)).result,'INCONCLUSIVE');});
 test('fixture fence survives production bootstrap NODE_OPTIONS replacement and rejects external network',()=>{

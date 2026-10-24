@@ -2,6 +2,10 @@
 
 ## Current owner-authorized Stage A acceptance (24 October)
 
+First actual run [40089639217](https://github.com/nazardzuba79-tech/-/actions/runs/40089639217), head0ef44927: curated API/Gateway image builds **PASS** (config IDs `sha256:a41e07d69d9afc112e981480aa0f9c86a1fa397f302c71ff6ac11597fe582552` / `sha256:41a456fb9453a49eba847cada8af6430f10691744e7c02af4af68c02ab7cc485`, local build IDs, not registry digests). Actual API bootstrap and benchmark **NOT_RUN**: disposable PG init exposed its temporary UNIX socket before the requested DB/TCP server was ready. Harness now checks actual TCP query/current_database; no financial rule or runtime source changed. Full error artifact12559105274 is retained. Subsequent run is continuation of the failed new startup stage; no benchmark has been consumed.
+
+Exact-head Node22 also exposed a catalogue-only test's obsolete three-schema-probe expectation. All original assertions are retained: the three-probe assertion now follows a separately explicit financial-mode readiness request (execution remainsOFF); a new zero-probe catalogue assertion was added. Targeted Node22 route/readiness9/9 and harness6/6 PASS locally. Real PG regression still requires completed automatic CI. Unsupported legacy SQLite FAIL remains untouched.
+
 The reviewed9db0b4f2/3894 change is being integrated into this same Draft PR. A permanent real-PG regression derived from Claude's6383359139 checks the compiled API and actual Gateway release child after removing only the three Stocks tables in a separately acknowledged disposable database. It never removes production tables or relaxes financial-mode schema requirements.
 
 `review/stocks-stage-a/provenance.cjs` is a separate strict contract for API overlayd71821c7 (parent production89c3ac00, Stocks3894caea, treedf214f1e). It does not override the original f97-based packager/source guards. Historical44+2 SQL is byte-verified and packaged only; the new Stage A environment applies only the preserved production-base Prisma schema to an empty CI-owned PostgreSQL18.6. No financial Stocks DDL is required for catalogue-only startup.

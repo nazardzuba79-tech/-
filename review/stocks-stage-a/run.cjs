@@ -46,7 +46,12 @@ async function main(){
     fs.writeFileSync(path.join(OUT,'build-'+target+'.log'),redact((build.stdout||'')+'\n'+(build.stderr||'')));
     assert.equal(build.status,0,'IMAGE_BUILD_FAILED '+target+'; full stdout/stderr in build-'+target+'.log');
     const inspect=JSON.parse(docker(['image','inspect',tag]))[0];report.images[target]={tag,id:inspect.Id,repoDigests:inspect.RepoDigests,source:OVERLAY,stocksSource:APP};
+    assert.equal(inspect.Config.Labels['org.opencontainers.image.revision'],OVERLAY);
+    fs.writeFileSync(path.join(OUT,'image-'+target+'.json'),JSON.stringify({Id:inspect.Id,RepoDigests:inspect.RepoDigests,Architecture:inspect.Architecture,Os:inspect.Os,source:inspect.Config.Labels['org.opencontainers.image.revision']},null,2));
   }
+  // Images contain code only; all random fixture credentials are mounted later.
+  docker(['save','-o',path.join(OUT,'candidate-images.tar'),report.images.api.tag,report.images.gateway.tag],{timeout:180000});
+  command('gzip',['-1',path.join(OUT,'candidate-images.tar')],{timeout:180000});
   stage('fresh-curated-api-and-gateway-images',report.images);
   const password=crypto.randomBytes(24).toString('hex'),jwt=crypto.randomBytes(32).toString('hex'),key=crypto.randomBytes(32).toString('hex');secrets.push(password,jwt,key);
   const users=['stage_a_alpha','stage_a_beta'],principals=users.map(subject=>({issuer:'stage-a-isolated',subject}));
@@ -61,7 +66,7 @@ async function main(){
   network='stocks-stage-a-'+id;docker(['network','create','--internal',network]);
   pg='stocks-stage-a-pg-'+id;api='stocks-stage-a-api-'+id;gateway='stocks-stage-a-gateway-'+id;
   runContainer(pg,['--network',network,'--network-alias','db','--cpus','0.25','--memory','512m','--env-file',envFile('pg',{POSTGRES_USER:'neondb_owner',POSTGRES_PASSWORD:password,POSTGRES_DB:'voltex_stage'}),PG]);
-  await waitFor(pg,()=>{try{return docker(['exec',pg,'pg_isready','-U','neondb_owner','-d','voltex_stage']).includes('accepting connections');}catch{return false;}});
+  await waitFor(pg,()=>require('./pg-ready.cjs').ready(docker,pg));
   const before=fixture('setup');report.before=before;
   const pgIP=JSON.parse(docker(['inspect',pg]))[0].NetworkSettings.Networks[network].IPAddress;
   const apiEnv=envFile('api',{VOLTEX_RUNTIME_MODE:'production',VOLTEX_RELEASE_SHA:OVERLAY,NODE_OPTIONS:'--require /fixture/net-boundary.cjs',STAGE_A_PG_IP:pgIP});
@@ -80,7 +85,7 @@ async function main(){
   report.performance=await require('./benchmark.cjs').run({OUT,tokens:result.tokens,startReaders:result.startReaders,proxy:result.proxy,docker,api,gateway,pg});
   report.after=fixture('snapshot');assert.deepEqual(report.after.fingerprint,before.fingerprint,'all non-identity financial/history rows unchanged');
   docker(['stop','--time','12',api]);assert.equal(JSON.parse(docker(['inspect',api]))[0].State.Running,false);
-  docker(['start',api]);await waitFor(api,()=>{try{return command('curl',['--silent','--fail','http://127.0.0.1:13020/health']).includes(OVERLAY);}catch{return false;}});processCount();stage('same-immutable-image-stop-restart-rollback-smoke');
+  docker(['start',api]);await waitFor(api,()=>{try{return command('curl',['--silent','--fail','http://127.0.0.1:13020/health']).includes(OVERLAY);}catch{return false;}});processCount();stage('same-immutable-image-stop-restart-smoke',{productionPreviousImageRollback:'NOT_EXECUTED; existing live digest/config retained, no production operation'});
   report.result=report.performance.result==='PASS'?'PASS':report.performance.result;
 }
 main().catch(e=>{report.result='FAIL';report.error=redact(e.stack||e.message);console.error(report.error);}).finally(async()=>{

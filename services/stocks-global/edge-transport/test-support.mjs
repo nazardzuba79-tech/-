@@ -66,7 +66,7 @@ export async function originProxy(t, ingressPort, { apiOrigin, preserveClientIp 
     const body=request.body===null?undefined:Buffer.from(await request.arrayBuffer());
     return new Promise((resolve, reject) => {
       const client = realNginx ? https : http;
-      const req = client.request({ host: '127.0.0.1', port, path: url.pathname + url.search, method: request.method, headers, ...(localAddress ? {localAddress} : {}),
+      const req = client.request({ host: '127.0.0.1', port, path: url.pathname + url.search, method: request.method, headers, signal: request.signal, ...(localAddress ? {localAddress} : {}),
         ...(realNginx ? { servername: url.hostname, ca, rejectUnauthorized: true } : {}) }, response => {
         const chunks = []; response.on('data', c => chunks.push(c)); response.on('end', () => resolve(new Response(Buffer.concat(chunks), { status: response.statusCode, headers: response.headers })));
       }); req.on('error', reject); req.end(body);
