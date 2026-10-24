@@ -16,7 +16,7 @@ const stage=(name,data={})=>{report.stages.push({name,result:'PASS',...data});co
 function runContainer(name,args){owned.push(name);return docker(['run','-d','--name',name,...args]);}
 function envFile(name,data){const f=path.join(work,name+'.env');fs.writeFileSync(f,Object.entries(data).map(([k,v])=>{assert.ok(!/[\r\n]/.test(String(v)));return k+'='+v;}).join('\n')+'\n',{mode:0o600});return f;}
 function fixture(mode){return JSON.parse(docker(['run','--rm','--network',network,'--mount','type=bind,src='+work+',dst=/fixture,readonly','--entrypoint','node',report.images.api.tag,'/fixture/fixture.cjs',mode],{timeout:120000}));}
-function processCount(){const rows=docker(['top',api,'-eo','args']).split('\n').slice(1);assert.equal(rows.filter(x=>/(?:^|\/)node dist\/index\.js$/.test(x.trim())).length,1);assert.equal(rows.filter(x=>/(?:^|\/)node dist\/marketDataCollector\.js$/.test(x.trim())).length,1);return{api:1,collector:1};}
+function processCount(){return require('./process-count.cjs').count(docker(['top',api,'-eo','pid,args']));}
 async function main(){
   assert.equal(process.platform,'linux');assert.equal(process.versions.node,'22.23.3');assert.equal(process.env.GITHUB_ACTIONS,'true');assert.equal(process.env.RUNNER_ENVIRONMENT,'github-hosted');assert.equal(process.env.ImageOS,'ubuntu24');assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
   assert.ok(!process.env.DOCKER_HOST&&!process.env.DOCKER_CONTEXT);assert.equal(docker(['context','show']),'default');

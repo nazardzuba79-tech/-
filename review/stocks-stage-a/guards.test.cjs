@@ -1,5 +1,12 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const {verify,OVERLAY}=require('./provenance.cjs');
+test('process census keeps Docker-required PID field and rejects duplicate or missing API/collector',()=>{
+ const {count}=require('./process-count.cjs');const ps='PID COMMAND\n1 node /opt/operations/runtime-bootstrap.cjs\n10 /usr/local/bin/node scripts/start-render-single-service.cjs\n20 /usr/local/bin/node dist/marketDataCollector.js\n30 /usr/local/bin/node dist/index.js\n';
+ assert.deepEqual(count(ps),{api:1,collector:1});
+ assert.throws(()=>count(ps+'40 node dist/index.js\n'),/exactly one API/);
+ assert.throws(()=>count(ps.replace('20 /usr/local/bin/node dist/marketDataCollector.js\n','')),/exactly one collector/);
+ assert.throws(()=>count('COMMAND\nnode dist/index.js'),/PID/);
+});
 test('PG readiness requires the actual fixture database over TCP, not init-only socket acceptance',()=>{
  const {ready}=require('./pg-ready.cjs');let args;
  assert.equal(ready(a=>{args=a;return 'accepting connections';},'fixture'),false);
