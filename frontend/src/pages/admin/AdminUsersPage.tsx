@@ -131,7 +131,7 @@ export function AdminUsersPage() {
         const value = widget?.status === 'ready' ? widget.value : legacyStats?.[key];
         if (key !== 'pendingPackages') return <div className="admin-users-kpi" key={key}><span>{label}</span><strong>{value ?? '—'}</strong></div>;
         return <Link className="admin-users-kpi admin-users-kpi-link" key={key} data-copy-signal={copySignal || undefined}
-          to={copySignal ? '/admin/deposits#copies' : '/admin/deposits'}><span>{copySignal && <DepositCopyTabBell count={copies.data && copies.data > 0 ? copies.data : undefined} />}{label}</span><strong>{value ?? '—'}</strong></Link>;
+          to={copySignal ? '/admin/deposits#copies' : '/admin/deposits'}><span className="admin-users-copy-label">{copySignal && <DepositCopyTabBell count={copies.data && copies.data > 0 ? copies.data : undefined} />}{label}</span><strong>{value ?? '—'}</strong></Link>;
       })}
       {summary.error && <div className="admin-kpi-note" role="status"><span>{summary.data ? 'Показатели могли устареть.' : 'Отдельные показатели пока недоступны.'}</span><button type="button" onClick={() => summary.reload()} disabled={summary.loading}>Обновить показатели</button></div>}
     </section>
