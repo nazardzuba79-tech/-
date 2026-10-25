@@ -7,6 +7,9 @@ import { readFavorites, writeFavorites } from './stockModel';
 import './stocks.css';
 import { widgetCatalogue, widgetPreview } from './stockWidgetCatalogue';
 import { shouldMountGlobalStocks } from './stockHostPolicy';
+import { mayMountOnchainEmbedPreview } from './onchainEmbedPreviewData';
+const StocksOnchainEmbedPreview = lazy(() => import('./StocksOnchainEmbedPreview'));
+
 
 // Each view is its own chunk: the overview never downloads the chart library,
 // and only the view on screen is mounted.
@@ -30,6 +33,11 @@ const GlobalStocksCatalogue = hostedStocks || localStocksSimulator
 export function StocksPage() {
   const {t}=useLanguage();
   const { instrumentId } = useParams();
+  // This research-only chart never replaces a hosted Stocks view and cannot enable trading.
+  if (mayMountOnchainEmbedPreview(typeof window === 'undefined' ? undefined : window.location.hostname,
+      import.meta.env.DEV, import.meta.env.VITE_STOCKS_ONCHAIN_EMBED_PREVIEW)) {
+    return <Suspense fallback={<div>{t('stocks.loading')}</div>}><StocksOnchainEmbedPreview /></Suspense>;
+  }
   if (GlobalStocks && GlobalStocksCatalogue && shouldMountGlobalStocks(typeof window === 'undefined' ? undefined : window.location.hostname, localStocksSimulator, hostedStocks)) return <Suspense fallback={<div>{t('stocks.loading')}</div>}>{instrumentId ? <GlobalStocks /> : <GlobalStocksCatalogue />}</Suspense>;
   return widgetPreview ? <StocksLayout catalogue={widgetCatalogue} /> : <LegacyStocksPage />;
 }
