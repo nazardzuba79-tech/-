@@ -46,7 +46,7 @@ jobs:
           }
           const assets=[],seen=new Set();
           let stopReason='';
-          for(let page=0;page<12;page++){
+          for(let page=0;page<30;page++){
             const data=unwrap(await get(issuer+'?page='+page+'&limit=100'));
             if(!data.items.length){stopReason='end-empty';break;}
             let newCount=0;
@@ -56,7 +56,7 @@ jobs:
               seen.add(a.symbol);assets.push(a);newCount++;
             }
             console.log('ISSUER_PAGE',page,'items',data.items.length,'new',newCount,'hasNext',data.hasNext);
-            if(assets.length>250)throw Error('ISSUER_TOO_MANY_ASSETS');
+            if(assets.length>2500)throw Error('ISSUER_TOO_MANY_ASSETS');
             if(!data.hasNext){stopReason='end-pageFlag';break;}
             if(newCount===0)throw Error('ISSUER_PAGINATION_REPEAT');
           }
