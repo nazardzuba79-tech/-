@@ -26,7 +26,14 @@ This is a **localhost-only, trading-disabled Stocks research catalogue** based o
 - `frontend/src/pages/stocks/StocksPage.tsx`: route conditional requires `127.0.0.1`, Vite DEV and `VITE_STOCKS_ONCHAIN_EMBED_PREVIEW=1`. Public hosting cannot activate through the flag.
 - `frontend/src/pages/stocks/stocksOnchainEmbedPreview.css`: responsive layout.
 
-Windows PowerShell local run from `frontend`: `$env:VITE_STOCKS_ONCHAIN_EMBED_PREVIEW='1'; npm run dev -- --host 127.0.0.1`, then browse `http://127.0.0.1:5173/stocks` (port may vary).
+Windows PowerShell local run from `frontend` (ordinary local VOLTEX authorization is still required):
+```powershell
+$env:VITE_STOCKS_ENABLED='true'
+$env:VITE_STOCKS_WIDGET_PREVIEW='true'
+$env:VITE_STOCKS_ONCHAIN_EMBED_PREVIEW='1'
+npm run dev -- --host 127.0.0.1
+```
+Then browse `http://127.0.0.1:5173/stocks` (port may vary). The normal Stocks login guard is unchanged.
 
 ## Release gates
 
@@ -36,3 +43,12 @@ Windows PowerShell local run from `frontend`: `$env:VITE_STOCKS_ONCHAIN_EMBED_PR
 4. Preserve STOCKS buy/sell as disabled until separately authorized.
 
 **No production merge or deploy**. The original Draft PR #613 is unchanged.
+
+## Follow-up local integration and browser evidence — 25 October 2026
+
+- The updated local-only UI combines 58 DEX candidate tickers, 7 direct on-chain-verified pool addresses and 19 GeckoTerminal API-indexed pools (22 distinct tickers have one or both kinds of additional source evidence). All per-pool claims remain separate.
+- 36 of 58 candidates met the historical >=10 trades/24h and >=$2,000 liquidity screen; those numbers are third-party snapshots, not a current trading suitability promise.
+- Stocks pool selector, source attribution, filter and explicit no-trading controls are available; production Stocks remains OFF.
+- Chromium desktop QA of all 58 at https://github.com/nazardzuba79-tech/-/actions/runs/40176512351: 58 iframe HTTP 200, 58 iframe load events and 58 iframe canvases. Actual visible OHLCV candlesticks were reviewed from saved screenshots for SPYx and CRCLx only.
+- The instant mobile screenshot after reload was blank during GeckoTerminal chart initialization. A separate browser retest was added to wait for chart loading before capturing mobile evidence.
+- Commercial embedding rights for tokenized securities, independent verification for the other 51 pools and full historical price accuracy are **not** established.

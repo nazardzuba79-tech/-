@@ -56,7 +56,11 @@ try {
   await page.locator('.vxson-filter-mode').selectOption('checked');
   if (await elements.count() !== 22) throw new Error('BAD_EXTRA_VERIFIED_COUNT');
   await page.locator('.vxson-filter-mode').selectOption('all');
-  for (const [i, ticker] of report.tickers.entries()) {
+  const reviewTickers = process.env.STOCKS_QA_MOBILE_ONLY === '1'
+    ? ['SPYx', 'CRCLx'] : report.tickers;
+  for (const ticker of reviewTickers) {
+    const i = report.tickers.indexOf(ticker);
+    if (i < 0) throw new Error('MISSING_TEST_TICKER_' + ticker);
     const active = page.locator('.vxson-market').nth(i);
     await active.click();
     await page.locator('.vxson-market-head h2').getByText(ticker, { exact: false }).waitFor({ timeout: 6000 });
@@ -94,8 +98,15 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.getByRole('heading', { name: 'Токенизированные акции' }).waitFor();
+  await page.waitForFunction(() => document.querySelector('.vxson-frame-status')?.textContent?.includes('Событие загрузки iframe получено'), null, { timeout: 20000 });
+  // The chart may paint several seconds after iframe's load event.
+  await page.waitForTimeout(8500);
+  const mobileFrame = page.frames().find(f => f.url().startsWith('https://www.geckoterminal.com/solana/pools/'));
+  report.mobileFrameFound = Boolean(mobileFrame);
+  report.mobileCanvasCount = mobileFrame ? await mobileFrame.locator('canvas').count().catch(() => 0) : 0;
   report.mobilePass = (await page.locator('.vxson-market').count()) === 58 &&
-    (await page.locator('.vxson-frame iframe').count()) === 1;
+    (await page.locator('.vxson-frame iframe').count()) === 1 &&
+    report.mobileFrameFound && report.mobileCanvasCount > 0;
   await page.screenshot({ path: artifactPath + '/SPYx-mobile-after-reload.png', fullPage: true });
   if (!report.mobilePass) throw new Error('MOBILE_RELOAD_SMOKE_FAILED');
   report.pageErrors = warnings;
