@@ -1,0 +1,68 @@
+import { useMemo, useState } from 'react';
+import { ExternalLink, Search } from 'lucide-react';
+import { Nav } from '../../components/Nav';
+import { ONCHAIN_EMBED_MARKETS, onchainEmbedUrl, onchainPoolUrl } from './onchainEmbedPreviewData';
+import './stocksOnchainEmbedPreview.css';
+
+/** Private localhost only. Embeds are provider-owned, not a VOLTEX market-data feed. No trading. */
+export default function StocksOnchainEmbedPreview() {
+  const [filter, setFilter] = useState('');
+  const [selectedTicker, setSelectedTicker] = useState('SPYx');
+  const instrument = ONCHAIN_EMBED_MARKETS.find(m => m.ticker === selectedTicker) ?? ONCHAIN_EMBED_MARKETS[0];
+  const shown = useMemo(() => ONCHAIN_EMBED_MARKETS.filter(m =>
+    (m.ticker + ' ' + m.name).toLowerCase().includes(filter.trim().toLowerCase())), [filter]);
+  return <div className="vxson-root">
+    <Nav active="/stocks" hideTicker readProfile={false} />
+    <main className="vxson-layout">
+      <header className="vxson-head">
+        <div><span className="vxson-eyebrow">VOLTEX / STOCKS / ON-CHAIN</span>
+          <h1>Токенізовані акції</h1>
+          <p>Реальні DEX-графіки токенів у Solana · режим локального перегляду</p>
+        </div>
+        <span className="vxson-mode">LOCAL PREVIEW · TRADING OFF</span>
+      </header>
+      <div className="vxson-grid">
+        <aside className="vxson-sidebar" aria-label="Активи">
+          <div className="vxson-sidebar-top"><h2>Активи <small>{ONCHAIN_EMBED_MARKETS.length}</small></h2>
+            <label className="vxson-search"><Search size={16}/><input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Пошук xStocks" aria-label="Знайти актив"/></label>
+          </div>
+          <div className="vxson-markets">{shown.map(m =>
+            <button type="button" key={m.ticker} className={'vxson-market'+(m.ticker===instrument.ticker?' is-active':'')}
+              aria-pressed={m.ticker===instrument.ticker} onClick={()=>setSelectedTicker(m.ticker)}>
+              <span className="vxson-market-icon">{m.ticker.slice(0,1)}</span>
+              <span><strong>{m.ticker}<small>/USDC</small></strong><span className="vxson-market-name">{m.name}</span></span>
+            </button>)}
+            {!shown.length && <p className="vxson-empty">Немає такого активу</p>}
+          </div>
+          <p className="vxson-source-note">Solana · Raydium CLMM. Тут ціни токенів з окремих DEX-пулів, а не котирування Nasdaq чи NYSE.</p>
+        </aside>
+        <section className="vxson-center" aria-label={instrument.ticker+' — DEX-графік'}>
+          <div className="vxson-market-head">
+            <span className="vxson-selected-icon">{instrument.ticker.slice(0,1)}</span>
+            <div><h2>{instrument.ticker}<span>/USDC</span></h2><p>{instrument.name} · Solana</p></div>
+            <a className="vxson-external" href={onchainPoolUrl(instrument)} target="_blank" rel="noopener noreferrer">
+              Відкрити джерело <ExternalLink size={14} />
+            </a>
+          </div>
+          <div className="vxson-frame"><iframe key={instrument.pool} title={instrument.ticker+'/USDC — GeckoTerminal on-chain chart'}
+            src={onchainEmbedUrl(instrument)} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
+            allow="clipboard-write; fullscreen" allowFullScreen /></div>
+          <div className="vxson-attribution"><span>Живий графік безпосередньо надає GeckoTerminal.</span>
+            <a href="https://about.geckoterminal.com/embed-charts" target="_blank" rel="noopener noreferrer">
+              GeckoTerminal Embed <ExternalLink size={12}/></a></div>
+          <div className="vxson-risk">Локальна перевірка. Комерційні права показу токенізованих цінних паперів не підтверджені.
+            Дані може затримувати або блокувати провайдер; це не ціна акції на фондовій біржі. Ордери й баланси відключені.</div>
+        </section>
+        <aside className="vxson-trade-off">
+          <div className="vxson-trade-title">SPOT · xStocks</div>
+          <div className="vxson-trade-symbol">{instrument.ticker} / USDC</div>
+          <div className="vxson-price-label">Ринкова ціна</div><div className="vxson-price-placeholder">—</div>
+          <p className="vxson-price-explain">Ціна не дублюється з iframe. Неперевірених котирувань немає.</p>
+          <div className="vxson-tabs"><span>Купити</span><span>Продати</span></div>
+          <button className="vxson-disabled-buy" type="button" disabled>Торгівля вимкнена</button>
+          <p className="vxson-trade-info">Цей перегляд ніколи не надсилає заявки, не змінює баланси й не відкриває позиції.</p>
+        </aside>
+      </div>
+    </main>
+  </div>;
+}
