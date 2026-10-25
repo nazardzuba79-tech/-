@@ -13,7 +13,7 @@ jobs:
       - name: Read issuer catalogue and concise verified Solana deployments
         run: |
           node --input-type=module <<'NODE'
-          const r=await fetch('https://api.xstocks.fi/api/v2/public/assets',{signal:AbortSignal.timeout(12000),headers:{accept:'application/json'}});
+          const r=await fetch('https://api.xstocks.fi/api/v2/public/assets?page=1',{signal:AbortSignal.timeout(12000),headers:{accept:'application/json'}});
           console.log('ISSUER_HTTP',r.status);
           if(!r.ok)process.exit(2);
           const d=await r.json();console.log('ISSUER_ROOT_KEYS',JSON.stringify(Object.keys(d)));
