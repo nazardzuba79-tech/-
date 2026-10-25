@@ -65,6 +65,36 @@ export default function StocksOnchainEmbedPreview() {
               Відкрити джерело <ExternalLink size={14} />
             </a>
           </div>
+          {instrument.poolVerification === 'aggregator' && <div className="vxson-candidate-metrics">
+            <span>DEX: {instrument.dex}</span>
+            <span>{'tx24hReported' in instrument ? instrument.tx24hReported.toLocaleString('en-US') : '—'} транзакцій / 24 год (агрегатор)</span>
+            <span>{'liquidityUSD' in instrument ? '
+            ? 'Пул і SwapEvent підтверджені on-chain. Графік надає зовнішній сервіс.'
+            : 'Кандидат: емітент підтвердив токен, але пул знайдено лише DEX-агрегатором. On-chain перевірка пулу ще потрібна.'}</p>
+          <div className="vxson-frame"><iframe key={instrument.pool} title={instrument.ticker+'/USDC — GeckoTerminal on-chain chart'}
+            src={iframeUrl(instrument)} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
+            allow="clipboard-write; fullscreen" allowFullScreen /></div>
+          <div className="vxson-attribution"><span>Живий графік безпосередньо надає GeckoTerminal.</span>
+            <a href="https://about.geckoterminal.com/embed-charts" target="_blank" rel="noopener noreferrer">
+              GeckoTerminal Embed <ExternalLink size={12}/></a></div>
+          <div className="vxson-risk">Локальна перевірка. Комерційні права показу токенізованих цінних паперів не підтверджені.
+            Дані може затримувати або блокувати провайдер; це не ціна акції на фондовій біржі. Ордери й баланси відключені.</div>
+        </section>
+        <aside className="vxson-trade-off">
+          <div className="vxson-trade-title">SPOT · xStocks</div>
+          <div className="vxson-trade-symbol">{instrument.ticker} / USDC</div>
+          <div className="vxson-price-label">Ринкова ціна</div><div className="vxson-price-placeholder">—</div>
+          <p className="vxson-price-explain">Ціна не дублюється з iframe. Неперевірених котирувань немає.</p>
+          <div className="vxson-tabs"><span>Купити</span><span>Продати</span></div>
+          <button className="vxson-disabled-buy" type="button" disabled>Торгівля вимкнена</button>
+          <p className="vxson-trade-info">Цей перегляд ніколи не надсилає заявки, не змінює баланси й не відкриває позиції.</p>
+        </aside>
+      </div>
+    </main>
+  </div>;
+}
+ + instrument.liquidityUSD.toLocaleString('en-US') : '—'} ліквідності (знімок)</span>
+          </div>}
           <p className="vxson-source-note" role="status">{instrument.poolVerification === 'onchain'
             ? 'Пул і SwapEvent підтверджені on-chain. Графік надає зовнішній сервіс.'
             : 'Кандидат: емітент підтвердив токен, але пул знайдено лише DEX-агрегатором. On-chain перевірка пулу ще потрібна.'}</p>
