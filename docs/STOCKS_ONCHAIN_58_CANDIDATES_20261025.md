@@ -83,3 +83,12 @@ Creating issues **does not start Codex or Claude**.
 - Issuer product legal overview: https://docs.xstocks.fi/docs/product-legal-overview ; xStocks are tracker certificates / structured financial instruments rather than ordinary equity ownership.
 
 **Still NO-GO for public GeckoTerminal Stocks** absent affirmative applicable rights. Technical localhost proof is not legal approval, liquidity guarantee, audited OHLCV or permission to enable trading. Do not merge/deploy.
+
+## Shareable local chart state and manual recovery — 25 October 2026
+
+- React Stocks local preview now reads `asset` and an optional exact allowlisted `pool` from `/stocks?asset=NVDAx&pool=...`. Selecting another market or pool updates the URL; reload and browser Back/Forward preserve the selection. Unknown symbols or pools fall back to existing allowlisted data and never interpolate arbitrary input into iframe `src`.
+- An explicit `Обновить график` action remounts the provider iframe without changing the pool. After 20 seconds without an iframe load signal, the UI shows a neutral warning, not a false claim that candles are absent. The normal no-order restrictions remain unchanged.
+- Exact code HEAD: `026a3ec3a345fa9a4bfbda89498b80987737e578`.
+- GitHub Actions focused QA PASS: https://github.com/nazardzuba79-tech/-/actions/runs/40179793034 — full frontend typecheck and Vite build; three selected GeckoTerminal iframe sources HTTP 200 / iframe load signals / Canvas (SPYx, NVDAx, CRCLx); NVDAx alternative-pool switch; URL persistence after reload; invalid pool ignored; retry retains exact source; mobile after reload; no local write requests.
+- Previously run independent **58/58 iframe** smoke is https://github.com/nazardzuba79-tech/-/actions/runs/40178027705 . This new targeted QA intentionally checked 3 rather than repeating all 58 unchanged sources; it does not supersede the earlier 58-candidate count or change proof levels.
+- Public Stocks remains OFF. Neither correct iframe loading nor this local navigation test proves commercial rights, audited OHLCV, actual Solana vault verification for the remaining candidates, or suitability for exchange trading.
