@@ -1,0 +1,30 @@
+name: VOLTEX xStocks issuer catalogue one-shot discovery
+'on':
+  push:
+    branches: [work/stocks-onchain-local-embed-20261025]
+    paths: [.github/workflows/stocks-issuer-discovery.yml]
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Read issuer catalogue and concise verified Solana deployments
+        run: |
+          node --input-type=module <<'NODE'
+          const r=await fetch('https://api.xstocks.fi/api/v2/public/assets',{signal:AbortSignal.timeout(12000),headers:{accept:'application/json'}});
+          console.log('ISSUER_HTTP',r.status);
+          if(!r.ok)process.exit(2);
+          const d=await r.json();console.log('ISSUER_ROOT_KEYS',JSON.stringify(Object.keys(d)));
+          const items=Array.isArray(d)?d:Array.isArray(d.nodes)?d.nodes:Array.isArray(d.assets)?d.assets:Array.isArray(d.data)?d.data:[];
+          const rows=items.filter(x=>typeof x.symbol==='string').map(x=>({
+             ticker:x.symbol,name:x.name||x.symbol,
+             mint:x.deployments?.find(y=>y.network==='Solana')?.address||null,
+             underlying:x.underlyingSymbol||null,
+             halted:x.isTradingHalted===true
+          })).filter(x=>x.mint && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(x.mint));
+          console.log('ISSUER_LIST_META',JSON.stringify({returned:items.length,solana:rows.length,page:d.page||null}));
+          for(const x of rows)console.log('ISSUER_ASSET',JSON.stringify(x));
+          if(rows.length<7)process.exitCode=3;
+          NODE
