@@ -27,9 +27,11 @@ jobs:
           import assert from 'node:assert/strict';
           import {ONCHAIN_EMBED_MARKETS,mayMountOnchainEmbedPreview,onchainEmbedUrl,onchainPoolUrl} from './frontend/src/pages/stocks/onchainEmbedPreviewData.ts';
           import {STOCKS_DISCOVERED_CANDIDATES} from './frontend/src/pages/stocks/onchainDiscoveredCandidates.ts';
-          assert.ok(STOCKS_DISCOVERED_CANDIDATES.length >= 28);
+          assert.equal(STOCKS_DISCOVERED_CANDIDATES.length,58);
           assert.equal(new Set(STOCKS_DISCOVERED_CANDIDATES.map(x=>x.ticker)).size,STOCKS_DISCOVERED_CANDIDATES.length);
           assert.ok(STOCKS_DISCOVERED_CANDIDATES.every(x=>x.verifiedOnChain===false));
+          assert.ok(STOCKS_DISCOVERED_CANDIDATES.every(x=>x.dex&&x.mint&&x.pool));
+          assert.equal(new Set([...ONCHAIN_EMBED_MARKETS.map(x=>x.ticker),...STOCKS_DISCOVERED_CANDIDATES.map(x=>x.ticker)]).size,58);
           assert.equal(ONCHAIN_EMBED_MARKETS.length,7);
           assert.equal(new Set(ONCHAIN_EMBED_MARKETS.map(x=>x.ticker)).size,7);
           assert.equal(new Set(ONCHAIN_EMBED_MARKETS.map(x=>x.pool)).size,7);
