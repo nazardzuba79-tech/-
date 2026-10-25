@@ -1,0 +1,60 @@
+name: VOLTEX xStocks seven issuer metadata read-only proof
+'on':
+  push:
+    branches:
+      - codex/solana-xstocks-seven-pool-proof-20261024
+    paths:
+      - .github/workflows/voltex-xstocks-seven-issuer-proof.yml
+permissions:
+  contents: read
+jobs:
+  seven-issuer-mints:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify seven official Solana mints and all issuer multiplier page statuses
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const pairs=[
+            ['AAPLx','XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp'],
+            ['TSLAx','XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB'],
+            ['NVDAx','Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh'],
+            ['SPYx','XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W'],
+            ['GOOGLx','XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN'],
+            ['MSTRx','XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ'],
+            ['QQQx','Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ']
+          ];
+          const results=[];
+          const get=async(path)=>{
+            const r=await fetch('https://api.xstocks.fi/api/v2/public/assets/'+path,{redirect:'error',headers:{accept:'application/json'},signal:AbortSignal.timeout(10000)});
+            if(!r.ok)throw Error('HTTP_'+r.status);
+            const t=await r.text();if(t.length>100000)throw Error('TOO_LARGE');
+            return JSON.parse(t);
+          };
+          for(const [symbol,mint] of pairs){
+            const row={symbol,expectedMint:mint,source:'official xStocks public v2 API',issuerMintVerified:false,multiplierHistoryComplete:false,chartReady:false};
+            try{
+              const asset=await get(symbol);
+              const dep=asset.deployments?.filter(x=>x.network==='Solana')||[];
+              row.issuerMintVerified=asset.symbol===symbol&&dep.length===1&&dep[0].address===mint;
+              if(!row.issuerMintVerified)throw Error('ISSUER_SOLANA_MINT_MISMATCH');
+              const history=await get(symbol+'/multiplier/history?network=Solana');
+              const current=await get(symbol+'/multiplier?network=Solana');
+              row.multiplierHistoryComplete=history.page?.currentPage===0&&history.page?.hasNextPage===false&&Array.isArray(history.nodes);
+              if(!row.multiplierHistoryComplete)throw Error('ISSUER_MULTIPLIER_PAGINATED_OR_INVALID');
+              row.historyEvents=history.nodes.length;
+              row.currentMultiplier=current.currentMultiplier;
+              const ev=history.nodes.map(x=>({time:Date.parse(x.activationDateTime),prev:x.previousMultiplier,next:x.multiplier})).sort((a,b)=>a.time-b.time);
+              if(ev.some(x=>!Number.isFinite(x.time)||!(x.prev>0)||!(x.next>0)))throw Error('BAD_MULTIPLIER_EVENT');
+              for(let i=1;i<ev.length;i++)if(ev[i].time<=ev[i-1].time||Math.abs(ev[i].prev-ev[i-1].next)>1e-11)throw Error('MULTIPLIER_CHAIN_GAP');
+              if(ev.length&&Math.abs(ev.at(-1).next-current.currentMultiplier)>1e-11)throw Error('CURRENT_MULTIPLIER_MISMATCH');
+              if(!ev.length&&Math.abs(1-current.currentMultiplier)>1e-11)throw Error('EMPTY_HISTORY_NONUNIT_MULTIPLIER');
+              row.validMultiplierChain=true;
+            }catch(e){row.error=String(e.message).slice(0,130);}
+            results.push(row);
+            await new Promise(r=>setTimeout(r,300));
+          }
+          console.log(JSON.stringify({at:new Date().toISOString(),readOnly:true,fullHistoryNotProved:true,allPoolsUnchanged:true,results},null,2));
+          if(results.some(x=>x.error))process.exitCode=2;
+          NODE
