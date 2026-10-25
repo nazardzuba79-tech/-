@@ -76,7 +76,8 @@ export function ConversionModal({ open, onClose, onSubmitted }: { open: boolean;
     try { applied(await api.confirmConversion(id)); }
     catch (err) {
       const code = err instanceof ApiError ? String(err.body.code) : '';
-      if (['QUOTE_EXPIRED', 'QUOTE_CHANGED', 'QUOTE_NOT_FOUND', 'UNSUPPORTED_ASSET', 'INVALID_CONVERSION', ...Object.keys(REFUSAL)].includes(code)) {
+      // PRICE_UNAVAILABLE at confirmation is decided under the account lock after the receipt check: nothing was debited.
+      if (['QUOTE_EXPIRED', 'QUOTE_CHANGED', 'QUOTE_NOT_FOUND', 'UNSUPPORTED_ASSET', 'INVALID_CONVERSION', 'PRICE_UNAVAILABLE', ...Object.keys(REFUSAL)].includes(code)) {
         // A definite refusal from the server: nothing was debited, the pending ID is released.
         clearPending(); setPending(null); setQuote(null);
         setError(t(REFUSAL[code] ?? 'wallet.conversion.refreshQuote'));

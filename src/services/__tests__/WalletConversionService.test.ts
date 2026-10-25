@@ -203,6 +203,18 @@ describe('wallet conversion pricing and admission', () => {
   });
 });
 
+describe('provider failures are definite refusals, never unexpected errors', () => {
+  test('a failing feed is PRICE_UNAVAILABLE at assets and quote; a failing depth read is unknown depth', async () => {
+    const { service, prices, prisma } = fixture();
+    prices.read.mockRejectedValueOnce(new Error('socket hang up'));
+    await expect(service.assets('customer')).rejects.toMatchObject({ code: 'PRICE_UNAVAILABLE' });
+    prices.read.mockRejectedValueOnce(new Error('socket hang up'));
+    await expect(service.quote('customer', 'USD', 'EUR', '1')).rejects.toMatchObject({ code: 'PRICE_UNAVAILABLE' });
+    prices.depth.mockRejectedValueOnce(new Error('socket hang up'));
+    await expect(service.quote('customer', 'USD', 'EUR', '1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LIQUIDITY' });
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+});
 describe('demo-ledger conversion (Issue #592 demo funds)', () => {
   const LIQ = '00000000-0000-4000-8000-00000000c0de';
   const DEMO_ENV = { DEMO_SPOT_ENABLED: 'true', DEMO_LIQUIDITY_ENABLED: 'true', DEMO_LIQUIDITY_ACCOUNT_ID: LIQ, DEMO_LIQUIDITY_PAIRS: 'BTC/USDT' };

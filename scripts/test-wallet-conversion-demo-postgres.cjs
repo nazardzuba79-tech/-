@@ -56,6 +56,7 @@ async function main() {
     const drains = Array.from({ length: 6 }, (_, i) => `qa-drain-${i}`);
     const people = { 'qa-admin': 'ADMIN', [LIQ]: 'USER', [NATIVE]: 'USER', 'qa-zero': 'USER', 'qa-tester': 'USER', 'qa-racer': 'USER', 'qa-double': 'USER',
       'qa-revoked': 'USER', 'qa-blocked': 'USER', 'qa-switch': 'USER', 'qa-dual': 'USER', 'qa-third': 'USER', 'qa-daily': 'USER', 'qa-off': 'USER',
+      'qa-stale': 'USER', 'qa-roll': 'USER', 'qa-other': 'USER',
       ...Object.fromEntries(drains.map(id => [id, 'USER'])) };
     for (const [id, role] of Object.entries(people)) {
       await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`,
@@ -108,7 +109,7 @@ async function main() {
 
     // Liquidity inventory: credited through demo top-up only, as on production.
     await topUp(LIQ, 'BTC', '1'); await topUp(LIQ, 'USDT', '10000'); await topUp(LIQ, 'USD', '10000'); await topUp(LIQ, 'EUR', '10000');
-    for (const who of ['qa-tester', 'qa-double', 'qa-revoked', 'qa-blocked', 'qa-switch', 'qa-dual', NATIVE, 'qa-off']) await topUp(who, 'USDT', '50');
+    for (const who of ['qa-tester', 'qa-double', 'qa-revoked', 'qa-blocked', 'qa-switch', 'qa-dual', NATIVE, 'qa-off', 'qa-stale', 'qa-roll', 'qa-other']) await topUp(who, 'USDT', '50');
     await topUp('qa-racer', 'USDT', '100'); await topUp('qa-daily', 'USDT', '200');
     for (const id of drains) await topUp(id, 'USDT', '100');
     await topUp('qa-admin', 'USDT', '50');
@@ -332,6 +333,67 @@ async function main() {
       await assert.rejects(capped.quote('qa-daily', 'USDT', 'BTC', '1'), { code: 'DAILY_LIMIT_EXCEEDED' });
       await assert.rejects(capped.quote('qa-daily', 'USDT', 'BTC', '101'), { code: 'INSUFFICIENT_BALANCE' });
       assert.equal(await demoOf('qa-daily', 'USDT'), '100');
+    });
+    await check('stale, changed or missing price at confirm, and an abandoned quote: refused, nothing moves, nothing stays reserved', async () => {
+      const before = await rowsOf('qa-stale');
+      let q = await conversion.quote('qa-stale', 'USDT', 'BTC', '10');
+      const saved = now; now += 15_000;
+      await assert.rejects(conversion.confirm('qa-stale', q.quoteId), { code: 'QUOTE_EXPIRED' });
+      now = saved;
+      q = await conversion.quote('qa-stale', 'USDT', 'BTC', '10');
+      feedBook.BTC = ['60000', '60011'];
+      await assert.rejects(conversion.confirm('qa-stale', q.quoteId), { code: 'QUOTE_CHANGED' });
+      feedBook.BTC = ['60000', '60010'];
+      failFeed = true;
+      await assert.rejects(conversion.confirm('qa-stale', q.quoteId), { code: 'PRICE_UNAVAILABLE' });
+      failFeed = false;
+      // An abandoned quote reserved nothing: the full balance is quotable again.
+      await conversion.quote('qa-stale', 'USDT', 'BTC', '50');
+      assert.equal(await rowsOf('qa-stale'), before);
+      assert.equal(await prisma.auditLog.count({ where: { userId: 'qa-stale', action: 'WALLET_DEMO_CONVERTED' } }), 0);
+    });
+    await check('another account can neither confirm nor read a demo quote or its receipt', async () => {
+      const q = await conversion.quote('qa-other', 'USDT', 'BTC', '10');
+      const before = await rowsOf('qa-other');
+      await assert.rejects(conversion.confirm('qa-roll', q.quoteId), { code: 'QUOTE_NOT_FOUND' });
+      assert.equal(await rowsOf('qa-other'), before);
+      const receipt = await conversion.confirm('qa-other', q.quoteId);
+      assert.equal(await conversion.status('qa-roll', q.quoteId), null);
+      assert.equal((await api('GET', `/wallet/conversion/receipt/${q.quoteId}`, 'qa-roll')).body, null);
+      assert.deepEqual(await conversion.status('qa-other', q.quoteId), receipt);
+    });
+    await check('rollback: a failed receipt write undoes all four DemoBalance legs; a short liquidity leg undoes the user debit', async () => {
+      const q = await conversion.quote('qa-roll', 'USDT', 'BTC', '10');
+      const user = await rowsOf('qa-roll'), liq = await rowsOf(LIQ);
+      // A conflicting audit row with the receipt's id makes the receipt insert fail after all four balance writes.
+      await prisma.auditLog.create({ data: { id: `conversion:${q.quoteId}`, userId: 'qa-roll', action: 'FIXTURE_CONFLICT', metadata: {} } });
+      await assert.rejects(conversion.confirm('qa-roll', q.quoteId), error => error?.code === 'P2002');
+      assert.equal(await rowsOf('qa-roll'), user); assert.equal(await rowsOf(LIQ), liq);
+      await prisma.auditLog.delete({ where: { id: `conversion:${q.quoteId}` } });
+      // Liquidity drained between quote and confirm: the user leg (written first) is rolled back with it.
+      const eth = await conversion.quote('qa-roll', 'USDT', 'ETH', '10');
+      const inventory = await demoOf(LIQ, 'ETH');
+      await prisma.demoBalance.update({ where: { userId_asset: { userId: LIQ, asset: 'ETH' } }, data: { available: '0' } });
+      await assert.rejects(conversion.confirm('qa-roll', eth.quoteId), { code: 'INSUFFICIENT_LIQUIDITY' });
+      assert.equal(await rowsOf('qa-roll'), user);
+      await prisma.demoBalance.update({ where: { userId_asset: { userId: LIQ, asset: 'ETH' } }, data: { available: inventory } });
+      await conserved();
+      // The original quote still confirms once the conflict is gone: exactly one receipt.
+      await conversion.confirm('qa-roll', q.quoteId);
+      assert.equal(await demoOf('qa-roll', 'USDT'), '40');
+      await conserved();
+    });
+    await check('rounding to zero and oversized requests are refused before any write', async () => {
+      const before = await rowsOf('qa-roll');
+      const quotes = () => prisma.auditLog.count({ where: { userId: 'qa-roll', action: 'WALLET_CONVERSION_QUOTED' } });
+      const quoted = await quotes();
+      await assert.rejects(conversion.quote('qa-roll', 'USDT', 'BTC', '0.000001'), { code: 'INVALID_CONVERSION' });
+      await assert.rejects(conversion.quote('qa-roll', 'USDT', 'BTC', '0.0000001'), { code: 'INVALID_CONVERSION' });
+      await topUp('qa-roll', 'USDT', '2000');
+      await assert.rejects(conversion.quote('qa-roll', 'USDT', 'BTC', '1004'), { code: 'LIMIT_EXCEEDED' }); // 1004 × 0.997 > 1000 USD
+      await assert.rejects(conversion.quote('qa-roll', 'USDT', 'BTC', '1000000000000000000'), { code: 'INVALID_CONVERSION' });
+      assert.equal(await quotes(), quoted, 'no quote row for a refused request');
+      assert.equal(await demoOf('qa-roll', 'USDT'), new BigNumber(JSON.parse(before).demo.find(r => r[0] === 'USDT')[1]).plus(2000).toFixed());
     });
     await check('after a restart (new DB client and service, feed down) history and receipts are intact; a replay debits nothing', async () => {
       restarted = new PrismaClient({ datasources: { db: { url } } });

@@ -164,7 +164,7 @@ async function main() {
     await check('expiry, changed price, outage, other owner, malformed payload do not mutate', async () => {
       const q = await conversion.quote(user, 'USD', 'EUR', '1'), before = await snapshot();
       eurPrice = '1.3'; await assert.rejects(conversion.confirm(user, q.quoteId), { code: 'QUOTE_CHANGED' }); eurPrice = '1.25';
-      failFeed = true; await assert.rejects(conversion.confirm(user, q.quoteId)); failFeed = false;
+      failFeed = true; await assert.rejects(conversion.confirm(user, q.quoteId), { code: 'PRICE_UNAVAILABLE' }); failFeed = false;
       await assert.rejects(conversion.confirm('qa-wallet-other', q.quoteId), { code: 'QUOTE_NOT_FOUND' });
       now += 15001; await assert.rejects(conversion.confirm(user, q.quoteId), { code: 'QUOTE_EXPIRED' }); now = Date.now();
       for (const body of [{ fromAsset: 'USD', toAsset: 'EUR', amount: '1', toAmount: '999' }, { quoteId: q.quoteId, fromAmount: '0' }]) assert.equal((await api(body.fromAsset ? '/wallet/conversion/quote' : '/wallet/conversion/confirm', body)).status, 400);

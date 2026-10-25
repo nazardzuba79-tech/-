@@ -164,7 +164,11 @@ conversion is the same service, quote, limits and receipt flow, settled on the d
   NRX, AITH, every managed listing) are never admitted on either ledger.
 
 Disposable PostgreSQL acceptance: `scripts/test-wallet-conversion-demo-postgres.cjs` (CI job *Wallet
-conversion safety*).
+conversion safety*). Independent safety review with the invariant matrix, findings and owner decisions:
+`docs/WALLET_CONVERSION_SAFETY_REVIEW.md` (Issue #617).
+
+A price-provider failure is a definite `PRICE_UNAVAILABLE` refusal (503) at assets, quote and confirm; at
+confirm it is decided after the receipt check and before any write, so the form releases the pending state.
 
 ## Risks and open decisions (not code defects; production NO-GO until decided)
 

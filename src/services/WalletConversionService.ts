@@ -185,7 +185,8 @@ export class WalletConversionService {
     if (quote.ledger === 'spot' && !this.limits.reserves.has(quote.toAsset)) throw new ConversionError('RESERVE_UNVERIFIED');
     for (const [asset, amount, side] of [[quote.fromAsset, quote.fromAmount, 'bid'], [quote.toAsset, quote.toAmount, 'ask']] as const) {
       if (asset === 'USD') continue;
-      const depth = await this.prices.depth(asset, side);
+      // A provider failure is unknown depth, never an unexpected error after the receipt check.
+      const depth = await this.prices.depth(asset, side).catch(() => null);
       if (depth === null || new Decimal(depth).lt(amount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
     }
   }
@@ -225,6 +226,11 @@ export class WalletConversionService {
     if ((await this.dailyUsed(db, userId)).plus(this.usd(quote)).gt(this.limits.dailyUsd)) throw new ConversionError('DAILY_LIMIT_EXCEEDED');
     if (quote.ledger === 'spot' && (await this.exposure(db, quote.toAsset)).plus(quote.toAmount).gt(this.limits.reserves.get(quote.toAsset)!)) throw new ConversionError('RESERVE_EXHAUSTED');
   }
+  /** The provider's feed. Any provider failure is a definite PRICE_UNAVAILABLE refusal: nothing has been written. */
+  private async feed() {
+    try { return await this.prices.read(); }
+    catch (error) { throw error instanceof ConversionError ? error : new ConversionError('PRICE_UNAVAILABLE'); }
+  }
   private fresh(feed: { fetchedAt: number }) {
     if (!Number.isFinite(feed.fetchedAt) || feed.fetchedAt > this.now() || this.now() - feed.fetchedAt > MAX_AGE) throw new ConversionError('PRICE_UNAVAILABLE');
   }
@@ -242,7 +248,7 @@ export class WalletConversionService {
     return ledger === 'demo' ? this.prisma.demoBalance.findMany(where) : this.prisma.balance.findMany(where);
   }
   async assets(userId: string) {
-    const feed = await this.prices.read(); this.fresh(feed);
+    const feed = await this.feed(); this.fresh(feed);
     const balances = await this.available(await this.ledger(this.prisma, userId), userId);
     return [...feed.bid.keys()].filter(asset => this.supported(asset) && validPrice(feed.bid.get(asset)) && validPrice(feed.ask.get(asset))).sort().map(asset => ({ asset, kind: FIAT.has(asset) ? 'fiat' : 'crypto',
       scale: this.admitted.get(asset)!, available: balances.find(b => b.asset === asset)?.available.toString() ?? '0' }));
@@ -253,7 +259,7 @@ export class WalletConversionService {
     // More decimals than the source keeps (e.g. 0.001 USD, 9 BTC decimals) is not an amount of that asset.
     if (new Decimal(amount).decimalPlaces()! > this.admitted.get(fromAsset)!) throw new ConversionError('INVALID_CONVERSION');
     await this.notBlocked(this.prisma, userId);
-    const feed = await this.prices.read(); this.fresh(feed);
+    const feed = await this.feed(); this.fresh(feed);
     const fromPriceUsd = feed.bid.get(fromAsset), toPriceUsd = feed.ask.get(toAsset);
     if (!fromPriceUsd || !toPriceUsd) throw new ConversionError('UNSUPPORTED_ASSET');
     if (!validPrice(fromPriceUsd) || !validPrice(toPriceUsd)) throw new ConversionError('PRICE_UNAVAILABLE');
@@ -298,7 +304,7 @@ export class WalletConversionService {
     // receipt lock: a concurrent first attempt may still be committing.
     let feed: ConversionFeed | undefined;
     let feedError: unknown;
-    try { feed = await this.prices.read(); } catch (error) { feedError = error; }
+    try { feed = await this.feed(); } catch (error) { feedError = error; }
     // Market depth is read outside the transaction too; a refusal is decided only after the receipt check.
     let admitError: unknown = null;
     try { await this.admit(quote); } catch (error) { admitError = error; }
@@ -312,7 +318,7 @@ export class WalletConversionService {
       await this.notBlocked(tx, userId);
       // An account funded with Balance, or admitted to demo, after its quote settles nothing on the other ledger.
       if (await this.ledger(tx, userId) !== quote.ledger) throw new ConversionError('QUOTE_CHANGED');
-      if (!feed) throw feedError || new ConversionError('PRICE_UNAVAILABLE');
+      if (!feed) throw feedError;
       this.fresh(feed);
       if (feed.bid.get(quote.fromAsset) !== quote.fromPriceUsd || feed.ask.get(quote.toAsset) !== quote.toPriceUsd) throw new ConversionError('QUOTE_CHANGED');
       if (admitError) throw admitError;
