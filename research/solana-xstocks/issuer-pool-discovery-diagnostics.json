@@ -1,0 +1,464 @@
+{
+  "provenance": {
+    "generatedAtUtc": "2026-10-25T07:21:42.764Z",
+    "scope": "local-dev-only noncommercial technical evaluation; NOT public Stocks activation",
+    "filters": {
+      "minLiquidityUsd": 3000,
+      "minReportedVolume24hUsd": 100,
+      "minReportedTrades24h": 10
+    },
+    "registries": [
+      "xStocks issuer v2 public API",
+      "DEX Screener token-pairs",
+      "GeckoTerminal pool identity API"
+    ],
+    "counts": {
+      "issuerAssets": 1474,
+      "issuerSolanaMints": 1474,
+      "dexCandidates": 31,
+      "geckoConfirmed": 19
+    },
+    "rightsToRedistribute": false,
+    "iframeRuntimeChecked": false,
+    "productionReady": false,
+    "warning": "Reported 24-hour trade data are third-party discovery statistics, not independently audited; market activity changes."
+  },
+  "excluded": [
+    {
+      "symbol": "BIDUx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "BABAx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "TSLLx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SHOPx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "JDx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "USOx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PDDx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SQQQx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "NVDLx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "AMCx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SPOTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SNAPx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "LCIDx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "LYFTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "DOCUx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "Ux",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SOXSx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "BPx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SHELx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "RIVNx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PINSx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ZSx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ROKUx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "OKTAx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "DASHx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "TWLOx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ABNBx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "DDOGx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ZMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SOFIx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "OXYx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "AXONx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "INTUx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "GMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SNOWx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "NOWx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "LMTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SBUXx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "COPx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "DEx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "LOWx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "DISx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "BAx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "AMGNx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "VZx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "QCOMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "RTXx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "MSx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "Cx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "WFCx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "CATx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "VOOx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SOXLx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "NETx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "VUGx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SLVx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "IEMGx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "IWMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "BKNGx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "Tx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "HUTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "MUx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "RBLXx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PANWx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "AMDx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "COSTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PYPLx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "CLSKx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "UBERx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ADBEx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "RIOTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "MARAx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "TQQQx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "VTIx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "GSx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "CRWDx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "IBMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ABTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "BACx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "TMOx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "CRMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "CSCOx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "WMTx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PEPx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "ABBVx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "MRKx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "CVXx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "HDx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "PGx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "MAx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "Vx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "JPMx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "JNJx",
+      "reason": "NO_FINAL_ELIGIBLE_POOL"
+    },
+    {
+      "symbol": "SPCXx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "GOOGLx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "AAPLx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "MSTRx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "MCDx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "AVGOx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "SNDKx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "AMZNx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "KOx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "NFLXx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "INTCx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    },
+    {
+      "symbol": "UNHx",
+      "reason": "GECKO_POOL_NOT_CONFIRMED",
+      "error": "HTTP_429 @ api.geckoterminal.com"
+    }
+  ]
+}
