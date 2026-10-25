@@ -50,6 +50,11 @@ try {
     throw error;
   }
   const elements = page.locator('.vxson-market');
+  // Candidate visibility is not a statement of current liquidity. Only the historically
+  // screened 36 are displayed until the user explicitly opts into all research entries.
+  if (await elements.count() !== 36) throw new Error('DEFAULT_UNSCREENED_ASSETS_VISIBLE');
+  const allFilter = page.getByRole('combobox', { name: 'Уровень проверки активов' });
+  await allFilter.selectOption('all');
   const total = await elements.count();
   if (total !== 58) throw new Error('EXPECTED_58_ASSETS_GOT_' + total);
   report.total = total;
@@ -59,11 +64,17 @@ try {
   if (await page.locator('.vxson-trade-off button:not([disabled])').count() !== 0) {
     throw new Error('STOCKS_TRADE_CONTROL_ENABLED');
   }
+  if (!(await page.locator('.vxson-catalogue-warning').innerText()).includes('25.10.2026')) {
+    throw new Error('MISSING_SNAPSHOT_DATE');
+  }
   await page.locator('.vxson-filter-mode').selectOption('active');
   if (await elements.count() !== 36) throw new Error('BAD_ACTIVE_COUNT');
   await page.locator('.vxson-filter-mode').selectOption('checked');
   if (await elements.count() !== 22) throw new Error('BAD_EXTRA_VERIFIED_COUNT');
   await page.locator('.vxson-filter-mode').selectOption('all');
+  if (!(await page.locator('.vxson-market-evidence').allTextContents()).some(x => x.includes('ниже порога снимка'))) {
+    throw new Error('MISSING_THIN_MARKET_WARNING');
+  }
   const search = page.getByRole('textbox', { name: 'Найти актив' });
   await search.fill('HOOD');
   if (await elements.count() !== 1 || !(await elements.first().innerText()).includes('HOODx')) {

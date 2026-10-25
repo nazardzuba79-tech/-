@@ -60,3 +60,10 @@
 .vxson-chart-retry:hover{background:#253447}
 .vxson-chart-retry:focus-visible{outline:2px solid #e6be68;outline-offset:2px}
 @media(max-width:680px){.vxson-frame-actions{width:100%;justify-content:space-between;gap:9px}}
+
+/* Keep dated evidence visible even on small screens; do not imply live market quality. */
+.vxson-catalogue-warning{margin:0;padding:10px 12px;border-bottom:1px solid #252d39;background:#171d26;color:#b9ab89;font-size:11px;line-height:1.5}
+@media(max-width:680px){.vxson-catalogue-warning{font-size:10px;padding:9px 11px}
+ .vxson-candidate-metrics{display:flex;gap:6px;padding:8px 10px}
+ .vxson-candidate-metrics span{font-size:10px;padding:5px 7px}
+}
