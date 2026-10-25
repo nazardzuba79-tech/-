@@ -32,14 +32,14 @@ jobs:
           let apiCount=0, retryCount=0;
           async function rpc(method,params){
             ensure(['getAccountInfo','getSignaturesForAddress','getTransaction','getBlock'].includes(method),'UNSAFE_METHOD');
-            for(let retry=0;retry<2;retry++){
+            for(let retry=0;retry<3;retry++){
               ensure(apiCount<85,'RPC_REQUEST_BUDGET');
-              apiCount++;await sleep(retry?2500:600);
+              apiCount++;await sleep(retry?12000:2800);
               const r=await fetch('https://api.mainnet.solana.com',{
                 method:'POST',redirect:'error',headers:{'content-type':'application/json'},
                 body:JSON.stringify({jsonrpc:'2.0',id:apiCount,method,params}),signal:AbortSignal.timeout(10000)
               });
-              if(r.status===429&&retry===0){retryCount++;continue;}
+              if(r.status===429&&retry<2){retryCount++;continue;}
               ensure(r.ok,'HTTP_'+r.status);
               const body=await r.text();ensure(body.length<1600000,'RESPONSE_TOO_LARGE');
               const j=JSON.parse(body);ensure(!j.error,'RPC_'+(j.error?.code||'ERROR'));return j.result;
