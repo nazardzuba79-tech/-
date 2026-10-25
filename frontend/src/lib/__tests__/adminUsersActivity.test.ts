@@ -230,14 +230,26 @@ test('phones choose the same order from one select: oldest first stays in the UR
 });
 test('the deposits card rings when an address copy waits for review and opens the copy journal', async () => {
   f.fetcher.mockImplementation(async (url: string) => String(url).endsWith('/admin/work-summary') ? json(workSummary())
-    : String(url).includes('/admin/deposit-address-copies') ? json({ asOf: '2026-10-03T09:00:00Z', items: [{ id: 'copy-1' }], nextCursor: null }) : json({ error: 'unexpected' }, 404));
+    : String(url).includes('/admin/deposit-address-copies') ? json({ pendingCount: 1 }) : json({ error: 'unexpected' }, 404));
   await f.mount();
   const card = attention().querySelector('a.admin-users-kpi') as HTMLAnchorElement;
-  expect(card.querySelector('span')?.textContent).toBe('Пополнения');
+  expect(card.querySelector('span')?.textContent).toBe('1Пополнения');
+  expect(card.querySelector('[data-copy-tab-count]')?.textContent).toBe('1');
+  expect(card.querySelector('strong')?.textContent).toBe('2'); // Real packages remain a separate number.
   expect(card.querySelector('[data-copy-tab-bell]')).not.toBeNull();
   expect(card.getAttribute('href')).toBe('/admin/deposits#copies');
   expect(f.calls('/admin/deposit-address-copies')).toHaveLength(1);
+  expect(f.calls('/admin/deposit-address-copies')[0][0]).toBe('/api/v1/admin/deposit-address-copies?countOnly=true');
   expect(f.calls('/admin/deposit-address-copies')[0][1]?.method ?? 'GET').toBe('GET');
+});
+
+test.each([37, 123])('pending copy badge uses the global count %s, not the visible Users page', async count => {
+  f.fetcher.mockImplementation(async (url: string) => String(url).endsWith('/admin/work-summary') ? json(workSummary())
+    : String(url).includes('/admin/deposit-address-copies') ? json({ pendingCount: count }) : json({ error: 'unexpected' }, 404));
+  await f.mount('AdminUsersPage', '/admin/users?page=2&search=someone');
+  const badge = attention().querySelector('[data-copy-tab-count]');
+  expect(badge?.textContent).toBe(count > 99 ? '99+' : String(count));
+  expect(badge?.getAttribute('aria-label')).toBe(`Необработанных копирований адреса: ${count}`);
 });
 test('no bell without a waiting copy, and a failed copy check never invents one', async () => {
   await f.mount();
