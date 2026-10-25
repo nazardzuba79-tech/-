@@ -139,6 +139,16 @@ describe('POST /deposit-address-copies', () => {
     expect(rejected).toHaveBeenCalledTimes(1);
   });
 
+  it('a failed email lookup preserves the saved event and the existing coin/network alert', async () => {
+    const db = fakeDb();
+    db.user.findUnique.mockRejectedValueOnce(new Error('synthetic lookup failure'));
+    const result = await request(app(db)).post('/api/v1/deposit-address-copies').set('Authorization', auth(U1)).send(event());
+    expect(result.status).toBe(201);
+    expect(db.inserts).toBe(1);
+    expect(notifyCopy).toHaveBeenCalledTimes(1);
+    expect(notifyCopy.mock.calls[0][0]).toMatchObject({ asset: 'USDT', network: 'tron', email: undefined });
+  });
+
   it('keeps a plausible device time and drops an implausible one', async () => {
     const db = fakeDb();
     const a = app(db);

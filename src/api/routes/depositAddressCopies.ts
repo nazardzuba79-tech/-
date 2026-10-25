@@ -155,7 +155,7 @@ export function depositAddressCopiesRouter(prisma: PrismaClient, notifyCopy: (co
       const label = rail.standard && rail.standard !== 'Native' ? `${rail.networkName} (${rail.standard})` : rail.networkName;
       void Promise.resolve().then(async () => {
         // Identity comes from the authenticated account, never a browser-supplied email.
-        const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }).catch(() => null);
         await notifyCopy({
           id: row.id, asset: event.asset, network: event.network, networkLabel: label,
           receivedAt: row.receivedAt, email: user?.email,
