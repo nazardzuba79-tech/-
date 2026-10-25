@@ -1,5 +1,13 @@
 name: Admin Listings (managed simulated markets)
 on:
+  # Isolated History20 branch acceptance. Only tests; never deploy production.
+  push:
+    branches: ['claude/voltex-mobile-audit-7rpjni']
+    paths:
+      - 'frontend/src/pages/admin/AdminListingsPage.tsx'
+      - 'frontend/src/pages/admin/listingHistoricalPublicationGate.ts'
+      - 'frontend/src/lib/__tests__/history20PublicationGate.test.ts'
+      - '.github/workflows/admin-listings.yml'
   pull_request:
     paths:
       - 'src/services/listings/**'
@@ -104,6 +112,8 @@ jobs:
           frontend/src/lib/__tests__/privateTestMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
+      - name: History20 private SIMUSDT confirmation - actual openPublish regression
+        run: npx jest --runInBand --runTestsByPath frontend/src/lib/__tests__/history20PublicationGate.test.ts
       - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
         run: >-
           npx jest --runInBand --silent
