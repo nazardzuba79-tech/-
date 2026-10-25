@@ -1,0 +1,107 @@
+name: VOLTEX xStocks one-minute finalized OHLC probe
+'on':
+  push:
+    branches:
+      - codex/solana-xstocks-seven-pool-proof-20261024
+    paths:
+      - .github/workflows/voltex-solana-minute-ohlc-proof.yml
+permissions:
+  contents: read
+jobs:
+  small-minute-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: One pass at a complete minute of finalized Raydium swaps
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {createHash} from 'node:crypto';
+          const pools=[
+           {ticker:'AAPLx',pool:'CKwJZwm7oj3nu4653N1EpDrqXbXAYXoPFiPeEnLouF8y',token:'XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp'},
+           {ticker:'NVDAx',pool:'4KqQN6u1pFKroFE2jVEhoepAMRKPcuAzWVDCgm9zRBYN',token:'Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh'}
+          ];
+          const clmm='CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',usdc='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+          const abc='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+          const b58=b=>{let n=0n;for(const v of b)n=n*256n+BigInt(v);let out='';while(n){out=abc[Number(n%58n)]+out;n/=58n;}let z=0;for(const v of b){if(v)break;z++;}return '1'.repeat(z)+out;};
+          const disc=t=>createHash('sha256').update(t).digest().subarray(0,8);
+          const pooldisc=disc('account:PoolState'),swapdisc=disc('event:SwapEvent');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));let id=0,requests=0;
+          const rpc=async(method,params)=>{
+           if(!['getAccountInfo','getSignaturesForAddress','getTransaction','getBlock'].includes(method))throw Error('UNSAFE_METHOD');
+           if(requests++>=40)throw Error('RPC_BUDGET_40_REACHED');
+           await sleep(850);
+           const res=await fetch('https://api.mainnet.solana.com',{method:'POST',redirect:'error',headers:{'content-type':'application/json'},
+              body:JSON.stringify({jsonrpc:'2.0',id:++id,method,params}),signal:AbortSignal.timeout(8500)});
+           if(!res.ok)throw Error('RPC_HTTP_'+res.status);
+           const body=await res.text();if(body.length>1600000)throw Error('RPC_TOO_LARGE');
+           const data=JSON.parse(body);if(data.error)throw Error('RPC_'+data.error.code);return data.result;
+          };
+          const results=[];
+          for(const pair of pools){
+           const e={ticker:pair.ticker,status:'NOT_PROVED',completeMinute:false,chartReady:false};
+           try{
+            const a=(await rpc('getAccountInfo',[pair.pool,{encoding:'base64',commitment:'finalized'}]))?.value;
+            if(a?.owner!==clmm)throw Error('POOL_OWNER_MISMATCH');
+            const bytes=Buffer.from(a?.data?.[0]||'','base64');
+            if(!bytes.subarray(0,8).equals(pooldisc))throw Error('POOL_DISC_MISMATCH');
+            const mints=[b58(bytes.subarray(73,105)),b58(bytes.subarray(105,137))];
+            if(!mints.includes(pair.token)||!mints.includes(usdc))throw Error('POOL_MINT_MISMATCH');
+            const baseSide=mints[0]===pair.token?0:1;
+            const bdec=bytes[baseSide===0?233:234],qdec=bytes[baseSide===0?234:233];
+            const rows=await rpc('getSignaturesForAddress',[pair.pool,{limit:25,commitment:'finalized'}]);
+            if(!Array.isArray(rows)||rows.some(x=>!Number.isSafeInteger(x.slot)||!Number.isSafeInteger(x.blockTime)||!x.signature))throw Error('INVALID_SIGNATURE_PAGE');
+            e.latestSignatureTime=rows[0]?.blockTime??null;
+            e.sampledSignatures=rows.length;
+            const now=Math.floor(Date.now()/1000),minutes=[...new Set(rows.map(x=>Math.floor(x.blockTime/60)*60))];
+            const match=minutes.map(from=>({from,end:from+60,items:rows.filter(r=>r.blockTime>=from&&r.blockTime<from+60)}))
+              .find(x=>x.end<=now-120&&x.items.length>0&&x.items.length<=6&&rows.some(r=>r.blockTime<x.from));
+            if(!match){e.status='NO_COMPLETELY_BRACKETED_MINUTE_WITHIN_LATEST_25';results.push(e);continue;}
+            e.minuteUTC=new Date(match.from*1000).toISOString();
+            e.windowSignatureCount=match.items.length;
+            const items=[],slots=new Set();
+            for(const x of match.items){
+             if(x.err!==null)continue;
+             const tx=await rpc('getTransaction',[x.signature,{encoding:'json',commitment:'finalized',maxSupportedTransactionVersion:1}]);
+             if(!tx||tx.slot!==x.slot||tx.blockTime!==x.blockTime||tx.meta?.err!==null||!tx.transaction.signatures.includes(x.signature))throw Error('TX_INCOMPLETE');
+             slots.add(tx.slot);
+             const stack=[],swaps=[];
+             for(const line of tx.meta.logMessages||[]){
+              const inv=line.match(/^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) invoke \[(\d+)\]$/);
+              if(inv){stack.push(inv[1]);continue;}
+              const fin=line.match(/^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) (?:success|failed:.*)$/);
+              if(fin){if(stack.pop()!==fin[1])throw Error('INVALID_INVOKE_STACK');continue;}
+              if(stack.at(-1)!==clmm||!line.startsWith('Program data: '))continue;
+              const b=Buffer.from(line.slice(14).trim(),'base64');
+              if(b.length!==221||!b.subarray(0,8).equals(swapdisc)||b58(b.subarray(8,40))!==pair.pool)continue;
+              const x0=b.readBigUInt64LE(136),x1=b.readBigUInt64LE(152);
+              const base=baseSide===0?x0:x1,quote=baseSide===0?x1:x0;
+              if(base<=0n||quote<=0n)throw Error('INVALID_SWAP_AMOUNTS');
+              const px=(quote*10n**BigInt(bdec)*100000000n)/(base*10n**BigInt(qdec));
+              swaps.push({price:Number(px)/1e8,rawTokenUnits:String(base),usdcUnits:String(quote)});
+             }
+             if(stack.length)throw Error('UNCLOSED_LOG_STACK');
+             items.push({signature:x.signature,slot:x.slot,swaps});
+            }
+            const orders=new Map();
+            for(const slot of slots){
+             const b=await rpc('getBlock',[slot,{encoding:'json',commitment:'finalized',transactionDetails:'signatures',maxSupportedTransactionVersion:1,rewards:false}]);
+             if(!Array.isArray(b?.signatures))throw Error('BLOCK_ORDER_MISSING');
+             orders.set(slot,new Map(b.signatures.map((s,i)=>[s,i])));
+            }
+            const records=[];
+            for(const item of items){
+             const pos=orders.get(item.slot)?.get(item.signature);
+             if(pos===undefined)throw Error('TX_MISSING_FROM_BLOCK');
+             item.swaps.forEach((s,i)=>records.push({...s,slot:item.slot,blockTxIndex:pos,eventIndex:i}));
+            }
+            records.sort((a,b)=>a.slot-b.slot||a.blockTxIndex-b.blockTxIndex||a.eventIndex-b.eventIndex);
+            e.completeMinute=true;e.swapCount=records.length;e.status=records.length?'COMPLETE_RAW_SWAP_MINUTE':'COMPLETE_EMPTY_MINUTE';
+            if(records.length)e.rawTokenOHLC={open:records[0].price,high:Math.max(...records.map(r=>r.price)),low:Math.min(...records.map(r=>r.price)),close:records.at(-1).price};
+            e.notPerSharePrices=true;e.issuerMultiplierApplied=false;e.note='Single verified Raydium pool; not an equities exchange chart; not redistributable rights approval';
+           }catch(err){e.error=String(err.message).slice(0,130);}
+           results.push(e);
+          }
+          console.log(JSON.stringify({at:new Date().toISOString(),rpcRequests:requests,boundedReadOnly:true,results},null,2));
+          if(!results.some(x=>x.status==='COMPLETE_RAW_SWAP_MINUTE'))process.exitCode=2;
+          NODE
