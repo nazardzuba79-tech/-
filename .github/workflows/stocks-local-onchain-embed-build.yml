@@ -11,6 +11,8 @@ name: VOLTEX Stocks local onchain embed isolated build and browser proof
       - frontend/src/pages/stocks/onchainXStocksCatalogue.generated.json
       - frontend/src/pages/stocks/stocksOnchainEmbedPreview.css
       - scripts/stocks-onchain-embed-browser-qa.mjs
+      - scripts/stocks-onchain-release-gate.mjs
+      - scripts/stocks-onchain-release-gate.test.mjs
 permissions:
   contents: read
 concurrency:
@@ -55,6 +57,14 @@ jobs:
           assert.throws(()=>onchainEmbedUrl({...ONCHAIN_EMBED_MARKETS[0],pool:'fake'}),/UNKNOWN_MARKET/);
           console.log('PASS strict LOCAL-only gating, 58 candidates, 7 independent checked pool references');
           NODE
+      - name: Check catalogue provenance, negative safety cases and release NO-GO
+        shell: bash
+        env:
+          STOCKS_RELEASE_GATE_OUTPUT: ${{ runner.temp }}/stocks-embed-evidence/release-gate.json
+        run: |
+          set -euo pipefail
+          node --test scripts/stocks-onchain-release-gate.test.mjs
+          node scripts/stocks-onchain-release-gate.mjs
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci --no-audit --no-fund
