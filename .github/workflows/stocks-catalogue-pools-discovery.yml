@@ -30,7 +30,7 @@ jobs:
             }
           };
           const issuer=[];
-          for(let page=0;page<6;page++){
+          for(let page=0;page<24;page++){
             const data=await fetchJson('https://api.xstocks.fi/api/v2/public/assets?page='+page,250);
             if(!Array.isArray(data.nodes))throw Error('ISSUER_LIST_SHAPE_MISMATCH');
             for(const a of data.nodes){
@@ -46,7 +46,8 @@ jobs:
           const prioritize=['AAPLx','TSLAx','NVDAx','SPYx','GOOGLx','MSTRx','QQQx','MSFTx','AMZNx','METAx','COINx','HOODx','PLTRx','AMDx','NFLXx','TSMx','AVGOx','CRCLx','MSTRx','BRK.Bx','GLDx','SLVx','IBITx','BITOx','DIAx','IWMx','VTIx','XOMx','ORCLx','INTCx','UBERx','BABA x','BABAx','SHOPx','SONYx','SOFIx','PYPLx','JPMx','BACx','LLYx','Vx','MAx','UNHx','NVOx','WMTx','COSTx','DISx','BAx','GME x','GMEx','AMCx','RBLXx','SNAPx','SOUNx','SQQQx','NVDLx','TSLLx','QYLDx'];
           const order=new Map(prioritize.map((x,i)=>[x,i]));
           const arr=issuer.sort((a,b)=>(order.get(a.ticker)??9999)-(order.get(b.ticker)??9999));
-          const cutoff=Math.min(arr.length,160);
+          console.log('POPULAR_MINTS',JSON.stringify(prioritize.filter(s=>issuer.some(x=>x.ticker===s))));
+          const cutoff=Math.min(arr.length,180);
           console.log('ISSUER_TOTAL',issuer.length,'SCANNING',cutoff);
           const results=[];
           for(const [i,asset] of arr.slice(0,cutoff).entries()){
