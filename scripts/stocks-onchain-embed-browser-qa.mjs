@@ -85,7 +85,7 @@ try {
     const poolAddress = src.split('/pools/')[1].split('?')[0];
     await delay(2600);
     const state = await page.locator('.vxson-frame-status').innerText();
-    const loaded = state.includes('Событие загрузки iframe получено');
+    const loaded = state.includes('Документ iframe загружен;');
     const frame = page.frames().find(f => f.url().startsWith('https://www.geckoterminal.com/solana/pools/' + poolAddress));
     let canvasCount = 0;
     let pageText = '';
@@ -133,14 +133,17 @@ try {
   const alternatePool = options.find(v => v !== originalPool);
   if (!alternatePool) throw new Error('MISSING_ALTERNATIVE_POOL_ADDRESS');
   await poolSelect.selectOption(alternatePool);
+  await page.locator('.vxson-frame iframe[src*="/pools/' + alternatePool + '"]').waitFor({ timeout: 10000 });
   const switchedUrl = await page.locator('.vxson-frame iframe').getAttribute('src');
   if (!switchedUrl?.includes('/pools/' + alternatePool)) throw new Error('POOL_SELECTOR_SWITCH_FAILED');
   await poolSelect.selectOption(originalPool);
+  await page.locator('.vxson-frame iframe[src*="/pools/' + originalPool + '"]').waitFor({ timeout: 10000 });
   const restoredUrl = await page.locator('.vxson-frame iframe').getAttribute('src');
   if (!restoredUrl?.includes('/pools/' + originalPool)) throw new Error('POOL_SELECTOR_RESTORE_FAILED');
   report.poolSwitchChecks.push({ticker: 'NVDAx', originalPool, alternatePool, success: true});
   if (new URL(page.url()).searchParams.get('pool') !== originalPool) throw new Error('POOL_NOT_PERSISTED_IN_URL');
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.vxson-frame iframe[src*="/pools/' + originalPool + '"]').waitFor({ timeout: 10000 });
   const reloadedSource = await page.locator('.vxson-frame iframe').getAttribute('src');
   if (!reloadedSource?.includes('/pools/' + originalPool)) throw new Error('POOL_LOST_ON_RELOAD');
   const beforeRetry = await page.locator('.vxson-frame iframe').getAttribute('src');
@@ -157,7 +160,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.getByRole('heading', { name: 'Токенизированные акции' }).waitFor();
-  await page.waitForFunction(() => document.querySelector('.vxson-frame-status')?.textContent?.includes('Событие загрузки iframe получено'), null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelector('.vxson-frame-status')?.textContent?.includes('Документ iframe загружен;'), null, { timeout: 20000 });
   // The chart may paint several seconds after iframe's load event.
   await page.waitForTimeout(8500);
   const mobileFrame = page.frames().find(f => f.url().startsWith('https://www.geckoterminal.com/solana/pools/'));
