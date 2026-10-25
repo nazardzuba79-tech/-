@@ -1,0 +1,184 @@
+name: VOLTEX SPYx ten-minute verified on-chain OHLC
+'on':
+  push:
+    branches: [codex/solana-xstocks-seven-pool-proof-20261024]
+    paths: [.github/workflows/voltex-spyx-ten-minute-proof.yml]
+permissions:
+  contents: read
+jobs:
+  ten-minute-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - name: Bounded read-only finalized SPYx active pool history and ten-minute OHLC
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {createHash} from 'node:crypto';
+          const symbol='SPYx';
+          const pool='4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw';
+          const token='XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W';
+          const quote='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+          const clmm='CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK';
+          const disc=x=>createHash('sha256').update(x).digest().subarray(0,8);
+          const poolDisc=disc('account:PoolState'),swapDisc=disc('event:SwapEvent');
+          const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+          function b58(bytes){let n=0n;for(const x of bytes)n=(n<<8n)+BigInt(x);let o='';while(n){o=alphabet[Number(n%58n)]+o;n/=58n;}let leading=0;while(leading<bytes.length&&bytes[leading]===0)leading++;return '1'.repeat(leading)+o;}
+          const ensure=(v,m)=>{if(!v)throw Error(m);};
+          const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+          const nowSec=Math.floor(Date.now()/1000);
+          const evidence={symbol,pool,token,at:new Date().toISOString(),readOnly:true,windowMinutes:10,
+            fullHistoricalFeed:false,commercialRightsVerified:false,publishable:false,chartReady:false,status:'NOT_VERIFIED'};
+          let apiCount=0, retryCount=0;
+          async function rpc(method,params){
+            ensure(['getAccountInfo','getSignaturesForAddress','getTransaction','getBlock'].includes(method),'UNSAFE_METHOD');
+            for(let retry=0;retry<2;retry++){
+              ensure(apiCount<85,'RPC_REQUEST_BUDGET');
+              apiCount++;await sleep(retry?2500:600);
+              const r=await fetch('https://api.mainnet.solana.com',{
+                method:'POST',redirect:'error',headers:{'content-type':'application/json'},
+                body:JSON.stringify({jsonrpc:'2.0',id:apiCount,method,params}),signal:AbortSignal.timeout(10000)
+              });
+              if(r.status===429&&retry===0){retryCount++;continue;}
+              ensure(r.ok,'HTTP_'+r.status);
+              const body=await r.text();ensure(body.length<1600000,'RESPONSE_TOO_LARGE');
+              const j=JSON.parse(body);ensure(!j.error,'RPC_'+(j.error?.code||'ERROR'));return j.result;
+            }
+            throw Error('RPC_429_LIMIT');
+          }
+          function tokenPrice(value,baseDecimals,quoteDecimals){
+            const {base,usd}=value;ensure(base>0n&&usd>0n,'ZERO_SWAP');
+            const units=usd*10n**BigInt(baseDecimals)*100000000n/(base*10n**BigInt(quoteDecimals));
+            ensure(units>0n,'ZERO_PRICE');return units;
+          }
+          function fmt(n){return String(n/100000000n)+'.'+String(n%100000000n).padStart(8,'0');}
+          function extract(tx,side,d0,d1){
+            const events=[],stack=[];
+            ensure(Array.isArray(tx.meta?.logMessages),'MISSING_LOGS');
+            for(const line of tx.meta.logMessages){
+              const invocation=line.match(/^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) invoke \[(\d+)\]$/);
+              if(invocation){ensure(stack.length<16&&Number(invocation[2])===stack.length+1,'BAD_STACK');stack.push(invocation[1]);continue;}
+              const finished=line.match(/^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) (?:success|failed:.*)$/);
+              if(finished){ensure(stack.pop()===finished[1],'BAD_STACK');continue;}
+              if(stack.at(-1)!==clmm||!line.startsWith('Program data: '))continue;
+              const bytes=Buffer.from(line.slice(14).trim(),'base64');
+              if(bytes.length!==221||!bytes.subarray(0,8).equals(swapDisc)||b58(bytes.subarray(8,40))!==pool)continue;
+              const a0=bytes.readBigUInt64LE(136),a1=bytes.readBigUInt64LE(152);
+              const base=side===0?a0:a1,usd=side===0?a1:a0;
+              const bp=side===0?d0:d1,qp=side===0?d1:d0;
+              ensure(bytes[168]<=1,'INVALID_TRADE_DIRECTION');
+              const price=tokenPrice({base,usd},bp,qp);
+              events.push({price,base,usd,eventIndex:events.length});
+            }
+            ensure(stack.length===0,'UNCLOSED_LOG_STACK');
+            return events;
+          }
+          try{
+            const state=(await rpc('getAccountInfo',[pool,{encoding:'base64',commitment:'finalized'}]))?.value;
+            ensure(state?.owner===clmm,'POOL_OWNER_MISMATCH');
+            const bytes=Buffer.from(state.data?.[0]||'','base64');
+            ensure(bytes.length>=235&&bytes.subarray(0,8).equals(poolDisc),'POOL_DISCRIMINATOR_MISMATCH');
+            const m0=b58(bytes.subarray(73,105)),m1=b58(bytes.subarray(105,137));
+            ensure(new Set([m0,m1]).size===2&&[m0,m1].includes(token)&&[m0,m1].includes(quote),'POOL_MINTS_MISMATCH');
+            const side=m0===token?0:1,d0=bytes[233],d1=bytes[234];
+            ensure(d0<=8&&d1<=8,'DECIMALS_UNSUPPORTED');
+            evidence.poolOnChainVerified=true;evidence.decimals=[d0,d1];
+            const signatures=[];let before=null;
+            for(let page=0;page<3;page++){
+              const params={limit:100,commitment:'finalized'};
+              if(before)params.before=before;
+              const pageRows=await rpc('getSignaturesForAddress',[pool,params]);
+              ensure(Array.isArray(pageRows)&&pageRows.length<=100,'BAD_SIGNATURE_PAGE');
+              ensure(pageRows.every(s=>typeof s.signature==='string'&&Number.isSafeInteger(s.slot)&&Number.isSafeInteger(s.blockTime)),'MISSING_SIG_TIME');
+              for(const row of pageRows){
+                const prev=signatures.at(-1);
+                ensure(!prev||row.slot<=prev.slot,'SIGNATURE_SLOT_ORDER_MISMATCH');
+                ensure(!signatures.some(s=>s.signature===row.signature),'DUPLICATE_SIGNATURE');
+                signatures.push(row);
+              }
+              if(!pageRows.length)break;
+              if(before&&signatures.length>=2){
+                const tail=signatures[signatures.length-pageRows.length-1];
+                const penultimate=signatures[signatures.length-pageRows.length-2];
+                ensure(tail?.signature&&penultimate?.signature,'PAGE_SEAM_MISSING');
+                const overlapping=await rpc('getSignaturesForAddress',[pool,{before:penultimate.signature,limit:2,commitment:'finalized'}]);
+                ensure(overlapping?.[0]?.signature===tail.signature&&overlapping?.[1]?.signature===pageRows[0].signature,'PAGINATION_SEAM_BROKEN');
+              }
+              before=pageRows.at(-1).signature;
+              if(pageRows.length<100)break;
+              if(signatures.at(-1).blockTime<nowSec-45*60)break;
+            }
+            evidence.signaturePagesObserved=Math.ceil(signatures.length/100);
+            evidence.signaturesSampled=signatures.length;
+            const cutoff=(Math.floor(nowSec/60)-3)*60;
+            const candidates=[];
+            for(let age=0;age<=50;age++){
+              const to=cutoff-age*60,from=to-600;
+              if(!(signatures[0]?.blockTime>=to&&signatures.at(-1)?.blockTime<from))continue;
+              const list=signatures.filter(s=>s.blockTime>=from&&s.blockTime<to);
+              const successful=list.filter(s=>s.err===null);
+              if(successful.length<4||successful.length>30)continue;
+              candidates.push({from,to,successCount:successful.length,
+                activeMinutes:new Set(successful.map(s=>Math.floor(s.blockTime/60))).size,rows:successful});
+            }
+            candidates.sort((a,b)=>b.activeMinutes-a.activeMinutes||Math.abs(a.successCount-16)-Math.abs(b.successCount-16)||b.to-a.to);
+            ensure(candidates.length,'NO_BRACKETED_TEN_MINUTE_WINDOW_UNDER_30_TX');
+            const picked=candidates[0];
+            evidence.windowUTC=[new Date(picked.from*1000).toISOString(),new Date(picked.to*1000).toISOString()];
+            evidence.probedSignatures=picked.rows.length;
+            evidence.probedActiveSignatureMinutes=picked.activeMinutes;
+            const txRows=[];
+            for(const sig of picked.rows){
+              const tx=await rpc('getTransaction',[sig.signature,{encoding:'json',commitment:'finalized',maxSupportedTransactionVersion:1}]);
+              ensure(tx&&tx.meta?.err===null&&tx.slot===sig.slot&&tx.blockTime===sig.blockTime&&
+                tx.transaction?.signatures?.includes(sig.signature),'TRANSACTION_MISSING_OR_DIFFERENT');
+              txRows.push({signature:sig.signature,slot:tx.slot,blockTime:tx.blockTime,events:extract(tx,side,d0,d1)});
+            }
+            const slotFreq=new Map();
+            for(const tx of txRows)slotFreq.set(tx.slot,(slotFreq.get(tx.slot)||0)+1);
+            const blockIndex=new Map();
+            for(const [slot,n] of slotFreq){
+              if(n<2)continue;
+              const block=await rpc('getBlock',[slot,{commitment:'finalized',encoding:'json',transactionDetails:'signatures',maxSupportedTransactionVersion:1,rewards:false}]);
+              ensure(Array.isArray(block?.signatures),'CANONICAL_BLOCK_MISSING');
+              blockIndex.set(slot,new Map(block.signatures.map((s,i)=>[s,i])));
+            }
+            const all=[];
+            for(const tx of txRows){
+              const txIndex=blockIndex.get(tx.slot)?.get(tx.signature);
+              ensure(slotFreq.get(tx.slot)===1||txIndex!==undefined,'CANONICAL_TX_ORDER_MISSING');
+              for(const e of tx.events)all.push({...e,blockTime:tx.blockTime,slot:tx.slot,txIndex:txIndex??0,signature:tx.signature});
+            }
+            all.sort((a,b)=>a.slot-b.slot||a.txIndex-b.txIndex||a.eventIndex-b.eventIndex);
+            const bars=new Map();
+            for(const e of all){
+              ensure(e.blockTime>=picked.from&&e.blockTime<picked.to,'TRADE_OUTSIDE_WINDOW');
+              const time=Math.floor(e.blockTime/60)*60;
+              let bar=bars.get(time);
+              if(!bar){bar={time,open:e.price,high:e.price,low:e.price,close:e.price,trades:0,baseUnits:0n,quoteUnits:0n};bars.set(time,bar);}
+              if(e.price>bar.high)bar.high=e.price;
+              if(e.price<bar.low)bar.low=e.price;
+              bar.close=e.price;bar.trades++;bar.baseUnits+=e.base;bar.quoteUnits+=e.usd;
+            }
+            const minutes=[];
+            for(let t=picked.from;t<picked.to;t+=60){
+              const b=bars.get(t);
+              minutes.push(b?{utc:new Date(t*1000).toISOString(),kind:'TRADE',trades:b.trades,ohlc:{
+                  open:fmt(b.open),high:fmt(b.high),low:fmt(b.low),close:fmt(b.close)
+                }}:{utc:new Date(t*1000).toISOString(),kind:'NO_SWAP_IN_VERIFIED_POOL'});
+            }
+            evidence.minutes=minutes;
+            evidence.swapsVerified=all.length;
+            evidence.minutesWithSwaps=bars.size;
+            evidence.minutesWithoutSwaps=10-bars.size;
+            evidence.status='TEN_MINUTE_RAW_ONCHAIN_WINDOW_VERIFIED';
+            evidence.completeSinglePoolWindow=true;
+            evidence.issuerMultiplierApplied=false;
+            evidence.rawTokenUSDCOnly=true;
+            evidence.sampleTransactions=txRows.filter(x=>x.events.length).slice(0,2).map(x=>x.signature);
+            evidence.note='Research-only, one finalized Raydium CLMM pool. Not issuer-adjusted stock quotes, no automatic chart publication.';
+          }catch(e){evidence.error=String(e.message).slice(0,160);}
+          evidence.rpcRequests=apiCount;evidence.rateLimitRetries=retryCount;
+          console.log(JSON.stringify(evidence,null,2));
+          if(evidence.status!=='TEN_MINUTE_RAW_ONCHAIN_WINDOW_VERIFIED')process.exitCode=2;
+          NODE
