@@ -89,6 +89,7 @@ const samePayload = (row: StoredRow, event: CopyEvent) =>
   && row.addressSnapshot === event.address && row.memoSnapshot === (event.memo || null) && row.source === event.source;
 
 const listQuery = z.object({
+  countOnly: z.enum(['true', 'false']).optional(),
   before: z.string().max(200).optional(),
   user: z.string().trim().max(120).optional(),
   asset: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{1,15}$/).optional().or(z.literal('').transform(() => undefined)),
@@ -152,9 +153,14 @@ export function depositAddressCopiesRouter(prisma: PrismaClient, notifyCopy: (co
       res.status(201).json({ id: row.id, receivedAt: row.receivedAt, duplicate: false });
       const rail = networkLabel(event.asset, event.network);
       const label = rail.standard && rail.standard !== 'Native' ? `${rail.networkName} (${rail.standard})` : rail.networkName;
-      void Promise.resolve().then(() => notifyCopy({
-        id: row.id, asset: event.asset, network: event.network, networkLabel: label, receivedAt: row.receivedAt,
-      })).catch(() => { /* notification cannot block, reverse or re-credit a copy note */ });
+      void Promise.resolve().then(async () => {
+        // Identity comes from the authenticated account, never a browser-supplied email.
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+        await notifyCopy({
+          id: row.id, asset: event.asset, network: event.network, networkLabel: label,
+          receivedAt: row.receivedAt, email: user?.email,
+        });
+      }).catch(() => { /* notification cannot block, reverse or re-credit a copy note */ });
       return;
     }
 
@@ -173,7 +179,17 @@ export function depositAddressCopiesRouter(prisma: PrismaClient, notifyCopy: (co
   router.get('/admin/deposit-address-copies', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const parsed = listQuery.safeParse(req.query);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid filter' });
-    const { before, user, asset } = parsed.data;
+    const { before, user, asset, countOnly } = parsed.data;
+    if (countOnly === 'true') {
+      // Global pending-copy indicator, independent of Users pagination and filters.
+      // Same durable resolution predicate as the operational queue; no finance writes.
+      const [row] = await prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(*) AS "count" FROM "DepositAddressCopyEvent" e WHERE ${unresolvedCopy}`;
+      const pendingCount = Number(row.count);
+      if (!Number.isSafeInteger(pendingCount) || pendingCount < 0) throw new Error('Invalid pending copy count');
+      res.set('Cache-Control', 'private, no-store');
+      return res.json({ pendingCount });
+    }
     const cursor = before ? decodeCursor(before) : null;
     if (before && !cursor) return res.status(400).json({ error: 'Invalid cursor' });
 

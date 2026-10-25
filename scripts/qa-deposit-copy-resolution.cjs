@@ -12,6 +12,19 @@ if (process.env.COPY_RESOLUTION_QA !== '1' || !['localhost', '127.0.0.1'].includ
   throw Error('Refusing anything except the named disposable localhost database');
 }
 const db = new PrismaClient();
+// Isolated API count reads through the real auth/admin middleware on this DB.
+process.env.JWT_SECRET = 'local-copy-count-synthetic-only-not-production';
+const express = require('express'), request = require('supertest'), jwt = require('jsonwebtoken');
+const { depositAddressCopiesRouter } = require('../dist/api/routes/depositAddressCopies');
+const countApp = express();
+countApp.use('/api/v1', depositAddressCopiesRouter(db, async () => {}));
+async function pendingCount(admin) {
+  const token = jwt.sign({ sub: admin.id }, process.env.JWT_SECRET);
+  const response = await request(countApp).get('/api/v1/admin/deposit-address-copies?countOnly=true').set('Authorization', `Bearer ${token}`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(Object.keys(response.body), ['pendingCount']);
+  return response.body.pendingCount;
+}
 const address = '0x' + '1'.repeat(40);
 const otherAddress = '0x' + '2'.repeat(40);
 const checks = [];
@@ -57,6 +70,7 @@ async function balance(id) {
 async function main() {
   const admin = await user('ADMIN'), admin2 = await user('ADMIN');
   const a = await user(), b = await user();
+  const countBefore = await pendingCount(admin);
   await db.balance.create({ data: { userId: a.id, asset: 'USDT', available: '123.456789', locked: '20' } });
   const old = await copy(a.id, { receivedAt: new Date('2026-01-01T00:00:00Z') });
   const selected = await copy(a.id, { receivedAt: new Date('2026-01-01T00:01:00Z') });
@@ -65,12 +79,15 @@ async function main() {
   const other = await copy(b.id);
   const before = await balance(a.id);
   const copyCount = await db.depositAddressCopyEvent.count();
+  assert.equal(await pendingCount(admin), countBefore + 5);
   await Promise.all([ignoreDepositCopy(db, selected.id, admin.id), ignoreDepositCopy(db, selected.id, admin2.id)]);
   assert.equal((await receipt(selected.id)).metadata.outcome, 'IGNORED');
   assert.ok(await receipt(old.id));
   assert.equal(await receipt(newer.id), null);
   assert.equal(await receipt(different.id), null);
   assert.equal(await receipt(other.id), null);
+  assert.equal(await pendingCount(admin), countBefore + 3);
+  ok('Authenticated global counter includes other users and excludes durable Ignore receipts');
   assert.equal((await latest(a.id)).id, newer.id);
   assert.deepEqual(await balance(a.id), before);
   assert.equal(await db.depositAddressCopyEvent.count(), copyCount);

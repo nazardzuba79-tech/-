@@ -12,7 +12,7 @@ import { AdminPagination } from './AdminPagination';
 import { AdminReadStatus } from './AdminReadStatus';
 import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { DepositCopyBell, DepositCopyTabBell, hasPendingCopy } from './DepositCopyBell';
-import { hasUnresolvedCopies, ignoreCopySignal } from './depositCopyReviewClient';
+import { unresolvedCopyCount, ignoreCopySignal } from './depositCopyReviewClient';
 import { adminDate } from './adminPresentation';
 import { formatLastLoginAt, kyivDayDifference } from './lastLoginLabel';
 import { useAdminWorkSummary, refreshAdminSummary } from './adminWorkSummary';
@@ -82,7 +82,7 @@ export function AdminUsersPage() {
   const read = useAdminRead(`users:${query}`, signal => getAdminUsersPage(query, signal), { timeoutMs: ADMIN_USERS_TIMEOUT_MS });
   useEffect(() => { if (read.data && query === requestedQuery) restoreScroll(); }, [read.data, query, requestedQuery, restoreScroll]);
   const summary = useAdminWorkSummary();
-  const copies = useAdminRead('deposit-copy-signal', hasUnresolvedCopies);
+  const copies = useAdminRead('deposit-copy-count', unresolvedCopyCount);
   const spam = useAdminRead('spam-emails', getSpamEmails);
   const [spamTarget, setSpamTarget] = useState<{ email: string; blocked: boolean } | null>(null);
   const [spamManagerOpen, setSpamManagerOpen] = useState(false);
@@ -91,7 +91,7 @@ export function AdminUsersPage() {
   const [visibilityBusy, setVisibilityBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const users = read.data?.items ?? [];
-  const copySignal = copies.data === true || users.some(hasPendingCopy);
+  const copySignal = (copies.data ?? 0) > 0 || users.some(hasPendingCopy);
   const legacyStats: Partial<Record<string, number>> | undefined = read.data?.legacyStats;
   const open = (user: AdminUser) => `/admin/users/${encodeURIComponent(user.id)}?returnTo=${encodeURIComponent(returnTo)}`;
   const changed = () => { read.reload(); copies.reload(); refreshAdminSummary(); };
@@ -131,7 +131,7 @@ export function AdminUsersPage() {
         const value = widget?.status === 'ready' ? widget.value : legacyStats?.[key];
         if (key !== 'pendingPackages') return <div className="admin-users-kpi" key={key}><span>{label}</span><strong>{value ?? '—'}</strong></div>;
         return <Link className="admin-users-kpi admin-users-kpi-link" key={key} data-copy-signal={copySignal || undefined}
-          to={copySignal ? '/admin/deposits#copies' : '/admin/deposits'}><span>{copySignal && <DepositCopyTabBell />}{label}</span><strong>{value ?? '—'}</strong></Link>;
+          to={copySignal ? '/admin/deposits#copies' : '/admin/deposits'}><span>{copySignal && <DepositCopyTabBell count={copies.data && copies.data > 0 ? copies.data : undefined} />}{label}</span><strong>{value ?? '—'}</strong></Link>;
       })}
       {summary.error && <div className="admin-kpi-note" role="status"><span>{summary.data ? 'Показатели могли устареть.' : 'Отдельные показатели пока недоступны.'}</span><button type="button" onClick={() => summary.reload()} disabled={summary.loading}>Обновить показатели</button></div>}
     </section>
