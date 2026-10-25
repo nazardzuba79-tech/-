@@ -28,8 +28,19 @@ try {
   });
   const warnings = [];
   page.on('pageerror', error => warnings.push(String(error).slice(0, 240)));
+  // Synthetic local-only session presence lets the *existing* RequireAuth guard
+  // render the route in CI. No live backend credentials or authentication bypass.
+  await page.addInitScript(() => window.localStorage.setItem('exchange_token', 'invalid-local-browser-qa-session'));
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.getByRole('heading', { name: 'Токенизированные акции' }).waitFor();
+  try {
+    await page.getByRole('heading', { name: 'Токенизированные акции' }).waitFor({ timeout: 15000 });
+  } catch (error) {
+    report.initialUrl = page.url();
+    report.initialText = (await page.locator('body').innerText().catch(() => '')).slice(0, 800);
+    await page.screenshot({ path: artifactPath + '/route-diagnostic.png', fullPage: true }).catch(() => {});
+    console.log('INITIAL_ROUTE_DIAGNOSTIC', JSON.stringify({ url: report.initialUrl, text: report.initialText }));
+    throw error;
+  }
   const elements = page.locator('.vxson-market');
   const total = await elements.count();
   if (total !== 58) throw new Error('EXPECTED_58_ASSETS_GOT_' + total);

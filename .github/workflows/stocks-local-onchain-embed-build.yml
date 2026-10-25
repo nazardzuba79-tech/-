@@ -76,7 +76,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$STOCKS_EMBED_QA_DIR"
           cd frontend
-          VITE_STOCKS_ONCHAIN_EMBED_PREVIEW=1 npm run dev -- --host 127.0.0.1 > "$STOCKS_EMBED_QA_DIR/vite.log" 2>&1 &
+          VITE_STOCKS_ENABLED=true VITE_STOCKS_WIDGET_PREVIEW=true VITE_STOCKS_ONCHAIN_EMBED_PREVIEW=1 npm run dev -- --host 127.0.0.1 > "$STOCKS_EMBED_QA_DIR/vite.log" 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           ready=0
