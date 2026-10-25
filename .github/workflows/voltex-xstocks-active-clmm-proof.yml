@@ -1,0 +1,85 @@
+name: VOLTEX xStocks alternate CLMM pools on-chain proof
+'on':
+  push:
+    branches:
+      - codex/solana-xstocks-seven-pool-proof-20261024
+    paths:
+      - .github/workflows/voltex-xstocks-active-clmm-proof.yml
+permissions:
+  contents: read
+jobs:
+  finalized-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Finalized owner/mint/swaps evidence for four alternative Raydium pools
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {createHash} from 'node:crypto';
+          const pools=[
+            ['AAPLx','ApniVWuZbZoruTAJdyJcLBA4AVw4DKGdV5fHxo6qrAZT','XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp'],
+            ['NVDAx','49iMatQtoyabsYAQc8GafVq6aeBFVDxSRH44oiatyyw6','Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh'],
+            ['SPYx','4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw','XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W'],
+            ['QQQx','GMjGLWzvK75LPetrgAmdeXnvxc4fUuQPwJxeQqTDU1aG','Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ']
+          ];
+          const clmm='CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',usdc='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+          const abc='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+          const b58=b=>{let n=0n;for(const v of b)n=n*256n+BigInt(v);let out='';while(n){out=abc[Number(n%58n)]+out;n/=58n;}let z=0;for(const v of b){if(v)break;z++;}return '1'.repeat(z)+out;};
+          const discriminator=s=>createHash('sha256').update(s).digest().subarray(0,8);
+          const pd=discriminator('account:PoolState'),sd=discriminator('event:SwapEvent');
+          let seq=0,count=0;const pause=x=>new Promise(r=>setTimeout(r,x));
+          async function rpc(method,params){
+            if(!['getAccountInfo','getSignaturesForAddress','getTransaction'].includes(method))throw Error('UNAUTHORIZED_METHOD');
+            if(++count>30)throw Error('MAX_REQUESTS_REACHED');
+            await pause(850);
+            const r=await fetch('https://api.mainnet.solana.com',{method:'POST',redirect:'error',
+              headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:++seq,method,params}),
+              signal:AbortSignal.timeout(8000)});
+            if(!r.ok)throw Error('HTTP_'+r.status);
+            const t=await r.text();if(t.length>1600000)throw Error('RPC_RESPONSE_TOO_LARGE');
+            const obj=JSON.parse(t);if(obj.error)throw Error('RPC_'+obj.error.code);
+            return obj.result;
+          }
+          const results=[];
+          for(const [ticker,pool,mint] of pools){
+            const o={ticker,pool,mint,poolOwnerAndMintsVerified:false,actualFinalizedSwaps:0,
+              completeHistoricalOHLCV:false,readOnly:true};
+            try{
+              const a=(await rpc('getAccountInfo',[pool,{encoding:'base64',commitment:'finalized'}]))?.value;
+              if(a?.owner!==clmm)throw Error('OWNER_NOT_RAYDIUM_CLMM');
+              const raw=Buffer.from(a?.data?.[0]||'','base64');
+              if(raw.length<235||!raw.subarray(0,8).equals(pd))throw Error('INVALID_RAYDIUM_POOL_LAYOUT');
+              const mints=[b58(raw.subarray(73,105)),b58(raw.subarray(105,137))];
+              if(mints[0]===mints[1]||!mints.includes(mint)||!mints.includes(usdc))throw Error('MINT_MISMATCH');
+              o.poolOwnerAndMintsVerified=true;
+              const signatures=await rpc('getSignaturesForAddress',[pool,{limit:5,commitment:'finalized'}]);
+              if(!Array.isArray(signatures))throw Error('INVALID_SIGNATURE_PAGE');
+              o.sampleSize=signatures.length;
+              for(const sig of signatures.slice(0,4)){
+                if(sig.err!==null||!sig.signature)continue;
+                const tx=await rpc('getTransaction',[sig.signature,{encoding:'json',commitment:'finalized',maxSupportedTransactionVersion:1}]);
+                if(!tx||tx.meta?.err!==null||tx.slot!==sig.slot)continue;
+                const stack=[];
+                for(const line of tx.meta.logMessages||[]){
+                  const inv=line.match(/^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) invoke \[(\d+)\]$/);
+                  if(inv){stack.push(inv[1]);continue;}
+                  const done=line.match(/^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) (?:success|failed:.*)$/);
+                  if(done){stack.pop();continue;}
+                  if(stack.at(-1)!==clmm||!line.startsWith('Program data: '))continue;
+                  const b=Buffer.from(line.slice(14).trim(),'base64');
+                  if(b.length===221&&b.subarray(0,8).equals(sd)&&b58(b.subarray(8,40))===pool){
+                    o.actualFinalizedSwaps++;
+                    o.proofSignature??=sig.signature;
+                    o.proofBlockTime??=tx.blockTime;
+                  }
+                }
+              }
+              o.status=o.actualFinalizedSwaps?'FINALIZED_SWAPS_VERIFIED':'POOL_VERIFIED_NO_SWAP_IN_SAMPLE';
+            }catch(e){o.status='PARTIAL_PROOF';o.error=String(e.message).slice(0,130)}
+            results.push(o);
+          }
+          console.log(JSON.stringify({utc:new Date().toISOString(),rpcRequests:count,sampledOnly:true,
+            dexVolumeNotIndependentlyAudited:true,results},null,2));
+          if(results.some(r=>!r.poolOwnerAndMintsVerified))process.exitCode=2;
+          NODE
