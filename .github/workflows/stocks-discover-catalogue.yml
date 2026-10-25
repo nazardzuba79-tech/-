@@ -1,0 +1,138 @@
+name: VOLTEX xStocks issuer-DEX catalog build (research only)
+'on':
+  push:
+    branches: [work/stocks-onchain-local-embed-20261025]
+    paths: [.github/workflows/stocks-discover-catalogue.yml]
+permissions:
+  contents: write
+jobs:
+  issuer-dex:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Discover verified token mint addresses and supported DEX pools
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const issuer='https://api.xstocks.fi/api/v2/public/assets';
+          const usdc='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const address=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+          const log=[];
+          let httpCount=0,geckoCount=0;
+          async function get(url,tries=2){
+            for(let n=0;n<tries;n++){
+              ++httpCount;
+              const res=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000),headers:{accept:'application/json'}});
+              if((res.status===429||res.status>=500)&&n<tries-1){await sleep(6000);continue;}
+              if(!res.ok)throw Error('HTTP_'+res.status+' @ '+new URL(url).host);
+              const txt=await res.text();if(txt.length>2_000_000)throw Error('RESPONSE_TOO_LARGE');
+              return JSON.parse(txt);
+            }
+          }
+          function unwrap(obj){
+            if(Array.isArray(obj))return {items:obj,hasNext:false};
+            for(const key of ['nodes','items','assets','results','data']){
+              const v=obj?.[key];if(Array.isArray(v))return {items:v,hasNext:Boolean(obj.page?.hasNextPage??obj.pagination?.hasNextPage??obj.hasNextPage)};
+            }
+            throw Error('UNKNOWN_ISSUER_LIST_RESPONSE_SHAPE:'+JSON.stringify(Object.keys(obj??{})));
+          }
+          const assets=[],seen=new Set();
+          let stopReason='';
+          for(let page=0;page<12;page++){
+            const data=unwrap(await get(issuer+'?page='+page+'&limit=100'));
+            if(!data.items.length){stopReason='end-empty';break;}
+            let newCount=0;
+            for(const a of data.items){
+              if(typeof a?.symbol!=='string')continue;
+              if(seen.has(a.symbol))continue;
+              seen.add(a.symbol);assets.push(a);newCount++;
+            }
+            console.log('ISSUER_PAGE',page,'items',data.items.length,'new',newCount,'hasNext',data.hasNext);
+            if(assets.length>250)throw Error('ISSUER_TOO_MANY_ASSETS');
+            if(!data.hasNext){stopReason='end-pageFlag';break;}
+            if(newCount===0)throw Error('ISSUER_PAGINATION_REPEAT');
+          }
+          if(!stopReason)throw Error('ISSUER_PAGINATION_NOT_EXHAUSTED');
+          if(assets.length<20)throw Error('ISSUER_ASSET_LIST_SUSPICIOUSLY_SHORT:'+assets.length);
+          const discovered=[];
+          let mints=0;
+          for(const a of assets){
+            if(!/x$/i.test(a.symbol))continue;
+            const deployments=(a.deployments??[]).filter(x=>x.network==='Solana'&&address.test(x.address||''));
+            if(deployments.length!==1){log.push({symbol:a.symbol,reason:'NO_UNIQUE_ISSUER_SOLANA_MINT'});continue;}
+            const mint=deployments[0].address;
+            mints++;
+            try{
+              await sleep(450);
+              const list=await get('https://api.dexscreener.com/token-pairs/v1/solana/'+mint);
+              if(!Array.isArray(list))throw Error('BAD_DEX_RESPONSE');
+              const eligible=list.filter(p=>p.chainId==='solana'&&address.test(p.pairAddress||'')&&
+                (p.baseToken?.address===mint&&p.quoteToken?.address===usdc || p.quoteToken?.address===mint&&p.baseToken?.address===usdc)
+                &&['raydium','orca','meteora','pancakeswap'].includes(p.dexId)
+                &&Number(p.liquidity?.usd||0)>=3000
+                &&Number(p.volume?.h24||0)>=100
+                &&Number(p.txns?.h24?.buys||0)+Number(p.txns?.h24?.sells||0)>=10);
+              eligible.sort((a,b)=>Math.log1p(Number(b.txns?.h24?.buys||0)+Number(b.txns?.h24?.sells||0))*Math.log1p(Number(b.liquidity?.usd||0)) -
+                       Math.log1p(Number(a.txns?.h24?.buys||0)+Number(a.txns?.h24?.sells||0))*Math.log1p(Number(a.liquidity?.usd||0)));
+              if(!eligible.length){log.push({symbol:a.symbol,reason:'NO_POOL_MEETING_MINIMUM_ACTIVITY'});continue;}
+              const p=eligible[0];
+              discovered.push({ticker:a.symbol,name:String(a.name||a.description||a.symbol).slice(0,90),
+                mint,pool:p.pairAddress,dex:p.dexId,liquidityUSD:Number(p.liquidity?.usd||0),
+                volume24hUSD:Number(p.volume?.h24||0),txns24h:Number(p.txns?.h24?.buys||0)+Number(p.txns?.h24?.sells||0),
+                issuerIsin:a.isin||null,sourceVerified:'issuer_v2_token_mint_and_dexscreener_reported_pair',
+                geckoIndexed:false});
+            }catch(e){log.push({symbol:a.symbol,reason:'DEX_LOOKUP_ERROR',error:String(e.message).slice(0,110)})}
+          }
+          // GeckoTerminal API is a discovery validator; it does NOT grant commercial embed rights.
+          discovered.sort((a,b)=>b.txns24h-a.txns24h);
+          const accepted=[];
+          for(const row of discovered){
+            if(geckoCount>=78)break;
+            geckoCount++;
+            try{
+              await sleep(2200);
+              const x=await get('https://api.geckoterminal.com/api/v2/networks/solana/pools/'+row.pool,2);
+              const poolData=x?.data;
+              const geckoAddress=poolData?.attributes?.address;
+              if(typeof geckoAddress!=='string'||geckoAddress!==row.pool){
+                log.push({symbol:row.ticker,reason:'GECKO_POOL_ID_MISMATCH',received:geckoAddress});continue;
+              }
+              accepted.push({...row,geckoIndexed:true});
+            }catch(e){log.push({symbol:row.ticker,reason:'GECKO_POOL_NOT_CONFIRMED',error:String(e.message).slice(0,110)})}
+          }
+          accepted.sort((a,b)=>a.ticker.localeCompare(b.ticker));
+          const provenance={generatedAtUtc:new Date().toISOString(),
+            scope:'local-dev-only noncommercial technical evaluation; NOT public Stocks activation',
+            filters:{minLiquidityUsd:3000,minReportedVolume24hUsd:100,minReportedTrades24h:10},
+            registries:['xStocks issuer v2 public API','DEX Screener token-pairs','GeckoTerminal pool identity API'],
+            counts:{issuerAssets:assets.length,issuerSolanaMints:mints,dexCandidates:discovered.length,geckoConfirmed:accepted.length},
+            rightsToRedistribute:false,iframeRuntimeChecked:false,productionReady:false,
+            warning:'Reported 24-hour trade data are third-party discovery statistics, not independently audited; market activity changes.'};
+          fs.mkdirSync('frontend/src/pages/stocks',{recursive:true});
+          fs.writeFileSync('frontend/src/pages/stocks/onchainXStocksCatalogue.generated.json',JSON.stringify({provenance,markets:accepted},null,2)+'\n');
+          fs.mkdirSync('research/solana-xstocks',{recursive:true});
+          fs.writeFileSync('research/solana-xstocks/issuer-pool-discovery-diagnostics.json',JSON.stringify({provenance,excluded:log},null,2)+'\n');
+          console.log('RESULT_COUNTS',JSON.stringify(provenance.counts));
+          console.log('ACCEPTED_TICKERS',JSON.stringify(accepted.map(x=>x.ticker)));
+          console.log('EXCLUDED_COUNTS',JSON.stringify(Object.groupBy(log,x=>x.reason) && Object.fromEntries(Object.entries(Object.groupBy(log,x=>x.reason)).map(([k,v])=>[k,v.length]))));
+          if(accepted.length<20){console.error('INSUFFICIENT_SUPPORTED_POOLS',accepted.length);process.exitCode=2;}
+          NODE
+      - name: Commit research-only generated catalogue if sufficient
+        if: success()
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/pages/stocks/onchainXStocksCatalogue.generated.json research/solana-xstocks/issuer-pool-discovery-diagnostics.json
+          if ! git diff --cached --quiet; then
+            git commit -m "[CF-Pages-Skip] [skip render] Research-only issuer and Gecko indexed xStocks catalogue (not public)"
+            git push origin HEAD:work/stocks-onchain-local-embed-20261025
+          fi
