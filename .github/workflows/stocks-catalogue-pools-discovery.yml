@@ -1,0 +1,78 @@
+name: VOLTEX xStocks bounded DEX pool discovery
+'on':
+  push:
+    branches: [work/stocks-onchain-local-embed-20261025]
+    paths: [.github/workflows/stocks-catalogue-pools-discovery.yml]
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - name: Official issuer Solana mint + independent DEX pool candidate scan
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const safeMint=m=>typeof m==='string'&&/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(m);
+          const usdc='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const fetchJson=async(url,delay=100)=>{
+            await sleep(delay);
+            for(let attempt=0;attempt<2;attempt++){
+              try{
+                const response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(9000),headers:{accept:'application/json'}});
+                if((response.status===429||response.status>=500)&&attempt===0){await sleep(3200);continue;}
+                if(!response.ok)throw Error('HTTP_'+response.status);
+                const body=await response.text();if(body.length>2_500_000)throw Error('PAYLOAD_TOO_LARGE');
+                return JSON.parse(body);
+              }catch(e){if(attempt)throw e;await sleep(2400);}
+            }
+          };
+          const issuer=[];
+          for(let page=0;page<6;page++){
+            const data=await fetchJson('https://api.xstocks.fi/api/v2/public/assets?page='+page,250);
+            if(!Array.isArray(data.nodes))throw Error('ISSUER_LIST_SHAPE_MISMATCH');
+            for(const a of data.nodes){
+              const deployments=(a.deployments||[]).filter(x=>x.network==='Solana'&&safeMint(x.address));
+              if(deployments.length!==1||!a.symbol||a.isTradingHalted===true)continue;
+              if(issuer.some(x=>x.ticker===a.symbol))continue;
+              issuer.push({ticker:a.symbol,name:a.name||a.symbol,mint:deployments[0].address});
+            }
+            console.log('ISSUER_PAGE',JSON.stringify({page,count:data.nodes.length,more:data.page?.hasNextPage}));
+            if(!data.page?.hasNextPage)break;
+          }
+          // Complete data may include hundreds of Solana tokens. Bounded scan only.
+          const prioritize=['AAPLx','TSLAx','NVDAx','SPYx','GOOGLx','MSTRx','QQQx','MSFTx','AMZNx','METAx','COINx','HOODx','PLTRx','AMDx','NFLXx','TSMx','AVGOx','CRCLx','MSTRx','BRK.Bx','GLDx','SLVx','IBITx','BITOx','DIAx','IWMx','VTIx','XOMx','ORCLx','INTCx','UBERx','BABA x','BABAx','SHOPx','SONYx','SOFIx','PYPLx','JPMx','BACx','LLYx','Vx','MAx','UNHx','NVOx','WMTx','COSTx','DISx','BAx','GME x','GMEx','AMCx','RBLXx','SNAPx','SOUNx','SQQQx','NVDLx','TSLLx','QYLDx'];
+          const order=new Map(prioritize.map((x,i)=>[x,i]));
+          const arr=issuer.sort((a,b)=>(order.get(a.ticker)??9999)-(order.get(b.ticker)??9999));
+          const cutoff=Math.min(arr.length,160);
+          console.log('ISSUER_TOTAL',issuer.length,'SCANNING',cutoff);
+          const results=[];
+          for(const [i,asset] of arr.slice(0,cutoff).entries()){
+            const x={...asset};
+            try{
+              const pairs=await fetchJson('https://api.dexscreener.com/token-pairs/v1/solana/'+asset.mint,520);
+              if(!Array.isArray(pairs))throw Error('PAIRS_SHAPE');
+              const matches=pairs.filter(p=>p.chainId==='solana'&&safeMint(p.pairAddress)&&
+                [p.baseToken?.address,p.quoteToken?.address].includes(asset.mint)&&
+                [p.baseToken?.address,p.quoteToken?.address].includes(usdc));
+              x.candidatePools=matches.length;
+              const best=matches.sort((a,b)=>
+                ((b.txns?.h24?.buys||0)+(b.txns?.h24?.sells||0))-
+                ((a.txns?.h24?.buys||0)+(a.txns?.h24?.sells||0)))[0];
+              if(best){
+                x.pool=best.pairAddress;x.dex=best.dexId;
+                x.liquidity=Math.round(best.liquidity?.usd||0);
+                x.trades24h=(best.txns?.h24?.buys||0)+(best.txns?.h24?.sells||0);
+                x.volume24h=Math.round(best.volume?.h24||0);
+                x.label=(best.labels||[]).join(',');
+              }
+            }catch(e){x.error=String(e.message).slice(0,60)}
+            results.push(x);
+            if(i%30===29)console.log('DISCOVERY_PROGRESS',i+1);
+          }
+          results.sort((a,b)=>(b.trades24h||0)-(a.trades24h||0));
+          console.log('DISCOVERY_META',JSON.stringify({officialSolanaTotal:issuer.length,scanned:cutoff,poolsWithUSDC:results.filter(x=>x.pool).length,with10Trades:results.filter(x=>x.trades24h>=10&&x.liquidity>=2000).length,geckoEmbedRightsVerified:false}));
+          for(const x of results.filter(x=>x.pool))console.log('DISCOVERY_CANDIDATE',JSON.stringify(x));
+          NODE
