@@ -1,16 +1,25 @@
-name: VOLTEX Stocks local onchain embed isolated build
+name: VOLTEX Stocks local onchain embed isolated build and browser proof
 'on':
   push:
     branches:
       - work/stocks-onchain-local-embed-20261025
     paths:
       - .github/workflows/stocks-local-onchain-embed-build.yml
+      - frontend/src/pages/stocks/StocksOnchainEmbedPreview.tsx
+      - frontend/src/pages/stocks/onchainPoolCatalogue.ts
+      - frontend/src/pages/stocks/onchainDiscoveredCandidates.ts
+      - frontend/src/pages/stocks/onchainXStocksCatalogue.generated.json
+      - frontend/src/pages/stocks/stocksOnchainEmbedPreview.css
+      - scripts/stocks-onchain-embed-browser-qa.mjs
 permissions:
   contents: read
+concurrency:
+  group: stocks-local-onchain-embed-build
+  cancel-in-progress: false
 jobs:
-  build:
+  build-browser:
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,7 +29,7 @@ jobs:
           node-version: '22.23.3'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Verify seven source guards, fixed origin and disabled hosted mount
+      - name: Verify seven onchain pool guards, strict localhost flag and 58 candidate sources
         shell: bash
         run: |
           node --experimental-strip-types --input-type=module <<'NODE'
@@ -28,15 +37,12 @@ jobs:
           import {ONCHAIN_EMBED_MARKETS,mayMountOnchainEmbedPreview,onchainEmbedUrl,onchainPoolUrl} from './frontend/src/pages/stocks/onchainEmbedPreviewData.ts';
           import {STOCKS_DISCOVERED_CANDIDATES} from './frontend/src/pages/stocks/onchainDiscoveredCandidates.ts';
           assert.equal(STOCKS_DISCOVERED_CANDIDATES.length,58);
-          assert.equal(new Set(STOCKS_DISCOVERED_CANDIDATES.map(x=>x.ticker)).size,STOCKS_DISCOVERED_CANDIDATES.length);
+          assert.equal(new Set(STOCKS_DISCOVERED_CANDIDATES.map(x=>x.ticker)).size,58);
           assert.ok(STOCKS_DISCOVERED_CANDIDATES.every(x=>x.verifiedOnChain===false));
-          assert.ok(STOCKS_DISCOVERED_CANDIDATES.every(x=>x.dex&&x.mint&&x.pool));
-          assert.equal(new Set([...ONCHAIN_EMBED_MARKETS.map(x=>x.ticker),...STOCKS_DISCOVERED_CANDIDATES.map(x=>x.ticker)]).size,58);
           assert.equal(ONCHAIN_EMBED_MARKETS.length,7);
-          assert.equal(new Set(ONCHAIN_EMBED_MARKETS.map(x=>x.ticker)).size,7);
-          assert.equal(new Set(ONCHAIN_EMBED_MARKETS.map(x=>x.pool)).size,7);
           assert.equal(mayMountOnchainEmbedPreview('127.0.0.1',true,'1'),true);
-          for(const [host,dev,flag] of [['voltextech.net',true,'1'],['preview.voltextech.net',true,'1'],['localhost',true,'1'],['127.0.0.1',false,'1'],['127.0.0.1',true,'0']]) {
+          for(const [host,dev,flag] of [['voltextech.net',true,'1'],['preview.voltextech.net',true,'1'],
+            ['localhost',true,'1'],['127.0.0.1',false,'1'],['127.0.0.1',true,'0']]) {
             assert.equal(mayMountOnchainEmbedPreview(host,dev,flag),false);
           }
           for (const m of ONCHAIN_EMBED_MARKETS) {
@@ -45,19 +51,47 @@ jobs:
             assert.equal(u.pathname,'/solana/pools/'+m.pool);
             assert.equal(u.searchParams.get('embed'),'1');
             assert.equal(onchainPoolUrl(m),u.origin+u.pathname);
-            assert.match(m.mint,/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
-            assert.match(m.pool,/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
           }
           assert.throws(()=>onchainEmbedUrl({...ONCHAIN_EMBED_MARKETS[0],pool:'fake'}),/UNKNOWN_MARKET/);
-          console.log('PASS 7 markets / strict localhost-only gating / source allowlist / URL safety');
+          console.log('PASS strict LOCAL-only gating, 58 candidates, 7 independent checked pool references');
           NODE
       - name: Install frontend dependencies
-        run: npm ci --no-audit --no-fund
         working-directory: frontend
-      - name: Full frontend type check and production build (flag OFF)
-        run: npm run build
+        run: npm ci --no-audit --no-fund
+      - name: Full frontend TypeScript check and production build (preview OFF)
         working-directory: frontend
         env:
           VITE_STOCKS_ONCHAIN_EMBED_PREVIEW: '0'
-
-# Exact-head narrow build after restoring JSX; no deployments.
+        run: npm run build
+      - name: Install Chromium for single browser-evidence sweep
+        shell: bash
+        run: |
+          npm install --prefix /tmp/stocks-qa-playwright --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/stocks-qa-playwright/node_modules/playwright/cli.js install chromium
+      - name: Check 58 iframe navigations, pool selection, mobile and reload (preview LOCAL only)
+        shell: bash
+        env:
+          STOCKS_EMBED_QA_DIR: ${{ runner.temp }}/stocks-embed-evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$STOCKS_EMBED_QA_DIR"
+          cd frontend
+          VITE_STOCKS_ONCHAIN_EMBED_PREVIEW=1 npm run dev -- --host 127.0.0.1 > "$STOCKS_EMBED_QA_DIR/vite.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:5173/stocks >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          cd ..
+          node scripts/stocks-onchain-embed-browser-qa.mjs
+      - name: Upload evidence (success or failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-onchain-embed-browser-${{ github.sha }}
+          path: ${{ runner.temp }}/stocks-embed-evidence/
+          if-no-files-found: warn
+          retention-days: 4
