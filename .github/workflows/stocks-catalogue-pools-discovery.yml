@@ -45,9 +45,9 @@ jobs:
           // Complete data may include hundreds of Solana tokens. Bounded scan only.
           const prioritize=['AAPLx','TSLAx','NVDAx','SPYx','GOOGLx','MSTRx','QQQx','MSFTx','AMZNx','METAx','COINx','HOODx','PLTRx','AMDx','NFLXx','TSMx','AVGOx','CRCLx','MSTRx','BRK.Bx','GLDx','SLVx','IBITx','BITOx','DIAx','IWMx','VTIx','XOMx','ORCLx','INTCx','UBERx','BABA x','BABAx','SHOPx','SONYx','SOFIx','PYPLx','JPMx','BACx','LLYx','Vx','MAx','UNHx','NVOx','WMTx','COSTx','DISx','BAx','GME x','GMEx','AMCx','RBLXx','SNAPx','SOUNx','SQQQx','NVDLx','TSLLx','QYLDx'];
           const order=new Map(prioritize.map((x,i)=>[x,i]));
-          const arr=issuer.sort((a,b)=>(order.get(a.ticker)??9999)-(order.get(b.ticker)??9999));
+          const arr=[...issuer.filter(x=>order.has(x.ticker)).sort((a,b)=>order.get(a.ticker)-order.get(b.ticker)), ...issuer.filter(x=>!order.has(x.ticker)).reverse()];
           console.log('POPULAR_MINTS',JSON.stringify(prioritize.filter(s=>issuer.some(x=>x.ticker===s))));
-          const cutoff=Math.min(arr.length,180);
+          const cutoff=Math.min(arr.length,200);
           console.log('ISSUER_TOTAL',issuer.length,'SCANNING',cutoff);
           const results=[];
           for(const [i,asset] of arr.slice(0,cutoff).entries()){
