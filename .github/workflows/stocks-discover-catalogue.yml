@@ -8,7 +8,7 @@ permissions:
 jobs:
   issuer-dex:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,34 +62,61 @@ jobs:
           }
           if(!stopReason)throw Error('ISSUER_PAGINATION_NOT_EXHAUSTED');
           if(assets.length<20)throw Error('ISSUER_ASSET_LIST_SUSPICIOUSLY_SHORT:'+assets.length);
-          const discovered=[];
-          let mints=0;
+          // Phase I: issuer identity is authoritative; 30-mint batched DEX search is a shortlisting aid.
+          const issuerByMint=new Map();
           for(const a of assets){
             if(!/x$/i.test(a.symbol))continue;
-            const deployments=(a.deployments??[]).filter(x=>x.network==='Solana'&&address.test(x.address||''));
-            if(deployments.length!==1){log.push({symbol:a.symbol,reason:'NO_UNIQUE_ISSUER_SOLANA_MINT'});continue;}
-            const mint=deployments[0].address;
-            mints++;
+            const deps=(a.deployments??[]).filter(d=>d.network==='Solana'&&address.test(d.address||''));
+            if(deps.length!==1){log.push({symbol:a.symbol,reason:'NO_UNIQUE_ISSUER_SOLANA_MINT'});continue;}
+            const mint=deps[0].address;
+            if(issuerByMint.has(mint)){log.push({symbol:a.symbol,reason:'DUPLICATE_ISSUER_MINT'});continue;}
+            issuerByMint.set(mint,a);
+          }
+          const mints=issuerByMint.size;
+          const rank=new Map();
+          const score=p=>Math.log1p(Number(p.txns?.h24?.buys||0)+Number(p.txns?.h24?.sells||0))*
+                        Math.log1p(Number(p.liquidity?.usd||0));
+          function isMarket(p,mint){
+            return p?.chainId==='solana'&&address.test(p.pairAddress||'')&&
+              ((p.baseToken?.address===mint&&p.quoteToken?.address===usdc)||
+               (p.quoteToken?.address===mint&&p.baseToken?.address===usdc))&&
+              ['raydium','orca','meteora','pancakeswap'].includes(p.dexId)&&
+              Number(p.liquidity?.usd||0)>=3000&&Number(p.volume?.h24||0)>=100&&
+              (Number(p.txns?.h24?.buys||0)+Number(p.txns?.h24?.sells||0))>=10;
+          }
+          const allMints=[...issuerByMint.keys()];
+          for(let i=0;i<allMints.length;i+=30){
             try{
-              await sleep(450);
-              const list=await get('https://api.dexscreener.com/token-pairs/v1/solana/'+mint);
-              if(!Array.isArray(list))throw Error('BAD_DEX_RESPONSE');
-              const eligible=list.filter(p=>p.chainId==='solana'&&address.test(p.pairAddress||'')&&
-                (p.baseToken?.address===mint&&p.quoteToken?.address===usdc || p.quoteToken?.address===mint&&p.baseToken?.address===usdc)
-                &&['raydium','orca','meteora','pancakeswap'].includes(p.dexId)
-                &&Number(p.liquidity?.usd||0)>=3000
-                &&Number(p.volume?.h24||0)>=100
-                &&Number(p.txns?.h24?.buys||0)+Number(p.txns?.h24?.sells||0)>=10);
-              eligible.sort((a,b)=>Math.log1p(Number(b.txns?.h24?.buys||0)+Number(b.txns?.h24?.sells||0))*Math.log1p(Number(b.liquidity?.usd||0)) -
-                       Math.log1p(Number(a.txns?.h24?.buys||0)+Number(a.txns?.h24?.sells||0))*Math.log1p(Number(a.liquidity?.usd||0)));
-              if(!eligible.length){log.push({symbol:a.symbol,reason:'NO_POOL_MEETING_MINIMUM_ACTIVITY'});continue;}
+              await sleep(300);
+              const batch=allMints.slice(i,i+30);
+              const pairs=await get('https://api.dexscreener.com/tokens/v1/solana/'+batch.join(','));
+              if(!Array.isArray(pairs))throw Error('BAD_DEX_BATCH');
+              for(const p of pairs){
+                const mint=batch.find(m=>isMarket(p,m));
+                if(!mint)continue;
+                if(!rank.has(mint)||score(p)>score(rank.get(mint)))rank.set(mint,p);
+              }
+            }catch(err){log.push({reason:'DEX_BATCH_LOOKUP_ERROR',batchStart:i,error:String(err.message).slice(0,100)});}
+          }
+          console.log('BATCHED_DEX_DISCOVERY',JSON.stringify({issuerAssets:assets.length,issuerSolanaMints:mints,batchedCandidateMints:rank.size,requestBatches:Math.ceil(allMints.length/30)}));
+          // Phase II: validate only the most active candidates using all known USDC pools of each token.
+          const shortlisted=[...rank.keys()].sort((a,b)=>score(rank.get(b))-score(rank.get(a))).slice(0,125);
+          const discovered=[];
+          for(const mint of shortlisted){
+            const a=issuerByMint.get(mint);
+            try{
+              await sleep(350);
+              const pairs=await get('https://api.dexscreener.com/token-pairs/v1/solana/'+mint);
+              if(!Array.isArray(pairs))throw Error('BAD_DEX_RESPONSE');
+              const eligible=pairs.filter(p=>isMarket(p,mint)).sort((a,b)=>score(b)-score(a));
               const p=eligible[0];
+              if(!p){log.push({symbol:a.symbol,reason:'NO_FINAL_ELIGIBLE_POOL'});continue;}
               discovered.push({ticker:a.symbol,name:String(a.name||a.description||a.symbol).slice(0,90),
                 mint,pool:p.pairAddress,dex:p.dexId,liquidityUSD:Number(p.liquidity?.usd||0),
                 volume24hUSD:Number(p.volume?.h24||0),txns24h:Number(p.txns?.h24?.buys||0)+Number(p.txns?.h24?.sells||0),
                 issuerIsin:a.isin||null,sourceVerified:'issuer_v2_token_mint_and_dexscreener_reported_pair',
                 geckoIndexed:false});
-            }catch(e){log.push({symbol:a.symbol,reason:'DEX_LOOKUP_ERROR',error:String(e.message).slice(0,110)})}
+            }catch(err){log.push({symbol:a.symbol,reason:'DEX_LOOKUP_ERROR',error:String(err.message).slice(0,100)});}
           }
           // GeckoTerminal API is a discovery validator; it does NOT grant commercial embed rights.
           discovered.sort((a,b)=>b.txns24h-a.txns24h);
