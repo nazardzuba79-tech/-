@@ -1,0 +1,45 @@
+name: VOLTEX xStocks official issuer public API evidence
+'on':
+  push:
+    branches:
+      - codex/solana-xstocks-seven-pool-proof-20261024
+    paths:
+      - .github/workflows/voltex-xstocks-issuer-evidence.yml
+permissions:
+  contents: read
+jobs:
+  issuer-public-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Read two official xStocks asset records and historical multipliers
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const instruments=[
+            {symbol:'AAPLx',mint:'XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp'},
+            {symbol:'TSLAx',mint:'XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB'}
+          ];
+          const host='https://api.xstocks.fi';
+          const evidence=[];
+          for(const a of instruments){
+            const out={symbol:a.symbol,expectedSolanaMint:a.mint,source:'official xStocks public v2 API',samples:[]};
+            for(const kind of ['asset','history','current']){
+              const path=kind==='asset'?'/api/v2/public/assets/'+a.symbol:
+                '/api/v2/public/assets/'+a.symbol+'/multiplier'+(kind==='history'?'/history':'')+'?network=Solana';
+              const item={kind,route:path};
+              try{
+                const res=await fetch(host+path,{redirect:'error',signal:AbortSignal.timeout(9000),headers:{accept:'application/json'}});
+                item.http=res.status;
+                const body=await res.text();
+                if(body.length>100000)throw Error('RESPONSE_TOO_LARGE');
+                item.json=JSON.parse(body);
+              }catch(err){item.error=String(err.message).slice(0,180);}
+              out.samples.push(item);
+              await new Promise(r=>setTimeout(r,300));
+            }
+            evidence.push(out);
+          }
+          console.log(JSON.stringify({utc:new Date().toISOString(),readOnly:true,host,issuerMintVerification:'requires comparison of returned fields',samples:evidence},null,2).slice(0,48000));
+          if(evidence.some(e=>e.samples.some(s=>s.http!==200)))process.exitCode=2;
+          NODE
