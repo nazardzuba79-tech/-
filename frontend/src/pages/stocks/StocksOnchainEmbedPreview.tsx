@@ -1,15 +1,36 @@
 import { useMemo, useState } from 'react';
 import { ExternalLink, Search } from 'lucide-react';
 import { Nav } from '../../components/Nav';
-import { ONCHAIN_EMBED_MARKETS, onchainEmbedUrl, onchainPoolUrl } from './onchainEmbedPreviewData';
+import { ONCHAIN_EMBED_MARKETS } from './onchainEmbedPreviewData';
+import { STOCKS_DISCOVERED_CANDIDATES } from './onchainDiscoveredCandidates';
 import './stocksOnchainEmbedPreview.css';
+
+const MARKETS = [
+  ...ONCHAIN_EMBED_MARKETS.map(m => ({...m, poolVerification: 'onchain' as const, dex: 'raydium'})),
+  ...STOCKS_DISCOVERED_CANDIDATES
+    .filter(m => !ONCHAIN_EMBED_MARKETS.some(existing => existing.ticker === m.ticker))
+    .map(m => ({...m, poolVerification: 'aggregator' as const})),
+];
+function verifiedCandidateUrl(instrument: typeof MARKETS[number]): string {
+  // Never permit a ticker-supplied URL. This is a finite exact address allowlist.
+  if (!MARKETS.some(m => m.pool === instrument.pool && m.mint === instrument.mint && m.ticker === instrument.ticker)) {
+    throw Error('UNRECOGNIZED_STOCKS_POOL');
+  }
+  return 'https://www.geckoterminal.com/solana/pools/' + instrument.pool;
+}
+function iframeUrl(instrument: typeof MARKETS[number]): string {
+  const url = new URL(verifiedCandidateUrl(instrument));
+  for (const [k, v] of Object.entries({embed: '1', info: '0', swaps: '0', light_chart: '0',
+    chart_type: 'price', resolution: '1h', bg_color: '101318'})) url.searchParams.set(k, v);
+  return url.href;
+}
 
 /** Private localhost only. Embeds are provider-owned, not a VOLTEX market-data feed. No trading. */
 export default function StocksOnchainEmbedPreview() {
   const [filter, setFilter] = useState('');
   const [selectedTicker, setSelectedTicker] = useState('SPYx');
-  const instrument = ONCHAIN_EMBED_MARKETS.find(m => m.ticker === selectedTicker) ?? ONCHAIN_EMBED_MARKETS[0];
-  const shown = useMemo(() => ONCHAIN_EMBED_MARKETS.filter(m =>
+  const instrument = MARKETS.find(m => m.ticker === selectedTicker) ?? MARKETS[0];
+  const shown = useMemo(() => MARKETS.filter(m =>
     (m.ticker + ' ' + m.name).toLowerCase().includes(filter.trim().toLowerCase())), [filter]);
   return <div className="vxson-root">
     <Nav active="/stocks" hideTicker readProfile={false} />
@@ -23,7 +44,7 @@ export default function StocksOnchainEmbedPreview() {
       </header>
       <div className="vxson-grid">
         <aside className="vxson-sidebar" aria-label="Активи">
-          <div className="vxson-sidebar-top"><h2>Активи <small>{ONCHAIN_EMBED_MARKETS.length}</small></h2>
+          <div className="vxson-sidebar-top"><h2>Активи <small>{MARKETS.length}</small></h2>
             <label className="vxson-search"><Search size={16}/><input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Пошук xStocks" aria-label="Знайти актив"/></label>
           </div>
           <div className="vxson-markets">{shown.map(m =>
@@ -40,12 +61,15 @@ export default function StocksOnchainEmbedPreview() {
           <div className="vxson-market-head">
             <span className="vxson-selected-icon">{instrument.ticker.slice(0,1)}</span>
             <div><h2>{instrument.ticker}<span>/USDC</span></h2><p>{instrument.name} · Solana</p></div>
-            <a className="vxson-external" href={onchainPoolUrl(instrument)} target="_blank" rel="noopener noreferrer">
+            <a className="vxson-external" href={verifiedCandidateUrl(instrument)} target="_blank" rel="noopener noreferrer">
               Відкрити джерело <ExternalLink size={14} />
             </a>
           </div>
+          <p className="vxson-source-note" role="status">{instrument.poolVerification === 'onchain'
+            ? 'Пул і SwapEvent підтверджені on-chain. Графік надає зовнішній сервіс.'
+            : 'Кандидат: емітент підтвердив токен, але пул знайдено лише DEX-агрегатором. On-chain перевірка пулу ще потрібна.'}</p>
           <div className="vxson-frame"><iframe key={instrument.pool} title={instrument.ticker+'/USDC — GeckoTerminal on-chain chart'}
-            src={onchainEmbedUrl(instrument)} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
+            src={iframeUrl(instrument)} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
             allow="clipboard-write; fullscreen" allowFullScreen /></div>
           <div className="vxson-attribution"><span>Живий графік безпосередньо надає GeckoTerminal.</span>
             <a href="https://about.geckoterminal.com/embed-charts" target="_blank" rel="noopener noreferrer">
