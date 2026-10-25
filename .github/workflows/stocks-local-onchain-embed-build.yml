@@ -59,3 +59,5 @@ jobs:
         working-directory: frontend
         env:
           VITE_STOCKS_ONCHAIN_EMBED_PREVIEW: '0'
+
+# Exact-head narrow build after restoring JSX; no deployments.
