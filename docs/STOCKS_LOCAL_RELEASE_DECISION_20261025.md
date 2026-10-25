@@ -58,3 +58,17 @@ Outstanding release gates, all hard blockers unless proven otherwise:
 Delegated tasks: on-chain proof in https://github.com/nazardzuba79-tech/-/issues/615 ; terms/release architecture in https://github.com/nazardzuba79-tech/-/issues/618 . A GitHub Issue is not evidence an external coding agent executed it.
 
 **Do not present this local technical milestone as production deployment or fully verified live trading.**
+
+## Final focused release gate CI — 25 Oct 2026
+
+- Exact reviewed code commit: `8395479095951f903d998bd76722be3fe98d0712`.
+- GitHub Actions: https://github.com/nazardzuba79-tech/-/actions/runs/40180539429 — **SUCCESS**.
+- Six pure negative/structure tests **PASS**, deterministic source release decision remains `NO_GO`.
+- Full frontend TypeScript + Vite build **PASS** with local embed preview flag OFF.
+- Browser QA sampled SPYx, NVDAx, CRCLx: **3/3 HTTP 200 and provider Canvas**, 3 iframe load events, no UI JavaScript errors; source switch NVDAx, URL/pool persistence, invalid pool rejection, same-source retry, mobile refresh **PASS**, zero local write requests.
+- A preceding browser run failed only on an early iframe `load` event while HTTP 200 and Canvas were already present. The final test records iframe `load` separately and requires the observed HTTP 200 + provider Canvas. These are separate signals; neither establishes audited candles or licensing.
+- Run artifact with `release-gate.json`, screenshots and test outputs: https://github.com/nazardzuba79-tech/-/actions/runs/40180539429/artifacts/12593482309 .
+- Prior 58-market provider HTTP+Canvas run: https://github.com/nazardzuba79-tech/-/actions/runs/40178027705 .
+- **No merge/deploy**, no SQL, no external trading, no market data price fabrications. Stocks trading remains silent NO-OP. Original #613 remains Draft.
+
+Final release position: **engineering LOCAL PASS; full audited on-chain data NOT PROVEN; public permission NOT CONFIRMED; production NO-GO**.
