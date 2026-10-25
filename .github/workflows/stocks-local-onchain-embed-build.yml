@@ -1,0 +1,55 @@
+name: VOLTEX Stocks local onchain embed isolated build
+'on':
+  push:
+    branches:
+      - work/stocks-onchain-local-embed-20261025
+    paths:
+      - .github/workflows/stocks-local-onchain-embed-build.yml
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Verify seven source guards, fixed origin and disabled hosted mount
+        shell: bash
+        run: |
+          node --experimental-strip-types --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {ONCHAIN_EMBED_MARKETS,mayMountOnchainEmbedPreview,onchainEmbedUrl,onchainPoolUrl} from './frontend/src/pages/stocks/onchainEmbedPreviewData.ts';
+          assert.equal(ONCHAIN_EMBED_MARKETS.length,7);
+          assert.equal(new Set(ONCHAIN_EMBED_MARKETS.map(x=>x.ticker)).size,7);
+          assert.equal(new Set(ONCHAIN_EMBED_MARKETS.map(x=>x.pool)).size,7);
+          assert.equal(mayMountOnchainEmbedPreview('127.0.0.1',true,'1'),true);
+          for(const [host,dev,flag] of [['voltextech.net',true,'1'],['preview.voltextech.net',true,'1'],['localhost',true,'1'],['127.0.0.1',false,'1'],['127.0.0.1',true,'0']]) {
+            assert.equal(mayMountOnchainEmbedPreview(host,dev,flag),false);
+          }
+          for (const m of ONCHAIN_EMBED_MARKETS) {
+            const u=new URL(onchainEmbedUrl(m));
+            assert.equal(u.origin,'https://www.geckoterminal.com');
+            assert.equal(u.pathname,'/solana/pools/'+m.pool);
+            assert.equal(u.searchParams.get('embed'),'1');
+            assert.equal(onchainPoolUrl(m),u.origin+u.pathname);
+            assert.match(m.mint,/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+            assert.match(m.pool,/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+          }
+          assert.throws(()=>onchainEmbedUrl({...ONCHAIN_EMBED_MARKETS[0],pool:'fake'}),/UNKNOWN_MARKET/);
+          console.log('PASS 7 markets / strict localhost-only gating / source allowlist / URL safety');
+          NODE
+      - name: Install frontend dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: frontend
+      - name: Full frontend type check and production build (flag OFF)
+        run: npm run build
+        working-directory: frontend
+        env:
+          VITE_STOCKS_ONCHAIN_EMBED_PREVIEW: '0'
