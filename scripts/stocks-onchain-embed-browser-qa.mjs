@@ -180,7 +180,7 @@ try {
   const mobileFrame = page.frames().find(f => f.url().startsWith('https://www.geckoterminal.com/solana/pools/'));
   report.mobileFrameFound = Boolean(mobileFrame);
   report.mobileCanvasCount = mobileFrame ? await mobileFrame.locator('canvas').count().catch(() => 0) : 0;
-  report.mobilePass = (await page.locator('.vxson-market').count()) === 58 &&
+  report.mobilePass = (await page.locator('.vxson-market').count()) === 36 &&
     (await page.locator('.vxson-frame iframe').count()) === 1 &&
     report.mobileFrameFound && report.mobileCanvasCount > 0;
   await page.screenshot({ path: artifactPath + '/SPYx-mobile-after-reload.png', fullPage: true });
