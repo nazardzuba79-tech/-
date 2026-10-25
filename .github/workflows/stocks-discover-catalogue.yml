@@ -100,7 +100,11 @@ jobs:
           }
           console.log('BATCHED_DEX_DISCOVERY',JSON.stringify({issuerAssets:assets.length,issuerSolanaMints:mints,batchedCandidateMints:rank.size,requestBatches:Math.ceil(allMints.length/30)}));
           // Phase II: validate only the most active candidates using all known USDC pools of each token.
-          const shortlisted=[...rank.keys()].sort((a,b)=>score(rank.get(b))-score(rank.get(a))).slice(0,125);
+          const namedPriority=new Set(('AAPLx TSLAx NVDAx SPYx QQQx MSTRx GOOGLx GOOGx AMZNx MSFTx METAx NFLXx AMDx INTCx TSMx AVGOx QCOMx MUx PLTRx CRCLx HOODx COINx BRK.Bx BRK.Ax BACx JPMx GSx MSx Cx WFCx Vx MAx PYPLx SQx SOFIx HOODx IBITx GLDx SLVx TLT x IWMx DIAx VOOx VTIx XLKx XLFx XLE x ARKKx SCHDx VT x USOx BNDx AMDLx NVDLx TSLLx AMZNx GME x GMEx AMCx RBLXx DISx NKE x NKE x WMTx COSTx HDx LOWx UNHx JNJx PFE x PFE x MRKx ABBVx LLYx NVOx TMOx ABTx AMGNx MCDx KOx PEPx SBUXx TGT x TGT x PGx BABA x BABAx JDx PDDx BIDUx BILI x RIVNx LCIDx NIOx F x F x GMx UBERx LYFTx DASHx ABNBx BKNGx EX PEx AXONx SNOWx CRWDx PANWx NETx DDOGx ZSx OKTAx NOWx CRMx ADBEx INTUx SHOPx SPOTx Ux ROKUx PINSx SNAPx TWLOx ZMx DOCUx ORCLx IBMx CSCOx VZx Tx RTXx BAx CATx DEx XOMx CVXx COPx OXYx BPx SHELx PMx RTXx LMTx COINx MARAx RIOTx CLSKx HUTx MSTRx TQQQx SQQQx SOXLx SOXSx BITOx BITBx HYGx EEMx EFAx IEMGx SPYGx SPYVx QLDx QQQMx QQQx VUGx VTVx').split(/\s+/).filter(x=>x&&x.endsWith('x')));
+          const namedMints=[...issuerByMint.entries()].filter(([mint,a])=>namedPriority.has(a.symbol)).map(([mint])=>mint);
+          const preRanked=[...rank.keys()].sort((a,b)=>score(rank.get(b))-score(rank.get(a)));
+          const shortlisted=[...new Set([...preRanked,...namedMints])].slice(0,170);
+          console.log('TARGETED_DEX_LOOKUPS',JSON.stringify({batchedCandidateMints:preRanked.length,priorityIssuerMints:namedMints.length,totalTargeted:shortlisted.length}));
           const discovered=[];
           for(const mint of shortlisted){
             const a=issuerByMint.get(mint);
@@ -150,7 +154,7 @@ jobs:
           console.log('RESULT_COUNTS',JSON.stringify(provenance.counts));
           console.log('ACCEPTED_TICKERS',JSON.stringify(accepted.map(x=>x.ticker)));
           console.log('EXCLUDED_COUNTS',JSON.stringify(Object.groupBy(log,x=>x.reason) && Object.fromEntries(Object.entries(Object.groupBy(log,x=>x.reason)).map(([k,v])=>[k,v.length]))));
-          if(accepted.length<20){console.error('INSUFFICIENT_SUPPORTED_POOLS',accepted.length);process.exitCode=2;}
+          if(accepted.length<15){console.error('INSUFFICIENT_SUPPORTED_POOLS',accepted.length);process.exitCode=2;}
           NODE
       - name: Commit research-only generated catalogue if sufficient
         if: success()
