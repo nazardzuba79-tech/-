@@ -111,7 +111,7 @@ export default function StocksOnchainEmbedPreview() {
             <iframe key={pool.address} title={instrument.ticker + '/USDC — GeckoTerminal on-chain chart'}
               src={poolUrl} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
               onLoad={() => setFrameState('document')} onError={() => setFrameState('error')}
-              allow="clipboard-write; fullscreen" allowFullScreen />
+              allow="fullscreen" allowFullScreen />
           </div>
           <div className="vxson-frame-status" role="status">
             {frameState === 'loading' ? 'Загрузка внешнего iframe…' :

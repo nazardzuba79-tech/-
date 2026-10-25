@@ -71,7 +71,7 @@ jobs:
       - name: Check 58 iframe navigations, pool selection, mobile and reload (preview LOCAL only)
         shell: bash
         env:
-          STOCKS_QA_MOBILE_ONLY: '1'
+          STOCKS_QA_MOBILE_ONLY: '0'
           STOCKS_EMBED_QA_DIR: ${{ runner.temp }}/stocks-embed-evidence
         run: |
           set -euo pipefail

@@ -13,6 +13,7 @@ const report = {
   origin: url, runAtUtc: new Date().toISOString(), total: 0,
   iframeLoadedSignals: 0, providerFramesWithCanvas: 0,
   providerFramesWithoutCanvas: 0, unavailableOrTimedOut: 0,
+  http200AndCanvas: 0, invalidDocumentCount: 0, poolSwitchChecks: [], unsafeLocalWrites: [],
   results: [], caveat: 'An iframe load event or canvas does not prove OHLCV correctness, candle rendering or commercial permission.',
 };
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -28,6 +29,13 @@ try {
   });
   const warnings = [];
   page.on('pageerror', error => warnings.push(String(error).slice(0, 240)));
+  // Read-only contract: no trading write must reach the local VOLTEX host.
+  page.on('request', req => {
+    const target = new URL(req.url());
+    if (target.origin === new URL(url).origin && !['GET', 'HEAD', 'OPTIONS'].includes(req.method())) {
+      report.unsafeLocalWrites.push({ method: req.method(), pathname: target.pathname });
+    }
+  });
   // Synthetic local-only session presence lets the *existing* RequireAuth guard
   // render the route in CI. No live backend credentials or authentication bypass.
   await page.addInitScript(() => window.localStorage.setItem('exchange_token', 'invalid-local-browser-qa-session'));
@@ -56,6 +64,12 @@ try {
   await page.locator('.vxson-filter-mode').selectOption('checked');
   if (await elements.count() !== 22) throw new Error('BAD_EXTRA_VERIFIED_COUNT');
   await page.locator('.vxson-filter-mode').selectOption('all');
+  const search = page.getByRole('textbox', { name: 'Найти актив' });
+  await search.fill('HOOD');
+  if (await elements.count() !== 1 || !(await elements.first().innerText()).includes('HOODx')) {
+    throw new Error('SEARCH_FILTER_FAILED');
+  }
+  await search.fill('');
   const reviewTickers = process.env.STOCKS_QA_MOBILE_ONLY === '1'
     ? ['SPYx', 'CRCLx'] : report.tickers;
   for (const ticker of reviewTickers) {
@@ -87,14 +101,35 @@ try {
       contentSample: pageText.replace(/\s+/g, ' ').slice(0, 120) };
     report.results.push(record);
     if (loaded) report.iframeLoadedSignals++;
+    if (response === 200 && loaded && canvasCount > 0) report.http200AndCanvas++;
+    else report.invalidDocumentCount++;
     if (canvasCount > 0) report.providerFramesWithCanvas++;
     else if (frame) report.providerFramesWithoutCanvas++;
     else report.unavailableOrTimedOut++;
     console.log('STOCKS_IFRAME_QA', JSON.stringify(record));
-    if (ticker === 'SPYx' || ticker === 'CRCLx') {
+    if (['SPYx','CRCLx','NVDAx','TSLAx','MSFTx','AAPLx','METAx','GOOGLx','QQQx','PLTRx'].includes(ticker)) {
       await page.screenshot({ path: artifactPath + '/' + ticker + '-desktop.png', fullPage: false });
     }
   }
+  // Different exchange pools for one ticker must produce distinct GeckoTerminal URLs.
+  // Check without altering any backend state or modifying the source allowlist.
+  await page.getByRole('button', { name: /NVDAx/ }).first().click();
+  const poolSelect = page.getByRole('combobox', { name: 'Выбрать пул графика' });
+  const options = await poolSelect.locator('option').evaluateAll(items => items.map(x => x.value));
+  if (options.length < 2) throw new Error('EXPECTED_NVDA_ALTERNATIVE_POOL');
+  const originalPool = await poolSelect.inputValue();
+  const alternatePool = options.find(v => v !== originalPool);
+  if (!alternatePool) throw new Error('MISSING_ALTERNATIVE_POOL_ADDRESS');
+  await poolSelect.selectOption(alternatePool);
+  const switchedUrl = await page.locator('.vxson-frame iframe').getAttribute('src');
+  if (!switchedUrl?.includes('/pools/' + alternatePool)) throw new Error('POOL_SELECTOR_SWITCH_FAILED');
+  await poolSelect.selectOption(originalPool);
+  const restoredUrl = await page.locator('.vxson-frame iframe').getAttribute('src');
+  if (!restoredUrl?.includes('/pools/' + originalPool)) throw new Error('POOL_SELECTOR_RESTORE_FAILED');
+  report.poolSwitchChecks.push({ticker: 'NVDAx', originalPool, alternatePool, success: true});
+
+  if (report.unsafeLocalWrites.length) throw new Error('STOCKS_WRITES_OBSERVED_' + JSON.stringify(report.unsafeLocalWrites));
+  if (report.invalidDocumentCount !== 0) throw new Error('STOCKS_DOCUMENT_OR_CANVAS_FAILURES_' + report.invalidDocumentCount);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.getByRole('heading', { name: 'Токенизированные акции' }).waitFor();
@@ -110,6 +145,7 @@ try {
   await page.screenshot({ path: artifactPath + '/SPYx-mobile-after-reload.png', fullPage: true });
   if (!report.mobilePass) throw new Error('MOBILE_RELOAD_SMOKE_FAILED');
   report.pageErrors = warnings;
+  if (warnings.length) throw new Error('STOCKS_JAVASCRIPT_ERRORS_' + warnings.length);
 } finally {
   fs.writeFileSync(artifactPath + '/report.json', JSON.stringify(report, null, 2));
   await browser.close();
@@ -119,5 +155,6 @@ console.log('STOCKS_BROWSER_SUMMARY', JSON.stringify({
   providerFramesWithCanvas: report.providerFramesWithCanvas,
   providerFramesWithoutCanvas: report.providerFramesWithoutCanvas,
   unavailableOrTimedOut: report.unavailableOrTimedOut,
-  mobilePass: report.mobilePass,
+  mobilePass: report.mobilePass, http200AndCanvas: report.http200AndCanvas,
+  poolSwitchChecks: report.poolSwitchChecks.length, unsafeLocalWrites: report.unsafeLocalWrites.length,
 }));
