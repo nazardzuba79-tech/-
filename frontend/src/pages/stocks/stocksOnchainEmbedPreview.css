@@ -33,3 +33,23 @@
 @media(max-width:1120px){.vxson-grid{grid-template-columns:minmax(180px,210px) minmax(0,1fr)}.vxson-trade-off{display:none}}
 @media(max-width:680px){.vxson-layout{padding:12px 8px 25px}.vxson-head{align-items:flex-start;flex-direction:column;gap:9px;margin-bottom:12px}.vxson-head h1{font-size:21px}.vxson-mode{padding:7px;font-size:10px}.vxson-grid{display:flex;flex-direction:column}.vxson-sidebar,.vxson-center{width:100%}.vxson-sidebar-top{padding:11px}.vxson-markets{display:flex;overflow-x:auto;max-height:none;gap:6px;padding:6px}.vxson-market{flex:0 0 130px}.vxson-source-note{display:none}.vxson-market-head{padding:12px;gap:7px}.vxson-market-head h2{font-size:15px}.vxson-market-head p{font-size:10px}.vxson-external{font-size:10px}.vxson-frame{height:440px;min-height:440px}.vxson-attribution{flex-direction:column;align-items:flex-start;gap:7px}}
 .vxson-candidate-metrics{display:flex;flex-wrap:wrap;gap:10px;padding:10px 14px;border-bottom:1px solid #252d39;color:#b7a781;font-size:11px}.vxson-candidate-metrics span{padding:5px 9px;background:#242116;border-radius:6px}
+
+/* Research catalogue controls: accessible, including narrow viewport and source changes. */
+.vxson-filter-mode,.vxson-chart-controls select{width:100%;min-width:0;border:1px solid #364454;border-radius:7px;background:#0b111a;color:#dce6f3;font:inherit;font-size:12px;padding:9px 10px}
+.vxson-filter-mode{margin-top:10px}
+.vxson-market-evidence{display:block;margin-top:5px;font-size:10px;color:#c5a763;line-height:1.3}
+.vxson-chart-controls{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#141b24;border-bottom:1px solid #252d39}
+.vxson-chart-controls label{font-size:11px;color:#9cacc0;white-space:nowrap}
+.vxson-chart-controls select{flex:1;max-width:100%}
+.vxson-pool-count{font-size:10px;color:#91a1b4;white-space:nowrap}
+.vxson-evidence-note{padding:10px 16px;margin:0;font-size:11px;line-height:1.5;color:#aeb8c8;background:#1b2029}
+.vxson-frame-status{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:10px 14px;border-top:1px solid #252d39;font-size:11px;color:#a3b5cb;line-height:1.6}
+.vxson-frame-status a{display:flex;align-items:center;gap:5px;color:#d7b059;text-decoration:none}
+@media(max-width:680px){
+  .vxson-chart-controls{flex-wrap:wrap;padding:10px;gap:7px}
+  .vxson-chart-controls label{width:100%}
+  .vxson-chart-controls select{width:100%;flex:1 1 100%}
+  .vxson-pool-count{white-space:normal}
+  .vxson-market-evidence{font-size:9px}
+  .vxson-evidence-note{font-size:10px;padding:9px 12px}
+}
