@@ -72,3 +72,14 @@ Delegated tasks: on-chain proof in https://github.com/nazardzuba79-tech/-/issues
 - **No merge/deploy**, no SQL, no external trading, no market data price fabrications. Stocks trading remains silent NO-OP. Original #613 remains Draft.
 
 Final release position: **engineering LOCAL PASS; full audited on-chain data NOT PROVEN; public permission NOT CONFIRMED; production NO-GO**.
+
+## Final screened-catalogue usability correction — 25 October 2026
+
+- Existing list still contains **58** official-issuer-mint-matched xStocks/USDC DEX-pool candidates. These are **not** 58 audited production markets.
+- The local viewing sidebar now **defaults to 36 historically screened candidates** with at least 10 *reported* trades during the prior 24-hour window and at least USD 2,000 *reported* pool liquidity at the 25 October 2026 discovery snapshot. The remaining 22 are accessible **only after explicitly selecting All candidates**, and flagged below that snapshot threshold. Neither cutoff is a current live-quality or safe-trading certification.
+- The selected pool now shows its **historical liquidity and 24-hour transactions, or "Нет данных"**, with a visible `25.10.2026, не live` warning. Numbers are pool-specific; independently on-chain-checked pools without corresponding snapshot figures are not assigned made-up statistics.
+- The prior full 58-iframe QA remains https://github.com/nazardzuba79-tech/-/actions/runs/40178027705 .
+- The targeted final Chromium + Vite CI of the screened UI passed: https://github.com/nazardzuba79-tech/-/actions/runs/40181665918 ; **six safety tests PASS**, TypeScript/Vite PASS, SPYx/NVDAx/CRCLx iframe HTTP 200/Canvas 3/3, mobile reload PASS, pool and link checks PASS, zero local write requests. The test also checks the default 36 and the 58-item research filter.
+- Checked code commit `301c9f4586d4d7f6fe8438f1a312744a287900d0`. The preceding failed test runs were corrected, not hidden; the final check is the successful one.
+
+**Final technical outcome:** localhost read-only preview accepted. **Final production outcome:** NOT READY / NO GO. Source rights, most exact Solana executed-swap validations, durable OHLCV completeness and official release authorization remain unresolved. No main/production/DB/trade changes.
