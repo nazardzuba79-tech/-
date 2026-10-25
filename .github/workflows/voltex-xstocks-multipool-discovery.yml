@@ -1,0 +1,59 @@
+name: VOLTEX xStocks multi-pool free discovery
+'on':
+  push:
+    branches:
+      - codex/solana-xstocks-seven-pool-proof-20261024
+    paths:
+      - .github/workflows/voltex-xstocks-multipool-discovery.yml
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: DEX pool discovery by seven issuer-verified Solana mints (research only)
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const tokens=[
+            ['AAPLx','XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp','CKwJZwm7oj3nu4653N1EpDrqXbXAYXoPFiPeEnLouF8y'],
+            ['TSLAx','XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB','8aDaBQkTrS6HVMjyc6EZebgdiaXhLYGriDWKWWp1NpFF'],
+            ['NVDAx','Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh','4KqQN6u1pFKroFE2jVEhoepAMRKPcuAzWVDCgm9zRBYN'],
+            ['SPYx','XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W','6truu3rZuiB9rKQg4VYC3Dt3QwV7DgwGqXrYUcrvnDDE'],
+            ['GOOGLx','XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN','B8YAwjGYk6qidWzGBXMAxP7nYfG8g74EZ3Y4gFSsobRw'],
+            ['MSTRx','XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ','RyhF4cksVZY7vcqJpoytHcxcGNKRp27PEGhSnEPpbGv'],
+            ['QQQx','Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ','FknDV1F5n6QaA7rLmjquDjuU6wcPMNm5RYq7zWbqhpZw']
+          ];
+          const usdc='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+          const findings=[];
+          for(const [symbol,mint,knownPool] of tokens){
+            const item={symbol,issuerVerifiedMint:mint,priorCLMMPool:knownPool,discoveryOnly:true};
+            try{
+              const r=await fetch('https://api.dexscreener.com/token-pairs/v1/solana/'+mint,{redirect:'error',signal:AbortSignal.timeout(9000)});
+              item.http=r.status;
+              if(!r.ok)throw Error('DEX_HTTP_'+r.status);
+              const body=await r.text();
+              if(body.length>1_500_000)throw Error('API_TOO_LARGE');
+              const pairs=JSON.parse(body);
+              if(!Array.isArray(pairs))throw Error('API_BAD_RESPONSE');
+              const correct=pairs.filter(p=>p.chainId==='solana'&&p.pairAddress&&
+                [p.baseToken?.address,p.quoteToken?.address].includes(mint));
+              const stable=correct.filter(p=>[p.baseToken?.address,p.quoteToken?.address].includes(usdc));
+              item.totalObservedPairs=correct.length;item.usdcPairs=stable.length;
+              item.dexes=[...new Set(stable.map(p=>p.dexId))].sort();
+              item.topUSDCPairs=stable.map(p=>({
+                pool:p.pairAddress,dex:p.dexId,labels:p.labels||[],isPreviouslyVerified:p.pairAddress===knownPool,
+                baseMint:p.baseToken?.address,quoteMint:p.quoteToken?.address,
+                liquidityUSD:p.liquidity?.usd??null,volume24hUSD:p.volume?.h24??null,
+                swaps24h:(p.txns?.h24?.buys??0)+(p.txns?.h24?.sells??0),
+                priceUsd:p.priceUsd??null
+              })).sort((a,b)=>b.swaps24h-a.swaps24h).slice(0,10);
+              item.otherPoolsBeyondTen=Math.max(0,stable.length-10);
+            }catch(e){item.error=String(e.message).slice(0,170)}
+            findings.push(item);
+            await new Promise(r=>setTimeout(r,750));
+          }
+          console.log(JSON.stringify({at:new Date().toISOString(),source:'DEX Screener public token-pairs API',limits:'third-party reported and may be stale or incomplete; not on-chain verification and NOT data redistribution permission',result:findings},null,2));
+          if(findings.some(x=>x.error))process.exitCode=2;
+          NODE
