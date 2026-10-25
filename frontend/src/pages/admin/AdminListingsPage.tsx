@@ -13,6 +13,7 @@ import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, historicalModelLabel, isHistoricalWindow, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
 import { historicalGrowthProvenance, ListingHistoricalGrowthPanel } from './ListingHistoricalGrowthPanel';
 import { HISTORICAL_GROWTH_LABEL, HISTORICAL_GROWTH_PREVIEW_UNIT, historicalGrowthDays, historicalWindowMovement, type HistoricalGrowthProgram } from './historicalGrowthModel';
+import { listingHistoricalPublicationBlocked } from './listingHistoricalPublicationGate';
 import { useAdminCompact } from './useAdminCompact';
 import './adminListings.css';
 
@@ -338,8 +339,7 @@ export function AdminListingsPage() {
 
   function openPublish() {
     if (!current || busy || !draftIsSaved) return;
-    if (current.draft.simulationProgram?.kind === 'scenario-controls-v2'
-      && (current.draft.simulationProgram.afterGrowth === 'historical' || current.draft.simulationProgram.growth === 'historical-window')) {
+    if (listingHistoricalPublicationBlocked(current.draft)) {
       setFormError('Историческое движение пока только для закрытого предпросмотра. Публикация требует проверки прав на источник и отдельного торгового счёта.');
       return;
     }
