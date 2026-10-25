@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
-import { ExternalLink, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ExternalLink, Search, RefreshCw } from 'lucide-react';
 import { Nav } from '../../components/Nav';
 import { STOCKS_ONCHAIN_CATALOGUE, STOCKS_QUALITY_COUNTS, onchainChartUrl, type OnchainPoolChoice } from './onchainPoolCatalogue';
 import './stocksOnchainEmbedPreview.css';
 
 type CatalogueFilter = 'all' | 'active' | 'checked';
-type FrameState = 'loading' | 'document' | 'error';
+type FrameState = 'loading' | 'document' | 'error' | 'slow';
 
 function poolEvidence(pool: OnchainPoolChoice): string {
   const evidence = [];
@@ -22,13 +23,24 @@ function poolName(pool: OnchainPoolChoice): string {
 export default function StocksOnchainEmbedPreview() {
   const [filter, setFilter] = useState('');
   const [catalogueFilter, setCatalogueFilter] = useState<CatalogueFilter>('all');
-  const [selectedTicker, setSelectedTicker] = useState('SPYx');
-  const [selectedPool, setSelectedPool] = useState<string | null>(null);
+  // Route state makes a specific asset/pool shareable, survives reload and supports Back/Forward.
+  // Unknown ticker and unallowlisted pool parameters are ignored, never interpolated into iframe URLs.
+  const [params, setParams] = useSearchParams();
+  const [reloadCounter, setReloadCounter] = useState(0);
   const [frameState, setFrameState] = useState<FrameState>('loading');
 
   const markets = STOCKS_ONCHAIN_CATALOGUE;
-  const instrument = markets.find(m => m.ticker === selectedTicker) ?? markets[0];
-  const pool = instrument.pools.find(p => p.address === selectedPool) ?? instrument.pools[0];
+  const selectedTicker = params.get('asset') ?? 'SPYx';
+  const instrument = markets.find(m => m.ticker === selectedTicker) ?? markets.find(m => m.ticker === 'SPYx') ?? markets[0];
+  const pool = instrument.pools.find(p => p.address === params.get('pool')) ?? instrument.pools[0];
+  const iframeKey = instrument.ticker + ':' + pool.address + ':' + reloadCounter;
+  useEffect(() => {
+    setFrameState('loading');
+    // Cross-origin frames may never signal a useful chart even if their document loads.
+    // This is a delay warning, NOT a claim the chart is unavailable or an automatic pool switch.
+    const handle = window.setTimeout(() => setFrameState(s => s === 'loading' ? 'slow' : s), 20000);
+    return () => window.clearTimeout(handle);
+  }, [iframeKey]);
   const shown = useMemo(() => markets.filter(m => {
     if (catalogueFilter === 'active' && !m.activeAtDiscovery) return false;
     if (catalogueFilter === 'checked' && !m.independentlyVerifiedPool && !m.geckoIndexedPool) return false;
@@ -39,14 +51,24 @@ export default function StocksOnchainEmbedPreview() {
   const sourceUrl = 'https://www.geckoterminal.com/solana/pools/' + pool.address;
 
   function selectTicker(ticker: string) {
-    setSelectedTicker(ticker);
-    setSelectedPool(null);
+    if (!markets.some(m => m.ticker === ticker)) return;
+    const next = new URLSearchParams(params);
+    next.set('asset', ticker);
+    next.delete('pool');
     setFrameState('loading');
+    setParams(next);
   }
   function changePool(address: string) {
     if (!instrument.pools.some(p => p.address === address)) return;
-    setSelectedPool(address);
+    const next = new URLSearchParams(params);
+    next.set('asset', instrument.ticker);
+    next.set('pool', address);
     setFrameState('loading');
+    setParams(next);
+  }
+  function refreshChart() {
+    setFrameState('loading');
+    setReloadCounter(n => n + 1);
   }
 
   return <div className="vxson-root">
@@ -108,16 +130,22 @@ export default function StocksOnchainEmbedPreview() {
             Проверка адреса не подтверждает загрузку самого графика и право коммерческого показа.
           </p>
           <div className="vxson-frame">
-            <iframe key={pool.address} title={instrument.ticker + '/USDC — GeckoTerminal on-chain chart'}
+            <iframe key={iframeKey} title={instrument.ticker + '/USDC — GeckoTerminal on-chain chart'}
               src={poolUrl} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
               onLoad={() => setFrameState('document')} onError={() => setFrameState('error')}
               allow="fullscreen" allowFullScreen />
           </div>
           <div className="vxson-frame-status" role="status">
-            {frameState === 'loading' ? 'Загрузка внешнего iframe…' :
-              frameState === 'error' ? 'Ошибка iframe. Откройте источник для проверки.' :
-              'Событие загрузки iframe получено; наличие свечей и корректных котировок не подтверждено автоматически.'}
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer">Проверить непосредственно на GeckoTerminal <ExternalLink size={12}/></a>
+            <span>{frameState === 'loading' ? 'Загрузка внешнего iframe…' :
+              frameState === 'slow' ? 'Нет подтверждения загрузки за 20 секунд. Источник может быть медленным или недоступным.' :
+              frameState === 'error' ? 'Браузер сообщил об ошибке iframe. Проверьте источник.' :
+              'Документ iframe загружен; отображение свечей и точность котировок не подтверждены автоматически.'}</span>
+            <div className="vxson-frame-actions">
+              <button type="button" className="vxson-chart-retry" onClick={refreshChart} aria-label="Перезагрузить график">
+                <RefreshCw size={12} /> Обновить график
+              </button>
+              <a href={sourceUrl} target="_blank" rel="noopener noreferrer">Проверить GeckoTerminal <ExternalLink size={12}/></a>
+            </div>
           </div>
           <div className="vxson-attribution"><span>Внешний график: GeckoTerminal. Изменение таймфрейма — внутри виджета.</span>
             <a href="https://about.geckoterminal.com/embed-charts" target="_blank" rel="noopener noreferrer">

@@ -53,3 +53,10 @@
   .vxson-market-evidence{font-size:9px}
   .vxson-evidence-note{font-size:10px;padding:9px 12px}
 }
+
+/* Source refresh and shareable selected market/pool state. No trading controls. */
+.vxson-frame-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vxson-chart-retry{display:inline-flex;align-items:center;gap:6px;border:1px solid #38465a;border-radius:6px;background:#18222d;color:#c8d5e5;font:inherit;font-size:11px;padding:7px 10px;cursor:pointer}
+.vxson-chart-retry:hover{background:#253447}
+.vxson-chart-retry:focus-visible{outline:2px solid #e6be68;outline-offset:2px}
+@media(max-width:680px){.vxson-frame-actions{width:100%;justify-content:space-between;gap:9px}}

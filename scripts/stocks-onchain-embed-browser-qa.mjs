@@ -70,8 +70,8 @@ try {
     throw new Error('SEARCH_FILTER_FAILED');
   }
   await search.fill('');
-  const reviewTickers = process.env.STOCKS_QA_MOBILE_ONLY === '1'
-    ? ['SPYx', 'CRCLx'] : report.tickers;
+  const requestedTickers = (process.env.STOCKS_QA_TICKERS ?? '').split(',').map(s => s.trim()).filter(Boolean);
+  const reviewTickers = requestedTickers.length ? requestedTickers : report.tickers;
   for (const ticker of reviewTickers) {
     const i = report.tickers.indexOf(ticker);
     if (i < 0) throw new Error('MISSING_TEST_TICKER_' + ticker);
@@ -111,6 +111,18 @@ try {
       await page.screenshot({ path: artifactPath + '/' + ticker + '-desktop.png', fullPage: false });
     }
   }
+  // URL state: persist through reload, Back/Forward and reject unallowlisted pool parameters.
+  await page.getByRole('button', { name: /NVDAx/ }).first().click();
+  if (new URL(page.url()).searchParams.get('asset') !== 'NVDAx') throw new Error('SELECTED_ASSET_NOT_IN_URL');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.vxson-market-head h2').getByText('NVDAx', { exact: false }).waitFor();
+  if (new URL(page.url()).searchParams.get('asset') !== 'NVDAx') throw new Error('ASSET_LOST_ON_RELOAD');
+  await page.goto(url + '?asset=NVDAx&pool=INVALID_ADDRESS_IN_QUERY', { waitUntil: 'domcontentloaded' });
+  await page.locator('.vxson-market-head h2').getByText('NVDAx', { exact: false }).waitFor();
+  const safeUrl = await page.locator('.vxson-frame iframe').getAttribute('src');
+  if (!safeUrl?.startsWith('https://www.geckoterminal.com/solana/pools/') ||
+      safeUrl.includes('INVALID_ADDRESS_IN_QUERY')) throw new Error('UNSAFE_POOL_QUERY');
+  report.routeChecks = { reload: true, invalidPoolIgnored: true };
   // Different exchange pools for one ticker must produce distinct GeckoTerminal URLs.
   // Check without altering any backend state or modifying the source allowlist.
   await page.getByRole('button', { name: /NVDAx/ }).first().click();
@@ -127,9 +139,21 @@ try {
   const restoredUrl = await page.locator('.vxson-frame iframe').getAttribute('src');
   if (!restoredUrl?.includes('/pools/' + originalPool)) throw new Error('POOL_SELECTOR_RESTORE_FAILED');
   report.poolSwitchChecks.push({ticker: 'NVDAx', originalPool, alternatePool, success: true});
+  if (new URL(page.url()).searchParams.get('pool') !== originalPool) throw new Error('POOL_NOT_PERSISTED_IN_URL');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const reloadedSource = await page.locator('.vxson-frame iframe').getAttribute('src');
+  if (!reloadedSource?.includes('/pools/' + originalPool)) throw new Error('POOL_LOST_ON_RELOAD');
+  const beforeRetry = await page.locator('.vxson-frame iframe').getAttribute('src');
+  await page.getByRole('button', { name: 'Перезагрузить график' }).click();
+  const afterRetry = await page.locator('.vxson-frame iframe').getAttribute('src');
+  if (beforeRetry !== afterRetry) throw new Error('RETRY_SOURCE_CHANGED');
+  report.routeChecks.poolReload = true;
+  report.routeChecks.retryKeepsSource = true;
 
   if (report.unsafeLocalWrites.length) throw new Error('STOCKS_WRITES_OBSERVED_' + JSON.stringify(report.unsafeLocalWrites));
   if (report.invalidDocumentCount !== 0) throw new Error('STOCKS_DOCUMENT_OR_CANVAS_FAILURES_' + report.invalidDocumentCount);
+  await page.goto(url + '?asset=SPYx', { waitUntil: 'domcontentloaded' });
+  await page.locator('.vxson-market-head h2').getByText('SPYx', { exact: false }).waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.getByRole('heading', { name: 'Токенизированные акции' }).waitFor();
@@ -156,5 +180,6 @@ console.log('STOCKS_BROWSER_SUMMARY', JSON.stringify({
   providerFramesWithoutCanvas: report.providerFramesWithoutCanvas,
   unavailableOrTimedOut: report.unavailableOrTimedOut,
   mobilePass: report.mobilePass, http200AndCanvas: report.http200AndCanvas,
-  poolSwitchChecks: report.poolSwitchChecks.length, unsafeLocalWrites: report.unsafeLocalWrites.length,
+  poolSwitchChecks: report.poolSwitchChecks.length, routeChecks: report.routeChecks,
+  unsafeLocalWrites: report.unsafeLocalWrites.length,
 }));
