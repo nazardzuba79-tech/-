@@ -78,7 +78,7 @@ jobs:
         run: |
           npm install --prefix /tmp/stocks-qa-playwright --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/stocks-qa-playwright/node_modules/playwright/cli.js install chromium
-      - name: Check 58 iframe navigations, pool selection, mobile and reload (preview LOCAL only)
+      - name: Check selected iframes, pool selection, mobile and reload (preview LOCAL only)
         shell: bash
         env:
           STOCKS_QA_TICKERS: 'SPYx,NVDAx,CRCLx'

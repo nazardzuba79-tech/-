@@ -101,7 +101,10 @@ try {
       contentSample: pageText.replace(/\s+/g, ' ').slice(0, 120) };
     report.results.push(record);
     if (loaded) report.iframeLoadedSignals++;
-    if (response === 200 && loaded && canvasCount > 0) report.http200AndCanvas++;
+    // Cross-origin chart JS can draw a Canvas before the iframe load event fires.
+    // Keep the load-event counter for diagnostics, but do not call a responding
+    // Canvas-backed provider frame a missing document solely because of this race.
+    if (response === 200 && frame && canvasCount > 0) report.http200AndCanvas++;
     else report.invalidDocumentCount++;
     if (canvasCount > 0) report.providerFramesWithCanvas++;
     else if (frame) report.providerFramesWithoutCanvas++;
