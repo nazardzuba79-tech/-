@@ -129,6 +129,77 @@ test('Stocks key preparation cannot replace the module auth key with a different
  expect(f.prisma.session.findUnique).not.toHaveBeenCalled();
  expect(f.authority.execute).not.toHaveBeenCalled();
 });
+// Stored 50+2 spans (1d02aea3, mixed arm): every identity/command hop verified the same bearer twice
+// (1260/1260 hops). Old and new code must admit and refuse exactly the same requests; only the number of
+// signature verifications may differ. `during` runs inside requireAuth's session read, after its
+// jwt.verify and before the route's actor: a clock step or a replaced Authorization header lands there.
+const T0=1_800_000_000,SECOND_KEY='replacement-synthetic-secret';
+let clock=T0*1000;
+const bearer=(claims:object,secret=process.env.JWT_SECRET!)=>jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a',iat:T0,...claims},secret);
+const at=(ms:number)=>()=>{clock=ms;};
+const replace=(claims:object,secret?:string)=>(req:any)=>{req.headers.authorization='Bearer '+bearer(claims,secret);};
+type Case={name:string;token:()=>string;routerKey?:string;during?:(req:any)=>void;expected:number|string;verifies:number};
+const atUseCases:Case[]=[
+ {name:'valid',token:()=>bearer({exp:T0+60}),expected:(T0+60)*1000,verifies:1},
+ {name:'expires during the session read',token:()=>bearer({exp:T0+60}),during:at((T0+60)*1000),expected:'503 ACCOUNT_OUTCOME_UNKNOWN',verifies:1},
+ {name:'1 ms before expiry at use',token:()=>bearer({exp:T0+60}),during:at((T0+60)*1000-1),expected:(T0+60)*1000,verifies:1},
+ {name:'clock steps back before not-before during the read',token:()=>bearer({nbf:T0,exp:T0+60}),during:at(T0*1000-1),expected:'503 ACCOUNT_OUTCOME_UNKNOWN',verifies:1},
+ {name:'no exp',token:()=>bearer({}),expected:'401 AUTH_REQUIRED',verifies:1},
+ {name:'bearer replaced by a later token of the same session',token:()=>bearer({exp:T0+60}),during:replace({exp:T0+120}),expected:(T0+120)*1000,verifies:2},
+ {name:'bearer replaced by another session\'s token',token:()=>bearer({exp:T0+60}),during:replace({sub:'synthetic-b',sid:'session-synthetic-b',exp:T0+60}),expected:'401 AUTH_REQUIRED',verifies:2},
+ {name:'bearer replaced by a token under another key',token:()=>bearer({exp:T0+60}),during:replace({exp:T0+60},'different-synthetic-key'),expected:'503 ACCOUNT_OUTCOME_UNKNOWN',verifies:2},
+ {name:'bearer replaced by an expired token',token:()=>bearer({exp:T0+60}),during:replace({exp:T0}),expected:'503 ACCOUNT_OUTCOME_UNKNOWN',verifies:2},
+ {name:'bearer removed',token:()=>bearer({exp:T0+60}),during:req=>{delete req.headers.authorization;},expected:'503 ACCOUNT_OUTCOME_UNKNOWN',verifies:1},
+ {name:'router with its own key',token:()=>bearer({exp:T0+60}),routerKey:SECOND_KEY,expected:'503 ACCOUNT_OUTCOME_UNKNOWN',verifies:2},
+ {name:'router with its own key, token under that key',token:()=>bearer({exp:T0+60},SECOND_KEY),routerKey:SECOND_KEY,expected:'401 Invalid or expired token',verifies:1},
+];
+async function hop(route:string,c:Case){
+ clock=T0*1000;
+ const f=fixture(true,c.routerKey??process.env.JWT_SECRET!);let current:any;
+ f.prisma.session.findUnique.mockImplementation(async({where}:any)=>({id:where.id,userId:where.id.replace('session-',''),revokedAt:null,lastSeenAt:new Date(Date.now()),remembered:false,user:{email:'synthetic@example.invalid'}}));
+ const read=f.prisma.$queryRaw.getMockImplementation();
+ f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>{const rows=await read(...args);c.during?.(current);return rows;});
+ const app=express();app.use(express.json());app.use((req,_res,next)=>{current=req;next();});app.use('/api/v1',stocksTestCashRouter(f.prisma,f.config,f.authority));
+ const token=c.token(),verify=jest.spyOn(jwt,'verify');
+ try{
+  const call=route==='command'?request(app).post('/api/v1/stocks-test-cash/command').set('x-stocks-authority-key',key).send({type:'readView'}):request(app).get('/api/v1/stocks-test-cash/'+route);
+  const res=await call.set('Authorization','Bearer '+token);
+  const actors=f.authority.execute.mock.calls.map(([actor,type]:any)=>({...actor,type}));
+  // Admitted: identity answers the subject; wallet/command hand the authority an actor whose expiry is observable.
+  const outcome=res.status!==200?`${res.status} ${res.body.error}`:route==='identity'?`200 ${res.body.subject}`:actors[0]?.expiresAt;
+  return{outcome,actors,verifies:verify.mock.calls.length};
+ }finally{verify.mockRestore();}
+}
+test('expiry, not-before and token binding are judged at use: the same admit/refuse as verifying the bearer twice (fa92cc66)',async()=>{
+ const now=jest.spyOn(Date,'now').mockImplementation(()=>clock);
+ try{
+  for(const c of atUseCases)for(const route of ['identity','wallet','command']){
+   const {outcome,actors}=await hop(route,c),admitted=typeof c.expected==='number';
+   expect([c.name,route,outcome]).toEqual([c.name,route,admitted&&route==='identity'?'200 synthetic-a':c.expected]);
+   if(admitted&&route!=='identity')expect(actors).toEqual([{issuer,subject:'synthetic-a',userId:'synthetic-a',sessionId:'session-synthetic-a',expiresAt:c.expected,type:'readView'}]);
+   else expect(actors).toEqual([]);
+  }
+ }finally{now.mockRestore();}
+});
+test('the bearer signature is verified once per hop only for the same token text and the auth key; no reuse across requests',async()=>{
+ const now=jest.spyOn(Date,'now').mockImplementation(()=>clock);
+ try{
+  for(const c of atUseCases)for(const route of ['identity','wallet','command'])
+   expect([c.name,route,(await hop(route,c)).verifies]).toEqual([c.name,route,c.verifies]);
+  // Admitted, then expired between two requests with the same bearer: the next request verifies afresh.
+  const f=fixture(),token=bearer({exp:T0+60}),verify=jest.spyOn(jwt,'verify');
+  f.prisma.session.findUnique.mockImplementation(async({where}:any)=>({id:where.id,userId:'synthetic-a',revokedAt:null,lastSeenAt:new Date(Date.now()),remembered:false,user:{email:'synthetic@example.invalid'}}));
+  try{
+   clock=T0*1000;
+   expect((await request(f.app).get('/api/v1/stocks-test-cash/wallet').set('Authorization','Bearer '+token)).status).toBe(200);
+   clock=(T0+60)*1000;
+   const expired=await request(f.app).get('/api/v1/stocks-test-cash/wallet').set('Authorization','Bearer '+token);
+   expect([expired.status,expired.body.error]).toEqual([401,'Invalid or expired token']);
+   expect(verify).toHaveBeenCalledTimes(2);
+   expect(f.authority.execute).toHaveBeenCalledTimes(1);
+  }finally{verify.mockRestore();}
+ }finally{now.mockRestore();clock=T0*1000;}
+});
 test('default auth keeps its original string-key verification path',async()=>{
  const {requireAuth}=require('../../middleware/auth'),f=fixture(),app=express();
  app.get('/default-auth',requireAuth(f.prisma),(req:any,res)=>res.json({subject:req.userId}));

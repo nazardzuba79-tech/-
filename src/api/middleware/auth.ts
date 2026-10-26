@@ -20,6 +20,11 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET env var is required');
 }
 
+/** Claims of a bearer that a Stocks-prepared requireAuth verified. */
+export interface VerifiedBearerClaims { sub: string; sid?: string; nbf?: number; exp?: number }
+// Kept per request object only, so nothing is reused by another request.
+const verifiedBearers = new WeakMap<Request, { token: string; claims: VerifiedBearerClaims }>();
+
 // How long a session's lastSeenAt can go stale before requireAuth bothers
 // writing a fresh value — without this, "last seen" would cost a DB write
 // on literally every authenticated request.
@@ -79,7 +84,7 @@ export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = fal
     if (!header?.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing bearer token' });
     }
-    let payload: { sub: string; sid?: string; purpose?: string; iat?: number };
+    let payload: { sub: string; sid?: string; purpose?: string; iat?: number; nbf?: number; exp?: number };
     try {
       payload = jwt.verify(header.slice(7), verificationKey) as typeof payload;
     } catch {
@@ -158,8 +163,27 @@ export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = fal
       return res.status(503).json({ error: 'Authentication temporarily unavailable' });
     }
     req.userId = payload.sub;
+    if (prepareVerificationKey) {
+      verifiedBearers.set(req, { token: header.slice(7), claims: { sub: payload.sub, sid: payload.sid, nbf: payload.nbf, exp: payload.exp } });
+    }
     next();
   };
+}
+
+/** The claims of the bearer that a Stocks-prepared requireAuth verified earlier in
+ * this same request, judged again now. Only for a caller verifying with this very
+ * secret while the request still carries that exact token text; otherwise null,
+ * and the caller verifies the token itself. The not-before and expiry windows are
+ * re-checked here with jwt.verify's own rule and errors, so a token that expired
+ * since requireAuth (e.g. during the session read) is refused exactly as a second
+ * jwt.verify would refuse it. Only the signature is not verified a second time. */
+export function verifiedBearerAtUse(req: Request, secret: string | undefined): VerifiedBearerClaims | null {
+  const verified = verifiedBearers.get(req);
+  if (!verified || secret !== JWT_SECRET || req.headers.authorization?.slice(7) !== verified.token) return null;
+  const now = Math.floor(Date.now() / 1000), { nbf, exp } = verified.claims;
+  if (nbf !== undefined && nbf > now) throw new jwt.NotBeforeError('jwt not active', new Date(nbf * 1000));
+  if (exp !== undefined && now >= exp) throw new jwt.TokenExpiredError('jwt expired', new Date(exp * 1000));
+  return verified.claims;
 }
 
 /** Like requireAuth, but never rejects — sets req.userId when a valid

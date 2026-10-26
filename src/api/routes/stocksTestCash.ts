@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { timingSafeEqual, createPublicKey, createSecretKey } from 'crypto';
 import { resolve } from 'path';
-import { requireAuth, AuthedRequest } from '../middleware/auth';
+import { requireAuth, verifiedBearerAtUse, AuthedRequest } from '../middleware/auth';
 
 interface Config { catalogueEnabled?: boolean; enabled?: boolean; orderExecutionEnabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
 interface Actor { issuer:string;subject:string;userId:string;sessionId:string;expiresAt:number }
@@ -60,7 +60,10 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   const auth = requireAuth(prisma, { prepareVerificationKey: true, singleSessionRead: true });
   const actor = (req: AuthedRequest): Actor => {
     if (!req.userId || !req.sessionId) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
-    const payload = jwt.verify(req.headers.authorization!.slice(7), verificationKey) as jwt.JwtPayload;
+    // Judged at use: the bearer requireAuth verified in this request is re-checked now
+    // (not-before/expiry, then the binding below). Only its signature is not verified
+    // again, and only for the same token text and key; anything else is verified in full.
+    const payload = verifiedBearerAtUse(req, secret) ?? jwt.verify(req.headers.authorization!.slice(7), verificationKey) as jwt.JwtPayload;
     if (payload.sub !== req.userId || payload.sid !== req.sessionId || !Number.isSafeInteger(payload.exp)) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
     return { issuer, subject: req.userId, userId: req.userId, sessionId: req.sessionId, expiresAt: payload.exp! * 1000 };
   };
