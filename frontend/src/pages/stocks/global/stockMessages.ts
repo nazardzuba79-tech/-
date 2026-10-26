@@ -1,6 +1,8 @@
 // Stocks-local messages: English, Spanish, Chinese, Hindi, Japanese, Korean.
 // Russian uses the exact source key. Keep named interpolation placeholders intact.
 export const STOCK_MESSAGES = {
+  'Цена токена': ['Token price', 'Precio del token', '代币价格', 'टोकन मूल्य', 'トークン価格', '토큰 가격'],
+  'Пробелы в данных': ['Data gaps', 'Lagunas de datos', '数据缺口', 'डेटा अंतराल', 'データの欠落', '데이터 공백'],
   'Открыт': ['Open', 'Abierta', '未成交', 'खुला', '未約定', '미체결'],
   'Частично исполнен': ['Partially filled', 'Ejecutada parcialmente', '部分成交', 'आंशिक रूप से निष्पादित', '一部約定', '부분 체결'],
   'Исполнен': ['Filled', 'Ejecutada', '已成交', 'निष्पादित', '約定済み', '체결 완료'],

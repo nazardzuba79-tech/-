@@ -6,7 +6,7 @@ import { stockTranslator } from '../../pages/stocks/global/stockText';
 
 const frontend = resolve(__dirname, '../../..'), req = createRequire(resolve(frontend, 'package.json'));
 const React = req('react'), { createRoot } = req('react-dom/client'), { JSDOM } = req('jsdom');
-const ID = 'BYBIT:AAPLXUSDT';
+let ID = 'BYBIT:AAPLXUSDT';
 const languageLocales = { ru: 'ru-RU', en: 'en-US', es: 'es-ES', zh: 'zh-CN', hi: 'hi-IN', ja: 'ja-JP', ko: 'ko-KR' } as const;
 let language: keyof typeof languageLocales = 'ru';
 // Execution tests opt in explicitly; the shipped build remains OFF.
@@ -49,12 +49,12 @@ function state(canTrade?: boolean, id = 'fixture-alice') {
   };
 }
 
-describe('Unimplemented Solana source-to-chart admission contract', () => {
+describe('Solana source-to-chart admission contract', () => {
   let dom: any, root: any, Terminal: any, terminalImports: Record<string, unknown>, credential: string | null;
   let listeners: Set<() => void>, pendingState: Array<(body: any) => void>;
   let writes: Array<{ url: string; init: RequestInit; finish: (status: number, body: any) => void }>;
   let fetchMock: jest.Mock;
-  let historyReply: unknown, chartCandles: unknown[];
+  let historyReply: unknown, chartCandles: unknown[], chartGaps: unknown[];
 
   const originalFetch = globalThis.fetch;
   const globals = ['window', 'document', 'localStorage', 'sessionStorage', 'HTMLInputElement', 'HTMLElement', 'IS_REACT_ACT_ENVIRONMENT'];
@@ -70,7 +70,7 @@ describe('Unimplemented Solana source-to-chart admission contract', () => {
     if (body) await flush(() => pendingState.shift()!(body));
   };
   beforeEach(() => {
-    language = 'ru'; executionEnabled = true; historyReply = { candles: [] }; chartCandles = [];
+    ID = 'BYBIT:AAPLXUSDT'; language = 'ru'; executionEnabled = true; historyReply = { candles: [] }; chartCandles = []; chartGaps = [];
     jest.useFakeTimers(); root = undefined; credential = 'fixture-alice-session'; listeners = new Set(); pendingState = []; writes = [];
     dom = new JSDOM('<div id="root"></div>', { url: 'http://127.0.0.1:4438/stocks/' + encodeURIComponent(ID), pretendToBeVisual: true });
     priorGlobals = new Map(globals.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
@@ -111,8 +111,8 @@ describe('Unimplemented Solana source-to-chart admission contract', () => {
       './stockOriginalText': compile('src/pages/stocks/global/stockOriginalText.ts'),
       './quoteReadiness': compile('src/pages/stocks/global/quoteReadiness.ts'),
       './chartDemand': { StockChartDemand: Demand }, '../../../components/Nav': { Nav: Empty },
-      './GlobalChart': { default: ({ fills, entry, candles }: { fills: unknown[]; entry: string | null; candles: unknown[] }) => {
-        chartCandles = candles;
+      './GlobalChart': { default: ({ fills, entry, candles, sourceGaps }: { fills: unknown[]; entry: string | null; candles: unknown[]; sourceGaps: unknown[] }) => {
+        chartCandles = candles; chartGaps = sourceGaps;
         return React.createElement('div', { 'data-testid': 'chart', 'data-fill-count': fills.length, 'data-entry': entry || '' });
       } },
       '../../../lib/stocksIdentity': { DEFAULT_STOCKS_INSTRUMENT: ID },
@@ -146,10 +146,8 @@ describe('Unimplemented Solana source-to-chart admission contract', () => {
     expect(writes).toHaveLength(0);
   });
 
-  // Deliberately RED integration acceptance gate for #615, not a claim that
-  // this existing CEX path is a deployed Solana source. No source adapter exists
-  // here yet. These hostile numeric rows are NOT accepted trades or prices.
-  // The proposed negative-case labels are test input, not a shipped API schema.
+  // Original #615 negative acceptance assertions are preserved. These hostile
+  // numeric rows are NOT accepted trades or prices, or evidence of a live feed.
   test.each(['1m', '5m', '1h'])('source-admission: UNKNOWN/incomplete %s must not reach the existing chart', async interval => {
     executionEnabled = false;
     Terminal = compile('src/pages/stocks/global/GlobalStocks.tsx', terminalImports).default;
@@ -164,6 +162,31 @@ describe('Unimplemented Solana source-to-chart admission contract', () => {
     await flush(() => document.querySelector<HTMLButtonElement>('.vxg-submit')!.click());
     expect(writes).toHaveLength(0);
     expect(chartCandles).toEqual([]);
+  });
+
+  test('versioned source admission and later revocation reach the mounted chart without retaining stale candles', async () => {
+    executionEnabled = false;
+    const mint = 'XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W', pool = '4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw';
+    ID = `SOLANA:${mint}:${pool}`;
+    Terminal = compile('src/pages/stocks/global/GlobalStocks.tsx', terminalImports).default;
+    // Disposable transport fixture only; no real interval or market is claimed.
+    const time = 1792924740, candidate = { time, open: 10, high: 12, low: 9, close: 11, volume: 4, tradeCount: 1, proofDigest: 'a'.repeat(64) };
+    const accepted = { schema: 'voltex.solana-ohlcv.v1', instrumentId: ID, interval: '1m', priceKind: 'raw-token', quoteCurrency: 'USDC',
+      range: { from: time, to: time + 60 }, candles: [candidate], gaps: [], provenance: {
+        status: 'ACCEPTED', intervalComplete: true, finality: 'finalized', acceptedTradeCount: 1, receiptsHash: 'b'.repeat(64), synthetic: false,
+        gates: { programIdentity: true, poolState: true, mintChronology: true, feeChronology: true, completeness: true, executionBinding: true },
+        source: { network: 'solana-mainnet-beta', program: 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',
+          mint, pool, quoteMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' } } };
+    historyReply = accepted;
+    const viewer = state(false); viewer.catalogue[0].timeframes = ['1m'];
+    await draw(viewer); await flush(() => button('1m').click());
+    expect(chartCandles).toEqual([candidate]); expect(chartGaps).toEqual([]);
+    historyReply = { ...accepted, candles: [], gaps: [{ time, reason: 'UNKNOWN' }],
+      provenance: { ...accepted.provenance, status: 'UNKNOWN', intervalComplete: false, acceptedTradeCount: 0 } };
+    await flush(() => jest.advanceTimersByTime(15000));
+    expect(chartCandles).toEqual([]); expect(chartGaps).toEqual([{ time, reason: 'UNKNOWN' }]);
+    await flush(() => document.querySelector<HTMLButtonElement>('.vxg-submit')!.click());
+    expect(writes).toHaveLength(0);
   });
 
 });
