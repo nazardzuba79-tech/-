@@ -51,12 +51,12 @@ describe('provider failure matrix', () => {
   /** Built at call time, so a moved clock still gets a fresh provider timestamp. */
   const liveGold = () => response({ 'XAU/USD': { ...goldQuote['XAU/USD'], timestamp: Math.floor(Date.now() / 1000) } });
 
-  /** Every outbound Twelve Data request, in order, as endpoint + exact query. */
+  /** Every outbound Twelve Data request, in order: endpoint + query entries in URL order, duplicates kept. */
   const requests = (fetchFn: jest.Mock) => (fetchFn.mock.calls as unknown[][]).map(([url]) => {
     const parsed = new URL(String(url));
-    return { endpoint: parsed.origin + parsed.pathname, query: Object.fromEntries(parsed.searchParams) };
+    return { endpoint: parsed.origin + parsed.pathname, query: [...parsed.searchParams.entries()] };
   });
-  const quoteOf = (symbol: string) => ({ endpoint: 'https://td.test/quote', query: { symbol, apikey: 'test-key' } });
+  const quoteOf = (symbol: string) => ({ endpoint: 'https://td.test/quote', query: [['symbol', symbol], ['apikey', 'test-key']] });
   const XAU = quoteOf('XAU/USD');
   /** The reference batch of `size` symbols starting at a catalog position. */
   const batch = (from: number, size = 8) => quoteOf(Array.from({ length: size },

@@ -6949,3 +6949,15 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
     - `qa-cfd-display-browser`: no findings, no page errors, 0 writes;
     - readiness tests: 13/13.
   - The three known backend failures are unchanged: 2 `CanonicalSourcePreservation` + 1 EUR/stale.
+- **Follow-up after the coordinator's review of `4fa6d19c` (two more test-only commits).**
+  - **Gap confirmed:** the go-to check never asserted the scroll. A bundle that drops only `setVisibleLogicalRange` and still returns `ok` (mutation M3) passed the `4fa6d19c` block.
+  - **Correction:** the earlier "loaded bar not scrolled to" control (M1) replaced `if (existing !== null && chartRef.current)` with `if (false && …)`. That changed the result to `missing`; it did not remove the scroll alone.
+  - **Now:** the check reads the chart's Analytics panel («Видимый диапазон», the first and last visible bar). It jumps to the loaded bar 120 bars before the last and requires the reported window to contain the target and end before the last bar.
+    - M3 now fails this check; M1 and M2 still fail.
+    - In the live run, the window after the jump is 2026-10-15T15:00 → 2026-10-23T15:00, with target 2026-10-19T17:00.
+  - **Wording corrected:** the prefill check shows that the host snapshot and the chart share the same last bar. It does not prove that the two snapshots are identical.
+  - **`ProviderFailureMatrix` request check:** it now compares the raw query entries in URL order, so duplicates are kept. A duplicated `symbol` parameter fails 7 rows; the `Object.fromEntries` version of `4fa6d19c` did not notice it. 10/10 provider-failure mutations are caught.
+  - **Targeted checks run:**
+    - CFD chart-section browser QA, live: 46 pass / 0 fail;
+    - deterministic old/new control at the 3 pinned clocks;
+    - the 4 suites still show exactly the 3 known failures.
