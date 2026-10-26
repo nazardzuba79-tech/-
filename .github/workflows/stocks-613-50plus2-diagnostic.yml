@@ -1,0 +1,96 @@
+name: Stocks 613 50+2 paired diagnostic (report only)
+
+# Interleaved before/after runs of the unchanged 50+2 plan (50 viewers, 2
+# synthetic traders, 80 crypto cycles) on a fresh GitHub-hosted runner. Each
+# harness process tree, PostgreSQL included, is pinned to 2 vCPUs. Own
+# PostgreSQL, synthetic users and loopback only: no secrets, no deployment,
+# no external market. CI_DIAGNOSTIC: never capacity acceptance.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stocks-613-50plus2-diagnostic.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stocks-613-50plus2-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  paired-runs:
+    name: 50+2 paired before/after (2 vCPU, report only)
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      PAIRS: '4'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+          ls -d /usr/lib/postgresql/*/bin
+      - name: Worktrees with runtime exactly at each pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          for kind in before after; do
+            policy=policy-613.cjs; [ "$kind" = after ] && policy=policy-613-after.cjs
+            sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/$policy').RC")
+            git worktree add --detach "$W/$kind" "$sha"
+            cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/$kind/scripts/qa/stocks-rc-50plus2/"
+            ln -s "$GITHUB_WORKSPACE/node_modules" "$W/$kind/node_modules"
+            git -C "$W/$kind" status --short
+          done
+          echo "RC50_DIR=$W" >> "$GITHUB_ENV"
+      - name: Interleaved runs (ABBA), each pinned to 2 vCPUs
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          run() {
+            local kind=$1 i=$2 flag=""; [ "$kind" = after ] && flag="--after"
+            mkdir -p "$RC50_DIR/runs/$kind-$i"
+            (cd "$RC50_DIR/$kind" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs $flag \
+              --root . --pg-bin "$PG_BIN" --out "$RC50_DIR/runs/$kind-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || true
+          }
+          for i in $(seq 1 "$PAIRS"); do
+            if [ $((i % 2)) -eq 1 ]; then run before "$i"; run after "$i"; else run after "$i"; run before "$i"; fi
+          done
+      - name: Report (fails only on admission or financial-invariant breakage)
+        if: always()
+        run: |
+          node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$RC50_DIR/runs" "$RC50_DIR/summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613
+          cp "$RC50_DIR/summary.json" output/rc50-613/ 2>/dev/null || true
+          for d in "$RC50_DIR"/runs/*/out; do
+            n=$(basename "$(dirname "$d")"); mkdir -p "output/rc50-613/$n"
+            cp "$d"/*.json "output/rc50-613/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-50plus2-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/rc50-613
+          retention-days: 14
+          if-no-files-found: error

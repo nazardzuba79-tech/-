@@ -45,3 +45,19 @@ Do not repin/replay the older qualification-only B packet.
 Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
+
+#613 candidate pins (2026-10-26, Claude)
+policy-613.cjs pins 234437f8 (reviewed #613 head, same RC as policy.cjs);
+policy-613-after.cjs pins fb6577be (one-query Stocks session read). Local Windows
+runs measured 783aeedd vs c010bc67, the same runtime on the PG path.
+diagnostic-run-613.cjs is run.cjs with that pin, plus two opt-in flags:
+--after selects the second pin; --cpu-prof writes a V8 profile of each
+measured API worker and reports PROFILE_ONLY_NOT_A_P95_VERDICT. Plan,
+driver, thresholds, admission and the one-shot claim are unchanged.
+Each pin runs from a worktree at that commit, because admission rejects
+any runtime change relative to the pin. The 613 pins add one scope,
+ci-diagnostic (Linux on a GitHub-hosted runner only), used by
+.github/workflows/stocks-613-50plus2-diagnostic.yml for interleaved
+before/after pairs pinned to 2 vCPUs; summarize-613.cjs aggregates them.
+Windows (LOCAL_DIAGNOSTIC) and CI results are diagnostics, never capacity
+acceptance; the isolated Linux attestation path is unchanged.
