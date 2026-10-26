@@ -34,13 +34,6 @@ export const REMEMBERED_SESSION_IDLE_MS = 30 * 24 * 60 * 60_000;
 /** The ordinary sign-in lifetime — the same 12h the login route's token carries. */
 const ORDINARY_SESSION_MS = 12 * 60 * 60_000;
 
-/** Real per-session auth: verifies the JWT, then (for any token carrying a
- * `sid` claim — every token issued since the Session model existed)
- * checks that session hasn't been revoked, so "sign out this device" in
- * Settings → Security actually invalidates that device's token instead of
- * just hiding a row in a list. A token from before this model existed has
- * no `sid` claim and must still belong to an existing user. Deleted accounts
- * cannot keep access through legacy tokens. */
 interface LiveSessionRow {
   id: string; userId: string; revokedAt: Date | null; lastSeenAt: Date; remembered: boolean; createdAt: Date | null;
   email: string | null; role: string | null; emailHash: string | null; contactAction: string | null;
@@ -69,6 +62,13 @@ async function readLiveSession(prisma: PrismaClient, sid: string) {
   return { ...session, blocked };
 }
 
+/** Real per-session auth: verifies the JWT, then (for any token carrying a
+ * `sid` claim — every token issued since the Session model existed)
+ * checks that session hasn't been revoked, so "sign out this device" in
+ * Settings → Security actually invalidates that device's token instead of
+ * just hiding a row in a list. A token from before this model existed has
+ * no `sid` claim and must still belong to an existing user. Deleted accounts
+ * cannot keep access through legacy tokens. */
 export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = false, singleSessionRead = false }: { prepareVerificationKey?: boolean; singleSessionRead?: boolean } = {}) {
   // Stocks opt-in only; the default auth path keeps the original string key.
   const verificationKey = prepareVerificationKey
