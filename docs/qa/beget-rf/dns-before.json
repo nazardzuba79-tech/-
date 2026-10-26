@@ -1,0 +1,128 @@
+{
+  "at": "2026-10-26T15:48:33.002172+00:00",
+  "resolver": "Google DNS-over-HTTPS, public read only",
+  "records": [
+    {
+      "name": "voltextech.net",
+      "type": "NS",
+      "status": 0,
+      "answers": [
+        {
+          "name": "voltextech.net.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "lana.ns.cloudflare.com."
+        },
+        {
+          "name": "voltextech.net.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "thomas.ns.cloudflare.com."
+        }
+      ],
+      "authority": []
+    },
+    {
+      "name": "voltextech.net",
+      "type": "A",
+      "status": 0,
+      "answers": [
+        {
+          "name": "voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "104.21.29.149"
+        },
+        {
+          "name": "voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "172.67.149.103"
+        }
+      ],
+      "authority": []
+    },
+    {
+      "name": "ru.voltextech.net",
+      "type": "A",
+      "status": 0,
+      "answers": [
+        {
+          "name": "ru.voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "185.50.25.51"
+        }
+      ],
+      "authority": []
+    },
+    {
+      "name": "ru.voltextech.net",
+      "type": "AAAA",
+      "status": 0,
+      "answers": [],
+      "authority": [
+        {
+          "name": "voltextech.net.",
+          "type": 6,
+          "TTL": 1800,
+          "data": "lana.ns.cloudflare.com. dns.cloudflare.com. 2418354903 10000 2400 604800 1800"
+        }
+      ]
+    },
+    {
+      "name": "ru.voltextech.net",
+      "type": "CNAME",
+      "status": 0,
+      "answers": [],
+      "authority": [
+        {
+          "name": "voltextech.net.",
+          "type": 6,
+          "TTL": 1800,
+          "data": "lana.ns.cloudflare.com. dns.cloudflare.com. 2418354903 10000 2400 604800 1800"
+        }
+      ]
+    },
+    {
+      "name": "api.voltextech.net",
+      "type": "A",
+      "status": 0,
+      "answers": [
+        {
+          "name": "api.voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "104.21.29.149"
+        },
+        {
+          "name": "api.voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "172.67.149.103"
+        }
+      ],
+      "authority": []
+    },
+    {
+      "name": "market.voltextech.net",
+      "type": "A",
+      "status": 0,
+      "answers": [
+        {
+          "name": "market.voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "172.67.149.103"
+        },
+        {
+          "name": "market.voltextech.net.",
+          "type": 1,
+          "TTL": 300,
+          "data": "104.21.29.149"
+        }
+      ],
+      "authority": []
+    }
+  ]
+}

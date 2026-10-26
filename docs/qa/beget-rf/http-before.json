@@ -1,0 +1,40 @@
+{
+  "at": "2026-10-26T15:53:48.944683+00:00",
+  "checks": [
+    {
+      "url": "https://voltextech.net",
+      "status": 200,
+      "finalUrl": "https://voltextech.net",
+      "contentType": "text/html; charset=utf-8",
+      "server": "envoy",
+      "bytes": 12703
+    },
+    {
+      "url": "https://ru.voltextech.net",
+      "error": "HTTP Error 503: Service Unavailable"
+    },
+    {
+      "url": "https://api.voltextech.net/health",
+      "status": 200,
+      "finalUrl": "https://api.voltextech.net/health",
+      "contentType": "application/json; charset=utf-8",
+      "server": "envoy",
+      "bytes": 120,
+      "body": {
+        "status": "ok",
+        "commit": "89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+        "branch": null,
+        "startedAt": "2026-10-23T16:30:08.152Z"
+      }
+    },
+    {
+      "url": "https://market.voltextech.net/market/listings",
+      "status": 200,
+      "finalUrl": "https://market.voltextech.net/market/listings",
+      "contentType": "application/json; charset=utf-8",
+      "server": "envoy",
+      "bytes": 3462,
+      "revision": "6"
+    }
+  ]
+}

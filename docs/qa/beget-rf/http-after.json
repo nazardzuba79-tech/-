@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-26T16:38:11.680494+00:00",
+  "checks": [
+    {
+      "url": "https://voltextech.net",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://api.voltextech.net/health",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://market.voltextech.net/market/listings",
+      "error": "HTTP Error 403: Forbidden"
+    }
+  ]
+}

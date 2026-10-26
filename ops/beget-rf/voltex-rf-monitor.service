@@ -1,0 +1,14 @@
+[Unit]
+Description=Read-only VOLTEX RU gateway health and aggregate 5xx
+After=network-online.target nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/voltex-rf/monitor.py
+User=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/etc/nginx/voltex-rf
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

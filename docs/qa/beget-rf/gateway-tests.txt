@@ -1,0 +1,22 @@
+test_01_nginx_syntax_and_health (__main__.GatewayTest.test_01_nginx_syntax_and_health) ... ok
+test_02_frontend_url_rewriting_html_js_css (__main__.GatewayTest.test_02_frontend_url_rewriting_html_js_css) ... ok
+test_03_financial_json_and_body_unchanged_single_request (__main__.GatewayTest.test_03_financial_json_and_body_unchanged_single_request) ... ok
+test_04_public_routes_strip_credentials_and_keep_query (__main__.GatewayTest.test_04_public_routes_strip_credentials_and_keep_query) ... ok
+test_05_foreign_origin_and_missing_unsafe_origin_rejected (__main__.GatewayTest.test_05_foreign_origin_and_missing_unsafe_origin_rejected) ... ok
+test_06_reserved_arbitrary_and_internal_targets_denied (__main__.GatewayTest.test_06_reserved_arbitrary_and_internal_targets_denied) ... ok
+test_07_public_post_and_trace_denied (__main__.GatewayTest.test_07_public_post_and_trace_denied) ... ok
+test_08_kyc_fixed_route_preserves_credentials (__main__.GatewayTest.test_08_kyc_fixed_route_preserves_credentials) ... ok
+test_09_sse_first_chunk_is_not_buffered (__main__.GatewayTest.test_09_sse_first_chunk_is_not_buffered) ... ok
+test_10_websocket_tunnel_and_origin (__main__.GatewayTest.test_10_websocket_tunnel_and_origin) ... ok
+test_11_unknown_host_closed (__main__.GatewayTest.test_11_unknown_host_closed) ... ok
+test_12_logs_have_no_credentials_or_queries (__main__.GatewayTest.test_12_logs_have_no_credentials_or_queries) ... ok
+test_api_and_market_prefixes_remain_distinct (__main__.RenderTest.test_api_and_market_prefixes_remain_distinct) ... ok
+test_bootstrap_has_only_acme_and_closed_app (__main__.RenderTest.test_bootstrap_has_only_acme_and_closed_app) ... ok
+test_checked_in_configs_match_renderer (__main__.RenderTest.test_checked_in_configs_match_renderer) ... ok
+test_invalid_paths_rejected (__main__.RenderTest.test_invalid_paths_rejected) ... ok
+test_production_tls_and_no_financial_retries (__main__.RenderTest.test_production_tls_and_no_financial_retries) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 2.184s
+
+OK

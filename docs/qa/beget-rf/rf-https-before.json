@@ -1,0 +1,46 @@
+{
+  "id": "2HbIrXZ25HNMOca8n00021O9O",
+  "type": "http",
+  "status": "finished",
+  "createdAt": "2026-10-26T15:58:00.004Z",
+  "updatedAt": "2026-10-26T15:58:00.180Z",
+  "target": "ru.voltextech.net",
+  "results": [
+    {
+      "city": "Moscow",
+      "country": "RU",
+      "network": "Timeweb",
+      "asn": 9123,
+      "networkType": "datacenter",
+      "status": "failed",
+      "resolvedAddress": "185.50.25.51",
+      "error": "connect ECONNREFUSED 185.50.25.51:443",
+      "timings": {
+        "total": 99,
+        "dns": 90,
+        "tcp": null,
+        "tls": null,
+        "firstByte": null,
+        "download": null
+      }
+    },
+    {
+      "city": "Saint Petersburg",
+      "country": "RU",
+      "network": "Selectel",
+      "asn": 49505,
+      "networkType": "datacenter",
+      "status": "failed",
+      "resolvedAddress": "185.50.25.51",
+      "error": "connect ECONNREFUSED 185.50.25.51:443",
+      "timings": {
+        "total": 79,
+        "dns": 60,
+        "tcp": null,
+        "tls": null,
+        "firstByte": null,
+        "download": null
+      }
+    }
+  ]
+}
