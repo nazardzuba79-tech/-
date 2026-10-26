@@ -119,11 +119,17 @@ jobs:
   # shape as above (GitHub-hosted, ci-diagnostic admission, 2 vCPUs, own
   # PostgreSQL, synthetic users, loopback only). Not a p95 verdict: the
   # instrumentation overhead applies to both arms and is not removed.
-  # PREPARED, NOT ENABLED. It runs only after the #613 coordinator approves it:
-  # one commit sets `if: false` to `if: true`; the next commit sets it back.
+  # ONE RUN, approved by the #613 coordinator (2026-10-26): only the first
+  # attempt of the #613 push whose previous head is 77b4fffc, from this
+  # repository. No later push and no re-run can fire it. The next commit
+  # restores `if: false`.
   spans-run:
     name: 50+2 server-side spans, one run (diagnostic, not a p95 verdict)
-    if: false
+    if: >-
+      github.event_name == 'pull_request' && github.event.action == 'synchronize' &&
+      github.event.pull_request.number == 613 && github.run_attempt == '1' &&
+      github.event.before == '77b4fffc28dc629b36840e821828ab7aa9dd267b' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
