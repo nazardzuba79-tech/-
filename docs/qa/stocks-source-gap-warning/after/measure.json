@@ -1,0 +1,60 @@
+{
+  "390": {
+    "warning": {
+      "x": 11,
+      "y": 687,
+      "w": 114,
+      "h": 27
+    },
+    "warningText": "Пробелы в данных: 1",
+    "clippedText": false,
+    "topElementsAtWarning": [
+      "warning",
+      "warning",
+      "warning",
+      "warning",
+      "warning"
+    ],
+    "logo": {
+      "x": 13,
+      "y": 625,
+      "w": 35,
+      "h": 19
+    },
+    "labelText": "VOLTEX · USDC · Цена токена",
+    "labelVisible": true,
+    "viewport": {
+      "w": 390,
+      "h": 844
+    }
+  },
+  "1440": {
+    "warning": {
+      "x": 63,
+      "y": 709,
+      "w": 114,
+      "h": 27
+    },
+    "warningText": "Пробелы в данных: 1",
+    "clippedText": false,
+    "topElementsAtWarning": [
+      "warning",
+      "warning",
+      "warning",
+      "warning",
+      "warning"
+    ],
+    "logo": {
+      "x": 65,
+      "y": 646,
+      "w": 35,
+      "h": 19
+    },
+    "labelText": "VOLTEX · USDC · Цена токена",
+    "labelVisible": false,
+    "viewport": {
+      "w": 1440,
+      "h": 900
+    }
+  }
+}

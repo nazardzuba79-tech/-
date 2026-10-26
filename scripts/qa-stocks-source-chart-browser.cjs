@@ -7,8 +7,9 @@
  * statically; the browser's Stocks reads are answered in-page with synthetic
  * versioned source pages. No gateway, database, provider, RPC or deployment.
  * Checked in Chromium at 1440 and 390, on the real GlobalChart (lightweight-charts):
- *   - an ACCEPTED 1m page with a gap draws the admitted candles, the raw-token
- *     label and the gap count; a raw native bar riding the quote never appears;
+ *   - an ACCEPTED 1m page with a gap draws the admitted candles, a visible raw-token
+ *     marking and a readable gap warning (not painted over, not over the chart, its
+ *     attribution or controls); a raw native bar riding the quote never appears;
  *   - valid UNKNOWN 1m/5m/1h envelopes draw no numbers, only the gap count;
  *   - the viewer's Buy stays silent: no POST of any kind reaches the Stocks API;
  *   - no data request leaves 127.0.0.1 (font stylesheet blocked) and the page raises no error.
@@ -71,6 +72,33 @@ async function step(name, fn) {
   try { await fn(); report.checks.push(name); console.log('✓ ' + name); }
   catch (error) { report.failures.push({ name, error: String(error.stack || error).slice(0, 1500) }); console.log('✗ ' + name + ' — ' + String(error.message || error).slice(0, 400)); }
 }
+// The gap warning must be readable where it is drawn: rendered, inside the viewport, topmost at its
+// corners and centre (nothing paints over it), text not clipped, and not overlapping the chart, the
+// chart attribution or any chart control. The raw-token marking must be visibly rendered.
+async function assertReadableSourceMarks(page, gaps) {
+  const found = await page.evaluate(() => {
+    const box = e => { const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
+    const warning = document.querySelector('.vxg-chart-warning');
+    const label = [...document.querySelectorAll('.vxg-chart-section span')].some(e => /Цена токена/.test(e.textContent) && e.checkVisibility());
+    if (!warning) return { label };
+    const b = box(warning), inset = 2;
+    const points = [[b.left + inset, b.top + inset], [b.right - inset, b.top + inset], [b.left + inset, b.bottom - inset], [b.right - inset, b.bottom - inset], [(b.left + b.right) / 2, (b.top + b.bottom) / 2]];
+    const covered = points.filter(([x, y]) => !warning.contains(document.elementFromPoint(x, y))).length;
+    const others = ['#tv-attr-logo', '.vxg-plot', '.vxg-timeframes button', '.vxg-chart-tools select', '.vxg-chart-tools button', '.vxg-pro-chart-rail button']
+      .flatMap(selector => [...document.querySelectorAll(selector)].filter(e => e.checkVisibility()).map(e => ({ selector, r: box(e) })));
+    const overlaps = others.filter(({ r }) => r.left < b.right && b.left < r.right && r.top < b.bottom && b.top < r.bottom).map(o => o.selector);
+    return { label, text: warning.textContent.trim(), visible: warning.checkVisibility(), covered, overlaps,
+      inViewport: b.left >= 0 && b.top >= 0 && b.right <= innerWidth && b.bottom <= innerHeight && b.width > 0 && b.height > 0,
+      clipped: warning.scrollWidth > warning.clientWidth || warning.scrollHeight > warning.clientHeight };
+  });
+  assert.equal(found.label, true, 'the raw-token marking «Цена токена» is not visibly rendered');
+  assert.equal(found.text, `Пробелы в данных: ${gaps}`);
+  assert.equal(found.visible, true, 'the gap warning is not rendered');
+  assert.equal(found.inViewport, true, 'the gap warning is outside the viewport');
+  assert.equal(found.covered, 0, `the gap warning is painted over at ${found.covered} of 5 points`);
+  assert.deepEqual(found.overlaps, [], 'the gap warning overlaps the chart, its attribution or a chart control');
+  assert.equal(found.clipped, false, 'the gap warning text is clipped');
+}
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
 
 (async () => {
@@ -119,8 +147,7 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
         await page.locator('.vxg-timeframes button', { hasText: /^1m$/ }).click();
         await page.waitForSelector('.vxg-chart-warning', { timeout: 15000 });
         await page.waitForFunction(() => !document.querySelector('.vxg-chart-overlay'), null, { timeout: 15000 });
-        assert.match(await page.locator('.vxg-chart-tools span').first().innerText(), /Цена токена/);
-        assert.equal((await page.locator('.vxg-chart-warning').innerText()).trim(), 'Пробелы в данных: 1');
+        await assertReadableSourceMarks(page, 1);
         assert((await page.locator('.vxg-plot canvas').count()) > 0, 'the real chart canvas is missing');
         assert(!/7[\s ]?777/.test(await text()), 'a raw native quote bar value reached the page');
         await page.waitForTimeout(3500); // one more quote poll carrying the native bar
@@ -136,7 +163,7 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
             await page.locator('.vxg-timeframes button', { hasText: /^1m$/ }).click();
           } else await page.locator('.vxg-timeframes button', { hasText: new RegExp(`^${interval}$`) }).click();
           await page.waitForSelector('.vxg-chart-overlay', { timeout: 15000 });
-          assert.equal((await page.locator('.vxg-chart-warning').innerText()).trim(), 'Пробелы в данных: 1');
+          await assertReadableSourceMarks(page, 1);
           await page.waitForTimeout(3500);
           assert.equal(await page.locator('.vxg-chart-overlay').count(), 1, 'numbers appeared for an UNKNOWN envelope');
           assert(!/7[\s ]?777/.test(await text()), 'a raw native quote bar value reached the page');

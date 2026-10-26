@@ -233,6 +233,48 @@ describe('native CEX bars vs own-source history admission (combined #613 + #621 
     await silent();
   });
 
+  // Review of 5645884b: a later provenance-less page must not downgrade a generation already
+  // classified as own-source, neither re-opening the native-bar path nor admitting plain numbers.
+  test.each([
+    ['empty', { candles: [] }],
+    ['numeric', { candles: [bar(T - 900), bar(T - 1800)] }],
+  ])('a provenance-less %s page cannot downgrade an own-source generation; a new generation starts fresh', async (_kind, plain) => {
+    deferHistory = true;
+    const state = (close = 12) => viewer({ [CEX]: { '15m': bar(T, close), '1m': bar(T, 1) } }, { [CEX]: ['15m', '1m'] });
+    await mount(); await sendState(state());
+    expect(chart().candles).toEqual([bar(T, 12)]);
+    await sendHistory({ ...source('15m', 'UNKNOWN'), instrumentId: CEX });
+    expect(chart().candles).toEqual([]); expect(chart().error).toBe('SOURCE_UNAVAILABLE');
+    // Next 15 s poll of the same generation answers without provenance.
+    await flush(() => jest.advanceTimersByTime(15000));
+    await sendHistory(plain, '15m');
+    expect(chart().candles).toEqual([]); expect(chart().gaps).toEqual([]);
+    expect(chart().error).toBe('SOURCE_UNAVAILABLE'); expect(chart().priceKind).toBe('raw-token');
+    await nextPoll(state(13));
+    await nextPoll(state(14));
+    expect(chart().candles).toEqual([]);
+    // A new generation (interval change) is classified afresh: genuine CEX history and native bars work.
+    deferHistory = false; historyReply = url => url.includes('interval=1m') ? { candles: [bar(T - 60)] } : { candles: [] };
+    await flush(() => button('1m').click());
+    await nextPoll(state());
+    expect(chart().candles).toEqual([bar(T - 60), bar(T, 1)]);
+    expect(chart().priceKind).toBeUndefined(); expect(chart().error).toBe('');
+    await silent();
+  });
+
+  test('the desktop chart heading marks own-source prices as token prices, never CEX prices', async () => {
+    const heading = () => document.querySelector('.vxg-pro-chart-heading > span')!.textContent;
+    historyReply = () => ({ candles: [bar(T - 900)] });
+    await mount(); await sendState(viewer({}, { [CEX]: ['15m'] }));
+    expect(heading()).not.toMatch(/Цена токена/);
+    await flush(() => root.unmount()); root = createRoot(document.getElementById('root'));
+    ID = OWN; historyReply = url => url.includes('interval=1m') ? source('1m', 'ACCEPTED') : { candles: [] };
+    await mount(); await sendState(viewer({}, { [OWN]: ['1m'] }));
+    await flush(() => button('1m').click());
+    expect(heading()).toMatch(/Цена токена/);
+    await silent();
+  });
+
   test('interval and instrument changes: a native bar never crosses into another generation', async () => {
     historyReply = url => ({ candles: url.includes('interval=1m') ? [bar(T - 60)] : [bar(T - 900)] });
     const state = () => viewer({ [CEX]: { '15m': bar(T, 15), '1m': bar(T, 1) }, [OWN]: { '1m': bar(T, 77) } },

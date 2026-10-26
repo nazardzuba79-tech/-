@@ -1,0 +1,34 @@
+{
+  "scope": "hosted Stocks bundle, in-page synthetic source pages, no server authority",
+  "checks": [
+    "1440: ACCEPTED 1m page with a gap — admitted candles, raw-token label, gap count, no native bar",
+    "1440: valid UNKNOWN 5m envelope — no numbers, gap count only",
+    "1440: valid UNKNOWN 1h envelope — no numbers, gap count only",
+    "1440: valid UNKNOWN 1m envelope — no numbers, gap count only",
+    "1440: the viewer's Buy stays silent",
+    "390: ACCEPTED 1m page with a gap — admitted candles, raw-token label, gap count, no native bar",
+    "390: valid UNKNOWN 5m envelope — no numbers, gap count only",
+    "390: valid UNKNOWN 1h envelope — no numbers, gap count only",
+    "390: valid UNKNOWN 1m envelope — no numbers, gap count only",
+    "390: the viewer's Buy stays silent",
+    "no POST, no outbound data request, no page error"
+  ],
+  "failures": [],
+  "screenshots": [
+    "source-1m-accepted-1440.png",
+    "source-5m-unknown-1440.png",
+    "source-1h-unknown-1440.png",
+    "source-1m-unknown-revoked-1440.png",
+    "source-1m-accepted-390.png",
+    "source-5m-unknown-390.png",
+    "source-1h-unknown-390.png",
+    "source-1m-unknown-revoked-390.png"
+  ],
+  "stocksPosts": [],
+  "outbound": 6,
+  "outboundHosts": {
+    "fonts.googleapis.com": 6
+  },
+  "apiAborted": 0,
+  "pageErrors": []
+}
