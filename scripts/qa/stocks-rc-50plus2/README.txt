@@ -1,5 +1,9 @@
 VOLTEX RC50 diagnostic harness
-Runtime source: 6cb82e3d16f8bf36d3ec6f7e4ba20950ee633aea.
+Runtime source: 234437f8bb106cc576375ff7df9b817d3fbc01cc (#613, repinned 2026-10-26; was 6cb82e3d).
+The pin is code preparation only. It does not authorize a run: the isolated
+Linux scope still needs an owner-approved, unexpired host attestation, a
+non-root process and a finite owned cgroup v2, and none of those is created
+here. Thresholds, admission and invariants are unchanged.
 This folder is test-only and is not imported by application startup.
 
 Real implementation: current RC stocksTestCashRouter, DemoTradingService,
