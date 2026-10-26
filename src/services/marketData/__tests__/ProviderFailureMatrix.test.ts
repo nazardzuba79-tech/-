@@ -1,7 +1,9 @@
-import { CfdMarketDataService } from '../../CfdMarketDataService';
+import { CfdMarketDataService, ExternalCfdDataError } from '../../CfdMarketDataService';
 import { ArbitrageService } from '../../ArbitrageService';
 import { KrakenMarketDataService } from '../../KrakenMarketDataService';
-import { ProviderUnavailableError } from '../ProviderHealth';
+import { providerHealthRegistry } from '../ProviderHealth';
+import { CfdQuoteUnavailable } from '../cfd/CfdQuote';
+import { CFD_REFERENCE_CATALOG } from '../cfd/catalog';
 
 /**
  * The failure matrix for the two providers this task moved onto the shared
@@ -34,10 +36,44 @@ describe('provider failure matrix', () => {
     'XAU/USD': { symbol: 'XAU/USD', close: '2400.10', percent_change: '0.42' },
   };
 
-  // This matrix isolates transport/circuit behavior under a sufficient TEST quota.
-  // CfdQuoteSafety separately verifies that the Basic budget denies retries.
+  // The service caps credits at the Basic plan's 8 per minute whatever it is
+  // given (d9567fea7), and a reference batch spends every available credit. The
+  // retry and circuit rows therefore run on one-credit execution requests for a
+  // synthetic entitled symbol: the same HTTP client and the same health object.
   function cfd(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
     return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy, {creditsPerMinute:100,creditsPerDay:10000});
+  }
+  function execution(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
+    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy,
+      {entitledSymbols:['XAUUSD'], executionSymbols:['XAUUSD']});
+  }
+  const twelveData = () => providerHealthRegistry.get('twelvedata')!.snapshot();
+  /** Built at call time, so a moved clock still gets a fresh provider timestamp. */
+  const liveGold = () => response({ 'XAU/USD': { ...goldQuote['XAU/USD'], timestamp: Math.floor(Date.now() / 1000) } });
+
+  /** Every outbound Twelve Data request, in order, as endpoint + exact query. */
+  const requests = (fetchFn: jest.Mock) => (fetchFn.mock.calls as unknown[][]).map(([url]) => {
+    const parsed = new URL(String(url));
+    return { endpoint: parsed.origin + parsed.pathname, query: Object.fromEntries(parsed.searchParams) };
+  });
+  const quoteOf = (symbol: string) => ({ endpoint: 'https://td.test/quote', query: { symbol, apikey: 'test-key' } });
+  const XAU = quoteOf('XAU/USD');
+  /** The reference batch of `size` symbols starting at a catalog position. */
+  const batch = (from: number, size = 8) => quoteOf(Array.from({ length: size },
+    (_, n) => CFD_REFERENCE_CATALOG[(from + n) % CFD_REFERENCE_CATALOG.length].providerSymbol).join(','));
+
+  const rejection = (attempt: Promise<unknown>) => attempt.then(() => { throw new Error('expected a refusal'); }, (error: unknown) => error);
+  /** An execution refusal is typed and coded, never a bare Error. */
+  async function refused(attempt: Promise<unknown>) {
+    const error = await rejection(attempt);
+    expect(error).toBeInstanceOf(CfdQuoteUnavailable);
+    expect(error).toMatchObject({ code: 'cfd_quote_temporarily_unavailable', reason: 'unavailable_or_stale' });
+  }
+  /** The reference path reports provider trouble as its sanitized error. */
+  async function providerError(attempt: Promise<unknown>, message: string) {
+    const error = await rejection(attempt);
+    expect(error).toBeInstanceOf(ExternalCfdDataError);
+    expect((error as Error).message).toBe(message);
   }
 
   // ── Twelve Data / CFD ───────────────────────────────────────────────
@@ -46,12 +82,49 @@ describe('provider failure matrix', () => {
     const fetchFn = jest
       .fn()
       .mockResolvedValueOnce(response({}, false, 503))
-      .mockResolvedValueOnce(response(goldQuote));
+      .mockImplementationOnce(() => Promise.resolve(liveGold()));
 
-    const tickers = await cfd(fetchFn).getTickers();
+    const quote = await execution(fetchFn).getFreshQuote('XAUUSD');
 
-    expect(fetchFn).toHaveBeenCalledTimes(2);
-    expect(tickers.find((t) => t.symbol === 'XAUUSD')!.price).toBe('2400.10');
+    expect(requests(fetchFn)).toEqual([XAU, XAU]);
+    expect(quote).toMatchObject({ status: 'live', lastDecimal: '2400.10' });
+  });
+
+  it('a reference batch spends the whole Basic minute, so its retries are denied before HTTP', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(response({}, false, 503));
+    const service = cfd(fetchFn);
+
+    await providerError(service.getTickers(), 'Failed to reach Twelve Data');
+    expect(requests(fetchFn)).toEqual([batch(0)]);
+    expect((await service.diagnostics()).credits).toMatchObject({ perMinute: 8, minuteUsed: 8 });
+    // Inside the minute the cached failure is reported again without HTTP.
+    await providerError(service.getTickers(), 'Failed to reach Twelve Data');
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('the reference path sends nothing for 60s even when the minute budget has room again', async () => {
+    let now = 1_700_000_000_000;
+    jest.spyOn(Date, 'now').mockImplementation(() => now);
+    try {
+      const fetchFn = jest.fn().mockResolvedValue(response({}, false, 503));
+      const service = execution(fetchFn);
+
+      await refused(service.getFreshQuote('XAUUSD')); // 1 attempt + 2 retries = 3 credits
+      now += 10_000;
+      await providerError(service.getTickers(), 'Failed to reach Twelve Data'); // the 5 credits left
+      expect(requests(fetchFn)).toEqual([XAU, XAU, XAU, batch(0, 5)]);
+
+      now += 59_999; // the execution credits have expired, so 3 are free: the cadence still holds
+      expect((await service.diagnostics()).credits).toMatchObject({ minuteUsed: 5 });
+      await providerError(service.getTickers(), 'Failed to reach Twelve Data');
+      expect(fetchFn).toHaveBeenCalledTimes(4);
+
+      now += 1; // a full minute after the batch: the next 8 symbols in rotation
+      await providerError(service.getTickers(), 'Failed to reach Twelve Data');
+      expect(requests(fetchFn)).toEqual([XAU, XAU, XAU, batch(0, 5), batch(5)]);
+    } finally {
+      (Date.now as jest.Mock).mockRestore();
+    }
   });
 
   it('honours Retry-After on a 429 instead of hammering a metered provider', async () => {
@@ -67,24 +140,27 @@ describe('provider failure matrix', () => {
   it('retries a transport timeout within a bounded budget, never unbounded', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('ETIMEDOUT'));
 
-    await expect(cfd(fetchFn).getTickers()).rejects.toThrow(/Failed to reach Twelve Data/);
+    await refused(execution(fetchFn).getFreshQuote('XAUUSD'));
     // 1 initial attempt + the default 2 retries. Bounded, by construction.
-    expect(fetchFn).toHaveBeenCalledTimes(3);
+    expect(requests(fetchFn)).toEqual([XAU, XAU, XAU]);
+    expect(twelveData()).toMatchObject({ state: 'CLOSED', consecutiveFailures: 1 });
   });
 
   it('opens the circuit after repeated failures and then stops calling the provider', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('down'));
-    // retries:0 so each getTickers() call is exactly one outbound attempt,
+    // retries:0 so each getFreshQuote() call is exactly one outbound attempt,
     // making the 4-failure threshold easy to count.
-    const service = cfd(fetchFn, { retries: 0 });
+    const service = execution(fetchFn, { retries: 0 });
 
     for (let i = 0; i < 4; i++) {
-      await expect(service.getTickers()).rejects.toThrow();
+      await refused(service.getFreshQuote('XAUUSD'));
     }
-    expect(fetchFn).toHaveBeenCalledTimes(4);
+    expect(requests(fetchFn)).toEqual([XAU, XAU, XAU, XAU]);
+    expect(twelveData().state).toBe('OPEN');
 
-    // Circuit is OPEN: the next call must not reach the network at all.
-    await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+    // Circuit is OPEN: neither the execution nor the reference path reaches the network.
+    await refused(service.getFreshQuote('XAUUSD'));
+    await providerError(service.getTickers(), 'CFD provider unavailable');
     expect(fetchFn).toHaveBeenCalledTimes(4);
   });
 
@@ -95,25 +171,29 @@ describe('provider failure matrix', () => {
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     try {
+      const probeStates: string[] = [];
       const fetchFn = jest
         .fn()
         .mockRejectedValueOnce(new Error('down'))
         .mockRejectedValueOnce(new Error('down'))
         .mockRejectedValueOnce(new Error('down'))
         .mockRejectedValueOnce(new Error('down'))
-        .mockResolvedValue(response(goldQuote));
-      const service = cfd(fetchFn, { retries: 0 });
+        .mockImplementation(() => { probeStates.push(twelveData().state); return Promise.resolve(liveGold()); });
+      const service = execution(fetchFn, { retries: 0 });
 
-      for (let i = 0; i < 4; i++) await expect(service.getTickers()).rejects.toThrow();
-      await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+      for (let i = 0; i < 4; i++) await refused(service.getFreshQuote('XAUUSD'));
+      expect(twelveData().state).toBe('OPEN');
+      await refused(service.getFreshQuote('XAUUSD'));
       expect(fetchFn).toHaveBeenCalledTimes(4);
 
-      // Past the 30s cooldown the next caller is the single probe, and its
-      // success closes the circuit.
+      // Past the 30s cooldown the next call is admitted while HALF_OPEN, and
+      // its success closes the circuit.
       now += 31_000;
-      const recovered = await service.getTickers();
-      expect(recovered.find((t) => t.symbol === 'XAUUSD')).toBeDefined();
-      expect(fetchFn).toHaveBeenCalledTimes(5);
+      const recovered = await service.getFreshQuote('XAUUSD');
+      expect(probeStates).toEqual(['HALF_OPEN']);
+      expect(recovered).toMatchObject({ status: 'live', lastDecimal: '2400.10' });
+      expect(requests(fetchFn)).toEqual([XAU, XAU, XAU, XAU, XAU]);
+      expect(twelveData().state).toBe('CLOSED');
     } finally {
       (Date.now as jest.Mock).mockRestore();
     }

@@ -6891,3 +6891,36 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Local validation: 106/106 initial focused Jest plus the final email-lookup outage regression; 61/61 notification/KYC tests including real local workerd; backend and frontend build PASS (existing large-chunk warning). Built frontend browser checks at 1440/390/320: 1, 123/99+, zero, navigation, unchanged package count, no overflow/page errors. Screenshots/report under ignored `output/` use synthetic accounts only. Exact-head CI tracked on PR #619; disposable PG check runs there. The synthetic admin browser fixture supports the new count-only contract; lookup outages retain the prior coin/network alert without inventing an email.
 - Release pending approval: notification Worker first (backward compatible), then API, then frontend. No merge, deploy, actual Telegram send, production DB/config/runtime changes. Read-only Pages check: production auto-deploy false, previews none.
 - CI at `1b72afa6` exposed a real layout race: a late copy-count badge increased the mobile KPI height and shifted restored scroll by 10px. Reproduced locally with a 1200ms delayed count. Scoped label geometry now reserves the badge height; the existing browser interaction assertion is preserved and extended to check the position after the delayed badge arrives. Local rebuilt frontend, delayed-count reproduction, 1440/390/320 screenshot checks and the full interaction sequence pass. The failed attempt remains visible in CI history; no assertions or tests were disabled.
+
+## 2026-10-26 — Claude (session 01EmV3Pt) — three baseline backend test corrections on a separate maintenance branch
+- **Branch:** `claude/voltex-mobile-audit-7rpjni-baseline-tests` from fresh `main` `63d6b02c`, as its own Draft PR linked from #613. #613 head `a820c18e` (CI 40 success / 2 skipped) is unchanged. No duplicate open PR; the older `fix/cfd-baseline-red-tests-20261002` branch is fully contained in `main`.
+- **Test-only, three files.** No production code, config, approved hash, workflow, flag or balance changed.
+  - `CfdMarketDataService.test.ts`: expects the catalog name `Gold Spot`. `d9567fea7` takes ticker names from the provider-verified catalog (`051347f9`).
+  - `LiveFinancialIsolation.test.ts`:
+    - the 5-line count is replaced by an exact list of the 8 collector lines (`3efe23b9`, `b32853b2`, `8bc9a147`);
+    - the gateway constructor is matched as one statement;
+    - the original marketOptions source check is kept;
+    - a new test reads the Express route stacks of marketOptions, displaySnapshots and marketDepth: exact paths, GET only, middleware limited to the options rate limiter and the spied display cache.
+    - Scope: registered routes and middleware, not transitive imports.
+  - `ProviderFailureMatrix.test.ts`:
+    - The retry and circuit rows run on one-credit execution requests: synthetic entitled `XAUUSD`, under the real 8/min Basic cap.
+    - Each refusal must be a typed `CfdQuoteUnavailable` with its code and reason, and every request must be exactly `XAU/USD`.
+    - The HALF_OPEN state is observed during the recovery fetch. No single-probe exclusivity is claimed.
+    - Reference rows:
+      - an 8-symbol batch spends 8/8 credits, and its retries are denied before HTTP;
+      - no HTTP inside 60 s, even when 3 credits are free again;
+      - the next rotation of 8 symbols goes out at exactly 60 s.
+- **Deliberately not changed:**
+  - `CanonicalSourcePreservation`: the guard exception is not approved, so hashes and guard are untouched.
+  - The EUR/stale row "stops serving once the stale budget expires": the owner's EUR valuation policy is pending, so no rewrite and no runtime change.
+- **Verified locally (Node 22.23.3, synthetic data only):**
+  - focused 3 suites: 31/32, the 1 being the EUR row;
+  - 18/18 targeted code mutations caught by the intended rows, none by a compile error;
+  - backend `tsc` and the changed tests under `tsconfig.jest.json`: PASS;
+  - full backend Jest, same command and environment:
+    - `main`: 4 suites / 9 tests failed, 8669 passed of 8825;
+    - this branch: 2 suites / 3 tests failed (2 canonical + 1 EUR), 8678 passed of 8828.
+- **Unresolved:**
+  - the owner's EUR valuation policy (`WalletPortfolioService` takes a stale EURUSD through `getTickers()`; card eligibility uses it);
+  - approval of the canonical guard exception;
+  - exact-head CI of this branch, to be read on its Draft PR.
