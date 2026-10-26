@@ -1,0 +1,6 @@
+Field subsets of real CI_DIAGNOSTIC runs before-1 and after-1, unchanged values:
+workflow "Stocks 613 50+2 paired diagnostic (report only)", job 121635971507 on
+#613 head da3a661a0bf82154a45dda5b6174f47b9fbc63db, artifact 12659717880
+(zip SHA256 295b018a3d9b6ad07123c7cad0e011d3293da20bcfb56e2bc45cd1a0c96d6f6a).
+Only the fields summarize-613.cjs reads were kept; no value was edited. The tests
+corrupt temporary copies, never these files. Diagnostic data, not acceptance.

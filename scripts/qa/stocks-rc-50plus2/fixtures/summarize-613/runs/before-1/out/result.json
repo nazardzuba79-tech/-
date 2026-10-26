@@ -1,0 +1,22 @@
+{
+ "runtimeSourceSha": "234437f8bb106cc576375ff7df9b817d3fbc01cc",
+ "status": "FAIL_LOCAL_DIAGNOSTIC",
+ "scope": "ci-diagnostic",
+ "fullWorkloadRuns": 1,
+ "failures": [],
+ "comparison": {
+  "status": "FAIL_LOCAL_DIAGNOSTIC",
+  "baselineCryptoP95Ms": 11.95096299999932,
+  "mixedCryptoP95Ms": 17.713237000003573,
+  "cryptoP95ChangePercent": 48.21598058670738,
+  "thresholdPercent": 5,
+  "failures": [
+   "CRYPTO_P95_OVER_5_PERCENT"
+  ],
+  "targetAcceptance": false
+ },
+ "postgresStopped": true,
+ "postgresStatusExit": 3,
+ "allRecordedPidsStopped": true,
+ "targetAcceptance": false
+}

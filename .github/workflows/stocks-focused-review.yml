@@ -263,6 +263,7 @@ jobs:
           services/stocks-global/http-reuse.test.mjs
           scripts/qa/stocks-rc-50plus2/cpu-http-profile.test.cjs
           scripts/qa/stocks-rc-50plus2/profile-summary.test.cjs
+          scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs
           scripts/qa/stocks-rc-50plus2/profile-session.test.cjs
           scripts/qa/stocks-rc-50plus2/profile-contract.test.cjs
       - name: Production factories reject all local ledgers and unverified authorities

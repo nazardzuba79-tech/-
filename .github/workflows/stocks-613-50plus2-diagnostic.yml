@@ -46,6 +46,8 @@ jobs:
             git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
           sudo install -d -m 1777 /var/run/postgresql
           ls -d /usr/lib/postgresql/*/bin
+      - name: Collection-gate self-test on stored results (no benchmark)
+        run: node --test scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs
       - name: Worktrees with runtime exactly at each pin; harness from this head
         run: |
           set -euo pipefail
@@ -64,37 +66,44 @@ jobs:
         run: |
           set -uo pipefail
           PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          # Every run goes ahead whatever the previous one returned; its exit code
+          # is kept as raw evidence, and the collection gate below judges the set.
           run() {
-            local kind=$1 i=$2 flag=""; [ "$kind" = after ] && flag="--after"
+            local kind=$1 i=$2 flag="" rc=0; [ "$kind" = after ] && flag="--after"
             mkdir -p "$RC50_DIR/runs/$kind-$i"
             (cd "$RC50_DIR/$kind" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs $flag \
               --root . --pg-bin "$PG_BIN" --out "$RC50_DIR/runs/$kind-$i/out" \
-              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || true
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$RC50_DIR/runs/$kind-$i/exit-code"
           }
           for i in $(seq 1 "$PAIRS"); do
             if [ $((i % 2)) -eq 1 ]; then run before "$i"; run after "$i"; else run after "$i"; run before "$i"; fi
           done
-      - name: Report (fails only on admission or financial-invariant breakage)
+      # Collection gate: fails unless every expected run (PAIRS per pin) is present,
+      # parseable, pin-matched, measured on both arms, financially intact and cleaned
+      # up. The p95 verdict is reported separately and never fails this step.
+      - name: Collection gate and diagnostic report (p95 is report-only)
         if: always()
         run: |
           set -o pipefail
-          node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$RC50_DIR/runs" "$RC50_DIR/summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$RC50_DIR/runs" "$RC50_DIR/summary.json" --pairs "$PAIRS" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Publish the numbers as check annotations (readable without sign-in)
         if: always()
         run: |
           node -e '
           const s = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" ? x.toFixed(d) : "-";
-          for (const r of s.runs.slice(0, 8)) console.log(`::notice title=50+2 ${r.name} ${(r.runtime || "").slice(0, 8)}::${r.status} dp95=${f(r.comparison?.cryptoP95ChangePercent)}% base/mixed p95=${f(r.baseline?.p95)}/${f(r.mixed?.p95)}ms apiCPU=${f(r.baseline?.apiCpuMs, 0)}/${f(r.mixed?.apiCpuMs, 0)}ms timeouts=${r.mixed?.timeouts ?? "-"} loss/double/viewer=${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join("/") : "-"}`);
-          for (const [k, v] of Object.entries(s.kinds)) console.log(`::notice title=50+2 ${k} ${(v.runtime || "").slice(0, 8)} pooled::complete ${v.completeRuns}/${v.runs} medianRunDp95=${f(v.medianRunDeltaPercent)}% pooledP95 base/mixed=${f(v.pooledBaselineP95Ms)}/${f(v.pooledMixedP95Ms)}ms pooledDp95=${f(v.pooledDeltaPercent)}% viewerInducedApiCPU=${f(v.meanViewerInducedApiCpuMs, 0)}ms meanMixedApiCPU=${f(v.meanMixedApiCpuMs, 0)}ms`);
+          if (s.collection.status !== "COMPLETE") console.log(`::error title=50+2 collection ${s.collection.status} ${s.collection.completeRuns}/${s.collection.expectedRuns}::${s.collection.failures.slice(0, 12).join(" ")}`);
+          for (const r of s.runs.slice(0, 8)) console.log(`::notice title=50+2 ${r.name} ${(r.runtime || "").slice(0, 8)}::${r.status} complete=${r.complete ? "yes" : "no"} dp95=${f(r.comparison?.cryptoP95ChangePercent)}% base/mixed p95=${f(r.baseline?.p95)}/${f(r.mixed?.p95)}ms apiCPU=${f(r.baseline?.apiCpuMs, 0)}/${f(r.mixed?.apiCpuMs, 0)}ms timeouts=${r.mixed?.timeouts ?? "-"} loss/double/viewer=${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join("/") : "-"}`);
+          for (const [k, v] of Object.entries(s.kinds)) console.log(`::notice title=50+2 ${k} ${(v.pin || "").slice(0, 8)} pooled::collection ${s.collection.status} complete ${v.completeRuns}/${v.runs} ${v.diagnosticP95} medianRunDp95=${f(v.medianRunDeltaPercent)}% pooledP95 base/mixed=${f(v.pooledBaselineP95Ms)}/${f(v.pooledMixedP95Ms)}ms pooledDp95=${f(v.pooledDeltaPercent)}% viewerInducedApiCPU=${f(v.meanViewerInducedApiCpuMs, 0)}ms meanMixedApiCPU=${f(v.meanMixedApiCpuMs, 0)}ms`);
           ' "$RC50_DIR/summary.json"
       - name: Collect run reports (no database files)
         if: always()
         run: |
           mkdir -p output/rc50-613
           cp "$RC50_DIR/summary.json" output/rc50-613/ 2>/dev/null || true
-          for d in "$RC50_DIR"/runs/*/out; do
-            n=$(basename "$(dirname "$d")"); mkdir -p "output/rc50-613/$n"
-            cp "$d"/*.json "output/rc50-613/$n/" 2>/dev/null || true
+          for r in "$RC50_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613/$n/" 2>/dev/null || true
           done
       - uses: actions/upload-artifact@v4
         if: always()

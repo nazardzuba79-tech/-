@@ -61,3 +61,12 @@ ci-diagnostic (Linux on a GitHub-hosted runner only), used by
 before/after pairs pinned to 2 vCPUs; summarize-613.cjs aggregates them.
 Windows (LOCAL_DIAGNOSTIC) and CI results are diagnostics, never capacity
 acceptance; the isolated Linux attestation path is unchanged.
+
+Collection gate (2026-10-26, cloud Claude): summarize-613.cjs reports two separate
+results. "collection" fails closed (exit 1) unless every expected run, PAIRS per
+pin, is present, parseable, pin-matched, measured on both arms with the plan's
+sample floor and population, financially intact and cleaned up; a stored verdict
+must follow from its stored latencies. "capacity" is the p95 verdict per pin,
+report only: a p95 FAIL never fails the collection and nothing is acceptance.
+summarize-613.test.cjs checks it on fixtures/summarize-613 (real CI results,
+see SOURCE.txt) and corrupted temporary copies; no benchmark runs there.
