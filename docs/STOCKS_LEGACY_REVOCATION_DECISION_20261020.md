@@ -178,7 +178,11 @@ the unsupported SQLite path:
   immediately before COMMIT. Any throw rolls back.
 * `account-worker-runtime.mjs` blocks on a shared `Int32Array` slot holding
   `(sequence<<2)|decision`, posts `{kind:'fence',requestId,sequence}` and
-  waits at most 2500 ms. Allow → COMMIT; deny → `AUTH_REQUIRED` (401);
+  waits at most 2500 ms on the monotonic clock (`performance.now()`, so a
+  wall-clock step cannot stretch or cut the wait). While it waits, the
+  worker's serialized queue and the SQLite writer lock are held, so other
+  SQLite-path commands queue behind it (their own 2500 ms queue timeout
+  still applies). Allow → COMMIT; deny → `AUTH_REQUIRED` (401);
   unavailable, crash or timeout → `AUTH_UNAVAILABLE` (503). On timeout the
   worker settles the slot itself with compareExchange, so a racing or late
   answer can never turn a rollback into a commit or release a later command.

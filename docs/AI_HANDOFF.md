@@ -7123,3 +7123,14 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - Verified locally (Node 24.22.0, Windows): unchanged `two-trader-auth-lifetime.test.mjs` 7/7 PASS (was 6/1); fence 5/5; together with two-trader-http, account-existing-only, cash-authority-contract and stocks-ci-source-head 73/73 PASS. Node 22.23.3 suites (release-startup) run only in CI.
 - Preserved: Codex #613 commits and the owner's PG-only release contract; no edits to #615/#616/#617 areas.
 - Open: 50+2 load test and p95 (prior FAIL +17.64% /me, +27.04% futures/positions); desktop/mobile QA; ECLAVO private Draft.
+
+## 2026-10-26 — Claude (session 01EmV3Pt, cloud) — #613 commit-fence review: monotonic deadline, queue-hold comment
+- Base: #613 head `783aeeddf6c8e53f45e62bccf3151118604f4877` (other Claude session's fence commit, fresh fetch). Fast-forward commit on the #613 branch; no merge, deploy, production, flag or balance change.
+- Review findings on `783aeedd` (coordinator's two code-review points, both confirmed):
+  - `account-worker-runtime.mjs:38,42` computed the fence deadline from `Date.now()`. A wall clock stepped back during the wait stretched it by the step while the SQLite writer lock and the serialized queue were held; a forward step cut it short (fail-closed 503).
+  - `server.mjs:266` said auth waits always stay outside the financial queue; on the SQLite path the fence now runs `authorize()` inside it for up to 2.5 s.
+- Fix: deadline and remaining time use `performance.now()` (monotonic); comment corrected; decision-doc addendum states the monotonic wait and the queue/lock hold.
+- Test: new `testing/wall-clock-step-back.mjs` (test-only `--import` preload: the worker's `Date.now()` reads one hour behind while a fence is pending) and a sixth case in `account-commit-fence.test.mjs` run in a subprocess (driver file, since workers inherit execArgv). It verifies the preload reached the worker, then expects `AUTH_UNAVAILABLE` after 2.4–10 s and revision 0. RED on `783aeedd` (wait outlived the 15 s kill), GREEN after the fix.
+- Verified locally, Node 22.23.3 (official tarball, SHA256 checked): `services/stocks-global/*.test.mjs` 374/375; the one failure, `venue-discovery.test.mjs` (bitget AAPL adapter label), fails identically on `783aeedd`, is not run by any workflow and is outside this change; legacy `two-trader-auth-lifetime` 7/7; fence 6/6.
+- p95 scope: the 50+2 harness uses the disposable PostgreSQL authority (`STOCKS_DISPOSABLE_PG_URL`), where `commitFence` is `{}`; this fence and this fix do not run in that measurement. The other Claude session (bridge, owner's Windows machine) was running 50+2 diagnostics on `783aeedd` at the time; not duplicated here.
+- Preserved: the other session's fence design, tests and workflow; Codex #615 areas untouched.

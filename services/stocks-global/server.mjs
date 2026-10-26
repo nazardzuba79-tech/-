@@ -263,7 +263,10 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
       const ctx=await getContext(req,requestAbort.signal);if(res.destroyed)return;
       // Bind revalidation to this request's initial trusted identity, never a
       // mutable context or a second allowed identity returned for the same
-      // credential. Auth waits stay outside the serialized financial queue.
+      // credential. The request-start auth wait stays outside the serialized
+      // financial queue; on the SQLite worker the pre-COMMIT fence (commitFence)
+      // runs authorize() inside it, holding the queue and the writer lock for up
+      // to 2.5 s. The PostgreSQL authority path has no such wait.
       const requestPrincipalId=ctx.id;
       const authorize=twoTraderMode?async()=>{
         const principal=await authenticate(req,{signal:requestAbort.signal});

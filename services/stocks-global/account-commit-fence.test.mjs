@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { spawn } from 'node:child_process';
 import { openAccountWorker } from './account-worker.mjs';
 import { SimError } from './engine.mjs';
 
@@ -74,4 +75,44 @@ test('fences are accepted only as functions on state-changing commands', async t
   // Unfenced commands keep their previous behavior.
   await f.alice.execute('quote', quote(1));
   assert.equal(await f.revision(f.alice), 1);
+});
+
+test('a wall clock stepped back during the fence wait cannot stretch it', { timeout: 30000 }, async t => {
+  // testing/wall-clock-step-back.mjs moves the worker's Date.now() one hour back
+  // while the fence waits; the 2.5 s deadline must still end the wait and roll back.
+  // The driver is a file, not --eval: workers inherit execArgv and reject --input-type.
+  const here = new URL('.', import.meta.url).href;
+  const driverDir = await mkdtemp(join(tmpdir(), 'stocks-fence-clock-driver-'));
+  t.after(() => rm(driverDir, { recursive: true, force: true }));
+  const driver = join(driverDir, 'driver.mjs');
+  await writeFile(driver, `
+    import { Worker } from 'node:worker_threads';
+    import { mkdtemp, rm } from 'node:fs/promises';
+    import { tmpdir } from 'node:os';
+    import { join } from 'node:path';
+    const { openAccountWorker } = await import(${JSON.stringify(here + 'account-worker.mjs')});
+    const probe = await new Promise((resolve, reject) => {
+      const w = new Worker(new URL('data:text/javascript,import{parentPort}from"node:worker_threads";parentPort.postMessage(globalThis[Symbol.for("stocks.wallClockStepBack")]===true)'));
+      w.once('message', value => { void w.terminate(); resolve(value); }); w.once('error', reject);
+    });
+    const dir = await mkdtemp(join(tmpdir(), 'stocks-fence-clock-'));
+    const repo = await openAccountWorker(join(dir, 'accounts.sqlite'), { now: () => ${NOW} });
+    const alice = await repo.forPrincipal(${JSON.stringify(ALICE)});
+    const started = performance.now(); let code = 'COMMITTED';
+    try { await alice.execute('quote', ${JSON.stringify(quote(1))}, { fence: () => new Promise(() => {}) }); } catch (error) { code = error.code; }
+    const elapsedMs = performance.now() - started, revision = (await alice.read()).revision;
+    await repo.close(); await rm(dir, { recursive: true, force: true });
+    process.stdout.write(JSON.stringify({ probe, code, elapsedMs, revision }));`);
+  const child = spawn(process.execPath, ['--import', here + 'testing/wall-clock-step-back.mjs', driver], { windowsHide: true });
+  let stdout = '', stderr = '', killed = false;
+  child.stdout.on('data', chunk => { stdout += chunk; }); child.stderr.on('data', chunk => { stderr += chunk; });
+  const kill = setTimeout(() => { killed = true; child.kill('SIGKILL'); }, 15000);
+  const status = await new Promise(resolve => child.once('close', resolve)); clearTimeout(kill);
+  assert.equal(killed, false, 'the fence wait outlived 15 s after a wall-clock step back');
+  assert.equal(status, 0, stderr);
+  const result = JSON.parse(stdout);
+  assert.equal(result.probe, true, 'the step-back preload reaches worker threads');
+  assert.equal(result.code, 'AUTH_UNAVAILABLE');
+  assert.ok(result.elapsedMs >= 2400 && result.elapsedMs < 10000, 'bounded wait: ' + result.elapsedMs);
+  assert.equal(result.revision, 0);
 });

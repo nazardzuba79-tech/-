@@ -30,16 +30,18 @@ const beforeRegistrationCommit=()=>{
 // Commit fence: with the write staged and the SQLite writer lock held, ask the
 // parent to re-authorize the request and wait for its answer. Slot 0 holds
 // (sequence<<2)|decision; a late answer for an earlier sequence cannot match.
+// The deadline is monotonic: a wall-clock step (NTP, manual) can neither
+// stretch the wait while the writer lock is held nor cut it short.
 const fenceState=workerData.fence?new Int32Array(workerData.fence):null;
 const FENCE_TIMEOUT_MS=2500,FENCE_ALLOW=1,FENCE_DENY=2,FENCE_UNAVAILABLE=3;
 let fenceSequence=0;
 const commitFence=requestId=>()=>{
   check(fenceState,'ACCOUNT_COMMAND_INVALID');
-  fenceSequence=fenceSequence%0x1fffffff+1;const pending=fenceSequence<<2,deadline=Date.now()+FENCE_TIMEOUT_MS;
+  fenceSequence=fenceSequence%0x1fffffff+1;const pending=fenceSequence<<2,deadline=performance.now()+FENCE_TIMEOUT_MS;
   Atomics.store(fenceState,0,pending);
   parentPort.postMessage({kind:'fence',requestId,sequence:fenceSequence});
   while(Atomics.load(fenceState,0)===pending){
-    const left=deadline-Date.now();
+    const left=deadline-performance.now();
     // On timeout the worker settles the decision itself, so a parent answer
     // racing the deadline can never turn this rollback into a commit.
     if(left<=0){Atomics.compareExchange(fenceState,0,pending,pending|FENCE_UNAVAILABLE);break;}
