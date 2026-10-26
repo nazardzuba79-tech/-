@@ -79,7 +79,8 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, be
         id, created,
         readState: () => load(id,missing),
         read: () => snapshot(load(id,missing), now()),
-        async transact(fn) {
+        async transact(fn, { commitFence } = {}) {
+          check(commitFence === undefined || typeof commitFence === 'function', 'ACCOUNT_COMMAND_INVALID');
           sql('begin','sqlExecCalls',()=>db.exec('BEGIN IMMEDIATE'));
           let committed=false;
           try {
@@ -88,6 +89,11 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, be
             state.revision++; validate(state);
             const encoded=JSON.stringify(state);
             sql('write','sqlWriteCalls',()=>update.run(encoded,id)); beforeCommit();
+            // The caller's authorization is confirmed again here, with the write
+            // staged and the writer lock held, as the PostgreSQL authority
+            // re-reads its session row before COMMIT. A revocation that lands
+            // before this point rolls the transaction back.
+            commitFence?.();
             sql('commit','sqlExecCalls',()=>db.exec('COMMIT'));
             committed=true;
             return { result, snapshot: snapshot(state, now()) };

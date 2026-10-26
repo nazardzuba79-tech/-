@@ -1,8 +1,10 @@
 name: Stocks legacy SQLite unsupported control
 
 # Owner decision 2026-10-20: outside the PG production release contract.
-# Keep the original assertions and failing exit status visible. This workflow
-# is intentionally independent of the required PostgreSQL release gate.
+# The original assertions are unchanged and keep their genuine exit status.
+# Since the SQLite worker's pre-COMMIT authorization fence (#613) they pass:
+# a revocation before COMMIT rolls back with 401. This workflow stays
+# independent of the required PostgreSQL release gate.
 on:
   pull_request:
     paths:
@@ -24,7 +26,7 @@ concurrency:
 
 jobs:
   legacy-unsupported:
-    name: Unsupported SQLite revocation — known defect (expected 401, actual 200)
+    name: Unsupported SQLite revocation (expected 401, no durable change)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -63,24 +65,36 @@ jobs:
         run: |
           set -euo pipefail
           node --test --test-reporter=tap services/stocks-global/two-trader-auth-lifetime.test.mjs | tee legacy-unsupported.tap
+      - name: SQLite worker commit fence (deny, unavailable, timeout, stale answer)
+        id: fence
+        if: success() || steps.legacy.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/account-commit-fence.test.mjs | tee commit-fence.tap
       - name: Report actual legacy result independently of PG release
         if: always()
         env:
           LEGACY_OUTCOME: ${{ steps.legacy.outcome }}
+          FENCE_OUTCOME: ${{ steps.fence.outcome }}
           VERIFIED_SOURCE_SHA: ${{ steps.source-check.outputs.sha }}
         run: |
-          echo "## Unsupported SQLite trading: $LEGACY_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Unsupported SQLite trading: $LEGACY_OUTCOME (commit fence: $FENCE_OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
           echo "Expected source SHA: $EXPECTED_SOURCE_SHA; verified checkout SHA: $VERIFIED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "Known pre-COMMIT revocation defect: expected 401, observed 200. No assertion was changed." >> "$GITHUB_STEP_SUMMARY"
-          echo "This job keeps its failing exit status; it is not part of the PostgreSQL production contract." >> "$GITHUB_STEP_SUMMARY"
-          if test -f legacy-unsupported.tap; then
-            echo '```text' >> "$GITHUB_STEP_SUMMARY"
-            cat legacy-unsupported.tap >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "Pre-COMMIT revocation must return 401 with no durable change. No assertion was changed." >> "$GITHUB_STEP_SUMMARY"
+          echo "This job keeps its genuine exit status; it is not part of the PostgreSQL production contract." >> "$GITHUB_STEP_SUMMARY"
+          for tap in legacy-unsupported.tap commit-fence.tap; do
+            if test -f "$tap"; then
+              echo '```text' >> "$GITHUB_STEP_SUMMARY"
+              cat "$tap" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: stocks-legacy-unsupported-${{ env.EXPECTED_SOURCE_SHA }}
-          path: legacy-unsupported.tap
+          path: |
+            legacy-unsupported.tap
+            commit-fence.tap
           if-no-files-found: error

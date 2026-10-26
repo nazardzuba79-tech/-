@@ -166,3 +166,40 @@ One canonical profiler, keep-alive5000, all financial code, tests, CI,
 44+2 packaging and the PG-only launcher remain byte-identical to b2524.
 No new Work assignment, changes to Claude, merge, deployment, SQL execution,
 paid resource or real financial operation.
+
+## Addendum 2026-10-26 (Claude, #613) — commit fence implemented
+
+The owner's 2026-10-26 work order asked for this defect to be repaired
+without weakening authorization. The runtime now has a pre-COMMIT fence on
+the unsupported SQLite path:
+
+* `accounts.mjs` `transact(fn, {commitFence})` calls the fence after UPDATE
+  and the test barrier, with the write staged and the SQLite writer lock held,
+  immediately before COMMIT. Any throw rolls back.
+* `account-worker-runtime.mjs` blocks on a shared `Int32Array` slot holding
+  `(sequence<<2)|decision`, posts `{kind:'fence',requestId,sequence}` and
+  waits at most 2500 ms. Allow → COMMIT; deny → `AUTH_REQUIRED` (401);
+  unavailable, crash or timeout → `AUTH_UNAVAILABLE` (503). On timeout the
+  worker settles the slot itself with compareExchange, so a racing or late
+  answer can never turn a rollback into a commit or release a later command.
+* `account-worker.mjs` answers only for the active non-batch request with
+  the same requestId; any malformed fence message is fatal for the worker.
+* `server.mjs` passes the request's own `authorize` (a fresh `authenticate`
+  against the identity resolver, no cache, bound to the initial principal)
+  for orders, cancel and order-bearing observations, only when the SQLite
+  worker is used. The PostgreSQL authority path is byte-for-byte unchanged.
+
+Result: the unchanged `two-trader-auth-lifetime.test.mjs` passes 7/7
+(revocation at the pre-COMMIT barrier → 401, ledger unchanged); new
+`account-commit-fence.test.mjs` 5/5 covers allow, deny, unavailable,
+crash, timeout and a stale late answer.
+
+Residual window (stated, not hidden): the identity service is remote and
+has no lease protocol, so a revocation acknowledged after the fence's
+`/api/v1/me` reply and before the local COMMIT (Atomics wake-up plus one
+SQLite COMMIT) can still commit. The window shrinks from the whole request
+(authentication, queueing, quote, write) to that interval. Only the
+PostgreSQL authority, which locks the Session row inside the financial
+transaction, gives full ordering; it stays the only supported production
+path. The legacy path remains unsupported in production
+(`STOCKS_LEGACY_STORAGE_UNSUPPORTED`).
