@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { open, readFile, rename, stat, unlink } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { assert, CLMM, USDC, MAINNET_GENESIS, poolIdentity, extractSwapCandidates } from './stocks-verify-clmm-proof.mjs';
+import { assert, CLMM, USDC, MAINNET_GENESIS, PILOTS, poolIdentity, extractSwapCandidates } from './stocks-verify-clmm-proof.mjs';
 import { reconcile } from './stocks-reconcile-clmm-receipts.mjs';
 
 export const SCHEMA = 'voltex.solana-ohlcv.v1';
@@ -20,6 +20,67 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const snapshotFor = (source, limits, watermark, minutes, metrics) => plain({ version: 1, source, limits, watermark,
   minutes: [...minutes.values()].sort((a, b) => a.from - b.from), metrics });
 const checkpointText = payload => JSON.stringify({ payload, sha256: digest(payload) }) + '\n';
+const archiveRoot = new URL('../research/solana-xstocks/', import.meta.url);
+const missingEvidence = {
+  programIdentity: 'Reproducible deployed-executable/source attestation is absent; the saved ProgramData header is insufficient.',
+  poolState: 'Full pool/config state at execution, with complete intervening mutation reconstruction, is absent.',
+  mintChronology: 'Historical on-chain mint/scaled-multiplier updates and their effective times are absent.',
+  feeChronology: 'Historical mint transfer-fee configuration/epochs and intervening changes are absent.',
+  completeness: 'Independent complete produced-block/signature streams bracketing the whole interval are absent.',
+};
+
+async function archivedScope(ticker) {
+  assert(Object.hasOwn(PILOTS, ticker), 'UNAPPROVED_PILOT');
+  // Explicit published manifests are anchors, never a scan of caller folders.
+  // Reuse acquisition's PILOTS; the profile index holds paths, not identities.
+  const index = JSON.parse(await readFile(new URL('source-producer-profiles.json', archiveRoot), 'utf8'));
+  assert(index.schema === 1 && Array.isArray(index.profiles) && new Set(index.profiles).size === index.profiles.length
+    && index.profiles.every(p => /^proof-615-\d{8}\/(?:[A-Za-z0-9-]+\/){1,2}manifest\.json$/.test(p)), 'ARCHIVE_PROFILE');
+  const profiles = (await Promise.all(index.profiles.map(async p => JSON.parse(await readFile(new URL(p, archiveRoot), 'utf8')))))
+    .filter(p => p.ticker === ticker);
+  assert(profiles.length && profiles.every(p => p.mint === PILOTS[ticker].mint && p.pool === PILOTS[ticker].pool
+    && p.network === 'solana-mainnet-beta'), 'ARCHIVE_PROFILE_IDENTITY');
+  return profiles;
+}
+
+async function verifyArchiveScope(manifest) {
+  const profiles = await archivedScope(manifest.ticker);
+  assert(['network', 'mint', 'pool'].every(k => manifest[k] === profiles[0][k]), 'ARCHIVE_SOURCE_SCOPE');
+  const pinned = profiles.find(p => digest(manifest.windowUTC) === digest(p.windowUTC));
+  assert(pinned, 'ARCHIVE_WINDOW_SCOPE');
+  const receiptIdentity = rows => rows.map(r => [r.file, r.url, r.method, r.params, r.httpStatus, r.sha256])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  assert(Array.isArray(manifest.receipts) && manifest.receipts.length === pinned.receipts.length
+    && new Set(manifest.receipts.map(r => r.file)).size === manifest.receipts.length
+    && digest(receiptIdentity(manifest.receipts)) === digest(receiptIdentity(pinned.receipts)), 'ARCHIVE_RECEIPT_BINDING');
+  const transactions = rows => rows.map(t => [t.signature, t.slot, t.blockTime, t.transactionOrderWithinBlock ?? null])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  assert(Array.isArray(manifest.transactions) && new Set(manifest.transactions.map(t => t.signature)).size === manifest.transactions.length
+    && digest(transactions(manifest.transactions)) === digest(transactions(pinned.transactions)), 'ARCHIVE_TRANSACTION_SCOPE');
+}
+
+/** Offline protocol only: no collector or network permission is created here. */
+export async function forwardCaptureProtocol(ticker, from, to) {
+  const pinned = (await archivedScope(ticker))[0], start = Date.parse(from) / 1000, end = Date.parse(to) / 1000;
+  assert(typeof from === 'string' && typeof to === 'string' && from.endsWith('Z') && to.endsWith('Z')
+    && integer(start) && start % 60 === 0 && end === start + 60, 'FORWARD_WINDOW');
+  const assessed = JSON.parse(await readFile(new URL('../research/solana-xstocks/proof-615-20261026/forward-capture-assessment.json', import.meta.url), 'utf8'));
+  return {
+    schema: 'voltex.solana-forward-capture.v1', status: 'PLAN_ONLY_NOT_EXECUTED', networkRequests: 0, acceptedIntervals: 0,
+    scope: { network: pinned.network, program: CLMM, ticker, mint: pinned.mint, pool: pinned.pool, quoteMint: USDC, windowUTC: [from, to] },
+    bounds: Object.fromEntries(['maxProducedBlocks', 'maxRpcAttempts', 'maxResponseBytes', 'maxTotalResponseBytes', 'minimumSpacingMs', 'automaticRetries'].map(k => [k, assessed[k]])),
+    phases: [
+      'Before the future window: capture finalized full pool/config/mints/vaults/loader/executable state and exact context slots.',
+      'From before the state snapshot through closure: retain every produced finalized block and independent pool signature stream.',
+      'During/after: retain all relevant program/pool/config/mint writes, canonical transaction indices, epoch/effective-time changes and post-state.',
+      'Offline: verify receipt/request/scope integrity, reuse verifyFinalizedCoverage and CLMM reconciliation; reject unsupported mutations or fees.',
+      'Before acceptance: obtain and verify reproducible executable attestation and full state/mint/fee reconstruction; snapshots or claimed booleans cannot substitute.',
+    ],
+    stopConditions: assessed.stopConditions,
+    missingEvidence: { ...missingEvidence },
+    activation: 'A separate normal network authorization and implemented evidence verifiers are required. This protocol never enables capture or a runtime writer.',
+  };
+}
 
 function validateSource(source) {
   assert(source?.network === 'solana-mainnet-beta' && source.program === CLMM && source.quoteMint === USDC
@@ -271,6 +332,9 @@ export function verifyFinalizedCoverage({ pool, from, to, genesis, finalizedSlot
 export async function replayPacket(directory) {
   const cpu = process.cpuUsage(), started = performance.now();
   const manifestText = await readFile(`${directory}/manifest.json`, 'utf8'), manifest = JSON.parse(manifestText);
+  // This factory supports the pinned historical archive only. A caller's
+  // manifest hashes, source fields, order indices or PASS claims are not anchors.
+  await verifyArchiveScope(manifest);
   const source = { network: manifest.network, program: CLMM, mint: manifest.mint,
     pool: manifest.pool, quoteMint: USDC, decimals: manifest.identity.decimals };
   validateSource(source);
@@ -326,7 +390,9 @@ export async function replayPacket(directory) {
   const spent = process.cpuUsage(cpu);
   return { pipeline, report: { ticker: manifest.ticker, source, currentPool, candidateTransactions: new Set(trades.map(t => t.signature)).size,
     candidateTransfers: trades.length * 2, acceptedIntervals: 0, acceptedMarkets: 0, networkRequests: 0,
-    gates: proof.gates, metrics: { ...pipeline.metrics, replayCpuUserMicros: spent.user, replayCpuSystemMicros: spent.system,
+    gates: proof.gates, missingEvidence: { ...missingEvidence },
+    producerBoundary: 'Pinned archive integrity plus existing receipt/CLMM verifiers; not live consensus attestation or an untrusted public writer.',
+    metrics: { ...pipeline.metrics, replayCpuUserMicros: spent.user, replayCpuSystemMicros: spent.system,
       replayWallMs: Math.round((performance.now() - started) * 1000) / 1000,
       storageBytes: Buffer.byteLength(JSON.stringify(pipeline.snapshot())) }, pages } };
 }

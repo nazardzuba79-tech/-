@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
-      - run: node --test scripts/stocks-verify-clmm-proof.test.mjs scripts/stocks-reconcile-clmm-receipts.test.mjs scripts/stocks-source-pipeline.test.mjs scripts/stocks-capture-transport.test.mjs
+      - run: node --test scripts/stocks-verify-clmm-proof.test.mjs scripts/stocks-reconcile-clmm-receipts.test.mjs scripts/stocks-source-pipeline.test.mjs scripts/stocks-capture-transport.test.mjs scripts/stocks-source-pipeline-producer.test.mjs
   source-admission:
     name: Source admission, gaps and viewer safety
     runs-on: ubuntu-latest
