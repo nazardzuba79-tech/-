@@ -3,7 +3,53 @@
 Date: 2026-10-26 UTC. Baseline main/working branch fetched from GitHub:
 `63d6b02cd38fe9ff52742c35ce46fa327827dd33`.
 
-## Actual external state
+## Update — VPS actually provisioned; activation still incomplete
+
+On 26 October 2026 (Europe/Kyiv), after the owner's explicit follow-up purchase
+authorization and their personal submission of Blog's monthly contract form,
+Beget completed its internal hosting-account transfer and enabled Cloud.
+Inventory had no VPS before creation. One server was created and reached Running:
+
+- Identifier/name: `voltex-ru-gateway-01`.
+- Location: Russia, Saint Petersburg.
+- Ubuntu 24.04, 2 vCPU / 1 GB RAM / 20 GB NVMe.
+- Public IPv4: `185.23.35.226` (ru DNS has **not** been changed to it).
+- VPS 767.10 + IPv4 150 = **917.10 RUB per 30 days**; with monthly Blog 520:
+  **1,437.10 RUB**. For a 31-day VPS period plus Blog: 1,467.67 RUB.
+- Provider uses PAYG from the current balance; monthly UI is a cost equivalent.
+  No annual/multi-month prepayment or new payment method. Six free hosting days
+  were canceled as required by Beget before Cloud creation. Last UI balance:
+  15,000 RUB; no full-month debit was observed at creation.
+- No second server, paid panel, additional disk, exchange account, balance or
+  financial configuration was created/changed.
+
+Provider file manager authenticated to the new node and displayed its root
+filesystem. The built-in console displayed Ubuntu 24.04.5 and tty login; input
+methods did not reliably enter text, and no successful root login or command
+execution is claimed. No new server file was written. Then browser control failed
+with: “Browser access requires the originating browser context. Open ChatGPT in
+the browser with the connected extension and try again.”
+
+The canonical VOLTEX home was also actually opened in the owner's ordinary
+browser: guest navigation, visible BTC/USDT chart and populated market quotes
+rendered. This resolves the earlier environment-only liveness uncertainty for
+the home UI, not authenticated wallet/trading or the RU gateway.
+
+The 17-test Nginx suite was run again after a new, demonstrated compatibility
+fix: existing KYC rejects RU Origin. The new stricter fixture reproduced **403**
+on the prior gateway (`kyc-origin-before.txt`), then the gateway's exact RU to
+canonical private-upstream Origin mapping produced **17/17 PASS**. Incoming
+foreign Origin and unsafe requests without Origin remain rejected before
+forwarding. No Worker/API allowlist or financial code changed.
+
+Current status: **VPS PURCHASE/RUNNING CONFIRMED; RU GATEWAY NOT DEPLOYED**.
+Nginx, cert issuance, backup, monitoring, actual upstream checks from Beget, RU
+DNS cutover and full desktop/mobile/RF QA remain pending. No rollback occurred.
+Resume browser management of this one node; do not repeat purchase or create
+replacement keys. Historical preflight measurements follow and are not current
+claims about Cloud access or server inventory.
+
+## Earlier preflight external state (before owner activated paid hosting)
 
 | Check | Actual result |
 | --- | --- |
@@ -88,5 +134,6 @@ This is not a fresh audit of unrelated Render/Northflank services.
 5. Perform real ru desktop/mobile auth/navigation/quotes/WS/logout QA, safe RF
    probes plus an actual RF home/mobile check. Keep financial writes excluded.
 
-Status: **BLOCKED — not a live PASS.** Cloudflare login is resolved; Beget account
-Cloud/VPS access and policy clarification are the next actionable dependencies.
+Historical status at that snapshot: **BLOCKED — not a live PASS.** The update
+above supersedes the old account-access/purchase blockers; live activation still
+has not occurred.

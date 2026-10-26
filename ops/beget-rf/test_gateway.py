@@ -37,6 +37,12 @@ class Fixture(BaseHTTPRequestHandler):
     def respond(self):
         body = self.rfile.read(int(self.headers.get('Content-Length', 0)))
         self.requests.append({'path': self.path, 'headers': dict(self.headers), 'body': body.decode()})
+        # Existing KYC Worker accepts canonical app origins, not the RU origin.
+        if self.path == '/v1/confirm' and self.headers.get('Origin') != 'https://voltextech.net':
+            self.send_response(403)
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
         if self.path == '/v2' and self.headers.get('Upgrade') == 'websocket':
             accept = base64.b64encode(hashlib.sha1((self.headers['Sec-WebSocket-Key'] +
                 '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').encode()).digest()).decode()
@@ -174,6 +180,7 @@ class GatewayTest(unittest.TestCase):
         self.assertEqual(actual['body'], body)
         self.assertEqual(actual['headers']['Authorization'], 'Bearer synthetic-secret')
         self.assertEqual(actual['headers']['Cookie'], 'session=secret-cookie')
+        self.assertEqual(actual['headers']['Origin'], 'https://voltextech.net')
         self.assertEqual(json.loads(result)['url'], 'https://api.voltextech.net')
         self.assertEqual(headers['Cache-Control'], 'no-store')
 
@@ -227,6 +234,7 @@ class GatewayTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(data)['path'], '/v1/confirm')
         self.assertEqual(Fixture.requests[-1]['headers']['Authorization'], 'Bearer synthetic-secret')
+        self.assertEqual(Fixture.requests[-1]['headers']['Origin'], 'https://voltextech.net')
 
     def test_09_sse_first_chunk_is_not_buffered(self):
         conn = http.client.HTTPSConnection('127.0.0.1', self.port, context=self.context, timeout=3)

@@ -4,30 +4,41 @@ Owner-authorized branch: `work/beget-rf-gateway-preflight-20261026`.
 Baseline: `63d6b02cd38fe9ff52742c35ce46fa327827dd33`.
 Evidence: `docs/qa/beget-rf/`. No exchange code, database or financial flag changes.
 
-## Current blocker
+## Current state — one VPS provisioned, gateway not deployed
 
-The authorized Beget account is FreeHosting, balance 15,000 RUB. Its Cloud and
-service-management pages return 403 in both the cloud browser and the owner's
-ordinary browser. The visible “Services” page contains shared-hosting add-ons,
-not VPS. Configuring the public VPS calculator (Saint Petersburg, 2 CPU, 2 GB,
-30 GB NVMe, Ubuntu 24.04, IPv4) and clicking Create redirects back to FreeHosting
-home; no order or VPS was created and the balance remains unchanged.
+The owner explicitly authorized Blog monthly hosting at 520 RUB/month, entered
+the contract data and accepted/submitted Beget's offer personally. After Beget's
+internal account transfer finished, Cloud/VPS became available. No support
+message was needed or sent. The earlier 403 evidence is historical.
 
-The calculator displayed 38.44 RUB/day + 5 RUB/day IPv4 = 43.44 RUB/day
-(1,303.20 RUB/30 days, 1,346.64 RUB/31 days). This is a **quote, not a purchase**.
-The fixed plans shown start above the owner's 1,500 RUB budget. No shared-hosting
-upgrade, annual subscription, identity change or additional account was made.
+VPS inventory was empty before the one authorized purchase. Created:
+`voltex-ru-gateway-01`, Saint Petersburg, 2 CPU / 1 GB RAM / 20 GB NVMe,
+Ubuntu 24.04, public IPv4 `185.23.35.226`, status **Running**.
+The smaller gateway-only configuration keeps combined recurring cost in budget:
+767.10 RUB/30 days + 150 RUB/30 days IPv4 = **917.10 RUB/30 days**;
+with Blog **1,437.10 RUB** (31-day VPS + Blog: 1,467.67 RUB).
+No annual prepayment, extra disk, paid panel or additional server was ordered.
+Beget displays a monthly equivalent; its documented VPS charging is PAYG from
+the balance, not a prepaid annual or multi-month contract. Last observed balance
+was still 15,000 RUB; do not confuse service creation with an immediately posted
+full-month debit. Creating Cloud services required cancellation of 6 free Blog
+days; the normal provider confirmation was accepted within the paid-purchase
+authorization.
 
-Ask Beget to enable VPS ordering for the existing account/balance without buying
-shared hosting. No message has been sent. Proposed support question:
+The new node is only for Nginx: no exchange API, collector, database or duplicated
+user/balance storage. Authentication details were kept out of files and reports.
+The provider file manager opened the new node's root filesystem through its
+existing authorized integration. No server file was edited or uploaded.
+The console showed Ubuntu 24.04.5 and a tty login, but paste/typing did not
+reliably enter text. No successful root login or server command is claimed.
 
-> The existing funded FreeHosting account cannot open Cloud/VPS (403); the VPS
-> calculator's Create action returns to FreeHosting home. How can VPS be enabled
-> on this account using the existing balance, without a shared-hosting upgrade?
-> We need one Ubuntu 24.04 server in Saint Petersburg, 2 CPU/2 GB/30 GB and IPv4.
-> Please also confirm that a fixed-upstream HTTPS reverse proxy serving only our
-> own VOLTEX application is permitted. It offers no VPN, CONNECT, arbitrary URL
-> forwarding, public proxy accounts or general Internet relay.
+Current execution blocker: the browser extension then returned **“Browser access
+requires the originating browser context. Open ChatGPT in the browser with the
+connected extension and try again.”** Resume the same authorized browser context;
+do not buy a second server, reset credentials or change keys to work around it.
+Nginx/ACME/monitoring have not been installed, and ru DNS is unchanged. The next
+step is to regain normal management input, inspect this new node and apply the
+reviewed procedure below. Do not treat VPS Running as a live gateway PASS.
 
 ## Provider boundary
 
@@ -40,9 +51,10 @@ Official sources checked 2026-10-26:
 - https://beget.com/ru/kb/manual/virtual-servers — hourly PAYG, separately billed
   IPv4, 30-day monthly display; actual calendar-month cost varies.
 
-The generic reverse-proxy tutorial is not written approval for this specific
-cross-border financial application. Resolve that ambiguity with Beget before
-activating the gateway; do not bypass a provider prohibition.
+The gateway follows Beget's documented own-web-application reverse-proxy pattern;
+it must not offer a VPN, general proxy service, arbitrary destinations or CONNECT.
+No special written exemption was obtained or claimed. Do not bypass a provider
+prohibition or expand this fixed application relay into a general-purpose proxy.
 
 ## Architecture and limits
 
@@ -57,6 +69,12 @@ private-response persistence or automatic upstream retry is enabled. Public
 feeds and frontend requests strip Authorization/Cookie and suppress Set-Cookie.
 API/KYC requests retain session credentials and are never logged with their
 path, query, body or credentials.
+After the gateway rejects foreign Origin and origin-less unsafe methods, private
+upstreams receive the exact approved RU Origin mapped to the canonical VOLTEX
+Origin. An absent Origin on safe reads stays absent. This preserves the existing
+KYC allowlist without changing Workers/API CORS or removing their checks. A fixture
+that implements the existing KYC Origin rejection failed 403 before the mapping
+and passes after it; forged foreign Origin still never reaches the upstream.
 
 | Browser route | Fixed upstream |
 | --- | --- |
@@ -119,10 +137,9 @@ site's shared nginx.conf with them.
 
 ## Ordered activation — not executed
 
-1. Resolve Beget VPS account access and own-app policy; enumerate existing VPS
-   before purchase. Confirm final price including IPv4, no panels/extra disks,
-   Ubuntu 24.04/RF location and budget. Record server ID/IP/quote privately.
-   Any new binding terms require owner confirmation at the acceptance step.
+1. Account activation and one VPS purchase are DONE as recorded above; do not
+   repeat them. Resume the existing `voltex-ru-gateway-01`. Keep any future
+   binding terms subject to owner confirmation at the acceptance step.
 2. On the new Beget node only, establish secure administration through Beget's
    authorized terminal, apply Ubuntu updates, install official nginx/certbot and
    verify modules/resolver. Never publish a root credential or add a key elsewhere.

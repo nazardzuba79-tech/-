@@ -76,7 +76,9 @@ def render(prefix='/etc/nginx/voltex-rf', resolver='127.0.0.53', port=443,
       proxy_hide_header Set-Cookie;
 '''
         else:
-            conf += '''      proxy_cookie_domain api.voltextech.net ru.voltextech.net;
+            conf += '''      # The RU Origin was checked at the gateway before canonical mapping.
+      proxy_set_header Origin $canonical_app_origin;
+      proxy_cookie_domain api.voltextech.net ru.voltextech.net;
       proxy_redirect https://api.voltextech.net/ https://ru.voltextech.net/;
 '''
         if ws:
@@ -120,6 +122,7 @@ http {{
   access_log {prefix}/access.log gateway;
   limit_conn_zone $binary_remote_addr zone=gateway_connections:1m;
   map $http_origin $foreign_origin {{ default 1; "" 0; "https://{HOST}" 0; }}
+  map $http_origin $canonical_app_origin {{ default ""; "https://{HOST}" "https://voltextech.net"; }}
   map "$request_method:$http_origin" $unsafe_origin {{
     default 1;
     ~^(GET|HEAD): 0;

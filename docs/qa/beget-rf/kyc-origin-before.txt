@@ -1,0 +1,14 @@
+test_08_kyc_fixed_route_preserves_credentials (__main__.GatewayTest.test_08_kyc_fixed_route_preserves_credentials) ... FAIL
+
+======================================================================
+FAIL: test_08_kyc_fixed_route_preserves_credentials (__main__.GatewayTest.test_08_kyc_fixed_route_preserves_credentials)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/46a00edda406/voltex-beget/ops/beget-rf/test_gateway.py", line 233, in test_08_kyc_fixed_route_preserves_credentials
+    self.assertEqual(status, 200)
+AssertionError: 403 != 200
+
+----------------------------------------------------------------------
+Ran 1 test in 0.984s
+
+FAILED (failures=1)
