@@ -1,0 +1,5 @@
+# Public RPC receipt checksums bind exact response bytes on every platform.
+# Do not let Windows autocrlf rewrite the attested evidence during checkout.
+research/solana-xstocks/**/receipt-*.json -text
+research/solana-xstocks/**/manifest.json -text
+research/solana-xstocks/proof-615-20261025/pool.pinned.rs -text

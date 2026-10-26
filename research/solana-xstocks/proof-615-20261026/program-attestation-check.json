@@ -1,0 +1,66 @@
+{
+  "status": "BLOCKED_NOT_ATTESTED",
+  "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+  "attestationReceipt": "windows-executions-1793034915829/SPYx/receipt-008.json",
+  "officialSourceRevision": "119ed36bf9f33335ed8d671780502bc37d9f1605",
+  "officialSourceUrl": "https://github.com/raydium-io/raydium-clmm/blob/119ed36bf9f33335ed8d671780502bc37d9f1605/programs/amm/src/states/pool.rs",
+  "swapFieldsAtReportedRevision": [
+    {
+      "name": "pool_state",
+      "type": "Pubkey"
+    },
+    {
+      "name": "sender",
+      "type": "Pubkey"
+    },
+    {
+      "name": "token_account_0",
+      "type": "Pubkey"
+    },
+    {
+      "name": "token_account_1",
+      "type": "Pubkey"
+    },
+    {
+      "name": "amount_0",
+      "type": "u64"
+    },
+    {
+      "name": "transfer_fee_0",
+      "type": "u64"
+    },
+    {
+      "name": "amount_1",
+      "type": "u64"
+    },
+    {
+      "name": "transfer_fee_1",
+      "type": "u64"
+    },
+    {
+      "name": "zero_for_one",
+      "type": "bool"
+    },
+    {
+      "name": "sqrt_price_x64",
+      "type": "u128"
+    },
+    {
+      "name": "liquidity",
+      "type": "u128"
+    },
+    {
+      "name": "tick",
+      "type": "i32"
+    }
+  ],
+  "eventBytesAtReportedRevisionIncludingDiscriminator": 205,
+  "observedEventBytes": 221,
+  "observedFieldsNotPresentAtReportedRevision": [
+    "trade_fee_0",
+    "trade_fee_1"
+  ],
+  "localPinnedLayoutRevision": "edfc5c0a0cd8084ed694668391174a35b5246cf5",
+  "meaning": "The verifier reports is_verified=false, no executable hash and no last verification. Its reported source revision lacks the two fee fields observed in real finalized receipts. Matching the newer layout is not source-to-deployed-binary attestation. Do not build or claim the stale revision as verified.",
+  "nextGate": "Independent reproducible deployed-binary/source correspondence for the actual revision, followed by complete finalized forward state/block evidence; no automatic on-chain verify/PDA transaction authorized."
+}

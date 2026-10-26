@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -8,10 +9,22 @@ const dir=new URL('SPYx-replay-final/',root);
 const manifest=JSON.parse(await readFile(new URL('manifest.json',dir)));
 const receipt=manifest.receipts.find(r=>r.method==='getTransaction');
 const original=JSON.parse(await readFile(new URL(receipt.file,dir))).result;
+for(const [ticker,count,multiplier] of [['SPYx',8,'1.005714560286254'],['CRCLx',3,'1']])test(`${ticker} fresh mainnet Token2022 multipliers and fee-bearing executions remain unpublished`,async()=>{
+ const directory=fileURLToPath(new URL(`../research/solana-xstocks/proof-615-20261026/windows-executions-1793034915829/${ticker}`,import.meta.url));
+ const m=JSON.parse(await readFile(`${directory}/manifest.json`));
+ const result=await replay(directory);
+ assert.equal(result.transactions.length,count);assert.equal(result.networkRequests,0);assert.equal(result.priceReady,false);
+ assert.equal(result.multiplierEvidence.issuerReportedWindowMultiplier,multiplier);
+ assert.equal(result.multiplierEvidence.historicalOnChainChronologyVerified,false);
+ assert(result.transactions.every(t=>t.vaultDeltasReconciled&&t.events.every(e=>e.transferCheckedReconciled&&e.zeroTransferFeesObserved&&!e.pricePublished)));
+ const events=m.transactions.flatMap(t=>t.events);
+ assert(events.every(e=>e.transferFee0==='0'&&e.transferFee1==='0'));
+ assert(events.some(e=>BigInt(e.tradeFee0)>0n||BigInt(e.tradeFee1)>0n));
+});
 const keys=[...original.transaction.message.accountKeys,...original.meta.loadedAddresses.writable,...original.meta.loadedAddresses.readonly];
 const swap=tx=>tx.meta.innerInstructions.flatMap(g=>g.instructions).find(i=>keys[i.programIdIndex]===CLMM);
 const inputTransfer=tx=>{const xs=tx.meta.innerInstructions.flatMap(g=>g.instructions);return xs[xs.indexOf(swap(tx))+1];};
-for(const ticker of ['SPYx','CRCLx'])test(`${ticker}: all immutable receipts reconcile without network`,async()=>{const r=await replay(new URL(`${ticker}-replay-final`,root).pathname);assert.equal(r.transactions.length,ticker==='SPYx'?13:2);assert.equal(r.acceptedIntervals,0);assert.equal(r.priceReady,false);assert.ok(r.transactions.every(t=>t.vaultDeltasReconciled&&t.events.every(e=>e.transferCheckedReconciled)));});
+for(const ticker of ['SPYx','CRCLx'])test(`${ticker}: all immutable receipts reconcile without network`,async()=>{const r=await replay(fileURLToPath(new URL(`${ticker}-replay-final`,root)));assert.equal(r.transactions.length,ticker==='SPYx'?13:2);assert.equal(r.acceptedIntervals,0);assert.equal(r.priceReady,false);assert.ok(r.transactions.every(t=>t.vaultDeltasReconciled&&t.events.every(e=>e.transferCheckedReconciled)));});
 const cases=[
  ['wrong pool',t=>swap(t).accounts[2]=0,'INSTRUCTION_POOL'],
  ['reversed vaults',t=>swap(t).accounts[5]=swap(t).accounts[6],'INSTRUCTION_VAULT'],

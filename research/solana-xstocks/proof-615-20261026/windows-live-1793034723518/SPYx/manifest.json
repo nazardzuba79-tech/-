@@ -1,0 +1,364 @@
+{
+  "network": "solana-mainnet-beta",
+  "ticker": "SPYx",
+  "startedAt": "2026-10-26T17:12:03.523Z",
+  "windowUTC": [
+    "2026-10-26T17:09:00.000Z",
+    "2026-10-26T17:10:00.000Z"
+  ],
+  "rpcRequests": 7,
+  "issuerVerified": true,
+  "poolOwnerVerified": true,
+  "pairMintVerified": true,
+  "vaultMintVerified": true,
+  "swapEventVerified": false,
+  "programVersionVerified": false,
+  "intervalComplete": false,
+  "multiplierChronologyVerified": false,
+  "commercialRightsVerified": false,
+  "productionReady": false,
+  "ohlcv": null,
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:12:03.523Z",
+      "httpStatus": 200,
+      "bytes": 6774,
+      "elapsedMs": 244.47609999999997,
+      "sha256": "e6503a828018d21b45528b60e7890942ba78b9dc8ee47e72c56789dff411c7eb"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "at": "2026-10-26T17:12:06.780Z",
+      "httpStatus": 200,
+      "bytes": 81,
+      "elapsedMs": 269.7114999999999,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d"
+    },
+    {
+      "file": "receipt-003.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-26T17:12:10.057Z",
+      "httpStatus": 200,
+      "bytes": 2317,
+      "elapsedMs": 57.71770000000015,
+      "sha256": "831aefc185d4aab7725fb4035c51c5c69c457283ebf148c01c82b99946b587a8"
+    },
+    {
+      "file": "receipt-004.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getMultipleAccounts",
+      "params": [
+        [
+          "AUhtN1KPdVEQ1mh7gy3oHzjWyqHo5RQx1KEiFJdyqAeN",
+          "92aTAYGnUCH28J96EFzD8ELa6ZpdzXw4zqEuX1nD6oD7"
+        ],
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "minContextSlot": 461744297
+        }
+      ],
+      "at": "2026-10-26T17:12:13.125Z",
+      "httpStatus": 200,
+      "bytes": 872,
+      "elapsedMs": 58.72690000000148,
+      "sha256": "3c848c18690c639752ceb3b8c1f684633b866df6dae972f5bad7e1794a8dde6d"
+    },
+    {
+      "file": "receipt-005.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-26T17:12:16.196Z",
+      "httpStatus": 200,
+      "bytes": 303,
+      "elapsedMs": 74.34410000000025,
+      "sha256": "e499af03ef70e5c2f5ecc9f095978c890a21e3006d22e3bdb9d00d48ab87a5ba"
+    },
+    {
+      "file": "receipt-006.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "dataSlice": {
+            "offset": 0,
+            "length": 45
+          }
+        }
+      ],
+      "at": "2026-10-26T17:12:19.271Z",
+      "httpStatus": 200,
+      "bytes": 321,
+      "elapsedMs": 45.539600000000064,
+      "sha256": "dff01feae56e85b0442a7afeb5d2360a522103f250bcc82ddb1c55a8ea9b4d97"
+    },
+    {
+      "file": "receipt-007.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+        {
+          "encoding": "jsonParsed",
+          "commitment": "finalized",
+          "minContextSlot": 461744297
+        }
+      ],
+      "at": "2026-10-26T17:12:22.331Z",
+      "httpStatus": 200,
+      "bytes": 1774,
+      "elapsedMs": 45.87199999999939,
+      "sha256": "063c18480345cd28e5fcc6250589431f82a61494a456051b587ea4b7cb8db596"
+    },
+    {
+      "file": "receipt-008.json",
+      "url": "https://verify.osec.io/status/CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:12:22.377Z",
+      "httpStatus": 200,
+      "bytes": 327,
+      "elapsedMs": 217.08989999999903,
+      "sha256": "69e575ea7f38ac2d5c0274dfbe294cebd5f842d3297bd61e94e7a5e685e0cba8"
+    },
+    {
+      "file": "receipt-009.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx/multiplier/history?network=Solana",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:12:22.595Z",
+      "httpStatus": 200,
+      "bytes": 770,
+      "elapsedMs": 158.78469999999652,
+      "sha256": "c648423c047a6c7842b0ce4c3f1b692516859aef362044b846c75d1c229d7bca"
+    },
+    {
+      "file": "receipt-010.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx/multiplier?network=Solana",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:12:22.754Z",
+      "httpStatus": 200,
+      "bytes": 94,
+      "elapsedMs": 98.2690999999977,
+      "sha256": "23a9bffc1de78a783f16898e043274b1821b22162e4f8ec7996a5d335087b3e4"
+    },
+    {
+      "file": "receipt-011.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "limit": 100,
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-26T17:12:25.865Z",
+      "httpStatus": 200,
+      "bytes": 23158,
+      "elapsedMs": 65.07450000000244,
+      "sha256": "e4d4660f2488232e94d89798ca0c70c87e4d558231f5193539f327e38ba9cc02"
+    }
+  ],
+  "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "accountSlot": 461744297,
+  "identity": {
+    "mints": [
+      "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    ],
+    "vaults": [
+      "AUhtN1KPdVEQ1mh7gy3oHzjWyqHo5RQx1KEiFJdyqAeN",
+      "92aTAYGnUCH28J96EFzD8ELa6ZpdzXw4zqEuX1nD6oD7"
+    ],
+    "decimals": [
+      8,
+      6
+    ]
+  },
+  "vaults": [
+    {
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "authority": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw"
+    },
+    {
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "authority": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw"
+    }
+  ],
+  "programDataAddress": "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+  "programLastDeploySlot": "459932378",
+  "mintExtensions": [
+    {
+      "extension": "metadataPointer",
+      "state": {
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "metadataAddress": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W"
+      }
+    },
+    {
+      "extension": "permanentDelegate",
+      "state": {
+        "delegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq"
+      }
+    },
+    {
+      "extension": "defaultAccountState",
+      "state": {
+        "accountState": "initialized"
+      }
+    },
+    {
+      "extension": "scaledUiAmountConfig",
+      "state": {
+        "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+        "multiplier": "1.003909240011759",
+        "newMultiplier": "1.005714560286254",
+        "newMultiplierEffectiveTimestamp": 1781755200
+      }
+    },
+    {
+      "extension": "pausableConfig",
+      "state": {
+        "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "paused": false
+      }
+    },
+    {
+      "extension": "confidentialTransferMint",
+      "state": {
+        "auditorElgamalPubkey": null,
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "autoApproveNewAccounts": false
+      }
+    },
+    {
+      "extension": "transferHook",
+      "state": {
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "programId": null
+      }
+    },
+    {
+      "extension": "tokenMetadata",
+      "state": {
+        "additionalMetadata": [],
+        "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+        "name": "SP500 xStock",
+        "symbol": "SPYx",
+        "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/SPYx/metadata.json"
+      }
+    }
+  ],
+  "mintDecimalsVerified": true,
+  "programAttestation": {
+    "is_verified": false,
+    "message": "On chain program not verified",
+    "on_chain_hash": "4b96e92b8705b24efe621d75ba4aebb208d708e91ab2aaa66e21d3d7965cb16b",
+    "executable_hash": "",
+    "repo_url": "https://github.com/raydium-io/raydium-clmm/tree/119ed36bf9f33",
+    "commit": "119ed36bf9f33",
+    "last_verified_at": null,
+    "is_frozen": false,
+    "is_closed": false
+  },
+  "issuerMultiplierHistory": {
+    "page": {
+      "currentPage": 0,
+      "hasNextPage": false
+    },
+    "nodes": [
+      {
+        "id": "edb40e5f-97c1-49a3-a26e-ea03f5475537",
+        "reason": "Dividend",
+        "multiplier": 1.005714560286254,
+        "previousMultiplier": 1.003909240011759,
+        "activationDateTime": "2026-06-18T04:00:00.000Z"
+      },
+      {
+        "id": "18c60b9f-b584-4396-a86f-8904ce394d26",
+        "reason": "Dividend",
+        "multiplier": 1.003909240011759,
+        "previousMultiplier": 1.0025607582229898,
+        "activationDateTime": "2026-05-01T00:15:00.000Z"
+      },
+      {
+        "id": "bcede013-57cb-4fb7-b7dc-b1996aea584f",
+        "reason": "Dividend",
+        "multiplier": 1.0025607582229898,
+        "previousMultiplier": 1.00099942056,
+        "activationDateTime": "2026-01-30T23:55:00.000Z"
+      },
+      {
+        "id": "18b849a1-631b-4627-9d7e-fe6f4a9f753a",
+        "reason": "Dividend",
+        "multiplier": 1.00099942056,
+        "previousMultiplier": 1,
+        "activationDateTime": "2025-10-31T23:55:00.000Z"
+      }
+    ]
+  },
+  "issuerCurrentMultiplier": {
+    "currentMultiplier": 1.005714560286254,
+    "newMultiplier": 0,
+    "activationDateTime": 0,
+    "reason": null
+  },
+  "signaturesScanned": 100,
+  "signaturesInWindow": 0,
+  "transactions": [],
+  "swapCandidates": 0,
+  "observedTransactionOrderVerified": true,
+  "status": "EVIDENCE_CAPTURED_NOT_PRICE_VERIFIED",
+  "blockers": [
+    "PROGRAM_SOURCE_BINARY_CORRESPONDENCE_UNVERIFIED",
+    "HISTORICAL_POOL_AND_VAULT_CONFIGURATION_UNVERIFIED",
+    "PAGINATION_COMPLETENESS_NOT_INDEPENDENTLY_PROVEN",
+    "TOKEN_2022_MULTIPLIER_AND_FEE_CHRONOLOGY_UNVERIFIED"
+  ],
+  "finishedAt": "2026-10-26T17:12:25.931Z",
+  "metrics": {
+    "httpRequests": 11,
+    "rpcAttempts": 7,
+    "rpcCompletions": 7,
+    "responseBytes": 36791,
+    "cpuUserMicros": 281000,
+    "cpuSystemMicros": 140000,
+    "elapsedMs": 22408.469399999998,
+    "rssBytes": 53686272,
+    "heapUsedBytes": 8892496,
+    "paidResources": false,
+    "monetarySpend": 0,
+    "automaticRetries": 0
+  }
+}
