@@ -5,6 +5,7 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), cp = require('node:child_process');
 const {summarize, markdown} = require('./summarize-613.cjs');
+const {PLAN, traceSha} = require('./driver.cjs');
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'summarize-613', 'runs');
 const SCRIPT = path.join(__dirname, 'summarize-613.cjs');
@@ -92,7 +93,36 @@ test('measurement validity: samples, population, errors and financial invariants
   dir = copy(t); edit(dir, 'after-1', 'mixed-result.json', j => { j.orderLoss = 1; });
   incomplete(summarize(dir, {pairs: 1}), 'after-1:MIXED_FINANCIAL_ORDERLOSS');
   dir = copy(t); edit(dir, 'after-1', 'baseline-result.json', j => { j.cryptoJobs = 79; });
-  incomplete(summarize(dir, {pairs: 1}), 'after-1:UNMATCHED_CRYPTO_TRACE');
+  incomplete(summarize(dir, {pairs: 1}), 'after-1:BASELINE_CRYPTO_JOBS_MISMATCH');
+});
+
+test('cleanup is confirmed only by pg_ctl status 3 (stopped), both stop flags and no cleanup error', t => {
+  // Missing, null, non-numeric, "no data directory" (4), generic error and running (0).
+  for (const change of [j => { delete j.postgresStatusExit; }, j => { j.postgresStatusExit = null; }, j => { j.postgresStatusExit = '3'; }, j => { j.postgresStatusExit = 4; }, j => { j.postgresStatusExit = 1; }, j => { j.postgresStatusExit = 0; }, j => { j.cleanupError = ''; }, j => { delete j.allRecordedPidsStopped; }]) {
+    const dir = copy(t); edit(dir, 'before-1', 'result.json', change);
+    incomplete(summarize(dir, {pairs: 1}), 'before-1:CLEANUP_UNCONFIRMED');
+  }
+});
+
+test('both arms must run the driver trace with the plan job count, not merely the same values', t => {
+  assert.equal(PLAN.measureMs / PLAN.cryptoPeriodMs, 80);
+  let dir = copy(t);
+  for (const arm of ['baseline', 'mixed']) edit(dir, 'before-1', arm + '-result.json', j => { delete j.traceSha; delete j.cryptoJobs; });
+  incomplete(summarize(dir, {pairs: 1}), 'before-1:BASELINE_TRACE_MISMATCH', 'before-1:MIXED_TRACE_MISMATCH', 'before-1:BASELINE_CRYPTO_JOBS_MISMATCH', 'before-1:MIXED_CRYPTO_JOBS_MISMATCH');
+  dir = copy(t);
+  for (const arm of ['baseline', 'mixed']) edit(dir, 'after-1', arm + '-result.json', j => { assert.equal(j.traceSha, traceSha); j.traceSha = '0'.repeat(64); j.cryptoJobs = 79; });
+  incomplete(summarize(dir, {pairs: 1}), 'after-1:BASELINE_TRACE_MISMATCH', 'after-1:MIXED_TRACE_MISMATCH', 'after-1:BASELINE_CRYPTO_JOBS_MISMATCH', 'after-1:MIXED_CRYPTO_JOBS_MISMATCH');
+});
+
+test('CPU counters must be present, finite, non-negative and not decrease', t => {
+  for (const change of [m => { delete m.after.cpu.user; }, m => { m.after.cpu.user = String(m.after.cpu.user); }, m => { m.after.cpu.system = m.before.cpu.system - 1; }, m => { m.before.cpu.user = -1; }, m => { m.before.cpu.system = null; }]) {
+    const dir = copy(t); edit(dir, 'after-1', 'mixed-result.json', j => change(j.metrics));
+    const r = summarize(dir, {pairs: 1});
+    incomplete(r, 'after-1:MIXED_CPU_METRICS_INVALID');
+    assert.doesNotMatch(markdown(r), /NaN/);
+  }
+  const dir = copy(t); edit(dir, 'before-1', 'baseline-result.json', j => { delete j.metrics; });
+  incomplete(summarize(dir, {pairs: 1}), 'before-1:BASELINE_CPU_METRICS_INVALID');
 });
 
 test('the stored verdict must follow from the stored latencies and be a p95-only outcome', t => {
@@ -102,6 +132,24 @@ test('the stored verdict must follow from the stored latencies and be a p95-only
   incomplete(summarize(dir, {pairs: 1}), 'before-1:COMPARISON_NOT_MEASURED');
   dir = copy(t); edit(dir, 'before-1', 'result.json', j => { j.comparison.failures = []; });
   incomplete(summarize(dir, {pairs: 1}), 'before-1:COMPARISON_INCONSISTENT');
+  for (const change of [j => { j.comparison.baselineCryptoP95Ms += 1; }, j => { j.comparison.mixedCryptoP95Ms = null; }, j => { j.comparison.thresholdPercent = 60; }, j => { j.comparison.failures.push('CRYPTO_P95_OVER_5_PERCENT'); }]) {
+    dir = copy(t); edit(dir, 'before-1', 'result.json', change);
+    incomplete(summarize(dir, {pairs: 1}), 'before-1:COMPARISON_INCONSISTENT');
+  }
+});
+
+test('statuses must agree with the recomputed p95; a complete run records no failures', t => {
+  // PASS written over the same failed latencies, together or separately.
+  for (const change of [j => { j.status = 'PASS_LOCAL_DIAGNOSTIC'; j.comparison.status = 'PASS_LOCAL_DIAGNOSTIC'; }, j => { j.status = 'PASS_LOCAL_DIAGNOSTIC'; }, j => { j.comparison.status = 'PASS_LOCAL_DIAGNOSTIC'; }, j => { j.comparison.status = 'NO_VERDICT'; }]) {
+    const dir = copy(t); edit(dir, 'after-1', 'result.json', change);
+    const r = summarize(dir, {pairs: 1});
+    incomplete(r, 'after-1:STATUS_INCONSISTENT');
+    assert.equal(r.capacity.kinds.after, 'NOT_EVALUATED_INCOMPLETE_COLLECTION');
+  }
+  for (const change of [j => { j.failures = ['ARM_INVARIANT_FAILED_mixed']; }, j => { delete j.failures; }, j => { j.failures = 'none'; }]) {
+    const dir = copy(t); edit(dir, 'after-1', 'result.json', change);
+    incomplete(summarize(dir, {pairs: 1}), 'after-1:RUN_FAILURES_RECORDED');
+  }
 });
 
 test('a measured p95 PASS is reported as such; collection does not depend on the p95 verdict', t => {
@@ -111,4 +159,7 @@ test('a measured p95 PASS is reported as such; collection does not depend on the
   const r = summarize(dir, {pairs: 1});
   assert.equal(r.collection.status, 'COMPLETE');
   assert.deepEqual(r.capacity.kinds, {before: 'DIAGNOSTIC_P95_FAIL', after: 'DIAGNOSTIC_P95_PASS'});
+  // The same passing latencies still labelled FAIL are inconsistent too.
+  edit(dir, 'after-1', 'result.json', j => { j.status = 'FAIL_LOCAL_DIAGNOSTIC'; });
+  incomplete(summarize(dir, {pairs: 1}), 'after-1:STATUS_INCONSISTENT');
 });

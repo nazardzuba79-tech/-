@@ -65,8 +65,12 @@ acceptance; the isolated Linux attestation path is unchanged.
 Collection gate (2026-10-26, cloud Claude): summarize-613.cjs reports two separate
 results. "collection" fails closed (exit 1) unless every expected run, PAIRS per
 pin, is present, parseable, pin-matched, measured on both arms with the plan's
-sample floor and population, financially intact and cleaned up; a stored verdict
-must follow from its stored latencies. "capacity" is the p95 verdict per pin,
+sample floor and population, on the driver's exact trace (traceSha and
+measureMs/cryptoPeriodMs jobs in both arms), financially intact, with sane CPU
+counters (finite, non-negative, not decreasing) and confirmed cleanup (pg_ctl
+status 3, both stop flags, no cleanupError); the stored p95 values, failures and
+both statuses must follow from the stored latencies, and the run's own failures
+must be empty. "capacity" is the p95 verdict per pin,
 report only: a p95 FAIL never fails the collection and nothing is acceptance.
 summarize-613.test.cjs checks it on fixtures/summarize-613 (real CI results,
 see SOURCE.txt) and corrupted temporary copies; no benchmark runs there.

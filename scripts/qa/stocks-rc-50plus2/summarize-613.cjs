@@ -3,23 +3,31 @@
 // Markdown report and JSON with two separate results:
 // - collection: fail-closed. Every expected run (PAIRS per pin) must exist,
 //   parse, carry its pin's runtime SHA, have measured both arms with the plan's
-//   sample floor and population, keep the financial invariants and confirm
-//   cleanup. Anything missing, corrupt or incomplete fails the collection.
+//   sample floor and population, run the driver's exact crypto trace, keep the
+//   financial invariants, record sane CPU counters, store a verdict that follows
+//   from its own latencies and confirm cleanup. Anything missing, corrupt,
+//   inconsistent or incomplete fails the collection.
 // - capacity: the p95 verdict per pin, report only. A p95 FAIL is an honest
 //   diagnostic result and never fails the collection; nothing here is acceptance.
 // Usage: node summarize-613.cjs <runsDir> [out.json] [--pairs N]  (PAIRS env otherwise)
 const fs = require('node:fs'), path = require('node:path');
 const {percentile} = require('./policy.cjs');
+const {PLAN, traceSha: TRACE_SHA} = require('./driver.cjs');
 
 const KINDS = ['before', 'after'];
 const MEASURED = ['PASS_LOCAL_DIAGNOSTIC', 'FAIL_LOCAL_DIAGNOSTIC'];
 const P95_ONLY = 'CRYPTO_P95_OVER_5_PERCENT';
-const MIN_SAMPLES = 200; // the plan's floor in policy comparison(); unchanged
+const THRESHOLD_PERCENT = 5, MIN_SAMPLES = 200; // policy comparison()'s threshold and floor; unchanged
+const CRYPTO_JOBS = PLAN.measureMs / PLAN.cryptoPeriodMs; // 80 in the current plan
+const PG_NOT_RUNNING = 3; // documented `pg_ctl status` exit code for a stopped server
+const CPU = ['user', 'system']; // process.cpuUsage() counters, microseconds
 const POPULATION = {baseline: [0, 0], mixed: [50, 2]};
 const ZERO = ['timeouts', 'unexpectedErrors', 'missedJobs'], FINANCIAL = ['orderLoss', 'doubleSpend', 'viewerMutations'];
 
 const pinsFromPolicies = () => ({before: require('./policy-613.cjs').RC, after: require('./policy-613-after.cjs').RC});
-const cpuMs = m => ((m.after.cpu.user - m.before.cpu.user) + (m.after.cpu.system - m.before.cpu.system)) / 1000;
+// Every counter present, finite, non-negative and not decreasing over the window.
+const cpuMs = m => CPU.every(k => [m?.before?.cpu?.[k], m?.after?.cpu?.[k]].every(x => finite(x) && x >= 0) && m.after.cpu[k] >= m.before.cpu[k])
+  ? CPU.reduce((t, k) => t + m.after.cpu[k] - m.before.cpu[k], 0) / 1000 : null;
 const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const finite = x => typeof x === 'number' && Number.isFinite(x);
@@ -39,7 +47,10 @@ function readArm(out, arm, problems) {
   if (a.viewerCount !== POPULATION[arm][0] || a.traderCount !== POPULATION[arm][1]) problems.push(tag + '_POPULATION_MISMATCH');
   for (const k of ZERO) if (a[k] !== 0) problems.push(tag + '_' + k.toUpperCase());
   for (const k of FINANCIAL) if (a[k] !== 0) problems.push(tag + '_FINANCIAL_' + k.toUpperCase());
-  let apiCpuMs = null; try { apiCpuMs = cpuMs(a.metrics); } catch { problems.push(tag + '_METRICS_MISSING'); }
+  if (a.cryptoJobs !== CRYPTO_JOBS) problems.push(tag + '_CRYPTO_JOBS_MISMATCH');
+  if (a.traceSha !== TRACE_SHA) problems.push(tag + '_TRACE_MISMATCH');
+  const apiCpuMs = cpuMs(a.metrics);
+  if (apiCpuMs === null) problems.push(tag + '_CPU_METRICS_INVALID');
   return {latencies: a.cryptoLatencies, cryptoJobs: a.cryptoJobs, traceSha: a.traceSha, p50: percentile(a.cryptoLatencies, .5), p95: percentile(a.cryptoLatencies, .95),
     apiCpuMs, timeouts: a.timeouts, errors: a.unexpectedErrors, orderLoss: a.orderLoss, doubleSpend: a.doubleSpend, viewerMutations: a.viewerMutations};
 }
@@ -56,7 +67,8 @@ function readRun(runsDir, name, kind, pin) {
   if (result.status === 'QUALIFICATION_OR_ADMISSION_FAILED_NOT_RUN') problems.push('ADMISSION_FAILED');
   else if (!MEASURED.includes(result.status)) problems.push('INCOMPLETE_RUN');
   if (result.fullWorkloadRuns !== 1) problems.push('WORKLOAD_NOT_RUN_ONCE');
-  if (result.allRecordedPidsStopped !== true || result.postgresStopped !== true || result.postgresStatusExit === 0 || result.cleanupError) problems.push('CLEANUP_UNCONFIRMED');
+  if (!Array.isArray(result.failures) || result.failures.length) problems.push('RUN_FAILURES_RECORDED');
+  if (result.allRecordedPidsStopped !== true || result.postgresStopped !== true || result.postgresStatusExit !== PG_NOT_RUNNING || Object.hasOwn(result, 'cleanupError')) problems.push('CLEANUP_UNCONFIRMED');
   run.baseline = readArm(out, 'baseline', problems);
   run.mixed = readArm(out, 'mixed', problems);
   const c = result.comparison;
@@ -64,10 +76,13 @@ function readRun(runsDir, name, kind, pin) {
   else {
     if (c.failures.some(f => f !== P95_ONLY)) problems.push('COMPARISON_NOT_MEASURED');
     if (run.baseline && run.mixed) {
-      if (run.baseline.cryptoJobs !== run.mixed.cryptoJobs || run.baseline.traceSha !== run.mixed.traceSha) problems.push('UNMATCHED_CRYPTO_TRACE');
-      // The stored verdict must follow from the stored latencies.
+      // The stored verdict, its p95 values, failures and both statuses must
+      // follow from the stored latencies; a p95 overrun stays a measured FAIL.
       const delta = run.baseline.p95 > 0 ? (run.mixed.p95 - run.baseline.p95) / run.baseline.p95 * 100 : null;
-      if (delta === null || Math.abs(delta - c.cryptoP95ChangePercent) > 1e-9 || (delta > 5) !== c.failures.includes(P95_ONLY)) problems.push('COMPARISON_INCONSISTENT');
+      const over = delta > THRESHOLD_PERCENT, verdict = over ? 'FAIL_LOCAL_DIAGNOSTIC' : 'PASS_LOCAL_DIAGNOSTIC';
+      if (delta === null || Math.abs(delta - c.cryptoP95ChangePercent) > 1e-9 || c.baselineCryptoP95Ms !== run.baseline.p95 || c.mixedCryptoP95Ms !== run.mixed.p95 ||
+          c.thresholdPercent !== THRESHOLD_PERCENT || c.failures.length !== (over ? 1 : 0) || over !== c.failures.includes(P95_ONLY)) problems.push('COMPARISON_INCONSISTENT');
+      else if (c.status !== verdict || result.status !== verdict) problems.push('STATUS_INCONSISTENT');
     }
   }
   return run;
@@ -106,9 +121,9 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies()} = {}) {
       pooledBaselineP95Ms: pb, pooledMixedP95Ms: pm, pooledDeltaPercent: pooled,
       meanBaselineApiCpuMs: mean(done.map(r => r.baseline.apiCpuMs)), meanMixedApiCpuMs: mean(done.map(r => r.mixed.apiCpuMs)),
       meanViewerInducedApiCpuMs: mean(done.map(r => r.mixed.apiCpuMs - r.baseline.apiCpuMs)),
-      diagnosticP95: evaluated ? (pooled <= 5 ? 'DIAGNOSTIC_P95_PASS' : 'DIAGNOSTIC_P95_FAIL') : 'NOT_EVALUATED_INCOMPLETE_COLLECTION'};
+      diagnosticP95: evaluated ? (pooled <= THRESHOLD_PERCENT ? 'DIAGNOSTIC_P95_PASS' : 'DIAGNOSTIC_P95_FAIL') : 'NOT_EVALUATED_INCOMPLETE_COLLECTION'};
   }
-  const capacity = {acceptance: false, scope: 'CI_DIAGNOSTIC_NOT_CAPACITY_ACCEPTANCE', thresholdPercent: 5, kinds: Object.fromEntries(KINDS.map(k => [k, kinds[k].diagnosticP95]))};
+  const capacity = {acceptance: false, scope: 'CI_DIAGNOSTIC_NOT_CAPACITY_ACCEPTANCE', thresholdPercent: THRESHOLD_PERCENT, kinds: Object.fromEntries(KINDS.map(k => [k, kinds[k].diagnosticP95]))};
   return {collection, capacity, kinds, runs};
 }
 
