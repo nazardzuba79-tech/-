@@ -32,7 +32,20 @@ def identity():
     ROOT.mkdir(mode=0o700, exist_ok=True)
 
 
-def render(public=False):
+def render(public=False, acme=False):
+    http_relay = f'''  server {{
+    listen 80;
+    proxy_connect_timeout 5s;
+    proxy_timeout 15s;
+    proxy_next_upstream off;
+    proxy_pass {TRUSTED}:18080;
+  }}
+''' if acme else ''
+    hold = '' if acme else '''http {
+  access_log off; server_tokens off;
+  server { listen 80 default_server; server_name _; return 503; }
+}
+'''
     return f'''# Opaque VOLTEX relay. No TLS key, HTTP upstream or local JavaScript.
 load_module {MODULE};
 worker_processes 1;
@@ -54,11 +67,8 @@ stream {{
     proxy_next_upstream off;
     proxy_pass $voltex_fixed_target;
   }}
-}}
-http {{
-  access_log off; server_tokens off;
-  server {{ listen 80 default_server; server_name _; return 503; }}
-}}
+{http_relay}}}
+{hold}
 '''
 
 
@@ -195,15 +205,86 @@ def activate():
     print('TCP_RELAY_ACTIVE; DNS still requires separate tested cutover')
 
 
+def acme():
+    if CONF.read_text().rstrip() != render(public=True).rstrip():
+        raise RuntimeError('Expected exact activated relay; inspect drift before changing port 80')
+    apply(render(public=True, acme=True))
+    print('ACME TCP80 to trusted challenge-only HTTP18080; HTTPS remains opaque')
+
+
+def monitor():
+    state = Path('/var/lib/voltex-rf-relay/state.json')
+    previous = json.loads(state.read_text()) if state.exists() else {}
+    rows = []
+    for path, method, expected in [('/_voltex/health','GET',200), ('/','HEAD',200),
+                                   ('/api/v1/balances','GET',401)]:
+        try:
+            row, _ = request(path,443,method)
+            rows.append({'path':path,'status':row['status'],'pass':row['status']==expected})
+        except Exception as e:
+            rows.append({'path':path,'pass':False,'error':type(e).__name__})
+    available = next(int(line.split()[1])*1024 for line in Path('/proc/meminfo').read_text().splitlines()
+                     if line.startswith('MemAvailable:'))
+    data = {'at':datetime.now(timezone.utc).isoformat(), 'checks':rows,
+            'status':'PASS' if all(row['pass'] for row in rows) else 'FAIL',
+            'observed5xx':previous.get('observed5xx',0)+sum(500<=r.get('status',0)<600 for r in rows),
+            'memoryAvailableBytes':available,'diskFreeBytes':shutil.disk_usage('/').free,
+            'load1':os.getloadavg()[0]}
+    state.write_text(json.dumps(data,indent=2))
+    print(json.dumps(data))
+    if data['status'] != 'PASS': raise RuntimeError('Relay health failed; see sanitized state')
+
+
+def monitoring():
+    unit = Path('/etc/systemd/system/voltex-rf-relay-health.service')
+    timer = Path('/etc/systemd/system/voltex-rf-relay-health.timer')
+    if unit.exists() or timer.exists(): raise RuntimeError('Monitoring exists; inspect before replacing')
+    unit.write_text('''[Unit]
+Description=VOLTEX opaque relay read-only health and host resource checks
+After=network-online.target nginx.service
+[Service]
+Type=oneshot
+DynamicUser=yes
+StateDirectory=voltex-rf-relay
+ExecStart=/usr/bin/python3 /voltex-relay.py monitor
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+CPUQuota=5%
+MemoryMax=64M
+TimeoutStartSec=55
+''')
+    timer.write_text('''[Unit]
+Description=Check VOLTEX opaque relay once per minute
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=60s
+AccuracySec=5s
+[Install]
+WantedBy=timers.target
+''')
+    for args in (['systemctl','daemon-reload'],['systemctl','enable','--now',timer.name],
+                 ['systemctl','start',unit.name]):
+        subprocess.run(args,check=True,timeout=60)
+    print('READ_ONLY_RELAY_MONITOR_ACTIVE; no request logs, tokens or financial payloads')
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action', choices=['stage', 'check', 'revoke', 'activate', 'rollback'])
+    p.add_argument('action', choices=['stage', 'check', 'revoke', 'activate', 'acme', 'monitoring', 'monitor', 'rollback'])
     args = p.parse_args()
+    if args.action == 'monitor':
+        monitor()
+        return
     identity()
     if args.action == 'stage': stage()
     elif args.action == 'check': check()
     elif args.action == 'revoke': revoke()
     elif args.action == 'activate': activate()
+    elif args.action == 'acme': acme()
+    elif args.action == 'monitoring': monitoring()
     else:
         data = json.loads((ROOT / 'staged.json').read_text())
         apply((Path(data['backup']) / 'nginx/nginx.conf').read_text())

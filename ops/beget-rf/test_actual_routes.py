@@ -60,6 +60,7 @@ class ActualRoutesTest(unittest.TestCase):
         c = (http.client.HTTPConnection('127.0.0.1',cls.data['port'],timeout=3) if direct else
              http.client.HTTPSConnection('127.0.0.1',cls.port,timeout=3,context=cls.context))
         h={'Host':HOST}
+        if method not in ('GET','HEAD'): h['Origin']='https://'+HOST
         if user: h['Authorization']='Bearer '+cls.data['tokens'][user]
         c.request(method,path,headers=h)
         r=c.getresponse(); out=(r.status,dict(r.getheaders()),r.read()); c.close(); return out
@@ -90,4 +91,11 @@ class ActualRoutesTest(unittest.TestCase):
         self.assertEqual(self.call('/api/v1/balances')[0],401)
         self.assertEqual(self.call('/api/v1/balances',user=None)[0],401)
         self.assertEqual(self.call('/api/v1/balances',user='synthetic-B')[0],200)
+        self.assertEqual(json.loads(self.call('/fixture/invariants',direct=True)[2]),{'writes':0,'unchanged':True})
+
+    def test_025_actual_cancel_handler_cannot_change_foreign_order_or_balance(self):
+        for user,other in [('synthetic-A','synthetic-B'),('synthetic-B','synthetic-A')]:
+            result=self.call('/api/v1/orders/'+other+'-order?userId='+other,user,method='DELETE')
+            self.assertEqual(result[0],404)
+            self.assertEqual(json.loads(result[2])['error'],'Order not found or not cancellable')
         self.assertEqual(json.loads(self.call('/fixture/invariants',direct=True)[2]),{'writes':0,'unchanged':True})
