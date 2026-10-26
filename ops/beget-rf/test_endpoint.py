@@ -126,6 +126,19 @@ class EndpointTest(unittest.TestCase):
         for path in ('/api/v1/private-trading/native/live', '/api/v1/balances', '/api/v1/wallet/overview'):
             self.assertEqual(self.request(path)[0], 200)
 
+    def test_public_websocket_upgrade_is_forwarded(self):
+        import socket
+        with socket.create_connection(('127.0.0.1', self.port), timeout=3) as raw:
+            with self.context.wrap_socket(raw, server_hostname=HOST) as tls:
+                tls.sendall(('GET /_voltex/ws/kraken HTTP/1.1\r\nHost: ' + HOST +
+                    '\r\nOrigin: https://' + HOST + '\r\nConnection: Upgrade\r\nUpgrade: websocket'
+                    '\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n').encode())
+                data = b''
+                while b'\r\n\r\n' not in data:
+                    data += tls.recv(8192)
+                self.assertIn(b'101 Switching Protocols', data)
+                self.assertIn(b'Upgrade: websocket', data)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
