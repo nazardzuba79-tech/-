@@ -77,7 +77,16 @@ jobs:
       - name: Report (fails only on admission or financial-invariant breakage)
         if: always()
         run: |
+          set -o pipefail
           node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$RC50_DIR/runs" "$RC50_DIR/summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the numbers as check annotations (readable without sign-in)
+        if: always()
+        run: |
+          node -e '
+          const s = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" ? x.toFixed(d) : "-";
+          for (const r of s.runs.slice(0, 8)) console.log(`::notice title=50+2 ${r.name} ${(r.runtime || "").slice(0, 8)}::${r.status} dp95=${f(r.comparison?.cryptoP95ChangePercent)}% base/mixed p95=${f(r.baseline?.p95)}/${f(r.mixed?.p95)}ms apiCPU=${f(r.baseline?.apiCpuMs, 0)}/${f(r.mixed?.apiCpuMs, 0)}ms timeouts=${r.mixed?.timeouts ?? "-"} loss/double/viewer=${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join("/") : "-"}`);
+          for (const [k, v] of Object.entries(s.kinds)) console.log(`::notice title=50+2 ${k} ${(v.runtime || "").slice(0, 8)} pooled::complete ${v.completeRuns}/${v.runs} medianRunDp95=${f(v.medianRunDeltaPercent)}% pooledP95 base/mixed=${f(v.pooledBaselineP95Ms)}/${f(v.pooledMixedP95Ms)}ms pooledDp95=${f(v.pooledDeltaPercent)}% viewerInducedApiCPU=${f(v.meanViewerInducedApiCpuMs, 0)}ms meanMixedApiCPU=${f(v.meanMixedApiCpuMs, 0)}ms`);
+          ' "$RC50_DIR/summary.json"
       - name: Collect run reports (no database files)
         if: always()
         run: |
