@@ -1,0 +1,9 @@
+test_01_two_actual_auth_sessions_cannot_select_foreign_balances (test_actual_routes.ActualRoutesTest.test_01_two_actual_auth_sessions_cannot_select_foreign_balances) ... ok
+test_025_actual_cancel_handler_cannot_change_foreign_order_or_balance (test_actual_routes.ActualRoutesTest.test_025_actual_cancel_handler_cannot_change_foreign_order_or_balance) ... ok
+test_02_real_deposit_handler_bytes_and_address_unchanged (test_actual_routes.ActualRoutesTest.test_02_real_deposit_handler_bytes_and_address_unchanged) ... ok
+test_03_revocation_missing_token_and_no_storage_write (test_actual_routes.ActualRoutesTest.test_03_revocation_missing_token_and_no_storage_write) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 4.962s
+
+OK

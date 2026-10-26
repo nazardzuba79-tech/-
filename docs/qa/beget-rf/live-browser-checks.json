@@ -1,0 +1,41 @@
+{
+  "ru": "https://ru.voltextech.net",
+  "at": "2026-10-26",
+  "desktop": {
+    "viewport": 1440,
+    "documentScrollWidth": 1430,
+    "screenshot": "live-ru-desktop.jpg"
+  },
+  "mobile": {
+    "viewport": 390,
+    "documentScrollWidth": 380,
+    "screenshot": "live-ru-mobile.jpg"
+  },
+  "liveHome": {
+    "rendered": true,
+    "quotes": true,
+    "candles": true,
+    "orderBook": true
+  },
+  "guestRoutes": {
+    "/trade": "/login?next=%2Ftrade",
+    "/futures": "/login?next=%2Ffutures",
+    "/wallet": "/login?next=%2Fwallet"
+  },
+  "invalidSyntheticLogin": "normal translated invalid credentials after reload; initial DNS-cache network failure observed",
+  "ordinaryProductionSession": {
+    "successfulLogin": "NOT RUN",
+    "authenticatedSpotFuturesWallet": "NOT RUN",
+    "successfulRegistration": "NOT RUN",
+    "logout": "NOT RUN",
+    "reason": "No authorized ordinary test session; admin session never copied"
+  },
+  "canonicalSite": "guest home rendered with quotes; no browser error/warn logs",
+  "limitations": [
+    "shared API IP rate limits for all relayed users",
+    "RF probes confirm named networks only",
+    "scripted external HEAD / 403 observed; actual browser GET 200",
+    "old certificate revocation checking is client-dependent",
+    "provider written exception and legal compliance not asserted"
+  ]
+}

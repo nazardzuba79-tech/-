@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-26T20:48:59.433959+00:00",
+  "checks": [
+    {
+      "path": "/_voltex/health",
+      "status": 200,
+      "pass": true
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/balances",
+      "status": 401,
+      "pass": true
+    }
+  ],
+  "status": "PASS",
+  "observed5xx": 0,
+  "memoryAvailableBytes": 643043328,
+  "diskFreeBytes": 17146765312,
+  "load1": 0.0
+}

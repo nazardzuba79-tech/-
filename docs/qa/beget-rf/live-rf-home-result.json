@@ -1,0 +1,51 @@
+{
+  "id": "2SYVEEsKMZ1bildXk00021ODv",
+  "type": "http",
+  "status": "finished",
+  "createdAt": "2026-10-26T20:39:37.690Z",
+  "target": "ru.voltextech.net",
+  "results": [
+    {
+      "country": "RU",
+      "city": "Moscow",
+      "network": "SERV.HOST GROUP",
+      "asn": 207957,
+      "resolvedAddress": "185.23.35.226",
+      "status": 200,
+      "timings": {
+        "total": 342,
+        "dns": 60,
+        "tcp": 15,
+        "tls": 136,
+        "firstByte": 129,
+        "download": 2
+      },
+      "tlsAuthorized": true,
+      "tlsProtocol": "TLSv1.3",
+      "fingerprint256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+      "bodySha256": "f19d368ee0fb6cc361c3a0f487beb5f25f6966c5eab845e36a108dc96abf3a02",
+      "bodyBytes": 10194
+    },
+    {
+      "country": "RU",
+      "city": "Tomsk",
+      "network": "Limited Company Information and Consulting Agency",
+      "asn": 31357,
+      "resolvedAddress": "185.23.35.226",
+      "status": 200,
+      "timings": {
+        "total": 599,
+        "dns": 96,
+        "tcp": 58,
+        "tls": 187,
+        "firstByte": 256,
+        "download": 2
+      },
+      "tlsAuthorized": true,
+      "tlsProtocol": "TLSv1.3",
+      "fingerprint256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+      "bodySha256": "f19d368ee0fb6cc361c3a0f487beb5f25f6966c5eab845e36a108dc96abf3a02",
+      "bodyBytes": 10194
+    }
+  ]
+}

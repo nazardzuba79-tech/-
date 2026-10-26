@@ -1,0 +1,108 @@
+{
+  "at": "2026-10-26T20:24:47.138843+00:00",
+  "certSha256": "c6136fc3f97d35677ac195d0eaab7cbc831892f9374378ddc40682091f6129e8",
+  "certExpiry": "Jan 24 19:01:08 2027 GMT",
+  "records": [
+    {
+      "path": "/_voltex/health",
+      "status": 200,
+      "bytes": 18,
+      "bodySha256": "120a871527cf8ae4c7b5e65c1b5a9f3075e98c27e44f44db55e265ca6178a08f",
+      "cacheControl": "no-store",
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/admin",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": null,
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/admin/users",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": null,
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/kyc/me",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": null,
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/_voltex/kyc/v1/submit",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": null,
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/balances",
+      "status": 401,
+      "bytes": 32,
+      "bodySha256": "6f02fb780e397fa718cde279845eb3ecc8849229f8d1dd8e7e18ec95aec5c8a0",
+      "cacheControl": "no-store",
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/deposit-address/ethereum",
+      "status": 401,
+      "bytes": 32,
+      "bodySha256": "6f02fb780e397fa718cde279845eb3ecc8849229f8d1dd8e7e18ec95aec5c8a0",
+      "cacheControl": "no-store",
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/not-reviewed",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": "no-store",
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/assets/../api/v1/%61dmin/users",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": null,
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/api/v1/orders",
+      "status": 403,
+      "bytes": 146,
+      "bodySha256": "32f2fa940d4b4fe19aca1e53a24e5aac29c57b7c5ee78588325b87f1b649c864",
+      "cacheControl": null,
+      "location": null,
+      "pass": true
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 12336,
+      "bodySha256": "4bb4ae611d5d1d4a0994b2580ca9f3d91b8738dabc14d4946227a458849ea6a6",
+      "cacheControl": "no-store",
+      "location": null,
+      "pass": true,
+      "html": true
+    }
+  ],
+  "status": "PASS"
+}

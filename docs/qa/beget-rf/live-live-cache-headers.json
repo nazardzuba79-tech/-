@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/",
+    "status": 403,
+    "cacheControl": "no-store",
+    "altSvc": null
+  },
+  {
+    "path": "/api/v1/balances",
+    "status": 401,
+    "cacheControl": "no-store",
+    "altSvc": null
+  },
+  {
+    "path": "/api/v1/deposit-address/ethereum",
+    "status": 401,
+    "cacheControl": "no-store",
+    "altSvc": null
+  }
+]

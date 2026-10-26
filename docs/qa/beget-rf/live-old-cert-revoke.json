@@ -1,0 +1,6 @@
+{
+  "at": "2026-10-26T20:20:30.271913+00:00",
+  "code": 0,
+  "stdout": "Deleted all files relating to certificate ru.voltextech.net.\nCongratulations! You have successfully revoked the certificate that was located at /etc/letsencrypt/live/ru.voltextech.net/cert.pem.\n",
+  "stderr": "Saving debug log to /var/log/letsencrypt/letsencrypt.log\n"
+}

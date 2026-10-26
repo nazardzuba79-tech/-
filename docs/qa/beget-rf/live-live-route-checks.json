@@ -1,0 +1,68 @@
+{
+  "note": "cacheControl null in this initial collector is a header-case extraction bug; see live-live-cache-headers.json for verified headers, including external scripted HEAD / 403. Other route status values are actual.",
+  "records": [
+    {
+      "path": "/_voltex/health",
+      "status": 200,
+      "bytes": 18,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/admin",
+      "status": 403,
+      "bytes": 146,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/api/v1/admin/users",
+      "status": 403,
+      "bytes": 146,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/api/v1/kyc/me",
+      "status": 403,
+      "bytes": 146,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/_voltex/kyc/v1/submit",
+      "status": 403,
+      "bytes": 146,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/api/v1/balances",
+      "status": 401,
+      "bytes": 32,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/api/v1/deposit-address/ethereum",
+      "status": 401,
+      "bytes": 32,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/_voltex/bybit/v5/market/tickers?category=spot&symbol=BTCUSDT",
+      "status": 200,
+      "bytes": 420,
+      "cacheControl": null,
+      "noAltSvc": true
+    },
+    {
+      "path": "/_voltex/kraken/0/public/Time",
+      "status": 200,
+      "bytes": 87,
+      "cacheControl": null,
+      "noAltSvc": true
+    }
+  ]
+}

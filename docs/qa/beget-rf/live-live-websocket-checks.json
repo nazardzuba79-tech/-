@@ -1,0 +1,12 @@
+{
+  "/_voltex/ws/kraken": {
+    "upgrade": 101,
+    "messageType": "status",
+    "receivedBytes": 598
+  },
+  "/_voltex/ws/bybit": {
+    "upgrade": 101,
+    "messageType": "snapshot",
+    "receivedBytes": 783
+  }
+}

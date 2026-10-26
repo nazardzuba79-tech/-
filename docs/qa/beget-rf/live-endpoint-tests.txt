@@ -1,0 +1,13 @@
+test_admin_kyc_internal_and_admin_outside_admin_prefix_never_forward (test_endpoint.EndpointTest.test_admin_kyc_internal_and_admin_outside_admin_prefix_never_forward) ... ok
+test_encoded_sensitive_paths_and_unknown_api_do_not_forward (test_endpoint.EndpointTest.test_encoded_sensitive_paths_and_unknown_api_do_not_forward) ... ok
+test_foreign_or_missing_unsafe_origin_stops_before_upstream (test_endpoint.EndpointTest.test_foreign_or_missing_unsafe_origin_stops_before_upstream) ... ok
+test_frontend_urls_rewritten_only_on_trusted_endpoint (test_endpoint.EndpointTest.test_frontend_urls_rewritten_only_on_trusted_endpoint) ... ok
+test_json_financial_response_is_not_url_rewritten (test_endpoint.EndpointTest.test_json_financial_response_is_not_url_rewritten) ... ok
+test_native_live_and_calculator_routes_are_in_allowlist (test_endpoint.EndpointTest.test_native_live_and_calculator_routes_are_in_allowlist) ... ok
+test_public_websocket_upgrade_is_forwarded (test_endpoint.EndpointTest.test_public_websocket_upgrade_is_forwarded) ... ok
+test_two_synthetic_bearers_and_order_body_preserved_without_retry (test_endpoint.EndpointTest.test_two_synthetic_bearers_and_order_body_preserved_without_retry) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.043s
+
+OK
