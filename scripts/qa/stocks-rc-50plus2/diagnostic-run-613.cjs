@@ -7,7 +7,11 @@ const {RC,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./po
 // --cpu-prof: V8 CPU profile of each measured API worker. Profiler overhead
 // applies to both arms; such a run locates hotspots and is never a p95 verdict.
 const PROFILE=process.argv.includes('--cpu-prof');
-const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'));
+// --spans: the existing server-side spans (spans.cjs) in BOTH measured arms, so
+// auth, Prisma/transaction, authority queue, GC and event-loop time can be told
+// apart. Instrumentation overhead applies to both arms; never a p95 verdict.
+const SPANS=process.argv.includes('--spans');
+const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'));
 let cfg,started=false,data,active,controller=new AbortController(),timer;
 const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));
@@ -34,7 +38,7 @@ function startWorker(arm,viewerCount,generatedClient){
    if(child.exitCode===null){if(process.platform==='win32')cp.spawnSync('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});else try{process.kill(-child.pid,'SIGTERM');}catch{}}
   }
  };
- return{child,rpc,close,init:()=>rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount})};
+ return{child,rpc,close,init:()=>rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification'})};
 }
 function provenance(){
  const selected=['prisma/schema.prisma','package-lock.json','services/stocks-global/server.mjs','services/stocks-global/postgres-authority.mjs','services/stocks-global/engine.mjs','services/stocks-global/testing/disposable-postgres.cjs','services/stocks-global/testing/synthetic-public-market.mjs','src/services/DemoTradingService.ts','src/api/routes/demoTrading.ts','src/api/routes/stocksTestCash.ts'];
@@ -44,9 +48,10 @@ function provenance(){
 }
 (async()=>{
  try{
+  if(SPANS&&PROFILE)throw Error('ONE_INSTRUMENTATION_PER_RUN');
   cfg=environment(a);fs.mkdirSync(cfg.out);report.nonce=crypto.randomBytes(6).toString('hex');
   report.admission={scope:cfg.scope,platform:cfg.platform,node:cfg.node,nodeSha256:cfg.nodeSha256,harnessHead:cfg.harnessHead,dependencyVersions:cfg.versions,physicalFocusUsed:false,productionAccess:false,externalNetworkAllowed:false,heapLimitMb:384,resources:'Same sequential worker shape and PostgreSQL cluster/settings; Windows shared host is unpinned and not CX23 acceptance'};
-  report.profiled=PROFILE;report.plan=PLAN;report.cryptoTraceSha=traceSha;provenance();json('admission.json',report);
+  report.profiled=PROFILE;report.spans=SPANS;report.plan=PLAN;report.cryptoTraceSha=traceSha;provenance();json('admission.json',report);
   if(a['prepare-only']){report.status='PREPARED_NOT_RUN';return;}
   if(!a['run-local'])throw Error('EXPLICIT_RUN_LOCAL_FLAG_REQUIRED');
   timer=setTimeout(()=>controller.abort(Error('HARD_DEADLINE_180S')),180000);
@@ -83,7 +88,9 @@ function provenance(){
    const warmup=await window(info,{arm:name,warmup:true,signal:controller.signal});json(name+'-warmup.json',warmup);
    if(warmup.timeouts||warmup.unexpectedErrors||warmup.missedJobs)throw Error('WARMUP_FAILED_'+name);
    const before=await active.rpc('snapshot'),metricsBefore=await active.rpc('metrics');
+   if(SPANS)await active.rpc('spans-start');
    const result=await window(info,{arm:name,mixed:name==='mixed',signal:controller.signal});
+   if(SPANS)json(name+'-spans.json',await active.rpc('spans-stop'));
    const after=await active.rpc('snapshot'),metricsAfter=await active.rpc('metrics');
    const financial=invariants(before,after,result.expected);Object.assign(result,financial);
    result.initialLogicalStateSha=info.initial.logicalStateSha;result.metrics={before:metricsBefore,after:metricsAfter};result.application=info.implementation;
@@ -95,8 +102,9 @@ function provenance(){
   if(arms.baseline.initialLogicalStateSha!==arms.mixed.initialLogicalStateSha)throw Error('UNMATCHED_INITIAL_LOGICAL_DATA');
   report.comparison=comparison(arms.baseline,arms.mixed);report.status=report.comparison.status;
   if(PROFILE){report.comparison.profiled=true;report.status='PROFILE_ONLY_NOT_A_P95_VERDICT';}
+  if(SPANS){report.comparison.spans=true;report.status='SPANS_ONLY_NOT_A_P95_VERDICT';}
   json('comparison.json',report.comparison);
-  if(report.status!=='PASS_LOCAL_DIAGNOSTIC'&&!PROFILE)process.exitCode=1;
+  if(report.status!=='PASS_LOCAL_DIAGNOSTIC'&&!PROFILE&&!SPANS)process.exitCode=1;
  }catch(e){
   report.status=report.fullWorkloadRuns?'FAIL_OR_INCOMPLETE_LOCAL_DIAGNOSTIC':'QUALIFICATION_OR_ADMISSION_FAILED_NOT_RUN';
   report.failures.push(String(e.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[synthetic-database]'));process.exitCode=1;

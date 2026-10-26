@@ -74,3 +74,14 @@ must be empty. "capacity" is the p95 verdict per pin,
 report only: a p95 FAIL never fails the collection and nothing is acceptance.
 summarize-613.test.cjs checks it on fixtures/summarize-613 (real CI results,
 see SOURCE.txt) and corrupted temporary copies; no benchmark runs there.
+
+Server-side spans run (prepared 2026-10-26, cloud Claude, NOT run):
+`diagnostic-run-613.cjs --after --spans` enables the existing spans.cjs in both
+measured arms (never with --cpu-prof) and writes <arm>-spans.json; its status is
+SPANS_ONLY_NOT_A_P95_VERDICT, so the collection gate never counts it.
+spans-summary-613.cjs splits every crypto request into time outside the API
+handler, JWT, Prisma on auth models, other Prisma, transaction admission and
+the rest, with process event-loop delay, ELU, GC and PG wait samples; it fails
+closed on missing, truncated or uncorrelated spans. The `spans-run` job in
+stocks-613-50plus2-diagnostic.yml is `if: false` and runs only after the #613
+coordinator approves one run. Plan, thresholds and admission are unchanged.

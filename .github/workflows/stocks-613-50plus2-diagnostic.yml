@@ -112,3 +112,73 @@ jobs:
           path: output/rc50-613
           retention-days: 14
           if-no-files-found: error
+
+  # One server-side spans run (spans.cjs in BOTH measured arms) of the current
+  # runtime pin (policy-613-after.cjs) with the unchanged plan, to separate auth,
+  # Prisma/transaction and event-loop time behind the crypto p95. Same host
+  # shape as above (GitHub-hosted, ci-diagnostic admission, 2 vCPUs, own
+  # PostgreSQL, synthetic users, loopback only). Not a p95 verdict: the
+  # instrumentation overhead applies to both arms and is not removed.
+  # PREPARED, NOT ENABLED. It runs only after the #613 coordinator approves it:
+  # one commit sets `if: false` to `if: true`; the next commit sets it back.
+  spans-run:
+    name: 50+2 server-side spans, one run (diagnostic, not a p95 verdict)
+    if: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Spans summary self-test on synthetic data (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/spans-summary-613.test.cjs
+      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-spans"; mkdir -p "$W"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "SPANS_DIR=$W" >> "$GITHUB_ENV"
+      - name: One spans run, pinned to 2 vCPUs
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1); rc=0
+          (cd "$SPANS_DIR/after" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --spans \
+            --root . --pg-bin "$PG_BIN" --out "$SPANS_DIR/out" \
+            --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+          echo "$rc" > "$SPANS_DIR/exit-code"
+      - name: Spans decomposition (fails closed on missing or truncated spans)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/spans-summary-613.cjs "$SPANS_DIR/out" "$SPANS_DIR/spans-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports and raw spans (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-spans
+          cp "$SPANS_DIR/exit-code" "$SPANS_DIR/spans-summary.json" "$SPANS_DIR"/out/*.json "$SPANS_DIR"/out/*.log output/rc50-613-spans/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-spans-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613-spans
+          retention-days: 14
+          if-no-files-found: error
