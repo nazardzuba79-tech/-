@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'services/stocks-global/live-*.mjs'
+      - 'services/stocks-global/venue*.mjs'
+      - 'services/stocks-global/testing/fixtures/venues/**'
       - 'services/stocks-global/mexc-public-protobuf.mjs'
       - 'services/stocks-global/kraken-instrument.mjs'
       - 'services/stocks-global/fixtures/live-public-20261024/**'
@@ -45,6 +47,7 @@ jobs:
           services/stocks-global/runtime-market.test.mjs
           services/stocks-global/release-market.test.mjs
           services/stocks-global/venues.test.mjs
+          services/stocks-global/venue-discovery.test.mjs
           services/stocks-global/market-history-range.test.mjs
           services/stocks-global/execution-off.test.mjs
           services/stocks-global/viewer-projection.test.mjs

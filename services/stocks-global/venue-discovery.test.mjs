@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { VENUE_DISCOVERY, WATCH_LIST, classify, withTicker, withCandles, discover, renderTable } from './venue-discovery.mjs';
+import { VENUES, venuesFromEnv } from './venues.mjs';
+import { LIVE_REST_ADAPTERS } from './live-rest.mjs';
 
 // Captured venue bodies only (testing/fixtures/venues/FIXTURES.md). Metadata subsets keep the
 // venue's rows for the watch list unchanged; nothing below is generated.
@@ -39,7 +41,7 @@ test('nine venues classify the watch list from their own metadata; a blocked ven
   assert.deepEqual(WATCH_LIST.map(t => [pick('okx', t).venueSymbol, pick('okx', t).status]), [['XAAPL-USDT', 'TRADING'], ['XNVDA-USDT', 'TRADING'], ['XTSLA-USDT', 'TRADING'], ['XMSFT-USDT', 'TRADING'], ['XSPY-USDT', 'TRADING'], ['XQQQ-USDT', 'TRADING']]);
   assert.equal(pick('okx', 'AAPL').issuer, 'NOT_VERIFIED'); assert.equal(pick('okx', 'AAPL').instCategory, '3'); assert.equal(pick('okx', 'AAPL').openType, 'pre_quote');
   assert.deepEqual(WATCH_LIST.map(t => pick('bitget', t).venueSymbol), ['RAAPLUSDT', 'RNVDAUSDT', 'RTSLAUSDT', 'RMSFTUSDT', 'RSPYUSDT', 'RQQQUSDT']);
-  assert.equal(pick('bitget', 'AAPL').sourceType, 'unified-share-equivalent'); assert.equal(pick('bitget', 'AAPL').base, 'rAAPL'); assert.equal(pick('bitget', 'AAPL').adapter, 'discovery only');
+  assert.equal(pick('bitget', 'AAPL').sourceType, 'unified-share-equivalent'); assert.equal(pick('bitget', 'AAPL').base, 'rAAPL'); assert.equal(pick('bitget', 'AAPL').adapter, 'MarketHub adapter');
   assert.deepEqual(WATCH_LIST.map(t => pick('kucoin', t).venueSymbol), ['AAPLX-USDT', null, 'TSLAX-USDT', null, null, null]);
   assert.equal(pick('kucoin', 'AAPL').market, 'Stocks');
   assert.deepEqual(WATCH_LIST.map(t => [pick('kraken', t).venueSymbol, pick('kraken', t).quote]), [['AAPLxUSD', 'ZUSD'], ['NVDAxUSD', 'ZUSD'], ['TSLAxUSD', 'ZUSD'], ['MSFTxUSD', 'ZUSD'], ['SPYxUSD', 'ZUSD'], ['QQQxUSD', 'ZUSD']]);
@@ -47,6 +49,21 @@ test('nine venues classify the watch list from their own metadata; a blocked ven
   // Identity is per venue: the same underlying is five different venue symbols and three issuer families.
   assert.deepEqual(['binance', 'gate', 'okx', 'bitget', 'kraken'].map(v => [pick(v, 'AAPL').base, pick(v, 'AAPL').issuer]), [['AAPLB', 'bstocks'], ['AAPLX', 'xstocks'], ['XAAPL', 'NOT_VERIFIED'], ['rAAPL', 'bitget-rtoken'], ['AAPLx', 'xstocks']]);
   assert.ok(Object.values(rows).flat().every(r => r.rights === 'DATA_RIGHTS_UNVERIFIED'));
+});
+
+test('adapter labels follow the VENUES registry; an adapter is not permission: default OFF, live REST venues cannot be opted in', () => {
+  // Since the shared live feeds (LIVE_REST_ADAPTERS) Bitget has a MarketHub history adapter on its
+  // v3 candles endpoint. The label records that an adapter exists; using it stays DATA_RIGHTS_UNVERIFIED.
+  assert.deepEqual(Object.keys(VENUES).sort(), ['bingx', 'bitget', 'gate', 'kraken', 'kucoin', 'mexc', 'okx']);
+  assert.equal(VENUES.bitget, LIVE_REST_ADAPTERS.bitget);
+  assert.deepEqual(VENUES.bitget.hosts, ['api.bitget.com']);
+  const candles = new URL(VENUES.bitget.historyUrl({ sourceSymbol: 'RAAPLUSDT' }, '15m', 5));
+  assert.equal(candles.origin + candles.pathname, 'https://api.bitget.com/api/v3/market/candles');
+  assert.equal(candles.searchParams.get('category'), 'SPOT'); assert.equal(candles.searchParams.get('symbol'), 'RAAPLUSDT');
+  const labels = Object.fromEntries(Object.keys(META).map(v => [v, classify(v, META[v], ['AAPL'])[0].adapter]));
+  assert.deepEqual(labels, { bybit: 'MarketHub (built-in)', binance: 'MarketHub (built-in)', bitget: 'MarketHub adapter', bingx: 'MarketHub adapter', gate: 'MarketHub adapter', mexc: 'MarketHub adapter', kucoin: 'MarketHub adapter', okx: 'MarketHub adapter', kraken: 'MarketHub adapter' });
+  assert.deepEqual(venuesFromEnv({}), []);
+  for (const v of Object.keys(LIVE_REST_ADAPTERS)) assert.throws(() => venuesFromEnv({ STOCKS_VENUES_ENABLED: v, STOCKS_VENUE_RIGHTS_CONFIRMED: v }), /VENUE_UNKNOWN/, v);
 });
 
 test('ticker and candle readers keep venue values verbatim, detect order and never fill a failed read', () => {
