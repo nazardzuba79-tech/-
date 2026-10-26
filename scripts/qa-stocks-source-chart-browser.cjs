@@ -68,6 +68,12 @@ function viewerState() {
   };
 }
 
+async function until(condition, ms, message) {
+  for (const end = Date.now() + ms; !condition();) {
+    assert(Date.now() < end, message);
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+}
 async function step(name, fn) {
   try { await fn(); report.checks.push(name); console.log('✓ ' + name); }
   catch (error) { report.failures.push({ name, error: String(error.stack || error).slice(0, 1500) }); console.log('✗ ' + name + ' — ' + String(error.message || error).slice(0, 400)); }
@@ -118,6 +124,9 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
       const context = await browser.newContext({ viewport });
       await context.addInitScript(() => localStorage.setItem('exchange_token', 'synthetic-viewer-session'));
       let revoked = false; // a corrected range later revokes the ACCEPTED 1m page
+      // A step holds the clicked interval's history until the previous interval's marks are gone,
+      // so no check can pass on the old state (an UNKNOWN page keeps the same overlay).
+      const hold = { interval: null, pending: [] };
       await context.route('**/*', route => {
         const request = route.request(), url = new URL(request.url());
         if (url.hostname !== '127.0.0.1') { report.outbound++; report.outboundHosts[url.hostname] = (report.outboundHosts[url.hostname] || 0) + 1; return route.abort(); }
@@ -128,7 +137,9 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
           if (url.pathname.endsWith('/history')) {
             const interval = url.searchParams.get('interval');
             if (url.searchParams.get('id') !== ID || !STEP[interval]) return json({ candles: [] });
-            return json(interval === '1m' && !revoked ? page1m() : unknownPage(interval));
+            const body = interval === '1m' && !revoked ? page1m() : unknownPage(interval);
+            if (hold.interval === interval) return new Promise(resolve => hold.pending.push(resolve)).then(() => json(body));
+            return json(body);
           }
           return route.fulfill({ status: 204, body: '' });
         }
@@ -158,10 +169,17 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
       for (const interval of ['5m', '1h', '1m']) {
         await step(`${tag}: valid UNKNOWN ${interval} envelope — no numbers, gap count only`, async () => {
           if (interval === '1m') revoked = true;
+          hold.interval = interval; hold.pending = [];
           if (interval === '1m') {
             await page.locator('.vxg-timeframes button', { hasText: /^5m$/ }).click();
             await page.locator('.vxg-timeframes button', { hasText: /^1m$/ }).click();
           } else await page.locator('.vxg-timeframes button', { hasText: new RegExp(`^${interval}$`) }).click();
+          await until(() => hold.pending.length > 0, 15000, `no ${interval} history request`);
+          const cleared = await page.waitForFunction(() => !document.querySelector('.vxg-chart-warning')
+            && ![...document.querySelectorAll('.vxg-chart-section span')].some(e => /Цена токена/.test(e.textContent) && e.checkVisibility()), null, { timeout: 5000 }).then(() => true, () => false);
+          const pending = hold.pending; hold.interval = null; hold.pending = []; pending.forEach(release => release());
+          assert(cleared, `the previous interval's gap warning or token-price marking stayed while the ${interval} page was pending`);
+          await page.waitForSelector('.vxg-chart-warning', { timeout: 15000 });
           await page.waitForSelector('.vxg-chart-overlay', { timeout: 15000 });
           await assertReadableSourceMarks(page, 1);
           await page.waitForTimeout(3500);
