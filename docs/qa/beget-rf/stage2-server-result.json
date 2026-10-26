@@ -1,0 +1,13 @@
+{
+  "startedAt": "2026-10-26T18:15:44.770877+00:00",
+  "node": "voltex-ru-gateway-01",
+  "ip": "185.23.35.226",
+  "status": "FAILED",
+  "terms": "https://letsencrypt.org/documents/LE-SA-v1.8-July-06-2026.pdf",
+  "mainChanged": false,
+  "dnsEditedByScript": false,
+  "error": "Command '['curl', '--fail', '--silent', '--show-error', '--noproxy', '*', '--max-time', '10', '--resolve', 'ru.voltextech.net:443:127.0.0.1', 'https://ru.voltextech.net/_voltex/health']' returned non-zero exit status 7.",
+  "rollbackSyntaxExit": 0,
+  "rollbackReloadExit": 0,
+  "finishedAt": "2026-10-26T18:15:54.287773+00:00"
+}

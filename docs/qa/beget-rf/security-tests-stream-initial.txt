@@ -1,0 +1,65 @@
+test_default_has_no_sensitive_or_frontend_upstream (test_security.HoldTests.test_default_has_no_sensitive_or_frontend_upstream) ... ok
+test_proposal_rejects_unreviewed_targets (test_security.HoldTests.test_proposal_rejects_unreviewed_targets) ... ok
+test_superseded_activators_stop_before_any_mutation (test_security.HoldTests.test_superseded_activators_stop_before_any_mutation) ... ok
+test_admin_denial_is_enforced_at_trusted_endpoint (test_security.StreamTests.test_admin_denial_is_enforced_at_trusted_endpoint) ... ERROR
+test_endpoint_certificate_and_bytes_survive_opaque_relay (test_security.StreamTests.test_endpoint_certificate_and_bytes_survive_opaque_relay) ... ERROR
+test_foreign_or_absent_sni_is_rejected (test_security.StreamTests.test_foreign_or_absent_sni_is_rejected) ... ok
+test_untrusted_certificate_is_not_accepted (test_security.StreamTests.test_untrusted_certificate_is_not_accepted) ... ERROR
+
+======================================================================
+ERROR: test_admin_denial_is_enforced_at_trusted_endpoint (test_security.StreamTests.test_admin_denial_is_enforced_at_trusted_endpoint)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/46a00edda406/voltex-beget/ops/beget-rf/test_security.py", line 141, in test_admin_denial_is_enforced_at_trusted_endpoint
+    _, response = self.request('/admin')
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/46a00edda406/voltex-beget/ops/beget-rf/test_security.py", line 123, in request
+    with self.client_context.wrap_socket(raw, server_hostname=HOST) as tls:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 461, in wrap_socket
+    return self.sslsocket_class._create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 1057, in _create
+    self.do_handshake()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 1335, in do_handshake
+    self._sslobj.do_handshake()
+TimeoutError: _ssl.c:993: The handshake operation timed out
+
+======================================================================
+ERROR: test_endpoint_certificate_and_bytes_survive_opaque_relay (test_security.StreamTests.test_endpoint_certificate_and_bytes_survive_opaque_relay)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/46a00edda406/voltex-beget/ops/beget-rf/test_security.py", line 132, in test_endpoint_certificate_and_bytes_survive_opaque_relay
+    fingerprint, response = self.request()
+                            ^^^^^^^^^^^^^^
+  File "/workspace/scratch/46a00edda406/voltex-beget/ops/beget-rf/test_security.py", line 123, in request
+    with self.client_context.wrap_socket(raw, server_hostname=HOST) as tls:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 461, in wrap_socket
+    return self.sslsocket_class._create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 1057, in _create
+    self.do_handshake()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 1335, in do_handshake
+    self._sslobj.do_handshake()
+TimeoutError: _ssl.c:993: The handshake operation timed out
+
+======================================================================
+ERROR: test_untrusted_certificate_is_not_accepted (test_security.StreamTests.test_untrusted_certificate_is_not_accepted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/46a00edda406/voltex-beget/ops/beget-rf/test_security.py", line 161, in test_untrusted_certificate_is_not_accepted
+    context.wrap_socket(raw, server_hostname=HOST)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 461, in wrap_socket
+    return self.sslsocket_class._create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 1057, in _create
+    self.do_handshake()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/ssl.py", line 1335, in do_handshake
+    self._sslobj.do_handshake()
+TimeoutError: _ssl.c:993: The handshake operation timed out
+
+----------------------------------------------------------------------
+Ran 7 tests in 10.691s
+
+FAILED (errors=3)

@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""Dedicated new Beget node only: install official packages and ACME-only Nginx.
+
+No DNS changes, TLS subscription agreement, app activation, credentials or
+financial requests. Run only after confirming the node identity. Never on Hetzner.
+"""
+import base64
+from datetime import datetime, timezone
+import fcntl
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tarfile
+import urllib.request
+
+EXPECTED_IP = '185.23.35.226'
+# Filled only in the generated transfer file, from reviewed local files.
+ASSETS = {'render.py': {'sha256': '01a7b2631ab867ab76a459a82dc5d6dae07666576d6661eaf9b01b4dd9840b0a', 'base64': 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJSZW5kZXIgYW4gb3duLWFwcGxpY2F0aW9uIGdhdGV3YXksIG5ldmVyIGFuIGFyYml0cmFyeSBVUkwgcHJveHkuIE5vIHNlcnZlciB3cml0ZXMuIiIiCmltcG9ydCBhcmdwYXJzZQppbXBvcnQgaXBhZGRyZXNzCmltcG9ydCBvcwppbXBvcnQgcHdkCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAoKSE9TVCA9ICdydS52b2x0ZXh0ZWNoLm5ldCcKUkVXUklURVMgPSB7CiAgICAnaHR0cHM6Ly9hcGkudm9sdGV4dGVjaC5uZXQnOiAnaHR0cHM6Ly8nICsgSE9TVCwKICAgICMgS2VlcCBhIGRpc3RpbmN0IGJhc2U6IGlzRWRnZU1hcmtldFVybCBjb21wYXJlcyB0aGlzIFVSTCBwcmVmaXggd2l0aCBBUEkgVVJMcy4KICAgICdodHRwczovL21hcmtldC52b2x0ZXh0ZWNoLm5ldCc6ICdodHRwczovLycgKyBIT1NUICsgJy9fdm9sdGV4L21hcmtldCcsCiAgICAnaHR0cHM6Ly9reWMudm9sdGV4dGVjaC5uZXQnOiAnaHR0cHM6Ly8nICsgSE9TVCArICcvX3ZvbHRleC9reWMnLAogICAgJ2h0dHBzOi8vdm9sdGV4LWRlcG9zaXQtY2F0YWxvZ3VlLXByb2R1Y3Rpb24ubmF6YXJkenViYTc5LndvcmtlcnMuZGV2JzogJ2h0dHBzOi8vJyArIEhPU1QgKyAnL192b2x0ZXgvY2F0YWxvZ3VlJywKICAgICdodHRwczovL2FwaS5rcmFrZW4uY29tJzogJ2h0dHBzOi8vJyArIEhPU1QgKyAnL192b2x0ZXgva3Jha2VuJywKICAgICdodHRwczovL2FwaS5ieWJpdC5jb20nOiAnaHR0cHM6Ly8nICsgSE9TVCArICcvX3ZvbHRleC9ieWJpdCcsCiAgICAnaHR0cHM6Ly9hcGkuYnl0aWNrLmNvbSc6ICdodHRwczovLycgKyBIT1NUICsgJy9fdm9sdGV4L2J5dGljaycsCiAgICAnd3NzOi8vd3Mua3Jha2VuLmNvbS92Mic6ICd3c3M6Ly8nICsgSE9TVCArICcvX3ZvbHRleC93cy9rcmFrZW4nLAogICAgJ3dzczovL3N0cmVhbS5ieWJpdC5jb20vdjUvcHVibGljL2xpbmVhcic6ICd3c3M6Ly8nICsgSE9TVCArICcvX3ZvbHRleC93cy9ieWJpdCcsCn0KCgpkZWYgcmVuZGVyKHByZWZpeD0nL2V0Yy9uZ2lueC92b2x0ZXgtcmYnLCByZXNvbHZlcj0nMTI3LjAuMC41MycsIHBvcnQ9NDQzLAogICAgICAgICAgIGZpeHR1cmVfcG9ydD1Ob25lLCBjZXJ0PU5vbmUsIGtleT1Ob25lLCBib290c3RyYXA9RmFsc2UpOgogICAgIiIiZml4dHVyZV9wb3J0IGlzIGxvb3BiYWNrLW9ubHksIHVzZWQgYnkgaXNvbGF0ZWQgdGVzdHMsIG5vdCBhIHByb2R1Y3Rpb24gdGFyZ2V0LiIiIgogICAgaXBhZGRyZXNzLmlwX2FkZHJlc3MocmVzb2x2ZXIpCiAgICBwcmVmaXggPSBzdHIoUGF0aChwcmVmaXgpLnJlc29sdmUoKSkKICAgIGlmIGFueShjIGluIHByZWZpeCBmb3IgYyBpbiAnXG5ccjt7fSJcJyAnKSBvciBub3QgMSA8PSBwb3J0IDw9IDY1NTM1OgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoJ3Vuc2FmZSBwYXRoIG9yIHBvcnQnKQogICAgaWYgZml4dHVyZV9wb3J0IGlzIG5vdCBOb25lIGFuZCBub3QgMSA8PSBmaXh0dXJlX3BvcnQgPD0gNjU1MzU6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcignaW52YWxpZCBmaXh0dXJlIHBvcnQnKQogICAgY2VydCA9IGNlcnQgb3IgJy9ldGMvbGV0c2VuY3J5cHQvbGl2ZS8nICsgSE9TVCArICcvZnVsbGNoYWluLnBlbScKICAgIGtleSA9IGtleSBvciAnL2V0Yy9sZXRzZW5jcnlwdC9saXZlLycgKyBIT1NUICsgJy9wcml2a2V5LnBlbScKICAgIGZvciBwYXRoIGluIChjZXJ0LCBrZXkpOgogICAgICAgIGlmIG5vdCBQYXRoKHBhdGgpLmlzX2Fic29sdXRlKCkgb3IgYW55KGMgaW4gcGF0aCBmb3IgYyBpbiAnXG5ccjt7fSJcJyAnKToKICAgICAgICAgICAgcmFpc2UgVmFsdWVFcnJvcigndW5zYWZlIGNlcnRpZmljYXRlIHBhdGgnKQogICAgdGVzdCA9IGZpeHR1cmVfcG9ydCBpcyBub3QgTm9uZQogICAgYmluZCA9IGYnMTI3LjAuMC4xOntwb3J0fScgaWYgdGVzdCBlbHNlIHN0cihwb3J0KQogICAgc2V0dXAgPSAoZid1c2VyIHtwd2QuZ2V0cHd1aWQob3MuZ2V0ZXVpZCgpKS5wd19uYW1lfTtcbm1hc3Rlcl9wcm9jZXNzIG9mZjsnIGlmIHRlc3QgZWxzZSAndXNlciB3d3ctZGF0YTsnKQogICAgY29tbW9uID0gJycnCiAgICAgIHByb3h5X2h0dHBfdmVyc2lvbiAxLjE7CiAgICAgIHByb3h5X2NhY2hlIG9mZjsKICAgICAgcHJveHlfc3RvcmUgb2ZmOwogICAgICBwcm94eV9yZXF1ZXN0X2J1ZmZlcmluZyBvZmY7CiAgICAgIHByb3h5X25leHRfdXBzdHJlYW0gb2ZmOwogICAgICBwcm94eV9zZXRfaGVhZGVyIEZvcndhcmRlZCAiIjsKICAgICAgcHJveHlfc2V0X2hlYWRlciBYLUZvcndhcmRlZC1Gb3IgJHJlbW90ZV9hZGRyOwogICAgICBwcm94eV9zZXRfaGVhZGVyIFgtUmVhbC1JUCAkcmVtb3RlX2FkZHI7CiAgICAgIHByb3h5X3NldF9oZWFkZXIgWC1Gb3J3YXJkZWQtUHJvdG8gaHR0cHM7CiAgICAgIHByb3h5X3NldF9oZWFkZXIgWC1Gb3J3YXJkZWQtSG9zdCBydS52b2x0ZXh0ZWNoLm5ldDsKICAgICAgcHJveHlfc2V0X2hlYWRlciBDb25uZWN0aW9uICIiOwogICAgICBwcm94eV9oaWRlX2hlYWRlciBDYWNoZS1Db250cm9sOwogICAgICBwcm94eV9oaWRlX2hlYWRlciBFeHBpcmVzOwogICAgICBhZGRfaGVhZGVyIENhY2hlLUNvbnRyb2wgIm5vLXN0b3JlIiBhbHdheXM7CiAgICAgIGFkZF9oZWFkZXIgWC1Db250ZW50LVR5cGUtT3B0aW9ucyBub3NuaWZmIGFsd2F5czsKICAgICAgYWRkX2hlYWRlciBSZWZlcnJlci1Qb2xpY3kgc3RyaWN0LW9yaWdpbi13aGVuLWNyb3NzLW9yaWdpbiBhbHdheXM7CiAgICAgIGFkZF9oZWFkZXIgU3RyaWN0LVRyYW5zcG9ydC1TZWN1cml0eSAibWF4LWFnZT04NjQwMCIgYWx3YXlzOwonJycKICAgIGRlZiBwcm94eShob3N0LCB1cmksIHByaXZhdGU9RmFsc2UsIHdzPUZhbHNlLCBodG1sPUZhbHNlKToKICAgICAgICBwcm90byA9ICdodHRwJyBpZiB0ZXN0IGVsc2UgJ2h0dHBzJwogICAgICAgIHRhcmdldCA9IGYnMTI3LjAuMC4xOntmaXh0dXJlX3BvcnR9JyBpZiB0ZXN0IGVsc2UgaG9zdAogICAgICAgIGNvbmYgPSBjb21tb24gKyBmJyAgICAgIHNldCAkZml4ZWRfdXBzdHJlYW0ge3RhcmdldH07XG4gICAgICBwcm94eV9zZXRfaGVhZGVyIEhvc3Qge2hvc3R9O1xuJwogICAgICAgIGNvbmYgKz0gZicgICAgICBwcm94eV9wYXNzIHtwcm90b306Ly8kZml4ZWRfdXBzdHJlYW17dXJpfTtcbicKICAgICAgICBpZiBub3QgdGVzdDoKICAgICAgICAgICAgY29uZiArPSBmJycnICAgICAgcHJveHlfc3NsX3NlcnZlcl9uYW1lIG9uOwogICAgICBwcm94eV9zc2xfbmFtZSB7aG9zdH07CiAgICAgIHByb3h5X3NzbF92ZXJpZnkgb247CiAgICAgIHByb3h5X3NzbF90cnVzdGVkX2NlcnRpZmljYXRlIC9ldGMvc3NsL2NlcnRzL2NhLWNlcnRpZmljYXRlcy5jcnQ7CiAgICAgIHByb3h5X3NzbF92ZXJpZnlfZGVwdGggNTsKJycnCiAgICAgICAgaWYgbm90IHByaXZhdGU6CiAgICAgICAgICAgIGNvbmYgKz0gJycnICAgICAgaWYgKCRyZXF1ZXN0X21ldGhvZCAhfiAiXihHRVR8SEVBRHxPUFRJT05TKSQiKSB7IHJldHVybiA0MDU7IH0KICAgICAgcHJveHlfc2V0X2hlYWRlciBBdXRob3JpemF0aW9uICIiOwogICAgICBwcm94eV9zZXRfaGVhZGVyIENvb2tpZSAiIjsKICAgICAgcHJveHlfaGlkZV9oZWFkZXIgU2V0LUNvb2tpZTsKJycnCiAgICAgICAgZWxzZToKICAgICAgICAgICAgY29uZiArPSAnJycgICAgICAjIFRoZSBSVSBPcmlnaW4gd2FzIGNoZWNrZWQgYXQgdGhlIGdhdGV3YXkgYmVmb3JlIGNhbm9uaWNhbCBtYXBwaW5nLgogICAgICBwcm94eV9zZXRfaGVhZGVyIE9yaWdpbiAkY2Fub25pY2FsX2FwcF9vcmlnaW47CiAgICAgIHByb3h5X2Nvb2tpZV9kb21haW4gYXBpLnZvbHRleHRlY2gubmV0IHJ1LnZvbHRleHRlY2gubmV0OwogICAgICBwcm94eV9yZWRpcmVjdCBodHRwczovL2FwaS52b2x0ZXh0ZWNoLm5ldC8gaHR0cHM6Ly9ydS52b2x0ZXh0ZWNoLm5ldC87CicnJwogICAgICAgIGlmIHdzOgogICAgICAgICAgICBjb25mICs9ICcnJyAgICAgIGlmICgkcmVxdWVzdF9tZXRob2QgIT0gR0VUKSB7IHJldHVybiA0MDU7IH0KICAgICAgaWYgKCRodHRwX29yaWdpbiAhPSAiaHR0cHM6Ly9ydS52b2x0ZXh0ZWNoLm5ldCIpIHsgcmV0dXJuIDQwMzsgfQogICAgICBpZiAoJGh0dHBfdXBncmFkZSAhPSAid2Vic29ja2V0IikgeyByZXR1cm4gNDI2OyB9CiAgICAgIHByb3h5X3NldF9oZWFkZXIgVXBncmFkZSAkaHR0cF91cGdyYWRlOwogICAgICBwcm94eV9zZXRfaGVhZGVyIENvbm5lY3Rpb24gdXBncmFkZTsKICAgICAgcHJveHlfcmVhZF90aW1lb3V0IDM2MDBzOwogICAgICBwcm94eV9idWZmZXJpbmcgb2ZmOwogICAgICBsaW1pdF9jb25uIGdhdGV3YXlfY29ubmVjdGlvbnMgMTI7CicnJwogICAgICAgIGVsc2U6CiAgICAgICAgICAgIGNvbmYgKz0gJycnICAgICAgcHJveHlfYnVmZmVyaW5nIG9mZjsKICAgICAgcHJveHlfcmVhZF90aW1lb3V0IDkwczsKJycnCiAgICAgICAgaWYgaHRtbDoKICAgICAgICAgICAgY29uZiArPSAnJycgICAgICBwcm94eV9zZXRfaGVhZGVyIEFjY2VwdC1FbmNvZGluZyAiIjsKICAgICAgcHJveHlfcmVkaXJlY3QgaHR0cHM6Ly92b2x0ZXh0ZWNoLm5ldC8gaHR0cHM6Ly9ydS52b2x0ZXh0ZWNoLm5ldC87CiAgICAgIHN1Yl9maWx0ZXJfb25jZSBvZmY7CiAgICAgIHN1Yl9maWx0ZXJfdHlwZXMgdGV4dC9jc3MgYXBwbGljYXRpb24vamF2YXNjcmlwdCB0ZXh0L2phdmFzY3JpcHQ7CicnJwogICAgICAgICAgICBmb3Igb2xkLCBuZXcgaW4gUkVXUklURVMuaXRlbXMoKToKICAgICAgICAgICAgICAgIGNvbmYgKz0gZiIgICAgICBzdWJfZmlsdGVyICd7b2xkfScgJ3tuZXd9JztcbiIKICAgICAgICByZXR1cm4gY29uZgoKICAgIGRlZiBsb2NhdGlvbihtYXRjaCwgaG9zdCwgdXJpLCAqKm9wdGlvbnMpOgogICAgICAgIHJldHVybiBmJyAgICBsb2NhdGlvbiB7bWF0Y2h9IHt7XG4nICsgcHJveHkoaG9zdCwgdXJpLCAqKm9wdGlvbnMpICsgJyAgICB9XG4nCgogICAgY29uZmlnID0gZicnJyMgR2VuZXJhdGVkIGJ5IG9wcy9iZWdldC1yZi9yZW5kZXIucHkuIERlZGljYXRlZCBCZWdldCBub2RlIG9ubHkuCntzZXR1cH0Kd29ya2VyX3Byb2Nlc3NlcyAxOwpwaWQge3ByZWZpeCArICcvbmdpbngucGlkJyBpZiB0ZXN0IGVsc2UgJy9ydW4vbmdpbngucGlkJ307CmVycm9yX2xvZyB7cHJlZml4fS9lcnJvci5sb2cgY3JpdDsKZXZlbnRzIHt7IHdvcmtlcl9jb25uZWN0aW9ucyAxMDI0OyB9fQpodHRwIHt7CiAgZGVmYXVsdF90eXBlIGFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbTsKICByZXNvbHZlciB7cmVzb2x2ZXJ9IGlwdjY9b2ZmIHZhbGlkPTMwMHM7CiAgIyBObyBxdWVyeSBzdHJpbmdzLCBJUHMsIHRva2VucywgY29va2llcywgcmVxdWVzdCBib2RpZXMgb3IgZmluYW5jaWFsIHZhbHVlcy4KICBsb2dfZm9ybWF0IGdhdGV3YXkgJyRyZXF1ZXN0X21ldGhvZCAkc3RhdHVzICRyZXF1ZXN0X3RpbWUgJHVwc3RyZWFtX3N0YXR1cyAkdXBzdHJlYW1fcmVzcG9uc2VfdGltZSc7CiAgYWNjZXNzX2xvZyB7cHJlZml4fS9hY2Nlc3MubG9nIGdhdGV3YXk7CiAgbGltaXRfY29ubl96b25lICRiaW5hcnlfcmVtb3RlX2FkZHIgem9uZT1nYXRld2F5X2Nvbm5lY3Rpb25zOjFtOwogIG1hcCAkaHR0cF9vcmlnaW4gJGZvcmVpZ25fb3JpZ2luIHt7IGRlZmF1bHQgMTsgIiIgMDsgImh0dHBzOi8ve0hPU1R9IiAwOyB9fQogIG1hcCAkaHR0cF9vcmlnaW4gJGNhbm9uaWNhbF9hcHBfb3JpZ2luIHt7IGRlZmF1bHQgIiI7ICJodHRwczovL3tIT1NUfSIgImh0dHBzOi8vdm9sdGV4dGVjaC5uZXQiOyB9fQogIG1hcCAiJHJlcXVlc3RfbWV0aG9kOiRodHRwX29yaWdpbiIgJHVuc2FmZV9vcmlnaW4ge3sKICAgIGRlZmF1bHQgMTsKICAgIH5eKEdFVHxIRUFEKTogMDsKICAgIH5eKFBPU1R8UFVUfFBBVENIfERFTEVURXxPUFRJT05TKTpodHRwczovL3J1XFwudm9sdGV4dGVjaFxcLm5ldCQgMDsKICB9fQogIHNlcnZlcl90b2tlbnMgb2ZmOwogIGNsaWVudF9tYXhfYm9keV9zaXplIDVtOwogIGNsaWVudF9ib2R5X3RlbXBfcGF0aCB7cHJlZml4fS9jbGllbnQ7CiAgcHJveHlfdGVtcF9wYXRoIHtwcmVmaXh9L3Byb3h5OwonJycKICAgIGlmIG5vdCB0ZXN0OgogICAgICAgIGNvbmZpZyArPSBmJycnICBzZXJ2ZXIge3sgbGlzdGVuIDgwIGRlZmF1bHRfc2VydmVyOyBzZXJ2ZXJfbmFtZSBfOyByZXR1cm4gNDQ0OyB9fQogIHNlcnZlciB7ewogICAgbGlzdGVuIDgwOwogICAgc2VydmVyX25hbWUge0hPU1R9OwogICAgbG9jYXRpb24gXn4gLy53ZWxsLWtub3duL2FjbWUtY2hhbGxlbmdlLyB7eyByb290IC92YXIvd3d3L3ZvbHRleC1hY21lOyB9fQogICAgbG9jYXRpb24gLyB7eyByZXR1cm4geyc1MDMnIGlmIGJvb3RzdHJhcCBlbHNlICczMDggaHR0cHM6Ly8nICsgSE9TVCArICckcmVxdWVzdF91cmknfTsgfX0KICB9fQonJycKICAgIGlmIG5vdCBib290c3RyYXA6CiAgICAgICAgY29uZmlnICs9IGYnJycgIHNlcnZlciB7ewogICAgbGlzdGVuIHtiaW5kfSBzc2wgaHR0cDI7CiAgICBzZXJ2ZXJfbmFtZSB7SE9TVH07CiAgICBzc2xfY2VydGlmaWNhdGUge2NlcnR9OwogICAgc3NsX2NlcnRpZmljYXRlX2tleSB7a2V5fTsKICAgIHNzbF9wcm90b2NvbHMgVExTdjEuMiBUTFN2MS4zOwogICAgaWYgKCRob3N0ICE9ICJ7SE9TVH0iKSB7eyByZXR1cm4gNDQ0OyB9fQogICAgaWYgKCRmb3JlaWduX29yaWdpbikge3sgcmV0dXJuIDQwMzsgfX0KICAgIGlmICgkdW5zYWZlX29yaWdpbikge3sgcmV0dXJuIDQwMzsgfX0KICAgIGlmICgkcmVxdWVzdF9tZXRob2QgIX4gIl4oR0VUfEhFQUR8UE9TVHxQVVR8UEFUQ0h8REVMRVRFfE9QVElPTlMpJCIpIHt7IHJldHVybiA0MDU7IH19CiAgICBsb2NhdGlvbiA9IC9fdm9sdGV4L2hlYWx0aCB7eyBkZWZhdWx0X3R5cGUgdGV4dC9wbGFpbjsgYWRkX2hlYWRlciBDYWNoZS1Db250cm9sIG5vLXN0b3JlIGFsd2F5czsgcmV0dXJuIDIwMCAidm9sdGV4LXJmLWdhdGV3YXlcXG4iOyB9fQonJycKICAgICAgICBjb25maWcgKz0gbG9jYXRpb24oJ15+IC9hcGkvdjEvJywgJ2FwaS52b2x0ZXh0ZWNoLm5ldCcsICckcmVxdWVzdF91cmknLCBwcml2YXRlPVRydWUpCiAgICAgICAgY29uZmlnICs9IGxvY2F0aW9uKCc9IC9oZWFsdGgnLCAnYXBpLnZvbHRleHRlY2gubmV0JywgJy9oZWFsdGgkaXNfYXJncyRhcmdzJykKICAgICAgICBjb25maWcgKz0gbG9jYXRpb24oJ34gXi9fdm9sdGV4L21hcmtldCg/PG1hcmtldF9wYXRoPi8oPzptYXJrZXQvKD86ZGlzcGxheXxsaXN0aW5nc3x0ZXN0LWFzc2V0cykoPzovW14/XSopP3xjZmQvZGlzcGxheS9bXj9dKnxoZWFsdGgpKSQnLAogICAgICAgICAgICAgICAgICAgICAgICAgICAnbWFya2V0LnZvbHRleHRlY2gubmV0JywgJyRtYXJrZXRfcGF0aCRpc19hcmdzJGFyZ3MnKQogICAgICAgIGNvbmZpZyArPSBsb2NhdGlvbignPSAvX3ZvbHRleC9jYXRhbG9ndWUvcHVibGljL2RlcG9zaXQtY2F0YWxvZ3VlJywKICAgICAgICAgICAgICAgICAgICAgICAgICAgJ3ZvbHRleC1kZXBvc2l0LWNhdGFsb2d1ZS1wcm9kdWN0aW9uLm5hemFyZHp1YmE3OS53b3JrZXJzLmRldicsICcvcHVibGljL2RlcG9zaXQtY2F0YWxvZ3VlJGlzX2FyZ3MkYXJncycpCiAgICAgICAgY29uZmlnICs9IGxvY2F0aW9uKCd+IF4vX3ZvbHRleC9rcmFrZW4vMC9wdWJsaWMvKD88a3Jha2VuX3BhdGg+RGVwdGh8T0hMQ3xUcmFkZXN8VGlja2VyfEFzc2V0UGFpcnN8VGltZSkkJywKICAgICAgICAgICAgICAgICAgICAgICAgICAgJ2FwaS5rcmFrZW4uY29tJywgJy8wL3B1YmxpYy8ka3Jha2VuX3BhdGgkaXNfYXJncyRhcmdzJykKICAgICAgICBmb3IgcHJvdmlkZXIsIGhvc3QgaW4gWygnYnliaXQnLCAnYXBpLmJ5Yml0LmNvbScpLCAoJ2J5dGljaycsICdhcGkuYnl0aWNrLmNvbScpXToKICAgICAgICAgICAgY29uZmlnICs9IGxvY2F0aW9uKCd+IF4vX3ZvbHRleC8nICsgcHJvdmlkZXIgKyAnL3Y1L21hcmtldC8oPzwnICsgcHJvdmlkZXIgKyAnX3BhdGg+dGlja2Vyc3xrbGluZXxvcmRlcmJvb2t8cmVjZW50LXRyYWRlKSQnLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgaG9zdCwgJy92NS9tYXJrZXQvJCcgKyBwcm92aWRlciArICdfcGF0aCRpc19hcmdzJGFyZ3MnKQogICAgICAgIGNvbmZpZyArPSBsb2NhdGlvbignPSAvX3ZvbHRleC93cy9rcmFrZW4nLCAnd3Mua3Jha2VuLmNvbScsICcvdjInLCB3cz1UcnVlKQogICAgICAgIGNvbmZpZyArPSBsb2NhdGlvbignPSAvX3ZvbHRleC93cy9ieWJpdCcsICdzdHJlYW0uYnliaXQuY29tJywgJy92NS9wdWJsaWMvbGluZWFyJywgd3M9VHJ1ZSkKICAgICAgICAjIEtZQyBwYXRoIHN0YXlzIGZpeGVkOyBpdCBtYXkgY29udGFpbiBhY2NvdW50LW93bmVkIGRvY3VtZW50IGJ5dGVzLgogICAgICAgIGNvbmZpZyArPSBsb2NhdGlvbignfiBeL192b2x0ZXgva3ljKD88a3ljX3BhdGg+L3YxLyg/OnN1Ym1pdHxjb25maXJtfG1hdGVyaWFscykpJCcsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICdreWMudm9sdGV4dGVjaC5uZXQnLCAnJGt5Y19wYXRoJGlzX2FyZ3MkYXJncycsIHByaXZhdGU9VHJ1ZSkKICAgICAgICBjb25maWcgKz0gJycnICAgIGxvY2F0aW9uIC9fdm9sdGV4LyB7IHJldHVybiA0MDQ7IH0KICAgIGxvY2F0aW9uIC9pbnRlcm5hbC8geyByZXR1cm4gNDA0OyB9CiAgICBsb2NhdGlvbiAvIHsKICAgICAgaWYgKCRyZXF1ZXN0X21ldGhvZCAhfiAiXihHRVR8SEVBRCkkIikgeyByZXR1cm4gNDA1OyB9CicnJwogICAgICAgIGNvbmZpZyArPSBwcm94eSgndm9sdGV4dGVjaC5uZXQnLCAnJHJlcXVlc3RfdXJpJywgaHRtbD1UcnVlKSArICcgICAgfVxuICB9XG4nCiAgICByZXR1cm4gY29uZmlnICsgJ31cbicKCgppZiBfX25hbWVfXyA9PSAnX19tYWluX18nOgogICAgcCA9IGFyZ3BhcnNlLkFyZ3VtZW50UGFyc2VyKGRlc2NyaXB0aW9uPV9fZG9jX18pCiAgICBwLmFkZF9hcmd1bWVudCgnLS1wcmVmaXgnLCBkZWZhdWx0PScvZXRjL25naW54L3ZvbHRleC1yZicpCiAgICBwLmFkZF9hcmd1bWVudCgnLS1yZXNvbHZlcicsIGRlZmF1bHQ9JzEyNy4wLjAuNTMnKQogICAgcC5hZGRfYXJndW1lbnQoJy0tYm9vdHN0cmFwJywgYWN0aW9uPSdzdG9yZV90cnVlJykKICAgIGFyZ3MgPSBwLnBhcnNlX2FyZ3MoKQogICAgcHJpbnQocmVuZGVyKCoqdmFycyhhcmdzKSksIGVuZD0nJykK'}, 'monitor.py': {'sha256': '981878436ac7bec888ba684fdfbac805dfc231d5fa66b9b19d885a609fa779ec', 'base64': 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJSZWFkLW9ubHkgQmVnZXQtbG9jYWwgcHJvYmU7IG5vIHJlc3RhcnQsIHJlbW90ZSB3cml0ZXMsIGF1dGggb3Igbm90aWZpY2F0aW9ucy4iIiIKaW1wb3J0IGpzb24KZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBzeXMKZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZXRpbWUsIHRpbWV6b25lCgoKZGVmIG1haW4oKToKICAgIHByZWZpeCA9IFBhdGgoJy9ldGMvbmdpbngvdm9sdGV4LXJmJykKICAgIHByb2JlID0gc3VicHJvY2Vzcy5ydW4oWydjdXJsJywgJy0tc2lsZW50JywgJy0tc2hvdy1lcnJvcicsICctLWZhaWwnLCAnLS1tYXgtdGltZScsICcxMCcsCiAgICAgICAgJy0tbm9wcm94eScsICcqJywgJy0tcmVzb2x2ZScsICdydS52b2x0ZXh0ZWNoLm5ldDo0NDM6MTI3LjAuMC4xJywKICAgICAgICAnaHR0cHM6Ly9ydS52b2x0ZXh0ZWNoLm5ldC9fdm9sdGV4L2hlYWx0aCddLCBjYXB0dXJlX291dHB1dD1UcnVlLCB0ZXh0PVRydWUpCiAgICBtZW1vcnkgPSB7fQogICAgZm9yIGxpbmUgaW4gUGF0aCgnL3Byb2MvbWVtaW5mbycpLnJlYWRfdGV4dCgpLnNwbGl0bGluZXMoKToKICAgICAgICBpZiBsaW5lLnN0YXJ0c3dpdGgoKCdNZW1Ub3RhbDonLCAnTWVtQXZhaWxhYmxlOicpKToKICAgICAgICAgICAgbmFtZSwgdmFsdWUsIF8gPSBsaW5lLnNwbGl0KCkKICAgICAgICAgICAgbWVtb3J5W25hbWUucnN0cmlwKCc6JyldID0gaW50KHZhbHVlKSAqIDEwMjQKICAgIGNvdW50cyA9IHsncmVxdWVzdHMnOiAwLCAnNXh4JzogMH0KICAgIGxvZyA9IHByZWZpeCAvICdhY2Nlc3MubG9nJwogICAgaWYgbG9nLmV4aXN0cygpOgogICAgICAgIGZvciBsaW5lIGluIGxvZy5vcGVuKCk6CiAgICAgICAgICAgIGZpZWxkcyA9IGxpbmUuc3BsaXQoKQogICAgICAgICAgICBpZiBsZW4oZmllbGRzKSA+PSAyIGFuZCBmaWVsZHNbMV0uaXNkaWdpdCgpOgogICAgICAgICAgICAgICAgY291bnRzWydyZXF1ZXN0cyddICs9IDEKICAgICAgICAgICAgICAgIGNvdW50c1snNXh4J10gKz0gaW50KDUwMCA8PSBpbnQoZmllbGRzWzFdKSA8IDYwMCkKICAgIGhlYWx0aHkgPSBwcm9iZS5yZXR1cm5jb2RlID09IDAgYW5kIHByb2JlLnN0ZG91dC5zdHJpcCgpID09ICd2b2x0ZXgtcmYtZ2F0ZXdheScKICAgIHJlcG9ydCA9IHsnYXQnOiBkYXRldGltZS5ub3codGltZXpvbmUudXRjKS5pc29mb3JtYXQoKSwgJ2dhdGV3YXlUbHNIZWFsdGh5JzogaGVhbHRoeSwKICAgICAgICAgICAgICAnbWVtb3J5Qnl0ZXMnOiBtZW1vcnksICdhY2Nlc3NMb2dDdXJyZW50Um90YXRpb24nOiBjb3VudHN9CiAgICBwcmludChqc29uLmR1bXBzKHJlcG9ydCwgc29ydF9rZXlzPVRydWUpKQogICAgcmV0dXJuIDAgaWYgaGVhbHRoeSBlbHNlIDEKCgppZiBfX25hbWVfXyA9PSAnX19tYWluX18nOgogICAgc3lzLmV4aXQobWFpbigpKQo='}, 'logrotate.conf': {'sha256': '6158d1d0316e08a8dbfe2817182aa7cf790f9779927982291261f30ad88db388', 'base64': 'L2V0Yy9uZ2lueC92b2x0ZXgtcmYvYWNjZXNzLmxvZyAvZXRjL25naW54L3ZvbHRleC1yZi9lcnJvci5sb2cgewogICAgZGFpbHkKICAgIHJvdGF0ZSA3CiAgICBtYXhzaXplIDEwTQogICAgbWlzc2luZ29rCiAgICBub3RpZmVtcHR5CiAgICBjb21wcmVzcwogICAgZGVsYXljb21wcmVzcwogICAgY3JlYXRlIDA2NDAgd3d3LWRhdGEgYWRtCiAgICBzaGFyZWRzY3JpcHRzCiAgICBwb3N0cm90YXRlCiAgICAgICAgdGVzdCAhIC1zIC9ydW4vbmdpbngucGlkIHx8IGtpbGwgLVVTUjEgIiQoY2F0IC9ydW4vbmdpbngucGlkKSIKICAgIGVuZHNjcmlwdAp9Cg=='}, 'voltex-rf-monitor.service': {'sha256': '628b570f3d99be9bb83bbf3a4c20c3067423e3da5aa2747510c8768f5ec800be', 'base64': 'W1VuaXRdCkRlc2NyaXB0aW9uPVJlYWQtb25seSBWT0xURVggUlUgZ2F0ZXdheSBoZWFsdGggYW5kIGFnZ3JlZ2F0ZSA1eHgKQWZ0ZXI9bmV0d29yay1vbmxpbmUudGFyZ2V0IG5naW54LnNlcnZpY2UKCltTZXJ2aWNlXQpUeXBlPW9uZXNob3QKRXhlY1N0YXJ0PS91c3IvYmluL3B5dGhvbjMgL29wdC92b2x0ZXgtcmYvbW9uaXRvci5weQpVc2VyPXd3dy1kYXRhCk5vTmV3UHJpdmlsZWdlcz10cnVlClByaXZhdGVUbXA9dHJ1ZQpQcm90ZWN0U3lzdGVtPXN0cmljdApQcm90ZWN0SG9tZT10cnVlClJlYWRPbmx5UGF0aHM9L2V0Yy9uZ2lueC92b2x0ZXgtcmYKUmVzdHJpY3RBZGRyZXNzRmFtaWxpZXM9QUZfSU5FVCBBRl9JTkVUNiBBRl9VTklYCg=='}, 'voltex-rf-monitor.timer': {'sha256': 'd5187ac1437c20e6daa55d9db04281117a671cc327c9e756432ba000195e8887', 'base64': 'W1VuaXRdCkRlc2NyaXB0aW9uPUNoZWNrIFZPTFRFWCBSVSBnYXRld2F5IGV2ZXJ5IG1pbnV0ZSB3aXRob3V0IHJlbWVkaWF0aW9uCgpbVGltZXJdCk9uQm9vdFNlYz0xbWluCk9uVW5pdEFjdGl2ZVNlYz0xbWluCkFjY3VyYWN5U2VjPTEwcwoKW0luc3RhbGxdCldhbnRlZEJ5PXRpbWVycy50YXJnZXQK'}}
+
+
+def run(args, **kwargs):
+    print('RUN', ' '.join(args), flush=True)
+    return subprocess.run(args, check=True, timeout=600, **kwargs)
+
+
+def main():
+    if os.geteuid() != 0:
+        raise RuntimeError('Root required on the new Beget node')
+    os.umask(0o077)
+    info = dict(line.split('=', 1) for line in Path('/etc/os-release').read_text().splitlines() if '=' in line)
+    if info.get('ID') != 'ubuntu' or info.get('VERSION_ID') != '"24.04"':
+        raise RuntimeError('Not the approved Ubuntu 24.04 node')
+    addresses = json.loads(subprocess.check_output(['ip', '-j', 'address'], text=True))
+    if not any(a.get('local') == EXPECTED_IP for n in addresses for a in n.get('addr_info', [])):
+        raise RuntimeError('Not the approved Beget IP; refusing mutation')
+    lock = open('/run/lock/voltex-rf-stage1.lock', 'w')
+    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    result_path = Path('/root/voltex-rf-stage1-result.json')
+    if result_path.exists():
+        raise RuntimeError('Prior result exists: inspect it, never auto-repeat provisioning')
+    if not ASSETS:
+        raise RuntimeError('No verified transfer assets embedded')
+    deploy = Path('/opt/voltex-rf')
+    deploy.mkdir(mode=0o750, exist_ok=True)
+    for name, asset in ASSETS.items():
+        if name not in ('render.py', 'monitor.py', 'logrotate.conf',
+                        'voltex-rf-monitor.service', 'voltex-rf-monitor.timer'):
+            raise RuntimeError('Unexpected asset path')
+        data = base64.b64decode(asset['base64'])
+        if hashlib.sha256(data).hexdigest() != asset['sha256']:
+            raise RuntimeError('Transfer checksum mismatch')
+        (deploy / name).write_bytes(data)
+        (deploy / name).chmod(0o644)
+    log = open('/root/voltex-rf-stage1.log', 'a', buffering=1)
+    sys.stdout = sys.stderr = log
+    result = {'startedAt': datetime.now(timezone.utc).isoformat(),
+              'node': 'voltex-ru-gateway-01', 'ip': EXPECTED_IP,
+              'status': 'STARTED', 'dnsChanged': False, 'appActivated': False,
+              'assetChecksums': {k: v['sha256'] for k, v in ASSETS.items()}}
+    result_path.write_text(json.dumps(result, indent=2))
+    installed = False
+    backup = None
+    try:
+        env = dict(os.environ, DEBIAN_FRONTEND='noninteractive')
+        run(['apt-get', 'update'], env=env)
+        run(['apt-get', 'install', '-y', '--no-install-recommends',
+             'nginx', 'certbot', 'ca-certificates', 'curl'], env=env)
+        # Refuse to overwrite any unrelated site configuration.
+        enabled = Path('/etc/nginx/sites-enabled')
+        if enabled.exists() and any(p.name != 'default' for p in enabled.iterdir()):
+            raise RuntimeError('Unexpected enabled site: manual review required')
+        stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        backup = Path('/root/voltex-rf-backup') / stamp
+        backup.mkdir(parents=True, mode=0o700)
+        with tarfile.open(backup / 'nginx-before.tar.gz', 'w:gz') as archive:
+            archive.add('/etc/nginx', arcname='nginx')
+        (backup / 'nginx.conf').write_bytes(Path('/etc/nginx/nginx.conf').read_bytes())
+        (backup / 'nginx.conf.sha256').write_text(hashlib.sha256((backup / 'nginx.conf').read_bytes()).hexdigest())
+        result['backup'] = str(backup)
+        prefix = Path('/etc/nginx/voltex-rf')
+        prefix.mkdir(mode=0o750, exist_ok=True)
+        import pwd
+        uid = pwd.getpwnam('www-data').pw_uid
+        gid = pwd.getpwnam('www-data').pw_gid
+        os.chown(prefix, 0, gid)
+        for name in ('client', 'proxy'):
+            p = prefix / name
+            p.mkdir(mode=0o700, exist_ok=True)
+            os.chown(p, uid, gid)
+        for name in ('access.log', 'error.log'):
+            p = prefix / name
+            p.touch(exist_ok=True)
+            p.chmod(0o640)
+            os.chown(p, 0, gid)
+        challenge = Path('/var/www/voltex-acme/.well-known/acme-challenge')
+        challenge.mkdir(parents=True, mode=0o755, exist_ok=True)
+        # umask 077 applies to all mkdir parents: grant traversal for Nginx.
+        for p in (challenge, challenge.parent, challenge.parent.parent):
+            p.chmod(0o755)
+        probe = 'voltex-rf-stage1-' + ASSETS['render.py']['sha256'][:16]
+        probe_file = challenge / 'voltex-gateway-preflight'
+        probe_file.write_text(probe + '\n')
+        probe_file.chmod(0o644)
+        spec = importlib.util.spec_from_file_location('voltex_rf_render', deploy / 'render.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        candidate = Path('/etc/nginx/nginx.conf.voltex-candidate')
+        candidate.write_text(module.render(bootstrap=True))
+        run(['nginx', '-t', '-c', str(candidate)])
+        os.replace(candidate, '/etc/nginx/nginx.conf')
+        installed = True
+        run(['systemctl', 'enable', '--now', 'nginx'])
+        run(['systemctl', 'reload', 'nginx'])
+        run(['systemctl', 'is-active', 'nginx'])
+        req = urllib.request.Request('http://127.0.0.1/.well-known/acme-challenge/voltex-gateway-preflight',
+                                     headers={'Host': 'ru.voltextech.net'})
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(req, timeout=10) as response:
+            if response.read().decode().strip() != probe:
+                raise RuntimeError('Local challenge response mismatch')
+        result.update(status='ACME_HTTP_READY', challengePath='/.well-known/acme-challenge/voltex-gateway-preflight',
+                      challengeValue=probe,
+                      nginxVersion=subprocess.run(['nginx', '-v'], capture_output=True, text=True).stderr.strip())
+        result['upstreamReads'] = []
+        for url in ('https://voltextech.net', 'https://api.voltextech.net/health',
+                    'https://market.voltextech.net/market/listings',
+                    'https://api.kraken.com/0/public/Time',
+                    'https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT'):
+            row = {'url': url}
+            try:
+                with urllib.request.urlopen(url, timeout=15) as response:
+                    data = response.read()
+                    row.update(status=response.status, bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+            except Exception as exc:
+                row['error'] = str(exc)
+            result['upstreamReads'].append(row)
+    except Exception as exc:
+        result.update(status='FAILED', error=str(exc))
+        if installed and backup:
+            Path('/etc/nginx/nginx.conf').write_bytes((backup / 'nginx.conf').read_bytes())
+            restore = subprocess.run(['nginx', '-t'], capture_output=True, text=True)
+            result['rollbackSyntaxExit'] = restore.returncode
+            if restore.returncode == 0:
+                result['rollbackReloadExit'] = subprocess.run(['systemctl', 'reload', 'nginx']).returncode
+        raise
+    finally:
+        result['finishedAt'] = datetime.now(timezone.utc).isoformat()
+        result_path.write_text(json.dumps(result, indent=2) + '\n')
+        result_path.chmod(0o600)
+
+
+if __name__ == '__main__':
+    main()

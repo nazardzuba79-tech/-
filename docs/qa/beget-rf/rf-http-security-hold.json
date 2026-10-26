@@ -1,0 +1,85 @@
+{
+  "id": "2Y5QPI0bRCtEqgSLN00021OBt",
+  "type": "http",
+  "status": "finished",
+  "createdAt": "2026-10-26T18:33:02.785Z",
+  "target": "185.23.35.226",
+  "results": [
+    {
+      "city": "Tomsk",
+      "asn": 31357,
+      "network": "Limited Company Information and Consulting Agency",
+      "tags": [
+        "eyeball-network",
+        "u-zGato"
+      ],
+      "result": {
+        "status": "finished",
+        "resolvedAddress": "185.23.35.226",
+        "headers": {
+          "server": "nginx",
+          "date": "Mon, 26 Oct 2026 18:33:02 GMT",
+          "content-type": "text/plain",
+          "content-length": "79",
+          "connection": "close",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'"
+        },
+        "rawHeaders": "Server: nginx\nDate: Mon, 26 Oct 2026 18:33:02 GMT\nContent-Type: text/plain\nContent-Length: 79\nConnection: close\nCache-Control: no-store\nX-Content-Type-Options: nosniff\nContent-Security-Policy: default-src 'none'; frame-ancestors 'none'",
+        "rawBody": "VOLTEX gateway unavailable pending security verification. Do not sign in here.\n",
+        "rawOutput": "HTTP/1.1 503\nServer: nginx\nDate: Mon, 26 Oct 2026 18:33:02 GMT\nContent-Type: text/plain\nContent-Length: 79\nConnection: close\nCache-Control: no-store\nX-Content-Type-Options: nosniff\nContent-Security-Policy: default-src 'none'; frame-ancestors 'none'\n\nVOLTEX gateway unavailable pending security verification. Do not sign in here.\n",
+        "truncated": false,
+        "statusCode": 503,
+        "statusCodeName": "Service Temporarily Unavailable",
+        "timings": {
+          "total": 119,
+          "dns": null,
+          "tcp": 59,
+          "tls": null,
+          "firstByte": 60,
+          "download": 0
+        },
+        "tls": null
+      }
+    },
+    {
+      "city": "Moscow",
+      "asn": 16262,
+      "network": "Datacheap",
+      "tags": [
+        "eyeball-network",
+        "u-zGato"
+      ],
+      "result": {
+        "status": "finished",
+        "resolvedAddress": "185.23.35.226",
+        "headers": {
+          "server": "nginx",
+          "date": "Mon, 26 Oct 2026 18:33:02 GMT",
+          "content-type": "text/plain",
+          "content-length": "79",
+          "connection": "close",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'"
+        },
+        "rawHeaders": "Server: nginx\nDate: Mon, 26 Oct 2026 18:33:02 GMT\nContent-Type: text/plain\nContent-Length: 79\nConnection: close\nCache-Control: no-store\nX-Content-Type-Options: nosniff\nContent-Security-Policy: default-src 'none'; frame-ancestors 'none'",
+        "rawBody": "VOLTEX gateway unavailable pending security verification. Do not sign in here.\n",
+        "rawOutput": "HTTP/1.1 503\nServer: nginx\nDate: Mon, 26 Oct 2026 18:33:02 GMT\nContent-Type: text/plain\nContent-Length: 79\nConnection: close\nCache-Control: no-store\nX-Content-Type-Options: nosniff\nContent-Security-Policy: default-src 'none'; frame-ancestors 'none'\n\nVOLTEX gateway unavailable pending security verification. Do not sign in here.\n",
+        "truncated": false,
+        "statusCode": 503,
+        "statusCodeName": "Service Temporarily Unavailable",
+        "timings": {
+          "total": 18,
+          "dns": null,
+          "tcp": 9,
+          "tls": null,
+          "firstByte": 9,
+          "download": 0
+        },
+        "tls": null
+      }
+    }
+  ]
+}

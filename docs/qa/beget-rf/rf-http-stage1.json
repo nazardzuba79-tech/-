@@ -1,0 +1,36 @@
+{
+  "id": "2wpA5D5fCvu3VBaY200021OBM",
+  "status": "finished",
+  "createdAt": "2026-10-26T18:00:27.417Z",
+  "target": "185.23.35.226",
+  "results": [
+    {
+      "city": "Tomsk",
+      "country": "RU",
+      "network": "Limited Company Information and Consulting Agency",
+      "asn": 31357,
+      "tags": [
+        "eyeball-network"
+      ],
+      "status": "finished",
+      "statusCode": 200,
+      "body": "voltex-rf-stage1-01a7b2631ab867ab\n",
+      "error": null,
+      "resolvedAddress": "185.23.35.226"
+    },
+    {
+      "city": "Moscow",
+      "country": "RU",
+      "network": "Datacheap",
+      "asn": 16262,
+      "tags": [
+        "eyeball-network"
+      ],
+      "status": "finished",
+      "statusCode": 200,
+      "body": "voltex-rf-stage1-01a7b2631ab867ab\n",
+      "error": null,
+      "resolvedAddress": "185.23.35.226"
+    }
+  ]
+}

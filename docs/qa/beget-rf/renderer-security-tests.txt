@@ -1,0 +1,10 @@
+test_api_and_market_prefixes_remain_distinct (test_gateway.RenderTest.test_api_and_market_prefixes_remain_distinct) ... ok
+test_checked_in_configs_match_renderer (test_gateway.RenderTest.test_checked_in_configs_match_renderer) ... ok
+test_invalid_paths_rejected (test_gateway.RenderTest.test_invalid_paths_rejected) ... ok
+test_old_bootstrap_option_also_stays_closed (test_gateway.RenderTest.test_old_bootstrap_option_also_stays_closed) ... ok
+test_production_default_is_closed_security_hold (test_gateway.RenderTest.test_production_default_is_closed_security_hold) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.002s
+
+OK

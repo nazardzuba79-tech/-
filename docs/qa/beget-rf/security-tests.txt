@@ -1,0 +1,37 @@
+test_default_has_no_sensitive_or_frontend_upstream (test_security.HoldTests.test_default_has_no_sensitive_or_frontend_upstream) ... ok
+test_proposal_rejects_unreviewed_targets (test_security.HoldTests.test_proposal_rejects_unreviewed_targets) ... ok
+test_superseded_activators_stop_before_any_mutation (test_security.HoldTests.test_superseded_activators_stop_before_any_mutation) ... ok
+test_admin_denial_is_enforced_at_trusted_endpoint (test_security.StreamTests.test_admin_denial_is_enforced_at_trusted_endpoint) ... ok
+test_endpoint_certificate_and_bytes_survive_opaque_relay (test_security.StreamTests.test_endpoint_certificate_and_bytes_survive_opaque_relay) ... ok
+test_foreign_or_absent_sni_is_rejected (test_security.StreamTests.test_foreign_or_absent_sni_is_rejected) ... ok
+test_untrusted_certificate_is_not_accepted (test_security.StreamTests.test_untrusted_certificate_is_not_accepted) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.171s
+
+OK
+
+Synthetic stream diagnostic log:
+2026/10/26 13:47:21 [notice] 13#0: using the "epoll" event method
+2026/10/26 13:47:21 [notice] 13#0: nginx/1.30.6
+2026/10/26 13:47:21 [notice] 13#0: built by gcc 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04)
+2026/10/26 13:47:21 [notice] 13#0: OS: Linux 6.18.55
+2026/10/26 13:47:21 [notice] 13#0: getrlimit(RLIMIT_NOFILE): 16384:16384
+2026/10/26 13:47:21 [info] 13#0: *1 client 127.0.0.1:53276 connected to 127.0.0.1:34105
+2026/10/26 13:47:21 [info] 13#0: *2 client 127.0.0.1:53292 connected to 127.0.0.1:34105
+2026/10/26 13:47:21 [info] 13#0: *2 proxy 127.0.0.1:50546 connected to 127.0.0.1:51649
+2026/10/26 13:47:21 [info] 13#0: *2 upstream disconnected, bytes from/to client:1693/3097, bytes from/to upstream:3097/1693
+2026/10/26 13:47:21 [info] 13#0: *4 client 127.0.0.1:53298 connected to 127.0.0.1:34105
+2026/10/26 13:47:21 [info] 13#0: *4 proxy 127.0.0.1:50562 connected to 127.0.0.1:51649
+2026/10/26 13:47:21 [info] 13#0: *4 upstream disconnected, bytes from/to client:1688/3089, bytes from/to upstream:3089/1688
+2026/10/26 13:47:21 [info] 13#0: *6 client 127.0.0.1:53300 connected to 127.0.0.1:34105
+2026/10/26 13:47:21 [error] 13#0: *6 no host in upstream "", client: 127.0.0.1, server: 127.0.0.1:34105, bytes from/to client:0/0, bytes from/to upstream:0/0
+2026/10/26 13:47:21 [info] 13#0: *7 client 127.0.0.1:53302 connected to 127.0.0.1:34105
+2026/10/26 13:47:21 [error] 13#0: *7 no host in upstream "", client: 127.0.0.1, server: 127.0.0.1:34105, bytes from/to client:0/0, bytes from/to upstream:0/0
+2026/10/26 13:47:21 [info] 13#0: *8 client 127.0.0.1:53304 connected to 127.0.0.1:34105
+2026/10/26 13:47:21 [info] 13#0: *8 proxy 127.0.0.1:50576 connected to 127.0.0.1:51649
+2026/10/26 13:47:21 [info] 13#0: *8 recv() failed (104: Connection reset by peer) while proxying and reading from client, client: 127.0.0.1, server: 127.0.0.1:34105, upstream: "127.0.0.1:51649", bytes from/to client:1531/2471, bytes from/to upstream:2471/1531
+2026/10/26 13:47:21 [info] 13#0: *8 client disconnected, bytes from/to client:1531/2471, bytes from/to upstream:2471/1531
+2026/10/26 13:47:21 [notice] 13#0: signal 15 (SIGTERM) received from 5, exiting
+2026/10/26 13:47:21 [info] 13#0: epoll_wait() failed (4: Interrupted system call)
+2026/10/26 13:47:21 [notice] 13#0: exit

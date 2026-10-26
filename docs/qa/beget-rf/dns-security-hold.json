@@ -1,0 +1,77 @@
+{
+  "at": "2026-10-26T18:47:59.993427+00:00",
+  "resolver": "dns.google",
+  "queries": {
+    "ru.voltextech.net/A": {
+      "status": 0,
+      "answer": [],
+      "authority": [
+        {
+          "name": "voltextech.net.",
+          "type": 6,
+          "TTL": 1800,
+          "data": "lana.ns.cloudflare.com. dns.cloudflare.com. 2418526141 10000 2400 604800 1800"
+        }
+      ],
+      "ad": false
+    },
+    "ru.voltextech.net/AAAA": {
+      "status": 0,
+      "answer": [],
+      "authority": [
+        {
+          "name": "voltextech.net.",
+          "type": 6,
+          "TTL": 1800,
+          "data": "lana.ns.cloudflare.com. dns.cloudflare.com. 2418526141 10000 2400 604800 1800"
+        }
+      ],
+      "ad": false
+    },
+    "ru.voltextech.net/CAA": {
+      "status": 0,
+      "answer": [
+        {
+          "name": "ru.voltextech.net.",
+          "type": 257,
+          "TTL": 300,
+          "data": "0 issue \";\""
+        }
+      ],
+      "authority": [],
+      "ad": false
+    },
+    "voltextech.net/NS": {
+      "status": 0,
+      "answer": [
+        {
+          "name": "voltextech.net.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "thomas.ns.cloudflare.com."
+        },
+        {
+          "name": "voltextech.net.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "lana.ns.cloudflare.com."
+        }
+      ],
+      "authority": [],
+      "ad": false
+    },
+    "voltextech.net/CAA": {
+      "status": 0,
+      "answer": [],
+      "authority": [
+        {
+          "name": "voltextech.net.",
+          "type": 6,
+          "TTL": 1800,
+          "data": "lana.ns.cloudflare.com. dns.cloudflare.com. 2418526141 10000 2400 604800 1800"
+        }
+      ],
+      "ad": false
+    }
+  }
+}

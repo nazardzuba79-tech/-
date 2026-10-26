@@ -1,0 +1,46 @@
+{
+  "startedAt": "2026-10-26T17:47:57.858542+00:00",
+  "node": "voltex-ru-gateway-01",
+  "ip": "185.23.35.226",
+  "status": "ACME_HTTP_READY",
+  "dnsChanged": false,
+  "appActivated": false,
+  "assetChecksums": {
+    "render.py": "01a7b2631ab867ab76a459a82dc5d6dae07666576d6661eaf9b01b4dd9840b0a",
+    "monitor.py": "981878436ac7bec888ba684fdfbac805dfc231d5fa66b9b19d885a609fa779ec",
+    "logrotate.conf": "6158d1d0316e08a8dbfe2817182aa7cf790f9779927982291261f30ad88db388",
+    "voltex-rf-monitor.service": "628b570f3d99be9bb83bbf3a4c20c3067423e3da5aa2747510c8768f5ec800be",
+    "voltex-rf-monitor.timer": "d5187ac1437c20e6daa55d9db04281117a671cc327c9e756432ba000195e8887"
+  },
+  "backup": "/root/voltex-rf-backup/20261026T174829Z",
+  "challengePath": "/.well-known/acme-challenge/voltex-gateway-preflight",
+  "challengeValue": "voltex-rf-stage1-01a7b2631ab867ab",
+  "nginxVersion": "nginx version: nginx/1.24.0 (Ubuntu)",
+  "upstreamReads": [
+    {
+      "url": "https://voltextech.net",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://api.voltextech.net/health",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://market.voltextech.net/market/listings",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://api.kraken.com/0/public/Time",
+      "status": 200,
+      "bytes": 87,
+      "sha256": "9564f622e50f5be6a26041eb7fea5e6e4d68e96daa9789f719c14b92bd599188"
+    },
+    {
+      "url": "https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT",
+      "status": 200,
+      "bytes": 876,
+      "sha256": "6e0fbc770d898c83a84013378ede49808d9bf54fd9939202d11b872359e37375"
+    }
+  ],
+  "finishedAt": "2026-10-26T17:48:32.084438+00:00"
+}

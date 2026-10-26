@@ -285,18 +285,19 @@ class RenderTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 render(**kwargs)
 
-    def test_production_tls_and_no_financial_retries(self):
+    def test_production_default_is_closed_security_hold(self):
         text = render()
-        self.assertIn('proxy_ssl_verify on;', text)
-        self.assertIn('proxy_next_upstream off;', text)
-        self.assertNotIn('proxy_pass $arg_', text)
-        self.assertNotIn('proxy_pass https://$http_', text)
-        self.assertIn('proxy_cache off;', text)
+        self.assertNotIn('proxy_pass', text)
+        self.assertNotIn('ssl_certificate', text)
+        self.assertNotIn('listen 443', text)
+        self.assertNotIn('/.well-known/acme-challenge/', text)
+        self.assertIn('return 503', text)
+        self.assertIn("default-src 'none'", text)
 
-    def test_bootstrap_has_only_acme_and_closed_app(self):
+    def test_old_bootstrap_option_also_stays_closed(self):
         text = render(bootstrap=True)
-        self.assertIn('/.well-known/acme-challenge/', text)
-        self.assertIn('return 503;', text)
+        self.assertNotIn('/.well-known/acme-challenge/', text)
+        self.assertIn('return 503', text)
         self.assertNotIn('proxy_pass', text)
         self.assertNotIn('listen 443', text)
 

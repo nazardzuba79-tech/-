@@ -17,6 +17,6 @@ test_invalid_paths_rejected (__main__.RenderTest.test_invalid_paths_rejected) ..
 test_production_tls_and_no_financial_retries (__main__.RenderTest.test_production_tls_and_no_financial_retries) ... ok
 
 ----------------------------------------------------------------------
-Ran 17 tests in 1.888s
+Ran 17 tests in 1.948s
 
 OK

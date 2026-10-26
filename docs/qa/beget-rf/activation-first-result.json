@@ -1,0 +1,63 @@
+{
+  "startedAt": "2026-10-26T18:20:47.305797+00:00",
+  "node": "voltex-ru-gateway-01",
+  "ip": "185.23.35.226",
+  "status": "FAILED",
+  "before": {
+    "service": {
+      "exit": 0,
+      "stdout": "MainPID=7415\nResult=success\nActiveState=active\nSubState=running\n",
+      "stderr": ""
+    },
+    "listeners": {
+      "exit": 0,
+      "stdout": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                                                 \nLISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=496,fd=15))              \nLISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:((\"nginx\",pid=8857,fd=5),(\"nginx\",pid=7415,fd=5))\nLISTEN 0      4096         0.0.0.0:22        0.0.0.0:*    users:((\"sshd\",pid=1110,fd=3),(\"systemd\",pid=1,fd=117))\nLISTEN 0      4096      127.0.0.54:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=496,fd=17))              \nLISTEN 0      4096            [::]:22           [::]:*    users:((\"sshd\",pid=1110,fd=4),(\"systemd\",pid=1,fd=118))\n",
+      "stderr": ""
+    },
+    "errorTail": ""
+  },
+  "mainChanged": false,
+  "scriptSha256": "04e28d480f249d5d3e3d6a03a7d032d44cf2ec686f8367ac3875341c9fd07abc",
+  "certificate": {
+    "exit": 0,
+    "stdout": "notBefore=Oct 26 17:17:21 2026 GMT\nnotAfter=Jan 24 17:17:20 2027 GMT\nsubject=CN = ru.voltextech.net\nissuer=C = US, O = Let's Encrypt, CN = YE2\nsha256 Fingerprint=B9:E3:62:2F:D6:63:EA:05:1C:BF:57:11:6F:96:44:D7:05:23:F9:8E:0C:D2:C4:8D:19:F4:27:E7:12:7D:42:78\n",
+    "stderr": ""
+  },
+  "healthAttempts": [
+    {
+      "exit": 7,
+      "stdout": "",
+      "stderr": "curl: (7) Failed to connect to ru.voltextech.net port 443 after 0 ms: Couldn't connect to server\n"
+    },
+    {
+      "exit": 0,
+      "stdout": "voltex-rf-gateway\n",
+      "stderr": ""
+    }
+  ],
+  "after": {
+    "service": {
+      "exit": 0,
+      "stdout": "MainPID=7415\nResult=success\nActiveState=active\nSubState=running\n",
+      "stderr": ""
+    },
+    "listeners": {
+      "exit": 0,
+      "stdout": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                                                   \nLISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=496,fd=15))                \nLISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:((\"nginx\",pid=9177,fd=5),(\"nginx\",pid=7415,fd=5))  \nLISTEN 0      4096         0.0.0.0:22        0.0.0.0:*    users:((\"sshd\",pid=1110,fd=3),(\"systemd\",pid=1,fd=117))  \nLISTEN 0      511          0.0.0.0:443       0.0.0.0:*    users:((\"nginx\",pid=9177,fd=10),(\"nginx\",pid=7415,fd=10))\nLISTEN 0      4096      127.0.0.54:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=496,fd=17))                \nLISTEN 0      4096            [::]:22           [::]:*    users:((\"sshd\",pid=1110,fd=4),(\"systemd\",pid=1,fd=118))  \n",
+      "stderr": ""
+    },
+    "errorTail": ""
+  },
+  "error": "Command '['systemctl', 'start', 'voltex-rf-monitor.service']' returned non-zero exit status 1.",
+  "rollbackSyntax": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful\n"
+  },
+  "rollbackReload": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "finishedAt": "2026-10-26T18:20:49.420748+00:00"
+}
