@@ -1,0 +1,715 @@
+{
+  "network": "solana-mainnet-beta",
+  "ticker": "SPYx",
+  "startedAt": "2026-10-26T17:15:15.834Z",
+  "windowUTC": [
+    "2026-10-26T17:03:00.000Z",
+    "2026-10-26T17:04:00.000Z"
+  ],
+  "rpcRequests": 17,
+  "issuerVerified": true,
+  "poolOwnerVerified": true,
+  "pairMintVerified": true,
+  "vaultMintVerified": true,
+  "swapEventVerified": false,
+  "programVersionVerified": false,
+  "intervalComplete": false,
+  "multiplierChronologyVerified": false,
+  "commercialRightsVerified": false,
+  "productionReady": false,
+  "ohlcv": null,
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:15:15.836Z",
+      "httpStatus": 200,
+      "bytes": 6774,
+      "elapsedMs": 195.1205,
+      "sha256": "e6503a828018d21b45528b60e7890942ba78b9dc8ee47e72c56789dff411c7eb"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "at": "2026-10-26T17:15:19.040Z",
+      "httpStatus": 200,
+      "bytes": 81,
+      "elapsedMs": 395.4394000000002,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d"
+    },
+    {
+      "file": "receipt-003.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-26T17:15:22.451Z",
+      "httpStatus": 200,
+      "bytes": 2317,
+      "elapsedMs": 43.57560000000012,
+      "sha256": "6170e6960e3f3c37d5f678c34a685471239e77dc3f473aff93731d169837400b"
+    },
+    {
+      "file": "receipt-004.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getMultipleAccounts",
+      "params": [
+        [
+          "AUhtN1KPdVEQ1mh7gy3oHzjWyqHo5RQx1KEiFJdyqAeN",
+          "92aTAYGnUCH28J96EFzD8ELa6ZpdzXw4zqEuX1nD6oD7"
+        ],
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "minContextSlot": 461745207
+        }
+      ],
+      "at": "2026-10-26T17:15:25.507Z",
+      "httpStatus": 200,
+      "bytes": 872,
+      "elapsedMs": 48.90900000000147,
+      "sha256": "f83aaa41e448928010ce353942fa4602303a5a43ee2d4131892e110d07242de5"
+    },
+    {
+      "file": "receipt-005.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-26T17:15:28.566Z",
+      "httpStatus": 200,
+      "bytes": 303,
+      "elapsedMs": 50.48570000000109,
+      "sha256": "af35de0d7a906ff750f4156500b2f7927f2a66f9e2fd4a4c5487aeade1636800"
+    },
+    {
+      "file": "receipt-006.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "dataSlice": {
+            "offset": 0,
+            "length": 45
+          }
+        }
+      ],
+      "at": "2026-10-26T17:15:31.632Z",
+      "httpStatus": 200,
+      "bytes": 321,
+      "elapsedMs": 59.14049999999952,
+      "sha256": "f3be88034f492d4839ef5ed2eb79a2ba5c8dd3af7a1318996619d080d73095b5"
+    },
+    {
+      "file": "receipt-007.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+        {
+          "encoding": "jsonParsed",
+          "commitment": "finalized",
+          "minContextSlot": 461745207
+        }
+      ],
+      "at": "2026-10-26T17:15:34.702Z",
+      "httpStatus": 200,
+      "bytes": 1774,
+      "elapsedMs": 52.66659999999683,
+      "sha256": "2616c21a77b140ce8d238c3f9de2e9b2583198dcc00e4b78496a1dcc7423ef15"
+    },
+    {
+      "file": "receipt-008.json",
+      "url": "https://verify.osec.io/status/CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:15:34.755Z",
+      "httpStatus": 200,
+      "bytes": 327,
+      "elapsedMs": 192.06489999999758,
+      "sha256": "69e575ea7f38ac2d5c0274dfbe294cebd5f842d3297bd61e94e7a5e685e0cba8"
+    },
+    {
+      "file": "receipt-009.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx/multiplier/history?network=Solana",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:15:34.947Z",
+      "httpStatus": 200,
+      "bytes": 770,
+      "elapsedMs": 361.1392999999989,
+      "sha256": "c648423c047a6c7842b0ce4c3f1b692516859aef362044b846c75d1c229d7bca"
+    },
+    {
+      "file": "receipt-010.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx/multiplier?network=Solana",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-26T17:15:35.309Z",
+      "httpStatus": 200,
+      "bytes": 94,
+      "elapsedMs": 107.95019999999931,
+      "sha256": "23a9bffc1de78a783f16898e043274b1821b22162e4f8ec7996a5d335087b3e4"
+    },
+    {
+      "file": "receipt-011.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "limit": 100,
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-26T17:15:38.429Z",
+      "httpStatus": 200,
+      "bytes": 22889,
+      "elapsedMs": 83.75200000000041,
+      "sha256": "d8d5aee0901e0b73f978cf857395687d0cc59b47540dea16b69de652dd3d646c"
+    },
+    {
+      "file": "receipt-012.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "limit": 100,
+          "commitment": "finalized",
+          "before": "5je5PyozmX1sYhVZMDWKxdTksBu738SG9s4TKPULE4b3rjjpRfkr7jaTZ7Ei8oaGYdXNSXCUR9EBbQGzZbbW2x3g"
+        }
+      ],
+      "at": "2026-10-26T17:15:41.527Z",
+      "httpStatus": 200,
+      "bytes": 23158,
+      "elapsedMs": 91.89170000000013,
+      "sha256": "df0c51db674339fd2dfb117692c53e918af714bf9058e673897e893a3eb98618"
+    },
+    {
+      "file": "receipt-013.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "2Gpk1y7Dqk9QoUr2jsm8c7unnYnRMTsyDyH3JzuNao1kweJnhbkwbqHbvzFtNMw1fzVoX1ZqWQVkHU3hrr9az9F9",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:15:44.620Z",
+      "httpStatus": 200,
+      "bytes": 13625,
+      "elapsedMs": 99.78880000000208,
+      "sha256": "0c717b8c7d698de0ad21a605b414198734156b74ec6df1ccd8ba89eeffb2da40"
+    },
+    {
+      "file": "receipt-014.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "3AyyrzGR7mS85sEmPHVsCtDZ3HmfUtddVboYqR3qNK6FwSQ7oqQsAgfaYDdusAouviwQwzkyPZ8jo4zxyPZvFqFM",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:15:47.724Z",
+      "httpStatus": 200,
+      "bytes": 21910,
+      "elapsedMs": 76.36960000000181,
+      "sha256": "ddd6d24a06a6ea324a2932cb42116d56fd1be950a37faf66c6a85903da9f8d97"
+    },
+    {
+      "file": "receipt-015.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "PpjHKmcdQqmrqxDcYT1f2hGgM2PdpVX4jCrDXCULj1aGtnKrdtxoATUEuxivGNt23ng7oqC6RxQajTR7Q6RSrbp",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:15:50.803Z",
+      "httpStatus": 200,
+      "bytes": 16179,
+      "elapsedMs": 48.04149999999936,
+      "sha256": "4c6f7c0e0d5fd4684cbdd58a1fdfc3e7735e82260c76b4d51adaf823f5a9f79e"
+    },
+    {
+      "file": "receipt-016.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "4vJF8thzGJ3ZEeSNvNDMV1dMFFcJVu6xwSa9e4m66Hs9tUHEmG8Lyj8MbpCyHJpoNFnxqQ4tgtQ6fJw1pVCdCeeL",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:15:53.865Z",
+      "httpStatus": 200,
+      "bytes": 11439,
+      "elapsedMs": 66.90600000000268,
+      "sha256": "a62305cd8b56e26d8aaa4aafd545aac14844c2e74414479dc1fa0dfb38095900"
+    },
+    {
+      "file": "receipt-017.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "4GDxSRSuzSZWewS5HwJCMFp7eKBTRhtBztFKDeXWqRcR3xQMourXkyBtdtyAGv21V2Xh3MXqewefink5cZzZ5eJx",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:15:56.934Z",
+      "httpStatus": 200,
+      "bytes": 14952,
+      "elapsedMs": 59.55369999999675,
+      "sha256": "65de69227cb2cf645b261e3f8003e27431cd0cc12137e4a9f99c0be87b7c2a7c"
+    },
+    {
+      "file": "receipt-018.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "4NBaZ5tStK2u8cemuetBETKpB5ssH1VW3re68duitA4ZzWkkEx3W9UfmeshrksRh5RPSuTGeRfm4FYDvXEmVt1CB",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:16:00.006Z",
+      "httpStatus": 200,
+      "bytes": 14957,
+      "elapsedMs": 63.366900000000896,
+      "sha256": "ef99bf69cd3a5f655f8e681940ab563a395e7635cec53c3e57bda86795ca54a8"
+    },
+    {
+      "file": "receipt-019.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "2cFGxSjHkZqdUQXbTwQTo4CFWwEKK3zha7249GS6ZH2GBU4wtRxLRkNsN28jU9j4nb6YX1inC5ip1tBf11Lib9rA",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:16:03.077Z",
+      "httpStatus": 200,
+      "bytes": 6948,
+      "elapsedMs": 65.10809999999765,
+      "sha256": "44c14b3052e5c427dd44562ef7739435e73630095fa70eb42ecfbbecfe88c178"
+    },
+    {
+      "file": "receipt-020.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "3UDNbDuExi5XoJHh7edTpSxTZEyPySU659oW4vUWzSGAi4Q9eXzfaf5ixMeq4Z5QJ7S5brKZqtGneWfDqwGLn5wd",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 1
+        }
+      ],
+      "at": "2026-10-26T17:16:06.148Z",
+      "httpStatus": 200,
+      "bytes": 6948,
+      "elapsedMs": 63.085299999998824,
+      "sha256": "92b4b01a384b0fac1999ee6242b3eb166233b840ddf74cbdeaebf055fc6df9ba"
+    },
+    {
+      "file": "receipt-021.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        461741906,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "signatures",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "at": "2026-10-26T17:16:09.214Z",
+      "httpStatus": 200,
+      "bytes": 61079,
+      "elapsedMs": 115.57489999999962,
+      "sha256": "992bcb3f1cbe25322192f21276dc26e24e3d927aacb598cdb48ad1e9e15eb8fd"
+    }
+  ],
+  "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "accountSlot": 461745207,
+  "identity": {
+    "mints": [
+      "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    ],
+    "vaults": [
+      "AUhtN1KPdVEQ1mh7gy3oHzjWyqHo5RQx1KEiFJdyqAeN",
+      "92aTAYGnUCH28J96EFzD8ELa6ZpdzXw4zqEuX1nD6oD7"
+    ],
+    "decimals": [
+      8,
+      6
+    ]
+  },
+  "vaults": [
+    {
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "authority": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw"
+    },
+    {
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "authority": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw"
+    }
+  ],
+  "programDataAddress": "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+  "programLastDeploySlot": "459932378",
+  "mintExtensions": [
+    {
+      "extension": "metadataPointer",
+      "state": {
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "metadataAddress": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W"
+      }
+    },
+    {
+      "extension": "permanentDelegate",
+      "state": {
+        "delegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq"
+      }
+    },
+    {
+      "extension": "defaultAccountState",
+      "state": {
+        "accountState": "initialized"
+      }
+    },
+    {
+      "extension": "scaledUiAmountConfig",
+      "state": {
+        "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+        "multiplier": "1.003909240011759",
+        "newMultiplier": "1.005714560286254",
+        "newMultiplierEffectiveTimestamp": 1781755200
+      }
+    },
+    {
+      "extension": "pausableConfig",
+      "state": {
+        "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "paused": false
+      }
+    },
+    {
+      "extension": "confidentialTransferMint",
+      "state": {
+        "auditorElgamalPubkey": null,
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "autoApproveNewAccounts": false
+      }
+    },
+    {
+      "extension": "transferHook",
+      "state": {
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "programId": null
+      }
+    },
+    {
+      "extension": "tokenMetadata",
+      "state": {
+        "additionalMetadata": [],
+        "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+        "name": "SP500 xStock",
+        "symbol": "SPYx",
+        "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/SPYx/metadata.json"
+      }
+    }
+  ],
+  "mintDecimalsVerified": true,
+  "programAttestation": {
+    "is_verified": false,
+    "message": "On chain program not verified",
+    "on_chain_hash": "4b96e92b8705b24efe621d75ba4aebb208d708e91ab2aaa66e21d3d7965cb16b",
+    "executable_hash": "",
+    "repo_url": "https://github.com/raydium-io/raydium-clmm/tree/119ed36bf9f33",
+    "commit": "119ed36bf9f33",
+    "last_verified_at": null,
+    "is_frozen": false,
+    "is_closed": false
+  },
+  "issuerMultiplierHistory": {
+    "page": {
+      "currentPage": 0,
+      "hasNextPage": false
+    },
+    "nodes": [
+      {
+        "id": "edb40e5f-97c1-49a3-a26e-ea03f5475537",
+        "reason": "Dividend",
+        "multiplier": 1.005714560286254,
+        "previousMultiplier": 1.003909240011759,
+        "activationDateTime": "2026-06-18T04:00:00.000Z"
+      },
+      {
+        "id": "18c60b9f-b584-4396-a86f-8904ce394d26",
+        "reason": "Dividend",
+        "multiplier": 1.003909240011759,
+        "previousMultiplier": 1.0025607582229898,
+        "activationDateTime": "2026-05-01T00:15:00.000Z"
+      },
+      {
+        "id": "bcede013-57cb-4fb7-b7dc-b1996aea584f",
+        "reason": "Dividend",
+        "multiplier": 1.0025607582229898,
+        "previousMultiplier": 1.00099942056,
+        "activationDateTime": "2026-01-30T23:55:00.000Z"
+      },
+      {
+        "id": "18b849a1-631b-4627-9d7e-fe6f4a9f753a",
+        "reason": "Dividend",
+        "multiplier": 1.00099942056,
+        "previousMultiplier": 1,
+        "activationDateTime": "2025-10-31T23:55:00.000Z"
+      }
+    ]
+  },
+  "issuerCurrentMultiplier": {
+    "currentMultiplier": 1.005714560286254,
+    "newMultiplier": 0,
+    "activationDateTime": 0,
+    "reason": null
+  },
+  "signaturesScanned": 200,
+  "signaturesInWindow": 10,
+  "transactions": [
+    {
+      "signature": "3UDNbDuExi5XoJHh7edTpSxTZEyPySU659oW4vUWzSGAi4Q9eXzfaf5ixMeq4Z5QJ7S5brKZqtGneWfDqwGLn5wd",
+      "slot": 461741768,
+      "blockTime": 1793034195,
+      "events": [
+        {
+          "logIndex": 8,
+          "invocationIndex": 3,
+          "eventBytes": 221,
+          "amount0": "18892040",
+          "amount1": "145470930",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": true,
+          "tradeFee0": "1890",
+          "tradeFee1": "0",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinObservedPool": 0
+    },
+    {
+      "signature": "2cFGxSjHkZqdUQXbTwQTo4CFWwEKK3zha7249GS6ZH2GBU4wtRxLRkNsN28jU9j4nb6YX1inC5ip1tBf11Lib9rA",
+      "slot": 461741817,
+      "blockTime": 1793034205,
+      "events": [
+        {
+          "logIndex": 8,
+          "invocationIndex": 3,
+          "eventBytes": 221,
+          "amount0": "18892040",
+          "amount1": "145469156",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": true,
+          "tradeFee0": "1890",
+          "tradeFee1": "0",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinObservedPool": 0
+    },
+    {
+      "signature": "4NBaZ5tStK2u8cemuetBETKpB5ssH1VW3re68duitA4ZzWkkEx3W9UfmeshrksRh5RPSuTGeRfm4FYDvXEmVt1CB",
+      "slot": 461741906,
+      "blockTime": 1793034224,
+      "events": [
+        {
+          "logIndex": 6,
+          "invocationIndex": 2,
+          "eventBytes": 221,
+          "amount0": "5587343",
+          "amount1": "43031100",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": false,
+          "tradeFee0": "0",
+          "tradeFee1": "4304",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinBlock": 123
+    },
+    {
+      "signature": "4GDxSRSuzSZWewS5HwJCMFp7eKBTRhtBztFKDeXWqRcR3xQMourXkyBtdtyAGv21V2Xh3MXqewefink5cZzZ5eJx",
+      "slot": 461741906,
+      "blockTime": 1793034224,
+      "events": [
+        {
+          "logIndex": 6,
+          "invocationIndex": 2,
+          "eventBytes": 221,
+          "amount0": "8847170",
+          "amount1": "68137077",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": false,
+          "tradeFee0": "0",
+          "tradeFee1": "6814",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinBlock": 244
+    },
+    {
+      "signature": "4vJF8thzGJ3ZEeSNvNDMV1dMFFcJVu6xwSa9e4m66Hs9tUHEmG8Lyj8MbpCyHJpoNFnxqQ4tgtQ6fJw1pVCdCeeL",
+      "slot": 461741939,
+      "blockTime": 1793034230,
+      "events": [
+        {
+          "logIndex": 11,
+          "invocationIndex": 4,
+          "eventBytes": 221,
+          "amount0": "1387302",
+          "amount1": "10682286",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": true,
+          "tradeFee0": "139",
+          "tradeFee1": "0",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinObservedPool": 0
+    },
+    {
+      "signature": "PpjHKmcdQqmrqxDcYT1f2hGgM2PdpVX4jCrDXCULj1aGtnKrdtxoATUEuxivGNt23ng7oqC6RxQajTR7Q6RSrbp",
+      "slot": 461741972,
+      "blockTime": 1793034237,
+      "events": [
+        {
+          "logIndex": 30,
+          "invocationIndex": 10,
+          "eventBytes": 221,
+          "amount0": "2949682",
+          "amount1": "22717246",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": false,
+          "tradeFee0": "0",
+          "tradeFee1": "2272",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinObservedPool": 0
+    },
+    {
+      "signature": "3AyyrzGR7mS85sEmPHVsCtDZ3HmfUtddVboYqR3qNK6FwSQ7oqQsAgfaYDdusAouviwQwzkyPZ8jo4zxyPZvFqFM",
+      "slot": 461741979,
+      "blockTime": 1793034239,
+      "events": [
+        {
+          "logIndex": 30,
+          "invocationIndex": 6,
+          "eventBytes": 221,
+          "amount0": "31683043",
+          "amount1": "243958725",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": true,
+          "tradeFee0": "3169",
+          "tradeFee1": "0",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinObservedPool": 0
+    },
+    {
+      "signature": "2Gpk1y7Dqk9QoUr2jsm8c7unnYnRMTsyDyH3JzuNao1kweJnhbkwbqHbvzFtNMw1fzVoX1ZqWQVkHU3hrr9az9F9",
+      "slot": 461741980,
+      "blockTime": 1793034239,
+      "events": [
+        {
+          "logIndex": 11,
+          "invocationIndex": 4,
+          "eventBytes": 221,
+          "amount0": "11025477",
+          "amount1": "84912351",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": false,
+          "tradeFee0": "0",
+          "tradeFee1": "8492",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinObservedPool": 0
+    }
+  ],
+  "swapCandidates": 8,
+  "observedTransactionOrderVerified": true,
+  "status": "EVIDENCE_CAPTURED_NOT_PRICE_VERIFIED",
+  "blockers": [
+    "PROGRAM_SOURCE_BINARY_CORRESPONDENCE_UNVERIFIED",
+    "HISTORICAL_POOL_AND_VAULT_CONFIGURATION_UNVERIFIED",
+    "PAGINATION_COMPLETENESS_NOT_INDEPENDENTLY_PROVEN",
+    "TOKEN_2022_MULTIPLIER_AND_FEE_CHRONOLOGY_UNVERIFIED"
+  ],
+  "finishedAt": "2026-10-26T17:16:09.330Z",
+  "metrics": {
+    "httpRequests": 21,
+    "rpcAttempts": 17,
+    "rpcCompletions": 17,
+    "responseBytes": 227717,
+    "cpuUserMicros": 391000,
+    "cpuSystemMicros": 125000,
+    "elapsedMs": 53495.4115,
+    "rssBytes": 55005184,
+    "heapUsedBytes": 10107472,
+    "paidResources": false,
+    "monetarySpend": 0,
+    "automaticRetries": 0
+  }
+}

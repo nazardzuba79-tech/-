@@ -1,0 +1,13 @@
+{
+  "reason": "Common non-empty minute selected offline from saved signature pages, not from guessed prices",
+  "input": "../windows-live-1793034723518",
+  "from": "2026-10-26T17:03:00.000Z",
+  "to": "2026-10-26T17:04:00.000Z",
+  "observedSuccessfulSignatures": {
+    "SPYx": 8,
+    "CRCLx": 3
+  },
+  "priorRpcRequests": 14,
+  "maxAdditionalRpcRequests": 80,
+  "automaticRetries": 0
+}

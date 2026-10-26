@@ -5,6 +5,22 @@ import {pathToFileURL} from 'node:url';
 export const CLMM='CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK';
 export const MAINNET_GENESIS='5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
 export const USDC='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+// Same two issuer/pool identities pinned in the original public receipt packets.
+// Acquisition must not depend on a frontend catalogue absent from this source PR.
+export const PILOTS=Object.freeze({
+ SPYx:Object.freeze({ticker:'SPYx',mint:'XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W',pool:'4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw'}),
+ CRCLx:Object.freeze({ticker:'CRCLx',mint:'XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1',pool:'GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV'}),
+});
+export async function boundedResponseText(response,maxBytes=2500000){
+ const reader=response.body?.getReader();assert(reader,'RESPONSE_STREAM_MISSING');
+ const chunks=[];let bytes=0;
+ try{
+  const declared=response.headers.get('content-length');
+  assert(declared===null||(/^\d+$/.test(declared)&&Number(declared)<=maxBytes),'RESPONSE_TOO_LARGE');
+  for(;;){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;assert(bytes<=maxBytes,'RESPONSE_TOO_LARGE');chunks.push(part.value);}
+  return {text:Buffer.concat(chunks).toString('utf8'),bytes};
+ }finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+}
 const TOKENS=new Set(['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA','TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb']);
 const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 export const assert=(value,reason)=>{if(!value)throw Error(reason);};
@@ -47,26 +63,31 @@ export function selectWindow(rows,from,to){
  assert(rows[0]?.blockTime>=to&&rows.at(-1)?.blockTime<from,'WINDOW_NOT_BRACKETED');
  return rows.filter(r=>r.blockTime>=from&&r.blockTime<to);
 }
-export async function capture({ticker='SPYx',from,to,out,maxRpc=40,delayMs=3000,reuseDirectory=null}){
+export async function capture({ticker='SPYx',from,to,out,maxRpc=40,delayMs=3000,reuseDirectory=null,fetchImpl=null}){
  assert(['SPYx','CRCLx'].includes(ticker),'UNAPPROVED_PILOT');assert(Number.isSafeInteger(maxRpc)&&maxRpc>0&&maxRpc<=60,'RPC_BUDGET');
  const start=Date.parse(from)/1000,end=Date.parse(to)/1000;assert(Number.isSafeInteger(start)&&Number.isSafeInteger(end)&&end>start&&end-start<=600&&end<Date.now()/1000-60,'INVALID_WINDOW');
  await mkdir(out,{recursive:true});await writeFile(`${out}/capture.lock`,'one-shot\n',{flag:'wx'});let count=0;const receipts=[];
  let cache=[];if(reuseDirectory){const previous=JSON.parse(await readFile(`${reuseDirectory}/manifest.json`,'utf8'));assert(previous.ticker===ticker&&JSON.stringify(previous.windowUTC)===JSON.stringify([from,to]),'CACHE_SCOPE');cache=previous.receipts;}
+ const cpu=process.cpuUsage(),started=performance.now();let responseBytes=0,httpRequests=0,rpcCompletions=0;
  const report={network:'solana-mainnet-beta',ticker,startedAt:new Date().toISOString(),windowUTC:[from,to],rpcRequests:0,issuerVerified:false,poolOwnerVerified:false,pairMintVerified:false,vaultMintVerified:false,swapEventVerified:false,programVersionVerified:false,intervalComplete:false,multiplierChronologyVerified:false,commercialRightsVerified:false,productionReady:false,ohlcv: null,receipts};
  async function request(url,body){
   const key=x=>JSON.stringify(x,(k,v)=>k==='maxSupportedTransactionVersion'?undefined:v);
   const cached=cache.find(r=>r.url===url&&r.method===(body?.method??'GET')&&key(r.params)===key(body?.params??null)&&r.httpStatus===200);
   if(cached){const text=await readFile(`${reuseDirectory}/${cached.file}`,'utf8');assert(createHash('sha256').update(text).digest('hex')===cached.sha256,'CACHE_HASH');const parsed=JSON.parse(text);if(!parsed.error){const name=`receipt-${String(receipts.length+1).padStart(3,'0')}.json`;await writeFile(`${out}/${name}`,text);receipts.push({...cached,file:name,reusedFrom:reuseDirectory});return body?parsed.result:parsed;}}
-  if(body){assert(++count<=maxRpc,'RPC_BUDGET_EXHAUSTED');await new Promise(r=>setTimeout(r,delayMs));}
-  const at=new Date().toISOString();const response=await fetch(url,{method:body?'POST':'GET',redirect:'error',headers:{'content-type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});
-  const text=await response.text();assert(text.length<2500000,'RESPONSE_TOO_LARGE');const name=`receipt-${String(receipts.length+1).padStart(3,'0')}.json`;
-  await writeFile(`${out}/${name}`,text);receipts.push({file:name,url,method:body?.method??'GET',params:body?.params??null,at,httpStatus:response.status,sha256:createHash('sha256').update(text).digest('hex')});
-  assert(response.ok,`HTTP_${response.status}`);const result=JSON.parse(text);assert(!result.error,`RPC_${result.error?.code}`);return body?result.result:result;
+  // Node22 native fetch does not automatically honor environment proxies. Never
+  // silently turn a configured proxy refusal into a direct connection.
+  assert(fetchImpl||!['HTTPS_PROXY','HTTP_PROXY','ALL_PROXY','https_proxy','http_proxy','all_proxy'].some(k=>process.env[k]),'CONFIGURED_PROXY_TRANSPORT_REQUIRED');
+  if(body){assert(count<maxRpc,'RPC_BUDGET_EXHAUSTED');await new Promise(r=>setTimeout(r,delayMs));count++;}
+  const at=new Date().toISOString(),requestStart=performance.now();httpRequests++;
+  const response=await (fetchImpl??fetch)(url,{method:body?'POST':'GET',redirect:'error',headers:{'content-type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});
+  const read=await boundedResponseText(response);const text=read.text;responseBytes+=read.bytes;
+  assert(responseBytes<=32000000,'CAPTURE_BYTE_BUDGET');const name=`receipt-${String(receipts.length+1).padStart(3,'0')}.json`;
+  await writeFile(`${out}/${name}`,text);receipts.push({file:name,url,method:body?.method??'GET',params:body?.params??null,at,httpStatus:response.status,bytes:read.bytes,elapsedMs:performance.now()-requestStart,sha256:createHash('sha256').update(text).digest('hex')});
+  assert(response.ok,`HTTP_${response.status}`);const result=JSON.parse(text);assert(!result.error,`RPC_${result.error?.code}`);if(body)rpcCompletions++;return body?result.result:result;
  }
  const rpc=(method,params)=>{assert(['getAccountInfo','getMultipleAccounts','getSignaturesForAddress','getTransaction','getBlock','getGenesisHash'].includes(method),'UNSAFE_RPC_METHOD');return request('https://api.mainnet-beta.solana.com',{jsonrpc:'2.0',id:count+1,method,params});};
  try{
-  const source=await readFile(new URL('../frontend/src/pages/stocks/onchainDiscoveredCandidates.ts',import.meta.url),'utf8');
-  const candidates=JSON.parse(source.slice(source.indexOf('\n[')+1,source.lastIndexOf(']')+1));const candidate=candidates.find(x=>x.ticker===ticker);assert(candidate,'CANDIDATE_MISSING');Object.assign(report,{pool:candidate.pool,mint:candidate.mint});
+  const candidate=PILOTS[ticker];assert(candidate,'CANDIDATE_MISSING');Object.assign(report,{pool:candidate.pool,mint:candidate.mint});
   const issuer=await request(`https://api.xstocks.fi/api/v2/public/assets/${ticker}`);const deployments=issuer.deployments?.filter(x=>x.network==='Solana');
   assert(issuer.symbol===ticker&&deployments?.length===1&&deployments[0].address===candidate.mint,'ISSUER_MINT');report.issuerVerified=true;
   const genesis=await rpc('getGenesisHash',[]);assert(genesis===MAINNET_GENESIS,'WRONG_NETWORK');
@@ -81,6 +102,9 @@ export async function capture({ticker='SPYx',from,to,out,maxRpc=40,delayMs=3000,
   const mintAccount=await rpc('getAccountInfo',[candidate.mint,{encoding:'jsonParsed',commitment:'finalized',minContextSlot:state.context.slot}]);
   const mintInfo=mintAccount?.value?.data?.parsed?.info;assert(TOKENS.has(mintAccount?.value?.owner)&&mintInfo?.isInitialized,'MINT_ACCOUNT');assert(mintInfo.decimals===identity.decimals[identity.mints.indexOf(candidate.mint)],'MINT_DECIMALS');
   report.mintExtensions=mintInfo.extensions??[];report.mintDecimalsVerified=true;
+  // Retain the public attestation answer, including an actual negative result.
+  // This alone never promotes the source/binary correspondence gate to PASS.
+  report.programAttestation=await request(`https://verify.osec.io/status/${CLMM}`);
   report.issuerMultiplierHistory=await request(`https://api.xstocks.fi/api/v2/public/assets/${ticker}/multiplier/history?network=Solana`);
   report.issuerCurrentMultiplier=await request(`https://api.xstocks.fi/api/v2/public/assets/${ticker}/multiplier?network=Solana`);
   // Capture current extension and issuer records without falsely treating them as historical account proofs.
@@ -102,6 +126,8 @@ export async function capture({ticker='SPYx',from,to,out,maxRpc=40,delayMs=3000,
 
   report.status='EVIDENCE_CAPTURED_NOT_PRICE_VERIFIED';report.blockers=['PROGRAM_SOURCE_BINARY_CORRESPONDENCE_UNVERIFIED','HISTORICAL_POOL_AND_VAULT_CONFIGURATION_UNVERIFIED','PAGINATION_COMPLETENESS_NOT_INDEPENDENTLY_PROVEN','TOKEN_2022_MULTIPLIER_AND_FEE_CHRONOLOGY_UNVERIFIED'];
  }catch(e){report.status='BLOCKED';report.blockers=[String(e.message)];}
- report.rpcRequests=count;report.finishedAt=new Date().toISOString();await writeFile(`${out}/manifest.json`,JSON.stringify(report,null,2)+'\n');return report;
+ report.rpcRequests=count;report.finishedAt=new Date().toISOString();const spent=process.cpuUsage(cpu);
+ report.metrics={httpRequests,rpcAttempts:count,rpcCompletions,responseBytes,cpuUserMicros:spent.user,cpuSystemMicros:spent.system,elapsedMs:performance.now()-started,rssBytes:process.memoryUsage().rss,heapUsedBytes:process.memoryUsage().heapUsed,paidResources:false,monetarySpend:0,automaticRetries:0};
+ await writeFile(`${out}/manifest.json`,JSON.stringify(report,null,2)+'\n');return report;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const [ticker,from,to,out,reuseDirectory]=process.argv.slice(2);assert(ticker&&from&&to&&out,'Usage: node script SPYx ISO_FROM ISO_TO OUTPUT_DIRECTORY');const report=await capture({ticker,from,to,out,reuseDirectory});console.log(JSON.stringify(report,null,2));if(!report.intervalComplete)process.exitCode=2;}

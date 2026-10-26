@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "profiles": [
+    "proof-615-20261025/SPYx-replay-final/manifest.json",
+    "proof-615-20261025/CRCLx-replay-final/manifest.json",
+    "proof-615-20261026/windows-executions-1793034915829/SPYx/manifest.json",
+    "proof-615-20261026/windows-executions-1793034915829/CRCLx/manifest.json"
+  ]
+}

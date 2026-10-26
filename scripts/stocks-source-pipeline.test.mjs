@@ -226,6 +226,22 @@ for (const [ticker, count] of [['SPYx', 13], ['CRCLx', 2]]) test(`${ticker} immu
   }
 });
 
+for (const [ticker, count] of [['SPYx', 8], ['CRCLx', 3]]) test(`${ticker} fresh Windows RPC executions reconcile but cannot bypass any missing proof gate`, async () => {
+  const directory = `research/solana-xstocks/proof-615-20261026/windows-executions-1793034915829/${ticker}`;
+  const manifest = JSON.parse(await readFile(`${directory}/manifest.json`, 'utf8'));
+  assert.equal(manifest.programAttestation.is_verified, false);
+  const {report} = await replayPacket(directory);
+  assert.equal(report.candidateTransactions, count); assert.equal(report.candidateTransfers, count * 2);
+  assert.equal(report.gates.executionBinding, true);
+  for (const gate of GATES.filter(g => g !== 'executionBinding')) assert.equal(report.gates[gate], false);
+  assert.equal(report.acceptedMarkets, 0); assert.equal(report.acceptedIntervals, 0);
+  assert.equal(report.networkRequests, 0);
+  for (const page of Object.values(report.pages)) {
+    assert.deepEqual(page.candles, []); assert.equal(page.gaps[0].reason, 'UNKNOWN');
+    assert.equal(page.provenance.synthetic, false); assert.equal(page.provenance.intervalComplete, false);
+  }
+});
+
 function coverage() {
   const times = [start - 1, start + 1, start + 60];
   const blocks = times.map((blockTime, i) => ({ slot: 100 + i,
