@@ -391,12 +391,12 @@ async function main() {
       await openFeatureOn(page, 'presets'); await page.locator('[data-cw-preset-reset]').click(); await page.waitForTimeout(500); await page.keyboard.press('Escape');
       check(`${P}.presets.reset`, (await store(page, WS_KEY))?.timeframe === '1h', { timeframe: (await store(page, WS_KEY))?.timeframe });
 
-      // Go to a date. Every target comes from the bars this chart was drawn from, never
-      // from the wall clock: a wall-clock hour can fall in the weekend or a daily close,
-      // where no bar exists (CI run 40410541862 aimed at Friday 22:00 UTC). The host's
-      // display cache answers this URL with the same six-hour snapshot the chart received;
-      // its bars are kept as the chart parses them. A loaded historical bar is scrolled to;
-      // a time inside a gap between loaded bars and a future date are refused.
+      // Go to a date. Every target comes from loaded bars, never from the wall clock: a
+      // wall-clock hour can fall in the weekend or a daily close, where no bar exists (CI
+      // run 40410541862 aimed at Friday 22:00 UTC). Targets are read from the host's
+      // display-cache answer for the chart's own URL, bars kept as the chart parses them.
+      // A loaded historical bar is scrolled to (the chart's Analytics panel reports the
+      // visible window); a time inside a gap between loaded bars and a future date are refused.
       await waitCandles(page);
       const snapshot = await (await fetch(`${origin}/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=500`)).json();
       const valid = bar => { const [o, h, l, c] = [bar.open, bar.high, bar.low, bar.close].map(Number);
@@ -419,11 +419,25 @@ async function main() {
         if (open) await page.keyboard.press('Escape');
         return { prefill, entered, closed: !open, status };
       };
-      // A loaded bar about two days before the last one.
-      const historical = [...loaded].reverse().find(time => time <= last - 48 * HOUR);
+      // A loaded bar 120 bars before the last: the chart's window around it ([bar − 70,
+      // bar + 90]) ends before the last bar, so a jump that never scrolls cannot pass.
+      const historical = loaded.length > 120 ? loaded[loaded.length - 121] : null;
+      const visibleWindow = async () => {
+        const text = await page.evaluate(() => document.querySelector('[data-cw-analytics]')?.textContent || '');
+        const m = /(\d{4}-\d\d-\d\d \d\d:\d\d)\s*—\s*(\d{4}-\d\d-\d\d \d\d:\d\d)/.exec(text);
+        return m ? { from: m[1].replace(' ', 'T'), to: m[2].replace(' ', 'T') } : null;
+      };
+      await page.locator('.cfd-chart-area [data-cw-view="analytics"]').click();
+      await page.locator('[data-cw-analytics-period="visible"]').click(); await page.waitForTimeout(400);
+      const before = await visibleWindow();
       const toBar = historical ? await goToDate(isoMinute(historical)) : null;
-      check(`${P}.goto`, !!toBar && toBar.prefill === isoMinute(last) && historical < last && toBar.entered === isoMinute(historical) && toBar.closed && !toBar.status,
-        { bars: loaded.length, lastBar: last ? isoMinute(last) : null, target: historical ? isoMinute(historical) : null, ...toBar });
+      await page.waitForTimeout(400);
+      const after = await visibleWindow();
+      await page.locator('.cfd-chart-area [data-cw-view="chart"]').click(); await page.waitForTimeout(200);
+      const target = historical ? isoMinute(historical) : null;
+      check(`${P}.goto`, !!toBar && toBar.prefill === isoMinute(last) && toBar.entered === target && toBar.closed && !toBar.status
+        && !!after && after.from <= target && target <= after.to && after.to < isoMinute(last),
+        { bars: loaded.length, lastBar: last ? isoMinute(last) : null, target, ...toBar, visibleBefore: before, visibleAfter: after });
       // The latest gap between two loaded bars: the hour after the earlier bar has none.
       const beforeGap = [...loaded].reverse().find((time, i, newestFirst) => i > 0 && newestFirst[i - 1] - time > HOUR);
       const intoGap = beforeGap ? await goToDate(isoMinute(beforeGap + HOUR)) : null;
