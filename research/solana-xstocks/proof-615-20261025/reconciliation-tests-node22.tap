@@ -1,0 +1,326 @@
+TAP version 13
+# (node:13) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SPYx: all immutable receipts reconcile without network
+ok 1 - SPYx: all immutable receipts reconcile without network
+  ---
+  duration_ms: 21.199789
+  type: 'test'
+  ...
+# Subtest: CRCLx: all immutable receipts reconcile without network
+ok 2 - CRCLx: all immutable receipts reconcile without network
+  ---
+  duration_ms: 2.195655
+  type: 'test'
+  ...
+# Subtest: reject wrong pool
+ok 3 - reject wrong pool
+  ---
+  duration_ms: 1.057538
+  type: 'test'
+  ...
+# Subtest: reject reversed vaults
+ok 4 - reject reversed vaults
+  ---
+  duration_ms: 0.327836
+  type: 'test'
+  ...
+# Subtest: reject wrong mint
+ok 5 - reject wrong mint
+  ---
+  duration_ms: 0.291402
+  type: 'test'
+  ...
+# Subtest: reject wrong token program
+ok 6 - reject wrong token program
+  ---
+  duration_ms: 0.287226
+  type: 'test'
+  ...
+# Subtest: reject wrong sender
+ok 7 - reject wrong sender
+  ---
+  duration_ms: 0.379773
+  type: 'test'
+  ...
+# Subtest: reject wrong user account
+ok 8 - reject wrong user account
+  ---
+  duration_ms: 0.332814
+  type: 'test'
+  ...
+# Subtest: reject unsupported instruction
+ok 9 - reject unsupported instruction
+  ---
+  duration_ms: 0.641081
+  type: 'test'
+  ...
+# Subtest: reject wrong transfer source
+ok 10 - reject wrong transfer source
+  ---
+  duration_ms: 0.630354
+  type: 'test'
+  ...
+# Subtest: reject wrong amount
+ok 11 - reject wrong amount
+  ---
+  duration_ms: 0.892052
+  type: 'test'
+  ...
+# Subtest: reject wrong decimals
+ok 12 - reject wrong decimals
+  ---
+  duration_ms: 0.32358
+  type: 'test'
+  ...
+# Subtest: reject unchecked transfer
+ok 13 - reject unchecked transfer
+  ---
+  duration_ms: 0.33708
+  type: 'test'
+  ...
+# Subtest: reject wrong nesting
+ok 14 - reject wrong nesting
+  ---
+  duration_ms: 0.215209
+  type: 'test'
+  ...
+# Subtest: reject missing instruction
+ok 15 - reject missing instruction
+  ---
+  duration_ms: 0.199686
+  type: 'test'
+  ...
+# Subtest: reject missing balance
+ok 16 - reject missing balance
+  ---
+  duration_ms: 0.521613
+  type: 'test'
+  ...
+# Subtest: reject wrong historical token program
+ok 17 - reject wrong historical token program
+  ---
+  duration_ms: 0.362398
+  type: 'test'
+  ...
+# Subtest: reject wrong historical mint
+ok 18 - reject wrong historical mint
+  ---
+  duration_ms: 0.505179
+  type: 'test'
+  ...
+# Subtest: reject wrong historical owner
+ok 19 - reject wrong historical owner
+  ---
+  duration_ms: 0.300005
+  type: 'test'
+  ...
+# Subtest: reject unexplained vault delta
+ok 20 - reject unexplained vault delta
+  ---
+  duration_ms: 0.385591
+  type: 'test'
+  ...
+# Subtest: reject loaded address corruption
+ok 21 - reject loaded address corruption
+  ---
+  duration_ms: 0.37771
+  type: 'test'
+  ...
+# Subtest: base58 zero roundtrip and invalid alphabet
+ok 22 - base58 zero roundtrip and invalid alphabet
+  ---
+  duration_ms: 0.592719
+  type: 'test'
+  ...
+# Subtest: multiplier chronology remains unverified despite current agreement
+ok 23 - multiplier chronology remains unverified despite current agreement
+  ---
+  duration_ms: 0.144845
+  type: 'test'
+  ...
+# Subtest: reject paginated history
+ok 24 - reject paginated history
+  ---
+  duration_ms: 0.41133
+  type: 'test'
+  ...
+# Subtest: reject broken history chain
+ok 25 - reject broken history chain
+  ---
+  duration_ms: 0.274046
+  type: 'test'
+  ...
+# Subtest: reject disagrees with mint
+ok 26 - reject disagrees with mint
+  ---
+  duration_ms: 0.463086
+  type: 'test'
+  ...
+# Subtest: reject change inside interval
+ok 27 - reject change inside interval
+  ---
+  duration_ms: 0.442466
+  type: 'test'
+  ...
+# (node:14) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: base58 leading zeros and real public keys roundtrip
+ok 28 - base58 leading zeros and real public keys roundtrip
+  ---
+  duration_ms: 1.411673
+  type: 'test'
+  ...
+# Subtest: pool identity verifies pair and decimals
+ok 29 - pool identity verifies pair and decimals
+  ---
+  duration_ms: 1.357433
+  type: 'test'
+  ...
+# Subtest: unknown program is not PASS
+ok 30 - unknown program is not PASS
+  ---
+  duration_ms: 0.521753
+  type: 'test'
+  ...
+# Subtest: wrong discriminator is rejected
+ok 31 - wrong discriminator is rejected
+  ---
+  duration_ms: 0.311542
+  type: 'test'
+  ...
+# Subtest: substitute mint is rejected
+ok 32 - substitute mint is rejected
+  ---
+  duration_ms: 0.352512
+  type: 'test'
+  ...
+# Subtest: vault validates mint, authority, token program, initialized state
+ok 33 - vault validates mint, authority, token program, initialized state
+  ---
+  duration_ms: 0.520682
+  type: 'test'
+  ...
+# Subtest: full current 221-byte event retains transfer and AMM fees independently
+ok 34 - full current 221-byte event retains transfer and AMM fees independently
+  ---
+  duration_ms: 0.873645
+  type: 'test'
+  ...
+# Subtest: unknown event size fails closed
+ok 35 - unknown event size fails closed
+  ---
+  duration_ms: 0.367865
+  type: 'test'
+  ...
+# Subtest: failed transactions cannot supply swaps
+ok 36 - failed transactions cannot supply swaps
+  ---
+  duration_ms: 0.474264
+  type: 'test'
+  ...
+# Subtest: event emitted by other program is not swap proof
+ok 37 - event emitted by other program is not swap proof
+  ---
+  duration_ms: 0.423037
+  type: 'test'
+  ...
+# Subtest: different pool event ignored
+ok 38 - different pool event ignored
+  ---
+  duration_ms: 0.4381
+  type: 'test'
+  ...
+# Subtest: unbalanced CPI logs rejected
+ok 39 - unbalanced CPI logs rejected
+  ---
+  duration_ms: 0.233326
+  type: 'test'
+  ...
+# Subtest: truncated logs rejected
+ok 40 - truncated logs rejected
+  ---
+  duration_ms: 0.201639
+  type: 'test'
+  ...
+# Subtest: bad direction rejected
+ok 41 - bad direction rejected
+  ---
+  duration_ms: 0.268528
+  type: 'test'
+  ...
+# Subtest: zero amounts rejected
+ok 42 - zero amounts rejected
+  ---
+  duration_ms: 0.223091
+  type: 'test'
+  ...
+# Subtest: explicit closed interval includes from and excludes to
+ok 43 - explicit closed interval includes from and excludes to
+  ---
+  duration_ms: 0.232565
+  type: 'test'
+  ...
+# Subtest: unbracketed history rejected
+ok 44 - unbracketed history rejected
+  ---
+  duration_ms: 0.122782
+  type: 'test'
+  ...
+# Subtest: unfinalized history rejected
+ok 45 - unfinalized history rejected
+  ---
+  duration_ms: 0.104285
+  type: 'test'
+  ...
+# Subtest: duplicate history rejected
+ok 46 - duplicate history rejected
+  ---
+  duration_ms: 0.361726
+  type: 'test'
+  ...
+# Subtest: invalid bounds rejected
+ok 47 - invalid bounds rejected
+  ---
+  duration_ms: 0.109042
+  type: 'test'
+  ...
+# Subtest: full genesis pin is not truncated CAIP identifier
+ok 48 - full genesis pin is not truncated CAIP identifier
+  ---
+  duration_ms: 0.18204
+  type: 'test'
+  ...
+# Subtest: CLI capture rejects invalid pilot and interval before any network
+ok 49 - CLI capture rejects invalid pilot and interval before any network
+  ---
+  duration_ms: 0.942858
+  type: 'test'
+  ...
+# Subtest: recorded finalized SPYx transactions decode deterministically, not synthetic market data
+ok 50 - recorded finalized SPYx transactions decode deterministically, not synthetic market data
+  ---
+  duration_ms: 13.396921
+  type: 'test'
+  ...
+# Subtest: all saved public SPYx/CRCLx transaction receipts replay with exact candidate counts
+ok 51 - all saved public SPYx/CRCLx transaction receipts replay with exact candidate counts
+  ---
+  duration_ms: 9.426645
+  type: 'test'
+  ...
+# Subtest: one-shot output refuses overwrite before network
+ok 52 - one-shot output refuses overwrite before network
+  ---
+  duration_ms: 3.455814
+  type: 'test'
+  ...
+1..52
+# tests 52
+# suites 0
+# pass 52
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 127.157312

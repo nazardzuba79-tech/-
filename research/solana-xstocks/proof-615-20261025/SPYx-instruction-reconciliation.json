@@ -1,0 +1,345 @@
+{
+  "ticker": "SPYx",
+  "windowUTC": [
+    "2026-10-25T10:39:00Z",
+    "2026-10-25T10:40:00Z"
+  ],
+  "networkRequests": 0,
+  "transactions": [
+    {
+      "signature": "28afaU9Jq8PcP63PZj14s8v23dehxLB9gJC9Bca1DYyQ9a2SCBJrwREyQSccffiHxCaC699vgNtNbb9rrqcYYm47",
+      "slot": 461226391,
+      "events": [
+        {
+          "logIndex": 14,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "10276299",
+            "78593438"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "7859343800000000",
+            "denominator": "10276299000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "nPawSiTbNhwxP1JnYaAAckBYz7bmmWqyZHANob5T9HnhzE3Ci4vhz5N11v8vzpwYcjmLXocxkptGVLytAgH2Kmz",
+      "slot": 461226394,
+      "events": [
+        {
+          "logIndex": 47,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "1455208",
+            "11129409"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "1112940900000000",
+            "denominator": "1455208000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "4G5xPDurzfedN59MxMeidGtzHUfeD36v9xeiqJbDNzMkF5jWv13hYJtumBNB7fJi4wjqfoZ5RtB45RjmEjV7wDqm",
+      "slot": 461226418,
+      "events": [
+        {
+          "logIndex": 4,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "1940865",
+            "14843680"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "1484368000000000",
+            "denominator": "1940865000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "2rpGnPMTsaXm5guRA5sPoyZCYqw3bP1Um7aBxSradzPEoDiYqt2bdZS6GQSNy2yJxxnQGjppSHMcYLLb9BMPPM7C",
+      "slot": 461226443,
+      "events": [
+        {
+          "logIndex": 14,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "4862972",
+            "37191766"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "3719176600000000",
+            "denominator": "4862972000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "5xRm6VLWp8XmeofPAbRAqrFUf4NKn3WgBMzqp7BjViuTLxKkbLUg1xsAGM9NwyZ9cz5ebqmpHexetL5ZDyJpjZ2g",
+      "slot": 461226449,
+      "events": [
+        {
+          "logIndex": 25,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "4937509",
+            "37761651"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "3776165100000000",
+            "denominator": "4937509000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "21ogW2RabBisqwoZooUf4HMdmmayWAqEC6cqCUwRCZGGGDyG4L9SKqSm2ujeyauvaS33wvPjJ834yQ9ywS3JG6eA",
+      "slot": 461226477,
+      "events": [
+        {
+          "logIndex": 11,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "6319426",
+            "48330181"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "4833018100000000",
+            "denominator": "6319426000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "5PBai3DCCxHrkyFN2xMaPHLVgogeJTDHADwoGFgEDEtAsTwrfutuJwZiKcPtKgXm5z3ZdaiG4hatuKLhjxmxGDZJ",
+      "slot": 461226477,
+      "events": [
+        {
+          "logIndex": 11,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "6976794",
+            "53357315"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "5335731500000000",
+            "denominator": "6976794000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "5GaqHYLYLCGEKnjdnC8J3hV6kT7EAVAYRjoq9H1zJzojTppWqgm5JzDMzc7ScZJAZxY9EiUt4oKujyMxhTAwbuNX",
+      "slot": 461226477,
+      "events": [
+        {
+          "logIndex": 11,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "6407903",
+            "49006227"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "4900622700000000",
+            "denominator": "6407903000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "BowAes4XG1VjRgiJqK6wszsso1PCFU1zbaYTNbsPAf133yt12HGUfkkco8Uo6gY2NyQKXrrBsestrDcyfkjeFdb",
+      "slot": 461226522,
+      "events": [
+        {
+          "logIndex": 37,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "4734647",
+            "36209342"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "3620934200000000",
+            "denominator": "4734647000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "5RV6TVSSTBUehhgm2TjL3c6PpSkZMQUDNSxMKbH6cBjRVvmcbmaKukWyoMxvB3Q4kzVZmbGFS8LevQ5SZqKb39UP",
+      "slot": 461226522,
+      "events": [
+        {
+          "logIndex": 37,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "4265667",
+            "32622568"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "3262256800000000",
+            "denominator": "4265667000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "4Fx8si2TGHuJyiRismUT7tdeG7vxThxBAjJgsWsgMjrP9v8xn9uRcA5SVutnKckf6iqZoisx7LFLAUTmRdhyKFN3",
+      "slot": 461226522,
+      "events": [
+        {
+          "logIndex": 37,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "4767899",
+            "36463338"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "3646333800000000",
+            "denominator": "4767899000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "cXR9eoJvt7312bbpKSaqT8gBbrJayVwRPCxGBCTEj2RTBCbxoKoqrdpfpt6a5KBxuTmvyMstmZXxZ9bGpjRRMa1",
+      "slot": 461226652,
+      "events": [
+        {
+          "logIndex": 24,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "1050617",
+            "8036372"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "803637200000000",
+            "denominator": "1050617000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "2UmfeHW6WbR8rWJ2RTDLfX8KgYSkTNmxRhvGk2BKZsNYiGFzqo5n4MZMsmJLc7PUXgVDSz9423UFc9cxAa1MQ9wQ",
+      "slot": 461226669,
+      "events": [
+        {
+          "logIndex": 26,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "1151131",
+            "8805237"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "880523700000000",
+            "denominator": "1151131000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    }
+  ],
+  "multiplierEvidence": {
+    "issuerHistoryChainConsistent": true,
+    "issuerHistoryPagesComplete": true,
+    "issuerReportedWindowMultiplier": "1.005714560286254",
+    "currentMintAgrees": true,
+    "historicalOnChainChronologyVerified": false,
+    "reason": "Captured mint state is later than interval; issuer API is not an immutable record of mint-update execution. Do not apply this multiplier to accepted prices."
+  },
+  "acceptedIntervals": 0,
+  "priceReady": false
+}

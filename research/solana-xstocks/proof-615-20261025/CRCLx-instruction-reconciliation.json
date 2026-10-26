@@ -1,0 +1,70 @@
+{
+  "ticker": "CRCLx",
+  "windowUTC": [
+    "2026-10-25T10:39:00Z",
+    "2026-10-25T10:40:00Z"
+  ],
+  "networkRequests": 0,
+  "transactions": [
+    {
+      "signature": "ZkZQppc9RNLhJYiqUKBCRbuvFEco9DwAoYF7fYCnPMLqrcftijzmYuJieH2nkz4kiHByFc6AYLGgrph5EP8h3PN",
+      "slot": 461226504,
+      "events": [
+        {
+          "logIndex": 9,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "942928768",
+            "800684568"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "80068456800000000",
+            "denominator": "942928768000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    },
+    {
+      "signature": "pYYGXvaT37qBsohLdL74mpLSRWvBaH4di31qNrQvKPkV6RKBr56gnjr6NatZf8CqYxTyPh35ZYAueyP3xgG1qw4",
+      "slot": 461226504,
+      "events": [
+        {
+          "logIndex": 9,
+          "instructionAccountBinding": true,
+          "transferCheckedReconciled": true,
+          "zeroTransferFeesObserved": true,
+          "rawAmounts": [
+            "471303464",
+            "400224304"
+          ],
+          "rawQuotePerBaseRational": {
+            "numerator": "40022430400000000",
+            "denominator": "471303464000000"
+          },
+          "pricePublished": false
+        }
+      ],
+      "historicalVaultBalanceMetadataVerified": true,
+      "vaultDeltasReconciled": true,
+      "programVersionVerified": false,
+      "intervalComplete": false
+    }
+  ],
+  "multiplierEvidence": {
+    "issuerHistoryChainConsistent": true,
+    "issuerHistoryPagesComplete": true,
+    "issuerReportedWindowMultiplier": "1",
+    "currentMintAgrees": true,
+    "historicalOnChainChronologyVerified": false,
+    "reason": "Captured mint state is later than interval; issuer API is not an immutable record of mint-update execution. Do not apply this multiplier to accepted prices."
+  },
+  "acceptedIntervals": 0,
+  "priceReady": false
+}
