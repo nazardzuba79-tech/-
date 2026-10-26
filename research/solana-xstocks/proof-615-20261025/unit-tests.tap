@@ -1,0 +1,33 @@
+✔ base58 leading zeros and real public keys roundtrip (1.344528ms)
+✔ pool identity verifies pair and decimals (1.103905ms)
+✔ unknown program is not PASS (0.416298ms)
+✔ wrong discriminator is rejected (0.292421ms)
+✔ substitute mint is rejected (0.933267ms)
+✔ vault validates mint, authority, token program, initialized state (0.328816ms)
+✔ full current 221-byte event retains transfer and AMM fees independently (0.570681ms)
+✔ unknown event size fails closed (0.275796ms)
+✔ failed transactions cannot supply swaps (0.382757ms)
+✔ event emitted by other program is not swap proof (0.378972ms)
+✔ different pool event ignored (0.257438ms)
+✔ unbalanced CPI logs rejected (0.383138ms)
+✔ truncated logs rejected (0.204378ms)
+✔ bad direction rejected (0.297629ms)
+✔ zero amounts rejected (0.227063ms)
+✔ explicit closed interval includes from and excludes to (0.245771ms)
+✔ unbracketed history rejected (0.115334ms)
+✔ unfinalized history rejected (0.167733ms)
+✔ duplicate history rejected (0.129756ms)
+✔ invalid bounds rejected (0.078147ms)
+✔ full genesis pin is not truncated CAIP identifier (0.209186ms)
+✔ CLI capture rejects invalid pilot and interval before any network (0.678814ms)
+✔ recorded finalized SPYx transactions decode deterministically, not synthetic market data (8.451449ms)
+✔ all saved public SPYx/CRCLx transaction receipts replay with exact candidate counts (7.2922ms)
+✔ one-shot output refuses overwrite before network (2.714605ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107.593302

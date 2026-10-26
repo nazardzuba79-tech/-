@@ -1,0 +1,36 @@
+{
+  "status": "BLOCKED_NOT_EXECUTED",
+  "pools": [
+    "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+    "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV"
+  ],
+  "targetClosedWindowSeconds": 60,
+  "maxProducedBlocks": 200,
+  "maxRpcAttempts": 225,
+  "maxResponseBytes": 2500000,
+  "maxTotalResponseBytes": 268435456,
+  "minimumSpacingMs": 3000,
+  "automaticRetries": 0,
+  "paidResources": false,
+  "destination": "disposable local public-evidence directory, never production",
+  "stopConditions": [
+    "HTTP 403 or 429; no provider/transport fallback",
+    "Any RPC error, missing history, oversized response, time or request/byte budget exhaustion",
+    "Unknown program layout, unrecognized account write, ambiguous state reconstruction"
+  ],
+  "captureRequirements": [
+    "Record full PoolState/config, both mints/vaults and loader/program-data before a future aligned UTC minute, with finalized context slots",
+    "Retain full deployed binary hash and independent reproducible build attestation; a 45-byte header is insufficient",
+    "Collect getBlocks plus every produced finalized full getBlock from before state snapshot through the closing boundary; validate parentSlot/previousBlockhash chain",
+    "Independently bracket and enumerate both pool signature streams; cross-check every successful AND failed pool-reference transaction against full blocks",
+    "Retain all pool/config/mint/program writes and reconstruct state from pre-window snapshot with pinned decoders; before/after snapshots alone cannot prove intervening configuration",
+    "Track Token-2022 scaled-multiplier effective timestamps and transfer-fee epochs during the window; reject unsupported changes/fees",
+    "Persist hash-addressed receipts, canonical tx indices, invocation/transfer reconciliation and resource measurements before deriving OHLCV"
+  ],
+  "limitations": [
+    "The RPC endpoint is currently denied by proxy CONNECT 403. A normal network-policy allowlist change by the environment operator is required before another attempt; no endpoint substitutions",
+    "Even with network access, free RPC and before/after snapshots alone do not supply reproducible binary attestation or a complete account-state decoder",
+    "A single accepted minute cannot establish a complete 5m or 1h bucket; capture and prove every constituent minute",
+    "Budgets are hard caps, not predictions or a provider quota guarantee; a busy minute can exceed the byte cap and must remain UNKNOWN"
+  ]
+}

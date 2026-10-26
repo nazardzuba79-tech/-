@@ -13,12 +13,14 @@ on:
       - 'prisma/schema.prisma'
       - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
+      - 'frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - 'frontend/src/lib/__tests__/stockOrderPanel.test.ts'
       - 'frontend/src/pages/stocks/StockOrderPanel.tsx'
       - '.github/workflows/stocks-focused-review.yml'
       - 'scripts/qa-stocks-hosted-browser.cjs'
       - 'scripts/qa-stocks-hosted-silent.cjs'
+      - 'scripts/qa-stocks-source-chart-browser.cjs'
       - 'frontend/src/pages/stocks/**'
       - '.github/workflows/stocks-legacy-unsupported.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
@@ -139,12 +141,13 @@ jobs:
           node --test
           services/stocks-global/runtime-market.test.mjs
           services/stocks-global/binance-trade-feed.test.mjs
-      - name: Viewer no-op and wallet projection
+      - name: Viewer no-op, wallet projection and native-bar vs own-source admission boundary
         run: >-
           npx jest --runInBand --runTestsByPath
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
           frontend/src/lib/__tests__/stockOrderPanel.test.ts
+          frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts
       - name: Bounded harness admission and financial assertion regressions (no workload run)
         run: node --test scripts/qa/stocks-rc-50plus2/self-test.cjs
       - name: Behavioral default-OFF, catalogue-only and explicit financial opt-in contract
@@ -367,6 +370,13 @@ jobs:
           QA_STOCKS_DIST: .stocks-hosted-dist
           QA_STOCKS_EXECUTION_DIST: .stocks-hosted-execution-dist
           QA_OUT: /tmp/stocks-hosted-browser
+      # #613 + #621: the real chart with in-page synthetic source pages; no gateway, provider or RPC.
+      - name: Own-source chart — ACCEPTED 1m with a gap, UNKNOWN 1m/5m/1h, native bar excluded, silent viewer — 1440 and 390
+        run: node scripts/qa-stocks-source-chart-browser.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_OUT: /tmp/stocks-hosted-browser/source-chart
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,0 +1,210 @@
+{
+  "network": "solana-mainnet-beta",
+  "ticker": "SPYx",
+  "startedAt": "2026-10-25T10:42:47.611Z",
+  "windowUTC": [
+    "2026-10-25T10:39:00Z",
+    "2026-10-25T10:40:00Z"
+  ],
+  "rpcRequests": 9,
+  "issuerVerified": true,
+  "poolOwnerVerified": true,
+  "pairMintVerified": true,
+  "vaultMintVerified": true,
+  "swapEventVerified": false,
+  "programVersionVerified": false,
+  "intervalComplete": false,
+  "multiplierChronologyVerified": false,
+  "commercialRightsVerified": false,
+  "productionReady": false,
+  "ohlcv": null,
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-25T10:42:47.612Z",
+      "httpStatus": 200,
+      "sha256": "9197460730a4714d09251d2cfb203543f1420679413ac88360aebc18687200e9"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "at": "2026-10-25T10:42:53.224Z",
+      "httpStatus": 200,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d"
+    },
+    {
+      "file": "receipt-003.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-25T10:42:58.744Z",
+      "httpStatus": 200,
+      "sha256": "ef5f5531843b2b039f3f07ce3ef6a1cc7a0a174eefe34aeb4a4f63cbf813370a"
+    },
+    {
+      "file": "receipt-004.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getMultipleAccounts",
+      "params": [
+        [
+          "AUhtN1KPdVEQ1mh7gy3oHzjWyqHo5RQx1KEiFJdyqAeN",
+          "92aTAYGnUCH28J96EFzD8ELa6ZpdzXw4zqEuX1nD6oD7"
+        ],
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "minContextSlot": 461227523
+        }
+      ],
+      "at": "2026-10-25T10:43:01.831Z",
+      "httpStatus": 200,
+      "sha256": "da7f922cd32df9d2558d9693227667c36441e2eff327901ab2e5e863f7e263b9"
+    },
+    {
+      "file": "receipt-005.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-25T10:43:04.903Z",
+      "httpStatus": 200,
+      "sha256": "66ec194cb129cd54b89f9f42e6a28f9ef996c3d01a6c900f2e89ce22d1367951"
+    },
+    {
+      "file": "receipt-006.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "dataSlice": {
+            "offset": 0,
+            "length": 45
+          }
+        }
+      ],
+      "at": "2026-10-25T10:43:07.970Z",
+      "httpStatus": 200,
+      "sha256": "19994c09027deb34033ed96cddd3eab214e9f7503f054ca7bc743aabe894feea"
+    },
+    {
+      "file": "receipt-007.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "limit": 100,
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-25T10:43:11.066Z",
+      "httpStatus": 200,
+      "sha256": "a35af49034f7535df1ee638c51b2b77cb72d68cf993154fd62186448cc44d016"
+    },
+    {
+      "file": "receipt-008.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "2UmfeHW6WbR8rWJ2RTDLfX8KgYSkTNmxRhvGk2BKZsNYiGFzqo5n4MZMsmJLc7PUXgVDSz9423UFc9cxAa1MQ9wQ",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 0
+        }
+      ],
+      "at": "2026-10-25T10:43:14.157Z",
+      "httpStatus": 200,
+      "sha256": "c2fe95d3f2850b722a48135d3cd57e3610528004c7abdca310e017c28ff11e29"
+    },
+    {
+      "file": "receipt-009.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "cXR9eoJvt7312bbpKSaqT8gBbrJayVwRPCxGBCTEj2RTBCbxoKoqrdpfpt6a5KBxuTmvyMstmZXxZ9bGpjRRMa1",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 0
+        }
+      ],
+      "at": "2026-10-25T10:43:17.255Z",
+      "httpStatus": 200,
+      "sha256": "691c6b37c66a8af079cd6e416834db0f5861c288e6ab752f65a408a761a549bc"
+    },
+    {
+      "file": "receipt-010.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "4Fx8si2TGHuJyiRismUT7tdeG7vxThxBAjJgsWsgMjrP9v8xn9uRcA5SVutnKckf6iqZoisx7LFLAUTmRdhyKFN3",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 0
+        }
+      ],
+      "at": "2026-10-25T10:43:20.322Z",
+      "httpStatus": 200,
+      "sha256": "a833f439b46659708b26267fc938e0b91faba178ece557387715a3512fd74585"
+    }
+  ],
+  "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "accountSlot": 461227523,
+  "identity": {
+    "mints": [
+      "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    ],
+    "vaults": [
+      "AUhtN1KPdVEQ1mh7gy3oHzjWyqHo5RQx1KEiFJdyqAeN",
+      "92aTAYGnUCH28J96EFzD8ELa6ZpdzXw4zqEuX1nD6oD7"
+    ],
+    "decimals": [
+      8,
+      6
+    ]
+  },
+  "vaults": [
+    {
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "authority": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw"
+    },
+    {
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "authority": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw"
+    }
+  ],
+  "programDataAddress": "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+  "programLastDeploySlot": "459932378",
+  "signaturesScanned": 100,
+  "signaturesInWindow": 13,
+  "status": "BLOCKED",
+  "blockers": [
+    "RPC_-32015"
+  ],
+  "finishedAt": "2026-10-25T10:43:20.392Z"
+}

@@ -1,0 +1,12 @@
+{
+  "endpoint": "https://api.mainnet-beta.solana.com",
+  "method": "getSlot",
+  "at": "2026-10-26T16:17:10.369283+00:00",
+  "rpcRequests": 1,
+  "retries": 0,
+  "error": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+  "providerRpcCompleted": 0,
+  "networkPolicyBypass": false,
+  "automaticRetry": false,
+  "oldReceiptRpcRepeated": 0
+}

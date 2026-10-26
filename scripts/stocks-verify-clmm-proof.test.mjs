@@ -1,0 +1,36 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {CLMM,USDC,b58,discriminator,poolIdentity,verifyVault,extractSwapCandidates,selectWindow} from './stocks-verify-clmm-proof.mjs';
+const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function decode(s){let n=0n;for(const c of s)n=n*58n+BigInt(alphabet.indexOf(c));const bytes=[];while(n){bytes.unshift(Number(n%256n));n/=256n;}let i=0;while(s[i]==='1')i++;return Buffer.concat([Buffer.alloc(i),Buffer.from(bytes)]);}
+const pool='4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw',mint='XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W';
+function account(b,owner=CLMM){return {owner,data:[b.toString('base64'),'base64']};}
+function poolBuffer(){const b=Buffer.alloc(1544);discriminator('account:PoolState').copy(b);decode(mint).copy(b,73);decode(USDC).copy(b,105);b[233]=8;b[234]=6;return b;}
+function event(){const b=Buffer.alloc(221);discriminator('event:SwapEvent').copy(b);decode(pool).copy(b,8);b.writeBigUInt64LE(1000n,136);b.writeBigUInt64LE(3n,144);b.writeBigUInt64LE(2000n,152);b.writeBigUInt64LE(4n,160);b[168]=1;b.writeBigUInt64LE(5n,205);b.writeBigUInt64LE(6n,213);return b;}
+const tx=b=>({meta:{err:null,logMessages:[`Program ${CLMM} invoke [1]`,'Program data: '+b.toString('base64'),`Program ${CLMM} success`]}});
+test('base58 leading zeros and real public keys roundtrip',()=>{for(const s of [CLMM,USDC,mint,pool,'11111111111111111111111111111111'])assert.equal(b58(decode(s)),s);});
+test('pool identity verifies pair and decimals',()=>assert.deepEqual(poolIdentity(account(poolBuffer()),mint).mints,[mint,USDC]));
+test('unknown program is not PASS',()=>assert.throws(()=>poolIdentity(account(poolBuffer(),'unknown'),mint),/UNKNOWN_POOL_PROGRAM/));
+test('wrong discriminator is rejected',()=>{const b=poolBuffer();b[0]^=1;assert.throws(()=>poolIdentity(account(b),mint),/POOL_LAYOUT/);});
+test('substitute mint is rejected',()=>assert.throws(()=>poolIdentity(account(poolBuffer()),pool),/PAIR_MINT/));
+test('vault validates mint, authority, token program, initialized state',()=>{const b=Buffer.alloc(165);decode(mint).copy(b);decode(pool).copy(b,32);b[108]=1;const owner='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';assert.equal(verifyVault(account(b,owner),mint,pool).mint,mint);b[108]=0;assert.throws(()=>verifyVault(account(b,owner),mint,pool),/NOT_INITIALIZED/);});
+test('full current 221-byte event retains transfer and AMM fees independently',()=>{const [e]=extractSwapCandidates(tx(event()),pool);assert.equal(e.amount0,'1000');assert.equal(e.amount1,'2000');assert.equal(e.transferFee0,'3');assert.equal(e.transferFee1,'4');assert.equal(e.tradeFee0,'5');assert.equal(e.tradeFee1,'6');assert.equal(e.programVersionVerified,false);});
+test('unknown event size fails closed',()=>assert.throws(()=>extractSwapCandidates(tx(Buffer.concat([event(),Buffer.alloc(16)])),pool),/UNKNOWN_SWAP_LAYOUT/));
+test('failed transactions cannot supply swaps',()=>{const t=tx(event());t.meta.err={InstructionError:[0,'x']};assert.throws(()=>extractSwapCandidates(t,pool),/FAILED_TRANSACTION/);});
+test('event emitted by other program is not swap proof',()=>{const t=tx(event());t.meta.logMessages=t.meta.logMessages.map(l=>l.replace(CLMM,USDC));assert.equal(extractSwapCandidates(t,pool).length,0);});
+test('different pool event ignored',()=>assert.equal(extractSwapCandidates(tx(event()),USDC).length,0));
+test('unbalanced CPI logs rejected',()=>{const t=tx(event());t.meta.logMessages.pop();assert.throws(()=>extractSwapCandidates(t,pool),/UNCLOSED_LOG_STACK/);});
+test('truncated logs rejected',()=>{const t=tx(event());t.meta.logMessages.splice(1,0,'Log truncated');assert.throws(()=>extractSwapCandidates(t,pool),/TRUNCATED/);});
+test('bad direction rejected',()=>{const b=event();b[168]=2;assert.throws(()=>extractSwapCandidates(tx(b),pool),/INVALID_DIRECTION/);});
+test('zero amounts rejected',()=>{const b=event();b.writeBigUInt64LE(0n,136);assert.throws(()=>extractSwapCandidates(tx(b),pool),/ZERO_SWAP/);});
+const rows=()=>[130,120,110,100,90].map((t,i)=>({signature:'s'+i,slot:100-i,blockTime:t,confirmationStatus:'finalized',err:null}));
+test('explicit closed interval includes from and excludes to',()=>assert.deepEqual(selectWindow(rows(),100,120).map(r=>r.blockTime),[110,100]));
+test('unbracketed history rejected',()=>assert.throws(()=>selectWindow(rows(),80,120),/NOT_BRACKETED/));
+test('unfinalized history rejected',()=>{const r=rows();r[1].confirmationStatus='confirmed';assert.throws(()=>selectWindow(r,100,120),/UNFINALIZED/);});
+test('duplicate history rejected',()=>{const r=rows();r[1].signature=r[0].signature;assert.throws(()=>selectWindow(r,100,120),/DUPLICATE/);});
+test('invalid bounds rejected',()=>assert.throws(()=>selectWindow(rows(),120,100),/INVALID_WINDOW/));
+test('full genesis pin is not truncated CAIP identifier',async()=>{const {MAINNET_GENESIS}=await import('./stocks-verify-clmm-proof.mjs');assert.equal(decode(MAINNET_GENESIS).length,32);assert.equal(MAINNET_GENESIS,'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d');});
+test('CLI capture rejects invalid pilot and interval before any network',async()=>{const {capture}=await import('./stocks-verify-clmm-proof.mjs');await assert.rejects(()=>capture({ticker:'BAD',out:'/tmp/unused'}),/UNAPPROVED_PILOT/);await assert.rejects(()=>capture({ticker:'SPYx',from:'bad',to:'bad',out:'/tmp/unused'}),/INVALID_WINDOW/);});
+test('recorded finalized SPYx transactions decode deterministically, not synthetic market data',async()=>{const {readFile}=await import('node:fs/promises');let count=0;for(const name of ['008','009']){const raw=JSON.parse(await readFile(new URL(`../research/solana-xstocks/proof-615-20261025/SPYx/receipt-${name}.json`,import.meta.url),'utf8'));assert.equal(raw.result.version,0);const events=extractSwapCandidates(raw.result,pool);count+=events.length;for(const e of events){assert.equal(e.eventBytes,221);assert.equal(e.programVersionVerified,false);}}assert.equal(count,2);});
+test('all saved public SPYx/CRCLx transaction receipts replay with exact candidate counts',async()=>{const {readFile}=await import('node:fs/promises');for(const [dir,expected] of [['SPYx-resumed',13],['CRCLx',2]]){const root=new URL(`../research/solana-xstocks/proof-615-20261025/${dir}/`,import.meta.url);const manifest=JSON.parse(await readFile(new URL('manifest.json',root),'utf8'));let found=0;for(const r of manifest.receipts.filter(r=>r.method==='getTransaction')){const data=JSON.parse(await readFile(new URL(r.file,root),'utf8'));assert.ok([0,1,'legacy'].includes(data.result.version));found+=extractSwapCandidates(data.result,manifest.pool).length;}assert.equal(found,expected);assert.equal(manifest.ohlcv,null);assert.equal(manifest.swapEventVerified,false);}});
+test('one-shot output refuses overwrite before network',async()=>{const {mkdtemp,writeFile,rm}=await import('node:fs/promises');const {tmpdir}=await import('node:os');const {capture}=await import('./stocks-verify-clmm-proof.mjs');const dir=await mkdtemp(tmpdir()+'/stocks-proof-test-');try{await writeFile(dir+'/capture.lock','exists');await assert.rejects(()=>capture({ticker:'SPYx',from:'2026-01-01T00:00:00Z',to:'2026-01-01T00:01:00Z',out:dir}),/EEXIST/);}finally{await rm(dir,{recursive:true});}});
