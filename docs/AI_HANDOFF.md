@@ -6924,3 +6924,28 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - the owner's EUR valuation policy (`WalletPortfolioService` takes a stale EURUSD through `getTickers()`; card eligibility uses it);
   - approval of the canonical guard exception;
   - exact-head CI of this branch, to be read on its Draft PR.
+- **Follow-up: CFD go-to-date QA fixture (same branch, separate test-only commit).**
+  - CI on `5d1c7ad9`: 5 success, 1 failure. `CFD working terminal / validate`, run 40410541862, failed only on `cfd.1440.goto` (`gotoClosed:false`). The run's artifact and log are kept.
+  - Cause: `scripts/qa-cfd-workspace.cjs` aimed at a wall-clock hour, now − 2 days with weekends skipped. At 22:14 UTC on Monday that is Friday 22:00 UTC. The live XAUUSD 1h snapshot has no bar between Friday 20:00 and Sunday 22:00, and none at 21:00 on weekdays, so the chart correctly answered `missing`.
+  - Reproduced live with the unchanged script at 22:30 UTC: `cfd.1440.goto` failed the same way.
+  - No re-run was made. The 00:12 UTC retry scheduled earlier was deleted before it ran.
+  - **Fix (QA script only; no chart or runtime change):** every target comes from the host's 1h snapshot, which is the same 6-hour display-cache answer the chart received, with bars filtered as the chart filters them.
+    - `goto`: a loaded bar about two days back. Checks: the dialog prefill equals the snapshot's last bar, the entered value equals the target, and the dialog closes with no warning.
+    - `goto.missing-bar`: the first hour of the latest gap between loaded bars. The dialog stays open with «История за эту дату не загружена».
+    - `goto.future`: a date three days ahead. The dialog stays open with «Дата в будущем».
+  - **Deterministic control** (scratch harness; real API answers recorded once and frozen; browser and Node clocks pinned):
+
+    | Pinned clock (UTC) | Original check | New checks | Friday 22:00 probe |
+    |---|---|---|---|
+    | Mon 26.10 22:40 | FAIL (same as CI) | 3/3 pass | refused |
+    | Tue 27.10 00:30 | pass (only because time moved on) | 3/3 pass | refused |
+    | Wed 28.10 21:30 | FAIL (Monday 21:00 daily break) | 3/3 pass | refused |
+
+  - **Mutated frontend bundles:**
+    - loaded bar not scrolled to: `goto` fails;
+    - dialog closes on any result: `goto.missing-bar` and `goto.future` fail.
+  - **Verified locally (live display source):**
+    - CFD workspace QA, CI mode: 76 pass / 0 fail;
+    - `qa-cfd-display-browser`: no findings, no page errors, 0 writes;
+    - readiness tests: 13/13.
+  - The three known backend failures are unchanged: 2 `CanonicalSourcePreservation` + 1 EUR/stale.
