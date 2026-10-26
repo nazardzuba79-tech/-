@@ -17,6 +17,9 @@ const order = (a, b) => a.slot - b.slot || a.transactionIndex - b.transactionInd
 const tradeKey = t => `${t.signature}:${t.logIndex}`;
 const eligible = proof => GATES.every(g => proof.gates[g] === true);
 const plain = value => JSON.parse(JSON.stringify(value));
+const snapshotFor = (source, limits, watermark, minutes, metrics) => plain({ version: 1, source, limits, watermark,
+  minutes: [...minutes.values()].sort((a, b) => a.from - b.from), metrics });
+const checkpointText = payload => JSON.stringify({ payload, sha256: digest(payload) }) + '\n';
 
 function validateSource(source) {
   assert(source?.network === 'solana-mainnet-beta' && source.program === CLMM && source.quoteMint === USDC
@@ -66,6 +69,7 @@ function candle(trades, time, decimals, proofs) {
 
 /** One writer per disposable local store; source evidence is immutable once ingested. */
 export class SourcePipeline {
+  #recovering = false;
   constructor(source, { maxMinutes = 180, maxTrades = 10000, maxBytes = 8 * 1024 * 1024 } = {}) {
     validateSource(source);
     assert(integer(maxMinutes) && maxMinutes >= 60 && maxMinutes <= 1440
@@ -106,7 +110,12 @@ export class SourcePipeline {
     const value = { from, to, proof: plain(proof), trades: sorted }, existing = this.minutes.get(from);
     if (existing) {
       assert(digest(existing) === digest(value), 'IMMUTABLE_INTERVAL_CONFLICT');
-      this.metrics.duplicateIntervals++; return;
+      const spent = process.cpuUsage(cpu), metrics = this.#recovering ? this.metrics : { ...this.metrics, duplicateIntervals: this.metrics.duplicateIntervals + 1,
+        rpcRequests: this.metrics.rpcRequests + rpcRequests, cpuUserMicros: this.metrics.cpuUserMicros + spent.user,
+        cpuSystemMicros: this.metrics.cpuSystemMicros + spent.system };
+      assert(Buffer.byteLength(checkpointText(snapshotFor(this.source, this.limits, this.watermark, this.minutes, metrics)))
+        <= this.limits.maxBytes, 'BYTE_STORAGE_BUDGET');
+      this.metrics = metrics; return;
     }
     const watermark = Math.max(this.watermark, to), floor = watermark - this.limits.maxMinutes * 60;
     assert(from >= floor, 'OUTSIDE_RETENTION');
@@ -115,6 +124,18 @@ export class SourcePipeline {
     const seen = new Set([...next.values()].flatMap(m => m.trades.map(tradeKey)));
     assert(sorted.every(t => !seen.has(tradeKey(t))), 'CROSS_INTERVAL_DUPLICATE');
     next.set(from, value);
+    // A transaction signature has one block identity across the ENTIRE retained
+    // store, including UNKNOWN minutes. Different log indices are executions of
+    // that same transaction, never permission to move it to another block.
+    const identities = new Map();
+    for (const t of [...next.values()].flatMap(m => m.trades)) {
+      const previous = identities.get(t.signature);
+      assert(!previous || (previous.slot === t.slot && previous.blockTime === t.blockTime
+        && (previous.transactionIndex === null || t.transactionIndex === null
+          || previous.transactionIndex === t.transactionIndex)), 'SIGNATURE_IDENTITY_CONFLICT');
+      identities.set(t.signature, { slot: t.slot, blockTime: t.blockTime,
+        transactionIndex: t.transactionIndex ?? previous?.transactionIndex ?? null });
+    }
     const canonical = [...next.values()].filter(m => eligible(m.proof)).flatMap(m => m.trades).sort(order);
     for (let i = 1; i < canonical.length; i++) {
       const a = canonical[i - 1], b = canonical[i];
@@ -122,14 +143,16 @@ export class SourcePipeline {
       assert(a.slot !== b.slot || a.transactionIndex !== b.transactionIndex || a.signature === b.signature, 'CROSS_INTERVAL_POSITION_COLLISION');
     }
     assert([...next.values()].reduce((n, m) => n + m.trades.length, 0) <= this.limits.maxTrades, 'TRADE_STORAGE_BUDGET');
-    const old = this.minutes, oldWatermark = this.watermark;
-    this.minutes = next; this.watermark = watermark;
-    try { assert(Buffer.byteLength(JSON.stringify(this.snapshot())) <= this.limits.maxBytes, 'BYTE_STORAGE_BUDGET'); }
-    catch (error) { this.minutes = old; this.watermark = oldWatermark; throw error; }
     const spent = process.cpuUsage(cpu);
-    this.metrics.evictedMinutes += old.size + 1 - next.size;
-    this.metrics.ingestedTrades += sorted.length; this.metrics.duplicateTrades += duplicates;
-    this.metrics.rpcRequests += rpcRequests; this.metrics.cpuUserMicros += spent.user; this.metrics.cpuSystemMicros += spent.system;
+    const metrics = this.#recovering ? this.metrics : { ...this.metrics, evictedMinutes: this.metrics.evictedMinutes + this.minutes.size + 1 - next.size,
+      ingestedTrades: this.metrics.ingestedTrades + sorted.length, duplicateTrades: this.metrics.duplicateTrades + duplicates,
+      rpcRequests: this.metrics.rpcRequests + rpcRequests, cpuUserMicros: this.metrics.cpuUserMicros + spent.user,
+      cpuSystemMicros: this.metrics.cpuSystemMicros + spent.system };
+    // Budget exactly what checkpoint() persists, including the digest wrapper,
+    // newline and final counters. No successful ingest may create unsavable state.
+    const prospective = snapshotFor(this.source, this.limits, watermark, next, metrics);
+    assert(Buffer.byteLength(checkpointText(prospective)) <= this.limits.maxBytes, 'BYTE_STORAGE_BUDGET');
+    this.minutes = next; this.watermark = watermark; this.metrics = metrics;
   }
 
   history(interval, from, to) {
@@ -160,12 +183,11 @@ export class SourcePipeline {
   }
 
   snapshot() {
-    return plain({ version: 1, source: this.source, limits: this.limits, watermark: this.watermark,
-      minutes: [...this.minutes.values()].sort((a, b) => a.from - b.from), metrics: this.metrics });
+    return snapshotFor(this.source, this.limits, this.watermark, this.minutes, this.metrics);
   }
 
   async checkpoint(file) {
-    const payload = this.snapshot(), encoded = JSON.stringify({ payload, sha256: digest(payload) }) + '\n';
+    const encoded = checkpointText(this.snapshot());
     assert(Buffer.byteLength(encoded) <= this.limits.maxBytes, 'CHECKPOINT_BUDGET');
     // Exclusive temp file catches concurrent writers and leaves a failed save
     // visible; an interrupted save never replaces the last valid checkpoint.
@@ -176,16 +198,23 @@ export class SourcePipeline {
   }
 
   static async recover(file, expectedSource) {
-    assert((await stat(file)).size <= 32 * 1024 * 1024, 'RECOVERY_BUDGET');
+    const bytes = (await stat(file)).size;
+    assert(bytes <= 32 * 1024 * 1024, 'RECOVERY_BUDGET');
     const { payload, sha256 } = JSON.parse(await readFile(file, 'utf8'));
     assert(payload?.version === 1 && digest(payload) === sha256, 'CHECKPOINT_CORRUPT');
     assert(digest(payload.source) === digest(expectedSource), 'CHECKPOINT_SOURCE_MISMATCH');
     const pipeline = new SourcePipeline(payload.source, payload.limits);
+    assert(bytes <= pipeline.limits.maxBytes, 'RECOVERY_BUDGET');
     assert(Array.isArray(payload.minutes) && payload.minutes.length <= payload.limits.maxMinutes, 'RECOVERY_MINUTES');
+    assert(payload.metrics && Object.keys(payload.metrics).length === Object.keys(pipeline.metrics).length
+      && Object.keys(pipeline.metrics).every(k => integer(payload.metrics[k])), 'RECOVERY_METRICS');
+    // Hydration revalidates the same stored counters, rather than charging new
+    // CPU/counter digits against an otherwise valid checkpoint at its byte cap.
+    pipeline.metrics = plain(payload.metrics); pipeline.#recovering = true;
     for (const minute of payload.minutes) pipeline.ingest(minute);
+    pipeline.#recovering = false;
     assert(pipeline.watermark === payload.watermark, 'RECOVERY_WATERMARK');
-    assert(Object.keys(pipeline.metrics).every(k => integer(payload.metrics?.[k])), 'RECOVERY_METRICS');
-    pipeline.metrics = payload.metrics;
+    assert(pipeline.minutes.size === payload.minutes.length, 'RECOVERY_DUPLICATE_MINUTE');
     return pipeline;
   }
 }

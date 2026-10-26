@@ -103,6 +103,83 @@ test('cross-minute block order cannot contradict transaction timestamps', () => 
   assert.equal(p.minutes.size, 1);
 });
 
+for (const complete of [true, false]) test(`signature cannot move across retained minutes, complete=${complete}`, () => {
+  const p = new SourcePipeline(source), evidence = proof({ completeness: complete }), a = trade();
+  p.ingest(interval([a], start, evidence));
+  const before = p.snapshot(), moved = { ...a, logIndex: a.logIndex + 1, slot: a.slot + 1, blockTime: start + 61 };
+  assert.throws(() => p.ingest(interval([moved], start + 60, evidence)), /SIGNATURE_IDENTITY_CONFLICT/);
+  assert.deepEqual(p.snapshot(), before); assert.equal(p.minutes.size, 1);
+});
+
+test('restart preserves global signature identity; recomputed checksum cannot bless a contradictory store', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'stocks615-identity-')), file = join(directory, 'state.json');
+  try {
+    const p = new SourcePipeline(source), a = trade(); p.ingest(interval([a])); await p.checkpoint(file);
+    const recovered = await SourcePipeline.recover(file, source), before = recovered.snapshot();
+    const moved = { ...a, logIndex: a.logIndex + 1, slot: a.slot + 1, blockTime: start + 61 };
+    assert.throws(() => recovered.ingest(interval([moved], start + 60)), /SIGNATURE_IDENTITY_CONFLICT/);
+    assert.deepEqual(recovered.snapshot(), before);
+    const saved = JSON.parse(await readFile(file, 'utf8'));
+    saved.payload.minutes.push(interval([moved], start + 60)); saved.payload.watermark = start + 120;
+    saved.sha256 = digest(saved.payload); await writeFile(file, JSON.stringify(saved));
+    await assert.rejects(SourcePipeline.recover(file, source), /SIGNATURE_IDENTITY_CONFLICT/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('multiple log indices in the same transaction remain distinct executions after restart', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'stocks615-multi-log-')), file = join(directory, 'state.json');
+  try {
+    const p = new SourcePipeline(source), a = trade(), b = { ...a, logIndex: a.logIndex + 1, quoteRaw: '12000000' };
+    p.ingest(interval([b, a])); await p.checkpoint(file);
+    const recovered = await SourcePipeline.recover(file, source), page = recovered.history('1m', start, start + 60);
+    assert.equal(page.candles.length, 1); assert.equal(page.candles[0].tradeCount, 2);
+    assert.equal(page.candles[0].open, 10); assert.equal(page.candles[0].close, 12);
+    assert.deepEqual(page, p.history('1m', start, start + 60));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('recovery enforces the saved byte budget and rejects extra metric fields', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'stocks615-recovery-budget-')), file = join(directory, 'state.json');
+  try {
+    const p = new SourcePipeline(source, { maxBytes: 4096 }); p.ingest(interval()); await p.checkpoint(file);
+    const original = await readFile(file, 'utf8'), saved = JSON.parse(original);
+    saved.padding = 'x'.repeat(4096); await writeFile(file, JSON.stringify(saved));
+    await assert.rejects(SourcePipeline.recover(file, source), /RECOVERY_BUDGET/);
+    const other = JSON.parse(original); other.payload.metrics.extra = 1; other.sha256 = digest(other.payload);
+    await writeFile(file, JSON.stringify(other)); await assert.rejects(SourcePipeline.recover(file, source), /RECOVERY_METRICS/);
+    const repeated = JSON.parse(original); repeated.payload.minutes.push(repeated.payload.minutes[0]);
+    repeated.sha256 = digest(repeated.payload); await writeFile(file, JSON.stringify(repeated));
+    await assert.rejects(SourcePipeline.recover(file, source), /RECOVERY_DUPLICATE_MINUTE/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('full checkpoint boundary includes final counters and stays persistable after accepted/rejected ingests', async t => {
+  // Fix only the measured CPU counters so the exact byte boundary is stable.
+  t.mock.method(process, 'cpuUsage', () => ({ user: 0, system: 0 }));
+  const directory = await mkdtemp(join(tmpdir(), 'stocks615-exact-budget-')), file = join(directory, 'state.json');
+  try {
+    const input = interval(Array.from({ length: 10 }, (_, i) => trade(i))), wide = new SourcePipeline(source, { maxBytes: 8192 });
+    wide.ingest(input); await wide.checkpoint(file);
+    const bytes = Buffer.byteLength(await readFile(file));
+    assert(bytes >= 4096 && bytes < 8192);
+    const fit = new SourcePipeline(source, { maxBytes: bytes }); fit.ingest(input);
+    await fit.checkpoint(file); assert.equal(Buffer.byteLength(await readFile(file)), bytes);
+    assert.deepEqual((await SourcePipeline.recover(file, source)).snapshot(), fit.snapshot());
+    const tooSmall = new SourcePipeline(source, { maxBytes: bytes - 1 }), before = tooSmall.snapshot();
+    assert.throws(() => tooSmall.ingest(input), /BYTE_STORAGE_BUDGET/);
+    assert.deepEqual(tooSmall.snapshot(), before); await tooSmall.checkpoint(file);
+    assert.equal((await SourcePipeline.recover(file, source)).minutes.size, 0);
+    // Counter width is part of the same budget even for a duplicate interval.
+    for (let i = 0; i < 9; i++) fit.ingest(input);
+    const nine = fit.snapshot(); assert.throws(() => fit.ingest(input), /BYTE_STORAGE_BUDGET/);
+    assert.deepEqual(fit.snapshot(), nine); await fit.checkpoint(file);
+    assert.equal(Buffer.byteLength(await readFile(file)), bytes);
+    assert.equal((await SourcePipeline.recover(file, source)).metrics.duplicateIntervals, 9);
+    t.mock.restoreAll(); // The reader's real CPU must not break exact-cap recovery.
+    assert.deepEqual((await SourcePipeline.recover(file, source)).snapshot(), fit.snapshot());
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
 test('bounded retention survives out-of-order arrival and never resurrects evicted history', () => {
   const p = new SourcePipeline(source, { maxMinutes: 60 });
   p.ingest(interval([], start + 60)); p.ingest(interval([], start));

@@ -28,7 +28,7 @@ Public inputs remain the original SPYx 13 + CRCLx 2 transactions / 30 reconciled
 
 The pinned official Raydium PoolState source is now saved with Git blob and SHA256 metadata. Both saved current accounts are exactly 1,544 bytes; source-decoded config, tick spacing, status, fee-on and seed index are reported. This closes offline availability/strict current-layout checks, not deployed-binary correspondence or transaction-time full PoolState. The old 45-byte ProgramData header cannot establish a reproducible executable match.
 
-Measured cloud replay (Node v24.19.0, one run, not a capacity benchmark):
+Measured cloud replay recorded at code `57a8e65c` (Node v24.19.0, one run, not a capacity benchmark):
 
 | Packet | New RPC | Retained state | Replay CPU user/system | Wall time |
 | --- | ---: | ---: | ---: | ---: |
@@ -47,8 +47,26 @@ The plan was **not executed**, because ordinary access to the public RPC endpoin
 
 ## Validation and publication
 
-Source tests on the final implementation: **90 PASS / 0 FAIL / 0 skipped** (52 existing + 38 new). Focused source-admission/gap/viewer/localization tests: **68 PASS / 0 FAIL / 0 skipped**. Frontend TypeScript/Vite build: **PASS**, with the existing large-chunk warning. The full frontend regression is still running at this checkpoint and its terminal result belongs in the PR/issue; no waiver or CI skip marker is used. Prisma Client generation succeeded using only disposable localhost:9 URLs; no bootstrap, migration or DB request was made. An initial ES2020 `.at` type error was corrected in the source, and the exact localization cardinality was updated for the two new fully translated messages.
+Source tests on the final implementation: **96 PASS / 0 FAIL / 0 skipped** (52 existing + 44 new). Focused source-admission/gap/viewer/localization tests: **68 PASS / 0 FAIL / 0 skipped**. Frontend TypeScript/Vite build: **PASS**, with the existing large-chunk warning. The full frontend regression is still running at this checkpoint and its terminal result belongs in the PR/issue; no waiver or CI skip marker is used. Prisma Client generation succeeded using only disposable localhost:9 URLs; no bootstrap, migration or DB request was made. An initial ES2020 `.at` type error was corrected in the source, and the exact localization cardinality was updated for the two new fully translated messages.
 
 Only the source test workflow changes: PR-only trigger, read-only permissions, exact source head checkout, Node 22.23.3, source/admission/gap/viewer tests. No dispatch/deploy step, secret, branch protection or production workflow change. Commit subjects start `[CF-Pages-Skip] [skip render]`, without a CI skip marker. Coordinator-provided Render preview/branch checks are retained; no external settings changed. Publication must fresh-check and fast-forward the existing #621 head without overwriting concurrent work.
 
 Claude's #613 gateway, auth, balances, sessions, financial modules and 50+2 harness remain separate. BUY/SELL viewer controls remain silent NO-OP; all production/execution flags remain unchanged/OFF. The implementation and a green parser/test suite do not make Stocks integration-ready.
+
+## Restart/storage follow-up from independent review
+
+The initial `a5a373dd` candidate completed all **9/9 PR workflows successfully**, including exact-head source 90/90, focused frontend 68/68 and full frontend CI. Two independently reproduced storage invariants were then fixed together:
+
+- A signature now has one `(slot, blockTime, transactionIndex)` identity across **all retained minutes**, including UNKNOWN candidates. Multiple log indices of the same transaction remain valid only with that identity. Recovery revalidates this invariant; a recomputed checksum cannot bless a contradictory two-block signature.
+- Ingest now budgets the **entire prospective serialized checkpoint** (payload, SHA256 wrapper, newline and final metrics) before committing any state. Counter-width growth on duplicate intervals is included. A successful boundary ingest remains checkpointable; over-cap input leaves intervals, watermark and counters unchanged.
+- Recovery enforces the saved byte cap, exact metric fields and unique stored minutes. It restores stored counters while revalidating executions, without charging new hydration CPU digits against a valid exact-cap checkpoint.
+
+New regression tests on the actual old `a5a373dd` module produced **39 PASS / 5 FAIL**; the multi-log positive control passed. The fixed complete source suite is **96/96 PASS**, zero skipped, Node24.19.0. Exact-cap tests freeze only measured CPU counters for deterministic byte accounting, then restore real CPU for recovery. No source gate or UNKNOWN assertion is weakened. Frontend code is unchanged by this follow-up; no second manual full frontend run was started.
+
+The one local Node24 full frontend run finished **295 suites PASS / 1 FAIL; 4,897 tests PASS / 21 FAIL**. The unchanged `adminConsoleInteractions` suite first hit a 5,000 ms timeout, then overlapping act warnings and cascading assertions. Its isolated unmodified run passed **24/24**. This local failure is retained, not waived; the same-tree Node22 full frontend CI succeeded. Raw full-CI log retrieval failed with connector `Transport closed`, and reading the official artifact's returned file URL was denied at proxy CONNECT 403 for `sdmntprcentralus.oaiusercontent.com`; no retry/workaround. Artifact metadata is `12669915583`, SHA256 `e2a777a4caf3dc0cf7a2898c6bee1f188f3cfb391c0ca09113591df6fd63529f`; its JSON was not inspected here, so no exact CI test count is invented.
+
+### Trusted producer boundary
+
+The only implemented envelope producer is the local `replayPacket(directory)` CLI adapter: it hashes saved receipts, checks saved genesis/finality/signature/transaction scope, reconciles exact invocation/transfer evidence, and constructs execution binding=true with **the other five gates=false**. It cannot promote this historical packet to accepted market data. The independent full-block verifier can check completeness if its required raw evidence is supplied; it is not a program or historical-state attestor.
+
+`SourcePipeline.ingest` trusts its caller's verified-envelope booleans. It is an internal offline library, **not a safe writer for untrusted public input**. Its checksum/proof digests detect mismatch within this protocol, not authenticity by themselves. Frontend admission validates a response contract; it does not verify Solana consensus, binary correspondence or historical mint state. Before any future runtime writer/endpoint, a trusted server-side producer must derive every gate from verified raw evidence and bind those results to exact network/mint/pool/window and receipts, without passing through requester-supplied booleans. That complete producer/attestation path is not implemented or proven. No runtime endpoint, public writer or live source feed was opened. Real acceptance remains **0 intervals / 0 markets**.
