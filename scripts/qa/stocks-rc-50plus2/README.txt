@@ -80,8 +80,13 @@ Server-side spans run (prepared 2026-10-26, cloud Claude, NOT run):
 measured arms (never with --cpu-prof) and writes <arm>-spans.json; its status is
 SPANS_ONLY_NOT_A_P95_VERDICT, so the collection gate never counts it.
 spans-summary-613.cjs splits every crypto request into time outside the API
-handler, JWT, Prisma on auth models, other Prisma, transaction admission and
-the rest, with process event-loop delay, ELU, GC and PG wait samples; it fails
-closed on missing, truncated or uncorrelated spans. The `spans-run` job in
+handler plus an exact partition of the handler's wall time by span intervals:
+JWT, auth/access-gate reads, trading Prisma, transaction admission, `overlap`
+(two or more categories at once) and `rest` (no wrapped call in progress); span
+time after the handler and same-category concurrency are reported, never
+subtracted or clamped. It fails closed on the full contract: the plan's exact
+request counts and population, expected HTTP statuses, handler route/status,
+finite non-negative numbers, the inner spans every crypto route must produce,
+spans covering the window, scope, pin, status and cleanup. The `spans-run` job in
 stocks-613-50plus2-diagnostic.yml is `if: false` and runs only after the #613
 coordinator approves one run. Plan, thresholds and admission are unchanged.
