@@ -3,10 +3,13 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { stocksTestCashRouter } from '../stocksTestCash';
+import { contactEmailHash } from '../../../services/ContactEmailPolicy';
 const issuer='synthetic-api-unit',key='synthetic-api-internal-key-000000000000';
 const principals=[{issuer,subject:'synthetic-a'},{issuer,subject:'synthetic-b'}];
 function fixture(enabled=true,verificationSecret=process.env.JWT_SECRET!,routerFactory=stocksTestCashRouter,catalogueEnabled=false,orderExecutionEnabled:boolean|null=true){
   const prisma:any={user:{findUnique:jest.fn(async({where}:any)=>({id:where.id}))},session:{findUnique:jest.fn(async({where}:any)=>({id:where.id,userId:where.id.replace('session-',''),revokedAt:null,lastSeenAt:new Date(),remembered:false,user:{email:'synthetic@example.invalid'}})),update:jest.fn()},auditLog:{findFirst:jest.fn(async()=>null)}};
+  // requireAuth singleSessionRead: the one-query session read, from the rows above.
+  prisma.$queryRaw=jest.fn(async(_sql:unknown,...values:any[])=>{const s=await prisma.session.findUnique({where:{id:values[values.length-1]}});if(!s)return[];const event=await prisma.auditLog.findFirst({});return[{...s,createdAt:null,email:s.user.email,role:null,emailHash:contactEmailHash(s.user.email),contactAction:event?.action??null}];});
   const authority={execute:jest.fn(async(actor:any,type:string)=>{if(!principals.some(p=>p.subject===actor.subject))throw Object.assign(Error('AUTH_REQUIRED'),{code:'AUTH_REQUIRED'});return type==='readView'?{wallets:{USDT:{cash:'731.25000000',reserved:'0.00000000',available:'731.25000000'}}}:{id:'synthetic-result'};}),metrics:()=>({unitFixture:true})};
   const config={enabled,catalogueEnabled,orderExecutionEnabled:orderExecutionEnabled??undefined,issuer,principals,gatewayKey:key,secret:verificationSecret};
   const app=express();app.use(express.json());app.use('/api/v1',routerFactory(prisma,config,authority));

@@ -1,4 +1,4 @@
-import { isBlockedContactEmail, isRevokedContactToken } from '../../services/ContactEmailPolicy';
+import { isBlockedContactEmail, isRevokedContactToken, contactEmailHash, CONTACT_EMAIL_BLOCKED, CONTACT_EMAIL_UNBLOCKED } from '../../services/ContactEmailPolicy';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { createPublicKey, createSecretKey } from 'crypto';
@@ -41,7 +41,35 @@ const ORDINARY_SESSION_MS = 12 * 60 * 60_000;
  * just hiding a row in a list. A token from before this model existed has
  * no `sid` claim and must still belong to an existing user. Deleted accounts
  * cannot keep access through legacy tokens. */
-export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = false }: { prepareVerificationKey?: boolean } = {}) {
+interface LiveSessionRow {
+  id: string; userId: string; revokedAt: Date | null; lastSeenAt: Date; remembered: boolean; createdAt: Date | null;
+  email: string | null; role: string | null; emailHash: string | null; contactAction: string | null;
+}
+
+/** One round trip for the session, its owner and the owner's latest contact
+ * block event. The SQL-side email hash is trusted only when it equals the
+ * application's own normalization; any other address uses the original lookup. */
+async function readLiveSession(prisma: PrismaClient, sid: string) {
+  const rows = await prisma.$queryRaw<LiveSessionRow[]>`
+    SELECT s."id", s."userId", s."revokedAt", s."lastSeenAt", s."remembered", s."createdAt",
+           u."email", u."role"::text AS "role", h."emailHash", c."action" AS "contactAction"
+    FROM "Session" s
+    LEFT JOIN "User" u ON u."id" = s."userId"
+    LEFT JOIN LATERAL (SELECT encode(sha256(convert_to(lower(btrim(u."email")), 'UTF8')), 'hex') AS "emailHash") h ON true
+    LEFT JOIN LATERAL (
+      SELECT a."action" FROM "AuditLog" a
+      WHERE a."action" IN (${CONTACT_EMAIL_BLOCKED}, ${CONTACT_EMAIL_UNBLOCKED}) AND a."metadata" -> 'emailHash' = to_jsonb(h."emailHash")
+      ORDER BY a."createdAt" DESC, a."id" DESC LIMIT 1
+    ) c ON true
+    WHERE s."id" = ${sid}`;
+  const session = rows[0];
+  if (!session) return null;
+  const sameHash = typeof session.email === 'string' && session.email.length <= 320 && session.emailHash === contactEmailHash(session.email);
+  const blocked = sameHash ? session.contactAction === CONTACT_EMAIL_BLOCKED : await isBlockedContactEmail(prisma, session.email);
+  return { ...session, blocked };
+}
+
+export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = false, singleSessionRead = false }: { prepareVerificationKey?: boolean; singleSessionRead?: boolean } = {}) {
   // Stocks opt-in only; the default auth path keeps the original string key.
   const verificationKey = prepareVerificationKey
     ? (() => { const { createPublicKey, createSecretKey } = require('crypto') as typeof import('crypto'); try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); } })()
@@ -64,7 +92,28 @@ export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = fal
     }
 
     try {
-      if (payload.sid) {
+      if (payload.sid && singleSessionRead) {
+        // Stocks opt-in: the same checks as below, read in one query. Still a
+        // fresh database read on every request; no auth cache or TTL.
+        const session = await readLiveSession(prisma, payload.sid);
+        if (!session || session.userId !== payload.sub || session.revokedAt) {
+          return res.status(401).json({ error: 'Session has been signed out' });
+        }
+        if (session.remembered) {
+          if (Date.now() - session.lastSeenAt.getTime() > REMEMBERED_SESSION_IDLE_MS) {
+            return res.status(401).json({ error: 'Session expired' });
+          }
+          if (session.role !== 'ADMIN'
+            && !(session.createdAt && Date.now() - session.createdAt.getTime() <= ORDINARY_SESSION_MS)) {
+            return res.status(401).json({ error: 'Session expired' });
+          }
+        }
+        if (session.blocked) return res.status(403).json({ error: 'Account blocked' });
+        req.sessionId = session.id;
+        if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {
+          prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() }, select: { id: true } }).catch(() => {});
+        }
+      } else if (payload.sid) {
         // Re-check the database on EVERY request, but do not transfer device/IP
         // metadata that authorization never reads. No auth cache or TTL.
         const session = await prisma.session.findUnique({

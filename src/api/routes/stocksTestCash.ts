@@ -55,7 +55,9 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   }
   // Normalize the immutable key once; signature/expiry checks still run on every request.
   const verificationKey = (() => { try { return createPublicKey(secret); } catch { return createSecretKey(Buffer.from(secret)); } })();
-  const auth = requireAuth(prisma, { prepareVerificationKey: true });
+  // Every gateway request (viewer polls included) re-validates the session here,
+  // so the session, owner and contact-block checks are read in one query.
+  const auth = requireAuth(prisma, { prepareVerificationKey: true, singleSessionRead: true });
   const actor = (req: AuthedRequest): Actor => {
     if (!req.userId || !req.sessionId) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
     const payload = jwt.verify(req.headers.authorization!.slice(7), verificationKey) as jwt.JwtPayload;

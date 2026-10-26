@@ -22,6 +22,12 @@ async function fixture(t, { enabled = false, schemaPresent = false, boundUsers =
     auditLog: { findFirst: async () => null },
     $queryRawUnsafe: async sql => { calls.schema.push(sql); if (!schemaPresent) throw Error('MISSING_FINANCIAL_TABLE'); return []; },
     $transaction: async () => { calls.financial++; throw Error('FINANCIAL_ACCESS_FORBIDDEN'); },
+    // requireAuth singleSessionRead: the one-query session read, from the rows above.
+    $queryRaw: async (_sql, ...values) => {
+      const s = await prisma.session.findUnique({ where: { id: values[values.length - 1] } }); if (!s) return [];
+      const { contactEmailHash } = require('../../dist/services/ContactEmailPolicy.js'), event = await prisma.auditLog.findFirst({});
+      return [{ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null }];
+    },
   };
   for (const name of ['demoBalance', 'stocksTestAccount', 'stocksTestReceipt', 'stocksTestAudit']) Object.defineProperty(prisma, name, { get() { calls.financial++; throw Error('FINANCIAL_ACCESS_FORBIDDEN'); } });
   const app = express(); app.use(express.json());

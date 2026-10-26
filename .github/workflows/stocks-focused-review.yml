@@ -8,6 +8,8 @@ on:
       - 'services/stocks-global/**'
       - 'src/api/routes/stocksTestCash.ts'
       - 'src/api/routes/__tests__/stocksTestCash.test.ts'
+      - 'src/api/middleware/auth.ts'
+      - 'src/services/ContactEmailPolicy.ts'
       - 'prisma/schema.prisma'
       - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
@@ -112,7 +114,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --test --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs | tee /tmp/stocks-financial-pg.tap
+          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/session-read.pg.test.cjs | tee /tmp/stocks-financial-pg.tap
           grep -Eq '^# skipped 0$' /tmp/stocks-financial-pg.tap
           grep -Eq '^# fail 0$' /tmp/stocks-financial-pg.tap
           grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-financial-pg.tap
