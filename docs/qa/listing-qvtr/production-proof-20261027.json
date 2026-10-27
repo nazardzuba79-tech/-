@@ -1,0 +1,25 @@
+{
+  "scope": "Actual production ADMIN UI, not local QA",
+  "createdExactlyOnePrivateDraft": true,
+  "revision": 1,
+  "date": "2026-10-28T13:00:00Z",
+  "seed": "qaventra-20261028-v1",
+  "fieldsAndApprovedLogoExactAfterReload": true,
+  "first24hPreview": {
+    "price": 0.1092,
+    "candles": 289
+  },
+  "fullGrowthPreview": {
+    "hours": 300,
+    "candles": 301,
+    "lastPrice": 0.818,
+    "high": 0.8182198871,
+    "cap": 0.88858
+  },
+  "published": false,
+  "timerStarted": false,
+  "financialWrites": false,
+  "tradable": false,
+  "ownerAllocation": "0",
+  "nextGate": "Separate owner approval for QVTR publication and native countdown; no frontend/API/Worker deployment needed for the existing compatible data path"
+}

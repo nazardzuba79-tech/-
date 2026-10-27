@@ -58,7 +58,7 @@ const EDGE = `http://127.0.0.1:${EDGE_PORT}`;
 const EDGE_B = `http://127.0.0.1:${Number(process.env.QA_EDGE_B_PORT || 8796)}`;
 const STORE_TOKEN = 'synthetic-local-only-listings-secret-0602';
 const file = JSON.parse(fs.readFileSync(path.join(root, 'config/test-markets/eclv-20261103.draft.json'), 'utf8'));
-const logoPath = path.join(root, 'config/test-markets/eclv-20261103.logo.svg');
+const logoPath = path.join(root, 'config/test-markets/eclv-20261103.logo.png');
 const AT = Date.parse(file.listingAt), HOUR = 3_600_000, DAY = 24 * HOUR;
 const DATE_LINE = '06.11.2026 — 13:00 UTC / 16:00 МСК';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' };
@@ -171,7 +171,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
     A = await renderFor(EDGE, 'A'); B = await renderFor(EDGE_B, 'B');
     browser = await chromium.launch(process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {});
     /* 1a. Import through the Admin Listings form on worker A, exactly as the owner would type it. */
-    await step('form import (1440): every field typed in Admin → Listings, logo uploaded from the SVG file, «Сохранить черновик»', async () => {
+    await step('form import (1440): every field typed in Admin → Listings, logo uploaded from the PNG file, «Сохранить черновик»', async () => {
       const page = await newPage(A.origin, 1440);
       await page.goto(`${A.origin}/admin/listings`);
       await page.locator('[data-create-listing]').click({ timeout: 20000 });

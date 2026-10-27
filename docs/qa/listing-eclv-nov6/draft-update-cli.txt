@@ -1,16 +1,17 @@
-✔ one CAS PUT updates the existing private id and keeps seed/profile/QVTR; repeat sends no write (222.67153ms)
-✔ missing or duplicate ECLV never falls back to creation (172.600749ms)
-✔ every published/timer state is refused without a PUT (373.241167ms)
-✔ unexpected identity/seed/phase edits are not overwritten (467.761854ms)
-✔ 409 CAS conflict is not retried or overwritten (122.921566ms)
-✔ a lost response after commit is resolved by a read-only repeat, never a second PUT (161.276745ms)
-✔ server profile mismatch is surfaced rather than silently accepted (131.679428ms)
-✔ create and update cannot be combined (38.105741ms)
-ℹ tests 8
+✔ one CAS PUT updates the existing private id and keeps seed/profile/QVTR; repeat sends no write (265.232433ms)
+✔ missing or duplicate ECLV never falls back to creation (189.202277ms)
+✔ every published/timer state is refused without a PUT (384.210251ms)
+✔ unexpected identity/seed/phase edits are not overwritten (467.403393ms)
+✔ 409 CAS conflict is not retried or overwritten (145.250681ms)
+✔ a lost response after commit is resolved by a read-only repeat, never a second PUT (204.441498ms)
+✔ server profile mismatch is surfaced rather than silently accepted (146.167004ms)
+✔ create and update cannot be combined (35.489536ms)
+✔ an already moved November6 private Draft completes only the approved cap/recovery update (202.691242ms)
+ℹ tests 9
 ℹ suites 0
-ℹ pass 8
+ℹ pass 9
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1778.423666
+ℹ duration_ms 2145.577861

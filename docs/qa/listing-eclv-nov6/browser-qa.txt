@@ -1,4 +1,4 @@
-✓ form import (1440): every field typed in Admin → Listings, logo uploaded from the SVG file, «Сохранить черновик»
+✓ form import (1440): every field typed in Admin → Listings, logo uploaded from the PNG file, «Сохранить черновик»
 ✓ the form-made draft equals the JSON file exactly (store adds only its profile and wick model)
 ✓ import tool: the preflight is read-only and clean; --create makes ONE draft equal to the file and to the form-made one; a repeat --create sends nothing
 ✓ update the SAME legacy private ECLV through real CAS; reload preserves November 6, +7148%, seed/profile and an unrelated QVTR; repeat sends no PUT

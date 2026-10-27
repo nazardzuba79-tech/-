@@ -7,12 +7,20 @@
 - Existing Draft: one ordinary CAS PUT, same ID, new revision, seed/profile/wick metadata unchanged, second run sends no write, QVTR snapshot unchanged; saved values read after browser reload at1440/390.
 - Canonical actual last price: **1.01472**, nontradable, at252h (`2026-11-17T01:00:00Z`). First24h remains0.1092. 1m/5m/1h, deep falls, continuity, wicks and cap tested.
 - Backend build PASS; frontend TypeScript + Vite production build PASS (QA bundle points at loopback, never deploy this artifact).
-- Initial targeted Jest:27/27 PASS (scenario controls, QVTR, ECLV at that point). Final ECLV/TYVN/countdown:25/25 PASS, including final-cap restriction and the pre-change88-hour tick fingerprint. Frontend movement:30/30 PASS. CLI CAS guards:8/8 PASS. Worker unit test runner PASS.
+- Initial targeted Jest:27/27 PASS (scenario controls, QVTR, ECLV at that point). Final ECLV/TYVN/countdown:25/25 PASS, including final-cap restriction and the pre-change88-hour tick fingerprint. Frontend movement:30/30 PASS. CLI CAS guards:9/9 PASS. Worker unit test runner PASS.
 - The first local browser run had one QA snapshot-comparison failure. Its exact message is preserved in `initial-failures.json`; fixed by comparing identical full-row projections, then rerun. No assertions about target price or financial isolation were removed.
 - Initial config-only endpoint=cap failed the existing3% validator. Narrow, separately reviewed terminal-DEEP_RECOVERY support resolves it; all previously valid paths keep their fingerprint.
 
 ## Production status
 
-Not executed. The connected-browser tool repeatedly returns `Browser access requires the originating browser context` despite the owner having an open admin tab. No production Draft ID/revision/state is inferred. No ECLV merge/deploy/publication/timer is authorized or performed here. QVTR PR624 was separately approved and merged as `b2387f96813bee46a37729d5ef0c55523535a1ce`; its production Draft/publication/timer remain unverified.
+Actual cloud-browser ADMIN access is restored. The SAME existing ECLV private Draft was moved date-only toNovember6,revision3; reload and actual first24h Preview PASS. Cap0.518/finalRecovery0.435 remain pending the approved runtime upgrade. Seed/logo/other fields preserved; **no ECLV publication or timer**. Its approved production PNG is now preserved in the candidate, replacing the historical repository SVG. Exact PNG hash is locked by tests.
 
-See [the controlled update/rollback procedure](../../ECLV_LISTING_20261103.md). Exact-head GitHub CI results are recorded on the review PR after execution.
+QVTR was absent; one authorized private Draft was created in production,revision1. Fields and logo match after reload, first24h Preview0.1092, full300h/301candle Preview0.818. It remains unpublished with no timer activation. Actual screenshots are under `docs/qa/listing-qvtr/`; `production-preflight.json` records read-only evidence without user identifiers or credentials.
+
+Production API is89c3ac003b44a6a0e7630d2ecbe5d7164e85b683, older than main/History20. An isolated two-file backport is prepared and locally built/tested on that exact base; see `production-api-source-compat.json`. Do not deploy whole main. A separate Node22 CI job compiles/tests the exact production source plus the patch.
+
+Cloudflare Google sign-in returned `Unable to sign in`; no retry loop or configuration change. Current Pages SHA and immutable Worker version are still unverified. PR627 has frontend-release priority through its agreed operator. No ECLV merge, API/Worker/frontend deploy, publication or timer is authorized/performed. See [controlled update and rollback](../../ECLV_LISTING_20261103.md).
+
+All16 workflows on1f423a28 passed; follow-up exact-head results are recorded on PR628 when complete. Screenshots from the new local run use the actual approved production PNG; local publication/timer remains isolated test activity.
+
+Operator coordination supplied12:50UTC: canonical frontend source `a7593324be9118cfda91ee8fc6bad0b6ff3acba9`, deployment `9dbc9e80` from23October; auto-deployOFF/previewsnone. This is explicitly attributed coordination evidence, not a Cloudflare observation from this cloud session. Main advanced to`e27117a61d191cbc03456abaf5e88fa38bdf5d62` after627; review branch reconciles that main while preserving Referral and scenario changes. PR627 retains the first frontend operator slot. No History20 archive rights or financial gates may be activated.

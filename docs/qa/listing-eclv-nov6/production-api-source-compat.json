@@ -1,0 +1,12 @@
+{
+  "scope": "Detached production API source plus two-file patch; no server/DB/financial writes",
+  "base": "89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+  "result": "PASS",
+  "first24h": 0.1092,
+  "actualPeak": 1.01472,
+  "candles5m": 3601,
+  "prior88HourFingerprint": "1d9684bcece301c6ca644d3b400ffac27673a29044b63cac9ede7744ffa16840",
+  "seed": "eclavo-20261103-v1",
+  "tradable": false,
+  "ownerAllocation": "0"
+}

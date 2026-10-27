@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'config/test-markets/eclv-20261103.draft.json'
-      - 'config/test-markets/eclv-20261103.logo.svg'
+      - 'config/test-markets/eclv-20261103.logo.png'
       - 'src/services/listings/__tests__/eclvDraft.test.ts'
       - 'src/services/testMarkets/simulationScenarioControls.ts'
       - 'src/shared/listingScenarioControls.ts'
@@ -13,6 +13,8 @@ on:
       - 'scripts/qa-listing-eclv.cjs'
       - 'scripts/eclv-draft-import.cjs'
       - 'scripts/eclv-draft-import.test.cjs'
+      - 'scripts/qa-eclv-api-backport.cjs'
+      - 'ops/listings/eclv-peak-89c3.patch'
       - 'docs/ECLV_LISTING_20261103.md'
       - '.github/workflows/eclv-listing-draft.yml'
 
@@ -61,7 +63,7 @@ jobs:
           assert.equal(c.seed, 'eclavo-20261103-v1');
           assert.equal(c.simulationProgram.kind,'scenario-controls-v2');
           assert.notEqual(c.simulationProgram.afterGrowth,'historical');
-          assert(c.logo.startsWith('data:image/svg+xml;base64,'));
+          assert(c.logo.startsWith('data:image/png;base64,'));
           console.log('ECLV candidate no trading, no automatic credit, no publication or deployment');
           NODE
 
@@ -103,3 +105,42 @@ jobs:
           name: eclv-listing-qa
           path: /tmp/eclv-qa-report
           retention-days: 14
+
+
+  eclv-production-api-source-compat:
+    # Compile the observed production API base + TWO-FILE patch. Never deploy.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Isolate the observed production source, without main/History20 overlays
+        run: |
+          git fetch origin 89c3ac003b44a6a0e7630d2ecbe5d7164e85b683 --depth=1
+          git worktree add --quiet --detach "$RUNNER_TEMP/eclv-production-api" 89c3ac003b44a6a0e7630d2ecbe5d7164e85b683
+          git -C "$RUNNER_TEMP/eclv-production-api" apply "$GITHUB_WORKSPACE/ops/listings/eclv-peak-89c3.patch"
+          git -C "$RUNNER_TEMP/eclv-production-api" diff --name-only > "$RUNNER_TEMP/eclv-production-api-files.txt"
+          python3 - <<'PY'
+          import os,pathlib
+          changed=pathlib.Path(os.environ['RUNNER_TEMP'],'eclv-production-api-files.txt').read_text().splitlines()
+          assert set(changed)=={'src/shared/listingScenarioControls.ts','src/services/testMarkets/simulationScenarioControls.ts'},changed
+          print('Only two synthetic-scenario files changed on the observed production API base')
+          PY
+      - name: Install the production base lockfile, generate client without DB access, build API
+        run: |
+          cd "$RUNNER_TEMP/eclv-production-api"
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+          npm run build
+      - name: Actual cap, retained seed, guards and prior-path fingerprint on the patched production source
+        run: node scripts/qa-eclv-api-backport.cjs "$RUNNER_TEMP/eclv-production-api" > .eclv-api-backport-result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eclv-production-api-source-compat
+          path: .eclv-api-backport-result.json

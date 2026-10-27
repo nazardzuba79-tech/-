@@ -21,8 +21,8 @@ test('candidate is valid, nontrading, UTC-correct, and has an actual compact bra
     listingAt:'2026-11-06T13:00:00Z',displayTimeZone:'Europe/Moscow',
     seed:'eclavo-20261103-v1',seedMode:'manual',ownerAllocation:'0',tradable:false });
   expect(RESERVED_LISTING_SYMBOLS.has(draft.symbol)).toBe(false);
-  expect(draft.logo).toMatch(/^data:image\/svg\+xml;base64,/);
-  expect(draft.logo!.length).toBeLessThan(9000);
+  expect(draft.logo).toMatch(/^data:image\/png;base64,/);
+  expect(draft.logo!.length).toBeLessThan(Math.ceil(LOGO_MAX_BYTES*4/3)+64);
   expect(new Date(AT).getUTCDay()).toBe(5);
   // One instant, 13:00 UTC: shown as 16:00 Moscow (the display zone, as TYVN) and 15:00 Kyiv.
   const clock = (timeZone: string) => new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(AT));
@@ -52,9 +52,13 @@ test('deterministic deep-recovery program and mathematically consistent bounds',
 });
 
 test('the logo file is the config logo byte for byte, so «Выбрать файл» reproduces the same data URL', () => {
-  const svg = readFileSync(resolve(__dirname, '../../../../config/test-markets/eclv-20261103.logo.svg'));
-  expect(draft.logo).toBe(`data:image/svg+xml;base64,${svg.toString('base64')}`);
-  expect(svg.length).toBeLessThan(LOGO_MAX_BYTES);
+  const png = readFileSync(resolve(__dirname, '../../../../config/test-markets/eclv-20261103.logo.png'));
+  expect(draft.logo).toBe(`data:image/png;base64,${png.toString('base64')}`);
+  expect(png.length).toBeLessThan(LOGO_MAX_BYTES);
+  expect(png.length).toBe(52194);
+  expect(png.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a');
+  // Captured from the owner's existing production Draft, not a replacement.
+  expect(createHash('sha256').update(png).digest('hex')).toBe('4f9ffc2f38645beeccf238a2609607064a63f7ef6c2d71018d5fae8aa9ca45a7');
 });
 
 test('every value can be entered in Admin → Listings exactly (no hidden or unreachable setting)', () => {

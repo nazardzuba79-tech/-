@@ -11,7 +11,7 @@ Owner-requested update of the existing ECLAVO/ECLV, **not a new listing**. Histo
 | First 24 hours | +680%, exactly 0.1092 USDT |
 | Maximum and attained model peak | +7148%, **1.01472 USDT** |
 | Seed | `eclavo-20261103-v1`, manual, unchanged |
-| Logo | Existing `config/test-markets/eclv-20261103.logo.svg`, unchanged |
+| Logo | Existing production-approved PNG, copied byte-for-byte to `config/test-markets/eclv-20261103.logo.png` |
 | Trading / allocation | `tradable:false`, `ownerAllocation:"0"`, unchanged |
 
 ## Canonical trajectory
@@ -51,7 +51,7 @@ Legacy `--create` remains for compatibility and isolated tests, but is **not aut
 
 ## Production gates and rollback
 
-No production merge, API/Worker/frontend release, publication or countdown activation has been performed by this update. Browser/ADMIN connectivity must be established before claiming the production Draft is changed.
+No production merge, API/Worker/frontend release, publication or countdown activation has been performed by this update. ADMIN access is now verified in the cloud browser. Actual production has one private ECLV with the old November3 date, cap0.518 and seed eclavo-20261103-v1. It was subsequently moved date-only toNovember6,revision3, with actual reload/Preview PASS; the new cap/recovery have not yet been installed. It remains private and unpublished.
 
 The new terminal-peak semantics require compatible API validation and market-edge simulation before saving the new config. Current production exact SHAs/capability must be inspected first. Do not save a config that an old deployed generator cannot interpret. Frontend form validation also needs this compatible patch when editing via the UI. Use separately approved, exact-SHA releases with the existing immutable rollback artifacts; do not broadly deploy unrelated changes.
 
@@ -66,3 +66,18 @@ If rollback is needed while still never-published, use the same official draft P
 - `scripts/qa-listing-eclv.cjs`: actual local admin router, actual market Worker/workerd/SQLite and the built frontend in Chromium. Existing Draft migration and reload, seed/profile, unchanged QVTR, private Preview, desktop1440/mobile390, local-only publication/timer, Spot/Markets/logo, 1m/5m/1h, day-one price and actual recovery peak.
 - Disposable local users/storage only. No real funds or external provider requests. Local publication/timer is **not** evidence of production publication.
 - `.github/workflows/eclv-listing-draft.yml` runs on review PRs with read-only GitHub permissions and no deployment job. Review commits carry Cloudflare Pages/Render skip markers. Exact-head results and evidence are recorded on the PR after execution.
+
+
+## Actual production preflight on 27 October
+
+- Secure ADMIN sign-in succeeded. ECLV is one existing private Draft; all51 displayed controls and the exact logo remain unchanged after the separate authorized QVTR creation. Preview selector preferences were restored before the full comparison. After this read-only check, one owner-authorized date-only CAS save moved the SAME private Draft toNovember6,revision3. Reload and actual first24h Preview PASS; seed/logo/all other fields preserved. The cap/recovery remain old until an approved compatible runtime release. No publication or timer action occurred.
+- **Actual approved logo differs from the old repository SVG.** Preserve the existing PNG:52194bytes,969×965, SHA256 `4f9ffc2f38645beeccf238a2609607064a63f7ef6c2d71018d5fae8aa9ca45a7`. The historical SVG is removed from active assets; the single config now contains the production PNG. The authoritative64KiB limit is unchanged, with an additional exact byte-count/signature/hash guard. Do not upload the old SVG over the owner's approved image.
+- API `/health` reports statusok, commit `89c3ac003b44a6a0e7630d2ecbe5d7164e85b683`. This predates main's History20 additions. **Do not deploy whole main or the whole PR628 API source over it.**
+- `ops/listings/eclv-peak-89c3.patch` is the isolated production-base alternative:only the synthetic validator and generator,13 additions/2 deletions. It contains no History20 implementation, database/migration, bootstrap, auth or financial change. It applies to that exact source base and has been compiled and exercised on a detached local checkout:actual peak1.01472, first24h0.1092,3601 bounded continuous5m candles and unchanged88-hour tick fingerprint. The dedicated Ubuntu24.04/Node22 CI job rechecks this production source without running a server or using a database.
+- This patch is **prepared, not deployed**. Before any approved application, require fresh `/health` to match89c3 and retain the immutable current API image. If the base differs, stop and rebase/retest rather than overlaying files from main.
+- The market Worker also needs compatible simulation semantics. Its precise deployed source/version and rollback must be verified before choosing a Worker artifact; the main bundle must not silently bring in unapproved History20 changes. Cloudflare's Google sign-in in this cloud session returned `Unable to sign in`; automated sign-in stopped after that first generic failure. No Cloudflare settings/deployments changed. Current Pages SHA and Worker immutable version remain unverified here.
+- Per owner coordination, **PR627 is first for a narrow frontend release through the agreed operator**. No parallel frontend release is permitted from this task. Admin validation integration for ECLV must be coordinated after627, with its own approval and verified frontend base.
+- QVTR is now one actual production private Draft,revision1, same approved logo/fields after reload. Actual first24h Preview0.1092, and full300h/301candle Preview0.818 with high0.8182198871≤0.88858. QVTR is not published and its timer was not started. See `docs/qa/listing-qvtr/voltex-qvtr-production-private-preview-20261027.jpg` and `voltex-qvtr-production-seven-phases-20261027.jpg`.
+- Review head1f423a28 passed **all16 GitHub workflows**, including73Jest+8CLI and browser27/27. The approved-logo/backport-evidence follow-up requires its own exact-head CI; the old green result is not substituted for it.
+
+Operator coordination supplied12:50UTC: canonical frontend source `a7593324be9118cfda91ee8fc6bad0b6ff3acba9`, deployment `9dbc9e80` from23October; auto-deployOFF/previewsnone. This is explicitly attributed coordination evidence, not a Cloudflare observation from this cloud session. Main advanced to`e27117a61d191cbc03456abaf5e88fa38bdf5d62` after627; review branch reconciles that main while preserving Referral and scenario changes. PR627 retains the first frontend operator slot. No History20 archive rights or financial gates may be activated.

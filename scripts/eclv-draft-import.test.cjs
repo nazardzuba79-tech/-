@@ -81,3 +81,15 @@ test('server profile mismatch is surfaced rather than silently accepted',async()
 test('create and update cannot be combined',async()=>{
   await fixture([row()],{},async f=>{assert.equal((await f.run(['--create','--update'])).code,1);assert.equal(f.calls.length,0);});
 });
+
+test('an already moved November6 private Draft completes only the approved cap/recovery update',async()=>{
+  const r=row();r.draft.listingAt=FILE.listingAt;
+  await fixture([r],{},async f=>{
+    const result=await f.run();assert.equal(result.code,0,result.out);
+    assert.equal(f.state[0].id,r.id);assert.equal(f.state[0].draftRevision,5);
+    assert.equal(f.state[0].draft.listingAt,FILE.listingAt);assert.equal(f.state[0].draft.logo,r.draft.logo);
+    assert.equal(f.state[0].draft.simulationProgram.maxPrice,'1.01472');
+    assert.equal(f.state[0].draft.simulationProgram.stages.at(-1).targetPrice,'1.01472');
+    assert.equal(f.calls.filter(c=>c.method==='PUT').length,1);assert.equal(f.calls.some(c=>c.method==='POST'),false);
+  });
+});
