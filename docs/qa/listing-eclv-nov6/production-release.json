@@ -1,0 +1,39 @@
+{
+  "apiSource": "754de3fc5bbe5b00b96dd0504ed0d5eabd6c5683",
+  "apiStatus": "APPLIED_HEALTHY; runtime configuration preserved",
+  "operatorOnlyFix": "8a9663950c07619d83aff34638e4967e3eeffe14",
+  "workerVersion": "ee2a5fde-3f35-46dc-ba38-0e7a69aab629",
+  "workerModuleSha256": "dc95cbdd113b1273a1a3fb73d7d879bbfca93c5a49c9746dc1ff2afc846ec0b2",
+  "pagesSource": "a4dcdd42bfc1e1303407085d767d140124e885fd",
+  "pagesDeployment": "7e82aeae-7bd6-45ec-a8f7-cfe1efdb839b",
+  "pagesSuccessAt": "2026-10-27T17:43:07.706544Z",
+  "draftUpdated": true,
+  "published": true,
+  "countdownStarted": true,
+  "draftRevision": 4,
+  "first24hPreview": {
+    "candles": 289,
+    "interval": "5m",
+    "endPrice": "0.1092"
+  },
+  "fullPreview": {
+    "candles": 253,
+    "interval": "1h",
+    "endPrice": "1.01472",
+    "observedHigh": "1.01472"
+  },
+  "activeVersion": 1,
+  "countdownState": "running",
+  "listingAt": "2026-11-06T13:00:00Z",
+  "seed": "eclavo-20261103-v1",
+  "approvedPngSha256": "4f9ffc2f38645beeccf238a2609607064a63f7ef6c2d71018d5fae8aa9ca45a7",
+  "tradable": false,
+  "ownerAllocation": "0",
+  "actualPublicCountdownVerified": true,
+  "productionViewport": {
+    "width": 1363,
+    "height": 936
+  },
+  "actualProductionMobileVerified": false,
+  "russianIspVerified": false
+}

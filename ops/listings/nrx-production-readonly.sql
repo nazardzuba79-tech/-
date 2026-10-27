@@ -1,0 +1,26 @@
+-- Aggregate counts only. No identifiers, amounts, addresses, or credentials.
+BEGIN READ ONLY;
+SET LOCAL statement_timeout='5s';
+SET LOCAL lock_timeout='500ms';
+SELECT 'transaction_read_only=' || current_setting('transaction_read_only');
+SELECT 'spot_orders=' || (SELECT count(*) FROM "Order" WHERE pair IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'open_spot_orders=' || (SELECT count(*) FROM "Order" WHERE pair IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX') AND status IN ('OPEN','PARTIALLY_FILLED','PENDING_TRIGGER'));
+SELECT 'spot_trades=' || (SELECT count(*) FROM "Trade" WHERE pair IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'demo_orders=' || (SELECT count(*) FROM "DemoOrder" WHERE pair IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'open_demo_orders=' || (SELECT count(*) FROM "DemoOrder" WHERE pair IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX') AND status IN ('OPEN','PARTIALLY_FILLED','PENDING_TRIGGER'));
+SELECT 'demo_trades=' || (SELECT count(*) FROM "DemoTrade" WHERE pair IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'futures_orders=' || (SELECT count(*) FROM "FuturesOrder" WHERE symbol IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'futures_positions=' || (SELECT count(*) FROM "FuturesPosition" WHERE symbol IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'open_futures_positions=' || (SELECT count(*) FROM "FuturesPosition" WHERE symbol IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX') AND status='OPEN');
+SELECT 'cfd_positions=' || (SELECT count(*) FROM "CfdPosition" WHERE symbol IN ('NRX/USDT','NRX-USDT','NRXUSDT','NRX/SIMUSDT','NRX-SIMUSDT','NRXSIMUSDT','NRX'));
+SELECT 'balance_nonzero=' || (SELECT count(*) FROM "Balance" WHERE asset='NRX' AND (available<>0 OR locked<>0));
+SELECT 'demobalance_nonzero=' || (SELECT count(*) FROM "DemoBalance" WHERE asset='NRX' AND (available<>0 OR locked<>0));
+SELECT 'futuresbalance_nonzero=' || (SELECT count(*) FROM "FuturesBalance" WHERE asset='NRX' AND (available<>0 OR locked<>0));
+SELECT 'deposit_references=' || (SELECT count(*) FROM "Deposit" WHERE asset='NRX');
+SELECT 'withdrawal_references=' || (SELECT count(*) FROM "Withdrawal" WHERE asset='NRX');
+SELECT 'wallet_references=' || (SELECT count(*) FROM "Wallet" WHERE asset='NRX');
+SELECT 'nativedemoaccount_nrx_payload_references=' || (SELECT count(*) FROM "NativeDemoAccount" WHERE payload::text LIKE '%NRX%');
+SELECT 'nativedemorevision_nrx_payload_references=' || (SELECT count(*) FROM "NativeDemoRevision" WHERE payload::text LIKE '%NRX%');
+SELECT 'nativedemoliveprojection_nrx_payload_references=' || (SELECT count(*) FROM "NativeDemoLiveProjection" WHERE payload::text LIKE '%NRX%');
+SELECT 'privatetradingaccount_nrx_payload_references=' || (SELECT count(*) FROM "PrivateTradingAccount" WHERE state::text LIKE '%NRX%');
+COMMIT;
