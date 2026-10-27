@@ -1,7 +1,39 @@
 # SOURCE ONLY; never auto-loaded by production Compose. No paid service.
 # Future owner-approved choice: one Node22 gateway/ingress process in the HOST
 # network namespace so host Nginx can reach its existing loopback listeners.
+# Separated layout (docs/STOCKS_613_PROCESS_ISOLATION.md): the Stocks authority
+# runs as its own process from the ordinary API image; the crypto API keeps every
+# STOCKS_* variable unset and mounts no Stocks route. Same host, no new server.
 services:
+  stocks-authority-review:
+    profiles: [stocks-review-only]
+    image: ${VOLTEX_API_REVIEWED_IMAGE:?reviewed immutable API image digest required}
+    # The API image's own Node entry, another compiled module: no shell, migration or seed.
+    entrypoint: []
+    command: [node, dist/stocksAuthority.js]
+    network_mode: host
+    restart: 'no'
+    read_only: true
+    user: '1000:1000'
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    # Provisional review budget, NOT a passed 50+2 capacity claim.
+    cpus: '0.25'
+    mem_limit: 256m
+    pids_limit: 64
+    tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
+    ulimits:
+      nofile: {soft: 1024, hard: 1024}
+    # DATABASE_URL, JWT_SECRET (the API's), STOCKS_TEST_CASH_GATEWAY_KEY,
+    # STOCKS_IDENTITY_ISSUER, STOCKS_TRADE_PRINCIPALS and the approved catalogue /
+    # test-cash flags; its own Prisma pool counts against PostgreSQL connections.
+    env_file: ["${STOCKS_AUTHORITY_APPROVED_ENV_FILE:?separately approved private environment required}"]
+    environment:
+      NODE_ENV: production
+      # Loopback-only private listener; there is no public listener in this process.
+      STOCKS_AUTHORITY_INTERNAL_PORT: '4439'
+      STOCKS_AUTHORITY_REQUESTS_PER_MINUTE: '240'
+      STOCKS_ORDER_EXECUTION_ENABLED: 'false'
   stocks-catalogue-review:
     profiles: [stocks-review-only]
     image: ${STOCKS_REVIEWED_IMAGE:?reviewed immutable Node22 image digest required}
@@ -29,4 +61,6 @@ services:
       STOCKS_PAGES_INGRESS_ENABLED: 'false'
       STOCKS_MARKET_DATA_ENABLED: 'false'
       STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+      # The dedicated authority above, never the crypto API.
+      STOCKS_TEST_CASH_AUTHORITY_URL: http://127.0.0.1:4439/api/v1/stocks-test-cash
     # No ports, database volume, SQLite path, seed, migration or restart of API.

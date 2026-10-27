@@ -9,6 +9,8 @@ on:
       - 'src/api/routes/stocksTestCash.ts'
       - 'src/api/routes/__tests__/stocksTestCash.test.ts'
       - 'src/api/middleware/auth.ts'
+      - 'src/stocksAuthority.ts'
+      - 'src/__tests__/stocksAuthority.test.ts'
       - 'src/services/ContactEmailPolicy.ts'
       - 'prisma/schema.prisma'
       - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
@@ -150,8 +152,8 @@ jobs:
           frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts
       - name: Bounded harness admission and financial assertion regressions (no workload run)
         run: node --test scripts/qa/stocks-rc-50plus2/self-test.cjs
-      - name: Behavioral default-OFF, catalogue-only and explicit financial opt-in contract
-        run: npx jest --runInBand --runTestsByPath src/api/routes/__tests__/stocksTestCash.test.ts
+      - name: Behavioral default-OFF, catalogue-only and explicit financial opt-in contract; dedicated authority process
+        run: npx jest --runInBand --runTestsByPath src/api/routes/__tests__/stocksTestCash.test.ts src/__tests__/stocksAuthority.test.ts
       - name: Review evidence (synthetic, no customer information)
         if: always()
         uses: actions/upload-artifact@v4
@@ -252,11 +254,11 @@ jobs:
           retention-days: 5
       - name: Release startup fails closed before listening
         run: node --test services/stocks-global/release-startup.test.mjs
-      - name: Compiled authority financial fences and real release startup on disposable PostgreSQL
+      - name: Compiled authority financial fences, real release startup and the dedicated authority process on disposable PostgreSQL
         shell: bash
         run: |
           set -euo pipefail
-          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/release-authority.pg.test.cjs | tee /tmp/stocks-node22-pg.tap
+          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/release-authority.pg.test.cjs services/stocks-global/separated-authority.pg.test.cjs | tee /tmp/stocks-node22-pg.tap
           grep -Eq '^# skipped 0$' /tmp/stocks-node22-pg.tap
           grep -Eq '^# fail 0$' /tmp/stocks-node22-pg.tap
           grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-node22-pg.tap
