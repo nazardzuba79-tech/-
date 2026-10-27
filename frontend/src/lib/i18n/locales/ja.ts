@@ -931,6 +931,7 @@ export const JA: Record<Key, string> = {
   'settings.referralRegion': '紹介リンクの地域',
   'settings.referralWorld': '全世界向け',
   'settings.referralRussia': 'ロシア向け',
+  'settings.referralCopy': 'コピー',
   'settings.referralLinkUnavailable': '紹介リンクは現在利用できません',
   'settings.pageSubtitle': 'アカウント、セキュリティ、個人設定を管理します。',
   'settings.activeSessions': 'アクティブなセッション',

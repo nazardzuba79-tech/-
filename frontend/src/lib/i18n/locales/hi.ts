@@ -931,6 +931,7 @@ export const HI: Record<Key, string> = {
   'settings.referralRegion': 'रेफ़रल लिंक का क्षेत्र',
   'settings.referralWorld': 'पूरी दुनिया के लिए',
   'settings.referralRussia': 'रूस के लिए',
+  'settings.referralCopy': 'कॉपी करें',
   'settings.referralLinkUnavailable': 'रेफ़रल लिंक अभी उपलब्ध नहीं है',
   'settings.pageSubtitle': 'अपने खाते, सुरक्षा और व्यक्तिगत प्राथमिकताओं को प्रबंधित करें।',
   'settings.activeSessions': 'सक्रिय सत्र',

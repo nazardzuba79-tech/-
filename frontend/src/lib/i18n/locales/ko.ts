@@ -931,6 +931,7 @@ export const KO: Record<Key, string> = {
   'settings.referralRegion': '추천 링크 지역',
   'settings.referralWorld': '전 세계',
   'settings.referralRussia': '러시아',
+  'settings.referralCopy': '복사',
   'settings.referralLinkUnavailable': '현재 추천 링크를 사용할 수 없습니다',
   'settings.pageSubtitle': '계정, 보안 및 개인 환경설정을 관리하세요.',
   'settings.activeSessions': '활성 세션',

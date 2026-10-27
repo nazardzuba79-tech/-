@@ -82,7 +82,7 @@ export function ReferralSection() {
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-[13px] font-medium text-primary-foreground transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
             >
               <Copy className="size-4" />
-              {t('deposit.copy')}
+              {t('settings.referralCopy')}
             </button>
           </div>
         </div>

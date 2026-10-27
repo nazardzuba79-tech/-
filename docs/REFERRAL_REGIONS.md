@@ -17,7 +17,7 @@ schema, migration or financial rules changed.
 ## Verification
 
 - Local: 131 link/auth/clipboard/localization tests; backend and frontend build.
-- The historical translation digest still pins all old bytes: only the four new
+- The historical translation digest still pins all old bytes: only the five new
   exact keys are excluded by name and separately checked in all seven languages.
 - `scripts/qa-referral-regions.cjs` is guarded to the disposable loopback database
   `voltex_referral_regions`. It exercises the unchanged actual auth/referral routes

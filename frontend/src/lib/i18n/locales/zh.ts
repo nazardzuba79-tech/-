@@ -935,6 +935,7 @@ export const ZH: Record<Key, string> = {
   'settings.referralRegion': '推荐链接地区',
   'settings.referralWorld': '全球',
   'settings.referralRussia': '俄罗斯',
+  'settings.referralCopy': '复制',
   'settings.referralLinkUnavailable': '推荐链接暂不可用',
   'settings.pageSubtitle': '管理你的账户、安全和个人偏好设置。',
   'settings.activeSessions': '活跃会话',

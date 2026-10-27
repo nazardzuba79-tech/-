@@ -34,7 +34,7 @@ test('unavailable storage defaults safely without breaking dev, SSR or registrat
 test('all seven locales label the same two regions without an unverified VPN claim', () => {
   const dictionaries = readDictionaries();
   for (const dictionary of Object.values(dictionaries)) {
-    for (const key of ['settings.referralRegion', 'settings.referralWorld', 'settings.referralRussia', 'settings.referralLinkUnavailable']) {
+    for (const key of ['settings.referralRegion', 'settings.referralWorld', 'settings.referralRussia', 'settings.referralCopy', 'settings.referralLinkUnavailable']) {
       expect(typeof dictionary[key]).toBe('string');
       expect(dictionary[key].length).toBeGreaterThan(0);
       expect(dictionary[key]).not.toMatch(/VPN/i);

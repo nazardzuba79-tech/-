@@ -936,6 +936,7 @@ export const EN: Record<Key, string> = {
   'settings.referralRegion': 'Referral link region',
   'settings.referralWorld': 'Worldwide',
   'settings.referralRussia': 'For Russia',
+  'settings.referralCopy': 'Copy',
   'settings.referralLinkUnavailable': 'Referral link is currently unavailable',
   'settings.pageSubtitle': 'Manage your account, security and personal preferences.',
   'settings.activeSessions': 'Active sessions',

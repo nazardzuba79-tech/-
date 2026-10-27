@@ -939,6 +939,7 @@ export const RU = {
   'settings.referralRegion': 'Регион реферальной ссылки',
   'settings.referralWorld': 'Для всего мира',
   'settings.referralRussia': 'Для России',
+  'settings.referralCopy': 'Скопировать',
   'settings.referralLinkUnavailable': 'Реферальная ссылка пока недоступна',
   'settings.pageSubtitle': 'Управляй аккаунтом, безопасностью и личными настройками.',
   'settings.activeSessions': 'Активные сессии',
