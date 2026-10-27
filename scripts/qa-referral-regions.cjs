@@ -163,6 +163,8 @@ async function finances() {
           assert.equal(await page.locator('[data-referral-link]').textContent(), link);
           assert.equal(await page.evaluate(key => localStorage.getItem(key), regionKey), region);
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+          // Reload starts at the top on mobile; include the actual controls in evidence.
+          if (width < 768) await page.locator('[data-referral-link]').evaluate(el => el.scrollIntoView({ block: 'center' }));
           await page.screenshot({ path: path.join(out, `profile-${new URL(origin).hostname}-${region}-${width}.png`) });
         }
         const stats = await page.evaluate(async () => (await fetch('/api/v1/referral/me', { headers: { Authorization: `Bearer ${localStorage.getItem('exchange_token')}` } })).json());
