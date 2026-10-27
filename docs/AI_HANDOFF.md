@@ -7460,6 +7460,14 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - portfolio labelling of demo proceeds;
   - P0-3 real-book exposure and reconciliation of production USDT already minted (read-only SQL in the doc).
 
+## 2026-10-27 — Codex — #616/#553 original History20 pack and all20 acceptance
+
+- Code commit `85a55a5b4aac8c3f88afa2a2e02cd18ebf1b722f`; original ZIP SHA256 `82255d3a1502c901734304d3e2e1eb3cef0f9d7e53e5932d7c74e73d7b3482bb` verified. All97/43 manifests, 20 pinned sources, 8,637 daily rows. Raw archive/data stay in ignored local output, never public Git/CI artifacts.
+- Historical importer/model/schema/UI only: verify the original research path, then apply explicit MATIC normalization v1 +15324%→+15000% for new imports. Preserve raw logs/hash, dates, 1× clock, original catalogue and saved history; other19 targets unchanged. At P0=2, cap302 SIMUSDT. Strict browser/server metadata validation and storage roundtrip.
+- RED→GREEN actual ZIP test; local6/6 pack +14/14 frontend/model tests, 7 suites/120 affected-model regressions, 4/4 isolated PostgreSQL Spot/Futures tests, backend/frontendTS and Vite build PASS. Actual Chromium/router/workerd all20 at1440/390: 40/40 matrix cases, 51 checks, zero errors/external calls/financial writes/overflow. Environment-gated checks not executed locally are explicitly distinguished in the integration note.
+- Preserved main620/625 financial fences, restricted SIMUSDT and private-admission replay/transaction guards. Work628 candidate `1f423a282227ceda7ea7af37f5f08d2b674a5e94` preview-merges cleanly; none of its ECLAVO records/config/date/seed/timers were imported or changed. New main QVTR changes retained as-is. Referral627 author/operator continues independently; no duplicate workspace edits or production operations.
+- Evidence and remaining boundary: `docs/HISTORY20_INTEGRATION_616_20261027.md`; all20 derived data/screenshots local-only. `HISTORICAL_RIGHTS_UNVERIFIED` remains; no public publication, funding, timer start, financial switch, main merge or deploy. Final exact-head CI belongs to the existing553 PR, separate from private local archive evidence.
+
 
 ## 2026-10-27 — Codex — PR624 exact QVTR integration preparation; production admin access blocked
 - Owner-selected existing branch work/qaventra-20261028-distinct-listing; started fdbe00c82063c88ae8c4a48df23dd175b29821c9, reconciled fresh main4ac8a45eeeb19ed6cd4677021d677134c438674f without conflicts (35 intervening commits). This enclosing merge/follow-up commit preserves all new financial fences and other-agent work. ECLAVO config/logo/importer/QA script byte-identical to main; no rename/reschedule. No merge INTO main, deploy, production Draft/publication/timer/financial operation.
