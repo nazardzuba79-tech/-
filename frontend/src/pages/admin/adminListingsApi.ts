@@ -1,6 +1,7 @@
 import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
 import type { ListingProgram } from './listingMovementModel';
+import type { HistoricalGrowthDataKind, HistoricalGrowthIntrabar, HistoricalGrowthSource } from './historicalGrowthModel';
 
 /** Admin → Listings calls (Render, ADMIN only; Render forwards to the Cloudflare store). */
 
@@ -20,7 +21,11 @@ export interface ListingConfig {
   simulationProfile?: 'CALM_TREND' | 'IMPULSE_TREND' | 'PULLBACK_TREND' | 'COMPRESSION_BREAKOUT';
   wickModel?: 'NATURAL_V1';
   simulationProgram?: ListingProgram;
+  /** History20 private test (owner and allowlisted testers, SIMUSDT, never public); fixed once started. */
+  privateTest?: PrivateTestSettings;
 }
+
+export interface PrivateTestSettings { settlement: 'SIMUSDT'; funding: { base: string; quote: string } }
 
 /** What the form sends. The server fills schemaVersion and an automatic seed; the store assigns the profile. */
 export type ListingForm = Omit<ListingConfig, 'schemaVersion' | 'seed' | 'simulationProfile'> & { seed?: string };
@@ -50,6 +55,7 @@ export interface AdminListing {
   countdown?: ListingCountdown | null;
 }
 
+export type ListingPreviewHorizon = 'first24h' | 'growth' | 'afterGrowth' | 'history' | 'window';
 export interface ListingPreview {
   listingId: string;
   draftRevision: number;
@@ -60,7 +66,12 @@ export interface ListingPreview {
   candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[];
   book: { available: boolean; bids: { price: string; quantity: string }[]; asks: { price: string; quantity: string }[] };
   trades: { id: string; price: string; quantity: string; side: 'BUY' | 'SELL'; time: number }[];
-  scenarioSummary?: { horizon: 'first24h' | 'growth' | 'afterGrowth' | 'history'; interval: string; from: number; to: number; initialPrice: string; first24hPrice: string; maxPrice: string; observedHigh: number; observedLow?: number; candleLimit: number };
+  scenarioSummary?: {
+    horizon: ListingPreviewHorizon; interval: string; from: number; to: number; initialPrice: string; first24hPrice: string; maxPrice: string; observedHigh: number; observedLow?: number; candleLimit: number;
+    /** Present for a historical growth window (admin preview only). */
+    historicalGrowth?: { scenarioId: string; unit: string; alpha: number; targetPeakGrowthPercent: string; windowDays: number; fromDay: number; toDay: number; clock: 'REAL_TIME'; dataKind: HistoricalGrowthDataKind; rights: string;
+      intrabar: HistoricalGrowthIntrabar; provider: HistoricalGrowthSource['provider']; metric: HistoricalGrowthSource['metric'] };
+  };
 }
 
 export class ListingApiError extends Error {
@@ -134,8 +145,8 @@ export const adminListingsApi = {
   create: (config: ListingForm) => call<{ id: string; draftRevision: number; draft: ListingConfig }>('/admin/listings', { method: 'POST', body: { config } }),
   saveDraft: (id: string, config: ListingForm, draftRevision: number) =>
     call<{ id: string; draftRevision: number; draft: ListingConfig }>(`/admin/listings/${encodeURIComponent(id)}/draft`, { method: 'PUT', body: { config }, ifMatch: draftRevision }),
-  preview: (id: string, at: string | null, interval = '5m', horizon?: 'first24h' | 'growth' | 'afterGrowth' | 'history') =>
-    call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}), ...(horizon ? { horizon } : {}) })}`),
+  preview: (id: string, at: string | null, interval = '5m', horizon?: ListingPreviewHorizon, fromDay?: number) =>
+    call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}), ...(horizon ? { horizon } : {}), ...(horizon === 'window' && fromDay !== undefined ? { fromDay: String(fromDay) } : {}) })}`),
   /** `countdown: 'staged'` publishes without starting the public timer; the admin starts it later with «Запустить таймер». */
   publish: (id: string, draftRevision: number, publishKey: string, countdown?: 'staged' | 'running') =>
     call<{ id: string; version: number; replayed: boolean; publishedAt: string; countdown?: ListingCountdown | null }>(

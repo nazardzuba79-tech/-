@@ -1,11 +1,21 @@
 name: Admin Listings (managed simulated markets)
 on:
+  # Isolated History20 branch acceptance. Only tests; never deploy production.
+  push:
+    branches: ['claude/voltex-mobile-audit-7rpjni']
+    paths:
+      - 'frontend/src/pages/admin/AdminListingsPage.tsx'
+      - 'frontend/src/pages/admin/listingHistoricalPublicationGate.ts'
+      - 'frontend/src/lib/__tests__/history20PublicationGate.test.ts'
+      - '.github/workflows/admin-listings.yml'
   pull_request:
     paths:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
       - 'src/shared/listingHistoricalReplay.ts'
+      - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
+      - 'src/shared/history20PrivateSymbol.ts'
       - 'config/test-markets/aith.draft.json'
       - 'config/test-markets/tyvn.draft.json'
       - 'config/test-markets/qvtr-20261028.*'
@@ -13,14 +23,23 @@ on:
       - 'scripts/qa-listing-qvtr.cjs'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
+      - 'src/services/PriceWatcherService.ts'
+      - 'src/api/routes/orders.ts'
       - 'src/services/WalletPortfolioService.ts'
+      - 'src/services/WalletTransferService.ts'
+      - 'src/services/PurchaseService.ts'
       - 'src/api/routes/adminListings.ts'
+      - 'src/api/routes/privateTestMarkets.ts'
+      - 'src/api/routes/testMarkets.ts'
+      - 'src/api/routes/candles.ts'
+      - 'src/services/CardApplicationService.ts'
       - 'src/index.ts'
       - 'workers/market-edge/**'
       - 'frontend/src/lib/marketEdge.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'frontend/src/lib/testMarket*.ts'
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/spotPublicMarket.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/markets-bolt/**'
       - 'frontend/src/pages/admin/**'
@@ -37,17 +56,20 @@ on:
       - 'scripts/qa-listing-controls.cjs'
       - 'scripts/benchmark-historical-replay.cjs'
       - 'scripts/qa-historical-archive-storage.cjs'
+      - 'scripts/qa-listing-history20.cjs'
+      - 'frontend/src/lib/__tests__/historicalGrowthLibrary.test.ts'
       - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
       - 'frontend/src/lib/__tests__/listingHistoricalLibrary.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
+      - 'scripts/fund-history20-private.cjs'
       - '.github/workflows/admin-listings.yml'
 permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       postgres:
@@ -87,17 +109,28 @@ jobs:
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
           src/services/listings/__tests__/historicalDemoContour.pg.test.ts
           src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts
+          src/services/listings/__tests__/managedListingFailClosed.pg.test.ts
+          src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts
+          src/services/listings/__tests__/legacySimulationSaleEquivalence.pg.test.ts
+          src/services/listings/__tests__/history20SimusdtSettlement.pg.test.ts
+          src/services/listings/__tests__/history20ColdRegistryCashout.pg.test.ts
+          src/services/listings/__tests__/history20PrivateSpot.pg.test.ts
+          src/services/listings/__tests__/history20PrivateConfig.test.ts
+          src/services/__tests__/History20ReplayAdmission.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
           frontend/src/lib/__tests__/listingTimeSafety.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/privateTestMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
+      - name: History20 private SIMUSDT confirmation - actual openPublish regression
+        run: npx jest --runInBand --runTestsByPath frontend/src/lib/__tests__/history20PublicationGate.test.ts
       - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
         run: >-
           npx jest --runInBand --silent
-          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour'
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour|historicalGrowth'
       - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
         run: |
           mkdir -p /tmp/listings-qa-report
@@ -128,6 +161,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: History20 growth window at 1440/390 (one synthetic window; the owner's pack is not in the repository)
+        run: node scripts/qa-listing-history20.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/history20
       - name: Pre-listing timer through the real admin router and the Worker — staged stays hidden, start / pause / stop, Spot refuses
         run: node scripts/qa-listing-timer-api.cjs
         env:

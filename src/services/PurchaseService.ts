@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
+import { isSimulationSettled } from './testMarkets/testAssetConfig';
 
 export class PurchaseError extends Error {}
 
@@ -26,6 +27,8 @@ export class PurchaseService {
       if (!product || !product.active) {
         throw new PurchaseError('Product not found or no longer available');
       }
+      // SIMUSDT-settled value (History20 private test) never pays for a real product. Every other asset is unchanged.
+      if (isSimulationSettled(product.priceAsset)) throw new PurchaseError('This asset cannot be used for purchases');
 
       const price = new BigNumber(product.priceAmount.toString());
       try {

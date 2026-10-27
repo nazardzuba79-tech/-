@@ -3,6 +3,33 @@ import type { ListingPreview } from './adminListingsApi';
 const price = (value: number) => value.toLocaleString('ru-RU', { maximumFractionDigits: 10 });
 const time = (value: number) => new Intl.DateTimeFormat('ru-RU', { timeZone: 'UTC', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(value * 1000);
 
+/** Source observations only. Connecting points does not assert an intraday price path. */
+export function ListingReferencePreview({ points }: { points: readonly { time: number; value: number }[] }) {
+  if (!points.length) return <p className="listing-muted">Опорных цен нет.</p>;
+  const width = 720, left = 20, right = width - 100;
+  const low = Math.min(...points.map(p => p.value)), high = Math.max(...points.map(p => p.value));
+  const span = high - low || high * .01 || 1;
+  const x = (i: number) => left + (right - left) * i / Math.max(1, points.length - 1);
+  const y = (v: number) => 26 + (high - v) / span * 226;
+  return <div className="listing-candle-scroll" tabIndex={0} aria-label="Опорные цены за сутки; горизонтальная прокрутка графика">
+    <svg width={width} height={300} viewBox={`0 0 ${width} 300`} role="img" data-historical-reference-chart
+      aria-label="Дневные опорные цены: без исторических OHLC и внутрисуточных наблюдений">
+      <rect width={width} height={300} fill="#fff" />
+      {[0, 1, 2, 3, 4].map(i => <g key={i}>
+        <line x1={left} x2={right} y1={y(high - span * i / 4)} y2={y(high - span * i / 4)} stroke="#edf0f4" />
+        <text x={right + 10} y={y(high - span * i / 4) + 4} fill="#64748b" fontSize="11">{price(high - span * i / 4)}</text>
+      </g>)}
+      <polyline points={points.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')} fill="none" stroke="#14836a" />
+      {points.map((p, i) => <g key={p.time}>
+        <circle cx={x(i)} cy={y(p.value)} r={1.4} fill="#14836a" data-reference-point={p.time}>
+          <title>{`${time(p.time)} UTC. Опорная цена: ${price(p.value)} SIMUSDT. OHLC и объём отсутствуют.`}</title>
+        </circle>
+        {i % Math.max(1, Math.ceil(points.length / 5)) === 0 && <text x={x(i)} y={281} fill="#64748b" fontSize="10">{time(p.time)}</text>}
+      </g>)}
+    </svg>
+  </div>;
+}
+
 /** Presentation only: every OHLC value comes from the saved server configuration. */
 export function ListingCandlePreview({ candles, plan = false }: {
   candles: ListingPreview['candles'];

@@ -51,7 +51,8 @@ export function listingForPath(pathname: string, listings: readonly PublishedLis
  * not about one (the caller then continues with its other handlers).
  */
 export function managedListingResponse(request: Request, listings: readonly PublishedListing[], now: number, revision: string): Response | null {
-  listings = listings.filter(item => !isAith(item.config.symbol) || validAithLease(item.readLease, item.version, now));
+  // A History20 private test is never public data, whoever passes it in.
+  listings = listings.filter(item => !item.config.privateTest && (!isAith(item.config.symbol) || validAithLease(item.readLease, item.version, now)));
   const url = new URL(request.url);
   const path = url.pathname;
   const isCatalogue = path === PUBLIC_CATALOGUE_PATH;

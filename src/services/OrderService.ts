@@ -5,8 +5,10 @@ import BigNumber from 'bignumber.js';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
-import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
-import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
+import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
+import { NEURIX } from './testMarkets/neurix';
+import { isSimulationSettled, SIMULATION_QUOTE, isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
+import { privateTestAdmitted } from './listings/privateTest';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
 import { assertFloor, floorValue, isMintedListingAsset, lockFloor, prepareFloor } from './syntheticProceedsFloor';
@@ -95,6 +97,12 @@ export class OrderService {
     /** Optional client request ID (UUID): a retry returns the order the first attempt committed. */
     requestId?: string;
   }) {
+    const privatePair = isSimulationSettled(params.pair);
+    const privateAdmitted = privatePair && await this.privateAdmitted(params.pair, params.userId);
+    // Idempotency is not an access grant: private admission is checked again
+    // even when the original request already committed. Ordinary venue retry
+    // behavior remains independent of current price/listing availability.
+    if (privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
     const requestOrderId = params.requestId ? spotRequestOrderId(params.userId, params.requestId) : undefined;
     // An earlier attempt with this request ID already committed: answer with it,
     // place and lock nothing (before any price or listing read can fail the retry).
@@ -104,8 +112,9 @@ export class OrderService {
     }
 
     // Listing gates remain authoritative for every path, including the
-    // owner's NRX simulation sale below.
-    await assertSpotListingReady(params.pair);
+    // owner's NRX simulation sale below. A History20 private test pair admits
+    // only a database-verified participant while the mode is on.
+    if (!privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
 
     // Owner/admin and explicitly allowlisted team test accounts trade with
     // simulation-only Spot settlement for MARKET SELL. Their synthetic/test
@@ -163,6 +172,7 @@ export class OrderService {
     // An account holding legacy simulated-sale proceeds may not order its value away (syntheticProceedsFloor).
     const floorMarks = await prepareFloor(this.prisma, params.userId, this.priceSource);
     const placed = await SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
+      await this.reassertPrivateAdmission(tx, params.pair, params.userId, privateAdmitted);
       // Under the Spot book lock: racing first attempts with one request ID place one order.
       if (requestOrderId) {
         const existing = await tx.order.findUnique({ where: { id: requestOrderId } });
@@ -310,22 +320,25 @@ export class OrderService {
     const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
-    // Default-off P0 fence: an explicitly enabled, private simulated-asset sale
-    // settles proceeds ONLY in DemoBalance. It never mints spendable Spot USDT.
-    // No change to normal venues or existing feature switches.
+    // History20 keeps its separately admitted, non-withdrawable SIMUSDT ledger.
+    // All other simulated assets retain main's default-OFF DemoBalance-only P0 fence.
     // A minted listing token is simulated even while the listing registry is cold or stale (durable allocation receipt).
+    const managed = pair === NEURIX.pair ? null : managedListingForPair(pair);
+    const privateMarket = !!managed?.privateTest && quote === SIMULATION_QUOTE && managed.quote === SIMULATION_QUOTE;
+    if (privateMarket && !(await privateTestAdmitted(this.prisma, userId))) throw new Error('Simulation Spot sale is not available for this account');
     const simulatedAsset = isTestAssetPairOrSymbol(pair) || await isMintedListingAsset(this.prisma, base);
-    if (simulatedAsset && process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED !== 'true')
+    const demoSettlement = simulatedAsset && !privateMarket;
+    if (demoSettlement && process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED !== 'true')
       throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
-    if (simulatedAsset && (proceeds.decimalPlaces() ?? 19) > 18)
+    if (demoSettlement && (proceeds.decimalPlaces() ?? 19) > 18)
       throw new Error('Simulation proceeds exceed demo ledger precision');
 
     const now = Date.now();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
-    const auditAction = 'TEAM_SPOT_SIMULATION_SOLD';
+    const auditAction = privateMarket ? 'HISTORY20_PRIVATE_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
 
     return this.prisma.$transaction(async tx => {
       // Re-check server-side test identity and block state inside the financial
@@ -334,12 +347,13 @@ export class OrderService {
         where: { id: userId },
         select: { role: true, blockedAt: true },
       });
-      if (!user || user.blockedAt || (user.role !== 'ADMIN' && !isSimulationOnlyUser(userId))) {
+      if (!user || user.blockedAt || (user.role !== 'ADMIN' && !isSimulationOnlyUser(userId))
+          || (privateMarket && !(await privateTestAdmitted(tx, userId)))) {
         throw new Error('Simulation Spot sale is not available for this account');
       }
 
       await mutateSpotBalance(tx, userId, base, { available: quantity.negated() });
-      if (simulatedAsset) {
+      if (demoSettlement) {
         // The debit and the non-withdrawable demo credit share one serializable transaction.
         // DemoBalance is excluded from the real Spot book, transfers and withdrawals.
         // A unique (userId, asset) key makes retries and concurrent credits atomic.
@@ -395,8 +409,8 @@ export class OrderService {
             price: price.toFixed(),
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
-            source: 'VOLTEX team test Spot simulation',
-            settlementLedger: simulatedAsset ? 'DemoBalance' : 'Balance',
+            source: privateMarket ? 'History20 private test model (SIMUSDT, non-withdrawable)' : 'VOLTEX team test Spot simulation',
+            settlementLedger: demoSettlement ? 'DemoBalance' : 'Balance',
             withdrawableProceeds: !simulatedAsset,
           },
         },
@@ -449,6 +463,9 @@ export class OrderService {
     /** Optional client request ID (UUID): a retry returns the pair the first attempt committed. */
     requestId?: string;
   }) {
+    const privatePair = isSimulationSettled(params.pair);
+    const privateAdmitted = privatePair && await this.privateAdmitted(params.pair, params.userId);
+    if (privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
     const ids = params.requestId ? {
       ocoGroupId: spotRequestOrderId(params.userId, params.requestId, 'oco'),
       takeProfitOrderId: spotRequestOrderId(params.userId, params.requestId, 'oco-take-profit'),
@@ -458,7 +475,7 @@ export class OrderService {
       const replay = await this.replayOco(this.prisma, ids, params);
       if (replay) return replay;
     }
-    await assertSpotListingReady(params.pair);
+    if (!privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
     const [base, quote] = params.pair.split('/');
     const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');
@@ -478,6 +495,7 @@ export class OrderService {
 
     const floorMarks = await prepareFloor(this.prisma, params.userId, this.priceSource);
     const oco = await SpotBookTransaction.run(this.prisma, this.engine, async tx => {
+      await this.reassertPrivateAdmission(tx, params.pair, params.userId, privateAdmitted);
       if (ids) {
         const replay = await this.replayOco(tx, ids, params);
         if (replay) return replay;
@@ -802,6 +820,16 @@ export class OrderService {
   private async floorStart(tx: TxClient, userId: string, marks: Map<string, BigNumber>) {
     await lockFloor(tx, userId);
     return floorValue(tx, userId, marks);
+  }
+
+  /** A History20 private test pair's admission (privateTest.privateTestAdmitted); false for every other pair. */
+  private async privateAdmitted(pair: string, userId: string): Promise<boolean> {
+    return isSimulationSettled(pair) && await privateTestAdmitted(this.prisma, userId);
+  }
+
+  /** The same admission again inside the financial transaction: removed or blocked since is refused. */
+  private async reassertPrivateAdmission(tx: TxClient, pair: string, userId: string, admitted: boolean) {
+    if (admitted && !(await privateTestAdmitted(tx, userId))) throw new Error(`${pair} is not available for this account`);
   }
 
   private async lockFunds(tx: TxClient, userId: string, asset: string, amount: BigNumber) {
