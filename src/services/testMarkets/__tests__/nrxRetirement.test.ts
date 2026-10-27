@@ -8,7 +8,7 @@ import { isTestAssetPairOrSymbol } from '../testAssetConfig';
 
 describe('NRX retirement without deleting economic history', () => {
   afterEach(() => jest.restoreAllMocks());
-  test.each(['NRX/USDT', 'NRX-USDT', 'nrx_usdt', 'NRXUSDT', 'NRX'])('rejects new orders for %s before registry or venue IO', async pair => {
+  test.each(['NRX/USDT', 'NRX-USDT', 'nrx_usdt', 'NRXUSDT', 'NRX', 'NRX/BTC', 'BTC/NRX', 'NRX/SIMUSDT', 'NRXSIMUSDT'])('rejects new orders for %s before registry or venue IO', async pair => {
     const refresh = jest.spyOn(managedListingRegistry, 'ensureFresh').mockResolvedValue(undefined);
     expect(() => assertSpotListing(pair, Date.UTC(2030, 0))).toThrow('NRX is no longer');
     await expect(assertSpotListingReady(pair)).rejects.toThrow('NRX is no longer');

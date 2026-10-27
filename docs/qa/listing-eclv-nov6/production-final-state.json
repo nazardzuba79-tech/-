@@ -85,5 +85,26 @@
   "noBalanceMutation": true,
   "noRollbackPerformed": true,
   "noNewPR": true,
-  "noStocksOrWalletConversionActivation": true
+  "noStocksOrWalletConversionActivation": true,
+  "nrxAlternatePairs": {
+    "status": "BLOCKED_PRODUCTION_GUARD_INCOMPLETE",
+    "canonicalNrxUsdtBlocked": true,
+    "gapReproducedLocally": [
+      "NRX/BTC",
+      "BTC/NRX",
+      "NRX/SIMUSDT",
+      "NRXSIMUSDT"
+    ],
+    "noFinancialRequestUsedForReproduction": true,
+    "redBackend": {
+      "failed": 4,
+      "passed": 21
+    },
+    "fixedCandidateBackendTests": 25,
+    "fixedCandidateFrontendTests": 33,
+    "fixedCandidateOperatorGuards": 13,
+    "candidateApplied": false,
+    "blocker": "No operational browser/server-console transport; extension originating-browser-context error; no configured SSH access"
+  },
+  "preparedFrontendCandidate": "f8805b0073d17c3072f37803cb7efbce538ab170"
 }
