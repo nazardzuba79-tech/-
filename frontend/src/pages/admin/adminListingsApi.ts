@@ -119,6 +119,10 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
   if (valid && path.endsWith('/publish')) {
     valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/publish`
       && revision(body!.version) && typeof body!.replayed === 'boolean' && instant(body!.publishedAt) && countdownShape(body!.countdown);
+  } else if (valid && path.endsWith('/delete')) {
+    valid = body!.deleted === true && typeof body!.id === 'string'
+      && path === `/admin/listings/${encodeURIComponent(body!.id)}/delete`
+      && typeof body!.symbol === 'string' && typeof body!.catalogueRevision === 'string';
   } else if (valid && path.endsWith('/countdown')) {
     valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/countdown`
       && object(body!.countdown) && countdownShape(body!.countdown) && typeof body!.changed === 'boolean';
@@ -151,6 +155,11 @@ export const adminListingsApi = {
   publish: (id: string, draftRevision: number, publishKey: string, countdown?: 'staged' | 'running') =>
     call<{ id: string; version: number; replayed: boolean; publishedAt: string; countdown?: ListingCountdown | null }>(
       `/admin/listings/${encodeURIComponent(id)}/publish`, { method: 'POST', body: { draftRevision, publishKey, ...(countdown ? { countdown } : {}) } }),
+  deleteListing: (listing: Pick<AdminListing, 'id' | 'symbol' | 'draftRevision' | 'activeVersion'>) =>
+    call<{ id: string; symbol: string; deleted: true; catalogueRevision: string }>(`/admin/listings/${encodeURIComponent(listing.id)}/delete`, {
+      method: 'POST', body: { symbol: listing.symbol, draftRevision: listing.draftRevision,
+        activeVersion: listing.activeVersion, confirmation: `УДАЛИТЬ ${listing.symbol}` },
+    }),
   countdown: (id: string, action: ListingCountdownAction) =>
     call<{ id: string; countdown: ListingCountdown; changed: boolean }>(`/admin/listings/${encodeURIComponent(id)}/countdown`, { method: 'POST', body: { action } }),
 };

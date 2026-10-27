@@ -507,3 +507,31 @@ test('timer: a whole workerd restart keeps every timer state, and the public cat
   assert.deepEqual((await catalogue()).assets.map((a) => [a.pair, a.listingArmed, a.countdown]).sort(), publicBefore);
   assert.deepEqual([before.qtm.state, before.qtp.state, before.qto], ['running', 'running', null]);
 });
+
+test('delete one published market and draft, reject stale identity, preserve siblings after Worker restart', async () => {
+  const id='zty-delete';
+  const cfg=config({symbol:'ZTY',name:'Temporary',seed:'zty-delete-synthetic',tradable:false,ownerAllocation:'0'});
+  const saved=await(await saveDraft(id,cfg,0)).json();
+  assert.equal((await publish(id,saved.draftRevision,'publish-delete-0000001')).status,200);
+  const row=(await(await admin('/internal/listings')).json()).listings.find(x=>x.id===id);
+  const oldRevision=(await catalogue()).revision;
+  const body={symbol:'ZTY',draftRevision:row.draftRevision,activeVersion:1,confirmation:'УДАЛИТЬ ZTY'};
+  const url=`/internal/listings/${id}/delete`;
+  assert.equal((await admin(url,{method:'POST',body:{...body,symbol:'BAD',confirmation:'УДАЛИТЬ BAD'}})).status,409);
+  assert.equal((await admin(url,{method:'POST',body:{...body,draftRevision:99}})).status,409);
+  assert.equal((await admin(url,{method:'POST',body:{...body,confirmation:'no'}})).status,400);
+  assert.equal((await admin(url,{method:'POST',body,headers:{Authorization:'Bearer wrong'}})).status,401);
+  const siblings=(await(await admin('/internal/listings')).json()).listings.filter(x=>x.id!==id)
+    .map(x=>[x.id,x.symbol,x.draftRevision,x.activeVersion,x.countdown]);
+  const result=await admin(url,{method:'POST',body});
+  assert.equal(result.status,200,await result.clone().text());
+  assert.deepEqual(await result.json(),{id,symbol:'ZTY',deleted:true,catalogueRevision:String(BigInt(oldRevision)+1n)});
+  assert.equal((await admin(url,{method:'POST',body})).status,404);
+  assert.equal((await catalogue()).assets.some(x=>x.pair==='ZTY/USDT'),false);
+  assert.equal((await pub('/market/test-assets/ZTY-USDT')).status,404);
+  assert.deepEqual((await(await admin('/internal/listings')).json()).listings
+    .map(x=>[x.id,x.symbol,x.draftRevision,x.activeVersion,x.countdown]),siblings);
+  await mf.dispose();mf=new Miniflare(options);
+  assert.equal((await(await admin('/internal/listings')).json()).listings.some(x=>x.symbol==='ZTY'),false);
+  assert.equal((await catalogue()).assets.some(x=>x.pair==='ZTY/USDT'),false);
+});

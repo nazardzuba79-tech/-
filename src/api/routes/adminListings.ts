@@ -230,5 +230,40 @@ export function adminListingsRouter(
     } catch (error) { failure(res, error); }
   });
 
+  /** ADMIN-only hard delete. The economic read is intentionally fail-closed. */
+  router.post('/admin/listings/:id/delete', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    const { symbol, draftRevision, activeVersion, confirmation } = (req.body ?? {}) as Record<string, unknown>;
+    if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    if (typeof symbol !== 'string' || !/^[A-Z0-9]{2,10}$/.test(symbol) ||
+      !Number.isSafeInteger(draftRevision) || Number(draftRevision) < 1 ||
+      (activeVersion !== null && (!Number.isSafeInteger(activeVersion) || Number(activeVersion) < 1)) ||
+      confirmation !== `УДАЛИТЬ ${symbol}`) return res.status(400).json({ error: 'DELETE_CONFIRMATION_REQUIRED' });
+    try {
+      if (!store.deleteListing) return res.status(503).json({ error: 'DELETE_UNAVAILABLE' });
+      const listing = (await store.list()).listings.find(item => item.id === req.params.id);
+      if (!listing) return res.status(404).json({ error: 'not_found' });
+      if (listing.symbol !== symbol || listing.draftRevision !== draftRevision || listing.activeVersion !== activeVersion)
+        return res.status(409).json({ error: 'LISTING_CHANGED', message: 'Листинг изменился. Обновите список перед удалением.' });
+      if (listing.draft.tradable || listing.active?.tradable)
+        return res.status(422).json({ error: 'LISTING_TRADABLE', message: 'Активный торгуемый рынок нельзя удалить до отключения торговли.' });
+      const pairs = [`${symbol}/USDT`, `${symbol}-USDT`, `${symbol}USDT`, `${symbol}/SIMUSDT`, `${symbol}-SIMUSDT`];
+      const counts = await Promise.all([
+        prisma.order.count({ where: { pair: { in: pairs } } }),
+        prisma.trade.count({ where: { pair: { in: pairs } } }),
+        prisma.futuresOrder.count({ where: { symbol: { in: pairs } } }),
+        prisma.futuresPosition.count({ where: { symbol: { in: pairs } } }),
+        prisma.balance.count({ where: { asset: symbol, OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+        prisma.demoBalance.count({ where: { asset: symbol, OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+      ]);
+      if (counts.some(count => count !== 0))
+        return res.status(422).json({ error: 'LISTING_HAS_ACTIVITY', message: 'По активу найдены ордера, сделки, позиции или остатки средств. Удаление отменено.' });
+      const result = await store.deleteListing(req.params.id, symbol, Number(draftRevision), activeVersion as number | null, req.userId!);
+      previewCache.clear();
+      registry.invalidate();
+      res.json(result);
+    } catch (error) { failure(res, error); }
+  });
+
   return router;
 }

@@ -28,6 +28,7 @@ const adminListSchema = z.object({ revision: z.string(), serverTime: z.number(),
 const publishedSchema = z.object({ revision: z.string(), listings: z.array(publishedListingSchema) });
 const publishReceiptSchema = z.object({ id: z.string(), version: z.number(), replayed: z.boolean(), publishedAt: z.string(), countdown: listingCountdownSchema.nullable().optional() });
 const countdownReceiptSchema = z.object({ id: z.string(), countdown: listingCountdownSchema, changed: z.boolean() });
+const deleteReceiptSchema = z.object({ id: z.string(), symbol: z.string(), deleted: z.literal(true), catalogueRevision: z.string() });
 export type ListingPublishReceipt = z.infer<typeof publishReceiptSchema>;
 export type ListingCountdownReceipt = z.infer<typeof countdownReceiptSchema>;
 
@@ -40,6 +41,7 @@ export interface ListingStore {
   /** Start, pause or stop the public pre-listing timer of a published listing. */
   countdown?(id: string, action: ListingCountdownAction, actor: string): Promise<ListingCountdownReceipt>;
   replacePrelisting?(id: string, body: Record<string, unknown>, actor: string): Promise<Record<string, unknown>>;
+  deleteListing?(id: string, symbol: string, draftRevision: number, activeVersion: number | null, actor: string): Promise<z.infer<typeof deleteReceiptSchema>>;
 }
 
 /** Why Render has no listing store. Names only — never a value. */
@@ -121,6 +123,11 @@ export class CloudflareListingStore implements ListingStore {
   }
   countdown(id: string, action: ListingCountdownAction, actor: string): Promise<ListingCountdownReceipt> {
     return this.call(`/${encodeURIComponent(id)}/countdown`, countdownReceiptSchema, { method: 'POST', body: { action }, actor });
+  }
+  deleteListing(id: string, symbol: string, draftRevision: number, activeVersion: number | null, actor: string) {
+    return this.call(`/${encodeURIComponent(id)}/delete`, deleteReceiptSchema, {
+      method: 'POST', body: { symbol, draftRevision, activeVersion, confirmation: `УДАЛИТЬ ${symbol}` }, actor,
+    });
   }
   replacePrelisting(id: string, body: Record<string, unknown>, actor: string) {
     return this.call(`/${encodeURIComponent(id)}/replace-prelisting`, z.object({ id: z.string(), phase: z.enum(['PREPARED', 'COMMITTED', 'CANCELLED']) }).passthrough(),
