@@ -142,10 +142,13 @@ function markdown({collection, capacity, kinds, runs}) {
 module.exports = {summarize, markdown};
 
 if (require.main === module) {
-  const argv = process.argv.slice(2), at = argv.indexOf('--pairs');
-  const pairs = Number(at >= 0 ? argv[at + 1] : process.env.PAIRS);
-  const [runsDir, jsonOut] = at >= 0 ? argv.filter((_, i) => i !== at && i !== at + 1) : argv;
-  const report = summarize(runsDir, {pairs});
+  // --pins <before>:<after> judges stored runs recorded at other pins (e.g. a fixture); default: the policies.
+  const argv = process.argv.slice(2), flags = {}, rest = [];
+  for (let i = 0; i < argv.length; i++) if (argv[i] === '--pairs' || argv[i] === '--pins') flags[argv[i]] = argv[++i]; else rest.push(argv[i]);
+  const pairs = Number('--pairs' in flags ? flags['--pairs'] : process.env.PAIRS);
+  const [before, after] = '--pins' in flags ? String(flags['--pins']).split(':') : [];
+  const [runsDir, jsonOut] = rest;
+  const report = summarize(runsDir, {pairs, ...('--pins' in flags ? {pins: {before, after}} : {})});
   console.log(markdown(report));
   if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({...report, runs: report.runs.map(({baseline, mixed, ...r}) => ({...r, baseline: baseline && {...baseline, latencies: undefined}, mixed: mixed && {...mixed, latencies: undefined}}))}, null, 2));
   process.exitCode = report.collection.status === 'COMPLETE' ? 0 : 1;

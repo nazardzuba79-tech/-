@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),os=require('node:os');
-const RC='234437f8bb106cc576375ff7df9b817d3fbc01cc';
+const RC='fa92cc6603493968194a124e48feee5068e94677';
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){

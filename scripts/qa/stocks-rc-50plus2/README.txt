@@ -46,10 +46,15 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
-#613 candidate pins (2026-10-26, Claude)
-policy-613.cjs pins 234437f8 (reviewed #613 head, same RC as policy.cjs);
-policy-613-after.cjs pins fb6577be (one-query Stocks session read). Local Windows
-runs measured 783aeedd vs c010bc67, the same runtime on the PG path.
+#613 candidate pins (repinned 2026-10-27, Claude; owner asked for a current paired run)
+policy-613.cjs pins fa92cc66 (verified #613 checkpoint before the JWT change);
+policy-613-after.cjs pins a820c18e (#613 head: one signature check per hop,
+9a640574; the runtime differs from fa92cc66 only in src/api/middleware/auth.ts and
+src/api/routes/stocksTestCash.ts). Earlier pairs: 234437f8 vs fb6577be (one-query
+Stocks session read); local Windows runs measured 783aeedd vs c010bc67.
+extended-report-613.cjs prints p50/p95/p99, errors, API CPU, memory, event-loop
+utilization/delay (recorded by api-worker 'metrics' in every arm) and the
+synthetic market WebSocket counts. Report only; summarize-613.cjs stays the gate.
 diagnostic-run-613.cjs is run.cjs with that pin, plus two opt-in flags:
 --after selects the second pin; --cpu-prof writes a V8 profile of each
 measured API worker and reports PROFILE_ONLY_NOT_A_P95_VERDICT. Plan,

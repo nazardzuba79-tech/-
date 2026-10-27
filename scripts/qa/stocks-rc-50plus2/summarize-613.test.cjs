@@ -4,17 +4,20 @@
 // No benchmark runs here.
 const test = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), cp = require('node:child_process');
-const {summarize, markdown} = require('./summarize-613.cjs');
+const {summarize: summarizeWithPins, markdown} = require('./summarize-613.cjs');
+const summarize = (dir, opts = {}) => summarizeWithPins(dir, {pins: FIXTURE_PINS, ...opts});
 const {PLAN, traceSha} = require('./driver.cjs');
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'summarize-613', 'runs');
+// The pins the fixture runs were recorded at (SOURCE.txt); the workflow's pins come from the policies.
+const FIXTURE_PINS = {before: '234437f8bb106cc576375ff7df9b817d3fbc01cc', after: 'fb6577bee28d66d3e68000335509e71ca2c9cedb'};
 const SCRIPT = path.join(__dirname, 'summarize-613.cjs');
 const copy = t => { const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rc50-613-')); t.after(() => fs.rmSync(dir, {recursive: true, force: true})); fs.cpSync(FIXTURE, dir, {recursive: true}); return dir; };
 const file = (dir, run, name) => path.join(dir, run, 'out', name);
 const edit = (dir, run, name, fn) => { const f = file(dir, run, name), j = JSON.parse(fs.readFileSync(f, 'utf8')); fn(j); fs.writeFileSync(f, JSON.stringify(j)); };
 const failures = r => r.collection.failures;
 const incomplete = (r, ...codes) => { assert.equal(r.collection.status, 'INCOMPLETE'); for (const c of codes) assert.ok(failures(r).includes(c), c + ' in ' + failures(r).join(', ')); };
-const cli = (dir, args, env = {}) => cp.spawnSync(process.execPath, [SCRIPT, dir, ...args], {encoding: 'utf8', env: {PATH: process.env.PATH, ...env}});
+const cli = (dir, args, env = {}, pins = FIXTURE_PINS.before + ':' + FIXTURE_PINS.after) => cp.spawnSync(process.execPath, [SCRIPT, dir, ...args, ...(pins ? ['--pins', pins] : [])], {encoding: 'utf8', env: {PATH: process.env.PATH, ...env}});
 
 test('real paired results: collection COMPLETE, p95 verdict stays a separate diagnostic FAIL', () => {
   const r = summarize(FIXTURE, {pairs: 1});
@@ -31,6 +34,14 @@ test('CLI: a p95 FAIL with complete collection exits 0; JSON keeps both results'
   const j = JSON.parse(fs.readFileSync(out, 'utf8'));
   assert.equal(j.collection.status, 'COMPLETE'); assert.equal(j.capacity.kinds.before, 'DIAGNOSTIC_P95_FAIL');
   assert.equal(cli(FIXTURE, [], {PAIRS: '1'}).status, 0, 'PAIRS from the environment');
+});
+
+test('without --pins the policy pins judge: runs recorded at other pins are a provenance mismatch', () => {
+  const policy = {before: require('./policy-613.cjs').RC, after: require('./policy-613-after.cjs').RC};
+  assert.notDeepEqual(policy, FIXTURE_PINS);
+  incomplete(summarizeWithPins(FIXTURE, {pairs: 1}), 'before-1:PROVENANCE_MISMATCH', 'after-1:PROVENANCE_MISMATCH');
+  assert.equal(cli(FIXTURE, ['--pairs', '1'], {}, null).status, 1);
+  assert.equal(cli(FIXTURE, ['--pairs', '1'], {}, 'x:y').status, 1, 'malformed --pins never passes');
 });
 
 test('empty, missing or unspecified run sets never pass', t => {

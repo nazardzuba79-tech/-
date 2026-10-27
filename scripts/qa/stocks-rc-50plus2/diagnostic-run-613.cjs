@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),net=require('node:net'),crypto=require('node:crypto');
-// #613 candidate pins: policy-613.cjs is the reviewed head before the session-read
-// optimization, --after selects policy-613-after.cjs.
+// #613 candidate pins: policy-613.cjs is the checkpoint before the one-signature-check
+// JWT change (fa92cc66), --after selects policy-613-after.cjs (a820c18e, with it).
 const AFTER=process.argv.includes('--after');
 const {RC,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,traceSha,window,invariants}=require('./driver.cjs');
 // --cpu-prof: V8 CPU profile of each measured API worker. Profiler overhead

@@ -2,6 +2,10 @@
 const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
 const {database,loopback,sha}=require('./policy.cjs');
 let f,market,cleanup=[],configuration,diagnostics,cpuHttpProfile;
+// Event-loop utilization and delay of this API process, read by 'metrics' before and after each measured
+// window (the delay histogram restarts at every read). Same in every arm and pin; a 10 ms sampling timer.
+const {performance:perf,monitorEventLoopDelay}=require('node:perf_hooks'),loopDelay=monitorEventLoopDelay({resolution:10});loopDelay.enable();
+const loop=()=>{const ms=x=>x/1e6,v={elu:perf.eventLoopUtilization(),delay:{count:loopDelay.count,minMs:ms(loopDelay.min),meanMs:ms(loopDelay.mean),p50Ms:ms(loopDelay.percentile(50)),p99Ms:ms(loopDelay.percentile(99)),maxMs:ms(loopDelay.max)}};loopDelay.reset();return v;};
 const send=(id,value,error)=>process.send?.({id,value,error});
 async function initialize(c){
  configuration=c;database(c.dbUrl,c.dbName);
@@ -91,7 +95,7 @@ process.on('message',async m=>{try{
  else if(m.command==='snapshot')value=await snapshot();
  else if(m.command==='qualify')value=await qualification();
  else if(m.command==='ready')value=await ready(m.value.index);
- else if(m.command==='metrics')value={cpu:process.cpuUsage(),memory:process.memoryUsage(),quote:f.gateway.quoteMetrics(),account:f.gateway.accountMetrics(),market:{...market.snapshot(),starts:market.starts.map(x=>({host:x.host,kind:x.kind}))},network:global.__rc50Network};
+ else if(m.command==='metrics')value={cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),quote:f.gateway.quoteMetrics(),account:f.gateway.accountMetrics(),market:{...market.snapshot(),starts:market.starts.map(x=>({host:x.host,kind:x.kind}))},network:global.__rc50Network};
  else if(m.command==='close'){value=await close();send(m.id,value);process.disconnect();return;}
  else throw Error('UNKNOWN_WORKER_COMMAND');
  send(m.id,value);

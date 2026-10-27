@@ -47,7 +47,7 @@ jobs:
           sudo install -d -m 1777 /var/run/postgresql
           ls -d /usr/lib/postgresql/*/bin
       - name: Collection-gate self-test on stored results (no benchmark)
-        run: node --test scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs
+        run: node --test scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs
       - name: Worktrees with runtime exactly at each pin; harness from this head
         run: |
           set -euo pipefail
@@ -87,6 +87,19 @@ jobs:
         run: |
           set -o pipefail
           node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$RC50_DIR/runs" "$RC50_DIR/summary.json" --pairs "$PAIRS" | tee -a "$GITHUB_STEP_SUMMARY"
+      # Report only: p50/p95/p99, errors, API CPU, memory, event-loop utilization and
+      # delay, synthetic market WebSocket. It never decides or fails the job.
+      - name: Extended numbers (report only, not a gate)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$RC50_DIR/runs" "$RC50_DIR/extended.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          node -e '
+          const r = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          for (const [k, v] of Object.entries(r.kinds)) console.log(`::notice title=50+2 ${k} extended::crypto p50/p95/p99 ${f(v.baselineCrypto.p50)}/${f(v.baselineCrypto.p95)}/${f(v.baselineCrypto.p99)} -> ${f(v.mixedCrypto.p50)}/${f(v.mixedCrypto.p95)}/${f(v.mixedCrypto.p99)} ms; viewer p95 ${f(v.mixedViewer.p95)} ms; ELU ${f(v.meanBaselineElu, 3)} -> ${f(v.meanMixedElu, 3)}; loop p99 ${f(v.meanMixedLoopDelayP99Ms)} ms; RSS max ${f(v.maxMixedRssMb, 0)} MB; error rate ${f(v.meanErrorRate, 4)}`);
+          if (r.afterVsBefore) console.log(`::notice title=50+2 after vs before::mixed crypto p95 ${f(r.afterVsBefore.mixedCryptoP95Percent)}%, viewer p95 ${f(r.afterVsBefore.viewerStateP95Percent)}%, mixed API CPU ${f(r.afterVsBefore.mixedApiCpuPercent)}%`);
+          ' "$RC50_DIR/extended.json"
       - name: Publish the numbers as check annotations (readable without sign-in)
         if: always()
         run: |
@@ -100,7 +113,7 @@ jobs:
         if: always()
         run: |
           mkdir -p output/rc50-613
-          cp "$RC50_DIR/summary.json" output/rc50-613/ 2>/dev/null || true
+          cp "$RC50_DIR/summary.json" "$RC50_DIR/extended.json" output/rc50-613/ 2>/dev/null || true
           for r in "$RC50_DIR"/runs/*/; do
             n=$(basename "$r"); mkdir -p "output/rc50-613/$n"
             cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613/$n/" 2>/dev/null || true
