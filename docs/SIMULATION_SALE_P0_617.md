@@ -114,3 +114,12 @@ GROUP BY 1, 2, 3 ORDER BY quote_amount DESC;
 ```
 
 The column names follow `prisma/schema.prisma` on `main`; verify them against production before running. These queries were not run here: this session has no production access.
+
+
+## 6. Follow-up: private DemoBalance settlement candidate (default OFF, 27 October)
+
+The owner requested preserving NRX MARKET SELL without turning model-priced proceeds into withdrawable USDT. This candidate adds server-only `SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED` (absent/false by default). With the flag OFF, the original fail-closed refusal and tests remain unchanged. When explicitly enabled for a reviewed private environment, the existing server-allowlisted ADMIN/tester synthetic sale debits the source asset from normal `Balance` and atomically credits the modeled quote proceeds **only** to `DemoBalance` (Decimal(36,18)). The `Order`/`Trade` audit path is retained for request-ID replay; the audit entry now identifies `settlementLedger: DemoBalance` and `withdrawableProceeds: false`.
+
+The dedicated disposable PostgreSQL suite additionally proves a filled NRX synthetic sale, unchanged real USDT supply, unchanged real USDT withdrawal allowance, one-time credit after retry/restart, and insufficient-inventory rollback. The existing OFF-gate regressions stay in place.
+
+**Release limitation:** The demo proceeds need explicit portfolio UI labeling before any customer-facing activation. This branch does not enable the flag or deploy. It does not remove the separately documented real-orderbook risk (P0-3) from unbacked/mispriced listing tokens, nor the legacy minted USDT. Both require distinct reconciliation and settlement analysis; do not claim global financial go-live.

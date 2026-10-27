@@ -55,6 +55,7 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
   });
   afterEach(async () => {
     jest.restoreAllMocks();
+    delete process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED;
     delete process.env.PRIVATE_TRADING_TEST_USER_IDS;
     await db.auditLog.deleteMany({ where: { userId: { in: users } } });
   });
@@ -103,4 +104,58 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
     expect(await synthetic(owner)).toEqual({ trades: 0, audits: 0 });
     expect(await balance(owner, 'NRX')).toEqual(['6250', '0']);
   });
+
+  test('opt-in NRX MARKET SELL keeps execution, but proceeds exist only in DemoBalance (never withdrawable)', async () => {
+    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
+    await allocateNrxOwner(db, owner);
+    const realBefore = await usdtSupply();
+    const filled = await sell(owner, '6000');
+    expect(filled.order.status).toBe('FILLED');
+    expect(filled.trades).toHaveLength(1);
+    const expectedDemo = new BigNumber(filled.trades[0].price.toString()).times('6000');
+    const demo = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
+    expect(demo?.available.toString()).toBe(expectedDemo.toFixed());
+    expect(await balance(owner, 'NRX')).toEqual(['250', '0']);
+    expect(await balance(owner, 'USDT')).toEqual(['1000', '0']);
+    expect(await usdtSupply()).toBe(realBefore);
+    expect(await synthetic(owner)).toEqual({ trades: 1, audits: 1 });
+    const audit = await db.auditLog.findFirst({ where: { userId: owner, action: 'TEAM_SPOT_SIMULATION_SOLD' }, orderBy: { createdAt: 'desc' } });
+    expect(audit?.metadata).toMatchObject({ settlementLedger: 'DemoBalance', withdrawableProceeds: false });
+    await expect(new WithdrawalService(db).requestWithdrawal({
+      userId: owner, asset: 'USDT', network: 'TRC20',
+      toAddress: 'Tmint0000000000000000000000000000', amount: '1000.01',
+    })).rejects.toThrow('Insufficient USDT balance');
+    expect(await db.withdrawal.count({ where: { userId: owner } })).toBe(0);
+  });
+
+  test('opt-in is idempotent under retry and preserves the exact demo amount after restart', async () => {
+    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
+    await allocateNrxOwner(db, owner);
+    const realBefore = await usdtSupply();
+    const requestId = randomUUID();
+    const place = () => service.placeOrder({
+      userId: owner, pair: NEURIX.pair, side: 'SELL', type: 'MARKET',
+      quantity: new BigNumber('5'), requestId,
+    });
+    const first = await place();
+    service = new OrderService(db, new MatchingEngine(), source);
+    const second = await place();
+    expect(second.order.id).toBe(first.order.id);
+    expect(second.replayed).toBe(true);
+    expect(await balance(owner, 'NRX')).toEqual(['6245', '0']);
+    expect(await usdtSupply()).toBe(realBefore);
+    expect(await synthetic(owner)).toEqual({ trades: 1, audits: 1 });
+    const credit = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
+    expect(credit?.available.toString()).toBe(new BigNumber(first.trades[0].price.toString()).times('5').toFixed());
+  });
+
+  test('opt-in still rejects insufficient NRX without creating a demo credit', async () => {
+    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
+    const realBefore = await usdtSupply();
+    await expect(sell(owner, '1')).rejects.toThrow('Insufficient NRX balance');
+    expect(await db.demoBalance.count({ where: { userId: owner } })).toBe(0);
+    expect(await synthetic(owner)).toEqual({ trades: 0, audits: 0 });
+    expect(await usdtSupply()).toBe(realBefore);
+  });
+
 });

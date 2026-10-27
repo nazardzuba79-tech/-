@@ -302,14 +302,16 @@ export class OrderService {
     const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
-    // A simulated asset's proceeds (NRX, a managed listing, any test market)
-    // would be ordinary Spot USDT priced by the model, and that ledger backs
-    // withdrawals and the real book; model-priced earnings must never be
-    // withdrawable (Issue #617 P0). Until a non-withdrawable settlement exists
-    // its synthetic sale stops here, before any write. Ordinary pairs are unchanged.
-    if (isTestAssetPairOrSymbol(pair)) throw new Error('Simulation Spot sale is not available for this listing');
+    // Default-off P0 fence: an explicitly enabled, private simulated-asset sale
+    // settles proceeds ONLY in DemoBalance. It never mints spendable Spot USDT.
+    // No change to normal venues or existing feature switches.
+    const simulatedAsset = isTestAssetPairOrSymbol(pair);
+    if (simulatedAsset && process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED !== 'true')
+      throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
+    if (simulatedAsset && proceeds.decimalPlaces() > 18)
+      throw new Error('Simulation proceeds exceed demo ledger precision');
 
     const now = Date.now();
     const tradeId = uuidv4();
@@ -328,7 +330,19 @@ export class OrderService {
       }
 
       await mutateSpotBalance(tx, userId, base, { available: quantity.negated() });
-      await mutateSpotBalance(tx, userId, quote, { available: proceeds });
+      if (simulatedAsset) {
+        // The debit and the non-withdrawable demo credit share one serializable transaction.
+        // DemoBalance is excluded from the real Spot book, transfers and withdrawals.
+        // A unique (userId, asset) key makes retries and concurrent credits atomic.
+        const amount = proceeds.toFixed(18);
+        await tx.demoBalance.upsert({
+          where: { userId_asset: { userId, asset: quote } },
+          create: { userId, asset: quote, available: amount },
+          update: { available: { increment: amount } },
+        });
+      } else {
+        await mutateSpotBalance(tx, userId, quote, { available: proceeds });
+      }
 
       await tx.order.create({
         data: {
@@ -373,6 +387,8 @@ export class OrderService {
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
             source: 'VOLTEX team test Spot simulation',
+            settlementLedger: simulatedAsset ? 'DemoBalance' : 'Balance',
+            withdrawableProceeds: !simulatedAsset,
           },
         },
       });
