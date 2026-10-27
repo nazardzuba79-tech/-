@@ -30,7 +30,8 @@ allowed = {'src/' + name + '.ts' for name in runtime}
 assert all(p in allowed or '/__tests__/' in p for p in changed), 'Unapproved runtime module changed: ' + repr([p for p in changed if p not in allowed and '/__tests__/' not in p])
 protected = ['prisma', 'package.json', 'package-lock.json', 'src/index.ts', 'src/buildCommit.ts', 'src/futures',
              'src/private-trading', 'src/services/listings', 'src/services/testMarkets', 'config', 'frontend', 'workers']
-subprocess.run(['git', 'diff', '--exit-code', '--quiet', live, sha, '--', *protected], cwd=root, check=True)
+# Test files are not runtime and never enter the overlay.
+subprocess.run(['git', 'diff', '--exit-code', '--quiet', live, sha, '--', *protected, ':(exclude)**/__tests__/**'], cwd=root, check=True)
 node = os.environ.get('NODE', 'node')
 subprocess.run([node, 'node_modules/typescript/bin/tsc', '--pretty', 'false'], cwd=root, check=True)
 
