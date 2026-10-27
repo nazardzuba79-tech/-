@@ -6242,3 +6242,27 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Owner authorizes only building/inspecting an inactive Docker image. No image start, Compose up, production migration/data/secret/order/listing change, merge, frontend/Worker deploy or repeated SQL audit. Final local tests, Docker image ID, protected file/config comparison and Pages auto-build read-back must be verified before readiness is claimed.
 - Candidate validation: TypeScript compile PASS and corrected full selection **12 suites / 182 tests PASS**, including the 81 assertions from #605's four-suite financial selection and production release identity. The first invocation had two incorrect nonexistent suite paths (ENOENT); it was not counted as a pass. No application assertion failed, and the corrected full run passed.
 - Inactive build correction: BuildKit interpreted bare `FROM sha256:...` as Docker Hub metadata, and failed before creating an image. Recipe now names the existing production local tag; the operator verifies its immutable image ID before and after the no-pull/no-network legacy build, avoiding registry resolution. No runtime container was started.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — API P0 fence hotfix on the live API lineage
+- **Live state, read-only:**
+  - `api.voltextech.net/health` reports commit `89c3ac00` (branch `release/demo-off-api-20261023`, started 23.10 16:30 UTC);
+  - the frontend bundle matches `main`'s frontend tree of `51c5d24e`…`c24325ef` (23.10); #593, #612 and #619 strings are absent;
+  - KYC/notification Worker last deployed by dispatch on `2e7acf15` (16.10);
+  - market-edge reports `public-display-edge-v10`; its exact commit is not visible from GitHub (Work owns it).
+- **Branch** `claude/voltex-mobile-audit-7rpjni-api-p0-hotfix` from `89c3ac00`.
+- **Changed modules (five):**
+  - `withdrawals.ts`, `adminWithdrawals.ts`, `WithdrawalService.ts`, `demoSpotAccess.ts`: byte-identical to #620 `5b80fc3e`;
+  - `OrderService.ts`: byte-identical to #625 `4ac8a45e`.
+  - The live versions of all five were byte-identical to `main`'s pre-fence versions, so nothing was adapted.
+- **Tests:** taken from `main`, plus the #625 delta of `nrxSpot.pg.test.ts`.
+- **Release files:** `release/api-p0-hotfix/{Dockerfile,compose.template.yaml}`, `scripts/package-api-p0-hotfix.py`, `.github/workflows/api-p0-hotfix.yml`, runbook `docs/API_P0_HOTFIX_20261027.md`.
+- **Verified locally** (Node 22.23.3, disposable PostgreSQL 16 with live-lineage migrations, synthetic data):
+  - **RED on the live code:** fence script 17/6 FAIL; Jest 22 failed of 104.
+  - **GREEN on the hotfix:**
+    - fence 23/23, `sentUnheld` 0;
+    - 10 suites / 195 tests;
+    - backend `tsc`.
+- **Not done:**
+  - no deploy, image build on the host or production connection;
+  - the switch needs one operator after the listing window (runbook steps 1–8).
+- **Preserved:** the live demo-off wiring, TYVN lineage, schema, dependencies and release identity (all byte-unchanged).

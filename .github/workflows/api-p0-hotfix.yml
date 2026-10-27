@@ -1,0 +1,87 @@
+name: API P0 fence hotfix (live-API lineage)
+# Hotfix candidate on top of the live API 89c3ac00: #620 withdrawal fence + #625 simulation-sale fence only.
+# Proves the fences on a disposable PostgreSQL, then builds the deterministic overlay archive the operator
+# compares on the host. Never deploys, never connects to production.
+on:
+  pull_request:
+    paths:
+      - 'release/api-p0-hotfix/**'
+      - 'scripts/package-api-p0-hotfix.py'
+      - 'src/services/OrderService.ts'
+      - 'src/services/WithdrawalService.ts'
+      - 'src/services/demoSpotAccess.ts'
+      - 'src/api/routes/withdrawals.ts'
+      - 'src/api/routes/adminWithdrawals.ts'
+      - 'src/services/__tests__/**'
+      - 'src/api/routes/__tests__/**'
+      - 'src/services/testMarkets/__tests__/**'
+      - 'scripts/test-withdrawal-demo-fence-postgres.cjs'
+      - 'docs/API_P0_HOTFIX_20261027.md'
+      - '.github/workflows/api-p0-hotfix.yml'
+permissions:
+  contents: read
+concurrency:
+  group: api-p0-hotfix-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  fences-and-overlay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: voltex_nrx_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_nrx_test
+      DIRECT_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_nrx_test
+      VOLTEX_NRX_TEST_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_nrx_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Live-lineage schema on the disposable database (no production connection)
+        run: npx prisma migrate deploy
+      - name: Fence, order, demo and isolation suites
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/services/__tests__/WithdrawalService.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/services/__tests__/simulationMintFence.pg.test.ts
+          src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
+          src/services/__tests__/DemoTradingService.test.ts
+          src/services/__tests__/DemoLiquidity.test.ts
+          src/services/__tests__/demoReleaseOff.test.ts
+          src/private-trading/__tests__/simulationOnlyIsolation.test.ts
+      - name: Isolated QA tools only (not application dependencies)
+        run: npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1
+      - name: Runner PostgreSQL tools (new temporary cluster only)
+        run: echo "WALLET_QA_PG_BIN=$(pg_config --bindir)" >> "$GITHUB_ENV"
+      - name: Withdrawal fence, every demo switch combination, real routes
+        run: node scripts/test-withdrawal-demo-fence-postgres.cjs
+      - name: Overlay archive (source correspondence, protected paths, tsc, five modules only)
+        run: python3 scripts/package-api-p0-hotfix.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-p0-hotfix-${{ github.event.pull_request.head.sha }}
+          path: |
+            output/api-p0-hotfix/
+            output/withdrawal-demo-fence/*.json
+            output/withdrawal-demo-fence/*.log
+          retention-days: 30
+          if-no-files-found: warn
