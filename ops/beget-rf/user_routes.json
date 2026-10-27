@@ -594,5 +594,9 @@
   [
     "GET",
     "/market/test-assets/:pair/candles"
+  ],
+  [
+    "GET",
+    "/kyc/me"
   ]
 ]

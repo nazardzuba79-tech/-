@@ -25,6 +25,7 @@ VHOST = Path('/etc/nginx/conf.d/voltex-ru.conf')
 DIRECTORY = 'https://acme-v02.api.letsencrypt.org/directory'
 TERMS = 'https://letsencrypt.org/documents/LE-SA-v1.8-July-06-2026.pdf'
 ROUTES = [["DELETE","/api-keys/:id"],["DELETE","/demo/orders/:orderId"],["DELETE","/futures/orders/:orderId"],["DELETE","/futures/positions/:positionId/protection"],["DELETE","/me/avatar"],["DELETE","/me/sessions/:id"],["DELETE","/orders/:orderId"],["DELETE","/private-trading/orders/:id"],["DELETE","/private-trading/previews/:id"],["GET","/account/security-log"],["GET","/analytics/open-interest-history"],["GET","/analytics/overview"],["GET","/api-keys"],["GET","/arbitrage/opportunities"],["GET","/balances"],["GET","/candles/:pair"],["GET","/card/application/me"],["GET","/card/waitlist/me"],["GET","/cfd/candles/:symbol"],["GET","/cfd/catalog"],["GET","/cfd/config"],["GET","/cfd/display/candles/:symbol"],["GET","/cfd/display/tickers"],["GET","/cfd/positions"],["GET","/cfd/positions/history"],["GET","/cfd/tickers"],["GET","/copy-trading/identities"],["GET","/copy-trading/identity/:traderId"],["GET","/copy-trading/marketplace"],["GET","/copy-trading/synthetic"],["GET","/demo/balances"],["GET","/demo/orderbook/:pair"],["GET","/demo/orders/history"],["GET","/demo/orders/open"],["GET","/demo/spot/access"],["GET","/demo/trades/:pair"],["GET","/deposit-address/:chain"],["GET","/deposit-catalogue"],["GET","/deposit-chains"],["GET","/deposit-config-version"],["GET","/deposits/me"],["GET","/futures/balances"],["GET","/futures/config"],["GET","/futures/funding-rate/:symbol"],["GET","/futures/mark-price/:symbol"],["GET","/futures/open-interest/:symbol"],["GET","/futures/orderbook/:symbol"],["GET","/futures/orders/me"],["GET","/futures/positions"],["GET","/futures/positions/:positionId/protection"],["GET","/futures/positions/history"],["GET","/market/assets"],["GET","/market/assets/icons"],["GET","/market/derivatives/:baseAsset"],["GET","/market/display/spot-snapshot"],["GET","/market/external/candles/:pair"],["GET","/market/external/orderbook/:pair"],["GET","/market/external/rankings"],["GET","/market/external/symbols"],["GET","/market/external/tickers"],["GET","/market/external/tickers/:pair"],["GET","/market/external/trades/:pair"],["GET","/market/featured-trader"],["GET","/market/futures/candles/:pair"],["GET","/market/global"],["GET","/market/options/instruments"],["GET","/market/options/tickers"],["GET","/market/snapshot"],["GET","/market/ticker/:pair"],["GET","/market/tradable"],["GET","/market/universe"],["GET","/me"],["GET","/me/sessions"],["GET","/orderbook/:pair"],["GET","/orders/me"],["GET","/otc/balances"],["GET","/otc/config"],["GET","/otc/requests/by-key/:key"],["GET","/private-trading/access"],["GET","/private-trading/candles"],["GET","/private-trading/cards/:id"],["GET","/private-trading/market"],["GET","/private-trading/native/account"],["GET","/private-trading/native/cards/:revision/:positionId"],["GET","/private-trading/native/collateral"],["GET","/private-trading/native/contracts/:symbol"],["GET","/private-trading/native/history"],["GET","/private-trading/native/live"],["GET","/private-trading/native/state"],["GET","/private-trading/native/wallet"],["GET","/private-trading/previews/:id"],["GET","/private-trading/state"],["GET","/products"],["GET","/purchases/me"],["GET","/referral/me"],["GET","/reserves"],["GET","/trades/me"],["GET","/wallet/overview"],["GET","/wallet/performance"],["GET","/wallet/portfolio-history"],["GET","/withdrawals/me"],["GET","/withdrawals/options"],["PATCH","/me/password"],["PATCH","/me/profile"],["PATCH","/orders/:orderId/trigger"],["PATCH","/private-trading/positions/:id"],["POST","/account/2fa/disable"],["POST","/account/2fa/setup"],["POST","/account/2fa/verify"],["POST","/api-keys"],["POST","/auth/login"],["POST","/auth/login/2fa"],["POST","/auth/logout"],["POST","/auth/register"],["POST","/card/application"],["POST","/card/waitlist/join"],["POST","/cfd/positions"],["POST","/cfd/positions/:positionId/close"],["POST","/demo/orders"],["POST","/deposit-address-copies"],["POST","/deposits/claim/:chain"],["POST","/futures/orders"],["POST","/futures/positions/:positionId/close"],["POST","/futures/transfer"],["POST","/orders"],["POST","/orders/oco"],["POST","/otc/requests"],["POST","/private-trading/allocate"],["POST","/private-trading/cards"],["POST","/private-trading/native/cards"],["POST","/private-trading/native/collateral-preference"],["POST","/private-trading/native/commands"],["POST","/private-trading/native/execution-session"],["POST","/private-trading/native/initialize"],["POST","/private-trading/native/quote"],["POST","/private-trading/positions/:id/close"],["POST","/private-trading/previews"],["POST","/private-trading/previews/:id/confirm"],["POST","/private-trading/scenarios/:id/advance"],["POST","/private-trading/scenarios/:id/close-on-chart"],["POST","/purchases"],["POST","/support/request"],["POST","/wallet/portfolio-snapshot"],["POST","/withdrawals"],["PUT","/futures/positions/:positionId/protection"],["PUT","/me/avatar"],["GET","/market/test-assets"],["GET","/market/test-assets/:pair"],["GET","/market/test-assets/:pair/candles"]]
+ROUTES.append(['GET', '/kyc/me'])
 REWRITES = {
     'https://api.voltextech.net': 'https://' + HOST,
     'https://market.voltextech.net': 'https://' + HOST + '/_voltex/market',
@@ -45,7 +46,8 @@ def route_pattern(path):
                     for part in path.split('/'))
 
 
-def render(prefix=str(ROOT), port=18443, fixture_port=None, cert=None, key=None):
+def render(prefix=str(ROOT), port=18443, fixture_port=None, cert=None, key=None,
+           proxy_protocol=False, include_acme=True):
     prefix = str(Path(prefix).resolve())
     if any(c in prefix for c in '\n\r;{}"\' $') or not 0 < port < 65536:
         raise ValueError('Unsafe configuration input')
@@ -64,9 +66,15 @@ map "$request_method:$http_origin" $voltex_ru_unsafe {
 }
 map $uri $voltex_ru_sensitive {
   default 0;
-  ~*(^|/)(admin|kyc|internal)(/|$) 1;
+  ~*(^|/)(admin|internal)(/|$) 1;
   ~*^/api/v1/demo/(vta|liquidity)(/|$) 1;
   ~*^/api/v1/market/status(/|$) 1;
+}
+map "$request_method:$uri" $voltex_ru_kyc_denied {
+  default 0;
+  ~^(GET|HEAD):/api/v1/kyc/me$ 0;
+  ~^(POST|OPTIONS):/_voltex/kyc/v1/(submit|materials|confirm)$ 0;
+  ~*(^|/)kyc(/|$) 1;
 }
 map $request_uri $voltex_ru_ambiguous {
   default 0;
@@ -80,7 +88,7 @@ map "$request_method:$uri" $voltex_ru_api_allowed {
         maps += f'  ~^{methods}:/api/v1{route_pattern(path)}$ 1;\n'
     maps += '}\n'
     conf = maps
-    if not test:
+    if not test and include_acme:
         conf += f'''server {{
   listen 18080; server_name {HOST};
   allow {BEGET_IP}; allow 127.0.0.1; deny all;
@@ -90,7 +98,7 @@ map "$request_method:$uri" $voltex_ru_api_allowed {
 }}
 '''
     conf += f'''server {{
-  listen {'127.0.0.1:' if test else ''}{port} ssl http2;
+  listen {'127.0.0.1:' if test else ''}{port} ssl http2{' proxy_protocol' if proxy_protocol else ''};
   server_name {HOST};
   ssl_certificate {cert}; ssl_certificate_key {key};
   ssl_protocols TLSv1.2 TLSv1.3;
@@ -107,11 +115,13 @@ map "$request_method:$uri" $voltex_ru_api_allowed {
   if ($voltex_ru_foreign) {{ return 403; }}
   if ($voltex_ru_unsafe) {{ return 403; }}
   if ($voltex_ru_sensitive) {{ return 403; }}
+  if ($voltex_ru_kyc_denied) {{ return 403; }}
   if ($voltex_ru_ambiguous) {{ return 400; }}
+{'  if ($proxy_protocol_addr = "") { return 444; }' if proxy_protocol else ''}
   location = /_voltex/health {{ default_type text/plain; add_header Cache-Control no-store always; return 200 "voltex-rf-hetzner\\n"; }}
 '''
 
-    def proxy(host, uri, private=False, html=False, websocket=False):
+    def proxy(host, uri, private=False, html=False, websocket=False, kyc=False):
         target = f'127.0.0.1:{fixture_port}' if test else ('127.0.0.1:13020' if private else host)
         proto = 'http' if test or private else 'https'
         text = f'''    set $voltex_ru_target {target};
@@ -119,8 +129,8 @@ map "$request_method:$uri" $voltex_ru_api_allowed {
     proxy_http_version 1.1;
     proxy_set_header Host {host};
     proxy_set_header Forwarded "";
-    proxy_set_header X-Forwarded-For $remote_addr;
-    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For {'$proxy_protocol_addr' if proxy_protocol else '$remote_addr'};
+    proxy_set_header X-Real-IP {'$proxy_protocol_addr' if proxy_protocol else '$remote_addr'};
     proxy_set_header X-Forwarded-Proto https;
     proxy_set_header X-Forwarded-Host {HOST};
     proxy_set_header CF-Connecting-IP "";
@@ -144,8 +154,17 @@ map "$request_method:$uri" $voltex_ru_api_allowed {
     proxy_ssl_verify on;
     proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
 '''
-        if private:
+        if private or kyc:
             text += '    proxy_set_header Origin $voltex_ru_origin;\n'
+            if kyc:
+                text += '''    proxy_set_header Authorization $http_authorization;
+    proxy_set_header Cookie "";
+    proxy_hide_header Set-Cookie;
+    client_max_body_size 4259840;
+    if ($request_method !~ "^(POST|OPTIONS)$") { return 405; }
+'''
+                if proxy_protocol:
+                    text += '    proxy_set_header X-Voltex-Ru-Client-IP $proxy_protocol_addr;\n'
         else:
             text += '''    proxy_set_header Authorization "";
     proxy_set_header Cookie "";
@@ -173,6 +192,8 @@ map "$request_method:$uri" $voltex_ru_api_allowed {
     if ($voltex_ru_api_allowed = 0) { return 403; }
 '''
     conf += proxy('api.voltextech.net', '$request_uri', private=True) + '  }\n'
+    conf += '  location ~ ^/_voltex/kyc(?<voltex_ru_kyc>/v1/(?:submit|materials|confirm))$ {\n'
+    conf += proxy('kyc.voltextech.net', '$voltex_ru_kyc$is_args$args', kyc=True) + '  }\n'
     for match, host, uri, ws in [
         ('~ "^(?:/_voltex/market){1,2}(?<voltex_ru_market>/(?:market/(?:display|listings|test-assets|nrx)(?:/[^?]*)?|cfd/display/[^?]*|health))$"', 'market.voltextech.net', '$voltex_ru_market$is_args$args', False),
         ('= /_voltex/catalogue/public/deposit-catalogue', 'voltex-deposit-catalogue-production.nazardzuba79.workers.dev', '/public/deposit-catalogue$is_args$args', False),

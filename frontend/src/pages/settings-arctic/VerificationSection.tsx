@@ -84,6 +84,7 @@ const MATERIAL_STAGE_KEY: Record<string, Key | undefined> = {
 export function VerificationSection() {
   const { t, lang } = useLanguage();
   const [status, setStatus] = useState<Awaited<ReturnType<typeof api.getMyKyc>> | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [country, setCountry] = useState('RU');
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -105,6 +106,7 @@ export function VerificationSection() {
   const ids = { country: useId(), countryLabel: useId(), fullName: useId(), dateOfBirth: useId(), documentType: useId() };
 
   function reload() {
+    setLoadFailed(false);
     api.getMyKyc().then((next) => {
       setStatus(next);
       const receipt = readKycReceipt();
@@ -112,7 +114,7 @@ export function VerificationSection() {
         clearKycReceipt();
         setAwaitingRecord(false);
       }
-    }).catch(() => {});
+    }).catch(() => setLoadFailed(true));
   }
   useEffect(reload, []);
 
@@ -191,7 +193,14 @@ export function VerificationSection() {
   if (!status) {
     return (
       <Panel>
-        <div className="h-40 animate-pulse rounded-2xl bg-secondary" />
+        {loadFailed ? (
+          <div className="flex flex-col gap-4 p-5 sm:p-6">
+            <p role="alert" className="text-[14px] text-danger">{t('serverError.unavailable')}</p>
+            <button type="button" onClick={reload} className="min-h-12 self-start rounded-xl bg-brand px-6 text-[14px] font-semibold text-primary-foreground">
+              {t('trade.retry')}
+            </button>
+          </div>
+        ) : <div role="status" aria-busy="true" className="h-40 animate-pulse rounded-2xl bg-secondary" />}
       </Panel>
     );
   }

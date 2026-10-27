@@ -34,7 +34,7 @@ class EndpointTest(unittest.TestCase):
         config = cls.root / 'nginx.conf'
         import pwd
         config.write_text('user ' + pwd.getpwuid(os.geteuid()).pw_name + ';\nmaster_process off;\npid ' + str(cls.root / 'nginx.pid') +
-            ';\nevents {}\nhttp {\n' + render(str(cls.root), cls.port,
+            ';\nevents {}\nhttp {\nfastcgi_temp_path ' + str(cls.root / 'fastcgi') + ';\nuwsgi_temp_path ' + str(cls.root / 'uwsgi') + ';\nscgi_temp_path ' + str(cls.root / 'scgi') + ';\n' + render(str(cls.root), cls.port,
                 cls.fixture.server_port, str(cls.cert), str(cls.key)) + '}\n')
         cls.nginx = str(Path(os.environ['NGINX_BIN']).resolve())
         check = subprocess.run([cls.nginx, '-p', str(cls.root), '-t', '-c', str(config)], capture_output=True, text=True)
@@ -74,14 +74,40 @@ class EndpointTest(unittest.TestCase):
         c.close()
         return result
 
-    def test_admin_kyc_internal_and_admin_outside_admin_prefix_never_forward(self):
+    def test_admin_internal_and_unreviewed_kyc_never_forward(self):
         for path, method in [('/admin', 'GET'), ('/api/v1/admin/users', 'GET'),
-                ('/api/v1/kyc/me', 'GET'), ('/_voltex/kyc/v1/submit', 'POST'),
+                ('/api/v1/kyc/admin/delivery', 'GET'), ('/_voltex/kyc/admin', 'POST'),
+                ('/api/v1/kyc/submit', 'POST'), ('/_voltex/kyc/v1/unknown', 'POST'),
                 ('/api/v1/internal/kyc/authorize', 'POST'), ('/api/v1/products', 'POST'),
                 ('/api/v1/market/status', 'GET'), ('/api/v1/demo/vta', 'GET')]:
             before = len(Fixture.requests)
             self.assertEqual(self.request(path, method)[0], 403, (path, method))
             self.assertEqual(len(Fixture.requests), before)
+
+    def test_customer_kyc_status_and_three_exact_worker_routes(self):
+        self.assertEqual(self.request('/api/v1/kyc/me')[0], 200)
+        for name in ('submit', 'materials', 'confirm'):
+            payload = '--synthetic\r\nContent-Disposition: form-data; name="document"; filename="synthetic.txt"\r\n\r\nNOT A REAL DOCUMENT\r\n--synthetic--\r\n'
+            status, headers, _ = self.request('/_voltex/kyc/v1/' + name, 'POST', payload,
+                {'Authorization': 'Bearer synthetic-kyc-user', 'Cookie': 'never-forward-me',
+                 'Content-Type': 'multipart/form-data; boundary=synthetic'})
+            self.assertEqual(status, 200)
+            received = Fixture.requests[-1]
+            self.assertEqual(received['path'], '/v1/' + name)
+            self.assertEqual(received['body'], payload)
+            self.assertEqual(received['headers']['Authorization'], 'Bearer synthetic-kyc-user')
+            self.assertEqual(received['headers']['Origin'], 'https://voltextech.net')
+            self.assertEqual(int(received['headers']['Content-Length']), len(payload))
+            self.assertNotIn('Cookie', received['headers'])
+            self.assertNotIn('Set-Cookie', headers)
+            self.assertIn('no-store', headers['Cache-Control'])
+
+    def test_kyc_wrong_origin_method_and_body_cap(self):
+        self.assertEqual(self.request('/_voltex/kyc/v1/submit', 'POST', 'synthetic',
+            {'Origin': 'https://evil.invalid'})[0], 403)
+        self.assertEqual(self.request('/_voltex/kyc/v1/submit')[0], 403)
+        self.assertEqual(self.request('/_voltex/kyc/v1/submit', 'POST', 'synthetic',
+            {'Content-Length': str(4259841)})[0], 413)
 
     def test_encoded_sensitive_paths_and_unknown_api_do_not_forward(self):
         for path in ('/api/v1/%61dmin/users', '/api/v1/%2561dmin/users',
