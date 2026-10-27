@@ -15,10 +15,10 @@ import { requireAdmin } from '../middleware/admin';
  * point before SENT, which returns the funds to the client's available
  * balance.
  */
-export function adminWithdrawalsRouter(prisma: PrismaClient, options: { demoFundsGuard?: () => boolean } = {}): Router {
+export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
   const router = Router();
-  // With the demo-funds guard on, an unheld (demo-valued) request cannot be approved or sent; it can be rejected.
-  const service = new WithdrawalService(prisma, options);
+  // An unheld (demo-valued) request is never approved or sent, whatever the demo switches; it can be rejected.
+  const service = new WithdrawalService(prisma);
 
   router.get('/admin/withdrawals', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const withdrawals = await prisma.withdrawal.findMany({

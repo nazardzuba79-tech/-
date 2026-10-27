@@ -44,7 +44,7 @@
       {
         "type": "pullback",
         "durationHours": 24,
-        "targetPrice": "0.510"
+        "targetPrice": "0.51"
       },
       {
         "type": "recovery",

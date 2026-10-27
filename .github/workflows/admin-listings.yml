@@ -8,6 +8,9 @@ on:
       - 'src/shared/aithPublication.ts'
       - 'config/test-markets/aith.draft.json'
       - 'config/test-markets/tyvn.draft.json'
+      - 'config/test-markets/qvtr-20261028.*'
+      - 'scripts/qvtr-draft-import.cjs'
+      - 'scripts/qa-listing-qvtr.cjs'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -83,6 +86,7 @@ jobs:
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
           src/services/listings/__tests__/historicalDemoContour.pg.test.ts
+          src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
@@ -152,6 +156,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report/scenario-controls
+      - name: QVTR exact candidate, idempotent importer, ECLAVO preservation and desktop/mobile
+        run: node scripts/qa-listing-qvtr.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-qvtr
       - name: AITH immutable replacement, lease drain and seven customer viewport sizes
         run: node scripts/qa-admin-listings.cjs
         env:

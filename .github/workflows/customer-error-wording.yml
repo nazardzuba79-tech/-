@@ -22,7 +22,9 @@ concurrency:
 jobs:
   wording:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Twenty customer screens in six states (three of them network failures,
+    # one answering after 8 s) take about eleven minutes of browser time.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,7 +48,7 @@ jobs:
           # this absolute path. Supply it only in the disposable runner.
           sudo mkdir -p /opt/node22/lib/node_modules
           sudo ln -s /tmp/wording-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
-      - name: Five customer screens, normal / failing / partial
+      - name: Twenty customer screens, normal / failing / partial / offline / timeout / slow
         run: node scripts/qa-customer-error-wording.cjs
       - uses: actions/upload-artifact@v4
         if: always()

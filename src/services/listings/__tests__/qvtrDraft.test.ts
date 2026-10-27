@@ -14,6 +14,10 @@ const item = { id:'qvtr-candidate-only', version:1, publishedAt:new Date(AT-2*DA
   countdown:{state:'running' as const,updatedAt:AT-2*DAY_MS,updatedBy:'fixture'} };
 
 test('independent ticker, name, date, logo and seed; ECLAVO stays November 3',()=>{
+  // The standalone importer compares the saved canonical draft to this file.
+  // A numerically equal but noncanonical stage price (e.g.0.510) used to
+  // report a false failure after the draft was already created.
+  expect(draft).toEqual(fresh);
   expect(draft).toMatchObject({symbol:'QVTR',name:'QAVENTRA',listingAt:'2026-10-28T13:00:00Z',displayTimeZone:'Europe/Moscow',
     initialPrice:'0.0140',seed:'qaventra-20261028-v1',tradable:false,ownerAllocation:'0'});
   expect([draft.symbol,draft.name,draft.seed,draft.listingAt,draft.logo]).not.toContain(null);
@@ -63,4 +67,29 @@ test('inert prelisting, explicit publish/timer gates and modeled price bounded',
   const candles=sim.candles5m(AT+2*DAY_MS,AT);
   expect(candles.length).toBeGreaterThan(100);
   expect(candles.every(c=>c.low>0&&c.high<=.88858)).toBe(true);
+});
+
+test('all seven phase endpoints and the full five-minute path respect the saved cap',()=>{
+  const p=saved.simulationProgram!;
+  if(p.kind!=='scenario-controls-v2')throw new Error('v2 expected');
+  const sim=simulationFor(publishedListingAsset(item));
+  let hours=0;
+  for(const phase of p.stages){
+    hours+=phase.durationHours;
+    expect(sim.priceAt(AT+hours*3_600_000)).toBeCloseTo(Number(phase.targetPrice),8);
+  }
+  const candles=sim.candles5m(AT+(hours+24)*3_600_000,AT);
+  expect(candles).toHaveLength(3889);
+  for(const c of candles){
+    expect([c.open,c.high,c.low,c.close].every(v=>Number.isFinite(v)&&v>0&&v<=.88858)).toBe(true);
+    expect(c.high).toBeGreaterThanOrEqual(Math.max(c.open,c.close));
+    expect(c.low).toBeLessThanOrEqual(Math.min(c.open,c.close));
+  }
+});
+
+test('the scheduled UTC instant is 15:00 Kyiv and 16:00 Moscow on October28',()=>{
+  const clock=(timeZone:string)=>new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(AT));
+  expect(clock('UTC')).toBe('13:00');
+  expect(clock('Europe/Kyiv')).toBe('15:00');
+  expect(clock('Europe/Moscow')).toBe('16:00');
 });
