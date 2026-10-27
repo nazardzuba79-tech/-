@@ -1277,7 +1277,7 @@ export const api = {
 
   // KYC verification. The document itself is uploaded by lib/kycEdge.ts to
   // the Cloudflare KYC edge, never to this API.
-  getMyKyc: () =>
+  getMyKyc: (signal?: AbortSignal) =>
     request<{
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       /** The finer stage of the latest submission; kycStatus stays PENDING while materials are requested. */
@@ -1293,7 +1293,7 @@ export const api = {
         rejectionReason: string | null;
         createdAt: string;
       } | null;
-    }>('/kyc/me'),
+    }>('/kyc/me', { signal }),
 
   // Admin: every client with their latest KYC submission (if any)
   getAllClients: (signal?: AbortSignal) =>

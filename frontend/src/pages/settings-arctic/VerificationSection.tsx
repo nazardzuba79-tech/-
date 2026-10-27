@@ -85,6 +85,7 @@ export function VerificationSection() {
   const { t, lang } = useLanguage();
   const [status, setStatus] = useState<Awaited<ReturnType<typeof api.getMyKyc>> | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const loadRequestRef = useRef<AbortController | null>(null);
   const [country, setCountry] = useState('RU');
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -106,17 +107,34 @@ export function VerificationSection() {
   const ids = { country: useId(), countryLabel: useId(), fullName: useId(), dateOfBirth: useId(), documentType: useId() };
 
   function reload() {
+    loadRequestRef.current?.abort();
+    const controller = new AbortController();
+    loadRequestRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), 15_000);
     setLoadFailed(false);
-    api.getMyKyc().then((next) => {
+    api.getMyKyc(controller.signal).then((next) => {
+      if (loadRequestRef.current !== controller || controller.signal.aborted) return;
       setStatus(next);
       const receipt = readKycReceipt();
       if (receipt && (next.latestSubmission?.id === receipt.submissionId || next.kycStatus === 'APPROVED')) {
         clearKycReceipt();
         setAwaitingRecord(false);
       }
-    }).catch(() => setLoadFailed(true));
+    }).catch(() => {
+      if (loadRequestRef.current === controller) setLoadFailed(true);
+    }).finally(() => {
+      clearTimeout(timer);
+      if (loadRequestRef.current === controller) loadRequestRef.current = null;
+    });
   }
-  useEffect(reload, []);
+  useEffect(() => {
+    reload();
+    return () => {
+      const controller = loadRequestRef.current;
+      loadRequestRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   // The document already went out; retry only the tiny record, a few times,
   // while this page is open. Never re-uploads.

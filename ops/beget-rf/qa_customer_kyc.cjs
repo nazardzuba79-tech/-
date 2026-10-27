@@ -74,7 +74,9 @@ async function main(){
   });
   app.get('/api/v1/me',(req,res)=>res.json({id:req.qaUser.id,email:req.qaUser.email,displayName:'SYNTHETIC QA ONLY',isAdmin:false,kycStatus:req.qaUser.status,twoFactorEnabled:false,createdAt:'2026-01-01T00:00:00Z'}));
   app.get('/api/v1/kyc/me',(req,res)=>{
-    const u=req.qaUser;if(u.failRead){u.failRead--;return res.status(503).json({error:'synthetic outage'});}
+    const u=req.qaUser;
+    if(u.stallRead){u.stallRead--;return;}// Intentionally no response: exercise the real browser timeout.
+    if(u.failRead){u.failRead--;return res.status(503).json({error:'synthetic outage'});}
     res.set('Cache-Control','no-store').json({kycStatus:u.status,latestSubmission:u.latest??null,materialRequest:u.material??null,reviewStage:u.material?(u.material.selfieReceived?'MATERIALS_RECEIVED':'SELFIE_REQUIRED'):undefined});
   });
   app.post('/api/v1/auth/logout',(req,res)=>{req.qaUser.revoked=true;res.json({ok:true});});
@@ -120,6 +122,11 @@ async function main(){
     await page.evaluate(token=>localStorage.setItem('exchange_token',token),token);
     await page.goto(ORIGIN+'/settings?tab=verification');await page.getByRole('alert').waitFor();
     await page.getByRole('button',{name:'Повторить',exact:true}).click();await page.locator('[data-kyc-state=NOT_STARTED]').waitFor();check(width+': network error and retry',true);
+    user.stallRead=1;await page.reload();
+    await page.getByRole('alert').waitFor({timeout:20_000});
+    await page.screenshot({path:path.join(out,'synthetic-'+width+'-timeout.png'),fullPage:true});
+    await page.getByRole('button',{name:'Повторить',exact:true}).click();await page.locator('[data-kyc-state=NOT_STARTED]').waitFor();
+    check(width+': stalled read times out and retry recovers',true);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);check(width+': no page overflow',!overflow);
     await page.getByLabel('Полное имя (как в документе)',{exact:true}).fill('SYNTHETIC QA ONLY');await page.getByLabel('Дата рождения',{exact:true}).fill('1990-01-01');
     await page.locator('input[type=file]').setInputFiles({name:'SYNTHETIC-NOT-A-PASSPORT.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nSYNTHETIC QA ONLY — NOT AN ID\n%%EOF')});

@@ -35,3 +35,44 @@ test('submit, materials and receipt-confirm keep binding limits on separate trus
   }
   assert.equal(keys.length,6);
 });
+
+// Exercise the actual rateAllowed path, not just string-key comparisons.
+// The in-memory binding below models the unchanged 5/min production policy;
+// no network, real account, document or notification is used.
+function quotaHarness() {
+  const counts = new Map();
+  return { ...env, ALLOWED_ORIGINS: 'https://voltextech.net', KYC_RATE_LIMIT: {
+    limit: async ({ key }) => {
+      const count = (counts.get(key) || 0) + 1;
+      counts.set(key, count);
+      return { success: count <= 5 };
+    },
+  } };
+}
+async function quotaRequest(config, peer, claim) {
+  const request = new Request('https://kyc.example.invalid/v1/confirm', {
+    method: 'POST', headers: {
+      origin: 'https://voltextech.net', 'cf-connecting-ip': peer,
+      'x-voltex-ru-client-ip': claim, 'x-forwarded-for': claim,
+      'x-real-ip': claim, 'content-type': 'application/json', 'content-length': '2',
+    }, body: '{}',
+  });
+  // No signing key intentionally: accepted quota checks then stop at503,
+  // before receipt processing or any API/email call.
+  return handle(request, config, {}, { now: () => 2_000_000_000_000 });
+}
+test('exhausting client A does not consume client B quota behind the same egress', async () => {
+  const config = quotaHarness();
+  for (let i = 0; i < 5; i++) {
+    assert.equal((await quotaRequest(config, env.RU_GATEWAY_PEER_IP, '192.0.2.41')).status, 503);
+  }
+  assert.equal((await quotaRequest(config, env.RU_GATEWAY_PEER_IP, '192.0.2.41')).status, 429);
+  assert.equal((await quotaRequest(config, env.RU_GATEWAY_PEER_IP, '192.0.2.42')).status, 503);
+});
+test('untrusted caller cannot evade its quota by rotating forged IP headers', async () => {
+  const config = quotaHarness();
+  for (let i = 1; i <= 5; i++) {
+    assert.equal((await quotaRequest(config, '192.0.2.51', `198.51.100.${i}`)).status, 503);
+  }
+  assert.equal((await quotaRequest(config, '192.0.2.51', '198.51.100.99')).status, 429);
+});

@@ -1,6 +1,8 @@
 # VOLTEX Beget — active opaque RU gateway
 
-Verified 27 October2026 on owner branch `work/beget-rf-gateway-preflight-20261026`.
+Recorded 27 October2026 on owner branch `work/beget-rf-gateway-preflight-20261026`.
+Latest narrow Worker release is owner-authorized but BLOCKED before deployment
+by lost authorized-browser context; see `kyc-worker-release-20261027.json`.
 No main merge, primary frontend/API deployment, DB write, real KYC submission
 or financial operation. Previous L7/blanket-KYC-block documents are historical.
 
@@ -70,7 +72,13 @@ Current sanitized evidence lives in `docs/qa/beget-rf/`:
 
 - Real Nginx1.24/TLS/stream/API-auth IP/rollout15/15 PASS. Forged HTTP IP ignored,
   clientA11th invalid login429 while clientB retains its independent bucket.
-- Worker39 existing contracts plus4 new IP tests PASS, run separately.
+- Previous Worker39 existing contracts plus4 IP tests passed separately.
+  Latest release preflight ran45/45 together:39 existing plus6 IP cases,
+  including independent actual-core quota consumption and forged-header rotation.
+  Two new actual API-router tests with synthetic storage/session/signatures pass:
+  rotated metadata cannot reset account quota; a revoked session remains401.
+  Generated client metadata was isolated under ignored output with no engine/DB;
+  initial missing-metadata/config-path failures are preserved in the release receipt.
   KYC client17/17; two DOM cases (network-error recovery and actual deposit
   dialog/QR/clipboard/minimum/synthetic memo) PASS.
 - Frontend tsc/Vite build PASS, existing chunk warning. Wrangler4.153.0 dry-run
@@ -103,20 +111,35 @@ node ops/beget-rf/qa_customer_kyc.cjs
 ```
 Do not deploy this QA-only frontend bundle as primary frontend.
 
-## Pending explicit approval / limits
+## Authorized Worker release — access blocked / limits
 
-Production Worker remains `b00aac7e`, checked in Cloudflare deployment UI.
-Its KYC IP quota still shares Hetzner egress until a separately approved narrow
-release: ONLY `voltex-kyc-edge` clientRateIp/core calls and plaintext
+Owner granted the narrow release. Do NOT ask again for that same approval.
+Last observed deployment was `b00aac7e` in the prior Cloudflare UI inspection;
+the current active version/rollback target cannot be verified this attempt.
+The connected browser returned an originating-context error twice, cloud fallback
+has no session, and execution has no existing Cloudflare credentials. Public
+health requests from execution returned403. No deployment/config write occurred.
+The authorized change is ONLY `voltex-kyc-edge` clientRateIp/core calls and plaintext
 `RU_GATEWAY_PEER_IP=138.199.227.130`. Trust claim only when Cloudflare-set peer
 matches pinned Hetzner; validate/canonicalize IPv4/IPv6, otherwise use actual peer.
 Spoof/malformed/fallback cases tested. Wrong pinning can misattribute quota.
+Beget PROXY metadata is NOT cryptographic identity: a compromised relay can forge
+it. Never use it for authentication/ownership/account/session exemptions. Actual
+API session verification and account quotas remain independently authoritative.
 
 Preserve existing signing secret, recipient, bindings, CORS,5/min binding,
 8/10min isolate and10/user/hour API limits. NO key rotation/notification Worker
-deployment/broad main-only workflow. Rollback to `b00aac7e` and prior variables.
-The frontend network-error alert/Retry is REVIEW CODE ONLY, needs separately
-approved primary frontend release. Current actual KYC form works after routing fix.
+deployment/broad main-only workflow. Before release, refresh live script/settings,
+record the full current deployment version and ensure same-Worker rollback.
+Only use `b00aac7e` if freshly confirmed as the actual previous working version.
+No live two-IP/fake-header canaries ran because release gate was not reached.
+
+Frontend fallback is separate REVIEW CODE ONLY, not published. Added15s timeout
+ONLY to KYC-status GET, abort on unmount/replacement and stale-response guards;
+uploads unchanged. Three DOM tests and21/21 real isolated browser checks at1440/390
+PASS, including stalled-read/error/Retry. Screenshots and `timeout-report.json`
+are under existing `customer-kyc-browser-20261027/`. QA build is not a production
+artifact. No primary frontend release is bundled with the approved Worker action.
 
 Technical PASS is not legal permission. Beget rule9 bans mass VPN/proxy services;
 fixed own-app relay is not an arbitrary proxy, but no written exception claimed.

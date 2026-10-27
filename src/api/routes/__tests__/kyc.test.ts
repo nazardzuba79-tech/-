@@ -168,6 +168,30 @@ describe('POST /internal/kyc/authorize (edge → Render, before the email)', () 
     expect(statuses[10]).toBe(429);
   });
 
+  it('rotating relay IP metadata cannot reset the authoritative account quota', async () => {
+    const prisma = prismaFor({ id: 'user-ip-rotation', email: 'qa@example.test', kycStatus: 'NOT_STARTED' });
+    const app = buildApp(prisma);
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) {
+      const req = edgePost(app, '/internal/kyc/authorize', { ...metadata, requestId: randomUUID() }, { bearer: authHeader('user-ip-rotation') });
+      req.set('X-Voltex-Ru-Client-IP', `192.0.2.${i + 1}`);
+      req.set('X-Forwarded-For', `198.51.100.${i + 1}`);
+      statuses.push((await req).status);
+    }
+    expect(statuses.slice(0, 10)).toEqual(Array(10).fill(200));
+    expect(statuses[10]).toBe(429);
+  });
+
+  it('relay IP metadata cannot authorize a revoked session', async () => {
+    const prisma = prismaFor({ id: 'user-revoked-relay', email: 'qa@example.test', kycStatus: 'NOT_STARTED' });
+    prisma.session = { findUnique: jest.fn(async () => ({ id: 'test-session:user-revoked-relay', userId: 'user-revoked-relay', revokedAt: new Date(), lastSeenAt: new Date() })) };
+    const req = edgePost(buildApp(prisma), '/internal/kyc/authorize', metadata, { bearer: authHeader('user-revoked-relay') });
+    req.set('X-Voltex-Ru-Client-IP', '192.0.2.99');
+    req.set('X-Forwarded-For', '198.51.100.99');
+    expect((await req).status).toBe(401);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it('no reachable edge key → 503 (never accepts unsigned)', async () => {
     delete process.env.KYC_EDGE_PUBLIC_KEY;
     const trust = new KycEdgeTrust({ fetchImpl: (async () => { throw new Error('offline'); }) as any });

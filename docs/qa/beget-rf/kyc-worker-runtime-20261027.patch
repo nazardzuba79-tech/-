@@ -1,0 +1,51 @@
+diff --git a/workers/kyc-edge/src/clientIp.js b/workers/kyc-edge/src/clientIp.js
+new file mode 100644
+index 00000000..8d7c18d6
+--- /dev/null
++++ b/workers/kyc-edge/src/clientIp.js
+@@ -0,0 +1,25 @@
++// CF-Connecting-IP is set by Cloudflare, not by the browser. Only the
++// separately trusted Hetzner egress may supply the overwritten relay header.
++// No X-Forwarded-For, cookies, JWT decoding or per-request identity guessing.
++// This is rate-limit metadata, NOT cryptographic proof of a client identity.
++// A malicious relay can forge its PROXY preamble. Never use this helper for
++// authentication, ownership or account/session exemptions; the authoritative
++// API must independently retain those checks and its per-account quota.
++function canonicalIp(raw) {
++  if (typeof raw !== 'string' || raw.length > 45) return null;
++  if (/^(?:0|[1-9]\d{0,2})(?:\.(?:0|[1-9]\d{0,2})){3}$/.test(raw)) {
++    return raw.split('.').every(n => Number(n) <= 255) ? raw : null;
++  }
++  if (!raw.includes(':') || !/^[0-9a-f:.]+$/i.test(raw)) return null;
++  try { return new URL(`http://[${raw}]/`).hostname.slice(1, -1); } catch { return null; }
++}
++
++export function clientRateIp(request, env) {
++  const peer = request.headers.get('cf-connecting-ip') || 'unknown';
++  const trusted = canonicalIp(env.RU_GATEWAY_PEER_IP);
++  if (trusted && canonicalIp(peer) === trusted) {
++    const client = canonicalIp(request.headers.get('x-voltex-ru-client-ip'));
++    if (client) return `ru:${client}`;
++  }
++  return peer;
++}
+diff --git a/workers/kyc-edge/src/core.js b/workers/kyc-edge/src/core.js
+index a58b980e..0610273d 100644
+--- a/workers/kyc-edge/src/core.js
++++ b/workers/kyc-edge/src/core.js
+@@ -12,0 +13 @@ import { queueKycNotification, queueKycMaterialNotification } from './notificati
++import { clientRateIp } from './clientIp.js';
+@@ -464 +465 @@ async function readUpload(request, env, deps, rateKey) {
+-  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
++  const ip = clientRateIp(request, env);
+@@ -764 +765 @@ async function handleConfirm(request, env, ctx, deps) {
+-  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
++  const ip = clientRateIp(request, env);
+diff --git a/workers/kyc-edge/wrangler.toml b/workers/kyc-edge/wrangler.toml
+index 860bebbd..b2d93923 100644
+--- a/workers/kyc-edge/wrangler.toml
++++ b/workers/kyc-edge/wrangler.toml
+@@ -24,0 +25,3 @@ ALLOWED_ORIGINS = "https://voltextech.net,https://www.voltextech.net,https://loc
++# Optional trusted ru egress. Only enabled together with the source-restricted
++# PROXY-protocol endpoint; the gateway overwrites this header after TLS ends.
++RU_GATEWAY_PEER_IP = "138.199.227.130"

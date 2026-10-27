@@ -1,6 +1,10 @@
 // CF-Connecting-IP is set by Cloudflare, not by the browser. Only the
 // separately trusted Hetzner egress may supply the overwritten relay header.
 // No X-Forwarded-For, cookies, JWT decoding or per-request identity guessing.
+// This is rate-limit metadata, NOT cryptographic proof of a client identity.
+// A malicious relay can forge its PROXY preamble. Never use this helper for
+// authentication, ownership or account/session exemptions; the authoritative
+// API must independently retain those checks and its per-account quota.
 function canonicalIp(raw) {
   if (typeof raw !== 'string' || raw.length > 45) return null;
   if (/^(?:0|[1-9]\d{0,2})(?:\.(?:0|[1-9]\d{0,2})){3}$/.test(raw)) {
