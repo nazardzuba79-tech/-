@@ -19,3 +19,5 @@ Base: existing #553 4390eaf325a5fa4484d3068ec834d6fb725e333e plus current main 6
 20/20 source metadata entries and deterministic model support are present. The owner archive VOLTEX_History20_Claude_20261018 was not found in project storage or Downloads; its twenty original file/source hashes were NOT reverified. Browser QA used the explicitly synthetic one-window fixture, never fabricated real market data. Public/commercial data rights remain unapproved. This is not activation or production readiness.
 
 No main merge, deployment, production SQL, real account/balance/order change, external order or flag activation. Stocks frontend, Wallet Conversion, withdrawals and TYVN/ECLAVO configs are byte-unchanged from current main. Historical unrelated failures remain separate, not repaired here.
+
+Code merge commit: `4730e0b60c06d01120f4a8c57ff2f9f9539f800c`. Remote PR remains at `4390eaf325a5fa4484d3068ec834d6fb725e333e` until publication safety is verified. New exact-head GitHub CI is NOT_RUN. Local code is committed on the existing PR branch, not a replacement candidate.
