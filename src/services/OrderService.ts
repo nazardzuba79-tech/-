@@ -310,7 +310,7 @@ export class OrderService {
       throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
-    if (simulatedAsset && proceeds.decimalPlaces() > 18)
+    if (simulatedAsset && (proceeds.decimalPlaces() ?? 19) > 18)
       throw new Error('Simulation proceeds exceed demo ledger precision');
 
     const now = Date.now();
