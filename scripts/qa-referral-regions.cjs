@@ -24,7 +24,9 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const db = new PrismaClient(), app = express();
 const out = path.resolve(process.env.QA_OUT || 'output/referral-regions');
 fs.mkdirSync(out, { recursive: true });
-const checks = [], browserErrors = [], signupBodies = [], unexpectedWrites = [];
+const checks = [], browserErrors = [], signupBodies = [], unexpectedWrites = [], routeErrors = [];
+const closingContexts = new WeakSet();
+let tearingDown = false;
 const codeKey = 'exchange_referral_code', regionKey = 'exchange_referral_region';
 const password = 'SyntheticReferralPass123';
 const origins = { world: 'https://voltextech.net', ru: 'https://ru.voltextech.net' };
@@ -87,13 +89,19 @@ async function finances() {
     }, { token });
     await ctx.route('**/*', async route => {
       const url = new URL(route.request().url());
-      if (Object.values(origins).includes(url.origin)) {
-        const response = await route.fetch({ url: loopback + url.pathname + url.search, maxRedirects: 0 });
-        return route.fulfill({ response });
+      try {
+        if (Object.values(origins).includes(url.origin)) {
+          const response = await route.fetch({ url: loopback + url.pathname + url.search, maxRedirects: 0 });
+          return await route.fulfill({ response });
+        }
+        // Home's market providers/fonts are offline fixtures; nothing reaches a public network.
+        if (url.hostname === 'fonts.googleapis.com') return await route.fulfill({ contentType: 'text/css', body: '' });
+        return await route.fulfill({ status: 503, json: { error: 'Offline market fixture' } });
+      } catch (error) {
+        if (tearingDown || closingContexts.has(ctx)) return;
+        routeErrors.push({ url: url.pathname, error: error.message });
+        await route.abort().catch(() => {});
       }
-      // Home's market providers/fonts are offline fixtures; nothing reaches a public network.
-      if (url.hostname === 'fonts.googleapis.com') return route.fulfill({ contentType: 'text/css', body: '' });
-      return route.fulfill({ status: 503, json: { error: 'Offline market fixture' } });
     });
     if (ctx.routeWebSocket) await ctx.routeWebSocket('**/*', ws => ws.close());
     return ctx;
@@ -102,6 +110,11 @@ async function finances() {
     await page.goto(origin + '/settings?tab=referral');
     await page.locator('[data-referral-link]').waitFor();
     await page.evaluate(() => document.fonts.ready);
+  }
+  async function closeContext(ctx) {
+    // Context shutdown can cancel in-flight read fixtures; never hide active errors.
+    closingContexts.add(ctx);
+    await ctx.close();
   }
   function watch(page) { page.on('pageerror', error => browserErrors.push(error.message)); }
   try {
@@ -133,7 +146,7 @@ async function finances() {
       const registered = await db.user.findUnique({ where: { email } });
       assert.equal(registered.referredById, owner.id);
       checks.push({ name: `${region}: guest link → home CTA → registration → shared referredById`, result: 'PASS' });
-      await ctx.close();
+      await closeContext(ctx);
     }
     for (const width of [1440, 390]) {
       const ctx = await context(width, seed.body.token), page = await ctx.newPage(); watch(page);
@@ -165,16 +178,18 @@ async function finances() {
         assert.equal(await page.evaluate(() => window.__copiedReferral), link);
         checks.push({ name: `${new URL(origin).hostname} ${width}: choose/copy/reload, shared stats=2, Banking preference`, result: 'PASS' });
       }
-      await ctx.close();
+      await closeContext(ctx);
     }
     assert.deepEqual(await finances(), before, 'registration and sharing write no financial rows');
     assert.deepEqual(unexpectedWrites, []);
     assert.deepEqual(egress, []);
     assert.deepEqual(browserErrors, []);
-    const report = { result: 'PASS', scope: 'Disposable PostgreSQL + real auth/referral routes + built frontend. Hostnames intercepted to loopback; no live RU or Russian ISP claim.', checks, browserErrors, unexpectedWrites, externalServerCalls: egress.length, financialRowsUnchanged: true };
+    assert.deepEqual(routeErrors, []);
+    const report = { result: 'PASS', scope: 'Disposable PostgreSQL + real auth/referral routes + built frontend. Hostnames intercepted to loopback; no live RU or Russian ISP claim.', checks, browserErrors, routeErrors, unexpectedWrites, externalServerCalls: egress.length, financialRowsUnchanged: true };
     fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report));
   } finally {
+    tearingDown = true;
     await browser?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await db.$disconnect();
   }
 })().catch(async error => { console.error(error); await db.$disconnect(); process.exitCode = 1; });

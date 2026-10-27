@@ -28,6 +28,10 @@ schema, migration or financial rules changed.
   row changes. No actual public registration or message is sent. Banking rendering
   uses read fixtures; reward/calculation logic is not reimplemented or changed.
 - Exact-head CI evidence is tracked on the PR, including browser report and images.
+- Local isolated PostgreSQL 16.15/browser run: both guest registrations, actual
+  shared referrer/count=2 and all four origin/viewport Profile/Banking combinations
+  PASS. Browser exceptions, unexpected writes and external server calls: zero;
+  financial table row counts remain unchanged. This is not a live RU endpoint test.
 
 ## RU infrastructure blocker
 
