@@ -16,6 +16,12 @@
  * checkPublishable). These refusals do not depend on that gate: they hold
  * even if a historical listing ever reaches the published catalogue.
  * Pure: no IO, no clock.
+ *
+ * A History20 growth window (`growth: 'historical-window'`) is NOT in this
+ * contour: it is only the price path of an ordinary scenario listing, priced,
+ * charted and traded by the existing Spot mechanism under the rules every
+ * scenario listing has. Its publication is refused separately by
+ * checkPublishable (HISTORICAL_RIGHTS_UNVERIFIED) until the rights are cleared.
  */
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import type { ListingConfig } from './listingConfig';
