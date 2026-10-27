@@ -1,0 +1,73 @@
+name: Referral regions (isolated PostgreSQL and browser)
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/lib/*eferral*'
+      - 'frontend/src/lib/__tests__/referralLinks.test.ts'
+      - 'frontend/src/pages/settings-arctic/ReferralSection.tsx'
+      - 'frontend/src/pages/BankingPage.tsx'
+      - 'frontend/src/pages/ReferralRedirectPage.tsx'
+      - 'frontend/src/pages/register/**'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'src/api/routes/auth.ts'
+      - 'src/api/routes/referral.ts'
+      - 'scripts/qa-referral-regions.cjs'
+      - '.github/workflows/referral-regions.yml'
+permissions:
+  contents: read
+concurrency:
+  group: referral-regions-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  referral:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: voltex
+          POSTGRES_PASSWORD: synthetic-local-only
+          POSTGRES_DB: voltex_referral_regions
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U voltex -d voltex_referral_regions"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://voltex:synthetic-local-only@127.0.0.1:5432/voltex_referral_regions
+      DIRECT_URL: postgresql://voltex:synthetic-local-only@127.0.0.1:5432/voltex_referral_regions
+      REFERRAL_REGION_QA: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Existing auth, clipboard, localization and new link contracts
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/referralLinks.test.ts
+          frontend/src/lib/__tests__/authApprovedDesign.test.ts
+          frontend/src/lib/__tests__/clipboardCopy.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          src/api/routes/__tests__/auth.test.ts
+      - run: npm run build
+      - run: npm run build --prefix frontend
+        env: { VITE_API_URL: '/api/v1' }
+      - name: Migrate only the guarded disposable test database
+        run: npx prisma migrate deploy
+      - name: Disposable browser tools
+        run: |
+          npm install --prefix /tmp/referral-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/referral-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Both guest links, real registration/referrer statistics, copy and persistence at 1440/390
+        run: node scripts/qa-referral-regions.cjs
+        env: { QA_PLAYWRIGHT_MODULE: '/tmp/referral-browser/node_modules/playwright' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: referral-regions
+          path: output/referral-regions/
+          retention-days: 7
