@@ -46,6 +46,17 @@ def memory_guard():
     values=dict(line.split(':',1) for line in pathlib.Path('/proc/meminfo').read_text().splitlines())
     assert int(values['MemAvailable'].split()[0]) >= 1024*1024, 'Available server RAM below1GiB'
 
+def public_payload_modes(release, names):
+    # Only the pinned, non-secret build payload is readable by the image's
+    # unprivileged Node user. The host release root/plans remain private.
+    for name in names:
+        p=release/name
+        assert p.is_file() and not p.is_symlink(), 'Unexpected payload file'
+        p.chmod(0o644)
+        for parent in p.parents:
+            if parent==release: break
+            parent.chmod(0o755)
+
 def compose_context(c):
     labels=c['Config']['Labels']; files=labels['com.docker.compose.project.config_files'].split(',')
     assert files and all(p.startswith('/opt/voltex-precutover/') and pathlib.Path(p).is_file() for p in files), 'Unexpected compose stack'
@@ -88,6 +99,7 @@ def main():
             with urllib.request.urlopen(raw+name,timeout=20) as r: body=r.read(600000)
             assert hashlib.sha256(body).hexdigest()==sha, 'Payload checksum mismatch'
             p.write_bytes(body);p.chmod(0o600)
+        public_payload_modes(release, expected)
         tag='voltex-eclv-peak:'+a.source_sha
         run(['docker','build','--pull=false','--network=none','--label','org.opencontainers.image.revision='+a.source_sha,'-t',tag,str(release)],timeout=120)
         image=run(['docker','image','inspect',tag,'--format','{{.Id}}']).strip()
