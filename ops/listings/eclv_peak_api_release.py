@@ -51,7 +51,9 @@ def compose_context(c):
     assert files and all(p.startswith('/opt/voltex-precutover/') and pathlib.Path(p).is_file() for p in files), 'Unexpected compose stack'
     project=labels['com.docker.compose.project']; service=labels['com.docker.compose.service']
     assert project=='voltex-cutover' and service=='api-production', 'Unexpected target'
-    args=['docker','compose','-p',project]
+    # The observed production service belongs to the existing cutover profile.
+    # Selecting it for config/up does not start other services: up names ONLY it.
+    args=['docker','compose','--profile','cutover','-p',project]
     for f in files: args += ['-f',f]
     return args,service
 
@@ -73,6 +75,7 @@ def main():
     assert {line.split()[1]:line.split()[0] for line in hashes}==OLD_HASHES, 'Production modules changed'
     assert run(['docker','image','inspect',BASE_TAG,'--format','{{.Id}}']).strip()==BASE_IMAGE, 'Rollback image changed'
     before=json.loads(run(args+['config','--format','json']))
+    assert before['services'][service].get('profiles')==['cutover'], 'Production service profile changed'
     assert before['services'][service].get('command')==['node','dist/index.js'], 'Compose startup is not the observed direct Node command'
     if a.mode=='prepare':
         release.mkdir(mode=0o700,parents=True,exist_ok=True)

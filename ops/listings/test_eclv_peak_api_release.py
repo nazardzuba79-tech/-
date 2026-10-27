@@ -27,5 +27,8 @@ class ReleaseScope(unittest.TestCase):
     def test_wrong_image_refused(self):
         self.after['services']['api-production']['image']='unrelated-api:main'
         with self.assertRaises(AssertionError):self.check()
+    def test_profile_change_refused(self):
+        self.after['services']['api-production']['profiles']=['unapproved-financial-service']
+        with self.assertRaises(AssertionError):self.check()
 
 if __name__=='__main__':unittest.main()
