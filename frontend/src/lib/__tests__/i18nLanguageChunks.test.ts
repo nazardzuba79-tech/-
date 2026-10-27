@@ -407,6 +407,8 @@ describe('translation integrity', () => {
           'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss',
           // Remembered-device sign-in (2026-10-03): additive auth/session copy.
           'settings.rememberedDevice',
+          // Region selector additions only; keep every historical dictionary byte pinned.
+          'settings.referralRegion', 'settings.referralWorld', 'settings.referralRussia', 'settings.referralCopy', 'settings.referralLinkUnavailable',
           // Verification form, Profile verification action and VOLTEX Card
           // shortcut (owner bundle, 2026-10-04): `git diff --numstat` over the
           // locales reports `19 0` per language, additions only.
