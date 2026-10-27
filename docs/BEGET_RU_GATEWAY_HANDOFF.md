@@ -70,3 +70,5 @@ Protect future certificate issuance too: CAA issuer restriction plus **validatio
 Official technical references: [Nginx ssl_preread without TLS termination](https://nginx.org/en/docs/stream/ngx_stream_ssl_preread_module.html), [Let's Encrypt CAA validationmethods/accounturi](https://letsencrypt.org/docs/caa/). No TLS, CAA, DNS, Nginx, KYC or production setting has been changed.
 
 Next runtime step requires a reachable approved probe (ideally documented Russian ISP) and read-only inspection of the existing gateway configuration. Do not mark authenticated or financial flows complete from public HTML200 or the owner's separate KYC result.
+
+Publication preflight: Cloudflare Pages production auto-deploy is OFF and previews none; both approved Render workspaces have no service on this review branch and previews OFF. No provider setting or permission changed. This source/fixture update may be fast-forwarded to existing Draft #622; new exact-head CI is separate from the blocked live RU checks. Code commit: `98b7cca1657a184af4ab4f7d9a32db293b38b50b`.
