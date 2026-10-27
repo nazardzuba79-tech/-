@@ -117,6 +117,56 @@ resources remain:
   a PostgreSQL backend;
 - the one PostgreSQL server, which also receives the Stocks commits and session reads.
 
+### Round 2 (separated + Stocks CPU weight): run 40514272799 on `b6ea7d97`
+
+Collection COMPLETE 8/8; both pins `DIAGNOSTIC_P95_FAIL`; errors 0; financial
+invariants 0.
+
+| Pin | Crypto p50/p95/p99 baseline → mixed (ms) | Pooled Δp95 | Median run Δp95 | Δp99 | Crypto API CPU base → mixed (ms) |
+|---|---|---|---|---|---|
+| one process | 7.92/11.61/15.28 → 8.49/17.66/26.45 | +52.1 % | +54.1 % | +73.0 % | 2257 → 6663 |
+| separated, nice 10 | 7.83/11.38/19.02 → 8.38/14.55/20.73 | +27.8 % | +25.1 % | +8.9 % | 2184 → 2243 |
+
+The separated layout with the lower CPU weight halves the inflation, but the
+gate stays failed.
+
+| Metric (separated) | Baseline | Mixed |
+|---|---|---|
+| Crypto API event-loop utilization | 0.047 | 0.054 |
+| Crypto API loop delay p99 (ms) | — | 11.7 |
+| Server-side crypto p95 (ms) | 10.00 | 13.28 |
+| Client−server gap p95 (ms) | 1.52 | 1.55 |
+
+Mixed arm, per process:
+
+| Process | CPU per window (ms) | Max RSS (MB) |
+|---|---|---|
+| Crypto API | 2243 | 203 |
+| Stocks authority | 2252 | 163 |
+| Stocks gateway | 2551 | 121 |
+| Driver | 1780 | — |
+| PostgreSQL | 690 | — |
+
+Viewer `/state` p95 is 7.16 ms and trader p95 is 31.9 ms.
+
+**Remaining bottleneck.** The extra time is spent inside the server's request
+handling. It does not come from the crypto API's own CPU (+2.7 %) or event loop,
+and not from the client (the gap is unchanged). Two causes:
+
+1. **One physical core.** `report.cpu` shows that the taskset's two vCPUs are the
+   two SMT threads of one physical core (`thread_siblings_list` `0-1`, AMD EPYC
+   7763). Whenever the Stocks processes, the driver's viewer load or PostgreSQL
+   run on the sibling thread, the crypto path runs slower. A CPU weight orders the
+   run queue; it cannot stop the sibling thread.
+2. **Shared PostgreSQL rows.** Trader 0 is also the crypto user. The Stocks
+   commands lock the same `User`/`DemoBalance` rows and commit with fsync.
+   - Only 13 % of crypto requests overlap trader requests.
+   - Yet 8 of the 17 slowest crypto requests (≥ p95) in each of `after-1` and `after-2` overlap them.
+
+Within the stated limits (same budget, unchanged workload), no further deployable
+step removes these two shared resources. Separate physical cores, or a separate
+database or host for Stocks, would be a resource or topology decision for the owner.
+
 ## Known limit (unchanged here)
 
 The gateway calls the authority's identity route on every gateway request. 50

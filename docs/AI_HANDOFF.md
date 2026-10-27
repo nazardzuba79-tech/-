@@ -7448,4 +7448,24 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
   - Separated: crypto API ELU 0.05; server-side crypto p95 9 → 15 ms; client−server gap 1.6 → 2.1 ms.
   - Separated mixed CPU per window (ms): authority 2280, gateway 2634, driver 1878, PostgreSQL 675.
   - Financial invariants 0 in all 16 arms.
-- **Round 2 (this push):** the `after` pin adds the release's scheduling control: both Stocks processes at nice 10, `cpu_shares: 102` in the compose example. Runtime pin unchanged. `report.cpu` records the allowed CPUs and their SMT siblings (report only). Harness 55/55 locally.
+- **Round 2:** the `after` pin adds the release's scheduling control: both Stocks processes at nice 10, `cpu_shares: 102` in the compose example. Runtime pin unchanged. `report.cpu` records the allowed CPUs and their SMT siblings (report only). Harness 55/55 locally.
+- **Round 2 result:** [run 40514272799](https://github.com/nazardzuba79-tech/-/actions/runs/40514272799) on `b6ea7d97`, artifact 12738414794 (zip SHA256 `77676d85…239b47`). Collection COMPLETE 8/8; both pins `DIAGNOSTIC_P95_FAIL`.
+
+  | Pin | Crypto p50/p95/p99 baseline → mixed (ms) | Pooled Δp95 | Median run Δp95 | Δp99 | API CPU (ms) |
+  |---|---|---|---|---|---|
+  | one process | 7.92/11.61/15.28 → 8.49/17.66/26.45 | +52.1 % | +54.1 % | +73.0 % | 2257 → 6663 |
+  | separated, nice 10 | 7.83/11.38/19.02 → 8.38/14.55/20.73 | +27.8 % | +25.1 % | +8.9 % | 2184 → 2243 |
+
+  - Separated: API ELU 0.047 → 0.054; server-side crypto p95 10.0 → 13.3 ms; client−server gap 1.52 → 1.55 ms.
+  - Separated mixed CPU per window (ms): authority 2252, gateway 2551, driver 1780, PostgreSQL 690.
+  - Max RSS (MB): API 203, authority 163, gateway 121.
+  - Errors 0; financial invariants 0.
+- **Exact-head CI on `b6ea7d97` (other workflows):**
+  - `financial-review` ran Jest `stocksTestCash` + `stocksAuthority`: 21/21.
+  - `node22-hetzner-module-load` ran the compiled PostgreSQL suite, `separated-authority` included: 27/27, 0 skipped.
+  - The other completed checks are green.
+- **Gate verdict: FAIL; stopped as instructed.** Remaining bottleneck:
+  1. The 2-vCPU taskset is the two SMT threads of one physical core (`thread_siblings_list` `0-1`, EPYC 7763). Stocks, driver and PostgreSQL work on the sibling thread slows the crypto path; a CPU weight cannot stop that.
+  2. Shared PostgreSQL rows. Trader 0 is the crypto user; Stocks commands lock `User`/`DemoBalance` and commit. 8 of the 17 slowest crypto requests per run overlap trader activity, against 13 % of all crypto requests.
+  - Removing either needs more cores or a separate database/host for Stocks: an owner resource decision, not taken here. Details: `docs/STOCKS_613_PROCESS_ISOLATION.md`.
+- **Preserved:** Codex's and earlier #613 work untouched. The protected fixture, `Dockerfile.release`, migrations and the #621 source pipeline were not edited; `summarize-613.cjs`, the plan, trace and thresholds are unchanged.
