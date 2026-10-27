@@ -7159,6 +7159,68 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
   - real production slow-network behaviour and the RU-domain login/KYC flow (no production access here);
   - Stocks and admin pages, which are out of #144 scope.
 
+### Claude — 2026-10-19 — Managed-listing simulation sale priced by the model, not the venue (CTO review on PR #544, Spot only)
+- **Task:** CTO comment on #544 (19.10, 07:01 UTC): `OrderService.sellTeamSpotSimulation` priced NRX with `spotPriceSource` but every other pair with the raw venue `getTicker`, so the owner/test-account MARKET SELL of a published managed listing asked the venue for a simulated pair. Use the same server model price the Spot ticker, chart and triggers use; change nothing else.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, from `main` `f81df788`.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource(this.priceSource)` for every pair (NRX and published managed listings: model price; ordinary pairs: the venue, as before).
+- **Added:** `src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts` (disposable loopback PostgreSQL, synthetic users/listings), wired into `admin-listings.yml`:
+  - owner (ADMIN) and an allowlisted tester sell at the model price, equal to the Spot ticker/trigger source and the chart's last 5m close; exact debit/credit; audit row; the venue is never asked; no book liquidity; no Futures/DemoBalance rows;
+  - refused before any write: before the listing time, a non-tradable listing, a scenario listing (DEMO_ONLY, the kind a History20 window is), more than the available balance;
+  - an ordinary user and a blocked admin get no synthetic fill (normal book path);
+  - a stale snapshot (refresh fails) keeps the last good listing and its model price;
+  - an unknown pair the venue cannot price is refused before any write;
+  - ordinary pair (ETH) keeps the venue price; NRX keeps its canonical model price.
+  - Mutation: with main's line restored, 3 of 6 fail (the modeled pair is priced by the venue).
+- **Preserved:** NRX pricing and records, listing gates, `isSimulationOnlyUser` policy, atomic debit/credit, no artificial liquidity, `DEMO_ONLY`, `HISTORICAL_RIGHTS_UNVERIFIED`; #544/#546/#548 untouched; Stocks/#543/Futures/NativeDemo untouched.
+- **Verified locally:** new test 6/6; with `ownerAllocation.pg`, `historicalDemoContour.pg`, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `adminListings`: 165/165; `nrxSpot.pg` 12/12 on a fresh database (it fails on a database other suites have written DemoBalance rows into, as before); broader listings/testMarkets/OrderService/PriceWatcher/matching-engine/routes run 39/40 suites, the 40th being that `nrxSpot.pg` shared-database case; backend `tsc` and `npm run build`.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** the sale credits ordinary Spot `Balance` USDT, potentially withdrawable (unchanged); a pair Render does not yet know (cold registry) still falls to the venue read, which refuses only if the venue cannot price it — #548's unresolved-pair gate closes that case; Buy/Sell on scenario listings stays `DEMO_ONLY`.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale: no withdrawable model proceeds (owner decision on PR #544, 07:18 UTC)
+- **Task:** owner decision «так без змін»: History20 is a private Spot test mode (verified owner and allowlisted testers only); profit from a model price must not be withdrawable; NRX/AITH byte-for-byte unchanged; fix the non-NRX owner SELL price source; if non-withdrawability cannot be guaranteed with the existing data model, stop before real credits and propose a design.
+- **Commit:** the commit that adds this entry, on top of `a495d030` (branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, PR #551). It supersedes `a495d030`'s behaviour, which let that sale credit model-priced USDT.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource` for every pair, then stops before any write for a published managed listing (`Simulation Spot sale is not available for this listing`). `src/services/testMarkets/nrxSpot.ts`: `managedListingForPair` exported. NRX and ordinary pairs are unchanged.
+- **Tests:** `managedListingSimulationSale.pg.test.ts`, 7 tests, disposable PostgreSQL:
+  - Spot USDT is withdrawable and the listing asset is not (the blocker, shown);
+  - owner/tester sale reads ticker = chart = valuation = model, never the venue, and writes nothing;
+  - prelisting / non-tradable / scenario refused before any venue read;
+  - ordinary user and blocked admin: normal book, no synthetic fill;
+  - stale snapshot: still stopped;
+  - unknown unpriced pair: refused;
+  - ETH and NRX sales unchanged.
+  - RED on `main` and on `a495d030` (2 of 7: model proceeds credited), GREEN here; mutation (venue price with the stop kept) also fails 2.
+- **Design:** `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`. Blocker: one fungible Spot USDT row backs withdrawals, and owner/testers fall back to it when their native wallet is unavailable. Proposal without a migration: a restricted `SIMUSDT` quote for History20 private pairs, exact admission via `isSimulationOnlyUser`, private publication, audited per-tester allocations. Not implemented.
+- **Verified locally:** 12 suites / 200 tests (`managedListingSimulationSale.pg`, `ownerAllocation.pg`, `historicalDemoContour.pg`, `nrxSpot.pg` on a fresh DB, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `WithdrawalService`, `adminListings`, `withdrawals`); backend `tsc`.
+- **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — Issue #617 P0: the Spot simulation sale minted withdrawable USDT (fix candidate, owner decision)
+- **Found by** the independent adversarial verification of #620 (fresh subagent, disposable PostgreSQL, real routes): an ADMIN or simulation-only MARKET SELL of NRX goes to `sellTeamSpotSimulation`, which credits model-priced USDT to `Balance`; it was withdrawn to SENT (owner +41.4 M USDT from the 6250 NRX allocation; tester +689 744 USDT from 100 book-bought NRX) and reached an ordinary USER through the real book (40 000 USDT, SENT). Pre-existing on main; outside #620's diff. #620's own demo fence held on every path (27 PASS).
+- **Branch** `claude/voltex-mobile-audit-7rpjni-simulation-mint-fence` from main `63d6b02c`: merge of #551 (`a9aee9cc`, managed listings already stopped; only the append-only handoff conflicted, both kept) + one fix: the synthetic sale refuses every simulated asset (`isTestAssetPairOrSymbol`, NRX included) before any write. Ordinary pairs, book path, allocations and withdrawals unchanged.
+- **Tests:** new `simulationMintFence.pg.test.ts` (3; RED 3/3 on main + #551, GREEN after); NRX expectations in `nrxSpot.pg.test.ts` (3) and `managedListingSimulationSale.pg.test.ts` (1) now assert refusal with nothing written. Local 13 suites / 174 tests, backend `tsc`. Operator SQL in `docs/SIMULATION_SALE_P0_617.md` syntax-checked read-only on the disposable DB only.
+- **Owner decision required:** this reverses the 19.10 «NRX sale unchanged» decision (options A/B/C in the doc). Existing minted USDT on production is not touched; read-only queries provided. P1 (ordinary-asset synthetic sale at venue price, no counterparty) and P2 (approve does not verify a held row's lock) documented, not changed.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — #625: review of the owner-account DemoBalance settlement, test fixes, restored handoff
+- **Base state:**
+  - main moved to `521f2419` at 09:34 UTC: #620, #606 and #626 merged by the owner's account.
+  - The owner's account then pushed three commits to this branch:
+    - `1a886a49`: default-OFF `SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED`, which settles proceeds only in DemoBalance (option B);
+    - `5cb7945a`: merge of main;
+    - `55948fd2`: nullable `decimalPlaces()` typecheck;
+    - `f6596d4d`: the replay test's union narrowing.
+  - This commit is on top of `f6596d4d`; the settlement logic is not changed.
+- **Restored:** the `5cb7945a` merge dropped this branch's three handoff entries (two from 19.10, #551 managed-listing sale; one from 27.10, #625). They are restored above, unchanged.
+- **Test fixes:**
+  - The retry test read `replayed` on a union type, which failed ts-jest. `f6596d4d` (owner's account) made the same fix this review had: `'replayed' in second`.
+  - The suite's `afterEach` removes its DemoBalance rows. Without that, `nrxSpot.pg` failed 2 tests (global `demoBalance.count() === 0`) whenever it ran after this suite on the shared database. Reproduced locally (2 failed / 176 passed), then fixed.
+- **Added:** an opt-in concurrency test (4 × 2000 NRX against 6250). NRX is never oversold, the demo credit equals the filled sales, and real USDT is unchanged.
+- **Review notes:** `docs/SIMULATION_SALE_P0_617.md` §6. Demo Spot admission still requires `DEMO_BALANCE_ADJUSTED`, so a sale credit admits nobody.
+- **Open (owner):**
+  - activation of the flag;
+  - portfolio labelling of demo proceeds;
+  - P0-3 real-book exposure and reconciliation of production USDT already minted (read-only SQL in the doc).
+
 ## 2026-10-26 — Claude — #613 legacy SQLite revocation: pre-COMMIT commit fence
 - Base: #613 head `eeebc74e78dc8330e0d1f341ee5b6b716e4fd2d6` (fresh fetch; main `63d6b02c`). Pushed as a fast-forward commit on the #613 branch; no merge, deploy or production change.
 - Finding: the 200-instead-of-401 failure was a real defect of the unsupported SQLite path, not the test environment. The worker committed with only the request-start authentication; the PG authority path already locks/rechecks the Session row before COMMIT and was correct.
