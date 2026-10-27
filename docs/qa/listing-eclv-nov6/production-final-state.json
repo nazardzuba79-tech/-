@@ -1,0 +1,89 @@
+{
+  "checkedAt": "2026-10-27T19:32:32.486435+00:00",
+  "api": {
+    "source": "85f6122b7ac0aa3ce72a2af9ac9aac13d814e44d",
+    "health": "ok",
+    "runtimeConfigurationPreserved": true
+  },
+  "pages": {
+    "source": "e426b2b5a6d77db5ac80c70745230174c5775765",
+    "deployment": "e328bfab-74ee-43f2-a907-f1dc2698dc4a",
+    "status": "success",
+    "completedAt": "2026-10-27T19:25:40.577143Z",
+    "automaticProduction": false,
+    "previews": "none"
+  },
+  "workers": {
+    "market": "f3a02fb5-60e0-4efa-bc3e-d48e5ecd02a2",
+    "notification": "54df907b-ae3f-4740-afca-0e06b2c2a761"
+  },
+  "listings": {
+    "ECLV": {
+      "version": 1,
+      "draftRevision": 4,
+      "countdown": "RUNNING",
+      "date": "2026-11-06T13:00:00Z",
+      "initial": 0.014,
+      "terminal": 1.01472,
+      "growthPercent": 7148,
+      "seedPreserved": true,
+      "logoPreserved": true,
+      "tradable": false
+    },
+    "QVTR": {
+      "date": "2026-10-28T13:00:00Z",
+      "countdown": "RUNNING",
+      "unchanged": true
+    }
+  },
+  "actualUi": {
+    "deleteDialogWrongConfirmationBlocked": true,
+    "deleteCancelled": true,
+    "productionListingDeleted": false,
+    "copyCount": 1,
+    "copyEventCreatedOnOwnedAccount": true,
+    "financialTransfer": false,
+    "nrxMarketsSearchResults": 0,
+    "nrxSpotSearchResults": 0,
+    "nrxDeepLinkChartCanvases": 0,
+    "nrxDeepLinkOrderInputs": 0,
+    "eclvAfterReload": true,
+    "qvtrAfterReload": true
+  },
+  "readOnlyHostChecks": {
+    "apiNrxTicker": 410,
+    "apiNrxCandles": 410,
+    "apiHealth": "PASS",
+    "edgeNrxCatalogue": "BLOCKED_JSONDecodeError",
+    "edgeNrxBook": "BLOCKED_JSONDecodeError",
+    "edgePublishedCatalogue": "BLOCKED_HTTPError"
+  },
+  "browserEdgeNrxCatalogue": {
+    "body": {
+      "error": "market_retired",
+      "symbol": "NRX"
+    },
+    "verified": true,
+    "httpStatusNotExposedByBrowserTool": true
+  },
+  "nrxPreservedEconomicReferences": {
+    "spotOrders": 6,
+    "openSpotOrders": 0,
+    "spotTrades": 2,
+    "nonzeroOrdinaryBalanceRows": 1,
+    "broadRevisionScan": "TIMEOUT_5s",
+    "remainingJournalScans": "NOT_RUN"
+  },
+  "limits": [
+    "Actual390px NOT_VERIFIED: standalone Chromium archive empty/damaged",
+    "RealRussianISP NOT_VERIFIED",
+    "RU authenticated end-to-end NOT_VERIFIED: no RU session",
+    "RealTelegram delivery NOT_VERIFIED",
+    "Browser transport disconnected; single recovery timeout"
+  ],
+  "noDatabaseMigration": true,
+  "noBalanceMutation": true,
+  "noRollbackPerformed": true,
+  "noNewPR": true,
+  "noStocksOrWalletConversionActivation": true
+}
