@@ -316,3 +316,20 @@ describe('6. no customer-facing screen renders a server message directly', () =>
     expect(READS_MESSAGE.test("setError(customerErrorText(err, t, t('x')));")).toBe(false);
   });
 });
+
+describe('ordinary copy carries no implementation vocabulary (issue #144)', () => {
+  // Found by the browser audit on /banking and /earn: a library name and a
+  // table name in the calculator note, the summary card and the success line.
+  const banking = readFileSync(resolve(frontend, 'src/pages/BankingPage.tsx'), 'utf8');
+
+  it('the Banking page names no library or ledger table to the customer', () => {
+    expect(banking).not.toMatch(/\bBigNumber\b/);
+    expect(banking).not.toMatch(/\bledger\b/i);
+  });
+
+  it('still says what the calculator counts and where a new placement appears', () => {
+    expect(banking).toContain('Расчёт выполняется на сервере и учитывает только завершённые календарные месяцы.');
+    expect(banking).toContain('Размещение создано. Оно появилось в разделе «Мои размещения».');
+    expect(banking).toContain('<h2>Мои размещения</h2>');
+  });
+});

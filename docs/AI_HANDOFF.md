@@ -7125,6 +7125,40 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - **Docs:** `docs/DEMO_TRADING.md`, `docs/DEMO_LIQUIDITY.md` — guard switch no longer part of activation/rollback; fence is permanent.
 - **Open:** configured simulation-only accounts that have a Cross wallet are still routed to it (as on main), so they cannot use the held `Balance` path (fail-closed; owner decision to change). P1-3 (admin `Balance` credits withdrawable, #592 provenance), owner limits/inventory numbers. Codex local candidate `b88abbd3` is not on the remote and was not reconciled. No merge, deploy, production, DB or real-data change.
 
+## 2026-10-23 — Claude — #502 Futures chart: recheck on main (no code change)
+- Main `3e79f2a9` (includes #507 chart UX, #511 rail toggle, #607 historical TP/SL acceptance). Nothing to fix; no PR for this stage.
+- **Verified locally:** `qa-futures-chart-ux.cjs` 129/129 at 1366/1440/1707/1920 (+390 sanity): «Индикаторы» trigger without a visible count, right price scale #FFFFFF (pixel-measured) surviving reload/symbol/interval, Cancel reverts, rail 56px with collapse, indicator panes release/restore; `qa-historical-entry.cjs` PASS at 1440 and 390 (historical candle pick → HISTORICAL_DEMO position, TP/SL, liquidation, close); `qa-futures-proportions.cjs` 0 violations; `qa-futures-figma-desktop.cjs` 4/4.
+- **Open:** none found for #502.
+
+## 2026-10-23 — Claude — #144 customer-facing technical text: audit on main + Banking wording
+- Branch `claude/voltex-mobile-audit-7rpjni-customer-errors-144` from main. The three source findings of #144 were already fixed on main (`futures.collateralIncomplete` plain wording in 7 locales; `futuresOrderErrors.ts` and `privateTradingApi.ts` behind the `customerError.ts` boundary; `customerFacingErrors.test.ts` scans for raw-message reads).
+- **Extended `scripts/qa-customer-error-wording.cjs`** from 5 to 20 customer routes (home, markets, banking, earn, card, arbitrage, otc, analytics, trading-bots, tools, dashboard, help, academy, login, register added) × normal / failing (HTML 502 page with stack, connection string, engine code) / partial (null figures); real-shaped fixtures for Banking (programmes as `src/banking/config.ts`), Card eligibility and Analytics; wallet overview fixture now sends numbers as `WalletPortfolioService` does (strings were concatenated by the page and printed `NaN%` — a fixture defect, not production); new banned class «developer jargon» (BigNumber, ledger, undefined, NaN, [object Object]).
+- **Found and fixed (customer copy, `BankingPage.tsx`):** «Расчёт выполняется на сервере через BigNumber…», «Данные из Banking ledger», «Данные сохранены в Banking ledger» → plain Russian without implementation names. Source guard added to `customerFacingErrors.test.ts` (fails on the old text).
+- **Verified locally:** extended guard 852/860 on the old bundle (the 8 failures = Banking/Earn «ledger» ×6 and the fixture `NaN` ×2), 860/860 after the fix; Jest `customerFacingErrors.test.ts` 66/66; frontend `tsc` PASS; workflow timeout 15 → 25 min (local browser time 315 s).
+- **Not changed (by design):** truthful data-failure messages («Данные временно недоступны», «Не удалось загрузить данные») — #144 requires failures to stay visible; Stocks pages (separate scope); admin pages (operator diagnostics). `scripts/qa-mobile-client-fixture.cjs` still uses a percent instead of a fraction for Banking `monthlyRate` (test fixture only; shows 142% there) — not touched here.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — #612 customer wording: network failure states
+- **Started from** #612 head `201b53f1` (the owner's account merged main `9c90dc31`, with #620 and #606, into #612 at 09:34 UTC).
+  - That merge kept the #612 code, but its handoff resolution dropped this branch's two 23.10 entries (#502 recheck, #144 audit).
+  - Both are restored above, unchanged, after the #620 entry it added.
+- **Extended `scripts/qa-customer-error-wording.cjs`:**
+  - Three states added to the 20 customer routes:
+    - `offline`: every `/api/` request is aborted as a failed connection;
+    - `timeout`: every request is dropped as a network timeout;
+    - `slow`: the normal answer arrives only after 8 s, so the screen is read while it is still loading.
+  - New banned class «a browser network error»: `Failed to fetch`, `NetworkError`, `Load failed`, `net::ERR_`, `TypeError`, `AbortError`, aborted signal, «timed out».
+  - The «unknown value is not printed as zero» check now runs in all four degraded states.
+- **Workflow change:** the job timeout goes from 25 to 40 min, because six states take about 11 min of local browser time.
+- **Verified locally** (Node 22.23.3, production bundle of `10e890c7`; `201b53f1` changes no frontend file):
+  - `customerFacingErrors.test.ts`: 66/66;
+  - three-state wording QA: 860/860;
+  - six-state QA with the network classes: 1820/1820;
+  - final six-state rerun with the widened zero check: 1880/1880, 0 FAIL, 10 min 45 s.
+  - No product code changed; no customer screen printed a browser error, raw code or an invented zero.
+- **Not covered:**
+  - real production slow-network behaviour and the RU-domain login/KYC flow (no production access here);
+  - Stocks and admin pages, which are out of #144 scope.
+
 ## 2026-10-26 — Claude — #613 legacy SQLite revocation: pre-COMMIT commit fence
 - Base: #613 head `eeebc74e78dc8330e0d1f341ee5b6b716e4fd2d6` (fresh fetch; main `63d6b02c`). Pushed as a fast-forward commit on the #613 branch; no merge, deploy or production change.
 - Finding: the 200-instead-of-401 failure was a real defect of the unsupported SQLite path, not the test environment. The worker committed with only the request-start authentication; the PG authority path already locks/rechecks the Session row before COMMIT and was correct.
