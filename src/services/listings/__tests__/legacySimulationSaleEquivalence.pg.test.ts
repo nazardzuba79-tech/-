@@ -6,7 +6,8 @@
  * The same file runs unchanged against `main` and against this branch. Each
  * scenario records a normalised outcome (refusal text, rows written, balances,
  * fill price); with LEGACY_SALE_SNAPSHOT_OUT set the outcomes are written as
- * JSON so the two runs can be diffed. The assertions here hold on both.
+ * JSON so the two runs can be diffed. The NRX contract below was deliberately
+ * tightened by main #625 (2026-10-27): the previous real-USDT mint is refused.
  *
  * The venue is realistic: it prices only real venue pairs (BTC, ETH), never a
  * managed listing — except in the explicit "venue collision" scenario, where
@@ -26,6 +27,7 @@ import { setManagedListingAssets } from '../managedSnapshot';
 import { allocateListingOwner } from '../ownerAllocation';
 import { NEURIX } from '../../testMarkets/neurix';
 import { simulationFor } from '../../testMarkets/testMarketSimulation';
+import { spotPriceSource } from '../../testMarkets/nrxSpot';
 import { OrderService } from '../../OrderService';
 import { MatchingEngine } from '../../../matching-engine/MatchingEngine';
 
@@ -89,11 +91,12 @@ pg('legacy simulation sales: AITH, an older managed listing and NRX (disposable 
     owner = randomUUID(); plain = randomUUID();
     symbol = `L${randomUUID().replace(/[^A-Z]/gi, '').slice(0, 5).toUpperCase()}`;
     pair = `${symbol}/USDT`;
-    saved = { enabled: process.env.PRIVATE_TRADING_ENABLED, ownerId: process.env.PRIVATE_TRADING_OWNER_ID, testers: process.env.PRIVATE_TRADING_TEST_USER_IDS };
+    saved = { enabled: process.env.PRIVATE_TRADING_ENABLED, ownerId: process.env.PRIVATE_TRADING_OWNER_ID, testers: process.env.PRIVATE_TRADING_TEST_USER_IDS, demoSettlement: process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED };
     // Approved owner access: the configured private-trading owner, an ADMIN.
     process.env.PRIVATE_TRADING_ENABLED = 'true';
     process.env.PRIVATE_TRADING_OWNER_ID = owner;
     delete process.env.PRIVATE_TRADING_TEST_USER_IDS;
+    delete process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED;
     await db.user.createMany({ data: ([[owner, 'ADMIN'], [plain, 'USER']] as const).map(([id, role]) => ({ id, email: `${id}@legacy-sale.invalid`, referralCode: id, passwordHash: 'fixture', role })) });
     await db.balance.createMany({ data: [owner, plain].map(userId => ({ userId, asset: 'USDT', available: '500' })) });
     venue = realVenue({ 'BTC/USDT': '60000', 'ETH/USDT': '2500' });
@@ -103,7 +106,7 @@ pg('legacy simulation sales: AITH, an older managed listing and NRX (disposable 
   afterEach(() => {
     jest.restoreAllMocks();
     setManagedListingAssets([]);
-    for (const [key, env] of [['enabled', 'PRIVATE_TRADING_ENABLED'], ['ownerId', 'PRIVATE_TRADING_OWNER_ID'], ['testers', 'PRIVATE_TRADING_TEST_USER_IDS']] as const) {
+    for (const [key, env] of [['enabled', 'PRIVATE_TRADING_ENABLED'], ['ownerId', 'PRIVATE_TRADING_OWNER_ID'], ['testers', 'PRIVATE_TRADING_TEST_USER_IDS'], ['demoSettlement', 'SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED']] as const) {
       if (saved[key] === undefined) delete process.env[env]; else process.env[env] = saved[key];
     }
   });
@@ -151,18 +154,24 @@ pg('legacy simulation sales: AITH, an older managed listing and NRX (disposable 
     outcomes['managed.venueCollision'].balances = { listingAsset: outcome.balances[symbol], USDT: outcome.balances.USDT };
   });
 
-  test('NRX: the owner\'s legacy sale at the canonical model price, USDT credited, one audit row', async () => {
+  test('NRX: canonical display price is unchanged, but main #625 forbids the legacy synthetic USDT credit by default', async () => {
     const nrxAt = NEURIX.listingAt + 60_000;
     (Date.now as jest.Mock).mockReturnValue(nrxAt);
     await db.balance.create({ data: { userId: owner, asset: 'NRX', available: '4' } });
     const price = new BigNumber(simulationFor(NEURIX).priceAt(nrxAt)!);
+    const ticker = await spotPriceSource(venue).getTicker(NEURIX.pair);
+    expect(new BigNumber(ticker!.lastPrice).eq(price)).toBe(true);
+    // Before main #625 this case expected FILLED, a 1-NRX debit and
+    // Balance.USDT = 500 + model price. That legacy mint is now forbidden.
+    // Keep the same real-PG exercise and prove every ledger/write stays intact.
     const outcome = await record('nrx.ownerMarketSell', owner, NEURIX.pair, ['NRX', 'USDT'], { quantity: 1 });
-    expect(outcome).toMatchObject({ refused: null, status: 'FILLED', fills: 1, price: price.toFixed(), writes: [1, 1, 1], balances: { NRX: ['3', '0'] } });
-    expect(new BigNumber(outcome.balances.USDT![0]).eq(price.plus(500))).toBe(true);
-    const trade = await db.trade.findFirst({ where: { takerUserId: owner } });
-    expect(trade).toMatchObject({ makerUserId: 'simulation:NRX', makerOrderId: 'simulation:NRX', side: 'SELL' });
-    const audit = await db.auditLog.findFirst({ where: { userId: owner, action: 'NRX_SIMULATION_SOLD' } });
-    expect(audit?.metadata).toMatchObject({ pair: 'NRX/USDT', asset: 'NRX', quote: 'USDT', quantity: '1', price: price.toFixed(), source: 'NEURIX canonical simulation' });
+    expect(outcome).toMatchObject({
+      refused: 'Simulation Spot sale is not available for this listing',
+      writes: [0, 0, 0], balances: { NRX: ['4', '0'], USDT: ['500', '0'] },
+    });
+    expect(await db.demoBalance.count({ where: { userId: owner } })).toBe(0);
+    expect(await db.trade.count({ where: { takerUserId: owner } })).toBe(0);
+    expect(await db.auditLog.count({ where: { userId: owner, action: 'NRX_SIMULATION_SOLD' } })).toBe(0);
     expect(venue.getTicker).not.toHaveBeenCalledWith('NRX/USDT');
   });
 
