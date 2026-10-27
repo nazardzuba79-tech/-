@@ -1,0 +1,23 @@
+{
+  "result": "PASS",
+  "checks": 12,
+  "labels": [
+    "unsigned event refused",
+    "forged signature refused",
+    "signed authenticated email event accepted",
+    "exact Telegram text includes synthetic copier email",
+    "duplicate events remain silent",
+    "invalid email and line injection refused",
+    "wallet-address field refused",
+    "old email-less API payload remains compatible",
+    "deduplication survives actual workerd restart",
+    "email not persisted in SQLite",
+    "existing retention preserved",
+    "no external control-plane request attempted"
+  ],
+  "syntheticTelegramMessages": 3,
+  "realTelegramRequests": 0,
+  "blockedControlPlaneRequests": 0,
+  "productionTouched": false,
+  "workerSha256": "67d1b121ae7aeb242141cdfcda8ccea132634cafe048b10b5458d3dc13041d87"
+}

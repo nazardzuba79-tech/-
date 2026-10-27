@@ -1,0 +1,17 @@
+{
+  "review": "63d6b02cd38fe9ff52742c35ce46fa327827dd33",
+  "oldVersion": "2032e7c0-1fd6-4646-8fda-f40c6b71b985",
+  "oldSha256": "f9f9cb58e8633729d35ee21d6591d7960c37d0e86f91550e4bdc346cc3c51f96",
+  "newSha256": "67d1b121ae7aeb242141cdfcda8ccea132634cafe048b10b5458d3dc13041d87",
+  "changedFunctions": [
+    "validEvent",
+    "message",
+    "acceptEvent"
+  ],
+  "allOtherRuntimeNodesByteIdentical": true,
+  "signatureVerificationUnchanged": true,
+  "eventDurableObjectByteIdentical": true,
+  "backwardCompatibleWithEmailLessApi": true,
+  "productionWrite": false,
+  "staleSourceMapRemoved": true
+}
