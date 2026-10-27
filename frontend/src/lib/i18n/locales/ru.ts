@@ -940,7 +940,7 @@ export const RU = {
   'settings.referralWorld': 'Для всего мира',
   'settings.referralRussia': 'Для России',
   'settings.referralCopy': 'Скопировать',
-  'settings.referralLinkUnavailable': 'Реферальная ссылка пока недоступна',
+  'settings.referralLinkUnavailable': 'Не удалось получить реферальную ссылку',
   'settings.pageSubtitle': 'Управляй аккаунтом, безопасностью и личными настройками.',
   'settings.activeSessions': 'Активные сессии',
   'settings.activeSessionsDesc': 'Устройства, с которых сейчас выполнен вход в аккаунт.',
