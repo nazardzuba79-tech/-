@@ -1,0 +1,18 @@
+{
+  "baseProduction": "291c875505c580dd2a13d8f1b3776a636d180f3b",
+  "scope": [
+    "PR633 managed delete",
+    "PR619 copy email/count"
+  ],
+  "checks": {
+    "typescript": "PASS",
+    "focusedApiSuites": 3,
+    "focusedApiTests": 62,
+    "releaseGuardTests": 13
+  },
+  "workerDeleteVersion": "20b2e94c-c63a-4ec0-ae7a-9fa5e3a6748c",
+  "workerNotificationVersion": "54df907b-ae3f-4740-afca-0e06b2c2a761",
+  "databaseChanges": false,
+  "financialFlagsChanged": false,
+  "rollback": "previous P0+ECLV291 image and full Compose stack"
+}

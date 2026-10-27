@@ -42,6 +42,11 @@ function fakeStore(): ListingStore & { drafts: Map<string, { draft: ListingConfi
       calls.push(`publish:${id}:${draftRevision}:${publishKey}:${actor}${countdown ? `:${countdown}` : ''}`);
       return { id, version: 1, replayed: false, publishedAt: new Date().toISOString(), countdown: countdown === 'staged' ? { state: 'staged', updatedAt: 1, updatedBy: actor } : null };
     },
+    async deleteListing(id, symbol, draftRevision, activeVersion, actor) {
+      calls.push(`delete:${id}:${symbol}:${draftRevision}:${activeVersion}:${actor}`);
+      drafts.delete(id);
+      return { id, symbol, deleted: true as const, catalogueRevision: '2' };
+    },
     async countdown(id, action, actor) {
       calls.push(`countdown:${id}:${action}:${actor}`);
       const state = action === 'start' ? 'running' : action === 'pause' ? 'paused' : 'staged';
@@ -259,6 +264,51 @@ describe('Admin → Listings routes', () => {
     store.list = async () => { throw new ListingStoreError(503, 'STORE_UNAVAILABLE', 'x'); };
     const { server } = app('ADMIN', store);
     expect((await request(server).get('/api/v1/admin/listings').set('Authorization', auth('admin-1'))).status).toBe(503);
+  });
+});
+
+describe('Admin listing deletion', () => {
+  test('unauthorized, stale, wrong confirmation and unavailable financial verification refuse writes', async () => {
+    const { server, store } = app();
+    const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
+      .send({config:form({tradable:false})})).body;
+    const url = `/api/v1/admin/listings/${created.id}/delete`;
+    const good = {symbol:'QAX',draftRevision:1,activeVersion:null,confirmation:'УДАЛИТЬ QAX'};
+    expect((await request(server).post(url).send(good)).status).toBe(401);
+    expect((await request(app('USER').server).post(url).set('Authorization',auth('user')).send(good)).status).toBe(403);
+    expect((await request(server).post(url).set('Authorization',auth('admin-1')).send({...good,confirmation:'yes'})).status).toBe(400);
+    expect((await request(server).post(url).set('Authorization',auth('admin-1')).send({...good,draftRevision:2})).status).toBe(409);
+    expect((await request(server).post(url).set('Authorization',auth('admin-1')).send(good)).status).toBe(503);
+    expect(store.calls.filter(c=>c.startsWith('delete:'))).toHaveLength(0);
+  });
+  test('all 6 financial tables verified and only exact listing deleted', async () => {
+    const store = fakeStore(), record = { ...form({symbol:'QAX',tradable:false}), schemaVersion:1, seed:'qa-fixed' } as ListingConfig;
+    store.drafts.set('qax-1',{draft:record,draftRevision:1});
+    const zero={count:jest.fn().mockResolvedValue(0)};
+    const prisma={user:{findUnique:jest.fn().mockResolvedValue({role:'ADMIN'})},
+      order:zero, trade:zero, futuresOrder:zero, futuresPosition:zero, balance:zero, demoBalance:zero, demoOrder:zero, demoTrade:zero};
+    const registry={invalidate:jest.fn(),ensureFresh:jest.fn()};
+    const srv=express();srv.use(express.json());srv.use('/api/v1',adminListingsRouter(prisma as any,store,null,registry as any));
+    const url='/api/v1/admin/listings/qax-1/delete';
+    const payload={symbol:'QAX',draftRevision:1,activeVersion:null,confirmation:'УДАЛИТЬ QAX'};
+    const r=await request(srv).post(url).set('Authorization',auth('admin-1')).send(payload);
+    expect([r.status,r.body.deleted,r.body.symbol]).toEqual([200,true,'QAX']);
+    expect(zero.count).toHaveBeenCalledTimes(8);
+    expect(store.calls.filter(c=>c.startsWith('delete:'))).toEqual(['delete:qax-1:QAX:1:null:admin-1']);
+    expect(registry.invalidate).toHaveBeenCalledTimes(1);
+    expect(store.drafts.has('qax-1')).toBe(false);
+  });
+  test('nonzero trades block deletion with explicit reason', async () => {
+    const store=fakeStore(),record={...form({symbol:'QAX',tradable:false}),schemaVersion:1,seed:'qa-fixed'} as ListingConfig;
+    store.drafts.set('qax-1',{draft:record,draftRevision:1});
+    const zero={count:jest.fn().mockResolvedValue(0)},nonzero={count:jest.fn().mockResolvedValue(1)};
+    const prisma={user:{findUnique:jest.fn().mockResolvedValue({role:'ADMIN'})},order:zero,trade:nonzero,
+      futuresOrder:zero,futuresPosition:zero,balance:zero,demoBalance:zero,demoOrder:zero,demoTrade:zero};
+    const srv=express();srv.use(express.json());srv.use('/api/v1',adminListingsRouter(prisma as any,store,null));
+    const r=await request(srv).post('/api/v1/admin/listings/qax-1/delete').set('Authorization',auth('admin-1'))
+      .send({symbol:'QAX',draftRevision:1,activeVersion:null,confirmation:'УДАЛИТЬ QAX'});
+    expect([r.status,r.body.error]).toEqual([422,'LISTING_HAS_ACTIVITY']);
+    expect(store.calls.some(c=>c.startsWith('delete:'))).toBe(false);
   });
 });
 
