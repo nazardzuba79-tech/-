@@ -1,0 +1,16 @@
+✔ one CAS PUT updates the existing private id and keeps seed/profile/QVTR; repeat sends no write (222.67153ms)
+✔ missing or duplicate ECLV never falls back to creation (172.600749ms)
+✔ every published/timer state is refused without a PUT (373.241167ms)
+✔ unexpected identity/seed/phase edits are not overwritten (467.761854ms)
+✔ 409 CAS conflict is not retried or overwritten (122.921566ms)
+✔ a lost response after commit is resolved by a read-only repeat, never a second PUT (161.276745ms)
+✔ server profile mismatch is surfaced rather than silently accepted (131.679428ms)
+✔ create and update cannot be combined (38.105741ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1778.423666

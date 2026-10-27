@@ -1,0 +1,9 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+PASS src/services/listings/__tests__/listingScenarioControls.test.ts (61.868 s)
+PASS src/services/listings/__tests__/qvtrDraft.test.ts (17.71 s)
+PASS src/services/listings/__tests__/eclvDraft.test.ts (39.44 s)
+
+Test Suites: 3 passed, 3 total
+Tests:       27 passed, 27 total
+Snapshots:   0 total
+Time:        119.257 s

@@ -1,0 +1,28 @@
+✓ form import (1440): every field typed in Admin → Listings, logo uploaded from the SVG file, «Сохранить черновик»
+✓ the form-made draft equals the JSON file exactly (store adds only its profile and wick model)
+✓ import tool: the preflight is read-only and clean; --create makes ONE draft equal to the file and to the form-made one; a repeat --create sends nothing
+✓ update the SAME legacy private ECLV through real CAS; reload preserves November 6, +7148%, seed/profile and an unrelated QVTR; repeat sends no PUT
+✓ no duplicates, no new seed: a second ECLV is 409 DUPLICATE_TICKER (manual or automatic seed); saves keep the seed and profile; a stale save is 409
+✓ import tool stops on the old candidate: with a ZRNTH draft in the store the preflight and --create refuse and send nothing
+✓ private preview: 0.014 at 13:00 UTC, 0.1092 after 24 h (+680 %), every 5m/1h candle within (0, 1.01472]; 12:59:50 UTC has no candles
+✓ draft only so far: the public catalogue is empty, Render does not know ECLV, the Worker called out to nothing
+✓ admin 1440: the draft row shows UTC · Kyiv · Moscow; the form reopens with the same values; private preview renders
+✓ admin 390: the draft row shows UTC · Kyiv · Moscow; the form reopens with the same values; private preview renders
+✓ local publish (1440): «Опубликовать» with the timer unticked → staged, nothing on the exchange; «Запустить таймер» → running, ECLV/USDT public
+✓ exchange 1440: countdown card with the logo, ECLAVO, ECLV/USDT, «06.11.2026 — 13:00 UTC / 16:00 МСК», 0.014000 USDT; the countdown ticks
+✓ exchange 390: countdown card with the logo, ECLAVO, ECLV/USDT, «06.11.2026 — 13:00 UTC / 16:00 МСК», 0.014000 USDT; the countdown ticks
+✓ Spot search (1440): «ECLV» and «eclv/usdt» find ECLV/USDT with the 20 px logo (the rail searches tickers, not names); the ticker bar shows the 24 px logo
+✓ Spot search (390): the pair name opens the pair list; «ECLV» finds ECLV/USDT with the 20 px logo; it opens the countdown with the 24 px logo
+✓ Markets 1440: the ECLV/USDT row with its logo and «06.11.2026 — 13:00 UTC / 16:00 МСК»
+✓ Markets 390: the ECLV/USDT row with its logo and «06.11.2026 — 13:00 UTC / 16:00 МСК»
+✓ after the opening 1440, open-plus-30m: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 1440, open-plus-24h: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 1440, open-plus-7d: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 1440, recovery-peak: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 390, open-plus-30m: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 390, open-plus-24h: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 390, open-plus-7d: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 390, recovery-peak: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472
+✓ after the opening 1440, +24 h: «1m», «5m» and «1h» each load their own candles, spaced by the interval, within (0, 1.01472], the last close 0.1092
+✓ after every step: no page error, the Worker never called out, only the local Worker A was published and started
+{"checks":27,"failures":0,"screenshots":28}

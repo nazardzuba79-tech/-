@@ -108,10 +108,13 @@ export function validateListingMovement(initial: string, program: ListingMovemen
   if (first.isGreaterThan(decimal(program.maxPrice))) return 'Цель за первые сутки выше максимальной цены';
   if (decimal(program.pullbacks.minDepthPercent).isGreaterThan(decimal(program.pullbacks.maxDepthPercent))) return 'Минимальная глубина отката не может быть больше максимальной';
   let elapsed = 0, hasDayOne = false;
-  for (const stage of program.stages) {
+  for (const [index, stage] of program.stages.entries()) {
     if (!Number.isFinite(stage.durationHours) || stage.durationHours <= 0) return 'Продолжительность каждого этапа должна быть больше нуля.';
     elapsed += stage.durationHours;
-    if (!decimal(stage.targetPrice).isGreaterThan(0) || decimal(stage.targetPrice).isGreaterThanOrEqualTo(decimal(program.maxPrice))) return 'Цель этапа должна быть положительной и ниже максимальной цены — оставьте запас для теней.';
+    const terminalPeak = program.scenario === 'DEEP_RECOVERY' && program.afterGrowth === 'range'
+      && index === program.stages.length - 1 && stage.type === 'recovery'
+      && decimal(stage.targetPrice).isEqualTo(decimal(program.maxPrice));
+    if (!decimal(stage.targetPrice).isGreaterThan(0) || (!terminalPeak && decimal(stage.targetPrice).isGreaterThanOrEqualTo(decimal(program.maxPrice)))) return 'Цель этапа должна быть положительной и ниже максимальной цены — оставьте запас для теней.';
     if (elapsed === 24) {
       hasDayOne = true;
       if (!decimal(stage.targetPrice).isEqualTo(first)) return 'Цель этапа через 24 часа не совпадает с ростом за первые сутки.';

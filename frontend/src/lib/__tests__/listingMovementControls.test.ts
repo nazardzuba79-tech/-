@@ -111,3 +111,13 @@ describe('Server-backed listing movement form', () => {
     expect(editor).not.toMatch(/fetch\(|setInterval|Math\.random/);
   });
 });
+
+test('the ECLAVO terminal cap is editable, without admitting an intermediate or non-recovery cap',()=>{
+  const file=JSON.parse(readFileSync(resolve(__dirname,'../../../../config/test-markets/eclv-20261103.draft.json'),'utf8'));
+  expect(validateListingMovement(file.initialPrice,file.simulationProgram)).toBeNull();
+  for(const change of [
+    (p:any)=>{p.scenario='WAVES';},
+    (p:any)=>{p.stages.at(-1).type='growth';},
+    (p:any)=>{p.stages[2].targetPrice=p.maxPrice;},
+  ]){const p=structuredClone(file.simulationProgram);change(p);expect(validateListingMovement(file.initialPrice,p)).not.toBeNull();}
+});

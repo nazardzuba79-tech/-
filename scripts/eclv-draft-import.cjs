@@ -4,14 +4,15 @@
  * ECLAVO (ECLV/USDT): ONE private Draft in Admin → Listings from
  * config/test-markets/eclv-20261103.draft.json, through the same request the
  * form sends (POST /api/v1/admin/listings). It never publishes, never touches
- * a timer and never edits or deletes an existing listing.
+ * a timer or deletes a listing. --update edits ONLY the one existing,
+ * never-published private ECLV with a guarded revision; it never creates.
  *
  * Read-only by default (preflight): what the store already holds for ECLV and
  * the old candidate ZRNTH, whether the seed is used elsewhere, the public
  * catalogue, and the time left before the listing instant.
  *
  *   VOLTEX_API=https://api.voltextech.net VOLTEX_MARKET=https://market.voltextech.net \
- *   VOLTEX_ADMIN_TOKEN=<an admin session token> node scripts/eclv-draft-import.cjs [--create]
+ *   VOLTEX_ADMIN_TOKEN=<an admin session token> node scripts/eclv-draft-import.cjs [--create | --update]
  *
  * --create (only with the owner's go):
  *   - an ECLV listing exists → nothing is sent; same configuration = already
@@ -28,6 +29,19 @@ const path = require('node:path');
 const FILE = path.resolve(__dirname, '../config/test-markets/eclv-20261103.draft.json');
 const OLD_SYMBOLS = ['ZRNTH'];
 const MIN_LEAD_MS = 60_000;
+const IDENTITY = ['schemaVersion','symbol','name','logo','initialPrice','displayTimeZone','ownerAllocation','seedMode','seed','tradable'];
+const privateDraft = (l) => l.activeVersion === null && l.active === null && l.countdown == null && Array.isArray(l.versions) && l.versions.length === 0;
+const stableMetadata = (d) => ({ seed:d.seed, simulationProfile:d.simulationProfile, wickModel:d.wickModel });
+function safeUpdate(previous, desired) {
+  if (!IDENTITY.every(k => same(previous[k], desired[k]))) return false;
+  if (!['2026-11-03T13:00:00Z',desired.listingAt].includes(previous.listingAt)) return false;
+  const a=previous.simulationProgram,b=desired.simulationProgram;
+  if (!a || !b || a.kind!=='scenario-controls-v2' || b.kind!=='scenario-controls-v2') return false;
+  const {maxPrice:_am,stages:_as,...ar}=a,{maxPrice:_bm,stages:_bs,...br}=b;
+  if (!same(ar,br) || !['0.518',b.maxPrice].includes(a.maxPrice) || a.stages.length!==b.stages.length) return false;
+  return a.stages.every((s,i) => i<b.stages.length-1 ? same(s,b.stages[i])
+    : s.type===b.stages[i].type && s.durationHours===b.stages[i].durationHours && ['0.435',b.stages[i].targetPrice].includes(s.targetPrice));
+}
 
 const base = (name, value) => {
   const url = new URL(value);
@@ -45,6 +59,8 @@ const state = (listing) => listing.activeVersion === null ? 'draft (never publis
 
 async function main() {
   const create = process.argv.includes('--create');
+  const update = process.argv.includes('--update');
+  if (create && update) throw new Error('--create and --update are mutually exclusive');
   const token = process.env.VOLTEX_ADMIN_TOKEN || '';
   if (!process.env.VOLTEX_API || !token) throw new Error('set VOLTEX_API and VOLTEX_ADMIN_TOKEN');
   const api = base('VOLTEX_API', process.env.VOLTEX_API);
@@ -77,6 +93,33 @@ async function main() {
     const response = await fetch(`${market}/market/listings`, { redirect: 'error', signal: AbortSignal.timeout(20000), headers: { 'Cache-Control': 'no-cache' } });
     const pairs = ((await response.json().catch(() => null))?.assets || []).map((a) => a.pair);
     console.log(`public catalogue: ${pairs.join(', ') || '—'}`);
+  }
+
+  if (update) {
+    const current=eclv[0];
+    if(eclv.length!==1 || old.length || seedElsewhere.length || left<MIN_LEAD_MS || !current || !privateDraft(current)) {
+      console.log('NOT UPDATED: exactly one never-published private ECLV is required; no create, publish or timer action is permitted');return 2;
+    }
+    if(typeof current.id!=='string'||!/^eclv-[a-z0-9-]+$/i.test(current.id)||!Number.isSafeInteger(current.draftRevision)||current.draftRevision<1 || !safeUpdate(current.draft,file)) {
+      console.log('NOT UPDATED: identity, seed, profile prerequisites or preserved scenario differ; owner review required');return 2;
+    }
+    if(same(comparable(current.draft),file)) {console.log(`NOT UPDATED: already current as ${current.id}; nothing sent`);return 0;}
+    const before=stableMetadata(current.draft);
+    const result=await call(`/admin/listings/${encodeURIComponent(current.id)}/draft`,{
+      method:'PUT',headers:{'If-Match':String(current.draftRevision)},body:JSON.stringify({config}),
+    });
+    if(result.status===409){console.log('NOT UPDATED: revision conflict; no retry, reload and review the current private draft');return 2;}
+    if(result.status!==200){console.log(`NOT UPDATED: ${result.status}; no automatic retry`);return 1;}
+    if(result.body?.id!==current.id || result.body?.draftRevision!==current.draftRevision+1 || !same(comparable(result.body.draft),file) || !same(stableMetadata(result.body.draft),before)) {
+      console.log('UPDATE RESPONSE MISMATCH: re-read the private draft; do not publish or retry blindly');return 3;
+    }
+    const reread=await call('/admin/listings');
+    const matches=reread.body?.listings?.filter(l=>l.symbol===file.symbol);
+    const saved=matches?.[0];
+    if(reread.status!==200 || matches?.length!==1 || saved.id!==current.id || !privateDraft(saved) || saved.draftRevision!==result.body.draftRevision || !same(comparable(saved.draft),file) || !same(stableMetadata(saved.draft),before)) {
+      console.log('UPDATE READBACK MISMATCH: stop; no automatic retry or rollback over another editor');return 3;
+    }
+    console.log(`UPDATED existing private draft ${current.id}, revision ${saved.draftRevision}; seed/profile/wicks preserved; no publication, timer, allocation or other listing changed`);return 0;
   }
 
   const conflict = eclv.some((l) => !same(comparable(l.draft), file)) || eclv.length > 1 || old.length > 0 || seedElsewhere.length > 0 || left < MIN_LEAD_MS;

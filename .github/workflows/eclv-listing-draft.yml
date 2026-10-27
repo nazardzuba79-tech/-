@@ -1,4 +1,4 @@
-name: ECLAVO November 3 listing candidate QA
+name: ECLAVO November 6 private-draft update QA
 
 on:
   pull_request:
@@ -6,8 +6,13 @@ on:
       - 'config/test-markets/eclv-20261103.draft.json'
       - 'config/test-markets/eclv-20261103.logo.svg'
       - 'src/services/listings/__tests__/eclvDraft.test.ts'
+      - 'src/services/testMarkets/simulationScenarioControls.ts'
+      - 'src/shared/listingScenarioControls.ts'
+      - 'frontend/src/pages/admin/listingMovementModel.ts'
+      - 'frontend/src/lib/__tests__/listingMovementControls.test.ts'
       - 'scripts/qa-listing-eclv.cjs'
       - 'scripts/eclv-draft-import.cjs'
+      - 'scripts/eclv-draft-import.test.cjs'
       - 'docs/ECLV_LISTING_20261103.md'
       - '.github/workflows/eclv-listing-draft.yml'
 
@@ -30,10 +35,14 @@ jobs:
           cache: npm
       - name: Install test dependencies only
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Private-draft update CAS, identity, publication and idempotency guards
+        run: node --test scripts/eclv-draft-import.test.cjs
       - name: Verify next listing candidate and previous TYVN scenario regression
         run: |
           npx jest --runInBand --silent --runTestsByPath \
             src/services/listings/__tests__/eclvDraft.test.ts \
+            src/services/listings/__tests__/qvtrDraft.test.ts \
+            frontend/src/lib/__tests__/listingMovementControls.test.ts \
             src/services/listings/__tests__/tyvnDraft.test.ts \
             src/services/listings/__tests__/listingCountdown.test.ts \
             src/services/listings/__tests__/listingScenarioControls.test.ts
@@ -46,7 +55,10 @@ jobs:
           assert.equal(c.tradable, false);
           assert.equal(c.ownerAllocation, '0');
           assert.equal(c.symbol, 'ECLV');
-          assert.equal(c.listingAt, '2026-11-03T13:00:00Z');
+          assert.equal(c.listingAt, '2026-11-06T13:00:00Z');
+          assert.equal(c.simulationProgram.maxPrice, '1.01472');
+          assert.equal(c.simulationProgram.stages.at(-1).targetPrice, '1.01472');
+          assert.equal(c.seed, 'eclavo-20261103-v1');
           assert.equal(c.simulationProgram.kind,'scenario-controls-v2');
           assert.notEqual(c.simulationProgram.afterGrowth,'historical');
           assert(c.logo.startsWith('data:image/svg+xml;base64,'));

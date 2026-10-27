@@ -4,7 +4,7 @@
   "name": "ECLAVO",
   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkVDTEFWTyBlY2xpcHNlIEUgZW1ibGVtIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjZTNmYWZmIi8+PHN0b3Agb2Zmc2V0PSIuNSIgc3RvcC1jb2xvcj0iIzYxYjhmZiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzlkNzhmZiIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJyIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI+PHN0b3Agc3RvcC1jb2xvcj0iIzMzNmNmMSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2U4ZDZhMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9IjY0IiBjeT0iNjQiIHI9IjU5IiBmaWxsPSIjMDkwZjIyIi8+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNyKSIgc3Ryb2tlLXdpZHRoPSIzIi8+PHBhdGggZD0iTTEwNSAzMGE0NSA0NSAwIDAgMC03MiA2OSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYTFiY2ZmIiBzdHJva2Utd2lkdGg9IjIuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIuNzUiLz48cGF0aCBkPSJNOTMgMzFIMzlWOTdIOTNNNDAgNjNIODIiIHN0cm9rZT0iIzA2MGQyMiIgc3Ryb2tlLXdpZHRoPSIxNiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIgc3Ryb2tlLWxpbmVqb2luPSJiZXZlbCIvPjxwYXRoIGQ9Ik05MyAzMUgzOVY5N0g5M000MCA2M0g4MiIgc3Ryb2tlPSJ1cmwoI3MpIiBzdHJva2Utd2lkdGg9IjkuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIgc3Ryb2tlLWxpbmVqb2luPSJiZXZlbCIvPjxjaXJjbGUgY3g9IjEwMSIgY3k9IjM2IiByPSIzLjIiIGZpbGw9IiNkOWQ4ZmYiLz48L3N2Zz4=",
   "initialPrice": "0.0140",
-  "listingAt": "2026-11-03T13:00:00Z",
+  "listingAt": "2026-11-06T13:00:00Z",
   "displayTimeZone": "Europe/Moscow",
   "ownerAllocation": "0",
   "seedMode": "manual",
@@ -14,7 +14,7 @@
     "kind": "scenario-controls-v2",
     "scenario": "DEEP_RECOVERY",
     "first24hGainPercent": "680",
-    "maxPrice": "0.518",
+    "maxPrice": "1.01472",
     "stages": [
       {
         "type": "growth",
@@ -39,7 +39,7 @@
       {
         "type": "recovery",
         "durationHours": 72,
-        "targetPrice": "0.435"
+        "targetPrice": "1.01472"
       }
     ],
     "afterGrowth": "range",
