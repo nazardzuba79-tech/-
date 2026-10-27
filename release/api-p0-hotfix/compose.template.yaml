@@ -1,0 +1,12 @@
+# PREPARATION ONLY: the operator fills both variables with the exact verified image ID and release commit.
+# Apply after the existing production Compose chain, to api-production ONLY. Nothing else changes.
+services:
+  api-production:
+    image: ${P0_HOTFIX_IMAGE:?Exact verified inactive image required}
+    environment:
+      VOLTEX_RELEASE_SHA: ${P0_HOTFIX_SHA:?Exact reviewed release commit required}
+      DEMO_SPOT_ENABLED: "false"
+      DEMO_LIQUIDITY_ENABLED: "false"
+      DEMO_WITHDRAWAL_GUARD_ENABLED: "false"
+      SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED: "false"
+    command: ["node", "dist/index.js"]
