@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Copy, Landmark, LockKeyhole, RefreshCw, Users, WalletCards, X } from 'lucide-react';
 import { Nav } from '../components/Nav';
+import { buildReferralLink } from '../lib/referralLinks';
+import { useReferralRegion } from '../lib/useReferralRegion';
+import { copyToClipboard } from '../lib/clipboard';
 import {
   bankingApi,
   bankingErrorText,
@@ -24,6 +27,9 @@ export function BankingPage() {
   const [state, setState] = useState<BankingState | null>(null);
   const [referral, setReferral] = useState<BankingReferral | null>(null);
   const [copied, setCopied] = useState(false);
+  const [referralRegion] = useReferralRegion();
+  const referralLink = buildReferralLink(referral?.referralCode, referralRegion);
+  useEffect(() => { setCopied(false); }, [referralLink]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [programId, setProgramId] = useState<BankingProgramId>('COMPOUND_21_12M');
@@ -228,10 +234,10 @@ export function BankingPage() {
           <div className="banking-referral-link">
             <div>
               <span>Ваша ссылка</span>
-              <code>{referral ? `${window.location.origin}/${referral.referralCode}` : '—'}</code>
+              <code data-banking-referral-link>{referralLink ?? '—'}</code>
             </div>
-            <button type="button" className="banking-primary" disabled={!referral}
-              onClick={() => { if (!referral) return; void navigator.clipboard.writeText(`${window.location.origin}/${referral.referralCode}`).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 2000); }).catch(() => setCopied(false)); }}>
+            <button type="button" className="banking-primary" disabled={!referralLink} data-copy-banking-referral
+              onClick={() => { if (!referralLink) return; void copyToClipboard(referralLink).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 2000); }).catch(() => setCopied(false)); }}>
               <Copy size={15} /> {copied ? 'Скопировано' : 'Копировать'}
             </button>
           </div>
