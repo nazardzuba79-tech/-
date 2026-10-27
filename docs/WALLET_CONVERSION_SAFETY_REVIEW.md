@@ -3,7 +3,13 @@
 Independent code-level review of PR #591 on base `main` `98261cc8`. Reviewed head: the commit that adds this file;
 the previous head was `780b2901`.
 
-**Коротко для власника.**
+**Оновлення 27.10 (Claude): попередній висновок нижче частково застарів.**
+- Висновок «P0 не знайдено» від 25.10 був **помилковим**. Шлях P1-2 нижче насправді P0. Його назавжди закриває #620: заявка, оцінена з демокоштів, не створюється, не схвалюється і не відправляється за жодних перемикачів. #591 тепер стоїть на #620 (злиття `2457bc29`).
+- **Нове виправлення P1-4.** Котирування, що прострочилося, або блокування акаунта, встановлене, поки підтвердження чекало спільного блокування, раніше все одно проводились за старою ціною. Тепер це відмова (`4b2e055f`; PG: Balance 26/26, demo 25/25; до виправлення — FAIL «expiry: APPLIED»).
+- **Окремий P0 поза конвертацією** (у #620 не входить): продаж «у симуляцію» за модельною ціною зараховував реальні USDT. Виправлення — Draft #625, потрібне рішення власника. Конвертація з реальних `Balance` може обміняти такі USDT на інший актив, лише якщо налаштовано резерв (за замовчуванням не налаштовано).
+- **Активація — NO-GO**, як і раніше.
+
+**Коротко для власника (25.10, історичне).**
 - Шляху, яким демопоповнення стає реальним балансом або грошима для виведення, у коді **немає**. P0 не знайдено.
 - Знайдено й виправлено одну помилку **P1**. Коли ціновий фід падав під час підтвердження, сервер відповідав 500, а інтерфейс показував «результат невідомий». Тепер це однозначна відмова: нічого не списано, обмін треба перерахувати.
 - Лишається один **умовний** шлях. Він існував до конвертації і стосується лише нативних Cross-гаманців тестерів. Він відкривається, тільки якщо вимкнути **всі** три перемикачі: Demo Spot, демоліквідність і захист виведення. Поки ввімкнений хоча б один із перших двох, шлях закритий.
@@ -100,12 +106,16 @@ Abbreviations below: **PG-B** = `test-wallet-conversion-postgres.cjs`, **PG-D** 
   - `ConversionModal` lists `PRICE_UNAVAILABLE` as a definite refusal at confirm. That is safe: the server decides it inside the transaction, after the receipt check and before any write.
 - **Tests:** PG-B outage now asserts the code, PG-D adds the outage case, plus a new unit test and the FE assertion.
 
-**P1-2 — pre-existing on `main`, configuration-dependent, not introduced by #591.**
+**P1-2 — pre-existing on `main`, configuration-dependent, not introduced by #591.** *Update 27.10: reclassified **P0** (Codex, Issue #617, 6395962055) and **closed by #620**. With every switch, no unheld (demo-valued) request is filed, approved or SENT, including older PENDING/APPROVED ones; it can only be rejected. #591 now contains #620 (merge `2457bc29`). The proposal below is historical.*
 - **The path.** A native Cross wallet (owner, `PRIVATE_TRADING_TEST_USER_IDS`) is valued from `DemoBalance` and can file an *unheld* withdrawal request that an admin pays by hand. The guard refuses it, and the guard is forced on only while `DEMO_SPOT_ENABLED` or `DEMO_LIQUIDITY_ENABLED` is on.
 - **When it reopens.** If an operator turns Demo Spot, Demo Liquidity **and** `DEMO_WITHDRAWAL_GUARD_ENABLED` off, the request path reopens for every demo-valued native wallet. Demo top-ups alone are enough; demo conversion results would count too, because they also sit in `DemoBalance`.
 - **Why conversion does not depend on it.** A demo conversion itself can only run while Demo Spot is on, so the guard is on whenever one runs.
 - **Removal criterion (owner decision; it changes withdrawal behaviour):** make the guard permanent for demo-valued requests. Proposed patch, not applied here: in `withdrawals.ts:142` and `WithdrawalService.requestUnheldWithdrawal`, refuse when the guard is on **or** the account has any `DEMO_BALANCE_ADJUSTED` / `WALLET_DEMO_CONVERTED` history.
 - **Until then, activation precondition:** never switch Demo Spot, Demo Liquidity and the guard all off while demo-valued native wallets exist.
+
+**P1-4 — fixed 27.10 (`4b2e055f`; first reported by Codex in a local, unpublished candidate).** The confirm transaction checked expiry, the account block and the ledger under the account lock. It then waited for the shared reserve lock (Balance) or the demo-book lock (DemoBalance) and settled. A quote that expired, or a block set, during that wait was still APPLIED at the quoted price.
+- **Fix:** the final shared lock is taken right after the receipt check, before every admission check. The lock order (account, then shared) is unchanged.
+- **Tests:** a second PostgreSQL session holds the shared lock while expiry or a block is set. Before the fix: Balance PG 25 PASS then FAIL «expiry: APPLIED conversion:…», and demo PG 22 PASS then the same FAIL. After the fix: Balance 26/26, demo 25/25; nothing moves and no receipt is written.
 
 **P1-3 — pre-existing (#592), documented.**
 - Admin `Balance` credits have no provenance and stay requestable for withdrawal (`WithdrawalService` on `main`).
