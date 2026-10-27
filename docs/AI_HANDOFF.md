@@ -7409,3 +7409,23 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
   - performance gate FAIL: next step is the Stocks gateway/viewer path in its own process or instance, then re-measure;
   - data rights NO-GO for CEX sources (#618).
 - **27.10 later:** main `bd72a2af` (#620, #606, #626, #604) merged in (`ebdab2f2`). Only this file conflicted; both sides kept. Local: contract 37/37, harness 51/51, release/migration 11/11, backend `tsc` PASS.
+
+## 2026-10-27 — Claude (session 01EmV3Pt, fork for task #153) — #613: Stocks load in its own processes; paired 50+2 exact-head
+- **Request:** move Stocks gateway/viewer load off the crypto API's execution, deployable, inside the same CPU/RAM budget; paired 50+2 with crypto p95 ≤ +5 %. Plan, trace, thresholds, workload and the collection gate are unchanged.
+- **Runtime (`5d69057d`):** `src/stocksAuthority.ts` runs the existing `stocksTestCashRouter` behind the existing private ingress in its own Node process (`node dist/stocksAuthority.js`, API image). It has no public listener and refuses to start without its private port. The crypto API keeps every `STOCKS_*` variable unset, so it mounts no Stocks route. The gateway (`release-entrypoint.mjs`) is unchanged; it points `STOCKS_TEST_CASH_AUTHORITY_URL` at the authority. No other runtime file changed.
+- **Unchanged and kept:** auth, the live session read, revocation, blocked users, contact block, the PostgreSQL authority and its locks, atomic commands, idempotency, the capability check and the 120–240/min quota. `Dockerfile.release`, `Dockerfile`, migrations and the protected fixture `disposable-postgres.cjs` are byte-identical. BUY/SELL stays a silent NO-OP.
+- **Deploy/docs:** the compose example adds `stocks-authority-review` (source only, review profile). New `docs/STOCKS_613_PROCESS_ISOLATION.md`.
+- **Harness:** both policies pin `5d69057d`. The `before` pin runs it as one process (the head's behaviour); the `after` pin runs it separated:
+  - `crypto-api.cjs` is the crypto API alone;
+  - `stocks-worker.cjs` runs as two processes, the authority and the gateway with the synthetic market;
+  - everything stays in the same 2-vCPU taskset.
+- **Harness, report only:** per-process CPU/RSS/ELU; driver and PostgreSQL CPU; server-side crypto time. Topology contract test: `topology-613.test.cjs`.
+- **Local checks:**
+  - harness: tests and self-test 55/55;
+  - contracts: source-head 37/37, migration-review 8/8, release-package 3/3, runtime-closure 4/4, api-image 7/7, root-image-gate 6/6, infra-source 3/3, release-startup 13/13, node22-route-load 6/6, catalogue-readiness 3/3;
+  - Jest: `stocksAuthority`, `stocksAuthorityIngress`, `stocksTestCash` 29/29;
+  - backend `tsc`: PASS;
+  - PG (Node 22.23.3, local PostgreSQL 16, compiled `dist`): `postgres-authority` + `release-authority` + `separated-authority` 27/27.
+- **Local smoke runs:** not evidence; the host was loaded by other sessions, load average about 6. Both topologies qualified and completed. Separated: +22…+32 % (once +75 % under load). Single process: +85…+147 %. Nice 10 on the Stocks processes made no local difference.
+- **Not claimed:** the CI result (below, once terminal). `allRecordedPidsStopped` is false locally only because this container does not reap the postmaster promptly (zombie); this was seen in both topologies.
+- **Known limit, unchanged:** the gateway calls identity on every request. 50 viewers at 1 Hz make about 3,000 calls/min, against a private quota of 120–240/min. Neither 50+2 arm mounts that quota.

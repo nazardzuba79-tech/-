@@ -3,8 +3,11 @@
 // summarize-613.cjs (the fail-closed collection gate) does not print. Per run and
 // arm: crypto p50/p95/p99 and p95 per operation, viewer and trader latency, request
 // and error counts, API CPU, memory, event-loop utilization and delay, and the
-// synthetic market's WebSocket subscriptions/connections. Per pin: pooled numbers,
-// and after vs before for the viewer path. Reads stored runs; starts no workload.
+// synthetic market's WebSocket subscriptions/connections; per process of the run's
+// topology (crypto API, Stocks authority, Stocks gateway) CPU, RSS, ELU and loop delay;
+// the load driver's and the PostgreSQL cluster's CPU; server-side crypto time and the
+// client-minus-server gap. Per pin: pooled numbers, and after vs before for the viewer
+// path. Reads stored runs; starts no workload.
 const fs = require('node:fs'), path = require('node:path');
 
 const percentile = (a, p) => a.length ? [...a].sort((x, y) => x - y)[Math.ceil(a.length * p) - 1] : null;
@@ -14,6 +17,14 @@ const delta = (after, before) => finite(after) && finite(before) ? after - befor
 const pct = (after, before) => finite(after) && finite(before) && before > 0 ? (after - before) / before * 100 : null;
 const read = file => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } };
 const stats = ms => ({count: ms.length, p50: percentile(ms, .5), p95: percentile(ms, .95), p99: percentile(ms, .99), max: ms.length ? Math.max(...ms) : null});
+const cpuOf = (b, a) => b?.cpu && a?.cpu ? (delta(a.cpu.user, b.cpu.user) + delta(a.cpu.system, b.cpu.system)) / 1000 : null;
+const eluOf = (b, a) => { const active = delta(a?.active, b?.active), idle = delta(a?.idle, b?.idle); return finite(active) && finite(idle) && active + idle > 0 ? active / (active + idle) : null; };
+// Each process of the run's topology; a single-process run has only 'api' (or nothing recorded).
+function processes(b, a) {
+  const after = a?.processes ?? {};
+  return Object.fromEntries(Object.entries(after).map(([name, x]) => [name, {cpuMs: cpuOf(b?.processes?.[name], x), rssMb: finite(x?.memory?.rss) ? x.memory.rss / 2 ** 20 : null,
+    elu: eluOf(b?.processes?.[name]?.loop?.elu, x?.loop?.elu), loopDelayP99Ms: x?.loop?.delay?.p99Ms ?? null}]));
+}
 
 function arm(result) {
   if (!result || !Array.isArray(result.samples)) return null;
@@ -34,6 +45,12 @@ function arm(result) {
     apiCpuMs: cpu,
     memory: a?.memory ? {rssMb: a.memory.rss / 2 ** 20, heapUsedMb: a.memory.heapUsed / 2 ** 20, rssDeltaMb: delta(a.memory.rss, b?.memory?.rss) / 2 ** 20} : null,
     elu, loopDelay: a?.loop?.delay ?? null,
+    topology: a?.topology ?? null, processes: processes(b, a),
+    driver: {cpuMs: cpuOf(result.metrics?.host?.before?.driver, result.metrics?.host?.after?.driver), elu: eluOf(result.metrics?.host?.before?.driver?.elu, result.metrics?.host?.after?.driver?.elu),
+      loopDelayP99Ms: result.metrics?.host?.after?.driver?.delay?.p99Ms ?? null},
+    postgresCpuMs: delta(result.metrics?.host?.after?.postgres?.cpuMs, result.metrics?.host?.before?.postgres?.cpuMs),
+    serverCrypto: stats(of('crypto').map(s => result.serverTimings?.[s.requestId]).filter(finite)),
+    clientMinusServerCrypto: stats(of('crypto').filter(s => finite(result.serverTimings?.[s.requestId])).map(s => s.ms - result.serverTimings[s.requestId])),
     websocket: {connectionsAfter: a?.market?.connections ?? null, subscribeControls: delta(market(a, 'controls'), market(b, 'controls')), restFetches: delta(market(a, 'starts'), market(b, 'starts'))},
   };
 }
@@ -58,7 +75,15 @@ function report(runsDir) {
       meanErrorRate: meanOf('mixed', a => a.errorRate), meanBaselineApiCpuMs: meanOf('baseline', a => a.apiCpuMs), meanMixedApiCpuMs: meanOf('mixed', a => a.apiCpuMs),
       meanBaselineElu: meanOf('baseline', a => a.elu?.utilization), meanMixedElu: meanOf('mixed', a => a.elu?.utilization),
       meanMixedLoopDelayP99Ms: meanOf('mixed', a => a.loopDelay?.p99Ms), maxMixedRssMb: Math.max(...done.map(r => r.mixed.memory?.rssMb).filter(finite), -Infinity),
-      mixedWsConnections: [...new Set(done.map(r => r.mixed.websocket.connectionsAfter))]};
+      mixedWsConnections: [...new Set(done.map(r => r.mixed.websocket.connectionsAfter))],
+      topology: [...new Set(done.map(r => r.mixed.topology).filter(Boolean))],
+      meanProcessCpuMs: Object.fromEntries(['baseline', 'mixed'].map(armName => [armName, Object.fromEntries([...new Set(done.flatMap(r => Object.keys(r[armName].processes)))]
+        .map(name => [name, meanOf(armName, x => x.processes[name]?.cpuMs)]))])),
+      maxMixedProcessRssMb: Object.fromEntries([...new Set(done.flatMap(r => Object.keys(r.mixed.processes)))].map(name => [name, Math.max(...done.map(r => r.mixed.processes[name]?.rssMb).filter(finite), -Infinity)])),
+      meanDriverCpuMs: {baseline: meanOf('baseline', x => x.driver.cpuMs), mixed: meanOf('mixed', x => x.driver.cpuMs)},
+      meanPostgresCpuMs: {baseline: meanOf('baseline', x => x.postgresCpuMs), mixed: meanOf('mixed', x => x.postgresCpuMs)},
+      serverCryptoP95Ms: {baseline: meanOf('baseline', x => x.serverCrypto.p95), mixed: meanOf('mixed', x => x.serverCrypto.p95)},
+      clientMinusServerCryptoP95Ms: {baseline: meanOf('baseline', x => x.clientMinusServerCrypto.p95), mixed: meanOf('mixed', x => x.clientMinusServerCrypto.p95)}};
     const k = kinds[kind];
     k.pooledCryptoP95ChangePercent = pct(k.mixedCrypto.p95, k.baselineCrypto.p95);
     k.pooledCryptoP99ChangePercent = pct(k.mixedCrypto.p99, k.baselineCrypto.p99);
@@ -81,6 +106,11 @@ function markdown(r) {
   }
   lines.push('', '| pin | runs | pooled crypto p50/p95/p99 baseline → mixed ms | Δp95 % | Δp99 % | mixed viewer p50/p95/p99 ms | mean API CPU ms base → mixed | mean ELU base → mixed | mean loop p99 ms | max RSS MB | mean error rate |', '|---|---|---|---|---|---|---|---|---|---|---|');
   for (const [kind, k] of Object.entries(r.kinds)) lines.push(`| ${kind} ${k.runtime.map(x => (x || '').slice(0, 8)).join(',')} | ${k.runs} | ${f(k.baselineCrypto.p50)}/${f(k.baselineCrypto.p95)}/${f(k.baselineCrypto.p99)} → ${f(k.mixedCrypto.p50)}/${f(k.mixedCrypto.p95)}/${f(k.mixedCrypto.p99)} | ${f(k.pooledCryptoP95ChangePercent)} | ${f(k.pooledCryptoP99ChangePercent)} | ${f(k.mixedViewer.p50)}/${f(k.mixedViewer.p95)}/${f(k.mixedViewer.p99)} | ${f(k.meanBaselineApiCpuMs, 0)} → ${f(k.meanMixedApiCpuMs, 0)} | ${f(k.meanBaselineElu, 3)} → ${f(k.meanMixedElu, 3)} | ${f(k.meanMixedLoopDelayP99Ms)} | ${f(k.maxMixedRssMb, 0)} | ${f(k.meanErrorRate, 4)} |`);
+  lines.push('', '| pin | topology | mean CPU ms per process, baseline → mixed | max mixed RSS MB per process | driver CPU ms base → mixed | PostgreSQL CPU ms base → mixed | mean server-side crypto p95 ms base → mixed | mean client−server crypto p95 ms base → mixed |', '|---|---|---|---|---|---|---|---|');
+  for (const [kind, k] of Object.entries(r.kinds)) {
+    const names = Object.keys(k.meanProcessCpuMs.mixed);
+    lines.push(`| ${kind} | ${k.topology.join(',') || '—'} | ${names.map(n => `${n} ${f(k.meanProcessCpuMs.baseline[n], 0)} → ${f(k.meanProcessCpuMs.mixed[n], 0)}`).join('; ') || '—'} | ${names.map(n => `${n} ${f(k.maxMixedProcessRssMb[n], 0)}`).join('; ') || '—'} | ${f(k.meanDriverCpuMs.baseline, 0)} → ${f(k.meanDriverCpuMs.mixed, 0)} | ${f(k.meanPostgresCpuMs.baseline, 0)} → ${f(k.meanPostgresCpuMs.mixed, 0)} | ${f(k.serverCryptoP95Ms.baseline)} → ${f(k.serverCryptoP95Ms.mixed)} | ${f(k.clientMinusServerCryptoP95Ms.baseline)} → ${f(k.clientMinusServerCryptoP95Ms.mixed)} |`);
+  }
   if (r.afterVsBefore) {
     const v = r.afterVsBefore;
     lines.push('', `After vs before (mixed arm): crypto p95 ${f(v.mixedCryptoP95Percent)} %, viewer state p50 ${f(v.viewerStateP50Percent)} % / p95 ${f(v.viewerStateP95Percent)} %, mean API CPU ${f(v.mixedApiCpuPercent)} %; viewer-induced API CPU ${f(v.viewerInducedApiCpuMs.before, 0)} → ${f(v.viewerInducedApiCpuMs.after, 0)} ms.`);

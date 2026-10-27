@@ -1,6 +1,8 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),os=require('node:os');
-const RC='a820c18ee0623723fd1843a4e9644e12f0522cdf';
+// Same runtime as policy-613.cjs; this pin runs the separated release layout: the crypto API alone, the
+// Stocks authority (src/stocksAuthority.ts) and the gateway in their own processes, under the same taskset.
+const RC='5d69057d65c4f95d05dab993a139bbebd79a9c66',TOPOLOGY='separated';
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){
@@ -70,4 +72,4 @@ function comparison(base,mixed){
  if(delta===null||delta>5)failed.push('CRYPTO_P95_OVER_5_PERCENT');
  return{status:failed.length?'FAIL_LOCAL_DIAGNOSTIC':'PASS_LOCAL_DIAGNOSTIC',baselineCryptoP95Ms:p95a,mixedCryptoP95Ms:p95b,cryptoP95ChangePercent:delta,thresholdPercent:5,failures:failed,targetAcceptance:false};
 }
-module.exports={RC,sha,loopback,database,args,git,environment,cleanEnv,percentile,comparison,fail};
+module.exports={RC,TOPOLOGY,sha,loopback,database,args,git,environment,cleanEnv,percentile,comparison,fail};

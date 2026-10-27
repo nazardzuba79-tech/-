@@ -1,9 +1,10 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),net=require('node:net'),crypto=require('node:crypto');
-// #613 candidate pins: policy-613.cjs is the checkpoint before the one-signature-check
-// JWT change (fa92cc66), --after selects policy-613-after.cjs (a820c18e, with it).
+// #613 pins: both policies pin the same runtime; policy-613.cjs runs it as one process (crypto API, Stocks
+// authority, gateway and synthetic market together), --after selects policy-613-after.cjs, the separated
+// release layout (crypto API alone; Stocks authority and gateway in their own processes, same taskset).
 const AFTER=process.argv.includes('--after');
-const {RC,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,traceSha,window,invariants}=require('./driver.cjs');
+const {RC,TOPOLOGY,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,traceSha,window,invariants}=require('./driver.cjs');
 // --cpu-prof: V8 CPU profile of each measured API worker. Profiler overhead
 // applies to both arms; such a run locates hotspots and is never a p95 verdict.
 const PROFILE=process.argv.includes('--cpu-prof');
@@ -13,7 +14,7 @@ const PROFILE=process.argv.includes('--cpu-prof');
 const SPANS=process.argv.includes('--spans');
 const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'));
 let cfg,started=false,data,active,controller=new AbortController(),timer;
-const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
+const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));
 function pg(name,argv,label){
  const r=cp.spawnSync(cfg.executable(name),argv,{encoding:'utf8',windowsHide:true,timeout:20000,env:cleanEnv(),maxBuffer:1024*1024});
@@ -38,10 +39,36 @@ function startWorker(arm,viewerCount,generatedClient){
    if(child.exitCode===null){if(process.platform==='win32')cp.spawnSync('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});else try{process.kill(-child.pid,'SIGTERM');}catch{}}
   }
  };
- return{child,rpc,close,init:()=>rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification'})};
+ const init=async()=>{
+  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,arm});
+  // Every process of the topology is recorded (cleanup must confirm each) and must be the one the pin names.
+  const p=info.processes??{},pids=Object.values(p);
+  for(const [role,pid] of Object.entries(p))if(role!=='api')report.ownPids.push({role:arm+'-'+role,pid});
+  if(info.topology!==TOPOLOGY||p.api!==child.pid||new Set(pids).size!==pids.length||pids.length!==(TOPOLOGY==='separated'?3:1))throw Error('TOPOLOGY_MISMATCH_'+arm);
+  return info;
+ };
+ return{child,rpc,close,init};
+}
+// Report only, never a gate: CPU of this process (the load driver: crypto, viewer and trader clients) and of
+// the whole PostgreSQL cluster (postmaster, live backends, reaped children), read around each measured window
+// like the workers' 'metrics'. /proc on Linux; postgres is null elsewhere.
+const {performance:perf,monitorEventLoopDelay}=require('node:perf_hooks'),driverDelay=monitorEventLoopDelay({resolution:10});driverDelay.enable();
+let clockTicks;
+function hostMetrics(){
+ const ms=x=>x/1e6,driver={cpu:process.cpuUsage(),memory:process.memoryUsage(),elu:perf.eventLoopUtilization(),delay:{p50Ms:ms(driverDelay.percentile(50)),p99Ms:ms(driverDelay.percentile(99)),maxMs:ms(driverDelay.max)}};driverDelay.reset();
+ let postgres=null;const master=report.ownPids.find(p=>p.role==='postgres')?.pid;
+ if(process.platform==='linux'&&master)try{
+  clockTicks??=Number(cp.execFileSync('getconf',['CLK_TCK'],{encoding:'utf8'}).trim())||100;
+  // Fields after the command name: [1] ppid, [11..14] utime, stime, cutime, cstime in clock ticks.
+  const stat=pid=>{const t=fs.readFileSync('/proc/'+pid+'/stat','utf8');return t.slice(t.lastIndexOf(')')+2).split(' ');};
+  const own=stat(master);let ticks=+own[11]+ +own[12]+ +own[13]+ +own[14],processes=1;
+  for(const name of fs.readdirSync('/proc'))if(/^\d+$/.test(name)&&+name!==master)try{const f=stat(name);if(+f[1]===master){ticks+=+f[11]+ +f[12];processes++;}}catch{}
+  postgres={cpuMs:ticks*1000/clockTicks,processes};
+ }catch{postgres=null;}
+ return{driver,postgres};
 }
 function provenance(){
- const selected=['prisma/schema.prisma','package-lock.json','services/stocks-global/server.mjs','services/stocks-global/postgres-authority.mjs','services/stocks-global/engine.mjs','services/stocks-global/testing/disposable-postgres.cjs','services/stocks-global/testing/synthetic-public-market.mjs','src/services/DemoTradingService.ts','src/api/routes/demoTrading.ts','src/api/routes/stocksTestCash.ts'];
+ const selected=['prisma/schema.prisma','package-lock.json','src/stocksAuthority.ts','services/stocks-global/server.mjs','services/stocks-global/postgres-authority.mjs','services/stocks-global/engine.mjs','services/stocks-global/testing/disposable-postgres.cjs','services/stocks-global/testing/synthetic-public-market.mjs','src/services/DemoTradingService.ts','src/api/routes/demoTrading.ts','src/api/routes/stocksTestCash.ts'];
  report.runtimeFiles=selected.map(file=>({file,sha256:sha(fs.readFileSync(path.join(cfg.root,file)))}));
  report.harnessFiles=fs.readdirSync(__dirname).filter(n=>/\.(cjs|sh|json)$/.test(n)).sort().map(file=>({file,sha256:sha(fs.readFileSync(path.join(__dirname,file)))}));
  report.runtimeAndHarnessManifestSha=sha(JSON.stringify({runtime:report.runtimeFiles,harness:report.harnessFiles,node:cfg.nodeSha256,plan:PLAN,traceSha}));
@@ -87,13 +114,14 @@ function provenance(){
    active=startWorker(name,50,gen);const info=await active.init();
    const warmup=await window(info,{arm:name,warmup:true,signal:controller.signal});json(name+'-warmup.json',warmup);
    if(warmup.timeouts||warmup.unexpectedErrors||warmup.missedJobs)throw Error('WARMUP_FAILED_'+name);
-   const before=await active.rpc('snapshot'),metricsBefore=await active.rpc('metrics');
+   await active.rpc('timings');
+   const before=await active.rpc('snapshot'),metricsBefore=await active.rpc('metrics'),hostBefore=hostMetrics();
    if(SPANS)await active.rpc('spans-start');
    const result=await window(info,{arm:name,mixed:name==='mixed',signal:controller.signal});
    if(SPANS)json(name+'-spans.json',await active.rpc('spans-stop'));
-   const after=await active.rpc('snapshot'),metricsAfter=await active.rpc('metrics');
+   const hostAfter=hostMetrics(),after=await active.rpc('snapshot'),metricsAfter=await active.rpc('metrics'),serverTimings=await active.rpc('timings');
    const financial=invariants(before,after,result.expected);Object.assign(result,financial);
-   result.initialLogicalStateSha=info.initial.logicalStateSha;result.metrics={before:metricsBefore,after:metricsAfter};result.application=info.implementation;
+   result.initialLogicalStateSha=info.initial.logicalStateSha;result.metrics={before:metricsBefore,after:metricsAfter,host:{before:hostBefore,after:hostAfter}};result.serverTimings=serverTimings;result.application=info.implementation;
    if(metricsAfter.network?.blocked)throw Error('EGRESS_ATTEMPT_DETECTED');
    json(name+'-result.json',result);json(name+'-financial.json',{before,after,invariants:financial});arms[name]=result;
    await active.close();active=null;

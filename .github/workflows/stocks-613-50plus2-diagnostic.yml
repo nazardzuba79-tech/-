@@ -5,6 +5,10 @@ name: Stocks 613 50+2 paired diagnostic (report only)
 # harness process tree, PostgreSQL included, is pinned to 2 vCPUs. Own
 # PostgreSQL, synthetic users and loopback only: no secrets, no deployment,
 # no external market. CI_DIAGNOSTIC: never capacity acceptance.
+# Both pins name the same runtime; 'before' runs it as one process (crypto API,
+# Stocks authority, gateway, synthetic market), 'after' as the separated release
+# layout (crypto API alone; Stocks authority and gateway in their own processes),
+# all inside the same 2-vCPU taskset (docs/STOCKS_613_PROCESS_ISOLATION.md).
 on:
   pull_request:
     paths:
@@ -47,7 +51,7 @@ jobs:
           sudo install -d -m 1777 /var/run/postgresql
           ls -d /usr/lib/postgresql/*/bin
       - name: Collection-gate self-test on stored results (no benchmark)
-        run: node --test scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs
+        run: node --test scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs scripts/qa/stocks-rc-50plus2/topology-613.test.cjs
       - name: Worktrees with runtime exactly at each pin; harness from this head
         run: |
           set -euo pipefail
@@ -98,6 +102,7 @@ jobs:
           node -e '
           const r = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
           for (const [k, v] of Object.entries(r.kinds)) console.log(`::notice title=50+2 ${k} extended::crypto p50/p95/p99 ${f(v.baselineCrypto.p50)}/${f(v.baselineCrypto.p95)}/${f(v.baselineCrypto.p99)} -> ${f(v.mixedCrypto.p50)}/${f(v.mixedCrypto.p95)}/${f(v.mixedCrypto.p99)} ms; viewer p95 ${f(v.mixedViewer.p95)} ms; ELU ${f(v.meanBaselineElu, 3)} -> ${f(v.meanMixedElu, 3)}; loop p99 ${f(v.meanMixedLoopDelayP99Ms)} ms; RSS max ${f(v.maxMixedRssMb, 0)} MB; error rate ${f(v.meanErrorRate, 4)}`);
+          for (const [k, v] of Object.entries(r.kinds)) console.log(`::notice title=50+2 ${k} processes::${v.topology.join(",")} mixed CPU ms ${Object.entries(v.meanProcessCpuMs.mixed).map(([n, x]) => n + " " + f(x, 0)).join(", ")}; driver ${f(v.meanDriverCpuMs.mixed, 0)}; PostgreSQL ${f(v.meanPostgresCpuMs.mixed, 0)}; server-side crypto p95 ${f(v.serverCryptoP95Ms.baseline)} -> ${f(v.serverCryptoP95Ms.mixed)} ms`);
           if (r.afterVsBefore) console.log(`::notice title=50+2 after vs before::mixed crypto p95 ${f(r.afterVsBefore.mixedCryptoP95Percent)}%, viewer p95 ${f(r.afterVsBefore.viewerStateP95Percent)}%, mixed API CPU ${f(r.afterVsBefore.mixedApiCpuPercent)}%`);
           ' "$RC50_DIR/extended.json"
       - name: Publish the numbers as check annotations (readable without sign-in)
@@ -133,7 +138,8 @@ jobs:
   # PostgreSQL, synthetic users, loopback only). Not a p95 verdict: the
   # instrumentation overhead applies to both arms and is not removed.
   # DISABLED. It ran once (approved one-shot on top of 77b4fffc, commit
-  # 1d02aea3). Any further run needs a new #613 coordinator approval.
+  # 1d02aea3). Any further run needs a new #613 coordinator approval. The after
+  # pin is now the separated layout, where spans.cjs sees the crypto API only.
   spans-run:
     name: 50+2 server-side spans, one run (diagnostic, not a p95 verdict)
     if: false

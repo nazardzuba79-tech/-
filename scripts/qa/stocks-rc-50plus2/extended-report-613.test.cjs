@@ -52,4 +52,27 @@ test('missing or partial runs are shown as missing, never invented', t => {
   assert.deepEqual(report(path.join(dir, 'absent')).runs, []);
 });
 
+test('separated runs: CPU, RSS and ELU per process, driver and PostgreSQL CPU, server-side crypto time', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rc50-ext-')); t.after(() => fs.rmSync(dir, {recursive: true, force: true}));
+  const proc = (cpuMs, rssMb) => ({cpu: {user: cpuMs * 1000, system: 0}, memory: {rss: rssMb * 2 ** 20}, loop: {elu: {active: cpuMs, idle: 1000}, delay: {p99Ms: 12}}});
+  const side = scale => ({topology: 'separated', ...metrics(100 * scale, 1000, 9000, 100, 1, 1),
+    processes: {api: proc(100 * scale, 200), stocksAuthority: proc(10 * scale, 150), stocksGateway: proc(20 * scale, 110)}});
+  const host = scale => ({driver: {cpu: {user: 50 * scale * 1000, system: 0}, elu: {active: 50 * scale, idle: 1000}, delay: {p99Ms: 11}}, postgres: {cpuMs: 30 * scale, processes: 9}});
+  const crypto = [10, 20, 30, 40], timings = Object.fromEntries(crypto.map((ms, i) => ['c' + i, ms - 2]));
+  const result = {cryptoLatencies: crypto, requests: 4, timeouts: 0, unexpectedErrors: 0, samples: crypto.map((ms, i) => ({requestId: 'c' + i, kind: 'crypto', op: 'open', status: 200, ms})),
+    metrics: {before: side(1), after: side(3), host: {before: host(1), after: host(4)}}, serverTimings: timings};
+  const out = path.join(dir, 'after-1', 'out'); fs.mkdirSync(out, {recursive: true});
+  fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({runtimeSourceSha: 'a'.repeat(40), status: 'PASS_LOCAL_DIAGNOSTIC'}));
+  for (const arm of ['baseline', 'mixed']) fs.writeFileSync(path.join(out, arm + '-result.json'), JSON.stringify(result));
+  const r = report(dir), mixed = r.runs[0].mixed;
+  assert.equal(mixed.topology, 'separated');
+  assert.deepEqual(Object.fromEntries(Object.entries(mixed.processes).map(([k, v]) => [k, [v.cpuMs, v.rssMb]])), {api: [200, 200], stocksAuthority: [20, 150], stocksGateway: [40, 110]});
+  assert.equal(mixed.apiCpuMs, 200, 'API CPU stays the crypto API process alone');
+  assert.equal(mixed.driver.cpuMs, 150); assert.equal(mixed.postgresCpuMs, 90);
+  assert.deepEqual([mixed.serverCrypto.p95, mixed.clientMinusServerCrypto.p95], [38, 2]);
+  assert.deepEqual(r.kinds.after.topology, ['separated']);
+  assert.equal(r.kinds.after.meanProcessCpuMs.mixed.stocksGateway, 40);
+  assert.match(markdown(r), /stocksAuthority 20 → 20/);
+});
+
 function percentile95(a) { return [...a].sort((x, y) => x - y)[Math.ceil(a.length * .95) - 1]; }

@@ -46,11 +46,30 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
-#613 candidate pins (repinned 2026-10-27, Claude; owner asked for a current paired run)
-policy-613.cjs pins fa92cc66 (verified #613 checkpoint before the JWT change);
-policy-613-after.cjs pins a820c18e (#613 head: one signature check per hop,
-9a640574; the runtime differs from fa92cc66 only in src/api/middleware/auth.ts and
-src/api/routes/stocksTestCash.ts). Earlier pairs: 234437f8 vs fb6577be (one-query
+#613 candidate pins (repinned 2026-10-27, Claude, task #153: process isolation)
+Both policies pin the same runtime, 5d69057d (#613 head runtime plus
+src/stocksAuthority.ts); only the process topology differs (TOPOLOGY export):
+- policy-613.cjs, 'single-process': api-worker.cjs hosts the crypto API, the Stocks
+  authority (stocksTestCashRouter + PostgreSQL authority), the gateway and the
+  synthetic market, exactly as before this change (the head's behaviour).
+- policy-613-after.cjs, 'separated': the release layout of
+  docs/STOCKS_613_PROCESS_ISOLATION.md. api-worker.cjs keeps only the crypto API
+  (crypto-api.cjs: the fixture's crypto subset, same rows and routes; the protected
+  fixture file stays byte-identical) and forks stocks-worker.cjs twice: the Stocks
+  authority (src/stocksAuthority.ts app, real PostgreSQL authority, loopback) and
+  the gateway (server.mjs + authority adapter + synthetic market; trading follows
+  the authority's readiness, as release-entrypoint.mjs). Same taskset, same 384 MB
+  heap cap and egress fence per process; nothing added to the CPU budget. Neither
+  arm mounts the private ingress quota (see the doc's known limit).
+The runner records every process's pid (cleanup must confirm each), refuses a
+topology other than the pin's, and the qualification proves the separation (the
+crypto API answers 404 for every Stocks authority route; three distinct pids).
+Report only: 'metrics' returns cpu/memory/loop of the crypto API (the gate's API
+CPU) plus 'processes' per topology process; result.metrics.host has the driver's
+and the whole PostgreSQL cluster's CPU; result.serverTimings has server-side time
+per driver request (x-rc50-request), for the client-minus-server split.
+topology-613.test.cjs checks the pins and the workers' refusals (no workload).
+Earlier pairs: fa92cc66 vs a820c18e (JWT change), 234437f8 vs fb6577be (one-query
 Stocks session read); local Windows runs measured 783aeedd vs c010bc67.
 extended-report-613.cjs prints p50/p95/p99, errors, API CPU, memory, event-loop
 utilization/delay (recorded by api-worker 'metrics' in every arm) and the
