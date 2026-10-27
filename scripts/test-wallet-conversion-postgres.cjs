@@ -110,6 +110,7 @@ async function main() {
         return { status: response.status, body: await response.json() };
       };
       for (const [path, body] of [
+        ['/wallet/conversion/availability', undefined],
         ['/wallet/conversion/assets', undefined],
         ['/wallet/conversion/quote', { fromAsset: 'USD', toAsset: 'EUR', amount: '1' }],
         ['/wallet/conversion/confirm', { quoteId: randomUUID() }],
@@ -222,6 +223,13 @@ async function main() {
       now += 15001; const second = conversion.confirm(user, q.quoteId); release();
       const [a, b] = await Promise.all([first, second]); assert.equal(a.operationId, b.operationId);
       assert.equal(await prisma.auditLog.count({ where: { id: a.operationId } }), 1); now = Date.now();
+    });
+    await check('availability offers Convert only where the server accepts it: verified reserve, unblocked account', async () => {
+      assert.deepEqual((await api('/wallet/conversion/availability')).body, { convertible: true, ledger: 'spot' });
+      assert.deepEqual(await new WalletConversionService(prisma, prices, () => now, admitted, limits('')).availability(user), { convertible: false, ledger: 'spot' });
+      await prisma.user.update({ where: { id: user }, data: { blockedAt: new Date() } });
+      try { assert.deepEqual((await api('/wallet/conversion/availability')).body, { convertible: false, ledger: 'spot' }); }
+      finally { await prisma.user.update({ where: { id: user }, data: { blockedAt: null } }); }
     });
     await check('an admin block refuses the quote, and a block set after the quote refuses the confirmation; nothing moves', async () => {
       const before = await snapshot();

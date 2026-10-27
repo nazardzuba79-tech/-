@@ -11,7 +11,7 @@ const strip = read('frontend/src/pages/wallet-v3/PortfolioStrip.tsx');
 describe('wallet conversion UI safety boundaries', () => {
   test('default-OFF keeps Convert controls disabled and cannot mount the modal', () => {
     expect(walletPage).toContain("import.meta.env.VITE_WALLET_CONVERSION_ENABLED === 'true'");
-    expect(walletPage).toContain("onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}");
+    expect(walletPage).toContain("onConvert={WALLET_CONVERSION_ENABLED && convertible ? () => setModal('convert') : undefined}");
     expect(walletPage).toContain('{WALLET_CONVERSION_ENABLED && <ConversionModal');
     expect(overview).toContain('disabled={!onConvert}');
     expect(strip).toContain('disabled={!onConvert}');
@@ -45,6 +45,29 @@ describe('wallet conversion UI safety boundaries', () => {
     expect(modal).toContain('confirm(pending)'); expect(modal).toContain('locked.current');
     expect(modal).toContain('if (receipt) applied(receipt); else setError');
     expect(modal).toContain('catch { setError');
+  });
+  test('the Convert action is offered only when the server reports this account can convert', () => {
+    const page = read('frontend/src/pages/WalletPage.tsx');
+    expect(page).toContain('api.getConversionAvailability()');
+    expect(page).toContain('setConvertible(r.convertible === true)');
+    expect(page).toContain('() => { if (live) setConvertible(false); }'); // 404 (switch off) or any error: hidden
+    expect(page.match(/onConvert=\{WALLET_CONVERSION_ENABLED && convertible \? \(\) => setModal\('convert'\) : undefined\}/g)).toHaveLength(2);
+    expect(page).not.toMatch(/onConvert=\{WALLET_CONVERSION_ENABLED \?/);
+  });
+  test('a DemoBalance conversion is shown as the non-withdrawable Spot trading balance, never as Funding', () => {
+    const page = read('frontend/src/pages/WalletPage.tsx');
+    expect(page).toContain("setConversionLedger(r.ledger === 'demo' ? 'demo' : 'spot')");
+    expect(page).toContain('<ConversionModal ledger={conversionLedger}');
+    expect(modal).toContain("t(ledger === 'demo' ? 'wallet.conversion.subtitleTrading' : 'wallet.conversion.subtitle')");
+    expect(history).toContain("ledger: a.ledger");
+    expect(history).toContain("{r.ledger === 'demo' && <div");
+    for (const [lang, dictionary] of Object.entries(readDictionaries())) {
+      for (const key of ['wallet.conversion.subtitleTrading', 'wallet.conversion.tradingLedger']) {
+        expect([lang, typeof dictionary[key] === 'string' && dictionary[key].length > 0]).toEqual([lang, true]);
+        expect(dictionary[key]).not.toMatch(/недоступн|unavailable|not available|demo|демо/i);
+      }
+      expect(dictionary['wallet.conversion.subtitleTrading']).not.toEqual(dictionary['wallet.conversion.subtitle']);
+    }
   });
   test('history retains exact decimal units, masks both conversion legs, preserves real deposit states and explorers', () => {
     expect(history).toContain('api.getMyDeposits()'); expect(history).toContain('api.getWalletActivity()');

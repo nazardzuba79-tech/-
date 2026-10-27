@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Nav } from '../components/Nav';
 import { useLanguage } from '../lib/i18n';
+import { api } from '../lib/api';
 import { PortfolioStrip } from './wallet-v3/PortfolioStrip';
 import { EquityChart } from './wallet-v3/EquityChart';
 import { WalletSection, WalletSideNav } from './wallet-v3/WalletSideNav';
@@ -106,6 +107,18 @@ export function WalletPage() {
   const stockRows = useStockPortfolio(stockRefreshKey);
   const portfolioRows = useMemo(() => [...rows, ...stockRows], [rows, stockRows]);
 
+  // The Convert action is offered only when the server says this account can complete one: the release
+  // switch is on (otherwise 404), the account is unblocked, and its ledger has a verified reserve or usable
+  // liquidity. Any error or refusal keeps the action inactive instead of opening a form the server will reject.
+  const [convertible, setConvertible] = useState(false);
+  const [conversionLedger, setConversionLedger] = useState<'spot' | 'demo'>('spot');
+  useEffect(() => {
+    if (!WALLET_CONVERSION_ENABLED) return;
+    let live = true;
+    api.getConversionAvailability().then(r => { if (live) { setConvertible(r.convertible === true); setConversionLedger(r.ledger === 'demo' ? 'demo' : 'spot'); } }, () => { if (live) setConvertible(false); });
+    return () => { live = false; };
+  }, [activityVersion]);
+
   // Deep links from elsewhere in the app (Futures' transfer action, the
   // header's Пополнить) keep working across a query-string-only navigation,
   // which does not remount this page.
@@ -161,7 +174,7 @@ export function WalletPage() {
                 onDeposit={() => setModal('deposit')}
                 onWithdraw={() => setModal('withdraw')}
                 onTransfer={() => setModal('transfer')}
-                onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}
+                onConvert={WALLET_CONVERSION_ENABLED && convertible ? () => setModal('convert') : undefined}
                 onHistory={() => setSection('orders')}
                 onOpenUnified={() => setSection('unified')}
                 onOpenFunding={() => setSection('funding')}
@@ -195,7 +208,7 @@ export function WalletPage() {
                   onDeposit={() => setModal('deposit')}
                   onWithdraw={() => setModal('withdraw')}
                   onTransfer={() => setModal('transfer')}
-                  onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}
+                  onConvert={WALLET_CONVERSION_ENABLED && convertible ? () => setModal('convert') : undefined}
                   onHistory={() => setSection('orders')}
                 />
 
@@ -245,7 +258,7 @@ export function WalletPage() {
       <DepositModal open={modal === 'deposit'} onClose={() => setModal(null)} />
       <WithdrawModal open={modal === 'withdraw'} onClose={() => setModal(null)} onSubmitted={refresh} onTransfer={() => setModal('transfer')} />
       <TransferModal open={modal === 'transfer'} onClose={() => setModal(null)} onSubmitted={refresh} />
-      {WALLET_CONVERSION_ENABLED && <ConversionModal open={modal === 'convert'} onClose={() => setModal(null)} onSubmitted={() => { refresh(); setActivityVersion(v => v + 1); }} />}
+      {WALLET_CONVERSION_ENABLED && <ConversionModal ledger={conversionLedger} open={modal === 'convert'} onClose={() => setModal(null)} onSubmitted={() => { refresh(); setActivityVersion(v => v + 1); }} />}
     </div>
   );
 }

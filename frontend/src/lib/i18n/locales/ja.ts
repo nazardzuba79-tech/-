@@ -14,6 +14,8 @@ import type { Key } from './keys';
 export const JA: Record<Key, string> = {
   'wallet.conversion.title': "交換",
   'wallet.conversion.subtitle': "資金調達口座の利用可能残高 · 手数料0%",
+  'wallet.conversion.subtitleTrading': "現物取引残高 · 取引専用、出金不可 · 手数料0%",
+  'wallet.conversion.tradingLedger': "現物取引残高 · 出金不可",
   'wallet.conversion.from': "交換元",
   'wallet.conversion.to': "交換先",
   'wallet.conversion.fiat': "法定通貨",

@@ -170,6 +170,25 @@ exports.run = async ({ origin, token, prisma, user, out, thinBook = {}, fund }) 
       await open(); await page.getByText('Не удалось рассчитать обмен. Попробуйте ещё раз', { exact: true }).waitFor();
       assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length, count);
     });
+    await check('a server that would refuse (account blocked) leaves Convert inactive: no dialog, no quote; unblocked it works again', async () => {
+      assetsFailed = false;
+      const answered = async () => { const r = page.waitForResponse(res => new URL(res.url()).pathname.endsWith('/wallet/conversion/availability')); await page.reload(); return (await r).json(); };
+      const buttons = page.getByRole('button', { name: 'Конвертация', exact: true });
+      await prisma.user.update({ where: { id: user }, data: { blockedAt: new Date() } });
+      try {
+        assert.deepEqual(await answered(), { convertible: false, ledger: 'spot' });
+        await buttons.first().waitFor();
+        const quotes = requests.filter(r => r.endpoint.startsWith('/wallet/conversion/') && !r.endpoint.endsWith('/availability')).length;
+        for (let i = 0; i < await buttons.count(); i += 1) { assert(await buttons.nth(i).isDisabled()); await buttons.nth(i).click({ force: true }); }
+        await page.waitForTimeout(300);
+        assert.equal(await page.locator('[role="dialog"]').count(), 0);
+        assert.equal(requests.filter(r => r.endpoint.startsWith('/wallet/conversion/') && !r.endpoint.endsWith('/availability')).length, quotes);
+        const file = path.join(out, 'conversion-refused-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      } finally { await prisma.user.update({ where: { id: user }, data: { blockedAt: null } }); }
+      assert.deepEqual(await answered(), { convertible: true, ledger: 'spot' });
+      await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Конвертация' && !b.disabled));
+      await open(); await page.getByRole('dialog').getByRole('button', { name: 'Отмена', exact: true }).click();
+    });
     assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
     const report = { build: 'production React bundle', conversionAndHistory: 'real routes / disposable PostgreSQL', unrelatedReads: 'fixtures', outboundNetwork: 'denied', checks, screenshots, errors, unexpected, requests, responses, productionTouched: false };
     fs.writeFileSync(path.join(out, 'browser-results.json'), JSON.stringify(report, null, 2));

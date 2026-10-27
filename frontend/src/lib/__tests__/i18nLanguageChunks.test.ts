@@ -81,7 +81,7 @@ const APPROVED_AUTH_DESIGN_KEYS = [
 // are omitted from the historical digest; existing numeric/other copy is not changed.
 const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
 // Additive funded-wallet conversion/history vocabulary; do not rehash older copy.
-const WALLET_CONVERSION_KEYS = ['title','subtitle','from','to','fiat','crypto','preview','pay','receive','rate','fee','priceNotice','success','quoteFailed','refreshQuote','insufficient','denied','limit','dailyLimit','capacity','places','unknown','check','retry']
+const WALLET_CONVERSION_KEYS = ['title','subtitle','subtitleTrading','tradingLedger','from','to','fiat','crypto','preview','pay','receive','rate','fee','priceNotice','success','quoteFailed','refreshQuote','insufficient','denied','limit','dailyLimit','capacity','places','unknown','check','retry']
   .map(key => `wallet.conversion.${key}`).concat(['wallet.txAdjustments','wallet.txCredit','wallet.txDebit','wallet.txPartial']);
 
 // ── Integrity ───────────────────────────────────────────────────────

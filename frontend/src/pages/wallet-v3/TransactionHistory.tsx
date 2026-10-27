@@ -32,6 +32,8 @@ interface Row {
   amount: string;
   toAsset?: string;
   toAmount?: string;
+  /** 'demo': a conversion inside the non-withdrawable Spot trading balance, never Funding. */
+  ledger?: 'spot' | 'demo';
   status: Status;
   at: number;
   chain?: string;
@@ -131,7 +133,7 @@ export function TransactionHistory({ hidden, refreshKey = 0 }: { hidden: boolean
           }),
           ...(activity.status === 'fulfilled' ? activity.value.map((a): Row => ({
             id: `activity-${a.id}`, kind: a.kind, asset: a.asset, amount: a.amount,
-            toAsset: a.toAsset, toAmount: a.toAmount, status: 'done', at: new Date(a.createdAt).getTime(),
+            toAsset: a.toAsset, toAmount: a.toAmount, ledger: a.ledger, status: 'done', at: new Date(a.createdAt).getTime(),
           })) : []),
         ];
         items.sort((a, b) => b.at - a.at);
@@ -227,6 +229,7 @@ export function TransactionHistory({ hidden, refreshKey = 0 }: { hidden: boolean
                           <CryptoIcon symbol={r.asset} size={18} />
                           <span className="text-[14px] font-medium leading-5 text-ink-2">{r.toAsset ? `${r.asset} → ${r.toAsset}` : r.asset}</span>
                         </div>
+                        {r.ledger === 'demo' && <div className="mt-0.5 text-[12px] leading-4 text-ink-3" data-conversion-ledger>{t('wallet.conversion.tradingLedger')}</div>}
                       </td>
                       <td title={hidden ? undefined : r.toAmount ? `${r.amount} ${r.asset} → +${r.toAmount} ${r.toAsset}` : r.amount} className={`num whitespace-nowrap px-3 py-3 text-right text-[14px] font-semibold leading-5 ${units.gte(0) ? 'text-pos' : 'text-neg'}`}>
                         {hidden ? MASK : signed(r.amount, dp)}

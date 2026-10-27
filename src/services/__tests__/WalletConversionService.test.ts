@@ -142,6 +142,13 @@ describe('wallet conversion pricing and admission', () => {
     expect((await service.quote('customer', 'USD', 'EUR', '10')).toAmount).toBe('8'); // a reserved asset is still a destination
     expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
   });
+  test('availability: Balance accounts can convert only with a verified reserve and while unblocked', async () => {
+    expect(await fixture('100', NOW, null, limits('')).service.availability('customer')).toEqual({ convertible: false, ledger: 'spot' });
+    expect(await fixture('100', NOW, null, limits('EUR:1000')).service.availability('customer')).toEqual({ convertible: true, ledger: 'spot' });
+    expect(await fixture('100', NOW, new Date(NOW - 1), limits()).service.availability('customer')).toEqual({ convertible: false, ledger: 'spot' });
+    // A reserve for an asset outside the admission list backs nothing.
+    expect(await fixture('100', NOW, null, { ...limits(''), reserves: new Map([['SOL', new BigNumber(5)]]) }).service.availability('customer')).toEqual({ convertible: false, ledger: 'spot' });
+  });
   test('the reserve caps the net amount all conversions have created in that asset', async () => {
     const { service, prisma, committed } = fixture('1000', NOW, null, limits('BTC:0.02,USD:1000'));
     committed.exposure.BTC = '0.015';
@@ -256,6 +263,14 @@ describe('demo-ledger conversion (Issue #592 demo funds)', () => {
     const { service, prisma } = demoFixture(env as Record<string, string>, demo as any);
     await expect(service.quote('tester', 'USDT', 'BTC', '50')).rejects.toMatchObject({ code });
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+  test.each([
+    ['usable Demo Liquidity', DEMO_ENV, 'tester', true],
+    ['Demo Liquidity off', { ...DEMO_ENV, DEMO_LIQUIDITY_ENABLED: 'false' }, 'tester', false],
+    ['the liquidity account itself', DEMO_ENV, LIQ, false],
+  ])('availability on DemoBalance: %s', async (_name, env, user, convertible) => {
+    const { service } = demoFixture(env as Record<string, string>, { tester: { USDT: '50' }, [LIQ]: { BTC: '1', USDT: '50' } });
+    expect(await service.availability(user as string)).toEqual({ convertible, ledger: 'demo' });
   });
   test('the liquidity account cannot convert against itself', async () => {
     const { service, prisma } = demoFixture(DEMO_ENV, { [LIQ]: { BTC: '1', USDT: '50' } });

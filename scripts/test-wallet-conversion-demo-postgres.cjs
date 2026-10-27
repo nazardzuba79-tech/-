@@ -149,12 +149,16 @@ async function main() {
     });
     await check('default-OFF server switch: no conversion route exists, also for demo accounts; nothing written', async () => {
       const before = await rowsOf('qa-tester');
-      for (const [method, route, body] of [['GET', '/wallet/conversion/assets'], ['POST', '/wallet/conversion/quote', { fromAsset: 'USDT', toAsset: 'BTC', amount: '1' }], ['POST', '/wallet/conversion/confirm', { quoteId: randomUUID() }]]) {
+      for (const [method, route, body] of [['GET', '/wallet/conversion/availability'], ['GET', '/wallet/conversion/assets'], ['POST', '/wallet/conversion/quote', { fromAsset: 'USDT', toAsset: 'BTC', amount: '1' }], ['POST', '/wallet/conversion/confirm', { quoteId: randomUUID() }]]) {
         const r = await api(method, route, 'qa-tester', body, { base: '/__default_off' });
         assert.equal(r.status, 404); assert.equal(r.body.code, 'NOT_FOUND');
       }
       assert.equal(await prisma.auditLog.count({ where: { action: 'WALLET_CONVERSION_QUOTED' } }), 0);
       assert.equal(await rowsOf('qa-tester'), before);
+    });
+    await check('availability: a demo tester is offered Convert on DemoBalance; the liquidity account itself is not', async () => {
+      assert.deepEqual((await api('GET', '/wallet/conversion/availability', 'qa-tester')).body, { convertible: true, ledger: 'demo' });
+      assert.deepEqual(await conversion.availability(LIQ), { convertible: false, ledger: 'demo' });
     });
     await check('new account with zero balance: nothing to convert, refused before any write, no balance row created', async () => {
       const assets = await conversion.assets('qa-zero');

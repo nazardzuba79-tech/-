@@ -24,7 +24,9 @@ const rateOf = (quote: WalletConversionQuote) => new BigNumber(new BigNumber(quo
  * and recover the durable receipt before starting another operation.
  * The server decides every amount, price and admission; this form only asks.
  */
-export function ConversionModal({ open, onClose, onSubmitted }: { open: boolean; onClose: () => void; onSubmitted: () => void }) {
+/** `ledger` is the server's answer (availability): a DemoBalance account converts its non-withdrawable
+ * Spot trading balance, never Funding, and the form says so. */
+export function ConversionModal({ open, onClose, onSubmitted, ledger = 'spot' }: { open: boolean; onClose: () => void; onSubmitted: () => void; ledger?: 'spot' | 'demo' }) {
   const { t } = useLanguage();
   const [assets, setAssets] = useState<Asset[] | null>(null);
   const [from, setFrom] = useState(''); const [to, setTo] = useState(''); const [amount, setAmount] = useState('');
@@ -92,7 +94,7 @@ export function ConversionModal({ open, onClose, onSubmitted }: { open: boolean;
     finally { locked.current = false; setBusy(false); }
   }
   const options = (except?: string) => (assets ?? []).filter(a => a.asset !== except).map(a => ({ value: a.asset, label: `${a.asset} · ${t(a.kind === 'fiat' ? 'wallet.conversion.fiat' : 'wallet.conversion.crypto')}` }));
-  return <Modal open={open} onClose={onClose} title={t('wallet.conversion.title')} subtitle={t('wallet.conversion.subtitle')} footer={
+  return <Modal open={open} onClose={onClose} title={t('wallet.conversion.title')} subtitle={t(ledger === 'demo' ? 'wallet.conversion.subtitleTrading' : 'wallet.conversion.subtitle')} footer={
     done ? <SecondaryButton onClick={onClose} full>{t('deposit.close')}</SecondaryButton> : pending ? <div className="flex flex-wrap gap-2">
       <button type="button" disabled={busy} onClick={recover} className="wallet-btn wallet-btn-secondary">{t('wallet.conversion.check')}</button>
       <PrimaryButton disabled={busy} onClick={() => confirm(pending)}>{t('wallet.conversion.retry')}</PrimaryButton>

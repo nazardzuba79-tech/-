@@ -14,6 +14,8 @@ import type { Key } from './keys';
 export const ZH: Record<Key, string> = {
   'wallet.conversion.title': "兑换",
   'wallet.conversion.subtitle': "资金账户可用资金 · 手续费 0%",
+  'wallet.conversion.subtitleTrading': "现货交易余额 · 仅限交易，不可提现 · 手续费 0%",
+  'wallet.conversion.tradingLedger': "现货交易余额 · 不可提现",
   'wallet.conversion.from': "从",
   'wallet.conversion.to': "至",
   'wallet.conversion.fiat': "法币",

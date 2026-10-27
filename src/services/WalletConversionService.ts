@@ -247,6 +247,20 @@ export class WalletConversionService {
     const where = { where: { userId }, select: { asset: true, available: true } };
     return ledger === 'demo' ? this.prisma.demoBalance.findMany(where) : this.prisma.balance.findMany(where);
   }
+  /**
+   * Whether this account can complete a conversion at all, so the Wallet offers the action only then: an unblocked
+   * account and, for Balance, at least one operator-verified reserve; for DemoBalance, a usable Demo Liquidity
+   * account. Advisory only: quote and confirm still decide every conversion under their own checks and locks.
+   */
+  async availability(userId: string): Promise<{ convertible: boolean; ledger: ConversionLedger }> {
+    const ledger = await this.ledger(this.prisma, userId);
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { blockedAt: true } });
+    if (!user || user.blockedAt) return { convertible: false, ledger };
+    if (ledger === 'spot') return { convertible: [...this.limits.reserves.keys()].some(asset => this.supported(asset)), ledger };
+    const { config } = demoLiquidityConfig(this.env);
+    if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) return { convertible: false, ledger };
+    return { convertible: !(await liquidityAccountRefusal(this.prisma, config.accountId, false, this.env)), ledger };
+  }
   async assets(userId: string) {
     const feed = await this.feed(); this.fresh(feed);
     const balances = await this.available(await this.ledger(this.prisma, userId), userId);

@@ -51,6 +51,7 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
       }
     });
   }
+  router.get('/wallet/conversion/availability', guarded(req => conversion.availability(req.userId!)));
   router.get('/wallet/conversion/assets', guarded(req => conversion.assets(req.userId!)));
   const quoteSchema = z.object({ fromAsset: z.string().regex(/^[A-Z0-9]{2,16}$/), toAsset: z.string().regex(/^[A-Z0-9]{2,16}$/), amount: z.string().max(37) }).strict();
   router.post('/wallet/conversion/quote', writeLimit, asyncRoute(async (req, res, next) => {
