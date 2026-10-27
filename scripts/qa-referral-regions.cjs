@@ -10,6 +10,7 @@ if (process.env.REFERRAL_REGION_QA !== '1' || !['127.0.0.1', 'localhost'].includ
 // Short synthetic JWT secret intentionally leaves the notification publisher unconfigured.
 process.env.JWT_SECRET = 'referral-local-qa-only';
 process.env.EMAIL_VERIFICATION_SECRET = 'referral-region-verification-local-synthetic-only';
+process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64); // Synthetic disposable password-vault key.
 process.env.REGISTRATION_OPEN = 'true';
 process.env.ADMIN_EMAIL = 'not-a-registration-test@example.invalid';
 const egress = [];
