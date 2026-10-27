@@ -19,6 +19,7 @@ export function validEvent(e, type, now = Date.now()) {
   }
   if (type === 'DEPOSIT_ADDRESS_COPIED') {
     return text(e.asset, 15) && /^[A-Z0-9]{1,15}$/.test(e.asset)
+      && (e.email === undefined || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
       && text(e.network, 40) && /^[a-z0-9-]{2,40}$/.test(e.network)
       && text(e.networkLabel, 80) && /^[A-Za-z0-9][A-Za-z0-9 .()_\/+\-]{0,79}$/.test(e.networkLabel);
   }
@@ -52,7 +53,8 @@ export function message(e) {
   if (e.eventType === 'DEPOSIT_ADDRESS_COPIED') return [
     'Скопійовано депозитну адресу VOLTEX', '',
     `Монета: ${e.asset}`, `Мережа: ${e.networkLabel}`,
-  ].join('\n');
+    e.email && `Email: ${e.email}`,
+  ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
   if (e.eventType === 'KYC_SUBMITTED') return [
     '🔔 Новая KYC заявка', '', e.email && `Email: ${e.email}`,
     'Статус: ожидает проверки', e.fullName && `Full Name: ${e.fullName}`,
@@ -82,7 +84,7 @@ export async function acceptEvent(event, type, env) {
   const allowed = type === 'NEW_USER_REGISTERED'
     ? ['eventId', 'eventType', 'timestamp', 'userId', 'email', 'role']
     : type === 'DEPOSIT_ADDRESS_COPIED'
-    ? ['eventId', 'eventType', 'timestamp', 'asset', 'network', 'networkLabel']
+    ? ['eventId', 'eventType', 'timestamp', 'asset', 'network', 'networkLabel', 'email']
     : type === 'KYC_SUBMITTED'
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'documentType']
     : type === 'KYC_MATERIALS_RECEIVED'

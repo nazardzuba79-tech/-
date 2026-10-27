@@ -153,17 +153,19 @@ for (const mode of ['success', 'failure', 'timeout']) test(`registration ${mode}
 
 const copy = (extra = {}) => ({ eventId: 'synthetic-copy', eventType: 'DEPOSIT_ADDRESS_COPIED',
   timestamp: now, asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', ...extra });
-test('copy notification shows only the coin and network; no timestamp, identity, address or amount', () => {
+test('legacy copy notification without email remains compatible; no timestamp, address or amount', () => {
   const text = message(copy());
   assert.equal(text, 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)');
   for (const hidden of ['Email:', 'Дата', 'Час', 'Адреса:', 'Сума:', 'synthetic-copy']) assert.ok(!text.includes(hidden));
 });
-test('copy notification refuses identity, address, amount, malformed rails and unknown signatures', async () => {
-  for (const extra of [{ email: 'private@example.test' }, { address: 'secret' }, { userId: 'secret' },
+test('copy notification includes valid account email and rejects malformed email and unapproved fields', async () => {
+  assert.equal(validEvent(copy({ email: 'copier@example.invalid' }), 'DEPOSIT_ADDRESS_COPIED', now), true);
+  assert.equal(message(copy({ email: 'copier@example.invalid' })), 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)\nEmail: copier@example.invalid');
+  for (const extra of [{ email: 'not-an-email' }, { email: 'copier@example.invalid\nINJECTED' }, { email: '' }, { email: null }, { address: 'secret' }, { userId: 'secret' },
     { amount: '1000' }, { timestamp: now - RETENTION_MS }, { asset: 'bad' }, { network: '../tron' },
     { networkLabel: 'TRON\\nINJECTED' }]) {
     const candidate = copy(extra);
-    if (['email','address','userId','amount'].some(key => key in extra)) {
+    if (['address','userId','amount'].some(key => key in extra)) {
       assert.equal((await acceptEvent(candidate, 'DEPOSIT_ADDRESS_COPIED', env)).status, 400);
     } else assert.equal(validEvent(candidate, 'DEPOSIT_ADDRESS_COPIED', now), false);
   }
@@ -179,20 +181,22 @@ test('copy notification refuses identity, address, amount, malformed rails and u
       headers: { 'x-voltex-timestamp': ts, 'x-voltex-signature': signature, ...headers } });
   };
   assert.equal((await handle(signed(), configuredEnv)).status, 200);
+  assert.equal((await handle(signed(copy({ email: 'copier@example.invalid' })), configuredEnv)).status, 200);
   assert.equal((await handle(signed(copy(), { origin: 'https://voltextech.net' }), configuredEnv)).status, 403);
   assert.equal((await handle(signed(copy(), {}, '/v1/deposit'), configuredEnv)).status, 401);
   assert.equal((await handle(signed(event()), configuredEnv)).status, 400);
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
 });
 test('duplicate signed copy notification makes at most one Telegram call', async () => {
   const s = storage(); let count = 0;
   const send = async (_, init) => { count++; assert.match(JSON.parse(init.body).text, /Монета: USDT/);
     return Response.json({ ok: true, result: { message_id: 10 } }); };
   const d = new Delivery({ storage: s }, env, send, () => now);
-  const responses = await Promise.all(Array.from({ length: 10 }, () => d.fetch(req(copy())).then(r => r.json())));
+  const responses = await Promise.all(Array.from({ length: 10 }, () => d.fetch(req(copy({ email: 'copier@example.invalid' }))).then(r => r.json())));
   assert.equal(responses.filter(r => r.status === 'SENT').length, 1);
   assert.equal(count, 1);
   assert.deepEqual(Object.keys(s.snapshot().record).sort(), ['eventId', 'eventType', 'status', 'timestamp']);
+  assert.ok(!JSON.stringify(s.snapshot()).includes('copier@example.invalid'));
 });
 test('KYC materials event: part + completion only, no file, no ID; unknown fields and bad parts refused', async () => {
   const e = { eventId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', eventType: 'KYC_MATERIALS_RECEIVED', timestamp: now, email: 'synthetic@example.test', fullName: 'Test Synthetic Person', part: 'SELFIE', complete: true };
