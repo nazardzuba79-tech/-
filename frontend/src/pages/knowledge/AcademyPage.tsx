@@ -113,7 +113,7 @@ function AcademyIndex({ content, sectionId }: { content: AcademyContent; section
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState<string | null>(null);
   const section = sectionId ? content.sections.find((s) => s.id === sectionId && s.id !== GLOSSARY) : null;
-  usePageMeta(section ? `${section.title} — ${TITLE}` : TITLE, section ? section.description : t('academy.subtitle'));
+  usePageMeta(section ? `${section.title} — ${TITLE}` : `${t('academy.hub.learn')} — ${TITLE}`, section ? section.description : t('academy.subtitle'));
   if (sectionId && !section) return <NotFound />;
 
   const levelList = levelsOf(content);
