@@ -1,141 +1,217 @@
 {
-  "at": "2026-10-27T07:43:15.922Z",
-  "status": "ROLLED_BACK_POST_RELEASE_CANARY_NOT_PASSED",
-  "ownerApproval": "Granted for ONLY voltex-kyc-edge IP quota fix; no repeat approval needed",
+  "at": "2026-10-27T08:14:54.881Z",
+  "status": "RELEASED_VERIFIED",
+  "worker": "voltex-kyc-edge",
   "candidateCommit": "6f122c2b5fcf620b9ce36b6d08791cfb7c9ddaac",
   "branch": "work/beget-rf-gateway-preflight-20261026",
-  "worker": "voltex-kyc-edge",
-  "baselineVersion": "b00aac7e-fb74-460e-b877-861297385571",
-  "attemptedReleaseVersion": "39ada124-9ffc-45c3-a570-a97293f6e576",
-  "finalActiveVersion": "e7af223b-04d6-42b9-abdd-55b471d4ca84",
-  "finalState": {
-    "source": "Freshly reloaded active editor copied through UI and byte-compared to pre-release clipboard source: identical 40131 characters",
-    "RU_GATEWAY_PEER_IP": "removed",
-    "health": {
-      "ok": true,
-      "service": "voltex-kyc-edge",
-      "version": "kyc-edge-v1",
-      "configured": true
-    }
+  "activeVersion": "db1e9f2a-20ed-4d0d-9e59-716e9047a359",
+  "rollbackTarget": "e7af223b-04d6-42b9-abdd-55b471d4ca84",
+  "release": {
+    "source": "Surgical live-bundle application of candidate clientIp.js plus exactly two core IP-expression replacements. Freshly reloaded active source equals expected 41407-character script. No other runtime differences from captured original.",
+    "bundleSha256": "2ff0e08e9f4b1f61def8643e01f277c405635019f97c320bf1216523a28f4eb9",
+    "configuration": {
+      "RU_GATEWAY_PEER_IP": "138.199.227.130"
+    },
+    "temporaryDiagnostics": "Removed. Final source has no releaseCanary, no additional diagnostic route or fields, and original VERSION=kyc-edge-v1."
   },
-  "changes": {
-    "runtime": "Surgical insertion of candidate clientIp.js helper (blob 8d7c18d6a80aff0d6cdb38e3b4537df7c33e3d9d), without export in bundled script; exactly two existing IP selection expressions replaced. Full staged editor copy matched expected 41407 characters; active deployed copy matched.",
-    "config": "Added only RU_GATEWAY_PEER_IP=138.199.227.130; removed during rollback",
-    "preserved": [
-      "Signing secret; no secret read/rotation",
-      "KYC_MAIL, NOTIFICATIONS, KYC_RATE_LIMIT bindings",
-      "ALLOWED_ORIGINS and VOLTEX_API_ORIGIN",
-      "TLS, API, DB, balances, other Workers, frontend"
-    ],
-    "localTests": "Previously passed local suites were not repeated. Syntax check only for surgical live bundle passed."
+  "verification": {
+    "liveTwoRealSources": {
+      "status": "PASS_KEY_SEPARATION",
+      "method": "Temporarily emitted the first16 hex characters of SHA256(actual confirm rate key), actual Cloudflare-peer match boolean, and limiter outcome only on unauthenticated qa=r27-* confirm canaries; no raw client IP/identity/secret/document was returned.",
+      "sourceA": {
+        "path": "real execution source -> RU gateway -> same pinned Hetzner peer",
+        "bucket": "9d644d09e5ebd732",
+        "relayPeer": true,
+        "rotatingForgedHeaders": "Two requests changed X-Voltex-Ru-Client-IP and X-Forwarded-For; both kept exactly this bucket."
+      },
+      "sourceB": {
+        "path": "Existing authorized Beget host -> RU gateway -> same pinned Hetzner peer",
+        "actualHostIp": "185.23.35.226",
+        "bucket": "d349cafc2dc44205",
+        "expectedBucket": "SHA256('confirm:ru:185.23.35.226').slice(0,16) = d349cafc2dc44205",
+        "relayPeer": true,
+        "observations": "24 nonce-distinct malformed requests showed this same B key; it differs from A. Prior nonce-distinct12-call burst from same host produced kyc_rate_limited among responses."
+      },
+      "conclusion": "Both callers traverse the same configured trusted egress but use different actual native limiter keys; their network counters are no longer keyed solely by shared Hetzner IP.",
+      "scope": "Verified actual key separation and native throttle operation. A strict globally atomic exhaust-A/allow-B sequence is not claimed."
+    },
+    "forgedHeaders": {
+      "nativeDirect": "Rotating X-Voltex-Ru-Client-IP, X-Forwarded-For, X-Real-IP still produced kyc_rate_limited on request7. No header-based bucket reset.",
+      "cloudflarePeerSpoof": "Nine direct requests carrying a fabricated CF-Connecting-IP were rejected by Cloudflare HTTP403 error1000.",
+      "throughRu": "Changed forged browser headers retained A's same actual bucket; gateway-overwritten metadata was used."
+    },
+    "limiterSemantics": {
+      "configurationUnchanged": "Namespace7302; limit5; period60, plus existing8/10min per-isolate map. Native success=true observed directly in actual RU path; no limiter exception.",
+      "correctionToPreviousAttempt": "Requiring rejection exactly after five requests was incorrect. Cloudflare documents cached per-instance decisions and eventual synchronization even within one location. Exceeding the configured threshold alone is not evidence the candidate broke the limiter. Added unique query markers correlate calls; caching was not established as the cause.",
+      "source": "https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/#accuracy"
+    },
+    "finalSmoke": {
+      "health": "HTTP200 ok=true configured=true version=kyc-edge-v1",
+      "ruUnauthenticatedSubmit": "HTTP401 kyc_auth_required",
+      "ruMalformedConfirm": "HTTP400 kyc_receipt_invalid; no releaseCanary field"
+    },
+    "settings": "Final UI confirms pinned peer variable, existing signing secret, KYC_RATE_LIMIT and NOTIFICATIONS binding retained.",
+    "localTests": "Existing45 Worker,2 API-router and frontend suites were not repeated. No runtime product code changed beyond approved patch; temporary diagnostics were removed."
   },
-  "canaries": {
-    "productionHealth": "PASS configured=true",
-    "ruInvalidReceipt": "HTTP400 kyc_receipt_invalid",
-    "executionForgedHeaders": "7 curl requests with rotating X-Voltex-Ru-Client-IP, X-Forwarded-For, X-Real-IP all HTTP400 kyc_receipt_invalid. Additional 7 transfers in a single curl process also HTTP400. Stable actual source IP not established for execution environment; cannot label quota bypass or header defense PASS.",
-    "begetSource": "Existing authorized Beget VNC shell used for read-only HTTP canaries. Correct Origin allowed malformed-body confirm requests; 10 individual calls and a six-call shell loop showed kyc_bad_request, not kyc_rate_limited. Binding inspected read-only in Cloudflare: namespace7302, limit5, period60.",
-    "failures": "Initial VNC command punctuation was translated by keyboard to wrong symbols; shell errors sent no requests. Corrected explicit shifted punctuation. One missing-Origin request returned nginx403. urllib probes returned Cloudflare1010; not counted as Worker quota evidence.",
-    "twoRealIpQuota": "NOT PROVEN. Two execution origins reached Worker through RU path, but no stable client bucket was demonstrably exhausted, so isolation and spoof resistance cannot be concluded.",
-    "writes": "No real session, identity document, receipt, submission, email or financial operation."
-  },
-  "rollback": {
-    "reason": "Required live quota/spoof canary did not pass; no attribution to candidate vs baseline established.",
-    "steps": [
-      "Cloudflare Rollback to b00aac7e",
-      "Delete only added RU_GATEWAY_PEER_IP and deploy",
-      "Variable deletion created74a2f00b based on latest candidate source; detected by fresh source copy",
-      "Restore captured original script exactly and deploy e7af223b",
-      "Fresh reload and full original-source byte comparison PASS; health configured=true"
-    ],
-    "productionMutations": 5
-  },
-  "remaining": [
-    "Investigate live rate-limiter behavior without weakening quotas; compare baseline and verify actual source/PoP before attempting release again.",
-    "Two-real-IP exhaust-A/allow-B and rotating-forged-header tests remain unresolved.",
-    "No authenticated Russian-network KYC completion performed."
+  "preserved": [
+    "TLS and all credentials/secrets (not read or rotated)",
+    "API and database",
+    "Balances and deposit addresses",
+    "Other Workers including notification service",
+    "Frontend; no publish",
+    "All existing account/session/receipt checks and numeric quota configuration"
   ],
-  "previousAttempt": {
-    "at": "2026-10-27T06:56:34.690246+00:00",
-    "status": "BLOCKED_BEFORE_PRODUCTION_RELEASE",
+  "productionActionsThisContinuation": [
+    "Add RU_GATEWAY_PEER_IP to original runtime (45c922b3)",
+    "Deploy exact candidate (e5f74757)",
+    "Deploy temporary unauthenticated network-key canary (3de807c0)",
+    "Add native decision detail to same temporary canary (1ec4dd60)",
+    "Remove all diagnostics and deploy exact candidate (db1e9f2a)"
+  ],
+  "scopeLimits": [
+    "No real KYC submission/document/email/financial operation.",
+    "Beget relay metadata is not cryptographic user identity; API account/session checks remain authoritative.",
+    "No claim of completed authenticated KYC from an end-user Russian network."
+  ],
+  "priorAttempt": {
+    "at": "2026-10-27T07:43:15.922Z",
+    "status": "ROLLED_BACK_POST_RELEASE_CANARY_NOT_PASSED",
     "ownerApproval": "Granted for ONLY voltex-kyc-edge IP quota fix; no repeat approval needed",
-    "productionMutations": 0,
-    "currentProductionDeployment": "NOT_VERIFIED_THIS_ATTEMPT",
-    "lastObservedDeployment": "b00aac7e (previous authorized Cloudflare UI inspection; not asserted current)",
-    "accessBlockers": [
-      "Connected-browser plugin twice returned: Browser access requires the originating browser context. Open ChatGPT in the browser with the connected extension and try again.",
-      "Fallback cloud browser inventory has no tabs or existing Cloudflare session.",
-      "No existing Cloudflare token/legacy credentials or Wrangler OAuth config in execution environment. No credentials requested or created.",
-      "Public health GETs from execution environment returned HTTP403; exact production deployment cannot be inferred from them."
-    ],
-    "candidateBundleSha256": "b488969684918cc484ed05107afdbd4caa9658b8ca1a39bef356ccec3c055cb2",
-    "workerDiff": {
-      "runtime": [
-        "src/core.js: readUpload/handleConfirm use clientRateIp",
-        "src/clientIp.js: optional pinned-egress metadata classification"
-      ],
-      "config": [
-        "RU_GATEWAY_PEER_IP=138.199.227.130"
-      ],
+    "candidateCommit": "6f122c2b5fcf620b9ce36b6d08791cfb7c9ddaac",
+    "branch": "work/beget-rf-gateway-preflight-20261026",
+    "worker": "voltex-kyc-edge",
+    "baselineVersion": "b00aac7e-fb74-460e-b877-861297385571",
+    "attemptedReleaseVersion": "39ada124-9ffc-45c3-a570-a97293f6e576",
+    "finalActiveVersion": "e7af223b-04d6-42b9-abdd-55b471d4ca84",
+    "finalState": {
+      "source": "Freshly reloaded active editor copied through UI and byte-compared to pre-release clipboard source: identical 40131 characters",
+      "RU_GATEWAY_PEER_IP": "removed",
+      "health": {
+        "ok": true,
+        "service": "voltex-kyc-edge",
+        "version": "kyc-edge-v1",
+        "configured": true
+      }
+    },
+    "changes": {
+      "runtime": "Surgical insertion of candidate clientIp.js helper (blob 8d7c18d6a80aff0d6cdb38e3b4537df7c33e3d9d), without export in bundled script; exactly two existing IP selection expressions replaced. Full staged editor copy matched expected 41407 characters; active deployed copy matched.",
+      "config": "Added only RU_GATEWAY_PEER_IP=138.199.227.130; removed during rollback",
       "preserved": [
-        "TLS and secrets",
-        "signing key and encrypted receipts",
-        "email recipient/service/rate bindings",
-        "all existing quotas/CORS/account/session verification",
-        "all other Workers/API/DB/financials"
-      ]
+        "Signing secret; no secret read/rotation",
+        "KYC_MAIL, NOTIFICATIONS, KYC_RATE_LIMIT bindings",
+        "ALLOWED_ORIGINS and VOLTEX_API_ORIGIN",
+        "TLS, API, DB, balances, other Workers, frontend"
+      ],
+      "localTests": "Previously passed local suites were not repeated. Syntax check only for surgical live bundle passed."
     },
-    "trustBoundary": "Relay IP is NOT cryptographic identity; a malicious relay can forge its PROXY preamble. It affects only supplementary network quota. Actual API session/account checks remain authoritative.",
-    "tests": {
-      "workerContracts": {
-        "pass": 45,
-        "fail": 0,
-        "command": "node --test workers/kyc-edge/test.mjs workers/kyc-edge/clientIp.test.mjs",
-        "scope": "Local core, synthetic binding budget, no actual production quota observation"
-      },
-      "accountSession": {
-        "pass": 2,
-        "skippedExistingUnrelated": 28,
-        "scope": "Actual KYC API router; synthetic signed calls/session/storage. Rotated IP does not reset account quota; revoked session remains401. Generated client metadata in isolated output folder without query engine/DB connection."
-      },
-      "frontendDom": {
-        "pass": 3,
-        "scope": "Network rejection, stalled read15s timeout/retry, unmount cancellation"
-      },
-      "frontendBrowser": {
-        "pass": 21,
-        "widths": [
-          1440,
-          390
-        ],
-        "scope": "Actual built frontend/Nginx/Worker/verifier; synthetic metadata/session/email sinks only",
-        "externalConnections": 0
-      },
-      "frontendBuild": "TypeScript+Vite PASS; QA-only environment, not production artifact",
-      "workerBuild": "Wrangler4.153.0 dry-run --keep-vars PASS; no upload/deploy"
+    "canaries": {
+      "productionHealth": "PASS configured=true",
+      "ruInvalidReceipt": "HTTP400 kyc_receipt_invalid",
+      "executionForgedHeaders": "7 curl requests with rotating X-Voltex-Ru-Client-IP, X-Forwarded-For, X-Real-IP all HTTP400 kyc_receipt_invalid. Additional 7 transfers in a single curl process also HTTP400. Stable actual source IP not established for execution environment; cannot label quota bypass or header defense PASS.",
+      "begetSource": "Existing authorized Beget VNC shell used for read-only HTTP canaries. Correct Origin allowed malformed-body confirm requests; 10 individual calls and a six-call shell loop showed kyc_bad_request, not kyc_rate_limited. Binding inspected read-only in Cloudflare: namespace7302, limit5, period60.",
+      "failures": "Initial VNC command punctuation was translated by keyboard to wrong symbols; shell errors sent no requests. Corrected explicit shifted punctuation. One missing-Origin request returned nginx403. urllib probes returned Cloudflare1010; not counted as Worker quota evidence.",
+      "twoRealIpQuota": "NOT PROVEN. Two execution origins reached Worker through RU path, but no stable client bucket was demonstrably exhausted, so isolation and spoof resistance cannot be concluded.",
+      "writes": "No real session, identity document, receipt, submission, email or financial operation."
     },
-    "frontendChanges": [
-      "Optional AbortSignal for getMyKyc",
-      "15s KYC-status GET timeout; abort prior/unmounted reads; ignore stale responses",
-      "Translated failure alert/Retry retained; no upload/submit behavior change"
-    ],
-    "initialLocalSetupFailures": [
-      "First Jest invocation used wrong relative executable path; corrected to existing dependency path.",
-      "Targeted Jest could not compile because generated @prisma/client metadata absent; no tests ran. Generated only isolated no-engine client metadata from unchanged schema and mapped it in disposable test config; no DB access.",
-      "Disposable Jest config first referenced wrong extension .cjs instead of existing .js; corrected, then2 target tests PASS."
-    ],
+    "rollback": {
+      "reason": "Required live quota/spoof canary did not pass; no attribution to candidate vs baseline established.",
+      "steps": [
+        "Cloudflare Rollback to b00aac7e",
+        "Delete only added RU_GATEWAY_PEER_IP and deploy",
+        "Variable deletion created74a2f00b based on latest candidate source; detected by fresh source copy",
+        "Restore captured original script exactly and deploy e7af223b",
+        "Fresh reload and full original-source byte comparison PASS; health configured=true"
+      ],
+      "productionMutations": 5
+    },
     "remaining": [
-      "Fresh active Worker deployment/full UUID, live settings and rollback target must be verified before release.",
-      "No live post-release two-real-IP quota test or forged-header canary ran.",
-      "No authenticated KYC completion from a Russian network this attempt.",
-      "No real account/document/email/financial operation; no main frontend deployment.",
-      "Applicable provider/legal/operator/PD obligations remain unverified."
+      "Investigate live rate-limiter behavior without weakening quotas; compare baseline and verify actual source/PoP before attempting release again.",
+      "Two-real-IP exhaust-A/allow-B and rotating-forged-header tests remain unresolved.",
+      "No authenticated Russian-network KYC completion performed."
     ],
-    "nextAction": "Reconnect this Work to the existing authorized Cloudflare browser. Then verify live code/config, keep snapshot/version for rollback, deploy ONLY this Worker, run bounded synthetic no-write canaries from two real IPs, and stop/rollback only this Worker on failure.",
-    "runtimePatch": {
-      "path": "docs/qa/beget-rf/kyc-worker-runtime-20261027.patch",
-      "baseSource": "ec1547e2fcf2872baa64c171663ed712977d96c4",
-      "note": "Repository source comparison, NOT a freshly exported live Worker diff; live comparison remains required.",
-      "format": "git unified0; review-only; application requires git apply --unidiff-zero after fresh live comparison"
+    "previousAttempt": {
+      "at": "2026-10-27T06:56:34.690246+00:00",
+      "status": "BLOCKED_BEFORE_PRODUCTION_RELEASE",
+      "ownerApproval": "Granted for ONLY voltex-kyc-edge IP quota fix; no repeat approval needed",
+      "productionMutations": 0,
+      "currentProductionDeployment": "NOT_VERIFIED_THIS_ATTEMPT",
+      "lastObservedDeployment": "b00aac7e (previous authorized Cloudflare UI inspection; not asserted current)",
+      "accessBlockers": [
+        "Connected-browser plugin twice returned: Browser access requires the originating browser context. Open ChatGPT in the browser with the connected extension and try again.",
+        "Fallback cloud browser inventory has no tabs or existing Cloudflare session.",
+        "No existing Cloudflare token/legacy credentials or Wrangler OAuth config in execution environment. No credentials requested or created.",
+        "Public health GETs from execution environment returned HTTP403; exact production deployment cannot be inferred from them."
+      ],
+      "candidateBundleSha256": "b488969684918cc484ed05107afdbd4caa9658b8ca1a39bef356ccec3c055cb2",
+      "workerDiff": {
+        "runtime": [
+          "src/core.js: readUpload/handleConfirm use clientRateIp",
+          "src/clientIp.js: optional pinned-egress metadata classification"
+        ],
+        "config": [
+          "RU_GATEWAY_PEER_IP=138.199.227.130"
+        ],
+        "preserved": [
+          "TLS and secrets",
+          "signing key and encrypted receipts",
+          "email recipient/service/rate bindings",
+          "all existing quotas/CORS/account/session verification",
+          "all other Workers/API/DB/financials"
+        ]
+      },
+      "trustBoundary": "Relay IP is NOT cryptographic identity; a malicious relay can forge its PROXY preamble. It affects only supplementary network quota. Actual API session/account checks remain authoritative.",
+      "tests": {
+        "workerContracts": {
+          "pass": 45,
+          "fail": 0,
+          "command": "node --test workers/kyc-edge/test.mjs workers/kyc-edge/clientIp.test.mjs",
+          "scope": "Local core, synthetic binding budget, no actual production quota observation"
+        },
+        "accountSession": {
+          "pass": 2,
+          "skippedExistingUnrelated": 28,
+          "scope": "Actual KYC API router; synthetic signed calls/session/storage. Rotated IP does not reset account quota; revoked session remains401. Generated client metadata in isolated output folder without query engine/DB connection."
+        },
+        "frontendDom": {
+          "pass": 3,
+          "scope": "Network rejection, stalled read15s timeout/retry, unmount cancellation"
+        },
+        "frontendBrowser": {
+          "pass": 21,
+          "widths": [
+            1440,
+            390
+          ],
+          "scope": "Actual built frontend/Nginx/Worker/verifier; synthetic metadata/session/email sinks only",
+          "externalConnections": 0
+        },
+        "frontendBuild": "TypeScript+Vite PASS; QA-only environment, not production artifact",
+        "workerBuild": "Wrangler4.153.0 dry-run --keep-vars PASS; no upload/deploy"
+      },
+      "frontendChanges": [
+        "Optional AbortSignal for getMyKyc",
+        "15s KYC-status GET timeout; abort prior/unmounted reads; ignore stale responses",
+        "Translated failure alert/Retry retained; no upload/submit behavior change"
+      ],
+      "initialLocalSetupFailures": [
+        "First Jest invocation used wrong relative executable path; corrected to existing dependency path.",
+        "Targeted Jest could not compile because generated @prisma/client metadata absent; no tests ran. Generated only isolated no-engine client metadata from unchanged schema and mapped it in disposable test config; no DB access.",
+        "Disposable Jest config first referenced wrong extension .cjs instead of existing .js; corrected, then2 target tests PASS."
+      ],
+      "remaining": [
+        "Fresh active Worker deployment/full UUID, live settings and rollback target must be verified before release.",
+        "No live post-release two-real-IP quota test or forged-header canary ran.",
+        "No authenticated KYC completion from a Russian network this attempt.",
+        "No real account/document/email/financial operation; no main frontend deployment.",
+        "Applicable provider/legal/operator/PD obligations remain unverified."
+      ],
+      "nextAction": "Reconnect this Work to the existing authorized Cloudflare browser. Then verify live code/config, keep snapshot/version for rollback, deploy ONLY this Worker, run bounded synthetic no-write canaries from two real IPs, and stop/rollback only this Worker on failure.",
+      "runtimePatch": {
+        "path": "docs/qa/beget-rf/kyc-worker-runtime-20261027.patch",
+        "baseSource": "ec1547e2fcf2872baa64c171663ed712977d96c4",
+        "note": "Repository source comparison, NOT a freshly exported live Worker diff; live comparison remains required.",
+        "format": "git unified0; review-only; application requires git apply --unidiff-zero after fresh live comparison"
+      }
     }
   }
 }
