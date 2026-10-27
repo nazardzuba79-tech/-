@@ -23,7 +23,8 @@ describe('CfdMarketDataService', () => {
     const tickers = await service.getTickers();
 
     const gold = tickers.find((t) => t.symbol === 'XAUUSD');
-    expect(gold).toEqual({ symbol: 'XAUUSD', name: 'Gold US Dollar', price: '4628.20', changePercent24h: '0.05' });
+    // Display names come from the provider-verified catalog (marketData/cfd/catalog.ts, d9567fea7).
+    expect(gold).toEqual({ symbol: 'XAUUSD', name: 'Gold Spot', price: '4628.20', changePercent24h: '0.05' });
     const eur = tickers.find((t) => t.symbol === 'EURUSD');
     expect(eur).toEqual({ symbol: 'EURUSD', name: 'Euro vs US Dollar', price: '1.16636', changePercent24h: '-0.10' });
     expect(fetchFn).toHaveBeenCalledTimes(1);
