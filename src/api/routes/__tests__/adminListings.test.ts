@@ -286,14 +286,14 @@ describe('Admin listing deletion', () => {
     store.drafts.set('qax-1',{draft:record,draftRevision:1});
     const zero={count:jest.fn().mockResolvedValue(0)};
     const prisma={user:{findUnique:jest.fn().mockResolvedValue({role:'ADMIN'})},
-      order:zero, trade:zero, futuresOrder:zero, futuresPosition:zero, balance:zero, demoBalance:zero};
+      order:zero, trade:zero, futuresOrder:zero, futuresPosition:zero, balance:zero, demoBalance:zero, demoOrder:zero, demoTrade:zero};
     const registry={invalidate:jest.fn(),ensureFresh:jest.fn()};
     const srv=express();srv.use(express.json());srv.use('/api/v1',adminListingsRouter(prisma as any,store,null,registry as any));
     const url='/api/v1/admin/listings/qax-1/delete';
     const payload={symbol:'QAX',draftRevision:1,activeVersion:null,confirmation:'УДАЛИТЬ QAX'};
     const r=await request(srv).post(url).set('Authorization',auth('admin-1')).send(payload);
     expect([r.status,r.body.deleted,r.body.symbol]).toEqual([200,true,'QAX']);
-    expect(zero.count).toHaveBeenCalledTimes(6);
+    expect(zero.count).toHaveBeenCalledTimes(8);
     expect(store.calls.filter(c=>c.startsWith('delete:'))).toEqual(['delete:qax-1:QAX:1:null:admin-1']);
     expect(registry.invalidate).toHaveBeenCalledTimes(1);
     expect(store.drafts.has('qax-1')).toBe(false);
@@ -303,7 +303,7 @@ describe('Admin listing deletion', () => {
     store.drafts.set('qax-1',{draft:record,draftRevision:1});
     const zero={count:jest.fn().mockResolvedValue(0)},nonzero={count:jest.fn().mockResolvedValue(1)};
     const prisma={user:{findUnique:jest.fn().mockResolvedValue({role:'ADMIN'})},order:zero,trade:nonzero,
-      futuresOrder:zero,futuresPosition:zero,balance:zero,demoBalance:zero};
+      futuresOrder:zero,futuresPosition:zero,balance:zero,demoBalance:zero,demoOrder:zero,demoTrade:zero};
     const srv=express();srv.use(express.json());srv.use('/api/v1',adminListingsRouter(prisma as any,store,null));
     const r=await request(srv).post('/api/v1/admin/listings/qax-1/delete').set('Authorization',auth('admin-1'))
       .send({symbol:'QAX',draftRevision:1,activeVersion:null,confirmation:'УДАЛИТЬ QAX'});

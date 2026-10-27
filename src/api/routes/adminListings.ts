@@ -255,6 +255,8 @@ export function adminListingsRouter(
         prisma.futuresPosition.count({ where: { symbol: { in: pairs } } }),
         prisma.balance.count({ where: { asset: symbol, OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
         prisma.demoBalance.count({ where: { asset: symbol, OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+        prisma.demoOrder.count({ where: { pair: { in: pairs } } }),
+        prisma.demoTrade.count({ where: { pair: { in: pairs } } }),
       ]);
       if (counts.some(count => count !== 0))
         return res.status(422).json({ error: 'LISTING_HAS_ACTIVITY', message: 'По активу найдены ордера, сделки, позиции или остатки средств. Удаление отменено.' });
