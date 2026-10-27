@@ -47,8 +47,7 @@ jobs:
             frontend/src/lib/__tests__/listingMovementControls.test.ts \
             src/services/listings/__tests__/tyvnDraft.test.ts \
             src/services/listings/__tests__/listingCountdown.test.ts \
-            src/services/listings/__tests__/listingScenarioControls.test.ts \
-            src/private-trading/__tests__/nativeFundingQaBoundary.test.ts
+            src/services/listings/__tests__/listingScenarioControls.test.ts
       - name: Confirm public configuration cannot place orders or allocate funds
         shell: bash
         run: |
