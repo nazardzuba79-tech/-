@@ -17,7 +17,7 @@ function defaultResponse(url) {
     return new Response('const streams = ["ws.kraken.com", "api.voltextech.net"]', { headers: { 'content-type': 'application/javascript' } });
   if (p === '/assets/main.css')
     return new Response('body { margin: 0; }', { headers: { 'content-type': 'text/css' } });
-  throw Error(\`Unexpected GET \${url}\`);
+  throw Error(`Unexpected GET ${url}`);
 }
 
 // Use the real CLI module without network, credentials, source changes or a second server.
@@ -41,7 +41,7 @@ async function run(respond = defaultResponse) {
     return respond(href);
   };
   try {
-    await import(\`./qa-beget-ru-preflight.mjs?offline-test=\${++sequence}\`);
+    await import(`./qa-beget-ru-preflight.mjs?offline-test=${++sequence}`);
     assert.equal(lines.length, 1, 'One JSON report is emitted');
     return { report: JSON.parse(lines[0]), exitCode: process.exitCode, paths: [...seen] };
   } finally {
