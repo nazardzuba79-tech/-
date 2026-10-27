@@ -1,0 +1,28 @@
+name: Hetzner API pinned release identity regression
+on:
+  pull_request:
+    paths:
+      - 'src/buildCommit.ts'
+      - 'src/__tests__/buildCommit.test.ts'
+      - '.github/workflows/hetzner-api-release-identity.yml'
+permissions:
+  contents: read
+jobs:
+  release-identity-only:
+    if: github.event.pull_request.draft == true && github.head_ref == 'review/preserve-hetzner-release-sha-20261023' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify pinned production SHA and fallback rules
+        run: npx jest --runInBand --runTestsByPath src/__tests__/buildCommit.test.ts
+      - name: Ensure no deploy or production database operation
+        run: echo 'QA-only; no flags, secrets, SSH, migrations, or deployment'

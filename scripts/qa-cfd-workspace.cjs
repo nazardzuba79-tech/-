@@ -391,21 +391,61 @@ async function main() {
       await openFeatureOn(page, 'presets'); await page.locator('[data-cw-preset-reset]').click(); await page.waitForTimeout(500); await page.keyboard.press('Escape');
       check(`${P}.presets.reset`, (await store(page, WS_KEY))?.timeframe === '1h', { timeframe: (await store(page, WS_KEY))?.timeframe });
 
-      // Go to a date inside the loaded window; a future date is refused.
+      // Go to a date. Every target comes from loaded bars, never from the wall clock: a
+      // wall-clock hour can fall in the weekend or a daily close, where no bar exists (CI
+      // run 40410541862 aimed at Friday 22:00 UTC). Targets are read from the host's
+      // display-cache answer for the chart's own URL, bars kept as the chart parses them.
+      // A loaded historical bar is scrolled to (the chart's Analytics panel reports the
+      // visible window); a time inside a gap between loaded bars and a future date are refused.
       await waitCandles(page);
-      await openFeatureOn(page, 'goto');
-      const twoDays = new Date(Date.now() - 2 * 86400000); twoDays.setUTCMinutes(0, 0, 0);
-      // CFD bars stop at the weekend: step back to the last weekday so the target is inside the loaded bars.
-      while ([0, 6].includes(twoDays.getUTCDay())) twoDays.setUTCDate(twoDays.getUTCDate() - 1);
-      await page.locator('[data-cw-goto-input]').fill(twoDays.toISOString().slice(0, 16));
-      await page.locator('[data-cw-goto-apply]').click(); await page.waitForTimeout(700);
-      const gotoClosed = !(await page.locator('[data-cw-goto]').count());
-      await openFeatureOn(page, 'goto');
-      await page.locator('[data-cw-goto-input]').fill(new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 16));
-      await page.locator('[data-cw-goto-apply]').click(); await page.waitForTimeout(300);
-      const futureWarn = await page.evaluate(() => document.querySelector('[data-cw-goto] [role="status"]')?.textContent || '');
-      await page.keyboard.press('Escape');
-      check(`${P}.goto`, gotoClosed && futureWarn.length > 0, { gotoClosed, futureWarn });
+      const snapshot = await (await fetch(`${origin}/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=500`)).json();
+      const valid = bar => { const [o, h, l, c] = [bar.open, bar.high, bar.low, bar.close].map(Number);
+        return [o, h, l, c].every(v => Number.isFinite(v) && v > 0) && h >= Math.max(o, c, l) && l <= Math.min(o, c, h); };
+      const loaded = [...new Set((snapshot?.bars || []).filter(valid)
+        .map(bar => Math.floor((typeof bar.openTime === 'number' ? bar.openTime : Date.parse(bar.openTime)) / 1000))
+        .filter(t => Number.isFinite(t) && t > 0))].sort((a, b) => a - b).slice(-500);
+      const HOUR = 3600, last = loaded[loaded.length - 1];
+      const isoMinute = seconds => new Date(seconds * 1000).toISOString().slice(0, 16);
+      const goToDate = async value => {
+        await openFeatureOn(page, 'goto');
+        // The dialog opens on the chart's own last bar.
+        const prefill = await page.locator('[data-cw-goto-input]').inputValue();
+        await page.locator('[data-cw-goto-input]').fill(value);
+        // Read back what the dialog will submit: its prefill is the last bar, which would also close it.
+        const entered = await page.locator('[data-cw-goto-input]').inputValue();
+        await page.locator('[data-cw-goto-apply]').click(); await page.waitForTimeout(700);
+        const open = (await page.locator('[data-cw-goto]').count()) > 0;
+        const status = open ? await page.evaluate(() => document.querySelector('[data-cw-goto] [role="status"]')?.textContent || '') : '';
+        if (open) await page.keyboard.press('Escape');
+        return { prefill, entered, closed: !open, status };
+      };
+      // A loaded bar 120 bars before the last: the chart's window around it ([bar − 70,
+      // bar + 90]) ends before the last bar, so a jump that never scrolls cannot pass.
+      const historical = loaded.length > 120 ? loaded[loaded.length - 121] : null;
+      const visibleWindow = async () => {
+        const text = await page.evaluate(() => document.querySelector('[data-cw-analytics]')?.textContent || '');
+        const m = /(\d{4}-\d\d-\d\d \d\d:\d\d)\s*—\s*(\d{4}-\d\d-\d\d \d\d:\d\d)/.exec(text);
+        return m ? { from: m[1].replace(' ', 'T'), to: m[2].replace(' ', 'T') } : null;
+      };
+      await page.locator('.cfd-chart-area [data-cw-view="analytics"]').click();
+      await page.locator('[data-cw-analytics-period="visible"]').click(); await page.waitForTimeout(400);
+      const before = await visibleWindow();
+      const toBar = historical ? await goToDate(isoMinute(historical)) : null;
+      await page.waitForTimeout(400);
+      const after = await visibleWindow();
+      await page.locator('.cfd-chart-area [data-cw-view="chart"]').click(); await page.waitForTimeout(200);
+      const target = historical ? isoMinute(historical) : null;
+      check(`${P}.goto`, !!toBar && toBar.prefill === isoMinute(last) && toBar.entered === target && toBar.closed && !toBar.status
+        && !!after && after.from <= target && target <= after.to && after.to < isoMinute(last),
+        { bars: loaded.length, lastBar: last ? isoMinute(last) : null, target, ...toBar, visibleBefore: before, visibleAfter: after });
+      // The latest gap between two loaded bars: the hour after the earlier bar has none.
+      const beforeGap = [...loaded].reverse().find((time, i, newestFirst) => i > 0 && newestFirst[i - 1] - time > HOUR);
+      const intoGap = beforeGap ? await goToDate(isoMinute(beforeGap + HOUR)) : null;
+      check(`${P}.goto.missing-bar`, !!intoGap && !loaded.includes(beforeGap + HOUR) && intoGap.entered === isoMinute(beforeGap + HOUR)
+        && !intoGap.closed && intoGap.status === 'История за эту дату не загружена', { barBeforeGap: beforeGap ? isoMinute(beforeGap) : null, ...intoGap });
+      const later = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 16);
+      const future = await goToDate(later);
+      check(`${P}.goto.future`, future.entered === later && !future.closed && future.status === 'Дата в будущем', future);
 
       // Chart settings dialog.
       await page.locator('.cfd-chart-area .chart-settings-trigger').click(); await page.waitForTimeout(300);
