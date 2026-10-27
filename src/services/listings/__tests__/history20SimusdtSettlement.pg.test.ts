@@ -171,7 +171,7 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     const withdrawals = new WithdrawalService(db);
     const to = { network: 'TRC20', toAddress: 'TQ-synthetic-fixture' };
     await expect(withdrawals.requestWithdrawal({ userId: owner, asset: 'SIMUSDT', amount: '10', ...to })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    await expect(withdrawals.requestUnheldWithdrawal({ userId: owner, asset: 'SIMUSDT', amount: '10', available: '1000', ...to })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    await expect(withdrawals.requestUnheldWithdrawal({ userId: owner, asset: 'SIMUSDT', amount: '10', available: '1000', ...to })).rejects.toMatchObject({ code: 'DEMO_FUNDS_NOT_WITHDRAWABLE', message: 'Demo funds are not withdrawable' });
     expect(await withdrawable(owner)).toEqual({ source: 'SPOT', assets: [{ asset: 'USDT', available: '500' }], futures: [] });
     await expect(withdrawals.requestWithdrawal({ userId: owner, asset: 'USDT', amount: '500.00000001', ...to })).rejects.toThrow('Insufficient USDT balance');
     expect(await db.withdrawal.count({ where: { userId: owner } })).toBe(0);
@@ -376,7 +376,7 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     const to = { network: 'TRC20', toAddress: 'TQ-synthetic-fixture' };
     for (const asset of [symbol, SIMULATION_QUOTE]) {
       await expect(withdrawals.requestWithdrawal({ userId: tester, asset, amount: '1', ...to })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-      await expect(withdrawals.requestUnheldWithdrawal({ userId: tester, asset, amount: '1', available: '100', ...to })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(withdrawals.requestUnheldWithdrawal({ userId: tester, asset, amount: '1', available: '100', ...to })).rejects.toMatchObject({ code: 'DEMO_FUNDS_NOT_WITHDRAWABLE', message: 'Demo funds are not withdrawable' });
       await expect(transferWalletBalance(db, tester, asset, new BigNumber(1), 'TO_FUTURES')).rejects.toThrow('This asset cannot be transferred');
       await expect(new DepositService(db, {} as never).submitClaim({ userId: tester, txHash: '0x' + 'd'.repeat(64), asset })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
       await expect(new BalanceAdjustmentService(db).adjust({ userId: tester, asset, amount: '5', reason: 'fixture', performedByAdminId: otherAdmin })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);

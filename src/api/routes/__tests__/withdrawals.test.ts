@@ -134,7 +134,8 @@ describe('withdrawals routes', () => {
     afterAll(() => { if (previous === undefined) delete process.env.PRIVATE_TRADING_TEST_USER_IDS; else process.env.PRIVATE_TRADING_TEST_USER_IDS = previous; });
     const wallet = (rows: { asset: string; available: string }[] | null) => ({ tradingWallet: jest.fn().mockResolvedValue(rows) });
 
-    it('records the request without touching any Balance row', async () => {
+    // Issue #617: a Cross wallet is valued from DemoBalance (or a preview fixture), so it files nothing, ever.
+    it('refuses the request (403) and writes nothing, not even a request row', async () => {
       const prisma = makePrisma({ balance: { available: '0', locked: '0' } });
       const options = wallet([{ asset: 'USDT', available: '5000' }]);
       const res = await request(buildApp(prisma, options))
@@ -142,9 +143,10 @@ describe('withdrawals routes', () => {
         .set('Authorization', authHeader(TRADER))
         .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' });
 
-      expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ status: 'PENDING', amount: '1200', balanceHeld: false });
-      expect(prisma.tx.withdrawal.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ balanceHeld: false }) }));
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: 'Demo funds are not withdrawable', code: 'DEMO_FUNDS_NOT_WITHDRAWABLE' });
+      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
+      expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
       expect(prisma.tx.balance.findUnique).not.toHaveBeenCalled();
       expect(prisma.tx.balance.update).not.toHaveBeenCalled();
       expect(prisma.tx.balance.updateMany).not.toHaveBeenCalled();
@@ -153,26 +155,16 @@ describe('withdrawals routes', () => {
       expect(options.tradingWallet).toHaveBeenCalledWith(expect.objectContaining({ userId: TRADER, sessionId: `test-session:${TRADER}` }));
     });
 
-    it('refuses more than the account can withdraw once earlier requests are counted', async () => {
-      const prisma = makePrisma({ claimed: '4000' });
-      const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
-        .post('/api/v1/withdrawals')
-        .set('Authorization', authHeader(TRADER))
-        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Insufficient USDT balance');
-      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
-    });
-
-    it('refuses an asset the account does not hold', async () => {
-      const res = await request(buildApp(makePrisma(), wallet([{ asset: 'USDT', available: '5000' }])))
-        .post('/api/v1/withdrawals')
-        .set('Authorization', authHeader(TRADER))
-        .send({ asset: 'BTC', network: 'Bitcoin', toAddress: 'bc1qxyz', amount: '0.1' });
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Insufficient BTC balance');
-    });
+    it.each([['a small amount', 'USDT', '1'], ['the whole valuation', 'USDT', '5000'], ['an asset it does not hold', 'BTC', '0.1']])(
+      'refuses %s the same way', async (_label, asset, amount) => {
+        const prisma = makePrisma();
+        const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
+          .post('/api/v1/withdrawals')
+          .set('Authorization', authHeader(TRADER))
+          .send({ asset, network: 'TRC20', toAddress: 'TXYZ', amount });
+        expect(res.status).toBe(403);
+        expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
+      });
 
     it('answers 503, not a guess, when the account cannot be valued', async () => {
       const options = { tradingWallet: jest.fn().mockRejectedValue(new Error('upstream down')) };
@@ -193,13 +185,13 @@ describe('withdrawals routes', () => {
       expect(res.status).toBe(401);
     });
 
-    it('lists what is withdrawable, net of earlier requests', async () => {
+    it('lists nothing withdrawable: the wallet is demo-valued', async () => {
       const prisma = makePrisma({ claimed: '1000' });
       const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }, { asset: 'BTC', available: '0' }])))
         .get('/api/v1/withdrawals/options')
         .set('Authorization', authHeader(TRADER));
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ source: 'TRADING', assets: [{ asset: 'USDT', available: '4000' }], futures: [] });
+      expect(res.body).toEqual({ source: 'TRADING', assets: [], futures: [] });
     });
 
     it('falls back to the spot ledger while the trading account is not opened', async () => {
@@ -248,26 +240,31 @@ describe('withdrawals routes', () => {
   });
 });
 
-// Issue #592: the demo-funds guard (DEMO_WITHDRAWAL_GUARD_ENABLED, forced on by DEMO_SPOT_ENABLED). Off by
-// default, so every case above is main's behaviour unchanged; on, a demo-valued Cross account files nothing.
-describe('demo-funds withdrawal guard', () => {
+// Issue #617: the refusal of demo-valued (Cross wallet) requests is permanent. No demo switch — on, off, or any other
+// value — opens it, and none of them changes an ordinary Balance-funded request.
+describe('demo-valued withdrawal fence, independent of every demo switch', () => {
   const TRADER = '00000000-0000-4000-8000-000000000001';
-  const saved = { ids: process.env.PRIVATE_TRADING_TEST_USER_IDS, spot: process.env.DEMO_SPOT_ENABLED, guard: process.env.DEMO_WITHDRAWAL_GUARD_ENABLED, liquidity: process.env.DEMO_LIQUIDITY_ENABLED };
+  const SWITCHES = ['DEMO_SPOT_ENABLED', 'DEMO_WITHDRAWAL_GUARD_ENABLED', 'DEMO_LIQUIDITY_ENABLED'];
+  const saved = { ids: process.env.PRIVATE_TRADING_TEST_USER_IDS, ...Object.fromEntries(SWITCHES.map(key => [key, process.env[key]])) } as Record<string, string | undefined>;
   const restore = (key: string, value: string | undefined) => { if (value === undefined) delete process.env[key]; else process.env[key] = value; };
+  const set = (env: Record<string, string>) => { for (const key of SWITCHES) delete process.env[key]; Object.assign(process.env, env); };
   beforeAll(() => { process.env.PRIVATE_TRADING_TEST_USER_IDS = TRADER; });
-  afterEach(() => { restore('DEMO_SPOT_ENABLED', saved.spot); restore('DEMO_WITHDRAWAL_GUARD_ENABLED', saved.guard); restore('DEMO_LIQUIDITY_ENABLED', saved.liquidity); });
+  afterEach(() => { for (const key of SWITCHES) restore(key, saved[key]); });
   afterAll(() => restore('PRIVATE_TRADING_TEST_USER_IDS', saved.ids));
   const wallet = () => ({ tradingWallet: jest.fn().mockResolvedValue([{ asset: 'USDT', available: '5000' }]) });
   const body = { asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' };
-
-  it.each([
+  const ENVS: [string, Record<string, string>][] = [
+    ['every demo switch unset', {}],
+    ['every demo switch explicitly false', { DEMO_SPOT_ENABLED: 'false', DEMO_WITHDRAWAL_GUARD_ENABLED: 'false', DEMO_LIQUIDITY_ENABLED: 'false' }],
+    ['switch values other than "true"', { DEMO_WITHDRAWAL_GUARD_ENABLED: '1', DEMO_SPOT_ENABLED: 'TRUE', DEMO_LIQUIDITY_ENABLED: 'yes' }],
     ['DEMO_WITHDRAWAL_GUARD_ENABLED=true', { DEMO_WITHDRAWAL_GUARD_ENABLED: 'true' }],
-    ['DEMO_SPOT_ENABLED=true (forced on)', { DEMO_SPOT_ENABLED: 'true' }],
-    ['DEMO_SPOT_ENABLED=true with the guard switch set to false (cannot be switched off)', { DEMO_SPOT_ENABLED: 'true', DEMO_WITHDRAWAL_GUARD_ENABLED: 'false' }],
-    // Demo Liquidity (#599) changes demo funds by trading too, also for the admin sandbox with Demo Spot off.
-    ['DEMO_LIQUIDITY_ENABLED=true (forced on)', { DEMO_LIQUIDITY_ENABLED: 'true', DEMO_WITHDRAWAL_GUARD_ENABLED: 'false' }],
-  ])('%s: a demo-valued account files nothing and lists nothing', async (_label, env) => {
-    Object.assign(process.env, env);
+    ['DEMO_SPOT_ENABLED=true', { DEMO_SPOT_ENABLED: 'true' }],
+    ['DEMO_LIQUIDITY_ENABLED=true', { DEMO_LIQUIDITY_ENABLED: 'true' }],
+    ['every demo switch on', { DEMO_SPOT_ENABLED: 'true', DEMO_WITHDRAWAL_GUARD_ENABLED: 'true', DEMO_LIQUIDITY_ENABLED: 'true' }],
+  ];
+
+  it.each(ENVS)('%s: a demo-valued account files nothing and lists nothing', async (_label, env) => {
+    set(env);
     const prisma = makePrisma({ balance: { available: '5000', locked: '0' } });
     const post = await request(buildApp(prisma, wallet())).post('/api/v1/withdrawals').set('Authorization', authHeader(TRADER)).send(body);
     expect(post.status).toBe(403);
@@ -279,36 +276,28 @@ describe('demo-funds withdrawal guard', () => {
     expect(options.body).toEqual({ source: 'TRADING', assets: [], futures: [] });
   });
 
-  it('switch values other than "true" leave it off: the request is recorded exactly as on main', async () => {
-    for (const value of ['1', 'TRUE', 'yes', '']) {
-      process.env.DEMO_WITHDRAWAL_GUARD_ENABLED = value;
-      const prisma = makePrisma();
-      const res = await request(buildApp(prisma, wallet())).post('/api/v1/withdrawals').set('Authorization', authHeader(TRADER)).send(body);
-      expect(res.status).toBe(200); expect(res.body).toMatchObject({ status: 'PENDING', balanceHeld: false });
-    }
-  });
-
-  it('never touches an ordinary Balance-funded request: held as before with the guard on', async () => {
-    process.env.DEMO_WITHDRAWAL_GUARD_ENABLED = 'true';
+  it.each(ENVS)('%s: an ordinary Balance-funded request is held exactly as before', async (_label, env) => {
+    set(env);
     const prisma = makePrisma({ userId: 'u1', balance: { available: '100', locked: '0' } });
     const res = await request(buildApp(prisma)).post('/api/v1/withdrawals').set('Authorization', authHeader('u1')).send({ ...body, amount: '10' });
     expect(res.status).toBe(200); expect(res.body.balanceHeld).toBe(true);
     expect(prisma.rows.get('u1:USDT')).toEqual({ available: '90', locked: '10' });
   });
 
-  it('a configured tester without an opened Cross wallet keeps the Balance path with the guard on', async () => {
-    process.env.DEMO_WITHDRAWAL_GUARD_ENABLED = 'true';
+  it.each(ENVS)('%s: a configured tester without an opened Cross wallet keeps the Balance path', async (_label, env) => {
+    set(env);
     const prisma = makePrisma({ userId: TRADER, balance: { available: '100', locked: '0' } });
     const res = await request(buildApp(prisma, { tradingWallet: jest.fn().mockResolvedValue(null) }))
       .post('/api/v1/withdrawals').set('Authorization', authHeader(TRADER)).send({ ...body, amount: '10' });
     expect(res.status).toBe(200); expect(res.body.balanceHeld).toBe(true);
   });
 
-  it('an injected guard is read per request (no restart needed to switch it)', async () => {
-    let on = false;
-    const app = buildApp(makePrisma(), { ...wallet(), demoFundsGuard: () => on });
-    expect((await request(app).post('/api/v1/withdrawals').set('Authorization', authHeader(TRADER)).send(body)).status).toBe(200);
-    on = true;
-    expect((await request(app).post('/api/v1/withdrawals').set('Authorization', authHeader(TRADER)).send(body)).status).toBe(403);
+  it('switching every demo switch between requests changes nothing: there is no switch for the fence', async () => {
+    const app = buildApp(makePrisma(), wallet());
+    const sequence: Record<string, string>[] = [{}, { DEMO_SPOT_ENABLED: 'true' }, {}, { DEMO_WITHDRAWAL_GUARD_ENABLED: 'true' }, {}];
+    for (const env of sequence) {
+      set(env);
+      expect((await request(app).post('/api/v1/withdrawals').set('Authorization', authHeader(TRADER)).send(body)).status).toBe(403);
+    }
   });
 });

@@ -353,7 +353,7 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     const withdrawals = new WithdrawalService(db);
     for (const asset of ['SIMUSDT', symbol]) {
       await expect(withdrawals.requestWithdrawal({ userId: owner, asset, network: 'TRC20', toAddress: 'TQ-synthetic-fixture', amount: '1' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-      await expect(withdrawals.requestUnheldWithdrawal({ userId: owner, asset, network: 'TRC20', toAddress: 'TQ-synthetic-fixture', amount: '1', available: '100' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(withdrawals.requestUnheldWithdrawal({ userId: owner, asset, network: 'TRC20', toAddress: 'TQ-synthetic-fixture', amount: '1', available: '100' })).rejects.toMatchObject({ code: 'DEMO_FUNDS_NOT_WITHDRAWABLE', message: 'Demo funds are not withdrawable' });
       await expect(new DepositService(db, { type: 'evm', chain: 'ETH' } as never).recordObservation({ txHash: `0x${randomUUID().replace(/-/g, '')}`, asset, source: 'admin_check' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
       await expect(new BalanceAdjustmentService(db).adjust({ userId: owner, asset, amount: '100', reason: 'fixture', performedByAdminId: otherAdmin })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
       for (const direction of ['TO_FUTURES', 'TO_SPOT'] as const) await expect(transferWalletBalance(db, owner, asset, new BigNumber(1), direction)).rejects.toThrow('This asset cannot be transferred');

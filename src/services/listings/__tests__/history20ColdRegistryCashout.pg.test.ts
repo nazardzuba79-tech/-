@@ -171,7 +171,7 @@ pg('History20 private asset with a cold, stale or empty registry: no real money,
       await expect(new PurchaseService(db).purchaseProduct(tester, product.id)).rejects.toThrow('This asset cannot be used for purchases');
       const withdrawals = new WithdrawalService(db);
       await expect(withdrawals.requestWithdrawal({ userId: tester, asset, amount: '1', network: 'TRC20', toAddress: 'TQ-synthetic-fixture' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-      await expect(withdrawals.requestUnheldWithdrawal({ userId: tester, asset, amount: '1', available: '100', network: 'TRC20', toAddress: 'TQ-synthetic-fixture' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(withdrawals.requestUnheldWithdrawal({ userId: tester, asset, amount: '1', available: '100', network: 'TRC20', toAddress: 'TQ-synthetic-fixture' })).rejects.toMatchObject({ code: 'DEMO_FUNDS_NOT_WITHDRAWABLE', message: 'Demo funds are not withdrawable' });
       const deposits = new DepositService(db, {} as never);
       await expect(deposits.submitClaim({ userId: tester, txHash: `0x${randomUUID().replace(/-/g, '')}${'e'.repeat(32)}`, asset })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
       await expect(deposits.recordObservation({ txHash: `0x${randomUUID().replace(/-/g, '')}${'f'.repeat(32)}`, asset, source: 'admin_check' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
