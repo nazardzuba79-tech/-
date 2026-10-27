@@ -80,12 +80,11 @@ async function main() {
     app.use('/api/v1', balancesRouter(prisma));
     app.use('/api/v1', demoTradingRouter(prisma, demoProxy, undefined, { enabled: () => enabled, isSpotPair: async pair => spotPairs.has(pair) }));
     // The native Cross wallet is valued from DemoBalance (PrismaNativeRepository); this reader stands in for that valuation.
-    // The demo-funds guard: its own switch, forced on while Demo Spot is on (demoWithdrawalGuardEnabled).
+    // Issue #617: demo-valued requests are refused permanently; the old guard switch no longer decides anything.
     let guardSwitch = false;
-    const demoFundsGuard = () => guardSwitch || enabled;
-    app.use('/api/v1', withdrawalsRouter(prisma, { demoFundsGuard, tradingWallet: async actor => actor.userId === TRADER
+    app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: async actor => actor.userId === TRADER
       ? (await prisma.demoBalance.findMany({ where: { userId: actor.userId } })).map(b => ({ asset: b.asset, available: b.available.toString() })) : null }));
-    const adminWithdrawals = new WithdrawalService(prisma, { demoFundsGuard }); // what the admin routes call
+    const adminWithdrawals = new WithdrawalService(prisma); // what the admin routes call
     if (process.env.DEMO_QA_BROWSER === '1') {
       const dist = path.resolve(root, process.env.DEMO_QA_DIST || 'frontend/dist');
       app.use(express.static(dist, { index: false }));
@@ -304,39 +303,33 @@ async function main() {
       assert.deepEqual(await realState(), realBefore);
     });
     let pendingUnheldId;
-    await check('withdrawal guard: off (default, every flag unset) = main exactly for the demo-valued Cross account; on (own switch, or forced by Demo Spot) nothing is filed and existing PENDING/APPROVED requests are neither approved nor sent, only rejectable; Balance requests unchanged in every mode', async () => {
+    await check('withdrawal fence (Issue #617): with every switch off, by the guard switch, or with Demo Spot on, the demo-valued Cross account files nothing; pre-existing PENDING/APPROVED unheld requests are neither approved nor sent, only rejectable; Balance-held requests unchanged', async () => {
       const send = (who, amount = '1') => api('POST', '/withdrawals', who, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount });
       const state = async () => JSON.stringify({ rows: await prisma.withdrawal.findMany({ where: { userId: TRADER }, orderBy: { createdAt: 'asc' }, select: { id: true, status: true, balanceHeld: true, amount: true } }),
         audit: await prisma.auditLog.count({ where: { userId: TRADER, action: { startsWith: 'WITHDRAWAL_' } } }), demo: await prisma.demoBalance.findMany({ where: { userId: TRADER }, orderBy: { asset: 'asc' } }),
         balance: await prisma.balance.count({ where: { userId: TRADER } }) });
       const demoBefore = JSON.stringify(await prisma.demoBalance.findMany({ where: { userId: TRADER }, orderBy: { asset: 'asc' } }));
-      // Off: the old flow — an unheld PENDING request against the Cross valuation, net of earlier claims.
-      enabled = false; guardSwitch = false;
-      const first = await send(TRADER), second = await send(TRADER), third = await send(TRADER);
-      pendingUnheldId = third.body.id; // stays PENDING: the pre-activation query must list it
-      assert.equal(first.status, 200); assert.equal(first.body.status, 'PENDING'); assert.equal(first.body.balanceHeld, false);
-      assert.equal(second.status, 200);
-      assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [{ asset: 'USDT', available: '97' }], futures: [] });
-      assert.equal((await adminWithdrawals.approveWithdrawal({ withdrawalId: second.body.id, performedByAdminId: 'admin' })).status, 'APPROVED');
-      for (const who of ['funded', TRADER2]) { const r = await send(who); assert.equal(r.status, 200); assert.equal(r.body.balanceHeld, true); }
-      // On, by its own switch or forced by Demo Spot (the switch cannot turn it off then).
-      for (const [label, mode] of [['own switch', { guard: true, spot: false }], ['forced by DEMO_SPOT_ENABLED', { guard: false, spot: true }]]) {
+      // Unheld requests filed before the fence, as production may hold them (the old flow, guard off).
+      const historic = async status => (await prisma.withdrawal.create({ data: { userId: TRADER, asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1', status, balanceHeld: false } })).id;
+      const first = await historic('PENDING'), second = await historic('APPROVED');
+      pendingUnheldId = await historic('PENDING'); // stays PENDING: the pre-activation query must list it
+      for (const [label, mode] of [['every switch off', { guard: false, spot: false }], ['guard switch', { guard: true, spot: false }], ['Demo Spot on', { guard: false, spot: true }]]) {
         guardSwitch = mode.guard; enabled = mode.spot;
+        if (guardSwitch) process.env.DEMO_WITHDRAWAL_GUARD_ENABLED = 'true'; else delete process.env.DEMO_WITHDRAWAL_GUARD_ENABLED;
         const before = await state();
         const refused = await send(TRADER);
         assert.equal(refused.status, 403, label); assert.equal(refused.body.code, 'DEMO_FUNDS_NOT_WITHDRAWABLE');
         assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [], futures: [] });
-        await assert.rejects(adminWithdrawals.approveWithdrawal({ withdrawalId: first.body.id, performedByAdminId: 'admin' }), DemoFundsNotWithdrawableError);
-        await assert.rejects(adminWithdrawals.markSent({ withdrawalId: second.body.id, performedByAdminId: 'admin', txHash: '0xfixture' }), DemoFundsNotWithdrawableError);
+        await assert.rejects(adminWithdrawals.approveWithdrawal({ withdrawalId: first, performedByAdminId: 'admin' }), DemoFundsNotWithdrawableError);
+        await assert.rejects(adminWithdrawals.markSent({ withdrawalId: second, performedByAdminId: 'admin', txHash: '0xfixture' }), DemoFundsNotWithdrawableError);
         assert.equal(await state(), before, `${label}: nothing written, existing requests untouched`);
         for (const who of ['funded', TRADER2]) { const r = await send(who); assert.equal(r.status, 200, `${who} ${label}`); assert.equal(r.body.balanceHeld, true); }
       }
-      // Rejecting an existing unheld request stays possible with the guard on; nothing is given back (nothing was held).
-      guardSwitch = true; enabled = false;
-      assert.equal((await adminWithdrawals.rejectWithdrawal({ withdrawalId: first.body.id, performedByAdminId: 'admin', reason: 'demo funds' })).status, 'REJECTED');
-      // Off again: the old flow resumes unchanged (an APPROVED request can be marked sent, as on main).
-      guardSwitch = false; enabled = false;
-      assert.equal((await adminWithdrawals.markSent({ withdrawalId: second.body.id, performedByAdminId: 'admin', txHash: '0xfixture' })).status, 'SENT');
+      // Rejecting an existing unheld request stays possible under any switch; nothing is given back (nothing was held).
+      guardSwitch = false; enabled = false; delete process.env.DEMO_WITHDRAWAL_GUARD_ENABLED;
+      assert.equal((await adminWithdrawals.rejectWithdrawal({ withdrawalId: first, performedByAdminId: 'admin', reason: 'demo funds' })).status, 'REJECTED');
+      assert.equal((await adminWithdrawals.rejectWithdrawal({ withdrawalId: second, performedByAdminId: 'admin', reason: 'demo funds' })).status, 'REJECTED');
+      assert.equal(await prisma.withdrawal.count({ where: { userId: TRADER, balanceHeld: false, status: { in: ['APPROVED', 'SENT'] } } }), 0);
       assert.equal(JSON.stringify(await prisma.demoBalance.findMany({ where: { userId: TRADER }, orderBy: { asset: 'asc' } })), demoBefore, 'no request moves a demo balance');
       assert.equal(await prisma.balance.count({ where: { userId: TRADER } }), 0, 'demo funds never reach Balance');
       enabled = true;

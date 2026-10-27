@@ -2,19 +2,16 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
-import { demoWithdrawalGuardEnabled } from './demoSpotAccess';
 
 export class WithdrawalRequestError extends Error {}
 
-/** The demo-funds guard refuses an unheld (demo-valued) request's approval or payout (see demoWithdrawalGuardEnabled). */
+/**
+ * A demo-valued request: one that holds no `Balance` (`balanceHeld: false`). It is never filed, approved or
+ * marked sent, independent of every feature switch (Issue #617); it can still be rejected.
+ */
 export class DemoFundsNotWithdrawableError extends WithdrawalRequestError {
   readonly code = 'DEMO_FUNDS_NOT_WITHDRAWABLE';
   constructor() { super('Demo funds are not withdrawable'); }
-}
-
-export interface WithdrawalServiceOptions {
-  /** Whether the demo-funds guard is on; read per call (default: demoWithdrawalGuardEnabled()). */
-  demoFundsGuard?: () => boolean;
 }
 
 export interface WithdrawalResult {
@@ -28,9 +25,6 @@ export interface WithdrawalResult {
   /** False for a request that held nothing (see requestUnheldWithdrawal). */
   balanceHeld: boolean;
 }
-
-/** Requests that still claim an unheld amount: open, or already paid out. */
-export const UNHELD_CLAIMING_STATUSES = ['PENDING', 'APPROVED', 'SENT'];
 
 /**
  * Manual withdrawal requests — the reverse of DepositService's manual
@@ -46,18 +40,20 @@ export const UNHELD_CLAIMING_STATUSES = ['PENDING', 'APPROVED', 'SENT'];
  * -> REJECTED at any point before SENT (lock released back to `available`,
  * since nothing was actually sent).
  *
- * A Cross trading account's request follows the same lifecycle without the
- * lock: see requestUnheldWithdrawal.
+ * Only a request that holds `Balance` can be paid. A Cross trading account
+ * files none (requestUnheldWithdrawal), and an unheld request that already
+ * exists can only be rejected.
  */
 export class WithdrawalService {
-  private readonly demoFundsGuard: () => boolean;
-  constructor(private prisma: PrismaClient, options: WithdrawalServiceOptions = {}) {
-    this.demoFundsGuard = options.demoFundsGuard ?? (() => demoWithdrawalGuardEnabled());
-  }
+  constructor(private prisma: PrismaClient) {}
 
-  /** With the demo-funds guard on, an unheld request (valued from demo funds) is never approved or paid. */
+  /**
+   * An unheld request held nothing: it is valued from demo funds and is never approved or paid. Decided on the row
+   * read FOR UPDATE inside the same transaction as the status change (requireStatus), so it holds for requests filed
+   * before this fence existed, under any switch.
+   */
   private refuseDemoFunds(withdrawal: { balanceHeld: boolean | null }) {
-    if (withdrawal.balanceHeld === false && this.demoFundsGuard()) throw new DemoFundsNotWithdrawableError();
+    if (withdrawal.balanceHeld === false) throw new DemoFundsNotWithdrawableError();
   }
 
   async requestWithdrawal(params: {
@@ -112,81 +108,21 @@ export class WithdrawalService {
 
   /**
    * A withdrawal REQUEST from a Cross trading account — the owner's, or a
-   * configured test account's — whose balance lives in the trading
-   * simulation rather than in the spot ledger this service can hold.
-   *
-   * Nothing is moved. The request is recorded for the admin, who reviews it
-   * and pays by hand, exactly as for a held request; it simply has no lock to
-   * release or return (`balanceHeld: false`).
-   *
-   * `available` is what the account can withdraw of this asset right now,
-   * read by the caller from the account's own valuation. Unheld requests
-   * that are open or already paid out for the same asset count against it,
-   * under a lock on the user's row, so neither two requests at once nor a
-   * repeat after a payout can claim the same funds twice.
+   * configured test account's. Permanently refused (Issue #617), whatever
+   * the demo switches: that account's balance lives in the trading
+   * simulation, whose only sources are DemoBalance and a preview fixture
+   * (`NativeAccount.source`), never a ledger this service can hold. Nothing
+   * is read or written; there is no exception switch.
    */
-  async requestUnheldWithdrawal(params: {
+  async requestUnheldWithdrawal(_params: {
     userId: string;
     asset: string;
     network: string;
     toAddress: string;
     amount: string;
     available: string;
-  }): Promise<WithdrawalResult> {
-    // Demo-valued: with the demo-funds guard on, nothing is filed (the route refuses first as well).
-    if (this.demoFundsGuard()) throw new DemoFundsNotWithdrawableError();
-    if (isTestAssetPairOrSymbol(params.asset)) throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    const amount = new BigNumber(params.amount);
-    if (!amount.isFinite() || amount.isLessThanOrEqualTo(0)) {
-      throw new WithdrawalRequestError('Amount must be greater than zero');
-    }
-
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${params.userId} FOR UPDATE`;
-      const claimed = await this.unheldClaimed(tx, params.userId, params.asset);
-      const withdrawable = BigNumber.max(new BigNumber(params.available).minus(claimed), 0);
-      if (!withdrawable.isFinite() || withdrawable.isLessThan(amount)) {
-        throw new WithdrawalRequestError(`Insufficient ${params.asset} balance`);
-      }
-
-      const withdrawal = await tx.withdrawal.create({
-        data: {
-          userId: params.userId,
-          asset: params.asset,
-          network: params.network,
-          toAddress: params.toAddress,
-          amount: amount.toString(),
-          status: 'PENDING',
-          balanceHeld: false,
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId: params.userId,
-          action: 'WITHDRAWAL_REQUESTED',
-          metadata: {
-            withdrawalId: withdrawal.id,
-            asset: params.asset,
-            network: params.network,
-            toAddress: params.toAddress,
-            amount: amount.toString(),
-            balanceHeld: false,
-          },
-        },
-      });
-
-      return this.toResult(withdrawal);
-    });
-  }
-
-  /** The part of an unheld balance already claimed by this user's requests. */
-  async unheldClaimed(db: Prisma.TransactionClient | PrismaClient, userId: string, asset: string): Promise<BigNumber> {
-    const sum = await db.withdrawal.aggregate({
-      where: { userId, asset, balanceHeld: false, status: { in: UNHELD_CLAIMING_STATUSES } },
-      _sum: { amount: true },
-    });
-    return new BigNumber(sum._sum.amount?.toString() ?? '0');
+  }): Promise<never> {
+    throw new DemoFundsNotWithdrawableError();
   }
 
   /** Admin has reviewed the request and intends to send the funds — the

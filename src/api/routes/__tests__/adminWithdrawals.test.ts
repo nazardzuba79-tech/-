@@ -10,10 +10,10 @@ function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 }
 
-function buildApp(prisma: any, options: { demoFundsGuard?: () => boolean } = {}) {
+function buildApp(prisma: any) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', adminWithdrawalsRouter(prisma, options));
+  app.use('/api/v1', adminWithdrawalsRouter(prisma));
   return app;
 }
 
@@ -178,24 +178,24 @@ describe('admin withdrawals routes', () => {
   });
 });
 
-// Issue #592: the demo-funds guard on the admin side. Off (the default), the cases above are main's behaviour.
-describe('admin withdrawals with the demo-funds guard', () => {
+// Issue #617: an unheld (demo-valued) request is never approved or marked sent — whatever the demo switches, and also
+// when it was filed before the fence existed. It can still be rejected.
+describe('admin withdrawals: demo-valued requests are reject-only, permanently', () => {
   const unheld = (status: string) => ({ id: 'w1', userId: 'user-1', asset: 'USDT', amount: '300', status, balanceHeld: false });
-  it('guard on: an existing unheld request is not approved or marked sent (403), and can be rejected', async () => {
+  const SWITCHES = ['DEMO_SPOT_ENABLED', 'DEMO_WITHDRAWAL_GUARD_ENABLED', 'DEMO_LIQUIDITY_ENABLED'];
+  const saved = Object.fromEntries(SWITCHES.map(key => [key, process.env[key]]));
+  afterEach(() => { for (const key of SWITCHES) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; } });
+  it.each([['every demo switch off', [] as string[]], ['every demo switch on', SWITCHES]])('%s: not approved or marked sent (403), and can be rejected', async (_label, on) => {
+    for (const key of SWITCHES) delete process.env[key];
+    for (const key of on) process.env[key] = 'true';
     const pending = withTransaction(adminPrisma(), { withdrawal: unheld('PENDING') });
-    const app = buildApp(pending, { demoFundsGuard: () => true });
+    const app = buildApp(pending);
     const approve = await request(app).post('/api/v1/admin/withdrawals/w1/approve').set('Authorization', authHeader('admin-1'));
     expect(approve.status).toBe(403); expect(approve.body).toEqual({ error: 'Demo funds are not withdrawable', code: 'DEMO_FUNDS_NOT_WITHDRAWABLE' });
     const approved = withTransaction(adminPrisma(), { withdrawal: unheld('APPROVED') });
-    const sent = await request(buildApp(approved, { demoFundsGuard: () => true })).post('/api/v1/admin/withdrawals/w1/mark-sent').set('Authorization', authHeader('admin-1')).send({ txHash: '0xabc' });
-    expect(sent.status).toBe(403);
+    const sent = await request(buildApp(approved)).post('/api/v1/admin/withdrawals/w1/mark-sent').set('Authorization', authHeader('admin-1')).send({ txHash: '0xabc' });
+    expect(sent.status).toBe(403); expect(sent.body.code).toBe('DEMO_FUNDS_NOT_WITHDRAWABLE');
     const reject = await request(app).post('/api/v1/admin/withdrawals/w1/reject').set('Authorization', authHeader('admin-1')).send({ reason: 'demo funds' });
     expect(reject.status).toBe(200); expect(reject.body).toMatchObject({ status: 'REJECTED' });
-  });
-  it('guard off: the same unheld request is approved and sent as before', async () => {
-    const pending = withTransaction(adminPrisma(), { withdrawal: unheld('PENDING') });
-    const app = buildApp(pending, { demoFundsGuard: () => false });
-    expect((await request(app).post('/api/v1/admin/withdrawals/w1/approve').set('Authorization', authHeader('admin-1'))).status).toBe(200);
-    expect((await request(app).post('/api/v1/admin/withdrawals/w1/mark-sent').set('Authorization', authHeader('admin-1')).send({ txHash: '0xabc' })).body).toMatchObject({ status: 'SENT' });
   });
 });
