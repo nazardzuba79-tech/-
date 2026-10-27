@@ -1,0 +1,57 @@
+name: Withdrawal demo-funds fence
+# Issue #617 P0: a demo-valued (unheld) withdrawal is never filed, approved or SENT, under any demo switch.
+on:
+  pull_request:
+    paths:
+      - 'src/services/WithdrawalService.ts'
+      - 'src/services/demoSpotAccess.ts'
+      - 'src/api/routes/withdrawals.ts'
+      - 'src/api/routes/adminWithdrawals.ts'
+      - 'src/private-trading/access.ts'
+      - 'src/private-trading/native/**'
+      - 'src/index.ts'
+      - 'prisma/**'
+      - 'src/services/__tests__/WithdrawalService.test.ts'
+      - 'src/api/routes/__tests__/withdrawals.test.ts'
+      - 'src/api/routes/__tests__/adminWithdrawals.test.ts'
+      - 'scripts/test-withdrawal-demo-fence-postgres.cjs'
+      - 'docs/DEMO_TRADING.md'
+      - 'docs/DEMO_LIQUIDITY.md'
+      - '.github/workflows/withdrawal-demo-fence.yml'
+permissions:
+  contents: read
+jobs:
+  withdrawal-demo-fence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Withdrawal unit and route suites
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/__tests__/WithdrawalService.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+      - name: Isolated QA tools only (not application dependencies)
+        run: npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1
+      - name: Runner PostgreSQL tools (new temporary cluster only)
+        run: |
+          pg_config --version
+          echo "WALLET_QA_PG_BIN=$(pg_config --bindir)" >> "$GITHUB_ENV"
+      - name: Real disposable PostgreSQL, every demo switch combination
+        run: node scripts/test-withdrawal-demo-fence-postgres.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: withdrawal-demo-fence-evidence
+          path: |
+            output/withdrawal-demo-fence/*.json
+            output/withdrawal-demo-fence/*.log
