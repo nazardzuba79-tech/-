@@ -421,12 +421,9 @@ export function MarketsBoltPage() {
             ))}
           </div>
 
-          {activeCategory === 'TradFi' ? (
-            <div className="empty-state-panel">
-              <strong>TradFi скоро появится</strong>
-              <span>Торговля традиционными активами станет доступна в одном из следующих обновлений.</span>
-            </div>
-          ) : activeKind === 'CFD' ? (
+          {/* TradFi is gold, silver, oil and currency pairs — the CFD instruments, with their live quotes;
+              no «coming soon» panel (owner, 2026-10-22). */}
+          {activeCategory === 'TradFi' || activeKind === 'CFD' ? (
             <CfdMarketsSection />
           ) : (
             <>

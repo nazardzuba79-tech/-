@@ -204,7 +204,7 @@ export function PortfolioStrip({
             <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.withdraw')}
           </button>
-          <button type="button" disabled aria-disabled="true" title={t('wallet.convertUnavailable')} className={`${ACTION_OFF} wallet-action-convert`}>
+          <button type="button" disabled aria-disabled="true" className={`${ACTION_OFF} wallet-action-convert`}>
             <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.convert')}
           </button>
@@ -212,7 +212,7 @@ export function PortfolioStrip({
             <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.transfer')}
           </button>
-          <button type="button" disabled aria-disabled="true" title={t('wallet.borrowUnavailable')} className={`${ACTION_OFF} wallet-action-borrow`}>
+          <button type="button" disabled aria-disabled="true" className={`${ACTION_OFF} wallet-action-borrow`}>
             <LandmarkIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.borrow')}
           </button>

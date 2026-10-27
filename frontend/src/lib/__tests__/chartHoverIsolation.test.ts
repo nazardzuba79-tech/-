@@ -9,7 +9,8 @@ function fixture() {
     performance: { now: () => ++now },
     setInterval: (callback: () => void) => { const id = next++; intervals.set(id, callback); return id; },
     clearInterval: (id: number) => intervals.delete(id),
-    setTimeout: (callback: () => void) => timeouts.push(callback),
+    setTimeout: (callback: () => void, _delay?: number) => timeouts.push(callback),
+    clearTimeout: (_id: number) => undefined,
     requestAnimationFrame: (callback: () => void) => frames.push(callback),
     fetch: (url: string) => { requests.push(url); return Promise.resolve(); },
   };
@@ -95,4 +96,53 @@ test('finally resumes scheduled work after an interaction failure', () => {
   expect(f.requests).toEqual(['/poll']);
   f.probe.begin();
   expect(f.probe.end().deferred).toEqual([]);
+});
+
+// PR #562 CI (2026-10-22): the managed-listings store polls with a
+// self-rescheduling one-shot timer (15 s with a versioned AITH row), not an
+// interval. Armed before the hover, it is scheduled work like the 5 s candle
+// interval above: held during the window, resumed once, its chain alive.
+test('a one-shot poll armed before hover is resumed once after hover, its chain still alive', () => {
+  const f = fixture();
+  const poll = () => { void f.scope.fetch('/market/listings'); f.scope.setTimeout(poll, 15000); };
+  f.scope.setTimeout(poll, 15000);
+  f.probe.begin();
+  f.timeouts[0]();
+  expect(f.requests).toEqual([]);
+  const result = f.probe.end();
+  expect(result.deferred).toEqual([expect.objectContaining({ kind: 'timeout', delay: 15000 })]);
+  expect(result.created).toEqual([]);
+  expect(f.requests).toEqual(['/market/listings']);
+  f.timeouts[1]();
+  expect(f.requests).toEqual(['/market/listings', '/market/listings']);
+});
+
+test('negative control: a timeout armed during hover fires inside the window, even at the poll URL', () => {
+  const f = fixture();
+  f.probe.begin();
+  f.scope.setTimeout(() => { void f.scope.fetch('/market/listings'); }, 0);
+  f.timeouts[0]();
+  expect(f.requests).toEqual(['/market/listings']);
+  expect(f.probe.end().deferred).toEqual([]);
+});
+
+test('a cleared one-shot poll is never resurrected when the window closes', () => {
+  const f = fixture();
+  const id = f.scope.setTimeout(() => { void f.scope.fetch('/market/listings'); }, 15000);
+  f.probe.begin();
+  f.timeouts[0]();
+  f.scope.clearTimeout(id);
+  f.probe.end();
+  expect(f.requests).toEqual([]);
+});
+
+test('finally resumes a held one-shot poll after an interaction failure', () => {
+  const f = fixture();
+  f.scope.setTimeout(() => { void f.scope.fetch('/market/listings'); }, 15000);
+  expect(() => {
+    f.probe.begin();
+    try { f.timeouts[0](); throw new Error('pointer action failed'); }
+    finally { f.probe.end(); }
+  }).toThrow('pointer action failed');
+  expect(f.requests).toEqual(['/market/listings']);
 });

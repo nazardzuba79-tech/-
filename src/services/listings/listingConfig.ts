@@ -294,7 +294,8 @@ export function isHistoricalGrowthWindowConfig(config: Pick<ListingConfig, 'simu
  */
 export const PRIVATE_TEST_SYMBOL_MESSAGE = 'Приватный тест History20 доступен только для тикеров VHX01–VHX99';
 
-export function checkPrivateTestable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS): void {
+export function checkPrivateTestable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS,
+  opened: boolean = active !== null && Date.parse(active.listingAt) <= now): void {
   if (!isHistoricalGrowthWindowConfig(next)) {
     throw new ListingValidationError('PRIVATE_TEST_WINDOW_ONLY', 'Приватный тест доступен только для листинга с историческим окном роста (History20)');
   }
@@ -304,7 +305,7 @@ export function checkPrivateTestable(next: ListingConfig, active: ListingConfig 
   if (next.simulationProgram?.kind === 'scenario-controls-v2' && next.simulationProgram.afterGrowth === 'historical')
     throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED',
       'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
-  checkHistoryLocks(next, active, now, minLeadMs);
+  checkHistoryLocks(next, active, now, minLeadMs, opened);
 }
 
 /**
@@ -312,10 +313,12 @@ export function checkPrivateTestable(next: ListingConfig, active: ListingConfig 
  * time `now`. They protect the past: once a market has history, nothing that
  * shapes that history can change.
  */
-export function checkPublishable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS): void {
+export function checkPublishable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS,
+  // Whether the active market opened (public history exists). A listing whose timer never ran past its date did not.
+  opened: boolean = active !== null && Date.parse(active.listingAt) <= now): void {
   // The one exception to the rights gate below: a History20 window run as a
   // private test (SIMUSDT, owner and allowlisted testers, never public).
-  if (next.privateTest) return checkPrivateTestable(next, active, now, minLeadMs);
+  if (next.privateTest) return checkPrivateTestable(next, active, now, minLeadMs, opened);
   // Administrative draft+private preview are functional, but a user-provided
   // historical dataset has no independently verified redistribution rights.
   // Never publish it to a market whose synthetic reference can affect Spot.
@@ -327,11 +330,11 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
       'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
   // A reserved History20 private ticker is never published as an ordinary listing.
   if (isHistory20PrivateSymbol(next.symbol)) throw new ListingValidationError('RESERVED_TICKER', `Ticker ${next.symbol} is reserved for History20 private tests`);
-  checkHistoryLocks(next, active, now, minLeadMs);
+  checkHistoryLocks(next, active, now, minLeadMs, opened);
 }
 
 /** What once-live history forbids, for a public publication and a private test alike. */
-function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs: number): void {
+function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs: number, opened: boolean): void {
   // Private stays private, public stays public, and the test funding is fixed once live.
   if (active && JSON.stringify(next.privateTest ?? null) !== JSON.stringify(active.privateTest ?? null))
     throw new ListingValidationError('HISTORY_LOCKED', 'Режим приватного теста опубликованного листинга изменить нельзя');
@@ -350,7 +353,7 @@ function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, no
   if (next.listingAt !== active.listingAt) {
     const activeAt = Date.parse(active.listingAt);
     // Moving the date is a postponement or an earlier opening of a market that has not opened yet.
-    if (activeAt <= now) throw new ListingValidationError('HISTORY_LOCKED', 'The listing already opened; its time cannot change');
+    if (opened) throw new ListingValidationError('HISTORY_LOCKED', 'The listing already opened; its time cannot change');
     if (at < now + minLeadMs) throw new ListingValidationError('LISTING_TIME_PAST', 'The new listing time must be at least one minute in the future');
     if (at > now + MAX_LEAD_MS) throw new ListingValidationError('LISTING_TIME_TOO_FAR', 'The listing time must be within one year');
   }
@@ -393,6 +396,43 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
   };
 }
 
+/**
+ * THE PRE-LISTING TIMER of a published listing is operational state kept next
+ * to the immutable configuration, never inside it: the owner starts, pauses
+ * and stops the public countdown without a new version and without moving
+ * the listing time. The countdown always counts to `listingAt`; starting it
+ * later never shifts that instant.
+ *
+ * - `staged`: published and validated, not public yet — no page, no
+ *   countdown, no market. Render still knows the ticker (restricted
+ *   everywhere).
+ * - `running`: the public page shows the countdown; the market opens at
+ *   `listingAt` by the server clock.
+ * - `paused`: the public page shows the date, the countdown is hidden; the
+ *   market stays frozen before its first tick, even past `listingAt`.
+ *
+ * A listing published before this state existed has none and behaves as
+ * `running` (today's behaviour).
+ */
+export type ListingCountdownState = 'staged' | 'running' | 'paused';
+export type ListingCountdownAction = 'start' | 'pause' | 'stop';
+export interface ListingCountdown {
+  state: ListingCountdownState;
+  /** Server time of the last change and who made it. */
+  updatedAt: number;
+  updatedBy: string;
+  /** Server time of the last start. */
+  startedAt?: number;
+}
+export const LISTING_COUNTDOWN_ACTIONS: readonly ListingCountdownAction[] = ['start', 'pause', 'stop'];
+
+export const listingCountdownSchema = z.object({
+  state: z.enum(['staged', 'running', 'paused']),
+  updatedAt: z.number().int().nonnegative(),
+  updatedBy: z.string().max(64),
+  startedAt: z.number().int().nonnegative().optional(),
+}).strict();
+
 /** A published listing as the public catalogue carries it: no owner allocation, no seed mode. */
 export interface PublishedListing {
   id: string;
@@ -400,6 +440,8 @@ export interface PublishedListing {
   publishedAt: string;
   config: ListingConfig;
   readLease?: import('../../shared/aithPublication').ListingReadLease;
+  /** Absent on listings published before the timer existed: their clock runs. */
+  countdown?: ListingCountdown;
 }
 
 export const publishedListingSchema = z.object({
@@ -411,4 +453,36 @@ export const publishedListingSchema = z.object({
     protocol: z.literal('aith-prelisting-v1'), generation: z.number().int().positive(),
     issuedAt: z.number().int().nonnegative(), expiresAt: z.number().int().positive(),
   }).strict().optional(),
+  countdown: listingCountdownSchema.optional(),
 }).strict();
+
+/** Whether the listing's clock runs: `running`, or no timer state at all. */
+export const listingCountdownArmed = (listing: Pick<PublishedListing, 'countdown'>): boolean =>
+  !listing.countdown || listing.countdown.state === 'running';
+
+/** The simulation input of a published listing: its configuration, armed only while the timer runs. */
+export function publishedListingAsset(listing: Pick<PublishedListing, 'config' | 'countdown'>): TestAssetConfig {
+  return { ...listingSimulationConfig(listing.config), listingArmed: listingCountdownArmed(listing) };
+}
+
+/** The market opened: its clock was running at the listing time, so public history exists. */
+export function listingOpened(listing: Pick<PublishedListing, 'config' | 'countdown'>, now: number): boolean {
+  return listingCountdownArmed(listing) && Date.parse(listing.config.listingAt) <= now;
+}
+
+/**
+ * The timer state after an admin action, or a refusal. Nothing is ever
+ * activated automatically: starting needs a listing time still ahead (a
+ * passed date must be moved first), and an opened market has no timer to
+ * pause or stop.
+ */
+export function nextListingCountdown(listing: Pick<PublishedListing, 'config' | 'countdown'>, action: ListingCountdownAction, now: number): ListingCountdownState {
+  if (listingOpened(listing, now)) throw new ListingValidationError('MARKET_OPEN', 'The market already opened; its timer cannot change');
+  if (action === 'start') {
+    if (Date.parse(listing.config.listingAt) <= now) {
+      throw new ListingValidationError('LISTING_TIME_PAST', 'The listing time has passed; set a new listing time before starting the timer');
+    }
+    return 'running';
+  }
+  return action === 'pause' ? 'paused' : 'staged';
+}

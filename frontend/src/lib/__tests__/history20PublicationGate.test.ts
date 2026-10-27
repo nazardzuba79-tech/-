@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { listingHistoricalPublicationBlocked } from '../../pages/admin/listingHistoricalPublicationGate';
 import { newListingMovement } from '../../pages/admin/listingMovementModel';
+import { listingPublicationAllowed } from '../../pages/admin/listingTimerCapability';
 
 const ordinary = newListingMovement('2');
 const history = { ...ordinary, growth: 'historical-window' as const, afterGrowth: 'range' as const };
@@ -25,12 +26,13 @@ const start = source.indexOf('  function openPublish() {');
 const end = source.indexOf('  async function confirmPublish()', start);
 if (start < 0 || end < 0) throw new Error('Unable to locate exact openPublish handler');
 const handler = source.slice(start, end);
-function click(config: unknown, flags: { busy?: boolean; saved?: boolean } = {}) {
+function click(config: unknown, flags: { busy?: boolean; saved?: boolean; timerSupported?: boolean } = {}) {
   const setPublishing = jest.fn(), setFormError = jest.fn();
   new Function('current', 'busy', 'draftIsSaved', 'listingHistoricalPublicationBlocked',
-    'setFormError', 'setPublishing', 'newPublishKey', handler + '\nopenPublish();')(
-    { id: 'synthetic-private', draft: config }, flags.busy ?? false, flags.saved ?? true,
-    listingHistoricalPublicationBlocked, setFormError, setPublishing, () => 'synthetic-key'
+    'listingPublicationAllowed', 'timerSupported', 'setFormError', 'setPublishing', 'newPublishKey', handler + '\nopenPublish();')(
+    { id: 'synthetic-private', activeVersion: null, countdown: null, draft: config }, flags.busy ?? false, flags.saved ?? true,
+    listingHistoricalPublicationBlocked, listingPublicationAllowed, flags.timerSupported ?? true,
+    setFormError, setPublishing, () => 'synthetic-key'
   );
   return { setPublishing, setFormError };
 }
@@ -45,4 +47,9 @@ test('actual handler fails closed for public historical and busy/unsaved drafts'
   expect(click({ simulationProgram: history }).setFormError).toHaveBeenCalledTimes(1);
   expect(click({ simulationProgram: history, privateTest }, { busy: true }).setPublishing).not.toHaveBeenCalled();
   expect(click({ simulationProgram: history, privateTest }, { saved: false }).setPublishing).not.toHaveBeenCalled();
+});
+
+test('actual handler refuses first private and public publication through an API without timer support', () => {
+  expect(click({ simulationProgram: history, privateTest }, { timerSupported: false }).setPublishing).not.toHaveBeenCalled();
+  expect(click({ simulationProgram: ordinary }, { timerSupported: false }).setPublishing).not.toHaveBeenCalled();
 });

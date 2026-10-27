@@ -42,7 +42,9 @@ describe('actual OrderForm submit handler', () => {
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
       quantity: '0.001', family: 'MARKET', type: 'MARKET', price: '', triggerPrice: '',
       isConditional: false, execution: 'MARKET', side: 'SELL', pair: 'BTC/USDT', baseAsset: 'BTC',
-      ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet };
+      ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet, orderBlocked: notTradingYet,
+      // Demo Spot (Issue #592) off: the ordinary ledger and api.placeOrder.
+      demoLedger: false, demo: 'off', demoRequest: false };
     const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
     return { ...bindings, submit };
   }
@@ -70,10 +72,12 @@ describe('actual OrderForm submit handler', () => {
     const f = fixture({}); await f.submit({ preventDefault() {} });
     expect(f.toast.success).not.toHaveBeenCalled(); expect(f.toast.info).toHaveBeenCalledWith('trade.orderStatusUnconfirmed');
   });
-  test('an upcoming listing answers that it is not trading yet and places nothing', async () => {
+  // Owner, 2026-10-22, on «Этот актив пока не торгуется» under the mobile form: no such line. The button is disabled.
+  test('an upcoming listing places nothing and says nothing: the button is disabled, no line, no toast', async () => {
     const f = fixture({ order: { status: 'FILLED' }, trades: [] }, true); await f.submit({ preventDefault() {} });
-    expect(f.setError).toHaveBeenLastCalledWith('trade.assetNotTradingYet');
-    expect(f.toast.error).toHaveBeenCalledWith('trade.assetNotTradingYet');
+    expect(f.setError.mock.calls).toEqual([[null]]);
+    expect(f.toast.error).not.toHaveBeenCalled();
+    expect(source).toContain('<button type="submit" disabled={submitting || orderBlocked}');
     expect(f.api.placeOrder).not.toHaveBeenCalled();
     expect(f.onPlaced).not.toHaveBeenCalled();
     expect(f.submittingRef.current).toBe(false);

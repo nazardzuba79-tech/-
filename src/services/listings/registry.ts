@@ -8,7 +8,7 @@
  * A caller never waits more than the given `waitMs` for it; a failed read
  * keeps the last good snapshot and is not retried before REFRESH_MS.
  */
-import { listingSimulationConfig, type PublishedListing } from './listingConfig';
+import { publishedListingAsset, type PublishedListing } from './listingConfig';
 import { setManagedListingAssets } from './managedSnapshot';
 import { listingStoreFromEnvironment, UnconfiguredListingStore, type ListingStore } from './store';
 import { aithLeaseDeadline, isAith, validAithLease } from '../../shared/aithPublication';
@@ -58,14 +58,15 @@ export class ManagedListingRegistry {
         this.aithValidUntil = aith?.readLease && validAithLease(aith.readLease, aith.version, aith.readLease.issuedAt)
           ? aithLeaseDeadline(aith.readLease, startedAt) : 0;
         this.listings = published.listings.filter(item => !isAith(item.config.symbol) || this.clock() < this.aithValidUntil);
-        setManagedListingAssets(this.listings.map((listing) => listingSimulationConfig(listing.config)), this.aithValidUntil);
+        // Staged and paused listings arrive unarmed: known (restricted) everywhere, open nowhere.
+        setManagedListingAssets(this.listings.map(publishedListingAsset), this.aithValidUntil);
         this.loadedAt = this.clock();
       })
       .catch(() => {
         // AITH must never fall back to an unfenced publication; other markets retain their existing policy.
         this.listings = this.listings.filter(item => !isAith(item.config.symbol));
         this.aithValidUntil = 0;
-        setManagedListingAssets(this.listings.map(listing => listingSimulationConfig(listing.config)));
+        setManagedListingAssets(this.listings.map(publishedListingAsset));
       })
       .finally(() => { this.inFlight = null; });
     return this.inFlight;

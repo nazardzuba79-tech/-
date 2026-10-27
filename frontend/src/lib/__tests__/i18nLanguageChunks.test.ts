@@ -34,7 +34,6 @@ const dicts = readDictionaries();
 // the separate assertion below rejects any missing, duplicate or extra key.
 // Only reverse this exact, tested wording correction for the older fingerprint.
 const cfdCopyBefore: Record<string,string> = {"en":"CFD prices are coming soon.","ru":"Цены CFD скоро появятся.","es":"Los precios de CFD estarán disponibles pronto.","hi":"CFD कीमतें जल्द ही उपलब्ध होंगी।","ja":"CFD価格は近日公開予定です。","ko":"CFD 가격은 곧 제공될 예정입니다.","zh":"CFD 价格即将上线。"};
-const cfdCopyAfter: Record<string,string> = {"en":"CFD trading temporarily unavailable.","ru":"Торговля CFD временно недоступна.","es":"La negociación de CFD no está disponible temporalmente.","hi":"CFD ट्रेडिंग अस्थायी रूप से अनुपलब्ध है।","ja":"CFD取引は一時的に利用できません。","ko":"CFD 거래를 일시적으로 이용할 수 없습니다.","zh":"CFD 交易暂不可用。"};
 const restoredEcosystemKeys = [
   'label', 'globalMarkets', 'equities', 'derivatives', 'capitalMarkets',
   'title', 'subtitle', 'pause', 'resume', 'nasdaq', 'nyse', 'cme',
@@ -61,7 +60,9 @@ const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 
 const CUSTOMER_PRESENTATION_KEYS = [
   'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
   'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
-  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  // 'listing.simulation', 'listing.tradingUnavailable' and 'listing.marketLive' were removed with the
+  // market notice they formed (owner, 2026-10-22: «забороняю такі надписи … інтерфейс має бути чистий»).
+  'listing.dateUnconfirmed',
   'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
   'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
 ];
@@ -83,8 +84,8 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
-  it('provides the twenty new customer state labels in every locale', () => {
-    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+  it('provides the seventeen remaining customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(17);
     for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
       expect(dicts[code][key]?.trim()).toBeTruthy();
       expect(dicts[code][key]).not.toBe(key);
@@ -333,6 +334,30 @@ describe('translation integrity', () => {
       ko: { label: 'Supreme VIP', title: 'Supreme VIP 등급' },
       zh: { label: 'Supreme VIP', title: 'Supreme VIP 状态' },
     };
+    const removedPracticeCopy: Record<string, string> = {
+      ru: 'Этот аккаунт работает только в тренировочном режиме.',
+      en: 'This account works in practice mode only.',
+      es: 'Esta cuenta funciona solo en modo de práctica.',
+      hi: 'यह खाता केवल अभ्यास मोड में काम करता है।',
+      ja: 'このアカウントは練習モードでのみ利用できます。',
+      ko: '이 계정은 연습 모드에서만 사용할 수 있습니다.',
+      zh: '该账户仅可用于练习模式。',
+    };
+    // «Котировки CFD скоро появятся» on the home page's CFD panel (owner, 2026-10-22: no «coming soon» for
+    // trading or quotes) — the panel now uses `home.dataUnavailable` like its neighbours.
+    const removedHomeCfdSoon: Record<string, string> = {
+      ru: 'Котировки CFD скоро появятся',
+      en: 'CFD quotes are coming soon',
+      es: 'Las cotizaciones de CFD llegarán pronto',
+      hi: 'CFD कोट्स जल्द आ रहे हैं',
+      ja: 'CFD の気配値は近日公開',
+      ko: 'CFD 시세가 곧 제공됩니다',
+      zh: 'CFD 报价即将上线',
+    };
+    // The other «пока недоступно / ещё не подключено» lines removed the same day (deposit, reserves, convert and
+    // borrow tooltips, analytics, card refusal, home CFD tab), recorded from main with the key each followed; put
+    // back in that order for the old digest. (`home.markets.cfdNotConfigured` follows `home.cfdSoon`, restored below.)
+    const removedNoticeLines: Record<string, Array<{ after: string; line: string }>> = require('./removedNoticeLines.json');
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
@@ -354,7 +379,9 @@ describe('translation integrity', () => {
         // `support.form*` are the support form's result lines and address hint
         // (2026-09-26: support became a form answered by email).
         const addedSinceDigest = ['browserSleeping', 'browserSyncing', 'browserSyncError', 'browserContinue',
-          'futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
+          // Failed-wake notice (2026-10-21): the retry/reload controls and the named failure, additions only.
+          'browserResumeBlocked', 'browserRetry', 'browserReload', 'browserFailure.session', 'browserFailure.read', 'browserFailure.timeout',
+          'futures.positionLimits', 'futures.allMarkets', 'futures.panelHeight', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           // Native demo P&L breakdown columns (2026-10-16): four new keys, additions only.
@@ -364,6 +391,10 @@ describe('translation integrity', () => {
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',
+          // Pre-listing timer (2026-10-20): the one line a paused countdown shows
+          // instead of the ticking cells. `git diff --numstat` over the locales
+          // reports `1 0` per language, additions only.
+          'listing.countdownPaused',
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
@@ -445,7 +476,10 @@ describe('translation integrity', () => {
         expect(dicts[code]['stocks.' + key]?.trim().length).toBeGreaterThan(0);
       }
       expect(Object.entries(dicts[code]).filter(([key]) => key.startsWith('stocks.')).every(([, value]) => value.trim().length > 0)).toBe(true);
-      expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
+      // «Торговля CFD временно недоступна» was removed (owner, 2026-10-22: no «trading unavailable» line on the
+      // exchange); the markets card shows quiet placeholder rows instead. Its original line is restored below.
+      expect(dicts[code]['trade.cfdUnavailable']).toBeUndefined();
+      expect(dicts[code]['home.cfdSoon']).toBeUndefined();
       // Added for the approved compact order-panel disclosure; older copy remains frozen.
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
       expect(dicts[code]['nav.tools'].trim()).not.toBe('');
@@ -471,7 +505,13 @@ describe('translation integrity', () => {
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
-      const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'")
+      const withNotices = removedNoticeLines[code].reduce((text, { after, line }) => {
+        // The anchor's value may sit on the next line (`'settings.reservesDisclaimer':` then the text).
+        const anchor = new RegExp(`\\n  '${after.replace(/\./g, '\\.')}':(?:[ \\t]*\\n[^\\n]*|[^\\n]*)`);
+        expect({ code, after, found: anchor.test(text) }).toEqual({ code, after, found: true });
+        return text.replace(anchor, (m) => `${m}\n${line}`);
+      }, source);
+      const restored = withNotices.replace(/(\n  'trade\.cfdInstrument': [^\n]*)/, `$1\n  'trade.cfdUnavailable': '${cfdCopyBefore[code]}',`)
         // Reverse only the owner's exact short navigation label; product copy stays frozen.
         .replace("'nav.card': '" + shortCardLabels[code] + "'", "'nav.card': 'Crypto Card'")
         // Supreme VIP is the owner-approved Wallet label. Restore only those
@@ -479,7 +519,12 @@ describe('translation integrity', () => {
         // translations remain byte-frozen.
         .replace("'wallet.superVip': '" + approvedVipCopy[code].label + "'", "'wallet.superVip': '" + previousVipCopy[code].label + "'")
         .replace("'wallet.superVipTitle': '" + approvedVipCopy[code].title + "'", "'wallet.superVipTitle': '" + previousVipCopy[code].title + "'")
-        .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'");
+        .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'")
+        // `serverError.practiceOnly` («…только в тренировочном режиме») was removed with every
+        // practice/demo notice (owner, 2026-10-22: «щоб більше ніколи … не появлялись»); the refusal
+        // now reads `serverError.forbidden`. Its original line is put back here for the old digest.
+        .replace(/(\n  'serverError\.notFound': [^\n]*)/, `$1\n  'serverError.practiceOnly': '${removedPracticeCopy[code]}',`)
+        .replace(/(\n  'home\.marketDataUnavailable': [^\n]*)/, `$1\n  'home.cfdSoon': '${removedHomeCfdSoon[code]}',`);
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
@@ -523,14 +568,11 @@ describe('translation integrity', () => {
     expect(new Set(values).size).toBe(LOCALES.length);
   });
 
-  it('localizes both explicit VTA operation refusals without changing existing copy', () => {
-    expect(dicts.ru['trade.assetPurchaseUnavailable']).toBe('Покупка этого актива недоступна.');
-    expect(dicts.ru['trade.assetOrderTypeUnavailable']).toBe('Этот тип ордера для данного актива недоступен.');
-    for (const key of ['trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable']) {
-      const values = LOCALES.map(code => dicts[code][key].trim());
-      expect(values.every(Boolean)).toBe(true);
-      expect(new Set(values).size).toBe(LOCALES.length);
-    }
+  // Owner, 2026-10-22 («Этот актив пока не торгуется» under the mobile form): the order form's refusals —
+  // not trading yet, and what a private VTA account may not buy or place — are a disabled button, never a line.
+  it('carries no order-form refusal line in any language', () => {
+    for (const code of LOCALES) for (const key of ['trade.assetNotTradingYet', 'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable'])
+      expect({ code, key, value: dicts[code][key] }).toEqual({ code, key, value: undefined });
   });
 
   it('adds exactly the approved institutional vocabulary without changing older dictionary bytes', () => {

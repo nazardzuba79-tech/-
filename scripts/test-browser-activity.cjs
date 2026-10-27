@@ -305,6 +305,56 @@ test('different headers or methods are not coalesced into the same wake read',as
   assert.equal(s.calls.length,3);await s.advance(151);s.stop();
 });
 
+// Failure records are built inside the sandbox realm; compare their plain shape.
+const plain=value=>JSON.parse(JSON.stringify(value));
+// Owner, 2026-10-21: a double click reached the chart menu while the single clicks were refused.
+test('a double click is refused like a click until the wake succeeds, then works again',async()=>{
+  const s=setup();s.api.sleepBrowser();
+  assert.equal(s.input('dblclick').blocked,true);
+  await flush();await s.advance(151);assert.equal(s.api.getBrowserPhase(),'active');
+  assert.equal(s.input('pointerdown').blocked,false);assert.equal(s.input('click').blocked,false);assert.equal(s.input('dblclick').blocked,false);
+  s.stop();
+});
+test('a failed wake names the failing request; only the notice controls are let through, as a retry',async()=>{
+  const s=setup({fetcher:async()=>new Response('{}',{status:503})});
+  s.api.browserSetInterval(()=>s.api.browserFetch('/positions'),1000);
+  s.api.sleepBrowser();await s.wake();
+  assert.equal(s.api.getBrowserPhase(),'error');
+  assert.deepEqual(plain(s.api.getBrowserResumeFailure()),{kind:'read',detail:'GET /positions',status:503});
+  const notice={closest:selector=>selector==='[data-browser-notice]'?{}:null},elsewhere={closest:()=>null};
+  const validations=s.validations;
+  // The notice's own controls reach their handlers (retry calls resumeBrowser itself) without starting a cycle here.
+  for(const type of ['pointerdown','click','keydown'])assert.equal(s.input(type,true,{target:notice,key:'Enter'}).blocked,false,type);
+  assert.equal(s.api.getBrowserPhase(),'error');assert.equal(s.validations,validations);
+  // Any other input is refused and is itself a retry — the next wake hides the notice until it fails again.
+  assert.equal(s.input('pointerdown',true,{target:elsewhere}).blocked,true);
+  assert.equal(s.api.getBrowserPhase(),'validating');
+  for(const type of ['click','dblclick','keydown'])assert.equal(s.input(type,true,{target:elsewhere}).blocked,true,type);
+  assert.equal(s.input('click',true,{target:notice}).blocked,true,'notice input while validating');
+  await flush();await s.advance(151);
+  assert.equal(s.api.getBrowserPhase(),'error');assert.equal(s.validations,validations+1);
+  assert.deepEqual(plain(s.api.getBrowserResumeFailure()),{kind:'read',detail:'GET /positions',status:503});
+  s.stop();
+});
+test('a failed session check and a barrier timeout are recorded as such',async()=>{
+  const a=setup({validate:async()=>{throw new Error('offline');}});a.api.sleepBrowser();await a.wake();
+  assert.equal(a.api.getBrowserPhase(),'error');assert.deepEqual(plain(a.api.getBrowserResumeFailure()),{kind:'session',detail:'offline'});a.stop();
+  const b=setup({fetcher:()=>new Promise(()=>{})});b.api.sleepBrowser();
+  const pending=b.api.resumeBrowser();await flush();assert.equal(b.api.getBrowserPhase(),'syncing');
+  void b.api.browserFetch('/slow').catch(()=>{});await flush();
+  await b.advance(30200);await pending;
+  assert.equal(b.api.getBrowserPhase(),'error');assert.deepEqual(plain(b.api.getBrowserResumeFailure()),{kind:'timeout',pending:['GET /slow']});b.stop();
+});
+test('an optional display read failing during the wake never fails it; a successful wake clears the record',async()=>{
+  const s=setup();s.api.sleepBrowser();
+  const pending=s.api.resumeBrowser();await flush();assert.equal(s.api.getBrowserPhase(),'syncing');
+  void s.api.trackBrowserRead(Promise.reject(new Error('ticker_http_503')),false,'futures reference tickers').catch(()=>{});
+  const edge=s.api.browserFallbackFetch('/edge/futures-tickers');await flush();
+  await s.advance(151);await pending;
+  assert.equal(s.api.getBrowserPhase(),'active');assert.equal(s.api.getBrowserResumeFailure(),null);
+  assert.equal((await edge).status,200);
+  s.stop();
+});
 test('F5 and browser reload shortcuts remain available while asleep',()=>{
   const s=setup();s.api.sleepBrowser();
   for(const values of [{key:'F5'},{key:'r',ctrlKey:true},{key:'R',metaKey:true}]){

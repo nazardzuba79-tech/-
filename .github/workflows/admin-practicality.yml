@@ -40,7 +40,7 @@ jobs:
         run: npm run build --prefix frontend
       - name: Disposable browser
         run: |
-          npm install --prefix /tmp/admin-practicality-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npm install --prefix /tmp/admin-practicality-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/admin-practicality-qa/node_modules/playwright/cli.js install --with-deps chromium
       - name: Four-width screenshot and overflow checks
         env:

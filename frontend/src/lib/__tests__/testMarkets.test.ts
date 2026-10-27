@@ -172,7 +172,9 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   const form = src('components/OrderForm.tsx');
   test('the standard ticker bar, book and order form; only the chart area is the listing card', () => {
     expect(page).toContain('<TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />');
-    expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />');
+    expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoPair ? demoMode : \'off\'} />');
+    // Demo Spot (Issue #592) never applies to a listing, test market or VTA.
+    expect(page).toContain("const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);");
     expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
     expect(page).toContain("marketType !== 'spot' || isBrowserInactive()) return;");
     expect(page).toContain("const bookLive = !testPair || testMarket.asset?.state.phase === 'live';");
@@ -184,14 +186,17 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   });
   test('prelisting and non-admin orders remain blocked; only the private live sale is admitted', () => {
     const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
-    expect(submit.replace(/\r\n/g, '\n')).toContain("if (notTradingYet) {\n      const message = t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
+    // Blocked orders are a disabled button, never a «not trading yet» sentence (owner, 2026-10-22).
+    expect(submit).toContain('if (orderBlocked) return;');
+    expect(form).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+    expect(form).not.toMatch(/assetNotTradingYet|assetPurchaseUnavailable|assetOrderTypeUnavailable/);
     // VTA is still gated exactly as before; NRX and a TRADABLE managed listing
     // (Admin → Listings) use the ordinary Spot path, refused server-side before listing.
     expect(form).toContain("const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;");
     expect(form).toContain('await withVtaSaleLock(accountId, async () => {');
     expect(form).toContain('const pending = prepareVtaIntent(accountId, quantity);');
     expect(form).toContain('await api.sellVtaDemo(pending.requestId, pending.quantity)');
-    expect(submit).toContain("if (privateVta && (side === 'BUY' || family !== 'MARKET'))");
+    expect(form).toContain("const orderBlocked = notTradingYet || (privateVta && (side === 'BUY' || family !== 'MARKET'));");
     expect(form).toContain('noValidate={notTradingYet || privateVta}');
   });
   test('no technical wording on the listing card or the Markets row', () => {

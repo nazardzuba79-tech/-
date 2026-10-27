@@ -136,13 +136,16 @@ describe('the deposit screen shows every wallet straight away', () => {
     expect(failed).toContain(dictionaries.ru['deposit.loadChainsError']);
   });
 
-  it('says it is loading before the config lands, and says nothing is configured after', () => {
+  // Owner, 2026-10-22: no «Пополнение пока недоступно: адреса кошельков ещё не подключены» — an empty value instead.
+  it('says it is loading before the config lands, and shows an empty value (no «not available yet» line) after', () => {
     const loading = renderModal({ loaded: false, wallets: [], minDepositUsd: null, error: null });
     expect(loading).toContain(dictionaries.ru['deposit.loadingNetworks']);
-    expect(loading).not.toContain(dictionaries.ru['deposit.noneConfigured']);
+    expect(loading).not.toContain('>—</p>');
 
     const none = renderModal({ loaded: true, wallets: [], minDepositUsd: 20, error: null });
-    expect(none).toContain(dictionaries.ru['deposit.noneConfigured']);
+    expect(none).toContain('aria-hidden="true">—</p>');
+    expect(none).not.toMatch(/Пополнение пока недоступно|не подключены/);
+    expect(dictionaries.ru['deposit.noneConfigured']).toBeUndefined();
     expect(none).not.toContain(dictionaries.ru['deposit.loadingNetworks']);
   });
 

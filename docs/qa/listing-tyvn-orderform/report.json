@@ -1,0 +1,104 @@
+[
+  {
+    "scenario": "TYVN pre-listing (timer running, 1 h before 13:00 UTC)",
+    "width": 1440,
+    "formEditable": true,
+    "submitEnabled": true,
+    "BUY": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "SELL": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "writesReachedServer": 0,
+    "pageErrors": [],
+    "screenshot": "tyvn-pre-1440.png"
+  },
+  {
+    "scenario": "TYVN pre-listing (timer running, 1 h before 13:00 UTC)",
+    "width": 390,
+    "formEditable": true,
+    "submitEnabled": true,
+    "BUY": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "SELL": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "writesReachedServer": 0,
+    "pageErrors": [],
+    "screenshot": "tyvn-pre-390.png"
+  },
+  {
+    "scenario": "TYVN live (1 h after 13:00 UTC)",
+    "width": 1440,
+    "formEditable": true,
+    "submitEnabled": true,
+    "BUY": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "SELL": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "writesReachedServer": 0,
+    "pageErrors": [],
+    "screenshot": "tyvn-live-1440.png"
+  },
+  {
+    "scenario": "TYVN live (1 h after 13:00 UTC)",
+    "width": 390,
+    "formEditable": true,
+    "submitEnabled": true,
+    "BUY": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "SELL": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "writesReachedServer": 0,
+    "pageErrors": [],
+    "screenshot": "tyvn-live-390.png"
+  },
+  {
+    "scenario": "AITH existing demo listing, live",
+    "width": 1440,
+    "formEditable": true,
+    "submitEnabled": true,
+    "BUY": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "SELL": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "writesReachedServer": 0,
+    "pageErrors": [],
+    "screenshot": "aith-live-1440.png"
+  },
+  {
+    "scenario": "AITH existing demo listing, live",
+    "width": 390,
+    "formEditable": true,
+    "submitEnabled": true,
+    "BUY": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "SELL": {
+      "requestsSent": [],
+      "message": "Этот актив пока не торгуется"
+    },
+    "writesReachedServer": 0,
+    "pageErrors": [],
+    "screenshot": "aith-live-390.png"
+  }
+]

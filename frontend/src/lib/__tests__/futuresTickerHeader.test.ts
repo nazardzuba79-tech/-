@@ -40,6 +40,11 @@ function stripKycMaterialsApi(text: string): string {
  */
 function normalizeApiTs(text: string): string {
   return stripKycMaterialsApi(text)
+    // Demo Spot (Issue #592): additive demo-ledger methods only; no Futures/Spot method changes.
+    .replace("  // Demo Spot (Issue #592): with the server's DEMO_SPOT_ENABLED an\n  // admin-credited account trades the demo ledger too (see lib/demoSpot).\n  getDemoSpotAccess: () => request<{ enabled: boolean; admitted: boolean; ledger?: 'spot' | 'demo' | 'none' }>('/demo/spot/access'),\n\n  /** `requestId` makes a retry after a lost response return the same order. */\n  placeDemoSpotOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string; requestId: string }) =>\n    request('/demo/orders', { method: 'POST', body: JSON.stringify(params) }),\n\n  getDemoOrderHistory: () =>\n    request<\n      {\n        id: string;\n        pair: string;\n        side: 'BUY' | 'SELL';\n        type: 'LIMIT' | 'MARKET';\n        price: string | null;\n        originalQuantity: string;\n        remainingQuantity: string;\n        status: string;\n        createdAt: string;\n      }[]\n    >('/demo/orders/history'),\n\n", '')
+    // Demo Spot on: the optional request ID on the two ordinary Spot order calls (Issue #592 review).
+    .replace("    quantity: string;\n    /** With Demo Spot on: a retry after a lost response returns the same order. */\n    requestId?: string;\n  }) => request('/orders',", "    quantity: string;\n  }) => request('/orders',")
+    .replace("    stopLimitPrice: string;\n    requestId?: string;\n  }) =>\n    request<{ ocoGroupId: string;", "    stopLimitPrice: string;\n  }) =>\n    request<{ ocoGroupId: string;")
     // Reuse the identical authenticated transport in the lazy OTC module.
     .replace('export async function request<T>', 'async function request<T>')
     // Remembered-device auth (2026-10-03, admin accounts only) adds logout and

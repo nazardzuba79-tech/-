@@ -29,7 +29,7 @@ export function ReservesPanel() {
       <div className="px-5 py-4 sm:px-6">
         {error && <div className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">{t('settings.reservesLoadError')}</div>}
         {!error && !rows && <div className="h-24 animate-pulse rounded-xl bg-secondary" />}
-        {rows && rows.length === 0 && <p className="text-[12.5px] text-muted-foreground">{t('settings.reservesEmpty')}</p>}
+        {rows && rows.length === 0 && <p className="text-[12.5px] text-muted-foreground" aria-hidden="true">—</p>}
         {rows && rows.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-[12.5px]">

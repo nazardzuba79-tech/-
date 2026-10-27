@@ -21,6 +21,8 @@ export class AdminUserDeletionService {
           // Same lock as FuturesBookTransaction, before user/balance locks.
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('futures-book', 0))::text`;
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('spot-book', 0))::text`;
+          // Same lock as demo Spot (DEMO_SPOT_LEDGER): its books reload from these rows.
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('demo-spot-book', 0))::text`;
           const users = await tx.$queryRaw<{ id: string; email: string; role: string }[]>`
             SELECT id, email, role FROM "User" WHERE id IN (${adminId}, ${userId}) ORDER BY id FOR UPDATE`;
           const admin = users.find(u => u.id === adminId);

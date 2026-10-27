@@ -43,6 +43,20 @@ const raw = (n = 1, extra: Record<string, unknown> = {}) => {
 const code = (fn: () => unknown) => { try { fn(); return null; } catch (error) { return (error as { code?: string }).code ?? 'NO_CODE'; } };
 
 describe('History20 private test listing: configuration', () => {
+  test('current-main opened-state protection applies to private history and never unlocks its financial parameters', () => {
+    const active = parseListingConfig(raw());
+    const now = START + DAY;
+    const moved = { ...active, listingAt: new Date(now + DAY).toISOString() };
+    // An explicitly never-opened staged record may move; absent evidence is conservative.
+    expect(() => checkPublishable(moved, active, now, 60_000, false)).not.toThrow();
+    expect(code(() => checkPublishable(moved, active, now))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable(moved, active, now, 60_000, true))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable({ ...moved, seed: 'replacement-seed' }, active, now, 60_000, false)))
+      .toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable({ ...moved, initialPrice: '3' }, active, now, 60_000, false)))
+      .toBe('HISTORY_LOCKED');
+  });
+
   test('a private History20 window parses; its pair and slug are quoted in SIMUSDT', () => {
     const config = parseListingConfig(raw());
     const asset = listingSimulationConfig(config);

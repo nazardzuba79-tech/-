@@ -22,6 +22,16 @@
 .listing-status-changed { color: var(--accent); }
 .listing-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .listing-actions a { display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border-radius: 8px; color: var(--admin-brand); font-weight: 700; font-size: 13px; text-decoration: none; }
+/* The pre-listing timer of a published listing: status, the UTC / МСК line and its start / pause / stop buttons, on a full-width line of the row. */
+.listing-timer { grid-column: 1 / -1; display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .03); box-shadow: inset 0 0 0 1px var(--border); font-size: 12px; }
+.listing-timer small { color: var(--text-tertiary); overflow-wrap: anywhere; }
+.listing-timer-running b { color: var(--buy); }
+.listing-timer-paused b { color: var(--accent); }
+.listing-timer-staged b { color: var(--text-secondary); }
+.listing-timer-open b { color: var(--text-secondary); }
+.listing-timer-overdue { box-shadow: inset 0 0 0 1px var(--sell); }
+.listing-timer-overdue b { color: var(--sell); }
+.listing-timer-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .listing-form { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); min-width: 0; }
 .listing-form h2 { margin: 0; font-size: 16px; }
 .listing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }

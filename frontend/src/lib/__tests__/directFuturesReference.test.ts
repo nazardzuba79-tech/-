@@ -103,3 +103,38 @@ test('keeps independent fallback provenance when edge returns OKX-normalized tic
   });
   expect(rows.get('BTC/USDT')?.provider).toBe('okx');
 });
+
+describe('the reference loader beside the wake barrier', () => {
+  const nativeFetch = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = nativeFetch; jest.useRealTimers(); jest.resetModules(); jest.dontMock('../browserActivity'); });
+
+  // 2026-10-21: production's edge fallback answered 503 market_data_unavailable. With the direct hosts
+  // unreachable as well, this one display read put every wake into `error` and refused all input.
+  test('tracks the whole logical read as optional and abandons a hanging attempt after 8 s on its own timer', async () => {
+    jest.resetModules(); jest.useFakeTimers();
+    const tracked: { reportFailure: boolean; label?: string }[] = [];
+    jest.doMock('../browserActivity', () => ({
+      isBrowserInactive: () => false, addBrowserActivityListener: () => {}, removeBrowserActivityListener: () => {},
+      browserFallbackFetch: (...args: unknown[]) => (globalThis.fetch as any)(...args),
+      trackBrowserRead: (promise: Promise<unknown>, reportFailure = true, label?: string) => { tracked.push({ reportFailure, label }); return promise; },
+    }));
+    const aborted: string[] = [];
+    globalThis.fetch = jest.fn((url: string, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init.signal!.addEventListener('abort', () => { aborted.push(url); reject(new DOMException('Aborted', 'AbortError')); });
+    })) as unknown as typeof fetch;
+    const { directFuturesReferenceStore } = await import('../directFuturesReference');
+    const off = directFuturesReferenceStore.subscribe(() => {});
+    await Promise.resolve();
+    expect(tracked).toEqual([{ reportFailure: false, label: 'futures reference tickers' }]);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(7_999);
+    expect(aborted).toEqual([]);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(aborted).toEqual(['/api/v1/market/display']);
+    // Retried by the loader's own 60 s timer, still optional — never by the wake.
+    await jest.advanceTimersByTimeAsync(60_000);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(tracked.every(read => read.reportFailure === false)).toBe(true);
+    off();
+  });
+});

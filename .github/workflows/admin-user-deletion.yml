@@ -37,7 +37,7 @@ jobs:
           src/services/__tests__/TreasuryWalletService.test.ts
           frontend/src/lib/__tests__/admin frontend/src/lib/__tests__/depositAllWallets
       - name: Install isolated disposable database and browser tools
-        run: npm install --prefix node_modules/.cache/admin-delete-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+        run: npm install --prefix node_modules/.cache/admin-delete-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.63.0
       - name: PostgreSQL rollback, retained history, authentication revocation and browser QA
         run: |
           $env:ADMIN_DELETE_QA_DEPS = Join-Path (Get-Location) 'node_modules/.cache/admin-delete-qa/package.json'

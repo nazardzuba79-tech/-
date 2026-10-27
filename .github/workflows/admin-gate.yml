@@ -41,7 +41,7 @@ jobs:
         run: npm run build --prefix frontend
       - name: Disposable Chromium
         run: |
-          npm install --prefix /tmp/admin-gate-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npm install --prefix /tmp/admin-gate-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/admin-gate-qa/node_modules/playwright/cli.js install --with-deps chromium
       - name: Browser QA at 390 and 1440 against a fixture API (no production service)
         env:

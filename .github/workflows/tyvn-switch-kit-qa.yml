@@ -1,0 +1,42 @@
+name: TYVN API-only Compose switch kit QA
+on:
+  push:
+    branches:
+      - review/tyvn-api-switch-kit-583-20261022
+    paths:
+      - 'scripts/tyvn-api-switch.py'
+      - 'scripts/tyvn-api-switch-selftest.sh'
+      - 'docs/TYVN_API_SWITCH_20261027.md'
+      - '.github/workflows/tyvn-switch-kit-qa.yml'
+  pull_request:
+    paths:
+      - 'scripts/tyvn-api-switch.py'
+      - 'scripts/tyvn-api-switch-selftest.sh'
+      - 'docs/TYVN_API_SWITCH_20261027.md'
+      - '.github/workflows/tyvn-switch-kit-qa.yml'
+permissions:
+  contents: read
+jobs:
+  offline-compose-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python compile
+        run: python3 -m py_compile scripts/tyvn-api-switch.py
+      - name: Shell syntax
+        run: bash -n scripts/tyvn-api-switch-selftest.sh
+      - name: Offline Compose allowlist and rejection self-test
+        run: bash scripts/tyvn-api-switch-selftest.sh
+      - name: Confirm read-only commands only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          code=Path('scripts/tyvn-api-switch.py').read_text()
+          assert "subprocess.run(cmd, capture_output=True" in code
+          assert "['up', '-d', '--no-deps', '--no-build', '--pull', 'never', SERVICE]" in code
+          assert "run(with_overlay + up)" not in code
+          assert "run(base + up)" not in code
+          PY

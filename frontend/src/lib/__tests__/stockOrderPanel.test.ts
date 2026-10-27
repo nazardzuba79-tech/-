@@ -40,18 +40,27 @@ describe('Stocks order ticket is presentation only', () => {
     key: widgetCatalogue.data!.instruments[index].instrumentId, instrument: widgetCatalogue.data!.instruments[index],
   })));
   const click = async (text: string) => React.act(async () => Array.from(document.querySelectorAll('button')).find(b => b.textContent === text)!.click());
-  test('unknown balance/total, disabled submission and no network dependencies', async () => {
+  test('unknown balance/total, clickable silent submission and no network dependencies', async () => {
     await draw();
     expect(document.querySelector('.vxs-order-available')!.textContent).toBe('trade.available— USD');
     expect(document.querySelector<HTMLInputElement>('input[aria-label="trade.total"]')!.value).toBe('');
     expect(document.querySelector<HTMLInputElement>('input[aria-label="trade.total"]')!.readOnly).toBe(true);
-    expect(document.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
-    expect(document.querySelector('.vxs-order-notice')!.textContent).toBe('stocks.tradingUnavailable');
+    expect(document.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
+    expect(document.querySelector('.vxs-order-notice')).toBeNull();
     const event = new window.Event('submit', { bubbles: true, cancelable: true });
     await React.act(async () => document.querySelector('form')!.dispatchEvent(event));
     expect(event.defaultPrevented).toBe(true);
+    const fetch = jest.spyOn(globalThis, 'fetch');
+    try {
+      await React.act(async () => document.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
+      const keyboardSubmit = new window.Event('submit', { bubbles: true, cancelable: true });
+      await React.act(async () => document.querySelector('form')!.dispatchEvent(keyboardSubmit));
+      expect(keyboardSubmit.defaultPrevented).toBe(true);
+      expect(fetch).not.toHaveBeenCalled();
+      expect(document.querySelectorAll('[role="alert"], [role="status"]')).toHaveLength(0);
+    } finally { fetch.mockRestore(); }
   });
-  test('Buy/Sell and Limit/Market remain usable while submission stays disabled', async () => {
+  test('Buy/Sell and Limit/Market remain usable while submission stays silent', async () => {
     await draw(); await click('trade.sell');
     expect(document.querySelector('.vxs-order-submit')!.classList.contains('sell')).toBe(true);
     await click('futures.closeMarket');
@@ -59,7 +68,7 @@ describe('Stocks order ticket is presentation only', () => {
     expect(document.querySelectorAll('.order-family-tabs button')).toHaveLength(2);
     await click('futures.closeLimit');
     expect(document.querySelector<HTMLInputElement>('input[aria-label="trade.price"]')!.readOnly).toBe(false);
-    expect(document.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
   });
   test('switching the instrument resets side and family without retaining another ticket', async () => {
     await draw(); await click('trade.sell'); await click('futures.closeMarket'); await draw(1);

@@ -65,12 +65,12 @@ test('real workerd + SQLite DO: signed deposit/registration, private KYC binding
     assert.match(calls[2].text, /^Нова реєстрація VOLTEX\n\nEmail: synthetic-registration@example.invalid\nДата і час: \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2} \(Київ\)$/);
     assert.ok(!calls[2].text.includes('integration-1'), 'no user ID in the Telegram text');
     const copy = { eventId: 'integration-copy-1', eventType: 'DEPOSIT_ADDRESS_COPIED',
-      timestamp: Date.now(), asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)' };
+      timestamp: Date.now(), asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', email: 'copier@example.invalid' };
     const copies = await Promise.all(Array.from({ length: 12 }, () => mf.dispatchFetch('https://local/v1/copy', signed(copy, '/v1/copy')).then(r => r.json())));
     assert.equal(copies.filter(r => r.status === 'SENT').length, 1);
     assert.equal(calls.length, 4, 'only one Telegram message per recorded copy event');
-    assert.equal(calls[3].text, 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)');
-    assert.ok(!calls[3].text.includes(registration.email), 'no account identity in copy Telegram');
+    assert.equal(calls[3].text, 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)\nEmail: copier@example.invalid');
+    assert.ok(!calls[3].text.includes(registration.email), 'copy uses its own account email');
     const wrongBinding = await kyc.fetch('https://local/', { method: 'POST', body: JSON.stringify(registration) });
     assert.equal((await wrongBinding.json()).status, 'INVALID_EVENT', 'KYC authority not broadened');
     await mf.dispose(); mf = new Miniflare(runtimeOptions);

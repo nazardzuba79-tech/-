@@ -79,7 +79,7 @@ export function OtcExchangeForm({token,onCreated,onDeposit,tier}:{token:string|n
     <p>Доступно для обмена: <strong>{loading||loadError||!eligible?'—':available} {draft.asset}</strong></p>
     {!eligible&&!loading&&!loadError&&<p>Нужны подтверждённые KYC и допуск оператора. Для обмена доступен только реальный баланс.</p>}
     <p>Курс, комиссия и сумма к выдаче согласовываются с поддержкой.</p>
-    {(!config?.enabled||!fiats.length)&&!loading&&<div className="otc-cash-notice">Страна и город — справочник, а не обещание работающей кассы. Направление пока не подтверждено.<br/><button onClick={openSupportWidget}>Уточнить доступность без резерва</button></div>}
+    {(!config?.enabled||!fiats.length)&&!loading&&<div className="otc-cash-notice"><button onClick={openSupportWidget}>Связаться с поддержкой</button></div>}
     {insufficient&&<p role="alert">Не хватает {amount.minus(available!).toFixed()} {draft.asset}. <button onClick={onDeposit}>Пополнить обычный баланс</button></p>}
     {!!draft.quantity&&!valid&&<p role="alert">Введите положительное количество без экспоненты и лишних знаков после запятой.</p>}
     {intent?<div className="otc-cash-notice"><p>Результат исходной попытки уточняется. Параметры сохранены, повтор не создаёт новую заявку.</p><button disabled={busy} onClick={()=>void check()}>Проверить исходную попытку</button><button disabled={busy} onClick={()=>void create()}>Повторить с тем же ключом</button></div>

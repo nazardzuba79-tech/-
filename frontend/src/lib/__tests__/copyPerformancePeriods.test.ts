@@ -108,7 +108,10 @@ afterEach(async () => {
   }
 });
 
-test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('dated demo is separate from the unchanged rolling figures in %s', async lang => {
+// The dated «Демо · симуляция» ROI notice (12–18.10.2026, shown until 22.10.2026 00:00 UTC) is removed with
+// every practice notice (owner, 2026-10-22: «щоб більше ніколи … не появлялись … і схожих»): no card or
+// profile shows it at any time, and the rolling figures are the only ROI on screen.
+test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('no dated demo notice next to the rolling figures in %s, even inside the old window', async lang => {
   jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-20T12:00:00Z'));
   language = lang;
   await mount(); await answer();
@@ -117,33 +120,26 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('dated demo is separate fr
     const week = buttons.find(button => button.textContent === '7Д') as HTMLButtonElement;
     expect(week).toBeDefined(); week.click();
   });
-  for (const [id, key, expected] of [['VX-001', 'nazar', 179], ['VX-KSENIA', 'ksenia', 132]] as const) {
-    const notice = card(id).querySelector('[data-demo-roi]')!;
-    expect(notice.textContent).toContain(`+${expected}%`);
-    expect(notice.textContent).toContain('12–18.10.2026');
-    expect(notice.textContent).toContain('UTC');
+  for (const [id, key] of [['VX-001', 'nazar'], ['VX-KSENIA', 'ksenia']] as const) {
+    expect(card(id).querySelector('[data-demo-roi]')).toBeNull();
+    expect(card(id).textContent).not.toMatch(/Демо|Demo|симуляц|simulat/i);
     expect(card(id).querySelector('.card-roi-copy strong')!.textContent)
       .toBe(formatPercent(sections[key].economics!.periods['7D'].roi));
   }
   await openProfile('VX-001'); await choose('7D');
-  expect(host.querySelector('[data-demo-roi]')!.textContent).toContain('+179%');
+  expect(host.querySelector('[data-demo-roi]')).toBeNull();
   expect(panel().values.roi).toBe(formatPercent(selectSyntheticPeriod(sections.nazar, '7D').roi));
   expect(panel().values.masterPnl).toBe(publicSignedUsdt(selectSyntheticPeriod(sections.nazar, '7D').pnl).replace(/ | /g, ' '));
-  await choose('30D');
-  expect(host.querySelector('[data-demo-roi]')).toBeNull();
 });
 
-test('the open page expires at midnight UTC without a reload or successful refresh, and stays expired on remount', async () => {
-  const clock = jest.spyOn(Date, 'now').mockReturnValue(DEMO_ROI_END - 1000);
-  const timers = jest.spyOn(dom.window, 'setTimeout');
+test('around the old deadline nothing appears or changes, and a remount shows nothing either', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(DEMO_ROI_END - 1000);
   await mount(); await answer(); await openProfile('VX-KSENIA'); await choose('7D');
-  expect(host.querySelector('[data-demo-roi]')!.textContent).toContain('+132%');
+  expect(host.querySelector('[data-demo-roi]')).toBeNull();
   const previous = panel().values;
   const payloadBefore = JSON.stringify(store.getState().ksenia);
-  const deadline = timers.mock.calls.find(call => call[1] === 1000)![0] as () => void;
-  expect(deadline).toBeInstanceOf(Function);
-  clock.mockReturnValue(DEMO_ROI_END);
-  await act(async () => { deadline(); await flush(); });
+  (Date.now as jest.Mock).mockReturnValue(DEMO_ROI_END);
+  await act(async () => { await flush(); });
   expect(host.querySelector('[data-demo-roi]')).toBeNull();
   expect(panel().values).toEqual(previous);
   expect(JSON.stringify(store.getState().ksenia)).toBe(payloadBefore);

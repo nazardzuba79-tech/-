@@ -1,4 +1,6 @@
 import { VtaSpotPanels } from '../components/VtaSpotPanels';
+import { DemoSpotAssets, DemoSpotOrders } from '../components/DemoSpotPanels';
+import { isDemoSpotPair, useDemoSpotMode } from '../lib/demoSpot';
 import { NrxBookTabs } from '../components/NrxBookTabs';
 import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 
@@ -87,6 +89,7 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
 
 export function TradePage() {
   const { t } = useLanguage();
+  const demoMode = useDemoSpotMode();
   const [searchParams, setSearchParams] = useSearchParams();
   // Lets other pages (e.g. the Wallet page's "Buy" action on a zero-balance
   // asset) deep-link straight into a specific pair via ?pair=SOL/USDT —
@@ -434,7 +437,11 @@ export function TradePage() {
     );
   }
 
-  const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
+  // Demo Spot (Issue #592): off unless both the build and the server switch it on.
+  // 'spot' (an account trading its ordinary Balance) keeps the ordinary panels.
+  const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);
+  const demoLedger = demoPair && (demoMode === 'trader' || demoMode === 'silent') ? demoMode : null;
+  const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoPair ? demoMode : 'off'} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
       <Nav active="/trade" onTickerSelect={selectSpotPair} staticTicker tickerFitToWidth terminalSwitch={<TerminalMarketSwitch current="spot" pair={pair} />} />
@@ -539,10 +546,12 @@ export function TradePage() {
             {/* Keep the reader mounted: a real incoming order or failed poll
                 must restore this panel without waiting for a tab click. */}
             <div className="account-tab-content" hidden={bottomTab !== 'open'}>
-              <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} onAccountCount={setAccountOpenOrderCount} />
+              {demoLedger
+                ? <DemoSpotOrders key={demoLedger} ref={openOrdersRef} mode={demoLedger} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} onAccountCount={setAccountOpenOrderCount} />
+                : <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} onAccountCount={setAccountOpenOrderCount} />}
             </div>
-            {bottomTab === 'orderHistory' && (pair === 'VTA/USDT' ? <VtaSpotPanels history refreshKey={ordersRefreshKey} /> : <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />)}
-            {bottomTab === 'assets' && (pair === 'VTA/USDT' ? <VtaSpotPanels refreshKey={ordersRefreshKey} /> : <AssetsPanel compact refreshKey={ordersRefreshKey} />)}
+            {bottomTab === 'orderHistory' && (pair === 'VTA/USDT' ? <VtaSpotPanels history refreshKey={ordersRefreshKey} /> : demoLedger ? <DemoSpotOrders key={demoLedger} history mode={demoLedger} pair={pair} refreshKey={ordersRefreshKey} /> : <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />)}
+            {bottomTab === 'assets' && (pair === 'VTA/USDT' ? <VtaSpotPanels refreshKey={ordersRefreshKey} /> : demoLedger ? <DemoSpotAssets key={demoLedger} mode={demoLedger} refreshKey={ordersRefreshKey} /> : <AssetsPanel compact refreshKey={ordersRefreshKey} />)}
           </div>
         </div>
       </div>

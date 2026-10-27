@@ -4,7 +4,10 @@
  * browser. Every call is one bounded HTTPS request; nothing here touches Neon.
  */
 import { z } from 'zod';
-import { listingConfigSchema, publishedListingSchema, type ListingConfig, type PublishedListing } from './listingConfig';
+import {
+  listingConfigSchema, listingCountdownSchema, publishedListingSchema,
+  type ListingConfig, type ListingCountdown, type ListingCountdownAction, type PublishedListing,
+} from './listingConfig';
 
 export class ListingStoreError extends Error {
   constructor(readonly status: number, readonly code: string, message: string, readonly details: Record<string, unknown> = {}) { super(message); }
@@ -17,16 +20,25 @@ export const adminListingSchema = z.object({
   draftUpdatedAt: z.string(), draftUpdatedBy: z.string(),
   activeVersion: z.number().int().positive().nullable(), active: listingConfigSchema.nullable(),
   versions: z.array(versionSchema),
+  /** The pre-listing timer; null until the listing has one (published before the timer existed, or never staged). */
+  countdown: listingCountdownSchema.nullable().optional(),
 });
 export type AdminListing = z.infer<typeof adminListingSchema>;
 const adminListSchema = z.object({ revision: z.string(), serverTime: z.number(), listings: z.array(adminListingSchema) });
 const publishedSchema = z.object({ revision: z.string(), listings: z.array(publishedListingSchema) });
+const publishReceiptSchema = z.object({ id: z.string(), version: z.number(), replayed: z.boolean(), publishedAt: z.string(), countdown: listingCountdownSchema.nullable().optional() });
+const countdownReceiptSchema = z.object({ id: z.string(), countdown: listingCountdownSchema, changed: z.boolean() });
+export type ListingPublishReceipt = z.infer<typeof publishReceiptSchema>;
+export type ListingCountdownReceipt = z.infer<typeof countdownReceiptSchema>;
 
 export interface ListingStore {
   list(): Promise<z.infer<typeof adminListSchema>>;
   published(): Promise<{ revision: string; listings: PublishedListing[] }>;
   saveDraft(id: string, config: ListingConfig, ifMatch: number, actor: string): Promise<{ id: string; draftRevision: number; draft: ListingConfig }>;
-  publish(id: string, draftRevision: number, publishKey: string, actor: string): Promise<{ id: string; version: number; replayed: boolean; publishedAt: string }>;
+  /** `countdown: 'staged'` keeps a first publication off the public edge until its timer is started. */
+  publish(id: string, draftRevision: number, publishKey: string, actor: string, countdown?: 'staged' | 'running'): Promise<ListingPublishReceipt>;
+  /** Start, pause or stop the public pre-listing timer of a published listing. */
+  countdown?(id: string, action: ListingCountdownAction, actor: string): Promise<ListingCountdownReceipt>;
   replacePrelisting?(id: string, body: Record<string, unknown>, actor: string): Promise<Record<string, unknown>>;
 }
 
@@ -42,6 +54,7 @@ export class UnconfiguredListingStore implements ListingStore {
   async published(): Promise<never> { this.fail(); }
   async saveDraft(): Promise<never> { this.fail(); }
   async publish(): Promise<never> { this.fail(); }
+  async countdown(): Promise<never> { this.fail(); }
 }
 
 /** https only; plain http is accepted for a loopback test Worker outside production. */
@@ -102,9 +115,12 @@ export class CloudflareListingStore implements ListingStore {
     return this.call(`/${encodeURIComponent(id)}/draft`, z.object({ id: z.string(), draftRevision: z.number(), draft: listingConfigSchema }),
       { method: 'PUT', body: { config }, ifMatch, actor });
   }
-  publish(id: string, draftRevision: number, publishKey: string, actor: string) {
-    return this.call(`/${encodeURIComponent(id)}/publish`, z.object({ id: z.string(), version: z.number(), replayed: z.boolean(), publishedAt: z.string() }),
-      { method: 'POST', body: { draftRevision, publishKey }, actor });
+  publish(id: string, draftRevision: number, publishKey: string, actor: string, countdown?: 'staged' | 'running') {
+    return this.call(`/${encodeURIComponent(id)}/publish`, publishReceiptSchema,
+      { method: 'POST', body: { draftRevision, publishKey, ...(countdown ? { countdown } : {}) }, actor });
+  }
+  countdown(id: string, action: ListingCountdownAction, actor: string): Promise<ListingCountdownReceipt> {
+    return this.call(`/${encodeURIComponent(id)}/countdown`, countdownReceiptSchema, { method: 'POST', body: { action }, actor });
   }
   replacePrelisting(id: string, body: Record<string, unknown>, actor: string) {
     return this.call(`/${encodeURIComponent(id)}/replace-prelisting`, z.object({ id: z.string(), phase: z.enum(['PREPARED', 'COMMITTED', 'CANCELLED']) }).passthrough(),

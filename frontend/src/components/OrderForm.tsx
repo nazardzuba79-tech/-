@@ -15,6 +15,7 @@ import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedb
 import { customerErrorText } from '../lib/customerError';
 import { isManagedTradablePair, isTestMarketPair } from '../lib/testMarkets';
 import { MOBILE_TERMINAL_QUERY, useMediaQuery } from '../lib/useMediaQuery';
+import type { DemoSpotMode } from '../lib/demoSpot';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -35,11 +36,15 @@ export function OrderForm({
   onPlaced,
   pickedPrice,
   refreshKey = 0,
+  demo = 'off',
 }: {
   pair: string;
   onPlaced: () => void;
   pickedPrice?: PickedPrice | null;
   refreshKey?: number;
+  /** Demo Spot (lib/demoSpot): which ledger this account trades on this
+   * pair. TradePage passes 'off' for test markets, listings and VTA. */
+  demo?: DemoSpotMode;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -48,6 +53,14 @@ export function OrderForm({
   const [baseAsset, quoteAsset] = pair.split('/');
   const privateVta = pair.toUpperCase() === 'VTA/USDT';
   const vta = useVtaSpotAccount(privateVta);
+  // The demo ledger replaces the ordinary one; an account with nothing to
+  // trade ('silent') sends nothing at all. 'spot' keeps the ordinary ledger.
+  const demoLedger = (demo === 'trader' || demo === 'silent') && !privateVta;
+  // With Demo Spot on, an order's request ID is kept while its outcome is
+  // unknown (network error, 5xx): the same terms reuse it, so pressing Buy
+  // again after a lost response cannot place twice (both ledgers).
+  const demoPending = useRef<{ terms: string; requestId: string } | null>(null);
+  const demoRequest = demo !== 'off' && !privateVta;
   const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
   const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -89,6 +102,8 @@ export function OrderForm({
   // The server refuses the pair on its own as well (OrderService).
   // NRX and a tradable managed listing use the ordinary Spot order path (the server refuses them before listing).
   const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
+  // A market that is not open, or what a private VTA account may not do: the button is simply disabled.
+  const orderBlocked = notTradingYet || (privateVta && (side === 'BUY' || family !== 'MARKET'));
   const vtaLocked = privateVta && (submitting || vtaUnconfirmed);
   useEffect(() => onSessionChange(() => {
     if (!privateVta) return;
@@ -158,6 +173,11 @@ export function OrderForm({
     setExecution('LIMIT');
   }, [pickedPrice, pair, privateVta]);
 
+  // The demo ledger matches LIMIT and MARKET orders only.
+  useEffect(() => {
+    if (demoLedger && family !== 'LIMIT' && family !== 'MARKET') setFamily('LIMIT');
+  }, [demoLedger, family]);
+
   useEffect(() => {
     let cancelled = false;
     if (privateVta) return;
@@ -166,8 +186,7 @@ export function OrderForm({
       if (pending) return;
       pending = true;
       setBalanceLoading(true);
-      await api
-      .getBalances()
+      await (demoLedger ? (demo === 'trader' ? api.getDemoBalances() : Promise.resolve([])) : api.getBalances())
       .then((balances) => {
         if (cancelled) return;
         const base = balances.find((b) => b.asset === baseAsset);
@@ -182,7 +201,7 @@ export function OrderForm({
     void load();
     const timer = browserSetInterval(load, 4000);
     return () => { cancelled = true; browserClearInterval(timer); };
-  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion, privateVta]);
+  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion, privateVta, demoLedger, demo]);
 
   const { ticker: referenceTicker } = useMarketTicker(pair, 5000);
 
@@ -254,20 +273,33 @@ export function OrderForm({
     setPercent(0);
   }
 
+  /** One request ID per order while its outcome is unknown: the same terms
+   * after a network error or 5xx reuse it (the server answers with the order
+   * the first attempt committed); any definite answer (4xx) releases it. */
+  async function withRequestId<T>(terms: object, send: (requestId: string) => Promise<T>): Promise<T> {
+    const key = JSON.stringify(terms);
+    if (demoPending.current?.terms !== key) demoPending.current = { terms: key, requestId: crypto.randomUUID() };
+    try {
+      const result = await send(demoPending.current.requestId);
+      demoPending.current = null;
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError && error.status < 500) demoPending.current = null;
+      throw error;
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
-    if (privateVta && (side === 'BUY' || family !== 'MARKET')) {
-      const message = t(side === 'BUY' ? 'trade.assetPurchaseUnavailable' : 'trade.assetOrderTypeUnavailable');
-      setError(message); toast.error(message); return;
-    }
-    if (notTradingYet) {
-      const message = t('trade.assetNotTradingYet');
-      setError(message);
-      toast.error(message);
-      return;
-    }
+    // The button is disabled for these; no «not trading yet» line or toast (owner, 2026-10-22).
+    if (orderBlocked) return;
+    // Nothing to trade on either ledger: Buy/Sell stay clickable and nothing is sent or shown (Issue #592).
+    if (demoLedger && demo !== 'trader') return;
+    // Nothing on the balance this side spends: the same — no order, no line, no toast.
+    // An amount above a non-zero balance still gets the ordinary «not enough» answer.
+    if (demoRequest && balanceReady && !balanceError && (side === 'BUY' ? available.quote : available.base) <= 0) return;
     const requiredValues = [quantity, ...(family === 'OCO' ? [ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice] : [
       ...(family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? [price] : []),
       ...(isConditional ? [triggerPrice] : []),
@@ -307,24 +339,30 @@ export function OrderForm({
         if (getToken() !== session) return;
         await vta.refresh();
         if (getToken() !== session) return;
+      } else if (demoLedger) {
+        const terms = { pair, side, type: family === 'MARKET' ? 'MARKET' as const : 'LIMIT' as const, price: family === 'MARKET' ? undefined : price, quantity };
+        feedback = spotOrderFeedback(await withRequestId(terms, requestId => api.placeDemoSpotOrder({ ...terms, requestId })));
       } else if (family === 'OCO') {
-        await api.placeOcoOrder({
+        const terms = {
           pair,
           side,
           quantity,
           takeProfitPrice: ocoTakeProfitPrice,
           stopTriggerPrice: ocoStopTriggerPrice,
           stopLimitPrice: ocoStopLimitPrice,
-        });
+        };
+        if (demoRequest) await withRequestId(terms, requestId => api.placeOcoOrder({ ...terms, requestId }));
+        else await api.placeOcoOrder(terms);
       } else {
-        const result = await api.placeOrder({
+        const terms = {
           pair,
           side,
           type,
           price: type === 'LIMIT' || type === 'STOP_LIMIT' || type === 'TAKE_PROFIT_LIMIT' ? price : undefined,
           triggerPrice: isConditional ? triggerPrice : undefined,
           quantity,
-        });
+        };
+        const result = demoRequest ? await withRequestId(terms, requestId => api.placeOrder({ ...terms, requestId })) : await api.placeOrder(terms);
         feedback = spotOrderFeedback(result);
       }
       onPlaced();
@@ -364,7 +402,7 @@ export function OrderForm({
     { id: 'STOP', label: t('trade.stopOrder') },
     { id: 'TAKE_PROFIT', label: t('trade.takeProfitOrder') },
     { id: 'OCO', label: t('trade.ocoOrder') },
-  ];
+  ].filter(f => !demoLedger || f.id === 'LIMIT' || f.id === 'MARKET') as { id: OrderFamily; label: string }[];
 
   const lastPriceLabel = t('trade.lastPriceBtn');
   const sideClass = side === 'BUY' ? 'buy' : 'sell';
@@ -607,7 +645,7 @@ export function OrderForm({
           </div>
         )}
 
-        <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
+        <button type="submit" disabled={submitting || orderBlocked} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : side === 'BUY' ? t('trade.buy') : t('trade.sell')}
         </button>
 

@@ -54,10 +54,10 @@ function readState(forWrite=false):CfdPaperState{
   try{
     const raw=window.localStorage.getItem(KEY);if(!raw)return empty();
     const parsed=JSON.parse(raw);
-    if(!parsed||typeof parsed!=='object'||!Array.isArray(parsed.open)||!Array.isArray(parsed.history))throw new Error('Invalid practice ledger');
+    if(!parsed||typeof parsed!=='object'||!Array.isArray(parsed.open)||!Array.isArray(parsed.history))throw new Error('Invalid CFD ledger');
     const open=parsed.open.filter(validOpen).slice(0,100);
     const history=parsed.history.filter(validHistory).slice(0,200);
-    if(forWrite&&(open.length!==parsed.open.length||history.length!==parsed.history.length))throw new Error('Invalid practice ledger entries');
+    if(forWrite&&(open.length!==parsed.open.length||history.length!==parsed.history.length))throw new Error('Invalid CFD ledger entries');
     return{open,history};
   }catch{
     if(forWrite)throw new Error('cfd_practice_storage_unavailable');

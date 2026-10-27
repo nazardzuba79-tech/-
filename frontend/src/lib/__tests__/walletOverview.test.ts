@@ -318,7 +318,7 @@ describe('6. the labels exist in every locale', () => {
   const keys = [
     'wallet.brandTagline', 'wallet.navAnalysis', 'wallet.cardLinkTitle', 'wallet.overviewTitle', 'wallet.pnlSeven',
     'wallet.accountsTitle', 'wallet.recentActivity', 'wallet.allActivity', 'wallet.noActivity', 'wallet.superVip', 'wallet.superVipTitle',
-    'wallet.fundingSubtitle', 'wallet.openDetails', 'wallet.depositShort', 'wallet.borrow', 'wallet.borrowUnavailable', 'wallet.tabAccount',
+    'wallet.fundingSubtitle', 'wallet.openDetails', 'wallet.depositShort', 'wallet.borrow', 'wallet.tabAccount',
     'wallet.tabAsset', 'wallet.allocationSub', 'wallet.dynamicsSub', 'wallet.profitForPeriod', 'wallet.periodAllShort', 'wallet.updatedOn',
     'wallet.valuationFull', 'wallet.valuationFullShort', 'wallet.hideSmallUsd', 'wallet.colCurrency', 'wallet.colAsCollateral',
     'wallet.collateralLocked', 'wallet.colAction', 'wallet.unrealizedPnlLong', 'wallet.assetsCount',

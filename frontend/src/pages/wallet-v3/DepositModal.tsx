@@ -94,7 +94,7 @@ function LegacyDepositModal({ open, onClose }: { open: boolean; onClose: () => v
             <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-3">{t('deposit.address')}</p>
           </div>
           <div className="p-3.5">
-            <p className="num break-all text-[12.5px] leading-[18px] text-ink">{address ?? t(loaded ? 'deposit.noneConfigured' : 'wallet.loading')}</p>
+            <p className="num break-all text-[12.5px] leading-[18px] text-ink">{address ?? (loaded ? '—' : t('wallet.loading'))}</p>
             <button
               type="button"
               disabled={!address}

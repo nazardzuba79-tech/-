@@ -165,7 +165,7 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     applyOptions: () => {},
     options: () => ({ priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }),
     setData: jest.fn(),
-    priceScale: () => ({ applyOptions: () => {} }),
+    priceScale: () => ({ applyOptions: () => {}, options: () => ({ scaleMargins: { top: 0.8, bottom: 0 } }) }),
     // A linear, invertible mapping is all the overlay needs. `priceShift`
     // stands for the chart rescaling on its own (axis drag, autoscale).
     priceToCoordinate: (price: number) => 500 + (harness.priceShift ?? 0) - price / 1000,
@@ -280,20 +280,32 @@ describe('private chart native interaction and history', () => {
   const interaction = () => ({ enabled: true, selecting: 'entry', trades: [], onCandleSelect: jest.fn(), onCancelSelection: jest.fn(), onTradeSelect: jest.fn() });
   const event = (chart: ReturnType<typeof mount>, extra = {}) => ({ point: { x: 100, y: 428 }, time, paneIndex: 0, seriesData: new Map([[chart.chartHarness.series[0], candle]]), ...extra });
 
-  test('selects actual completed OHLC with viewport anchor; drag, empty, indicator and volume cannot select or fetch', async () => {
+  test('selects actual completed OHLC with viewport anchor, the bottom of the price pane included; drag, empty, other-pane and off-bar clicks cannot select or fetch', async () => {
     jest.setSystemTime(new Date('2026-09-14T12:00:00Z'));
     const state = interaction();
     const loader = jest.fn().mockResolvedValue({ candles: [candle] });
     const chart = mount({ ...FUTURES, privateTrading: state, candleLoader: loader });
     chart.render(); await flush(); chart.render();
+    // The volume has its own pane on the product (2026-09-30); series[3] is the volume histogram.
+    Object.assign(chart.chartHarness.series[3], { getPane: () => ({ paneIndex: () => 1 }) });
     chart.chartHarness.click(event(chart));
     expect(state.onCandleSelect).toHaveBeenCalledWith(expect.objectContaining({ symbol: 'BTCUSDT', source: 'BYBIT_LINEAR', openTime: time * 1000, closeTime: time * 1000 + 3600000, close: 73000, x: 100, y: 428 }));
-    const invalid = [event(chart, { point: { x: 100, y: 580 } }), event(chart, { point: { x: 100, y: 100 } }), event(chart, { seriesData: new Map() }), event(chart, { hoveredSeries: chart.chartHarness.series[3] })];
+    // The bar spans y 425…432: below it, above it, over no bar at all, a series of ANOTHER pane under the pointer, a click in the volume pane.
+    const invalid = [event(chart, { point: { x: 100, y: 580 } }), event(chart, { point: { x: 100, y: 100 } }), event(chart, { seriesData: new Map() }), event(chart, { hoveredSeries: chart.chartHarness.series[3] }), event(chart, { paneIndex: 1 })];
     invalid.forEach(item => chart.chartHarness.click(item));
     chart.chartHarness.hostEvents.get('pointerdown')({ clientX: 100, clientY: 428, isPrimary: true });
     chart.chartHarness.hostEvents.get('pointermove')({ clientX: 140, clientY: 428 });
     chart.chartHarness.click(event(chart));
     expect(state.onCandleSelect).toHaveBeenCalledTimes(1);
+    // The regression (owner, 2026-10-21, IOST/USDT 1h): the same bar drawn in the bottom fifth of the
+    // price pane — y 575…582 of 600 — is a bar, not a scale, and a price-pane overlay under the pointer
+    // (the SMA along a flat run of old candles; series[1] stands in) does not take the pick from it.
+    chart.chartHarness.hostEvents.get('pointerdown')({ clientX: 100, clientY: 578, isPrimary: true });
+    chart.chartHarness.priceShift = 150;
+    chart.chartHarness.click(event(chart, { point: { x: 100, y: 578 }, hoveredSeries: chart.chartHarness.series[1] }));
+    expect(state.onCandleSelect).toHaveBeenCalledTimes(2);
+    expect(state.onCandleSelect).toHaveBeenLastCalledWith(expect.objectContaining({ close: 73000, x: 100, y: 578 }));
+    chart.chartHarness.priceShift = 0;
     expect(loader).toHaveBeenCalledTimes(1);
     chart.unmount();
   });
@@ -305,7 +317,7 @@ describe('private chart native interaction and history', () => {
     chart.render(); await flush(); chart.render();
     expect(chart.chartHarness.markers.map((marker: any) => marker.id)).toEqual(['private-trade:p1|entry', 'private-trade:p1|exit:0']);
     expect(chart.chartHarness.markers[0].time).toBe(time);
-    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL', 'LIQ']);
+    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL']);
     expect(chart.chartHarness.priceLines[0].options).toMatchObject({price:73000,color:'#13ad75',axisLabelVisible:true});
     chart.chartHarness.click(event(chart, { hoveredInfo: { objectId: 'private-trade:p1|entry' } }));
     expect(state.onTradeSelect).toHaveBeenCalledWith('p1');

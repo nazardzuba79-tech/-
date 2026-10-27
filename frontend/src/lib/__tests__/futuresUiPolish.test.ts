@@ -80,7 +80,16 @@ function restoreFormPresentation(source) {
  expect(text.split(propsAnchor).length - 1).toBe(1);
  expect(text.split(renderAnchor).length - 1).toBe(1);
  expect(text).not.toContain('className="archive-calculator-trigger"');
+ // 2026-10-22 (owner: no «Недоступно» / «not trading yet» line anywhere): the red «Недоступно» row and the
+ // buttons' «Недоступно» tooltip are gone — the buttons were already disabled. Put back exactly those for the
+ // fingerprint; `canSubmit`, the guards and the payload stay frozen.
+ const ctaAnchor = '\n\n        {/* The shared terminal CTA';
+ expect(text.split(ctaAnchor).length - 1).toBe(1);
+ expect(text).not.toContain("t('analytics.unavailable')");
  return text
+  .replace(ctaAnchor, "\n        {!executionEnabled && <div className=\"fo-error\" role=\"status\">{t('analytics.unavailable')}</div>}" + ctaAnchor)
+  .replace("title={!connectedFamily ? undefined : reduceBlockedReason('BUY')}", "title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('BUY')}")
+  .replace("title={!connectedFamily ? undefined : reduceBlockedReason('SELL')}", "title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('SELL')}")
   .replace(propsAnchor, '  calculatorDraft,\n  onOpenCalculator,\n  lastPrice = null,\n')
   .replace(renderAnchor, '      </form>\n' + removedCalculator + '\n      {/* The compact account summary')
   .replace('  pickedPriceSequence,\n','')
@@ -438,7 +447,31 @@ test.each([
     // «Позиция закрыта» card ask for the native position history, which the
     // page's existing `setHistoryDemand` effect now also loads while the card
     // is shown. No order, execution, account, depth or layout byte changed.
-    "ac101210d56f6a487dd29bc16de067fc450ac5adfc9ae79c031a0a7a87291076"
+    // Re-taken for the account panel's draggable top edge (owner, 2026-10-21,
+    // «як у байбіт … показати дві угоди разом»). What differs: one hook
+    // import (`useFuturesPanelHeight`) and one stylesheet import; two module
+    // helpers that read the pair row's height and the grid's padding and
+    // gaps; the height state, two refs, a ResizeObserver effect and the
+    // drag/keyboard handlers beside `accountPanel`; the grid div carries
+    // `--futures-account-height` inline with `data-account-height`; the
+    // panel's first child is the Spot terminal's `orders-resize-handle`.
+    // No order, position, balance, book, chart or execution wiring changed.
+    // Re-taken 2026-10-21 (CTO): the ceiling is measured in a layout effect,
+    // the grid gets `effectivePanelHeight` (the preference held inside the
+    // live ceiling, `panelShown`), the terminal flags
+    // `data-account-height-limited`, the handle's ARIA value is the shown
+    // height. Still no trading wiring changed.
+    // Re-taken 2026-10-22 (owner, Bybit page scroll): the account panel
+    // continues below the screen's edge by `--futures-account-extension`;
+    // two module helpers read it and the screen's room, the ceiling and the
+    // measured height leave it out, and a window resize re-measures. Still
+    // no order, position, balance, book, chart or execution wiring changed.
+    // Re-taken 2026-10-22 (owner's second Bybit recording): one import
+    // (`installPageFirstWheel`), one ref on the order column's div and one
+    // effect that installs the desktop wheel listener on it, so the wheel
+    // over the column moves the page first. No order, position, balance,
+    // book, chart or execution wiring changed.
+    "ddfa053511db9bed65dd36ed5a4198e063a9d54fe8636ec65e222faae10a462e"
   ],
   [
     "components/FuturesPairList.tsx",

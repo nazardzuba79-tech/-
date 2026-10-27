@@ -3,7 +3,7 @@ import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityLis
  * Successful acquisition time (not visibility or a failed attempt) determines age.
  * A mutation during a GET queues one subsequent GET; it never joins an old snapshot.
  */
-export function createVisibleRead(read: (signal: AbortSignal) => Promise<void>, staleMs: number, poll = false, refreshOnWake = true) {
+export function createVisibleRead(read: (signal: AbortSignal) => Promise<void>, staleMs: number, poll = false, refreshOnWake = true, reportWakeFailure = true) {
   let stopped = false;
   let dirty = true;
   let succeededAt: number | null = null;
@@ -29,7 +29,7 @@ export function createVisibleRead(read: (signal: AbortSignal) => Promise<void>, 
       if (stopped || hidden()) { dirty = true; return; }
       dirty = false;
       return read(requestController.signal);
-    }).then(() => { if (!stopped && !dirty) succeededAt = Date.now(); }))
+    }).then(() => { if (!stopped && !dirty) succeededAt = Date.now(); }), reportWakeFailure)
       .catch(() => {
         // Keep the consumer's last-good data, but a failed explicit refresh
         // cannot make the next deliberate wake reuse it as a fresh result.

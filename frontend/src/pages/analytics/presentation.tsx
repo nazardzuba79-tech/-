@@ -206,7 +206,7 @@ export function UnavailableModule({ titleKey, detail }: { titleKey: Key; detail?
   return (
     <div className="vx-pending" role="status">
       <span className="vx-pending-title">{t(titleKey)}</span>
-      <span className="vx-pending-state">{detail ?? t('analytics.noSource')}</span>
+      <span className="vx-pending-state">{detail ?? '—'}</span>
     </div>
   );
 }

@@ -21,11 +21,9 @@
 .vx-stocks-terminal .vxs-order-field input { display:block; width:100%; min-width:0; height:100%; padding:20px 8px 5px 12px; border:0; outline:none; background:none; color:var(--vxs-text-soft); font-size:16px; line-height:20px; font-weight:600; font-variant-numeric:tabular-nums; }
 .vx-stocks-terminal .vxs-order-field input::placeholder { color:var(--vxs-label); font-size:14px; font-weight:400; }
 .vx-stocks-terminal .vxs-order-field div > span { flex-shrink:0; max-width:35%; padding-right:12px; color:var(--vxs-text-soft); font-weight:600; }
-.vx-stocks-terminal .vxs-order-submit { min-height:48px; width:100%; margin-top:12px; border:0; border-radius:999px; font-size:15px; font-weight:600; color:#fff; cursor:not-allowed; }
+.vx-stocks-terminal .vxs-order-submit { min-height:48px; width:100%; margin-top:12px; border:0; border-radius:999px; font-size:15px; font-weight:600; color:#fff; cursor:pointer; }
 .vx-stocks-terminal .vxs-order-submit.buy { background:var(--vxs-up); }
 .vx-stocks-terminal .vxs-order-submit.sell { background:var(--vxs-down); }
-.vx-stocks-terminal .vxs-order-submit:disabled { opacity:.48; }
-.vx-stocks-terminal .vxs-order-notice { margin:-7px 0 0; text-align:center; color:var(--vxs-label); font-size:12px; line-height:1.5; }
 .vx-stocks-terminal .vxs-trade-facts { border-top:1px solid var(--vxs-border); margin-top:8px; }
 .vx-stocks-terminal .vxs-trade-facts > summary { display:flex; align-items:center; justify-content:space-between; list-style:none; min-height:48px; padding:0 16px; font-size:13px; font-weight:600; cursor:pointer; }
 .vx-stocks-terminal .vxs-trade-facts > summary::-webkit-details-marker { display:none; }

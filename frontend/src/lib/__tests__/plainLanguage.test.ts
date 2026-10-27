@@ -13,8 +13,9 @@ import { LOCALES, readLocale } from '../../../test-utils/i18nSource';
  * the rendered copy — the seven dictionaries, and string/JSX text in the
  * components — and fails on the vocabulary below. It deliberately does NOT
  * look at identifiers, imports, types, CSS classes or comments: naming a
- * variable `nativeDemoApi` is fine. The dated owner-approved Copy ROI scenario
- * is explicitly simulated: its exact disclosure is required, not hidden.
+ * variable `nativeDemoApi` is fine. The dated Copy ROI scenario that carried
+ * a «Демо · симуляция» disclosure until 22.10.2026 00:00 UTC is removed with
+ * every practice notice (owner, 2026-10-22); no exemption is left.
  */
 
 const root = resolve(__dirname, '../../../..');
@@ -40,6 +41,57 @@ const PLUMBING = [
 ];
 
 /**
+ * Practice / training / simulation / demo / test notices, in all seven
+ * languages (owner, 2026-10-22, on the live «Учебный рынок · Торговля пока
+ * недоступна» banner: «я подальшому забороняю такі надписи, біржа не приймає
+ * трейдерів чи реальних грошей, біржа торгується до презентації, тому її
+ * інтерфейс має бути чистий»; then «щоб більше ніколи, ні для якого актива не
+ * появлялись … і схожих»). No screen may call a market, an account, a figure
+ * or a badge practice, training, simulated, demo or test.
+ */
+const PRACTICE_NOTICES = [
+  /учебн|тренировочн|(^|[^а-яё])практик[аиуе]?([^а-яё]|$)|симулир|тестов(ый|ая|ое|ые) (рынок|режим|сч[её]т|торг)/i,
+  /Торговля пока недоступна|Рынок открыт/,
+  /\bpractice\b|\bsimulated\b|\btraining mode\b|\bpaper trading\b|\btest market\b|Trading is currently unavailable/i,
+  /práctica|simulad[oa]|simulación|Trading no disponible por ahora/i,
+  /अभ्यास|सिमुल|प्रैक्टिस|डेमो/,
+  /練習|シミュレ|デモ/,
+  /연습|시뮬레|데모|모의 (거래|투자|시장)/,
+  /练习|模拟|演示/,
+];
+
+/**
+ * «Trading (temporarily) unavailable», in all seven languages — the same kind
+ * of line (owner, 2026-10-22, on «Торговля CFD временно недоступна»:
+ * «виправляй»). Only Stocks' own `stocks.tradingUnavailable` still says it:
+ * Codex's switched-off work, exempt as below, to go before Stocks is switched on.
+ */
+const TRADING_UNAVAILABLE = [
+  /торгов(ля|ли|ать)[^.]{0,40}(недоступн|не доступн|приостановлен|закрыт|не работает)/i,
+  /\btrad(ing|e)\b[^.]{0,40}\b(unavailable|not available|disabled|suspended|closed)\b/i,
+  /(negociación|trading|operar)[^.]{0,40}(no (está |estará )?disponible|suspendid|cerrad)/i,
+  /ट्रेडिंग[^।]{0,40}(अनुपलब्ध|उपलब्ध नहीं|बंद)/,
+  /取引(?!量|額|条件)[^。]{0,20}(利用できません|ご利用いただけません|停止|休止)|取引できません/,
+  /거래[^.]{0,20}(이용할 수 없|할 수 없|중단|중지)/,
+  /交易(?!量|额|对|所)[^。]{0,10}(暂不可用|暂未开放|不可用|暂停|关闭)/,
+  // …and its «coming soon» form: trading or quotes that «will be available» («TradFi скоро появится · Торговля
+  // традиционными активами станет доступна…», «Котировки CFD скоро появятся»).
+  /(торгов(ля|ли|ать)|котировк|цены)[^.]{0,60}(скоро появ|станет доступн|будет доступн|появятся)/i,
+  /\b(trading|quotes|prices)\b[^.]{0,40}\b(coming soon|will be available|available soon)\b/i,
+  /(negociación|cotizaciones|precios)[^.]{0,40}(pronto|estará(n)? disponible)/i,
+  /(ट्रेडिंग|कोटेशन|कोट्स|कीमतें|कीमत)[^।]{0,40}(जल्द|उपलब्ध होगी|उपलब्ध होंगी)/,
+  /(取引|相場|価格|気配)(?!量|額)[^。]{0,20}(近日|まもなく|予定です)/,
+  /(거래|시세|가격)[^.]{0,20}(곧 |예정)/,
+  /(交易|报价|价格)(?!量|额)[^。]{0,10}(即将|敬请期待)/,
+  // …and «not yet / for now» about the product itself (owner, 2026-10-22, «Этот актив пока не торгуется» on the
+  // phone: «ти мав всі знайти і видалити»): deposits, convert, borrow, reserves, the card, an asset.
+  /пока (не (торгу|подключ|определ|подтвержд|доступ)|недоступ)|не торгуется|ещё не (подключ|торгу)|еще не (подключ|торгу)/i,
+  /\bnot (available|trading) yet\b|\bnot available\b[^.]{0,40}\byet\b|\bnot connected yet\b|\bare connected yet\b/i,
+  /aún no (está |están )?disponible|todavía no (hay|se negocia)/i,
+];
+const saysTradingUnavailable = (text: string) => TRADING_UNAVAILABLE.some((r) => r.test(text));
+
+/**
  * Only a dictionary value gets this one. A deploy-time variable's name on a
  * screen is a leak; the same shape inside a component is almost always an
  * order status or a colour constant that the reader never sees.
@@ -63,34 +115,7 @@ const ALLOWED = [
 
 const allowed = (text: string) => ALLOWED.some((r) => r.test(text));
 
-const demoNoticeFile = 'frontend/src/pages/copy-trading-bolt/DemoRoiContext.tsx';
-// Only these exact disclosures in this one component are allowed. Neither
-// the general vocabulary rules nor any other file receive an exemption.
-const demoDisclosures = [
-  ['Демо · симуляция', 'Не фактическая доходность. До 22.10.2026 00:00 UTC.'],
-  ['Demo · simulated', 'Not actual returns. Until 22 Oct 2026 00:00 UTC.'],
-  ['演示 · 模拟', '非实际收益。截止：2026年10月22日 00:00 UTC。'],
-  ['Demo · simulación', 'No es rentabilidad real. Hasta 22 oct 2026 00:00 UTC.'],
-  ['डेमो · सिमुलेटेड', 'वास्तविक रिटर्न नहीं। 22 अक्टूबर 2026 00:00 UTC तक।'],
-  ['デモ · シミュレーション', '実際の収益ではありません。2026年10月22日 00:00 UTCまで。'],
-  ['데모 · 시뮬레이션', '실제 수익이 아닙니다. 2026년 10월 22일 00:00 UTC까지.'],
-];
-const allowedDemoDisclosure = (file: string, text: string) =>
-  file === demoNoticeFile && demoDisclosures.some(pair => pair.includes(text));
 
-test('dated simulated ROI keeps all seven disclosures and the exception stays exact and file-scoped', () => {
-  const notice = readFileSync(resolve(root, demoNoticeFile), 'utf8');
-  for (const pair of demoDisclosures) for (const text of pair) {
-    expect(notice).toContain("'" + text + "'");
-    expect(allowedDemoDisclosure(demoNoticeFile, text)).toBe(true);
-    expect(allowedDemoDisclosure('frontend/src/pages/CopyTradingPage.tsx', text)).toBe(false);
-    expect(allowedDemoDisclosure(demoNoticeFile, text + ' backend')).toBe(false);
-  }
-  expect(notice).toContain('{label} · {demo.period} (UTC)');
-  expect(notice).toContain('<small>{description}</small>');
-  expect(allowedDemoDisclosure(demoNoticeFile, 'Demo guaranteed profit')).toBe(false);
-  expect(PLUMBING.some(rule => rule.test('Demo guaranteed profit'))).toBe(true);
-});
 
 /** Every `'key': 'value'` row of a dictionary, values only. */
 function localeStrings(source: string): { key: string; value: string }[] {
@@ -103,8 +128,9 @@ function localeStrings(source: string): { key: string; value: string }[] {
 describe.each(LOCALES)('%s dictionary', (code) => {
   test('speaks about the product, not about the plumbing', () => {
     const offenders = localeStrings(readLocale(code))
-      .filter(({ value }) => !allowed(value)
-        && [...PLUMBING, ENV_VAR_NAME].some((r) => r.test(value)))
+      .filter(({ key, value }) => !allowed(value)
+        && ([...PLUMBING, ...PRACTICE_NOTICES, ENV_VAR_NAME].some((r) => r.test(value))
+          || (!key.startsWith('stocks.') && saysTradingUnavailable(value))))
       .map(({ key, value }) => `${key}: ${value}`);
     expect(offenders).toEqual([]);
   });
@@ -176,9 +202,85 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     // against this same vocabulary, in every language.
     if (rel === 'frontend/src/lib/customerError.ts') continue;
     for (const text of visibleStrings(readFileSync(path, 'utf8'))) {
-      if (allowed(text) || allowedDemoDisclosure(rel, text)) continue;
+      if (allowed(text)) continue;
       if (PLUMBING.some((r) => r.test(text))) offenders.push(`${rel}: ${text.slice(0, 120)}`);
     }
   }
   expect(offenders).toEqual([]);
+});
+
+/** As `isCopy`, but any script counts as text: the practice vocabulary is also Hindi, Japanese, Korean and Chinese. */
+const isAnyCopy = (value: string) => {
+  const text = core(value);
+  return text.length >= 2 && /\p{L}/u.test(text) && !NOT_COPY.some((r) => r.test(text));
+};
+
+test('no component copy, in any of the seven languages, is a practice / training / simulation / demo notice, and no badge says so', () => {
+  const offenders: string[] = [];
+  for (const path of uiFiles(resolve(root, 'frontend/src'))) {
+    const rel = relative(root, path).replace(/\\/g, '/');
+    // Staff-only screens and the isolated loopback review are not customer copy (as above).
+    if (rel.startsWith('frontend/src/pages/admin/') || rel.startsWith('frontend/src/mobile-review/')) continue;
+    // The server's own sentences, mapped to neutral `serverError.*` wording (see above).
+    if (rel === 'frontend/src/lib/customerError.ts') continue;
+    // Stocks is Codex's work in progress and switched off on the exchange (VITE_STOCKS_ENABLED unset);
+    // the owner has said not to interfere with it. Its «тестовый счёт» wording must go before it is
+    // switched on — recorded in docs/AI_HANDOFF.md (2026-10-22). Nothing else is exempt.
+    if (rel.startsWith('frontend/src/pages/stocks/')) continue;
+    const source = readFileSync(path, 'utf8');
+    const candidates: string[] = [];
+    for (const line of source.split('\n')) {
+      if (/^\s*(import|export)\s/.test(line) || /^\s*(\/\/|\*|\/\*)/.test(line)) continue;
+      for (const m of line.matchAll(/>([^<>{}\n]{2,300})</g)) candidates.push(m[1].trim());
+      for (const m of line.matchAll(/(['"`])((?:[^'"`\\\n]|\\.){2,300}?)\1/g)) candidates.push(m[2]);
+    }
+    for (const text of candidates.filter(isAnyCopy)) {
+      // The dictionaries get the trading vocabulary in their own test above, where Stocks' keys are exempt.
+      const trading = !rel.startsWith('frontend/src/lib/i18n/locales/') && saysTradingUnavailable(text);
+      if (!allowed(text) && (PRACTICE_NOTICES.some((r) => r.test(text)) || trading)) offenders.push(`${rel}: ${text.slice(0, 120)}`);
+    }
+    for (const m of source.matchAll(/>\s*(SIM|DEMO|TEST|PRACTICE|ДЕМО|ТЕСТ)\s*</g)) offenders.push(`${rel}: badge «${m[1]}»`);
+  }
+  expect(offenders).toEqual([]);
+});
+
+test('the practice vocabulary catches every former notice and leaves ordinary wording alone', () => {
+  const hit = (text: string) => PRACTICE_NOTICES.some((r) => r.test(text));
+  for (const text of ['Учебный рынок', 'Торговля пока недоступна', 'Рынок открыт', 'Этот аккаунт работает только в тренировочном режиме.',
+    'Practice market', 'This account works in practice mode only.', 'Trading is currently unavailable', 'Mercado de práctica',
+    'अभ्यास बाज़ार', '練習用市場', '연습용 시장', '练习市场', 'Демо · симуляция', 'Demo · simulated', '이 브라우저에 모의 거래 데이터를 저장할 수 없습니다.',
+    'Не удалось сохранить данные практики в браузере.'])
+    expect({ text, hit: hit(text) || PLUMBING.some((r) => r.test(text)) }).toEqual({ text, hit: true });
+  for (const text of ['Рынки', 'Купить', 'Дата листинга', 'Данные временно недоступны', 'Торговля акциями пока недоступна.', 'Market', 'Price', '市场', '价格'])
+    expect({ text, hit: hit(text) }).toEqual({ text, hit: false });
+});
+
+test('the «trading unavailable / coming soon» vocabulary catches the former CFD, TradFi and home lines in every language and leaves data wording alone', () => {
+  for (const text of ['Торговля CFD временно недоступна.', 'CFD trading temporarily unavailable.', 'La negociación de CFD no está disponible temporalmente.',
+    'CFD ट्रेडिंग अस्थायी रूप से अनुपलब्ध है।', 'CFD取引は一時的に利用できません。', 'CFD 거래를 일시적으로 이용할 수 없습니다.', 'CFD 交易暂不可用。',
+    'Торговля пока недоступна', 'Trading is currently unavailable',
+    'Торговля традиционными активами станет доступна в одном из следующих обновлений.', 'Котировки CFD скоро появятся', 'CFD quotes are coming soon',
+    'Las cotizaciones de CFD llegarán pronto', 'CFD कोट्स जल्द आ रहे हैं', 'CFD の気配値は近日公開', 'CFD 시세가 곧 제공됩니다', 'CFD 报价即将上线',
+    'Этот актив пока не торгуется', 'This asset is not trading yet', 'Este activo todavía no se negocia',
+    'Пополнение пока недоступно: адреса кошельков ещё не подключены.', 'Deposits are not available yet: no wallet addresses are connected.',
+    'Конвертация пока недоступна', 'Convert is not available yet', 'Заём пока недоступен', 'Ни одна сеть пока не подключена.',
+    'No networks are connected yet.', 'Todavía no hay redes conectadas.', 'Пока недоступно', 'Aún no disponible',
+    'Карта пока недоступна для этого аккаунта.', 'The card is not available for this account yet.',
+    'Условия досрочного возврата основной суммы пока не определены.', 'Направление пока не подтверждено.', 'Лимитное закрытие пока недоступно в приватном режиме'])
+    expect({ text, hit: saysTradingUnavailable(text) }).toEqual({ text, hit: true });
+  for (const text of ['Данные временно недоступны', 'Не удалось обновить данные. Показаны последние полученные значения.', 'График временно недоступен',
+    'Цена сейчас недоступна, поэтому расчёт не подтверждён.', 'Data temporarily unavailable', 'Trading', 'Торговля', '交易', '取引', '거래',
+    '等面积：交易量不可用', '等面積：取引量は取得できません', '資金・取引条件を確認できませんでした。データを更新してください。', 'Эта страница недоступна для вашего аккаунта.',
+    'Операций пока нет', 'Депозитов пока нет.', 'Сделок по этой паре ещё не было.', 'Исходная заявка пока не найдена.', 'La fecha de listado aún no está confirmada', 'Data temporarily unavailable'])
+    expect({ text, hit: saysTradingUnavailable(text) }).toEqual({ text, hit: false });
+});
+
+// Owner, 2026-10-22: the order forms say nothing when an order cannot be placed — the button is disabled.
+test('the Spot and Futures order forms have no «not trading yet» / «Недоступно» line', () => {
+  const spot = readFileSync(resolve(root, 'frontend/src/components/OrderForm.tsx'), 'utf8');
+  const futures = readFileSync(resolve(root, 'frontend/src/components/FuturesOrderForm.tsx'), 'utf8');
+  expect(spot).not.toMatch(/assetNotTradingYet|assetPurchaseUnavailable|assetOrderTypeUnavailable/);
+  expect(spot).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+  expect(futures).not.toContain("t('analytics.unavailable')");
+  expect(futures).toContain('disabled={!canSubmit || protectionBreachFor(\'BUY\') || !reducible(\'BUY\')}');
 });

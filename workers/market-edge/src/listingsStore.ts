@@ -13,8 +13,9 @@
  * bundle still builds for the edge-isolation tests.
  */
 import {
-  ListingValidationError, LISTING_ID_PATTERN, MIN_LEAD_FLOOR_MS, MIN_LEAD_MS, checkPublishable, parseListingConfig, withStableProfile, withStableSeed,
-  type ListingConfig, type PublishedListing,
+  ListingValidationError, LISTING_COUNTDOWN_ACTIONS, LISTING_ID_PATTERN, MIN_LEAD_FLOOR_MS, MIN_LEAD_MS, checkPublishable, listingCountdownArmed,
+  listingOpened, nextListingCountdown, parseListingConfig, withStableProfile, withStableSeed,
+  type ListingConfig, type ListingCountdown, type ListingCountdownAction, type PublishedListing,
 } from '../../../src/services/listings/listingConfig';
 import { aithReplacementConfig } from '../../../src/services/listings/aithReplacement';
 import { AITH_READ_LEASE_MS, AITH_LEASE_SAFETY_MS, AITH_PUBLICATION_PROTOCOL, isAith, validAithLease } from '../../../src/shared/aithPublication';
@@ -124,6 +125,45 @@ export class ManagedListingsDO {
     this.sql.exec('INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', key, value);
   }
 
+  private bumpCatalogueRevision(): string {
+    const revision = String(BigInt(this.catalogueRevision()) + 1n);
+    this.setMeta('catalogue_revision', revision);
+    return revision;
+  }
+
+  /** The pre-listing timer of a published listing (listingConfig.ListingCountdown); absent before the timer existed. */
+  private countdownOf(id: string): ListingCountdown | null {
+    const row = this.sql.exec('SELECT v FROM meta WHERE k = ?', `countdown:${id}`).toArray()[0];
+    return row ? JSON.parse(String(row.v)) as ListingCountdown : null;
+  }
+
+  /**
+   * Start, pause or stop the public timer of a published listing. Operational
+   * state only: no new version, the listing time never moves. Idempotent: the
+   * same action twice answers the same state and bumps nothing.
+   */
+  private countdown(id: string, input: Record<string, unknown> | undefined, actor: string, now: number): Response {
+    const action = input?.action;
+    if (typeof action !== 'string' || !LISTING_COUNTDOWN_ACTIONS.includes(action as ListingCountdownAction)) return reply({ error: 'invalid_countdown_request' }, 400);
+    if (this.replacement()?.id === id) return reply({ error: 'replacement_in_progress' }, 409);
+    return this.state.storage.transactionSync(() => {
+      const row = this.sql.exec('SELECT * FROM listing WHERE id = ?', id).toArray()[0];
+      if (!row) return reply({ error: 'not_found' }, 404);
+      if (row.active_version === null) return reply({ error: 'NOT_PUBLISHED', message: 'Publish the listing before starting its timer' }, 422);
+      const config = JSON.parse(String(this.version(id, Number(row.active_version))!.config)) as ListingConfig;
+      const current = this.countdownOf(id);
+      let state: ListingCountdown['state'];
+      try { state = nextListingCountdown({ config, countdown: current ?? undefined }, action as ListingCountdownAction, now); }
+      catch (error) { return validationReply(error); }
+      if (current?.state === state) return reply({ id, countdown: current, changed: false });
+      const next: ListingCountdown = { state, updatedAt: now, updatedBy: actor,
+        ...(state === 'running' ? { startedAt: now } : current?.startedAt !== undefined ? { startedAt: current.startedAt } : {}) };
+      this.setMeta(`countdown:${id}`, JSON.stringify(next));
+      this.bumpCatalogueRevision();
+      return reply({ id, countdown: next, changed: true });
+    });
+  }
+
   private replaceAith(id: string, input: Record<string, unknown> | undefined, actor: string, now: number): Response {
     const key = input?.operationKey;
     if (!input || typeof key !== 'string' || !PUBLISH_KEY.test(key) || !['prepare', 'commit', 'cancel'].includes(String(input.phase))) return reply({ error: 'invalid_replacement_request' }, 400);
@@ -180,10 +220,11 @@ export class ManagedListingsDO {
 
   /**
    * Every active version, as the public catalogue and Render's trading
-   * registry read it. A History20 private test goes to Render's Bearer
-   * registry only (`includePrivate`), never to the public read.
+   * registry read it. A staged listing (timer never started, or stopped) is
+   * not public: only Render learns it, with the timer state, so its ticker
+   * stays restricted everywhere.
    */
-  published(includePrivate = false): { revision: string; listings: PublishedListing[] } {
+  published(includeRestricted = false): { revision: string; listings: PublishedListing[] } {
     const rows = this.sql.exec(`SELECT l.id, v.version, v.config, v.published_at FROM listing l
       JOIN listing_version v ON v.listing_id = l.id AND v.version = l.active_version ORDER BY v.published_at, l.id`).toArray();
     const now = Date.now();
@@ -191,11 +232,14 @@ export class ManagedListingsDO {
     const listings: PublishedListing[] = [];
     for (const row of rows) {
       const config = JSON.parse(String(row.config)) as ListingConfig;
-      if (config.privateTest && !includePrivate) continue;
-      const listing: PublishedListing = { id: String(row.id), version: Number(row.version), publishedAt: new Date(Number(row.published_at)).toISOString(), config };
+      if (config.privateTest && !includeRestricted) continue;
+      const countdown = this.countdownOf(String(row.id));
+      if (countdown?.state === 'staged' && !includeRestricted) continue;
+      const listing: PublishedListing = { id: String(row.id), version: Number(row.version), publishedAt: new Date(Number(row.published_at)).toISOString(), config,
+        ...(countdown ? { countdown } : {}) };
       if (isAith(config.symbol)) {
         if (pending) continue;
-        if (now >= Date.parse(config.listingAt)) this.setMeta('aith_public_history_started', String(now));
+        if (now >= Date.parse(config.listingAt) && listingCountdownArmed(listing)) this.setMeta('aith_public_history_started', String(now));
         const expiresAt = now + AITH_READ_LEASE_MS;
         this.setMeta('aith_last_read_lease', String(Math.max(expiresAt, Number(this.sql.exec("SELECT v FROM meta WHERE k = 'aith_last_read_lease'").toArray()[0]?.v ?? 0))));
         listing.readLease = { protocol: AITH_PUBLICATION_PROTOCOL, generation: listing.version, issuedAt: now, expiresAt };
@@ -224,6 +268,7 @@ export class ManagedListingsDO {
         activeVersion: row.active_version === null ? null : Number(row.active_version),
         active: active ? JSON.parse(String(active.config)) as ListingConfig : null,
         versions,
+        countdown: this.countdownOf(id),
       };
     });
     return { revision: this.catalogueRevision(), serverTime: Date.now(), listings };
@@ -272,14 +317,21 @@ export class ManagedListingsDO {
     });
   }
 
-  private publish(id: string, draftRevision: unknown, publishKey: unknown, actor: string, now: number): Response {
+  /**
+   * `countdown: 'staged'` on a FIRST publication keeps the listing off the
+   * public edge until the admin starts its timer; omitted (or `'running'`),
+   * the countdown is public at once, as before the timer existed.
+   */
+  private publish(id: string, draftRevision: unknown, publishKey: unknown, countdown: unknown, actor: string, now: number): Response {
     if (this.replacement()?.id === id) return reply({ error: 'replacement_in_progress' }, 409);
     if (!Number.isSafeInteger(draftRevision) || typeof publishKey !== 'string' || !PUBLISH_KEY.test(publishKey)) return reply({ error: 'invalid_publish_request' }, 400);
+    if (countdown !== undefined && countdown !== 'staged' && countdown !== 'running') return reply({ error: 'invalid_publish_request' }, 400);
     return this.state.storage.transactionSync(() => {
       const row = this.sql.exec('SELECT * FROM listing WHERE id = ?', id).toArray()[0];
       if (!row) return reply({ error: 'not_found' }, 404);
+      const receipt = (version: number, publishedAt: number) => reply({ id, version, replayed: true, publishedAt: new Date(publishedAt).toISOString(), countdown: this.countdownOf(id) });
       const replay = this.sql.exec('SELECT version, published_at FROM listing_version WHERE listing_id = ? AND publish_key = ?', id, publishKey).toArray()[0];
-      if (replay) return reply({ id, version: Number(replay.version), replayed: true, publishedAt: new Date(Number(replay.published_at)).toISOString() });
+      if (replay) return receipt(Number(replay.version), Number(replay.published_at));
       if (Number(row.draft_revision) !== draftRevision) return reply({ error: 'revision_conflict', draftRevision: Number(row.draft_revision) }, 409);
       let config: ListingConfig;
       try {
@@ -288,9 +340,11 @@ export class ManagedListingsDO {
         // Publishing what is already live (a second confirmation, another admin's tab) is a replay, not a new version.
         if (active && JSON.stringify(config) === JSON.stringify(active)) {
           const current = this.version(id, Number(row.active_version))!;
-          return reply({ id, version: Number(row.active_version), replayed: true, publishedAt: new Date(Number(current.published_at)).toISOString() });
+          return receipt(Number(row.active_version), Number(current.published_at));
         }
-        checkPublishable(config, active, now, envMs(this.env.LISTINGS_MIN_LEAD_MS, MIN_LEAD_MS, MIN_LEAD_FLOOR_MS));
+        // A market whose timer never ran past its date did not open: its time may still move.
+        const opened = active !== null && listingOpened({ config: active, countdown: this.countdownOf(id) ?? undefined }, now);
+        checkPublishable(config, active, now, envMs(this.env.LISTINGS_MIN_LEAD_MS, MIN_LEAD_MS, MIN_LEAD_FLOOR_MS), opened);
         // Default off: a private test also needs the explicit switch on this Worker.
         if (config.privateTest && this.env.HISTORY20_PRIVATE_TEST !== 'enabled')
           throw new ListingValidationError('PRIVATE_TEST_DISABLED', 'Приватный тест History20 выключен на этом сервере');
@@ -299,9 +353,9 @@ export class ManagedListingsDO {
       this.sql.exec('INSERT INTO listing_version (listing_id, version, config, publish_key, published_at, published_by) VALUES (?, ?, ?, ?, ?, ?)',
         id, version, JSON.stringify(config), publishKey, now, actor);
       this.sql.exec('UPDATE listing SET active_version = ? WHERE id = ?', version, id);
-      const revision = String(BigInt(this.catalogueRevision()) + 1n);
-      this.sql.exec("INSERT INTO meta (k, v) VALUES ('catalogue_revision', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v", revision);
-      return reply({ id, version, replayed: false, publishedAt: new Date(now).toISOString(), catalogueRevision: revision });
+      if (row.active_version === null && countdown === 'staged') this.setMeta(`countdown:${id}`, JSON.stringify({ state: 'staged', updatedAt: now, updatedBy: actor } satisfies ListingCountdown));
+      const revision = this.bumpCatalogueRevision();
+      return reply({ id, version, replayed: false, publishedAt: new Date(now).toISOString(), catalogueRevision: revision, countdown: this.countdownOf(id) });
     });
   }
 
@@ -314,7 +368,7 @@ export class ManagedListingsDO {
       if (denied) return denied;
       const actor = request.headers.get('X-Voltex-Admin-Id') ?? '';
       if (url.pathname === '/internal/listings' && request.method === 'GET') return reply(this.adminList());
-      // Render's trading registry: published configurations INCLUDING the seed (never served publicly).
+      // Render's trading registry: published configurations INCLUDING the seed (never served publicly) and staged listings.
       if (url.pathname === '/internal/listings/published' && request.method === 'GET') return reply(this.published(true));
       // Authenticated, read-only audit of an immutable publication; never exposed by public catalogue paths.
       const history = /^\/internal\/listings\/([^/]+)\/versions\/([1-9]\d{0,8})$/.exec(url.pathname);
@@ -323,7 +377,7 @@ export class ManagedListingsDO {
         return row ? reply({ id: history[1], version: Number(row.version), config: JSON.parse(String(row.config)),
           publishedAt: new Date(Number(row.published_at)).toISOString(), publishedBy: String(row.published_by) }) : reply({ error: 'not_found' }, 404);
       }
-      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting)$/.exec(url.pathname);
+      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting|countdown)$/.exec(url.pathname);
       if (!match || !LISTING_ID_PATTERN.test(match[1])) return reply({ error: 'not_found' }, 404);
       if (!ACTOR.test(actor)) return reply({ error: 'actor_required' }, 400);
       const body = await readJson(request);
@@ -339,7 +393,10 @@ export class ManagedListingsDO {
         return this.saveDraft(match[1], ifMatch, body.value?.config, actor, Date.now());
       }
       if (match[2] === 'publish' && request.method === 'POST') {
-        return this.publish(match[1], body.value?.draftRevision, body.value?.publishKey, actor, Date.now());
+        return this.publish(match[1], body.value?.draftRevision, body.value?.publishKey, body.value?.countdown, actor, Date.now());
+      }
+      if (match[2] === 'countdown' && request.method === 'POST') {
+        return this.countdown(match[1], body.value, actor, Date.now());
       }
       return reply({ error: 'method_not_allowed' }, 405);
     } catch {

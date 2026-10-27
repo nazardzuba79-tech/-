@@ -63,15 +63,15 @@ test.each(['timeout', 'http', 'missing-key', 'invalid-date'])('registration %s i
   expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret-token|private@|synthetic-user|synthetic@example/);
 });
 
-const copied = { id: 'synthetic-copy-event', asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', receivedAt: new Date() };
-test('recorded deposit-address copy signs only coin and network; no wallet, identity, time in Telegram', async () => {
+const copied = { id: 'synthetic-copy-event', asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', email: 'copier@example.invalid', receivedAt: new Date() };
+test('recorded deposit-address copy signs account email with coin/network; no wallet or credentials', async () => {
   const mock = jest.fn(async () => Response.json({ status: 'SENT' }));
-  await notifyDepositAddressCopied({ ...copied, address: 'NEVER_SEND', email: 'NEVER_SEND', userId: 'NEVER_SEND' } as any, mock as typeof fetch);
+  await notifyDepositAddressCopied({ ...copied, address: 'NEVER_SEND', password: 'NEVER_SEND', userId: 'NEVER_SEND' } as any, mock as typeof fetch);
   expect(mock).toHaveBeenCalledTimes(1);
   const [url, init] = mock.mock.calls[0] as any;
   expect(url).toBe('https://notify.voltextech.net/v1/copy');
   expect(JSON.parse(init.body)).toEqual({ eventId: copied.id, eventType: 'DEPOSIT_ADDRESS_COPIED',
-    timestamp: copied.receivedAt.getTime(), asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)' });
+    timestamp: copied.receivedAt.getTime(), asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', email: copied.email });
   const key = createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: notificationPublicKey()! }, format: 'jwk' });
   expect(verify(null, Buffer.from(`voltex-notifications-v1\n${init.headers['x-voltex-timestamp']}\n/v1/copy\n${init.body}`), key,
     Buffer.from(init.headers['x-voltex-signature'], 'base64url'))).toBe(true);

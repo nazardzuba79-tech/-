@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 
 type TxClient = Prisma.TransactionClient;
 import BigNumber from 'bignumber.js';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
@@ -14,6 +14,25 @@ import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
 
 export type ExtendedOrderType = OrderType | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
+
+/** A client request ID that already placed an order with other terms. */
+export class OrderRequestConflict extends Error {}
+
+/** One order per (account, client request ID): a retry after a lost response
+ * finds the order its first attempt committed instead of placing a second one
+ * (the demo ledger does the same, DemoTradingService.demoOrderId). Another
+ * account's request ID never collides; the ID is the table's primary key. */
+export const spotRequestOrderId = (userId: string, requestId: string, leg = 'order') =>
+  uuidv5(`voltex:spot-${leg}:${userId}:${requestId}`, uuidv5.URL);
+
+type StoredOrder = {
+  id: string; userId: string; pair: string; side: string; type: string; price: { toString(): string } | null;
+  triggerPrice: { toString(): string } | null; ocoGroupId: string | null;
+  originalQuantity: { toString(): string }; remainingQuantity: { toString(): string }; status: string; createdAt: Date; updatedAt: Date;
+};
+/** Both absent, or both present and numerically equal. */
+const sameAmount = (stored: { toString(): string } | null, wanted: BigNumber | null | undefined) =>
+  stored === null || wanted == null ? stored === null && wanted == null : new BigNumber(stored.toString()).eq(wanted);
 
 const CONDITIONAL_TYPES = new Set<ExtendedOrderType>(['STOP_LIMIT', 'STOP_MARKET', 'TAKE_PROFIT_LIMIT', 'TAKE_PROFIT_MARKET']);
 const LIMIT_FAMILY = new Set<ExtendedOrderType>(['LIMIT', 'STOP_LIMIT', 'TAKE_PROFIT_LIMIT']);
@@ -74,12 +93,27 @@ export class OrderService {
     triggerPrice?: BigNumber; // required for conditional types
     quantity: BigNumber;
     ocoGroupId?: string; // internal — set by placeOcoOrder, not exposed on the public route
+    /** Optional client request ID (UUID): a retry returns the order the first attempt committed. */
+    requestId?: string;
   }) {
+    const privatePair = isSimulationSettled(params.pair);
+    const privateAdmitted = privatePair && await this.privateAdmitted(params.pair, params.userId);
+    // Idempotency is not an access grant: private admission is checked again
+    // even when the original request already committed. Ordinary venue retry
+    // behavior remains independent of current price/listing availability.
+    if (privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
+    const requestOrderId = params.requestId ? spotRequestOrderId(params.userId, params.requestId) : undefined;
+    // An earlier attempt with this request ID already committed: answer with it,
+    // place and lock nothing (before any price or listing read can fail the retry).
+    if (requestOrderId) {
+      const existing = await this.prisma.order.findUnique({ where: { id: requestOrderId } });
+      if (existing) return this.replayOrder(this.prisma, existing, params);
+    }
+
     // Listing gates remain authoritative for every path, including the
     // owner's NRX simulation sale below. A History20 private test pair admits
     // only a database-verified participant while the mode is on.
-    const privateAdmitted = await this.privateAdmitted(params.pair, params.userId);
-    await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
+    if (!privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
 
     // Owner/admin and explicitly allowlisted team test accounts trade with
     // simulation-only Spot settlement for MARKET SELL. Their synthetic/test
@@ -92,7 +126,7 @@ export class OrderService {
         select: { role: true, blockedAt: true },
       });
       if (user && !user.blockedAt && (user.role === 'ADMIN' || isSimulationOnlyUser(params.userId))) {
-        return this.sellTeamSpotSimulation(params.userId, params.pair, params.quantity);
+        return this.sellTeamSpotSimulation(params.userId, params.pair, params.quantity, params.requestId);
       }
     }
 
@@ -136,6 +170,11 @@ export class OrderService {
 
     const placed = await SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
       await this.reassertPrivateAdmission(tx, params.pair, params.userId, privateAdmitted);
+      // Under the Spot book lock: racing first attempts with one request ID place one order.
+      if (requestOrderId) {
+        const existing = await tx.order.findUnique({ where: { id: requestOrderId } });
+        if (existing) return this.replayOrder(tx, existing, params);
+      }
       const staged = conditional ? undefined : await session.book(params.pair);
       if (!conditional && params.type === 'MARKET' && params.side === 'BUY') {
         const bestAsk = staged!.getBook(params.pair).bestAsk()?.price;
@@ -144,7 +183,7 @@ export class OrderService {
       }
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
-      const orderId = uuidv4();
+      const orderId = requestOrderId ?? uuidv4();
       let createdAt = Date.now();
       if (staged) for (const side of ['BUY', 'SELL'] as const) for (const resting of staged.getBook(params.pair).getBook(side)) {
         createdAt = Math.max(createdAt, resting.createdAt + 1);
@@ -212,6 +251,32 @@ export class OrderService {
     return placed;
   }
 
+  /** The committed outcome of an earlier attempt with the same request ID.
+   * Other terms under that ID are refused: one request is one order. */
+  private async replayOrder(db: PrismaClient | TxClient, row: StoredOrder, params: {
+    userId: string; pair: string; side: OrderSide; type: ExtendedOrderType; price?: BigNumber; triggerPrice?: BigNumber; quantity: BigNumber;
+  }) {
+    const limitFamily = effectiveOrderType(params.type) === 'LIMIT';
+    const same = row.userId === params.userId && row.pair === params.pair && row.side === params.side && row.type === params.type
+      && row.ocoGroupId === null && new BigNumber(row.originalQuantity.toString()).eq(params.quantity)
+      && sameAmount(row.price, limitFamily ? params.price : null)
+      && sameAmount(row.triggerPrice, isConditionalType(params.type) ? params.triggerPrice : null);
+    if (!same) throw new OrderRequestConflict('This request was already used for a different order');
+    const trades = await db.trade.findMany({ where: { takerOrderId: row.id }, orderBy: [{ executedAt: 'asc' }, { id: 'asc' }] });
+    return {
+      order: {
+        id: row.id, userId: row.userId, pair: row.pair, side: row.side as OrderSide, type: row.type as OrderType,
+        price: row.price ? new BigNumber(row.price.toString()) : null,
+        originalQuantity: new BigNumber(row.originalQuantity.toString()), remainingQuantity: new BigNumber(row.remainingQuantity.toString()),
+        status: row.status as Order['status'], createdAt: row.createdAt.getTime(), updatedAt: row.updatedAt.getTime(),
+      },
+      trades: trades.map(t => ({ id: t.id, pair: t.pair, takerOrderId: t.takerOrderId, makerOrderId: t.makerOrderId, takerUserId: t.takerUserId,
+        makerUserId: t.makerUserId, price: new BigNumber(t.price.toString()), quantity: new BigNumber(t.quantity.toString()),
+        side: t.side as OrderSide, executedAt: t.executedAt.getTime() })),
+      replayed: true as const,
+    };
+  }
+
   /**
    * Simulation-only Spot liquidation for the owner/admin and explicitly
    * allowlisted team test accounts.
@@ -221,10 +286,25 @@ export class OrderService {
    * are credited in the quote asset at the canonical/current server price.
    * Scope is intentionally narrow: SELL + MARKET only.
    */
-  private async sellTeamSpotSimulation(userId: string, pair: string, quantity: BigNumber) {
+  private async sellTeamSpotSimulation(userId: string, pair: string, quantity: BigNumber, requestId?: string) {
     if (!quantity.isFinite() || quantity.lte(0)) throw new Error('Quantity must be greater than zero');
     const [base, quote] = pair.split('/');
     if (!base || !quote) throw new Error('Invalid Spot pair');
+    const terms = { userId, pair, side: 'SELL' as const, type: 'MARKET' as const, quantity };
+    // A concurrent attempt with the same request ID fails on the order's primary
+    // key (the whole sale rolls back); both then answer with the committed order.
+    if (requestId) {
+      try { return await this.sellTeamSpotSimulationOnce(userId, pair, quantity, spotRequestOrderId(userId, requestId)); } catch (error) {
+        const existing = await this.prisma.order.findUnique({ where: { id: spotRequestOrderId(userId, requestId) } });
+        if (existing) return this.replayOrder(this.prisma, existing, terms);
+        throw error;
+      }
+    }
+    return this.sellTeamSpotSimulationOnce(userId, pair, quantity, uuidv4());
+  }
+
+  private async sellTeamSpotSimulationOnce(userId: string, pair: string, quantity: BigNumber, orderId: string) {
+    const [base, quote] = pair.split('/');
 
     // The same server price the pair's Spot ticker, chart and conditional
     // triggers use: NRX and a published managed listing their model price,
@@ -245,7 +325,6 @@ export class OrderService {
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
 
     const now = Date.now();
-    const orderId = uuidv4();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
     const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : privateMarket ? 'HISTORY20_PRIVATE_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
@@ -357,9 +436,22 @@ export class OrderService {
     takeProfitPrice: BigNumber; // also used as this leg's trigger price
     stopTriggerPrice: BigNumber;
     stopLimitPrice: BigNumber;
+    /** Optional client request ID (UUID): a retry returns the pair the first attempt committed. */
+    requestId?: string;
   }) {
-    const privateAdmitted = await this.privateAdmitted(params.pair, params.userId);
-    await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
+    const privatePair = isSimulationSettled(params.pair);
+    const privateAdmitted = privatePair && await this.privateAdmitted(params.pair, params.userId);
+    if (privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
+    const ids = params.requestId ? {
+      ocoGroupId: spotRequestOrderId(params.userId, params.requestId, 'oco'),
+      takeProfitOrderId: spotRequestOrderId(params.userId, params.requestId, 'oco-take-profit'),
+      stopOrderId: spotRequestOrderId(params.userId, params.requestId, 'oco-stop'),
+    } : undefined;
+    if (ids) {
+      const replay = await this.replayOco(this.prisma, ids, params);
+      if (replay) return replay;
+    }
+    if (!privatePair) await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
     const [base, quote] = params.pair.split('/');
     const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');
@@ -379,11 +471,15 @@ export class OrderService {
 
     const oco = await SpotBookTransaction.run(this.prisma, this.engine, async tx => {
       await this.reassertPrivateAdmission(tx, params.pair, params.userId, privateAdmitted);
+      if (ids) {
+        const replay = await this.replayOco(tx, ids, params);
+        if (replay) return replay;
+      }
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
-      const ocoGroupId = uuidv4();
-      const takeProfitId = uuidv4();
-      const stopId = uuidv4();
+      const ocoGroupId = ids?.ocoGroupId ?? uuidv4();
+      const takeProfitId = ids?.takeProfitOrderId ?? uuidv4();
+      const stopId = ids?.stopOrderId ?? uuidv4();
 
       const shared = {
         userId: params.userId,
@@ -422,6 +518,21 @@ export class OrderService {
     // watcher — after the commit, for the same reason as above.
     this.onConditionalOrderCommitted();
     return oco;
+  }
+
+  /** An OCO pair an earlier attempt with this request ID committed, or null. */
+  private async replayOco(db: PrismaClient | TxClient, ids: { ocoGroupId: string; takeProfitOrderId: string; stopOrderId: string }, params: {
+    userId: string; pair: string; side: OrderSide; quantity: BigNumber; takeProfitPrice: BigNumber; stopTriggerPrice: BigNumber; stopLimitPrice: BigNumber;
+  }) {
+    const [takeProfit, stop] = await Promise.all([ids.takeProfitOrderId, ids.stopOrderId].map(id => db.order.findUnique({ where: { id } })));
+    if (!takeProfit && !stop) return null;
+    const leg = (row: StoredOrder | null, type: string, price: BigNumber, trigger: BigNumber) => !!row && row.userId === params.userId
+      && row.pair === params.pair && row.side === params.side && row.type === type && row.ocoGroupId === ids.ocoGroupId
+      && new BigNumber(row.originalQuantity.toString()).eq(params.quantity) && sameAmount(row.price, price) && sameAmount(row.triggerPrice, trigger);
+    if (!leg(takeProfit, 'TAKE_PROFIT_LIMIT', params.takeProfitPrice, params.takeProfitPrice) || !leg(stop, 'STOP_LIMIT', params.stopLimitPrice, params.stopTriggerPrice)) {
+      throw new OrderRequestConflict('This request was already used for a different order');
+    }
+    return { ...ids, replayed: true as const };
   }
 
   /**

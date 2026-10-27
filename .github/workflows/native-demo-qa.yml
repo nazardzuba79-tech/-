@@ -13,6 +13,7 @@ on:
       - 'scripts/qa-order-panel-refinement.cjs'
       - 'scripts/qa-futures-tiny-price.cjs'
       - 'scripts/qa-native-funding-pnl.cjs'
+      - 'scripts/qa-historical-entry.cjs'
       - 'jest.config.js'
       - '.github/workflows/native-demo-qa.yml'
 permissions:
@@ -92,12 +93,20 @@ jobs:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
           LIMIT_QA_WIDTHS: '1440,390'
         run: node scripts/qa-limit-close.cjs
+      - name: Historical candle entry, LONG/SHORT and Market/Limit (1440, 390)
+        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
+          HISTORICAL_QA_WIDTHS: '1440,390'
+          HISTORICAL_QA_OUT: output/historical-entry-ci
+        run: node scripts/qa-historical-entry.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-demo-evidence
           path: |
             native-tests.json
+            output/historical-entry-ci/
             docs/qa/native-demo/
             docs/qa/native-funding-pnl/
             docs/qa/futures-tiny-price/

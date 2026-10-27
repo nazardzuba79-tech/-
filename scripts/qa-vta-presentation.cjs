@@ -94,6 +94,26 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       assert.equal(await banner.count(), 0, 'healthy VTA remains silent');
       assert.equal(await diagnostic.count(), 0, 'healthy VTA clears its diagnostic marker');
       if (width === 390) await page.locator('#mobile-trade-trade').click();
+      // Owner, 2026-10-22: VTA is not open to an ordinary account, so its submit is disabled — no «not
+      // trading yet» line. The side tabs keep their colours; the released CTA colours are checked below
+      // on a pair whose button is live.
+      for (const side of ['buy', 'sell']) {
+        await page.locator(`.order-form-tab.${side}`).click();
+        await page.waitForFunction(({side}) => {
+          const tab = document.querySelector(`.order-form-tab.${side}.active`);
+          if (!tab) return false;
+          const probe = document.createElement('span'); probe.style.color = `var(--color-${side})`; tab.append(probe);
+          const standard = getComputedStyle(probe).color; probe.remove();
+          return getComputedStyle(tab).backgroundColor === standard;
+        }, {side});
+        assert.equal(await page.locator(`.submit-btn.${side}`).isDisabled(), true, `VTA ${side} submit is disabled for an ordinary account`);
+        await page.locator(`.submit-btn.${side}`).click({ force: true }); await page.waitForTimeout(100);
+        assert.doesNotMatch(await page.locator('body').innerText(), /пока не торгуется|not trading yet/i, 'no refusal line');
+      }
+      await page.screenshot({ path: path.join(out, `vta-sell-${width}.png`), fullPage: true });
+      await page.goto(origin + '/trade?pair=BTC%2FUSDT');
+      await page.waitForSelector('.spot-terminal');
+      if (width === 390) await page.locator('#mobile-trade-trade').click();
       for (const side of ['buy', 'sell']) {
         await page.locator(`.order-form-tab.${side}`).click();
         await page.waitForFunction(({side,fill}) => {
@@ -114,7 +134,6 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
         }, {side,fill:ctaFill[side]});
         assert.equal(colours.tab, colours.standard); assert.equal(colours.cta, colours.expectedCta);
       }
-      await page.screenshot({ path: path.join(out, `vta-sell-${width}.png`), fullPage: true });
       assert.deepEqual(writes, []); assert.deepEqual(errors, []);
       console.log(`PASS ${width}px: healthy VTA + disconnected venue silent; own outage/recovery correct; compact 12px label ${metrics.width.toFixed(1)}px; no writes/errors/overflow`);
       await ctx.close();

@@ -40,7 +40,8 @@ export function assertSpotListing(pair: string, now = Date.now(), privateAdmitte
     // SIMUSDT and a reserved private ticker never trade as an ordinary managed listing, whatever the registry says.
     if (isSimulationSettled(pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     if (!managed.isTradable) throw new Error(`${managed.name} is not available for trading.`);
-    if (now < managed.listingAt) throw new Error('Trading has not started yet');
+    // Unarmed = the pre-listing timer is not running (staged or paused): the market never opens by itself.
+    if (!managed.listingArmed || now < managed.listingAt) throw new Error('Trading has not started yet');
     return;
   }
   if (isTestAssetPairOrSymbol(pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
@@ -80,7 +81,7 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     // A historical model price never triggers a real conditional order.
     // A listing closed to new public orders (tradable:false) keeps its model
     // price for already-resting conditional orders: bot training relies on it.
-    if (isHistoricalDemoAsset(managed)) return null;
+    if (isHistoricalDemoAsset(managed) || !managed.listingArmed) return null;
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };
   } };

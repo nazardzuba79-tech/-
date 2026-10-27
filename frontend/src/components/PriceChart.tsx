@@ -46,7 +46,7 @@ import {
 import type { DrawingView } from '../lib/drawingGeometry';
 import { ChartDrawingLayer, CURSOR_TOOLS, newDrawingId, type ChartDrawing, type DrawingTool, type TextRequest } from './ChartDrawingLayer';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
-import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
+import { chartEntryAnchor, chartEventBar, chartOverlayBottomFraction, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_BAND_OVERLAY_TOP, CHART_INTERVAL_MS, CHART_VOLUME_OVERLAY_TOP, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
 import { CHART_TIMEFRAMES, LEGACY_TIMEFRAMES, isChartTimeframe, timeframeDurationMs, timeframeLabelKey, timeframeSpec, type CandleSourceKind, type ChartTimeframe } from '../lib/chartTimeframes';
 import { isTimeframeUnavailable, loadChartCandles, timeframeUnavailableError, workspaceCandleLoader } from '../lib/chartCandleSource';
 import { candleSourceFor, chartCapabilities, quickTimeframesFor, resolveTimeframe } from '../lib/chartCapabilities';
@@ -212,23 +212,13 @@ export function PriceChart({
   candleLoader?: ChartCandleLoader;
   privateTrading?: ChartTradingInteraction;
   /**
-   * Open positions to draw on the price scale: entry, take profit, stop
-   * loss and the liquidation boundary.
+   * Server-confirmed open positions to draw on the price scale: entry,
+   * armed take profit and armed stop loss. The liquidation price remains
+   * in the positions table only (owner request, 2026-10-22); never draw
+   * its horizontal line or price-axis LIQ badge.
    *
-   * Every figure is the SERVER'S. `entryPrice` and `liquidationPrice` come
-   * off /futures/positions, and the two protection levels are the armed
-   * triggers the protection service holds — not an echo of anything typed
-   * into an editor. Nothing here is derived, and nothing is approximated:
-   * `previewLiquidationPrice` in lib/futuresMath is a form-time estimate
-   * and must never back a line a trader reads as their liquidation level.
-   *
-   * `liquidationPrice: null` is the engine saying NO PRICE IS REACHABLE
-   * with the account's current collateral. There is then no line, because
-   * a line drawn at some plausible number would be a boundary the engine
-   * does not recognize.
-   *
-   * Undefined where `privateTrading` already draws the same lines from the
-   * simulation transcript, so a position never gets two entry lines.
+   * Undefined where `privateTrading` draws its own entry and TP/SL
+   * from the simulation transcript, so a position never gets two entry lines.
    */
   positionLines?: ChartPositionLine[];
   /** 'logarithmic' for a market whose history spans orders of magnitude (a
@@ -637,7 +627,7 @@ export function PriceChart({
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
     });
-    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: CHART_VOLUME_OVERLAY_TOP, bottom: 0 } });
 
     // Bars, hollow candles and Heikin Ashi: hidden until picked. The
     // candlestick series above stays the coordinate authority for every
@@ -717,13 +707,28 @@ export function PriceChart({
           if (!param.point || !data || !('open' in data) || typeof data.time !== 'number') return;
           const candle = candlesRef.current.find(item => item.time === data.time);
           if (!candle) return;
+          // The price pane (pane 0) is the pick area. Volume is in its own
+          // pane when shown and parked invisible in this one when hidden, so
+          // it only narrows the area while it is actually drawn here; the
+          // Spot/CFD oscillator band does the same (lib/chartTrading).
           const pane = chart.paneSize(0);
           const hovered = param.hoveredInfo?.series ?? param.hoveredSeries;
+          // A price-pane overlay drawn through the bar — the default SMA 200
+          // runs exactly along a flat run of old candles — never takes the
+          // pick from the candle under it: while picking, the candle's own
+          // geometry decides. Only a series from another pane under the
+          // pointer is an indicator hit (owner, 2026-10-21: «індикатор усе ще
+          // накладений на головну панель»).
+          const hoveredElsewhere = !!hovered && hovered !== series
+            && typeof hovered.getPane === 'function' && hovered.getPane().paneIndex() !== 0;
+          const volumeVisibleInPricePane = volumeSeries.options().visible !== false
+            && (typeof volumeSeries.getPane !== 'function' || volumeSeries.getPane().paneIndex() === 0);
           if (!isCandleHit({ x: param.point.x, y: param.point.y,
             candleX: chart.timeScale().timeToCoordinate(data.time), highY: series.priceToCoordinate(candle.high), lowY: series.priceToCoordinate(candle.low),
             paneWidth: pane.width, paneHeight: pane.height, barSpacing: chart.timeScale().options().barSpacing,
-            paneIndex: param.paneIndex, dragged, indicatorHovered: !!hovered && hovered !== series,
-            indicatorPanelVisible: chartHitRef.current.bandOscillators })) return;
+            paneIndex: param.paneIndex, dragged, indicatorHovered: hoveredElsewhere,
+            overlayBottomFraction: chartOverlayBottomFraction({ volumeVisibleInPricePane,
+              volumeScaleTop: volumeSeries.priceScale().options().scaleMargins?.top, bandOscillators: chartHitRef.current.bandOscillators }) })) return;
           const selected = completeChartCandle(candle, chartHitRef.current.pair, chartHitRef.current.interval);
           if (!selected) return;
           const bounds = host.getBoundingClientRect();
@@ -882,7 +887,7 @@ export function PriceChart({
       layoutPanes();
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
     } else {
-      volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+      volume.priceScale().applyOptions({ scaleMargins: { top: CHART_VOLUME_OVERLAY_TOP, bottom: 0 } });
     }
     chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
     setBaseMargins(0.1, bandOscillators ? 0.3 : 0.06);
@@ -936,7 +941,7 @@ export function PriceChart({
         set = { signature: '', paintSignature: '', computed: null, pane, lines, histogram, levels: [] };
         map.set(inst.id, set);
         const first = Object.values(lines)[0];
-        if (pane === 'band') first?.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 }, visible: false });
+        if (pane === 'band') first?.priceScale().applyOptions({ scaleMargins: { top: CHART_BAND_OVERLAY_TOP, bottom: 0.02 }, visible: false });
       }
       const all = [...Object.values(set.lines), ...(set.histogram ? [set.histogram] : [])];
       if (pane === 'lower') {
@@ -1049,7 +1054,6 @@ export function PriceChart({
       };
       addLine(protectedTrade.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
       addLine(protectedTrade.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
-      addLine(protectedTrade.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
     }
   }, [privateTrading, chartReady, candlesRevision, pair, interval, chartType]);
 
@@ -1161,26 +1165,14 @@ export function PriceChart({
   }, [drawingToolsOn, clearDrawings, locked]);
 
   /**
-   * THE POSITION OVERLAY: entry, take profit, stop loss, liquidation.
+   * THE POSITION OVERLAY: server-confirmed entry, armed take profit and
+   * armed stop loss. The liquidation boundary is still delivered to the
+   * positions table but deliberately never drawn on the chart (2026-10-22).
+   * Neither a saved liquidation price nor an order-form estimate can add a
+   * LIQ line or price-axis label.
    *
-   * Every one of these four is a figure the SERVER holds. Entry and the
-   * liquidation boundary arrive on /futures/positions; the two protection
-   * levels are the triggers `FuturesProtectionService` has armed, which is
-   * why a level typed into the positions editor and not yet saved draws
-   * nothing here. A line on a price scale reads as a commitment, and a
-   * commitment nobody made is the one thing this overlay must not draw.
-   *
-   * NO LIQUIDATION LINE WHEN THE PRICE IS NULL. `null` is the engine
-   * saying no liquidation price is reachable with the account's current
-   * collateral — a fully hedged Cross position, or one the whole balance
-   * backs. `previewLiquidationPrice` in lib/futuresMath could always
-   * produce SOME number, and that is exactly why it is not consulted: it
-   * is a form-time estimate for an order that does not exist yet, not the
-   * boundary this position will actually be closed at.
-   *
-   * One effect owns the whole lifecycle, same discipline as `horizontals`
-   * below: it removes every line it previously made and recreates them, so
-   * the chart objects and the data can never drift apart.
+   * The protection levels come from the armed server triggers, not an
+   * unsaved editor value. The effect owns the lifecycle of all price lines.
    */
   useEffect(() => {
     const visible = visibleSeriesFor(chartType);
@@ -1206,7 +1198,6 @@ export function PriceChart({
         position.side === 'LONG' ? '#13ad75' : '#f33b57', LineStyle.Solid);
       add(position.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
       add(position.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
-      add(position.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
     }
     return () => {
       for (const line of positionLinesRef.current) positionLineOwnerRef.current?.removePriceLine(line);

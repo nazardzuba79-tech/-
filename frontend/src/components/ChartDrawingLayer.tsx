@@ -4,7 +4,7 @@ import {
   drawingStyle, drawingVisibleOn, readableTextOn, settleLiveEnd, trackDrawingGesture,
   type DrawingKind, type DrawingPoint, type StoredDrawing,
 } from '../lib/chartDrawings';
-import { anchorAt, drawingGeometry, drawingToolbarPlacement, geometryDistance, labelBox, measurementLine, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
+import { anchorAt, drawingGeometry, drawingToolbarPlacement, geometryDistance, hitGeometry, labelBox, measurementLine, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
 import { DrawingActions, DrawingObjectToolbar, TOOLBAR_HEIGHT } from './DrawingObjectToolbar';
 import { DrawingSettingsDialog } from './DrawingSettingsDialog';
 
@@ -90,7 +90,12 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
   const [guide, setGuide] = useState<{ id: number; price: number; snapped: boolean } | null>(null);
 
   const drawingTool = !CURSOR_TOOLS.includes(tool);
-  const capture = drawingTool && !blocked;
+  // The eraser is not a drawing tool for the plot: it acts on a drawing's
+  // own hit target (startMove) and leaves the bare chart to pan, as on
+  // TradingView. Taking the whole plot left the chart dead while the eraser
+  // stayed selected (owner, 2026-10-21: «графік не переміщується»).
+  const erasing = tool === 'erase';
+  const capture = drawingTool && !erasing && !blocked;
 
   // A tool change, a lock or another interaction abandons whatever was
   // half-placed.
@@ -139,15 +144,6 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     return out;
   }, [drawings, view]);
 
-  const topmostAt = useCallback((p: { x: number; y: number }) => {
-    for (let i = drawingsRef.current.length - 1; i >= 0; i--) {
-      const d = drawingsRef.current[i];
-      const g = geometries.get(d.id);
-      if (g && geometryDistance(g, p) <= HIT_RADIUS) return d;
-    }
-    return null;
-  }, [geometries]);
-
   const commit = useCallback((kind: DrawingKind, points: DrawingPoint[]) => {
     if (DRAWING_TEXT_KINDS.includes(kind)) { props.onRequestText({ kind, points }); return; }
     const drawing: ChartDrawing = { id: newDrawingId(), kind, points };
@@ -162,11 +158,6 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     event.preventDefault();
     const at = local(event.clientX, event.clientY);
     if (!at) return;
-    if (tool === 'erase') {
-      const hit = topmostAt(at);
-      if (hit && !hit.locked) { setDrawings((previous) => previous.filter((d) => d.id !== hit.id)); if (selectedId === hit.id) onSelect(null); }
-      return;
-    }
     const kind = tool as DrawingKind;
     const start = pointAt(at.x, at.y);
     if (!start) return;
@@ -278,11 +269,15 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
   });
   const toggleLock = (id: number) => setDrawings((previous) => previous.map((d) => (d.id === id ? { ...d, locked: !d.locked || undefined } : d)));
 
-  /** Press on a drawing in a cursor mode: select it and drag the body. */
+  /** Press on a drawing in a cursor mode: select it and drag the body. With the eraser: remove it (a locked one stays). */
   const startMove = (event: React.PointerEvent, drawing: ChartDrawing) => {
     if (event.button !== 0 || blocked) return;
     event.stopPropagation();
     event.preventDefault();
+    if (erasing) {
+      if (!lockedRef.current && !drawing.locked) { setDrawings((previous) => previous.filter((d) => d.id !== drawing.id)); if (selectedId === drawing.id) onSelect(null); }
+      return;
+    }
     onSelect(drawing.id);
     if (lockedRef.current || drawing.locked || !view) return;
     const origin = local(event.clientX, event.clientY);
@@ -360,7 +355,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     return drawingGeometry({ kind: pending.kind, points: points.slice(0, required), text: DRAWING_TEXT_KINDS.includes(pending.kind) ? '…' : undefined }, view);
   })();
 
-  const cursor = tool === 'erase' ? 'cell' : capture ? 'crosshair' : undefined;
+  const cursor = erasing ? 'cell' : capture ? 'crosshair' : undefined;
 
   return <>
     <svg ref={svgRef} className="drawing-overlay drawing-layer" data-drawing-layer
@@ -375,11 +370,11 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
           return <g key={d.id} data-drawing-kind={d.kind} data-drawing-selected={d.id === selectedId || undefined} data-drawing-live={d.followLast || undefined}
             onPointerEnter={d.kind === 'ruler' ? () => hoverRulerOn(d.id) : undefined} onPointerLeave={d.kind === 'ruler' ? hoverRulerOff : undefined}>
             <Primitives prims={guided ? g.prims.filter((p) => p.t !== 'label') : g.prims} />
-            {!capture && !blocked && <HitTargets geometry={g} onPointerDown={(e) => startMove(e, d)} onDoubleClick={() => openSettings(d)} onContextMenu={(e) => openContextMenu(e, d)} />}
+            {!capture && !blocked && <HitTargets geometry={g} frozen={locked || !!d.locked} cursor={erasing ? 'cell' : 'pointer'} onPointerDown={(e) => startMove(e, d)} onDoubleClick={() => openSettings(d)} onContextMenu={(e) => openContextMenu(e, d)} />}
           </g>;
         })}
         {preview && <g opacity={0.85}><Primitives prims={preview.prims} /></g>}
-        {capture && hover && tool !== 'erase' && <g pointerEvents="none">
+        {capture && hover && <g pointerEvents="none">
           <line x1={hover.x} y1={0} x2={hover.x} y2="100%" stroke="#9598a1" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
           <line x1={0} y1={hover.y} x2="100%" y2={hover.y} stroke="#9598a1" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
         </g>}
@@ -507,15 +502,23 @@ function Primitives({ prims }: { prims: Primitive[] }) {
   })}</>;
 }
 
-/** Invisible, wider targets over what is painted, live only in cursor modes. */
-function HitTargets({ geometry, onPointerDown, onDoubleClick, onContextMenu }: {
-  geometry: DrawingGeometry; onPointerDown: (e: React.PointerEvent) => void; onDoubleClick?: () => void; onContextMenu?: (e: React.MouseEvent) => void;
+/**
+ * The invisible shapes a pointer meets before the chart's canvas. The SVG
+ * itself passes the pointer through (pointer-events: none outside a tool),
+ * so only these take a press. A frozen drawing — locked itself, or every
+ * drawing locked — offers its outline and labels only (lib/drawingGeometry
+ * hitGeometry): its body would swallow the press and move nothing, and the
+ * chart under it could not be panned (owner, 2026-10-21).
+ */
+function HitTargets({ geometry, frozen, cursor, onPointerDown, onDoubleClick, onContextMenu }: {
+  geometry: DrawingGeometry; frozen: boolean; cursor: 'pointer' | 'cell'; onPointerDown: (e: React.PointerEvent) => void; onDoubleClick?: () => void; onContextMenu?: (e: React.MouseEvent) => void;
 }) {
-  const style: CSSProperties = { cursor: 'pointer' };
-  return <g onPointerDown={onPointerDown} onDoubleClick={onDoubleClick ? (e) => { e.stopPropagation(); onDoubleClick(); } : undefined} onContextMenu={onContextMenu}>
-    {geometry.strokes.map((s, i) => <polyline key={`s${i}`} points={s.map((q) => `${q.x},${q.y}`).join(' ')} fill="none" stroke="transparent" strokeWidth={HIT_RADIUS * 2} style={{ ...style, pointerEvents: 'stroke' }} />)}
-    {geometry.areas.map((a, i) => <polygon key={`a${i}`} points={a.map((q) => `${q.x},${q.y}`).join(' ')} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
-    {geometry.boxes.map((b, i) => <rect key={`b${i}`} x={b.x} y={b.y} width={b.w} height={b.h} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
+  const style: CSSProperties = { cursor };
+  const hit = hitGeometry(geometry, frozen);
+  return <g data-drawing-hit={frozen ? 'outline' : 'body'} onPointerDown={onPointerDown} onDoubleClick={onDoubleClick ? (e) => { e.stopPropagation(); onDoubleClick(); } : undefined} onContextMenu={onContextMenu}>
+    {hit.strokes.map((s, i) => <polyline key={`s${i}`} points={s.map((q) => `${q.x},${q.y}`).join(' ')} fill="none" stroke="transparent" strokeWidth={HIT_RADIUS * 2} style={{ ...style, pointerEvents: 'stroke' }} />)}
+    {hit.areas.map((a, i) => <polygon key={`a${i}`} points={a.map((q) => `${q.x},${q.y}`).join(' ')} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
+    {hit.boxes.map((b, i) => <rect key={`b${i}`} x={b.x} y={b.y} width={b.w} height={b.h} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
   </g>;
 }
 

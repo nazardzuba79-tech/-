@@ -18,10 +18,15 @@
 }
 .vta-prelisting-card { position: relative; display: grid; justify-items: center; gap: 10px; width: min(560px, 100%); text-align: center; }
 .vta-prelisting-mark { width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .03); box-shadow: 0 0 0 1px var(--border), 0 18px 48px rgba(0, 0, 0, .35); }
+.vta-prelisting-mark--tyvn { border-radius: 0; background: transparent; box-shadow: none; }
+.vta-prelisting-tyvn-logo { display: block; width: 100%; height: 100%; overflow: hidden; mix-blend-mode: screen; filter: drop-shadow(0 3px 12px rgba(230, 169, 32, .16)); }
 .vta-prelisting-name { margin: 6px 0 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: .16em; color: var(--text-primary); }
 .vta-prelisting-pair { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
 .managed-demo-status { padding: 7px 12px; border: 1px solid #4b6587; border-radius: 6px; background: #182739; color: #c5dfff; font-size: 11px; line-height: 1.4; font-weight: 600; letter-spacing: .04em; text-align: center; }
-.managed-demo-chart { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-height: 0; }
+/* The chart fills the area; the stale-data alert, when there is one, takes a row above it.
+   (The market notice that used to be that row is gone — owner, 2026-10-22.) */
+.managed-demo-chart { display: grid; grid-template-rows: minmax(0, 1fr); height: 100%; min-height: 0; }
+.managed-demo-chart:has(> .managed-demo-status) { grid-template-rows: auto minmax(0, 1fr); }
 .managed-demo-chart > .managed-demo-status { border-radius: 0; border-width: 0 0 1px; }
 .vta-prelisting-when { margin: 8px 0 2px; font-size: 14px; color: var(--text-primary); }
 .vta-countdown { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(440px, 100%); margin-top: 4px; }

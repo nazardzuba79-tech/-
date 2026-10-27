@@ -71,6 +71,30 @@ describe('managed listings in the frontend', () => {
     expect(utcOffsetLabel(Date.parse('2026-10-01T12:00:00Z'), 'Europe/Kyiv')).toBe('UTC+3');
     expect(managedListingTime('2026-10-01T12:00:00Z', 'Europe/Kyiv')).toBe('01.10.2026 · 15:00 Europe/Kyiv · 12:00 UTC');
   });
+
+  test('a listing entered in Moscow time reads UTC first, as NRX does: «26.10.2026 — 13:00 UTC / 16:00 МСК»', () => {
+    expect(managedListingTime('2026-10-26T13:00:00Z', 'Europe/Moscow')).toBe('26.10.2026 — 13:00 UTC / 16:00 МСК');
+    expect(managedListingTime('2026-10-26T13:00:00Z', 'Europe/Moscow', 'en-US')).toBe('10/26/2026 — 13:00 UTC / 16:00 МСК');
+    expect(managedListingTime('2026-10-26T13:00:00Z', 'UTC')).toBe('26.10.2026 · 13:00 UTC');
+    expect(zonedWallTimeToUtc('2026-10-26T16:00', 'Europe/Moscow')).toBe('2026-10-26T13:00:00Z');
+  });
+
+  test('the public timer state: paused keeps the date and loses the countdown; running counts; unarmed shows no date', () => {
+    const now = Date.parse('2026-10-01T11:00:00Z');
+    const paused = parseTestMarkets({ serverTime: 1, assets: [managed({ listingArmed: false, countdown: 'paused' })] })!.assets[0];
+    expect(paused.countdown).toBe('paused');
+    for (const at of [now, Date.parse('2026-10-01T12:00:00Z'), Date.parse('2026-10-02T12:00:00Z')]) {
+      expect(testMarketHelpers.testMarketPresentation(paused, at)).toMatchObject({ showCountdown: false, showDate: true, scheduleKey: 'listing.countdownPaused' });
+    }
+    const running = parseTestMarkets({ serverTime: 1, assets: [managed()] })!.assets[0];
+    expect(running.countdown).toBe('running');
+    expect(testMarketHelpers.testMarketPresentation(running, now)).toMatchObject({ showCountdown: true, showDate: true, scheduleKey: null });
+    expect(testMarketHelpers.testMarketPresentation(running, Date.parse('2026-10-01T12:00:00Z'))).toMatchObject({ showCountdown: false, showDate: true, scheduleKey: 'listing.awaitingStart' });
+    const unarmed = parseTestMarkets({ serverTime: 1, assets: [managed({ listingArmed: false })] })!.assets[0];
+    expect(testMarketHelpers.testMarketPresentation(unarmed, now)).toMatchObject({ showCountdown: false, showDate: false, scheduleKey: 'listing.dateUnconfirmed' });
+    // Unknown values never count: only the server's exact `paused` pauses.
+    expect(parseTestMarkets({ serverTime: 1, assets: [managed({ countdown: 'stopped' })] })!.assets[0].countdown).toBe('running');
+  });
 });
 
 describe('test-market list identity', () => {
@@ -329,12 +353,21 @@ describe('saved-draft actions in the mounted Listings admin', () => {
   const { act } = React;
   const { Simulate } = req('react-dom/test-utils');
   let dom: any, root: any, host: HTMLElement, listing: any, extraListings: any[], fetchMock: jest.Mock;
-  let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number;
+  let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number, serverTime: number | null;
   let malformedPublish: boolean;
+  // oldApi: the API deployed before the timer (2e7acf1) — it strips `countdown` from every answer, ignores
+  // «staged» (publishes at once) and has no timer route. storeEmpty: no listing yet until one is created.
+  let oldApi: boolean, storeEmpty: boolean;
   let globals: Map<string, PropertyDescriptor | undefined>;
   const modules = new Map<string, any>();
   const sessionListeners = new Set<() => void>();
   const json = (body: unknown, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) });
+  const withoutCountdown = ({ countdown: _stripped, ...rest }: any) => rest;
+  // What the Worker's public catalogue would show: published and not held back by a staged timer.
+  const publicPairs = () => (storeEmpty ? [] : [listing, ...extraListings])
+    .filter((item) => item.activeVersion !== null && item.countdown?.state !== 'staged').map((item) => `${item.symbol}/USDT`);
+  // A React handler called straight from its props: the path a stale or scripted call would take past `disabled`.
+  const reactProps = (element: Element) => (element as any)[Object.keys(element).find((key) => key.startsWith('__reactProps$'))!];
 
   function load(file: string): any {
     for (const suffix of ['', '.tsx', '.ts']) if (existsSync(file + suffix)) { file += suffix; break; }
@@ -357,17 +390,32 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     Object.assign(globalThis, values);
     host = document.getElementById('root')!;
     root = req('react-dom/client').createRoot(host);
-    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false;
+    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false; serverTime = null; oldApi = false; storeEmpty = false;
     listing = {
       id: 'qax-1', symbol: 'QAX', draftRevision: 2, draftUpdatedAt: '2026-09-29T00:00:00Z', draftUpdatedBy: 'fixture-admin',
-      activeVersion: null, active: null, versions: [],
+      // A timer-capable API returns the countdown key on every listing, null until a timer exists.
+      activeVersion: null, active: null, versions: [], countdown: null,
       draft: { schemaVersion: 1, symbol: 'QAX', name: 'QA Example', logo: null, initialPrice: '0.25',
         listingAt: '2026-10-01T12:00:00Z', displayTimeZone: 'Europe/Kyiv', ownerAllocation: '0', seedMode: 'auto',
         seed: 'qax-fixed-seed', tradable: false, simulationProfile: 'CALM_TREND' },
     };
     fetchMock = jest.fn(async (url: string, init: any = {}) => {
       const path = String(url);
-      if (path === '/api/v1/admin/listings') return json({ revision: String(listing.draftRevision), serverTime: Date.now(), listings: [listing, ...extraListings] });
+      if (path === '/api/v1/admin/listings' && init.method === 'POST') {
+        const { config } = JSON.parse(init.body);
+        listing = { ...listing, symbol: config.symbol, draftRevision: 1, draft: { ...listing.draft, ...config }, activeVersion: null, active: null, versions: [], countdown: null };
+        storeEmpty = false;
+        return json({ id: listing.id, draftRevision: 1, draft: listing.draft }, 201);
+      }
+      if (path === '/api/v1/admin/listings') return json({ revision: String(listing.draftRevision), serverTime: serverTime ?? Date.now(),
+        listings: (storeEmpty ? [] : [listing, ...extraListings]).map((item) => (oldApi ? withoutCountdown(item) : item)) });
+      if (path.endsWith('/countdown') && init.method === 'POST') {
+        if (oldApi) return json({ error: 'Not found' }, 404);
+        const { action } = JSON.parse(init.body);
+        const state = action === 'start' ? 'running' : action === 'pause' ? 'paused' : 'staged';
+        listing = { ...listing, countdown: { state, updatedAt: 1, updatedBy: 'fixture-admin', ...(state === 'running' ? { startedAt: 1 } : {}) } };
+        return json({ id: listing.id, countdown: listing.countdown, changed: true });
+      }
       if (path.endsWith('/draft') && init.method === 'PUT') {
         const { config } = JSON.parse(init.body);
         listing = { ...listing, draftRevision: listing.draftRevision + 1, draft: { ...listing.draft, ...config } };
@@ -384,9 +432,11 @@ describe('saved-draft actions in the mounted Listings admin', () => {
       if (path.endsWith('/publish') && init.method === 'POST') {
         if (malformedPublish) return json({ accepted: true });
         if (publishFailures > 0) { publishFailures -= 1; throw new Error('fixture connection lost'); }
+        const staged = !oldApi && JSON.parse(init.body).countdown === 'staged';
         listing = { ...listing, activeVersion: 1, active: structuredClone(listing.draft),
-          versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }] };
-        return json({ id: listing.id, version: 1, replayed: false, publishedAt: '2026-09-29T01:00:00Z' });
+          versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }],
+          countdown: staged ? { state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' } : listing.countdown ?? null };
+        return json({ id: listing.id, version: 1, replayed: false, publishedAt: '2026-09-29T01:00:00Z', ...(oldApi ? {} : { countdown: listing.countdown }) });
       }
       return json({ error: `unexpected fixture request ${path}` }, 404);
     });
@@ -682,6 +732,179 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(host.querySelector('[data-listing-preview]')).toBeNull();
     expect(button('[data-preview]').disabled).toBe(false);
     expect(button('[data-publish]').disabled).toBe(false);
+  });
+
+  const publishedListing = (countdown: Record<string, unknown> | null) => ({
+    ...listing, activeVersion: 1, active: structuredClone(listing.draft),
+    versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }], countdown,
+  });
+  const timerBox = () => host.querySelector<HTMLElement>('[data-listing-timer]');
+  const timerActions = () => Array.from(host.querySelectorAll('[data-timer-action]')).map(button => button.getAttribute('data-timer-action'));
+
+  // The fixture lists on 2026-10-01: the page reads the SERVER clock from the list, never the browser's, so the tests set it.
+  const beforeListing = Date.parse('2026-09-30T00:00:00Z');
+
+  test('the timer of a published listing: «Запустить таймер» shows the market; pause and stop follow; the listing date never moves', async () => {
+    serverTime = beforeListing;
+    listing = publishedListing({ state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' });
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
+    expect(timerBox()?.textContent).toContain('Таймер не запущен');
+    expect(host.querySelector('[data-listing-timer-line]')?.textContent).toContain('01.10.2026 — 12:00 UTC / 15:00 МСК');
+    expect(host.querySelector('.listing-when')?.textContent).toContain('Москва (UTC+3)');
+    expect(timerActions()).toEqual(['start']);
+    await click('[data-timer-action="start"]');
+    expect(JSON.parse(calls('/countdown')[0][1].body)).toEqual({ action: 'start' });
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('запущен: отсчёт до 01.10.2026 — 12:00 UTC / 15:00 МСК');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+    expect(timerActions()).toEqual(['pause', 'stop']);
+    await click('[data-timer-action="pause"]');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('paused');
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('приостановлен');
+    expect(timerActions()).toEqual(['start', 'stop']);
+    await click('[data-timer-action="stop"]');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('скрыт с биржи');
+    expect(calls('/countdown').map(([, init]) => JSON.parse(init.body).action)).toEqual(['start', 'pause', 'stop']);
+    expect(calls('/draft')).toHaveLength(0);
+    expect(calls('/publish')).toHaveLength(0);
+    expect(listing.active.listingAt).toBe('2026-10-01T12:00:00Z');
+  });
+
+  test('a listing published before the timer existed counts as running; a passed date with a timer that never ran is an alert, never a start', async () => {
+    serverTime = beforeListing;
+    listing = publishedListing(null);
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+    expect(timerActions()).toEqual(['pause', 'stop']);
+    await act(async () => root.unmount());
+    root = req('react-dom/client').createRoot(host);
+    // The server clock, not the browser's, says the date passed: the listing was never started, so nothing opened.
+    serverTime = Date.parse('2026-10-02T00:00:00Z');
+    listing = publishedListing({ state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' });
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('overdue');
+    expect(timerBox()?.getAttribute('role')).toBe('alert');
+    expect(timerBox()?.textContent).toContain('назначьте новую дату');
+    expect(timerBox()?.textContent).toContain('Ничего не запускается автоматически');
+    expect(timerActions()).toEqual([]);
+    // Opened the old way (running past its date): no timer controls at all.
+    await act(async () => root.unmount());
+    root = req('react-dom/client').createRoot(host);
+    listing = publishedListing({ state: 'running', updatedAt: 1, updatedBy: 'fixture-admin', startedAt: 1 });
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('open');
+    expect(timerActions()).toEqual([]);
+    expect(calls('/countdown')).toHaveLength(0);
+  });
+
+  test('publishing without starting the timer sends countdown=staged and says the market stays hidden until «Запустить таймер»', async () => {
+    serverTime = beforeListing;
+    await mount();
+    await click('[data-publish]');
+    const box = host.querySelector<HTMLInputElement>('[data-field="publishStartTimer"]')!;
+    expect(box.checked).toBe(true);
+    expect(host.querySelector('[data-publish-timer-line]')?.textContent).toContain('01.10.2026 — 12:00 UTC / 15:00 МСК');
+    await change('publishStartTimer', false);
+    expect(host.querySelector('[data-publish-dialog]')?.textContent).toContain('останется скрытым');
+    await click('[data-confirm-publish]');
+    expect(JSON.parse(calls('/publish')[0][1].body)).toMatchObject({ countdown: 'staged' });
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('Таймер не запущен');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
+    expect(timerActions()).toEqual(['start']);
+  });
+
+  // Owner, 2026-10-22 (PR #585): the API deployed before the timer (2e7acf1) drops «staged» and has no timer route
+  // (scripts/qa-listing-timer-api.cjs), so a first publication through it would be public at once. The page never sends one.
+  test('an API without the timer: no first publication — disabled, no dialog; rapid clicks, Enter and a direct call send no POST; draft and preview still work', async () => {
+    serverTime = beforeListing;
+    oldApi = true;
+    await mount();
+    expect(button('[data-publish]').disabled).toBe(true);
+    expect(host.querySelector('[data-publish-needs-timer]')?.textContent).toContain('Первая публикация закрыта');
+    await act(async () => { for (let i = 0; i < 5; i += 1) button('[data-publish]').click(); await flush(); });
+    await act(async () => { button('[data-publish]').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await flush(); });
+    await act(async () => { reactProps(button('[data-publish]')).onClick(); reactProps(button('[data-publish]')).onClick(); await flush(); });
+    expect(host.querySelector('[data-publish-dialog]')).toBeNull();
+    // Enter in the form submits it: that saves the draft, never publishes.
+    await act(async () => { Simulate.submit(host.querySelector('[data-listing-form]')!); await flush(); });
+    expect(calls('/draft')).toHaveLength(1);
+    await click('[data-preview]');
+    expect(calls('/preview?')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-preview]')).not.toBeNull();
+    expect(button('[data-publish]').disabled).toBe(true);
+    expect(calls('/publish')).toHaveLength(0);
+    expect(listing.activeVersion).toBeNull();
+    expect(publicPairs()).toEqual([]);
+  });
+
+  test('an API without the timer: a listing that is already public may still be re-published — its visibility does not change, no timer field', async () => {
+    serverTime = beforeListing;
+    oldApi = true;
+    listing = publishedListing(null);
+    await mount();
+    expect(host.querySelector('[data-publish-needs-timer]')).toBeNull();
+    await click('[data-publish]');
+    expect(host.querySelector('[data-publish-dialog]')?.textContent).toContain('Состояние таймера сохраняется');
+    await click('[data-confirm-publish]');
+    expect(calls('/publish')).toHaveLength(1);
+    expect('countdown' in JSON.parse(calls('/publish')[0][1].body)).toBe(false);
+  });
+
+  test('an API without the timer: a published listing shows its running state and no timer buttons (they would 404)', async () => {
+    serverTime = beforeListing;
+    listing = publishedListing(null);
+    oldApi = true;
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+    expect(timerActions()).toEqual([]);
+  });
+
+  test('the API losing the timer between two list reads (a rollback) closes the first publication at the next read', async () => {
+    serverTime = beforeListing;
+    await mount();
+    expect(button('[data-publish]').disabled).toBe(false);
+    oldApi = true;
+    await act(async () => { Simulate.submit(host.querySelector('[data-listing-form]')!); await flush(); });
+    expect(button('[data-publish]').disabled).toBe(true);
+    expect(host.querySelector('[data-publish-needs-timer]')).not.toBeNull();
+    await act(async () => { reactProps(button('[data-publish]')).onClick(); await flush(); });
+    expect(host.querySelector('[data-publish-dialog]')).toBeNull();
+    expect(calls('/publish')).toHaveLength(0);
+    expect(publicPairs()).toEqual([]);
+  });
+
+  test('an empty store fails closed until its first draft is saved; on a timer-capable API that draft then publishes hidden («staged»)', async () => {
+    serverTime = beforeListing;
+    storeEmpty = true;
+    const { AdminListingsPage } = load(resolve(frontend, 'src/pages/admin/AdminListingsPage'));
+    const { MemoryRouter } = req('react-router-dom');
+    await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminListingsPage))); await flush(); });
+    await click('[data-create-listing]');
+    expect(host.querySelector('[data-publish]')).toBeNull();
+    await change('name', 'QA Example');
+    await change('symbol', 'QAX');
+    await change('initialPrice', '0.25');
+    await change('wallTime', '2026-10-01T15:00');
+    await act(async () => { Simulate.submit(host.querySelector('[data-listing-form]')!); await flush(); });
+    expect(host.querySelector('[data-listing-error]')).toBeNull();
+    expect(button('[data-publish]').disabled).toBe(false);
+    expect(host.querySelector('[data-publish-needs-timer]')).toBeNull();
+    await click('[data-publish]');
+    await change('publishStartTimer', false);
+    await click('[data-confirm-publish]');
+    expect(JSON.parse(calls('/publish')[0][1].body)).toMatchObject({ countdown: 'staged' });
+    expect(publicPairs()).toEqual([]);
+  });
+
+  test('publishing with the timer sends no timer field and shows the running countdown', async () => {
+    serverTime = beforeListing;
+    await mount();
+    await click('[data-publish]');
+    await click('[data-confirm-publish]');
+    expect('countdown' in JSON.parse(calls('/publish')[0][1].body)).toBe(false);
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('Рынок появится');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
   });
 
   test('the real laboratory makes no admin requests and clears its local examples on session change', async () => {

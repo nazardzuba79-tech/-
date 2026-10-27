@@ -82,6 +82,46 @@ async function scenario(width){
   assert.equal(await qty.inputValue(),'0.25');
   await context.unroute('**/api/v1/me');await wake(page);
   checks.push({width,name:'failed session refresh preserves balance/draft, no retry storm; explicit retry recovers',pass:true});
+  // Owner, 2026-10-21: a wake that fails left the tab refusing every click with nothing on screen.
+  // (a) The display reference read is optional: production's edge answered 503 market_data_unavailable
+  //     that day, and on the unfixed bundle that alone put every wake into `error`.
+  const financial=[];page.on('request',r=>{if(r.url().endsWith('/native/commands')&&r.method()==='POST'){const kind=r.postDataJSON()?.kind;if(kind&&kind!=='REFRESH')financial.push(kind);}});
+  await page.evaluate(()=>window.__readBudget.hidden(true));
+  await context.route('**/api/v1/market/display',r=>r.fulfill({status:503,json:{ok:false,error:'market_data_unavailable'}}));
+  await page.evaluate(()=>window.__readBudget.hidden(false));
+  await page.waitForFunction(()=>!document.querySelector('[data-browser-phase]'),null,{timeout:15000});
+  const displayFailed=await snap(page);assert.ok((displayFailed.responses||[]).some(r=>r.path==='/api/v1/market/display'&&r.status===503),'the wake did not read the display reference');
+  await context.unroute('**/api/v1/market/display');
+  checks.push({width,name:'a failing display reference read (edge 503 market_data_unavailable) does not fail the wake',pass:true});
+  // (b) A failing tracked native read does fail the wake — and the tab now says so, names it, and offers
+  //     «Повторить попытку»: the same validation and barrier again, no forced active state, no command replay.
+  await page.evaluate(()=>window.__readBudget.hidden(true));
+  await context.route('**/api/v1/private-trading/native/execution-session',r=>r.fulfill({status:503,json:{error:'isolated outage'}}));
+  await page.evaluate(()=>window.__readBudget.hidden(false));
+  await page.waitForFunction(()=>document.querySelector('[data-browser-phase]')?.getAttribute('data-browser-phase')==='error');
+  const notice=page.locator('[data-browser-notice]');await notice.waitFor();
+  assert.equal(await notice.getAttribute('data-browser-failure'),'read');
+  const noticeText=(await notice.innerText()).replace(/\s+/g,' ');
+  assert.ok(/Действия недоступны/.test(noticeText),'a blocked wake must remain recoverable');
+  assert.ok(!/execution-session|TypeError|Failed to fetch|HTTP|503|https?:\/\/|GET /.test(noticeText),'technical details leaked: '+noticeText);
+  assert.equal((await notice.locator('button').allInnerTexts()).join('|'),'Повторить попытку');
+  await page.screenshot({path:path.join(out,'wake-failed-'+width+'.png')});
+  if(width===1440){
+    // A double click on the chart opens nothing while the wake has failed (it used to open a menu whose controls were refused).
+    const surface=await page.locator('.chart-surface').boundingBox();
+    await page.mouse.dblclick(surface.x+surface.width*0.55,surface.y+surface.height*0.55);
+    await page.waitForTimeout(500);assert.equal(await page.locator('.chart-tools-menu').count(),0,'chart menu opened while the wake had failed');
+    await page.waitForFunction(()=>document.querySelector('[data-browser-phase]')?.getAttribute('data-browser-phase')==='error');
+    await notice.waitFor();
+  }
+  const failedAgain=await snap(page);await advance(page,600000);assert.deepEqual((await snap(page)).hits,failedAgain.hits,'a failed wake retried on its own');
+  await context.unroute('**/api/v1/private-trading/native/execution-session');
+  await notice.getByRole('button',{name:'Повторить попытку'}).click();
+  await page.waitForFunction(()=>!document.querySelector('[data-browser-phase]'),null,{timeout:15000});
+  assert.equal(await page.locator('[data-browser-notice]').count(),0);
+  assert.deepEqual(financial,[],'a wake or retry sent a financial command');
+  assert.equal(await qty.inputValue(),'0.25');
+  checks.push({width,name:'failed native wake: safe unobtrusive retry, dblclick refused, no command replay',pass:true});
   // A position closed elsewhere while this tab sleeps must disappear on return.
   await page.evaluate(()=>window.__readBudget.hidden(true));
   await command({kind:'CLOSE',positionId:restored.positions[0].id,quantity:'1'});

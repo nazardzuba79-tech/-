@@ -30,6 +30,17 @@ export interface PrivateTestSettings { settlement: 'SIMUSDT'; funding: { base: s
 /** What the form sends. The server fills schemaVersion and an automatic seed; the store assigns the profile. */
 export type ListingForm = Omit<ListingConfig, 'schemaVersion' | 'seed' | 'simulationProfile'> & { seed?: string };
 
+/**
+ * The pre-listing timer of a published listing (server state, never part of
+ * the configuration): `staged` = not public yet, `running` = countdown shown,
+ * `paused` = date shown without a countdown. It always counts to the listing
+ * time; starting it later never moves that time.
+ */
+export type ListingCountdownState = 'staged' | 'running' | 'paused';
+export type ListingCountdownAction = 'start' | 'pause' | 'stop';
+export interface ListingCountdown { state: ListingCountdownState; updatedAt: number; updatedBy: string; startedAt?: number }
+export const LISTING_COUNTDOWN_STATES: readonly ListingCountdownState[] = ['staged', 'running', 'paused'];
+
 export interface AdminListing {
   id: string;
   symbol: string;
@@ -40,6 +51,8 @@ export interface AdminListing {
   activeVersion: number | null;
   active: ListingConfig | null;
   versions: { version: number; publishedAt: string; publishedBy: string }[];
+  /** Null (or absent) until the listing has a timer: published before it existed, or never staged. */
+  countdown?: ListingCountdown | null;
 }
 
 export type ListingPreviewHorizon = 'first24h' | 'growth' | 'afterGrowth' | 'history' | 'window';
@@ -100,10 +113,15 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
   }
   // A 2xx without a recognizable receipt is an UNKNOWN outcome, not success.
   // Keep the caller's form/confirmation (and the same publish key) for recovery.
+  const countdownShape = (value: unknown) => value === null || value === undefined
+    || (object(value) && LISTING_COUNTDOWN_STATES.includes(value.state as ListingCountdownState) && typeof value.updatedAt === 'number');
   let valid = object(body);
   if (valid && path.endsWith('/publish')) {
     valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/publish`
-      && revision(body!.version) && typeof body!.replayed === 'boolean' && instant(body!.publishedAt);
+      && revision(body!.version) && typeof body!.replayed === 'boolean' && instant(body!.publishedAt) && countdownShape(body!.countdown);
+  } else if (valid && path.endsWith('/countdown')) {
+    valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/countdown`
+      && object(body!.countdown) && countdownShape(body!.countdown) && typeof body!.changed === 'boolean';
   } else if (valid && (init.method === 'POST' || init.method === 'PUT')) {
     valid = typeof body!.id === 'string' && revision(body!.draftRevision) && configShape(body!.draft)
       && (init.method === 'POST' || path === `/admin/listings/${encodeURIComponent(body!.id)}/draft`);
@@ -111,6 +129,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
     valid = Array.isArray(body!.listings) && body!.listings.every(item => object(item) && typeof item.id === 'string'
       && revision(item.draftRevision) && configShape(item.draft)
       && (item.activeVersion === null ? item.active === null : revision(item.activeVersion) && configShape(item.active))
+      && countdownShape(item.countdown)
       && Array.isArray(item.versions) && item.versions.every(version => object(version) && revision(version.version)
         && instant(version.publishedAt) && typeof version.publishedBy === 'string'));
   } else if (valid && path.includes('/preview?')) {
@@ -128,8 +147,12 @@ export const adminListingsApi = {
     call<{ id: string; draftRevision: number; draft: ListingConfig }>(`/admin/listings/${encodeURIComponent(id)}/draft`, { method: 'PUT', body: { config }, ifMatch: draftRevision }),
   preview: (id: string, at: string | null, interval = '5m', horizon?: ListingPreviewHorizon, fromDay?: number) =>
     call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}), ...(horizon ? { horizon } : {}), ...(horizon === 'window' && fromDay !== undefined ? { fromDay: String(fromDay) } : {}) })}`),
-  publish: (id: string, draftRevision: number, publishKey: string) =>
-    call<{ id: string; version: number; replayed: boolean; publishedAt: string }>(`/admin/listings/${encodeURIComponent(id)}/publish`, { method: 'POST', body: { draftRevision, publishKey } }),
+  /** `countdown: 'staged'` publishes without starting the public timer; the admin starts it later with «Запустить таймер». */
+  publish: (id: string, draftRevision: number, publishKey: string, countdown?: 'staged' | 'running') =>
+    call<{ id: string; version: number; replayed: boolean; publishedAt: string; countdown?: ListingCountdown | null }>(
+      `/admin/listings/${encodeURIComponent(id)}/publish`, { method: 'POST', body: { draftRevision, publishKey, ...(countdown ? { countdown } : {}) } }),
+  countdown: (id: string, action: ListingCountdownAction) =>
+    call<{ id: string; countdown: ListingCountdown; changed: boolean }>(`/admin/listings/${encodeURIComponent(id)}/countdown`, { method: 'POST', body: { action } }),
 };
 
 /** One key per opened publish confirmation: a double click or a retry after a lost answer is the same publish. */

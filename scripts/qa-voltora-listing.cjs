@@ -15,7 +15,8 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/li
 const root = path.resolve(__dirname, '..');
 const dist = path.resolve(process.env.QA_FRONTEND_DIST || path.join(root, 'frontend/dist'));
 const out = path.resolve(process.env.QA_OUT || path.join(root, 'docs/qa/voltora-listing'));
-const REFUSAL = 'Этот актив пока не торгуется';
+// Owner, 2026-10-22: no «not trading yet» line anywhere — an order that cannot be placed is a disabled button.
+const FORMER_REFUSALS = /Этот актив пока не торгуется|Покупка этого актива недоступна|Этот тип ордера для данного актива недоступен/;
 const TECHNICAL = /TEST · NOT TRADABLE|NOT TRADABLE|Simulated|Preview|preview|simulation|тестов|Тестов|симуляц/;
 
 const app = express();
@@ -115,26 +116,28 @@ function testAssets(now) {
       assert.doesNotMatch(await page.locator('body').innerText(), TECHNICAL, `technical wording on the page @${width}`);
       await page.screenshot({ path: path.join(out, `voltora-${width}-chart.png`) });
 
-      // Standard tabs stay interactive. Unavailable operations refuse through
-      // the ordinary error pattern, without reaching any matching engine.
+      // Standard tabs stay interactive. Before the listing every order is a disabled
+      // button — no refusal line, no toast — and nothing reaches a matching engine.
       if (mobile) await page.locator('#mobile-trade-trade').click();
       const form = page.locator('.order-form-area');
+      const submitQuietlyDisabled = async (state) => {
+        assert.equal(await form.locator('button[type="submit"]').isDisabled(), true, `${state}: submit disabled @${width}`);
+        await form.locator('button[type="submit"]').click({ force: true });
+        await page.waitForTimeout(300);
+        assert.doesNotMatch(await page.locator('body').innerText(), FORMER_REFUSALS, `${state}: refusal line @${width}`);
+      };
       assert.equal(await form.locator('.order-form-tab.buy').isEnabled(), true);
-      assert.equal(await form.locator('button[type="submit"]').isEnabled(), true);
       await form.getByLabel('Количество', { exact: true }).first().fill('100');
-      await form.locator('button[type="submit"]').click();
-      await page.getByText('Покупка этого актива недоступна.', { exact: true }).first().waitFor();
+      await submitQuietlyDisabled('buy limit');
       await form.locator('.order-form-tab.sell').click();
-      await form.locator('button[type="submit"]').click();
-      await page.getByText('Этот тип ордера для данного актива недоступен.', { exact: true }).first().waitFor();
+      await submitQuietlyDisabled('sell limit');
       // owner, 2026-10-04: order type is one select on a phone — the same «Рынок» family, chosen through it.
       if (mobile) {
         await form.locator('.order-type-select select').selectOption('MARKET');
         assert.equal((await form.locator('.order-type-select select option:checked').textContent()).trim(), 'Рынок', `market order type @${width}`);
       } else
       await form.getByRole('button', { name: 'Рынок', exact: true }).click();
-      await form.locator('button[type="submit"]').click();
-      await page.getByText(REFUSAL, { exact: true }).first().waitFor();
+      await submitQuietlyDisabled('sell market');
       assert.equal(writes, 0, `unexpected write requests @${width}`);
 
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -153,8 +156,9 @@ function testAssets(now) {
       const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
       const expectedStart = `Дата листинга: ${date.getUTCDate()} ${months[date.getUTCMonth()]} в ${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')} UTC`;
       assert.ok((await row.innerText()).includes(expectedStart), `markets row start time @${width}: expected ${expectedStart}`);
-      assert.ok((await row.innerText()).includes('Учебный рынок'), `simulation disclosure @${width}`);
-      assert.ok((await row.innerText()).includes('Торговля пока недоступна'), `trading refusal @${width}`);
+      // Owner, 2026-10-22: «забороняю такі надписи» — no market notice on the row.
+      assert.ok(!(await row.innerText()).includes('Учебный рынок'), `notice «Учебный рынок» on the markets row @${width}`);
+      assert.ok(!(await row.innerText()).includes('Торговля пока недоступна'), `notice «Торговля пока недоступна» on the markets row @${width}`);
       assert.doesNotMatch(await row.innerText(), TECHNICAL, `technical wording on the markets row @${width}`);
       // The row itself stays inside the viewport (the rest of the Markets
       // page is not what this script checks).
