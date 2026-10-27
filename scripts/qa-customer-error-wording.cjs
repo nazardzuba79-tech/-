@@ -13,7 +13,11 @@
  *              and an engine code in the body, which is the exact payload
  *              that used to be rendered verbatim;
  *   partial  — requests answered, but with nulls where a price or a figure
- *              would be, which is where "unknown" must not become "0".
+ *              would be, which is where "unknown" must not become "0";
+ *   offline  — every request fails in the browser (no connection at all);
+ *   timeout  — every request is dropped as a network timeout;
+ *   slow     — every answer is the normal one, but only after 8 s, so the
+ *              screen is read (and refreshed) while it is still loading.
  *
  * There is no backend here on purpose. Every `/api/` call is answered by
  * this harness, so the failing state is produced rather than waited for,
@@ -65,6 +69,8 @@ const BANNED = [
   // Implementation vocabulary in ordinary copy (a library or table name, a
   // raw JavaScript value), not only in error paths.
   ['developer jargon', /\bBigNumber\b|\bledger\b|\bundefined\b|\bNaN\b|\[object Object\]/],
+  // What the browser itself reports when a request never completes.
+  ['a browser network error', /Failed to fetch|NetworkError|Load failed|net::ERR_|\bTypeError\b|\bAbortError\b|signal is aborted|The operation was aborted|timed out/i],
 ];
 
 /** Wording that would claim something the server never confirmed. */
@@ -283,7 +289,7 @@ async function run() {
   const base = `http://127.0.0.1:${server.address().port}`;
   const browser = await chromium.launch({ args: ['--no-sandbox'] });
   try {
-    for (const state of ['normal', 'failing', 'partial']) {
+    for (const state of ['normal', 'failing', 'partial', 'offline', 'timeout', 'slow']) {
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ru-RU' });
       await context.addInitScript(() => {
         // A signed-in session, so the authenticated screens actually render.
@@ -292,6 +298,9 @@ async function run() {
       });
       await context.route('**/api/**', (route) => {
         if (process.env.QA_TRACE) console.log('  REQ', new URL(route.request().url()).pathname);
+        if (state === 'offline') return route.abort('failed');
+        if (state === 'timeout') return route.abort('timedout');
+        if (state === 'slow') return new Promise((resolve) => setTimeout(resolve, 8000)).then(() => route.fulfill(answer('normal', route.request().url()))).catch(() => {});
         route.fulfill(answer(state, route.request().url()));
       });
       const page = await context.newPage();
@@ -322,8 +331,8 @@ async function run() {
         }
         check(`${tag}: claims no success the server did not give`, !FALSE_CLAIM.test(text));
         if (process.env.QA_DUMP) console.log('---- ' + tag + '\n' + text + '\n----');
-        if (state === 'partial') {
-          // An unpriced holding must read as unknown, not as nothing.
+        if (['partial', 'offline', 'timeout', 'slow'].includes(state)) {
+          // An unpriced holding, or one never received, must read as unknown, not as nothing.
           const zeroed = /BTC[^\n]*\$?0[.,]00/.test(text);
           check(`${tag}: an unknown value is not printed as zero`, !zeroed, zeroed ? text.match(/BTC[^\n]*/)[0] : '');
         }
