@@ -1,7 +1,7 @@
 {
   "status": "PREPARED_NOT_DEPLOYED",
   "productionApiSource": "85f6122b7ac0aa3ce72a2af9ac9aac13d814e44d",
-  "productionFrontendSource": "e426b2b5a6d77db5ac80c70745230174c5775765",
+  "productionFrontendSource": "f8805b0073d17c3072f37803cb7efbce538ab170",
   "finding": "Canonical NRX/USDT retirement is live; original deny predicate does not cover alternate base/quote NRX pairs",
   "red": {
     "backendTests": 25,
@@ -22,5 +22,9 @@
   "blocked": "Connected browser transport disconnected, one recovery timed out; extension requires originating browser context; no configured SSH agent/config/known-host pin. Do not claim deployed.",
   "rollback": "actual85 API/E426 frontend, immutable identities preserved",
   "financialWrites": false,
-  "preparedFrontendCandidate": "f8805b0073d17c3072f37803cb7efbce538ab170"
+  "preparedFrontendCandidate": "f8805b0073d17c3072f37803cb7efbce538ab170",
+  "preparedApiCandidate": "210aefacb319374194392624d75b312b87b42e94",
+  "frontendStatus": "APPLIED_PAGES_SUCCESS_2026-10-27T19:54:11Z",
+  "frontendDeployment": "ec6734c9-6c1e-4985-8d57-023edc505e9d",
+  "freshProductionUi": "NOT_VERIFIED_BROWSER_DISCONNECTED"
 }

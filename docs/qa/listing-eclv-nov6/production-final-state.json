@@ -6,12 +6,14 @@
     "runtimeConfigurationPreserved": true
   },
   "pages": {
-    "source": "e426b2b5a6d77db5ac80c70745230174c5775765",
-    "deployment": "e328bfab-74ee-43f2-a907-f1dc2698dc4a",
+    "source": "f8805b0073d17c3072f37803cb7efbce538ab170",
+    "deployment": "ec6734c9-6c1e-4985-8d57-023edc505e9d",
     "status": "success",
-    "completedAt": "2026-10-27T19:25:40.577143Z",
+    "completedAt": "2026-10-27T19:54:11.283669Z",
     "automaticProduction": false,
-    "previews": "none"
+    "previews": "none",
+    "freshUiVerification": "BLOCKED_BROWSER_TRANSPORT",
+    "focusedFrontendTests": 33
   },
   "workers": {
     "market": "f3a02fb5-60e0-4efa-bc3e-d48e5ecd02a2",
@@ -104,7 +106,11 @@
     "fixedCandidateFrontendTests": 33,
     "fixedCandidateOperatorGuards": 13,
     "candidateApplied": false,
-    "blocker": "No operational browser/server-console transport; extension originating-browser-context error; no configured SSH access"
+    "blocker": "No operational browser/server-console transport; extension originating-browser-context error; no configured SSH access",
+    "preparedApiCandidate": "210aefacb319374194392624d75b312b87b42e94",
+    "frontendApplied": true,
+    "serverCandidateApplied": false
   },
-  "preparedFrontendCandidate": "f8805b0073d17c3072f37803cb7efbce538ab170"
+  "preparedFrontendCandidate": "f8805b0073d17c3072f37803cb7efbce538ab170",
+  "finalCheckedAt": "2026-10-27T19:54:11.283669Z"
 }
