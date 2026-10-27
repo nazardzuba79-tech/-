@@ -74,9 +74,16 @@ def authoritative_base_image():
     assert re.fullmatch('sha256:[a-f0-9]{64}',d['image']), 'Invalid ECLV immutable image'
     return d['image']
 
-def production_flags_off():
-    code="const fs=require('fs');const c=JSON.parse(fs.readFileSync('/run/secrets/production_config','utf8'));const names=['DEMO_SPOT_ENABLED','DEMO_LIQUIDITY_ENABLED','DEMO_WITHDRAWAL_GUARD_ENABLED','SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED'];const bad=names.filter(k=>!['false','0','',false,0,undefined,null].includes(c[k]??process.env[k]));console.log(JSON.stringify({allOff:bad.length===0}));"
-    assert json.loads(run(['docker','exec',CONTAINER,'node','-e',code]))['allOff'], 'Financial flag not OFF; no automatic flag change'
+def assert_financial_flags(flags):
+    on=(True,'true','1',1)
+    off=(False,'false','0',0,'',None)
+    for name in ['DEMO_SPOT_ENABLED','DEMO_LIQUIDITY_ENABLED','DEMO_WITHDRAWAL_GUARD_ENABLED']:
+        assert flags.get(name) in on, 'Observed production flag changed: '+name
+    assert flags.get('SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED') in off, 'New simulation settlement must remain OFF'
+
+def production_flags_match():
+    code="const fs=require('fs');const c=JSON.parse(fs.readFileSync('/run/secrets/production_config','utf8'));const names=['DEMO_SPOT_ENABLED','DEMO_LIQUIDITY_ENABLED','DEMO_WITHDRAWAL_GUARD_ENABLED','SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED'];console.log(JSON.stringify(Object.fromEntries(names.map(k=>[k,c[k]??process.env[k]??null]))));"
+    assert_financial_flags(json.loads(run(['docker','exec',CONTAINER,'node','-e',code])))
 
 def main():
     global BASE_IMAGE
@@ -93,7 +100,7 @@ def main():
     assert c['Config'].get('Entrypoint')==['node','/opt/operations/runtime-bootstrap.cjs'], 'Bootstrap changed'
     assert c['Config'].get('Cmd')==['node','dist/index.js'], 'Unexpected startup/migration command'
     assert c.get('State',{}).get('Health',{}).get('Status')=='healthy', 'API is not healthy'
-    memory_guard();production_flags_off();args,service=compose_context(c)
+    memory_guard();production_flags_match();args,service=compose_context(c)
     hashes=run(['docker','exec',CONTAINER,'sha256sum',*OLD_HASHES]).splitlines()
     assert {line.split()[1]:line.split()[0] for line in hashes}==OLD_HASHES, 'Production modules changed'
     assert run(['docker','image','inspect',BASE_TAG,'--format','{{.Id}}']).strip()==BASE_IMAGE, 'Rollback image changed'

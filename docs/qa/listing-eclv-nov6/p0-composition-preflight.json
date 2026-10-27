@@ -10,11 +10,20 @@
   "combinedTypeScript": "PASS",
   "eclvRuntimeSourceUnchanged": true,
   "releaseGuardTests": {
-    "passed": 9,
+    "passed": 13,
     "failed": 0
   },
   "runtimeChanges": "Only five reviewed P0 modules; existing ECLV peak modules preserved",
   "configurationChanges": "API image and release identity only; no flags/migration/DB changes",
   "sourceMaps": "Original CI maps retained; newly compiled maps differ only by compiler output path",
-  "productionApplied": false
+  "productionApplied": false,
+  "observedRuntimeFlags": {
+    "DEMO_SPOT_ENABLED": true,
+    "DEMO_LIQUIDITY_ENABLED": true,
+    "DEMO_WITHDRAWAL_GUARD_ENABLED": true,
+    "SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED": null
+  },
+  "priorRunbookAllOffAssumption": "DISPROVEN by current production runtime-config whitelist read",
+  "existingCiAllThreeOnCombination": "PASS (included in 23/23 PostgreSQL checks)",
+  "guardPolicy": "Preserve observed three ON flags; reject change or new settlement activation; never change flags"
 }

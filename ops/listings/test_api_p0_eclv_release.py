@@ -13,6 +13,14 @@ class ReleaseScope(unittest.TestCase):
             self.assertEqual(p.parent.stat().st_mode & 0o777,0o755)
             self.assertEqual(root.stat().st_mode & 0o777,0o700)
             self.assertEqual(plan.stat().st_mode & 0o777,0o600)
+    def test_observed_live_flags_preserved_and_new_settlement_off(self):
+        release.assert_financial_flags({'DEMO_SPOT_ENABLED':'true','DEMO_LIQUIDITY_ENABLED':True,'DEMO_WITHDRAWAL_GUARD_ENABLED':'true','SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED':None})
+    def test_new_settlement_activation_rejected(self):
+        with self.assertRaises(AssertionError): release.assert_financial_flags({'DEMO_SPOT_ENABLED':True,'DEMO_LIQUIDITY_ENABLED':True,'DEMO_WITHDRAWAL_GUARD_ENABLED':True,'SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED':True})
+    def test_existing_flag_change_rejected(self):
+        with self.assertRaises(AssertionError): release.assert_financial_flags({'DEMO_SPOT_ENABLED':False,'DEMO_LIQUIDITY_ENABLED':True,'DEMO_WITHDRAWAL_GUARD_ENABLED':True})
+    def test_unknown_flag_value_rejected(self):
+        with self.assertRaises(AssertionError): release.assert_financial_flags({'DEMO_SPOT_ENABLED':'enabled','DEMO_LIQUIDITY_ENABLED':True,'DEMO_WITHDRAWAL_GUARD_ENABLED':True})
     def setUp(self):
         self.before={'services':{'api-production':{'image':'old','command':['node','dist/index.js'],'environment':{'FINANCE_GATE':'false','VOLTEX_RELEASE_SHA':'old'},'volumes':['private-bootstrap:ro']},'db':{'image':'postgres:18','volumes':['existing-db']}}}
         self.after=copy.deepcopy(self.before);self.after['services']['api-production']['image']='voltex-api-p0:'+'a'*40;self.after['services']['api-production']['environment']['VOLTEX_RELEASE_SHA']='a'*40
