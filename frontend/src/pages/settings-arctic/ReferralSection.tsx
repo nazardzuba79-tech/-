@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { api } from '../../lib/api';
 import { useLanguage, localeOf } from '../../lib/i18n';
 import { copyToClipboard } from '../../lib/clipboard';
+import { buildReferralLink } from '../../lib/referralLinks';
+import { useReferralRegion } from '../../lib/useReferralRegion';
 import { Panel, PanelHeader } from './Panel';
 
 // Ported from the archive's components/voltex/referral-section.tsx — the
@@ -12,6 +14,7 @@ import { Panel, PanelHeader } from './Panel';
 export function ReferralSection() {
   const { t, lang } = useLanguage();
   const [data, setData] = useState<Awaited<ReturnType<typeof api.getReferralMe>> | null>(null);
+  const [region, chooseRegion] = useReferralRegion();
 
   useEffect(() => {
     api.getReferralMe().then(setData).catch(() => {});
@@ -25,12 +28,13 @@ export function ReferralSection() {
     );
   }
 
-  const link = `${window.location.origin}/${data.referralCode}`;
+  const link = buildReferralLink(data.referralCode, region);
   const totalEarned = data.rewardsByAsset
     .map((r) => `${parseFloat(r.amount).toLocaleString(localeOf(lang), { maximumFractionDigits: 8 })} ${r.asset}`)
     .join(' + ');
 
   function copy() {
+    if (!link) return;
     void copyToClipboard(link).then(
       () => toast.success(t('deposit.copied')),
       () => toast.error(t('deposit.ui.copyError')),
@@ -61,14 +65,24 @@ export function ReferralSection() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.referralLink')}</p>
-              <p className="mt-0.5 truncate text-[13.5px] font-medium tabular-nums text-foreground">{link}</p>
+              <div role="group" aria-label={t('settings.referralRegion')} className="my-2 inline-flex max-w-full gap-1 rounded-lg bg-secondary p-1">
+                {(['world', 'ru'] as const).map(value => <button type="button" key={value} data-referral-region={value}
+                  aria-pressed={region === value} onClick={() => chooseRegion(value)}
+                  className={`rounded-md px-3 py-2 text-[12px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${region === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {t(value === 'world' ? 'settings.referralWorld' : 'settings.referralRussia')}
+                </button>)}
+              </div>
+              <p data-referral-link className="mt-0.5 break-all text-[13.5px] font-medium tabular-nums text-foreground">{link ?? t('settings.referralLinkUnavailable')}</p>
             </div>
             <button
               onClick={copy}
+              type="button"
+              disabled={!link}
+              data-copy-referral
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-[13px] font-medium text-primary-foreground transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
             >
               <Copy className="size-4" />
-              {t('deposit.copy')}
+              {t('settings.referralCopy')}
             </button>
           </div>
         </div>
