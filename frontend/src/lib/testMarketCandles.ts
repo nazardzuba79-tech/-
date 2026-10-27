@@ -1,8 +1,8 @@
 import { API_BASE } from './api';
 import type { ChartCandleLoader } from './chartTrading';
 import type { Candle } from './indicators';
-import { fetchTestMarketJson } from './testMarketStore';
-import { managedListingVersion, testMarketSlug } from './testMarkets';
+import { fetchPrivateTestMarketJson, fetchTestMarketJson } from './testMarketStore';
+import { isPrivateTestPair, managedListingVersion, testMarketSlug } from './testMarkets';
 import { isAith } from '../../../src/shared/aithPublication';
 
 /**
@@ -16,6 +16,12 @@ const validCandle = (c: any): c is Candle =>
   && c.open > 0 && c.low > 0 && c.low <= Math.min(c.open, c.close) && c.high >= Math.max(c.open, c.close);
 
 export const testMarketCandleLoader: ChartCandleLoader = async (pair, interval, limit, signal) => {
+  // A History20 private test market: the authenticated private API, server clock only.
+  if (isPrivateTestPair(pair)) {
+    const body = await fetchPrivateTestMarketJson(`${API_BASE}/private-test/markets/${testMarketSlug(pair)}/candles?interval=${encodeURIComponent(interval)}&limit=${limit}`, signal) as { candles?: unknown };
+    if (!Array.isArray(body?.candles)) throw new Error('test_market_candles_shape');
+    return { candles: body.candles.filter(validCandle) };
+  }
   const version = managedListingVersion(pair);
   if (isAith(pair) && version === undefined) throw new Error('listing_authority_unavailable');
   const body = await fetchTestMarketJson(

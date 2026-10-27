@@ -1,5 +1,6 @@
 import BigNumber from 'bignumber.js';
 import type { HistoricalProgram } from './listingHistoricalImport';
+import { historicalGrowthDays, historicalGrowthMaxPrice, historicalGrowthProblem, type HistoricalGrowthProgram } from './historicalGrowthModel';
 
 export const MOVEMENT_SCENARIOS = [
   { id: 'CALM', name: 'Спокойный рост', description: 'Плавное движение с небольшими откатами и короткими тенями.' },
@@ -23,6 +24,9 @@ export interface ListingMovement {
   stages: { type: 'growth' | 'range' | 'pullback' | 'recovery'; durationHours: number; targetPrice: string }[];
   afterGrowth: 'range' | 'historical';
   historical?: HistoricalProgram;
+  /** The growth follows a scaled historical window INSTEAD of the stages (historicalGrowthModel.ts). */
+  growth?: 'historical-window';
+  historicalGrowth?: HistoricalGrowthProgram;
   pullbacks: { frequency: MovementFrequency; minDepthPercent: string; maxDepthPercent: string; durationMinutes: number };
   candles: { intensity: 'low' | 'medium' | 'high'; diversity: number; pauseFrequency: MovementFrequency };
   wicks: { length: 'short' | 'normal' | 'pronounced'; longFrequency: MovementFrequency };
@@ -45,7 +49,13 @@ export function formatMovementPrice(value: string | number): string {
   const result = decimal(String(value));
   return result.isFinite() ? result.toFixed().replace('.', ',') : '—';
 }
-export function movementDuration(program: ListingMovement): number { return program.stages.reduce((total, stage) => total + stage.durationHours, 0); }
+export function movementDuration(program: ListingMovement): number {
+  if (program.growth === 'historical-window' && program.historicalGrowth) return historicalGrowthDays(program.historicalGrowth) * 24;
+  return program.stages.reduce((total, stage) => total + stage.durationHours, 0);
+}
+/** A program whose growth is a historical window (no stages). */
+export const isHistoricalWindow = (program: ListingProgram | undefined | null): program is ListingMovement =>
+  program?.kind === 'scenario-controls-v2' && program.growth === 'historical-window';
 export function parseMovementHours(value: string, unit: 'hours' | 'days' = 'hours'): number {
   const text = normalizeMovementDecimal(value);
   if (!/^\d+(?:\.\d*)?$/.test(text)) return NaN;
@@ -84,6 +94,11 @@ export function selectMovementScenario(program: ListingMovement, scenario: Listi
 }
 
 export function rebaseListingMovement(program: ListingMovement, previousInitial: string, nextInitial: string): ListingMovement {
+  // The window's cap is not a rescaled value: it is exactly P0 · (1 + G/100) for the new P0.
+  if (program.growth === 'historical-window' && program.historicalGrowth) {
+    const maxPrice = historicalGrowthMaxPrice(nextInitial, program.historicalGrowth.targetPeakGrowthPercent);
+    return maxPrice ? { ...program, maxPrice } : program;
+  }
   let previous = decimal(previousInitial);
   const next = decimal(nextInitial);
   if (!next.isFinite() || !next.isGreaterThan(0)) return program;
@@ -103,6 +118,17 @@ export function rebaseListingMovement(program: ListingMovement, previousInitial:
 
 /** UI mirrors the server's actionable rules; server validation remains authoritative. */
 export function validateListingMovement(initial: string, program: ListingMovement): string | null {
+  if (program.growth === 'historical-window' || program.historicalGrowth) {
+    if (program.growth !== 'historical-window' || !program.historicalGrowth) return 'Выберите историческое окно роста или вернитесь к этапам.';
+    if (program.stages.length || program.afterGrowth !== 'range' || program.historical || program.first24hGainPercent !== '0')
+      return 'Историческое окно заменяет этапы: этапы и продолжение по часовым свечам не задаются.';
+    const problem = historicalGrowthProblem(program.historicalGrowth);
+    if (problem) return problem;
+    if (!decimal(initial).isGreaterThan(0)) return 'Укажите положительную начальную цену.';
+    if (program.maxPrice !== historicalGrowthMaxPrice(initial, program.historicalGrowth.targetPeakGrowthPercent))
+      return 'Максимальная цена исторического окна должна быть ровно P0 · (1 + G/100).';
+    return null;
+  }
   if (!decimal(initial).isGreaterThan(0) || !decimal(program.maxPrice).isGreaterThan(0)) return 'Укажите положительную начальную и максимальную цену.';
   const first = decimal(movementPriceFromGain(initial, program.first24hGainPercent));
   if (first.isGreaterThan(decimal(program.maxPrice))) return 'Цель за первые сутки выше максимальной цены';

@@ -283,3 +283,39 @@ describe('Cloudflare store client', () => {
     await expect(store.list()).rejects.toMatchObject({ status: 503, code: 'STORE_UNAVAILABLE' });
   });
 });
+
+describe('Admin → Listings: historical growth window drafts', () => {
+  const { buildHistoricalGrowthProgram, historicalGrowthMaxPrice } = require('../../../shared/listingHistoricalGrowth');
+  // Synthetic daily reference (not market data): 60 days, +40% … −20% swings around a rising line.
+  const rows = Array.from({ length: 60 }, (_, d) => ({ date: new Date(Date.UTC(2020, 0, 1) + d * 86_400_000).toISOString().slice(0, 10), close: 100 * Math.exp(d * 0.07 + 0.15 * Math.sin(d / 3)) }));
+  const growth = buildHistoricalGrowthProgram({ scenarioId: 'VHX-01-BTC', targetPeakGrowthPercent: '11872.45', rows,
+    source: { provider: 'Coin Metrics', asset: 'BTC', quote: 'USD', metric: 'PriceUSD', dataKind: 'daily_reference', timeframe: '1d', sliceSha256: 'c'.repeat(64), license: 'CC-BY-NC-4.0' } });
+  const windowForm = () => form({ symbol: 'vhx01', tradable: false, ownerAllocation: '0', initialPrice: '2', listingAt: '2026-10-02T00:00:00Z',
+    simulationProgram: { ...defaultScenarioControls('2'), stages: [], first24hGainPercent: '0', afterGrowth: 'range', growth: 'historical-window', historicalGrowth: growth, maxPrice: historicalGrowthMaxPrice('2', '11872.45') } });
+
+  test('the server accepts the window draft and keeps the preview bounded with or without a horizon', async () => {
+    const { server } = app();
+    const created = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: windowForm() });
+    expect(created.status).toBe(201);
+    expect(created.body.draft.simulationProgram).toMatchObject({ growth: 'historical-window', maxPrice: '239.449', stages: [] });
+    // No horizon and a weekly interval: at most 30 days of candles, never the whole window.
+    const loose = await request(server).get(`/api/v1/admin/listings/${created.body.id}/preview?at=2026-11-20T00:00:00Z&interval=1w`).set('Authorization', auth('admin-1'));
+    expect(loose.status).toBe(200);
+    expect(loose.body.candles.length).toBeLessThanOrEqual(4);
+    const fragment = await request(server).get(`/api/v1/admin/listings/${created.body.id}/preview?horizon=window&fromDay=10&interval=4h`).set('Authorization', auth('admin-1'));
+    expect(fragment.status).toBe(200);
+    expect(fragment.body.scenarioSummary.historicalGrowth).toMatchObject({ scenarioId: 'VHX-01-BTC', fromDay: 10, toDay: 40, unit: 'SIMUSDT', clock: 'REAL_TIME' });
+    const outside = await request(server).get(`/api/v1/admin/listings/${created.body.id}/preview?horizon=window&fromDay=59&interval=4h`).set('Authorization', auth('admin-1'));
+    expect(outside.status).toBe(422);
+  });
+
+  test('a tradable window is refused before any store write; an owner allocation is the ordinary scenario parameter', async () => {
+    const { server, store } = app();
+    const tradable = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: { ...windowForm(), tradable: true } });
+    expect(tradable.body.error).toBe('DEMO_ONLY');
+    expect(store.calls).toEqual([]);
+    const allocated = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: { ...windowForm(), ownerAllocation: '5' } });
+    expect(allocated.status).toBe(201);
+    expect(allocated.body.draft.ownerAllocation).toBe('5');
+  });
+});

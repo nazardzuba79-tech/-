@@ -35,6 +35,8 @@ export interface ListingsEnv {
   LISTINGS_MIN_LEAD_MS?: string;
   /** Test environments only: the public catalogue cache window. Unset in production = 15 s. */
   LISTINGS_PUBLIC_CACHE_MS?: string;
+  /** History20 private tests may be started (published privately) only when exactly `enabled`. Unset = off. */
+  HISTORY20_PRIVATE_TEST?: string;
 }
 
 function envMs(value: string | undefined, fallback: number, floor: number): number {
@@ -222,7 +224,7 @@ export class ManagedListingsDO {
    * not public: only Render learns it, with the timer state, so its ticker
    * stays restricted everywhere.
    */
-  published(includeStaged = false): { revision: string; listings: PublishedListing[] } {
+  published(includeRestricted = false): { revision: string; listings: PublishedListing[] } {
     const rows = this.sql.exec(`SELECT l.id, v.version, v.config, v.published_at FROM listing l
       JOIN listing_version v ON v.listing_id = l.id AND v.version = l.active_version ORDER BY v.published_at, l.id`).toArray();
     const now = Date.now();
@@ -230,8 +232,9 @@ export class ManagedListingsDO {
     const listings: PublishedListing[] = [];
     for (const row of rows) {
       const config = JSON.parse(String(row.config)) as ListingConfig;
+      if (config.privateTest && !includeRestricted) continue;
       const countdown = this.countdownOf(String(row.id));
-      if (countdown?.state === 'staged' && !includeStaged) continue;
+      if (countdown?.state === 'staged' && !includeRestricted) continue;
       const listing: PublishedListing = { id: String(row.id), version: Number(row.version), publishedAt: new Date(Number(row.published_at)).toISOString(), config,
         ...(countdown ? { countdown } : {}) };
       if (isAith(config.symbol)) {
@@ -342,6 +345,9 @@ export class ManagedListingsDO {
         // A market whose timer never ran past its date did not open: its time may still move.
         const opened = active !== null && listingOpened({ config: active, countdown: this.countdownOf(id) ?? undefined }, now);
         checkPublishable(config, active, now, envMs(this.env.LISTINGS_MIN_LEAD_MS, MIN_LEAD_MS, MIN_LEAD_FLOOR_MS), opened);
+        // Default off: a private test also needs the explicit switch on this Worker.
+        if (config.privateTest && this.env.HISTORY20_PRIVATE_TEST !== 'enabled')
+          throw new ListingValidationError('PRIVATE_TEST_DISABLED', 'Приватный тест History20 выключен на этом сервере');
       } catch (error) { return validationReply(error); }
       const version = (row.active_version === null ? 0 : Number(this.sql.exec('SELECT MAX(version) AS v FROM listing_version WHERE listing_id = ?', id).toArray()[0].v)) + 1;
       this.sql.exec('INSERT INTO listing_version (listing_id, version, config, publish_key, published_at, published_by) VALUES (?, ?, ?, ?, ?, ?)',

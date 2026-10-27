@@ -102,7 +102,7 @@ describe('test-market list identity', () => {
     // A fresh array each render made useMarketTickers rebuild its Map on every render, which kept the
     // Markets page re-rendering and starved React Router transitions (Markets → Trade never committed).
     const source = require('fs').readFileSync(require('path').join(__dirname, '../testMarketStore.ts'), 'utf8') as string;
-    expect(source).toMatch(/const assets = useMemo\(\(\) => \[\.\.\.vta\.assets, \.\.\.nrx\.assets, \.\.\.managed\.assets\], \[vta\.assets, nrx\.assets, managed\.assets\]\);/);
+    expect(source).toMatch(/const assets = useMemo\(\(\) => \[\.\.\.vta\.assets, \.\.\.nrx\.assets, \.\.\.managed\.assets, \.\.\.privateTests\.assets\], \[vta\.assets, nrx\.assets, managed\.assets, privateTests\.assets\]\);/);
     expect(source).not.toMatch(/assets: \[\.\.\.vta\.assets/);
   });
 });
@@ -128,7 +128,7 @@ function stores(read: (url: string) => Promise<unknown>) {
   new Function('exports', 'document', 'globalThis', compile(resolve(frontend, 'src/lib/browserActivity.ts')))(activity, document, { fetch });
   const output: any = {};
   new Function('require', 'exports', 'document', 'fetch', compile(resolve(frontend, 'src/lib/testMarketStore.ts')))((name: string) => {
-    if (name === './api') return { API_BASE: '/api/v1' };
+    if (name === './api') return { API_BASE: '/api/v1', getToken: () => null, onSessionChange: () => () => {} };
     if (name === './testMarkets') return testMarketHelpers;
     if (name === './nrxMarket') return { ...nrxHelpers, fetchNrxPublic: read };
     if (name === './browserActivity') return activity;

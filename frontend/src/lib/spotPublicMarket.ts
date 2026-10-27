@@ -1,7 +1,7 @@
 import { browserFallbackFetch as fetch, trackBrowserRead } from './browserActivity';
 import type { Candle } from './indicators';
 import type { FuturesDepthSnapshot } from './futuresDepth';
-import { isTestMarketPair } from './testMarkets';
+import { isPrivateTestPair, isTestMarketPair } from './testMarkets';
 import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';
 
 const APP_API_BASE = '/api/v1';
@@ -96,6 +96,20 @@ export function readSpotPublicBook(pair: string, signal?: AbortSignal): Promise<
 
 async function loadReadSpotPublicBook(pair: string, signal?: AbortSignal): Promise<{ pair: string } & FuturesDepthSnapshot> {
   if (!/^[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}$/.test(pair)) throw new Error('Invalid spot pair');
+
+  // A History20 private test market: its real internal book (participants' own orders), authenticated.
+  // An empty or one-sided book is simply unavailable, never a venue fallback.
+  if (isPrivateTestPair(pair)) {
+    const [{ fetchPrivateTestMarketJson }, { API_BASE }] = await Promise.all([import('./testMarketStore'), import('./api')]);
+    const body: any = await fetchPrivateTestMarketJson(`${API_BASE}/private-test/markets/${pairSlug(pair)}/orderbook`, signal);
+    if (body?.pair !== pair) throw new Error('private_book_identity');
+    const side = (rows: unknown) => (Array.isArray(rows) ? rows : []).slice(0, 25)
+      .filter((row: any) => finitePositiveText(row?.price) && finitePositiveText(row?.quantity)).map((row: any) => ({ price: row.price, quantity: row.quantity }));
+    const bids = side(body.bids).sort((a, b) => Number(b.price) - Number(a.price));
+    const asks = side(body.asks).sort((a, b) => Number(a.price) - Number(b.price));
+    const asOf = Number(body.timestamp);
+    return { pair, bids, asks, asOf: Number.isFinite(asOf) && asOf > 0 ? asOf : Date.now(), source: 'rest', status: bids.length || asks.length ? 'live' : 'unavailable' };
+  }
 
   // Canonical local market only: never try an external venue or its fallback.
   if (isTestMarketPair(pair)) {

@@ -1,5 +1,6 @@
 /** Pure, deterministic DTO/math shared by the listing validator and simulation. No IO. */
 import type { HistoricalMoveProgram } from './listingHistoricalReplay';
+import type { HistoricalGrowthProgram } from './listingHistoricalGrowth';
 export const LISTING_SCENARIOS = ['CALM', 'WAVES', 'FREQUENT_PULLBACKS', 'COMPRESSION_BREAKOUT', 'STAIRCASE', 'SLOW_START', 'FAST_START', 'FALSE_BREAKOUT', 'DEEP_RECOVERY', 'LONG_WICKS'] as const;
 export type ListingScenario = typeof LISTING_SCENARIOS[number];
 export type ScenarioFrequency = 'rare' | 'moderate' | 'often';
@@ -13,6 +14,14 @@ export interface ScenarioControlsProgram {
   afterGrowth: 'range' | 'historical';
   /** Offline, source-attributed 1-hour shape, never live provider prices. */
   historical?: HistoricalMoveProgram;
+  /**
+   * `historical-window`: the growth itself follows a scaled historical window
+   * (listingHistoricalGrowth.ts) INSTEAD of the stages, which must then be
+   * empty. Absent: the programmed stages (and, optionally, the hourly
+   * continuation after them). The two are mutually exclusive.
+   */
+  growth?: 'historical-window';
+  historicalGrowth?: HistoricalGrowthProgram;
   pullbacks: { frequency: ScenarioFrequency; minDepthPercent: string; maxDepthPercent: string; durationMinutes: number };
   candles: { intensity: 'low' | 'medium' | 'high'; diversity: number; pauseFrequency: ScenarioFrequency };
   wicks: { length: 'short' | 'normal' | 'pronounced'; longFrequency: ScenarioFrequency };
@@ -107,7 +116,85 @@ export function defaultScenarioControls(initialPrice: string, scenario: ListingS
   };
 }
 
+/* Historical growth window (voltex.historical-growth.v1). Inert copy of the
+ * structural rules: the reference module adds the logs checksum on save. */
+export const HISTORICAL_GROWTH_LIMITS = { minRows: 30, maxRows: 1500, minPeakPercent: 7248, maxPeakPercent: 15324, logScale: 100000000, maxAbsLog: 2000000000 } as const;
+
+export function validateHistoricalGrowthStructure(program: HistoricalGrowthProgram): void {
+  const L = HISTORICAL_GROWTH_LIMITS;
+  if (!program || program.format !== 'voltex.historical-growth.v1' || program.scenarioVersion !== 1
+      || typeof program.scenarioId !== 'string' || !/^VHX-\d{2}-[A-Z0-9]{2,10}$/.test(program.scenarioId)
+      || program.rights !== 'HISTORICAL_RIGHTS_UNVERIFIED')
+    throw new RangeError('Неизвестный формат исторического окна роста');
+  const s = program.source;
+  const reference = !!s && s.dataKind === 'daily_reference' && s.provider === 'Coin Metrics' && s.quote === 'USD' && s.metric === 'PriceUSD' && s.license === 'CC-BY-NC-4.0';
+  const ohlc = !!s && s.dataKind === 'exchange_ohlcv' && s.provider === 'Binance Vision' && s.quote === 'USDT' && s.metric === 'spot daily OHLCV'
+    && s.license === 'CC-BY-NC-SA-4.0 plus Binance Vision Dataset Terms';
+  if (!s || (!reference && !ohlc) || typeof s.asset !== 'string' || !/^[A-Z0-9]{2,10}$/.test(s.asset) || s.timeframe !== '1d'
+      || typeof s.sliceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(s.sliceSha256))
+    throw new RangeError('Источник исторического окна описан не полностью');
+  const c = program.clock;
+  if (!c || c.mode !== 'REAL_TIME' || c.sourceStepSeconds !== 86400 || c.scenarioStepSeconds !== 86400)
+    throw new RangeError('Историческое окно работает только в реальном времени: сутки источника = сутки сценария');
+  // v1 = straight-line baseline, v2 = seeded bridge; each only for its data kind.
+  if (ohlc ? program.intrabar !== 'SEEDED_OHLC_PATH_V1' && program.intrabar !== 'SEEDED_BRIDGE_OHLC_V2'
+    : program.intrabar !== 'LOG_LINEAR_REFERENCE_V1' && program.intrabar !== 'SEEDED_BRIDGE_REFERENCE_V2')
+    throw new RangeError('Модель внутри суток не соответствует типу данных');
+  const target = program.targetPeakGrowthPercent;
+  if (typeof target !== 'string' || !/^\d{4,5}(?:\.\d{1,2})?$/.test(target) || Number(target) < L.minPeakPercent || Number(target) > L.maxPeakPercent)
+    throw new RangeError('Пик сценария должен быть от +7248% до +15324% от начальной цены');
+  const n = program.targetNormalization;
+  if (n !== undefined && (n.version !== 1 || n.method !== 'LOG_AMPLITUDE_OWNER_CAP'
+      || n.sourceTargetPeakGrowthPercent !== '15324' || n.maxTargetPeakGrowthPercent !== '15000'
+      || Object.keys(n).sort().join(',') !== 'maxTargetPeakGrowthPercent,method,sourceTargetPeakGrowthPercent,version'
+      || target !== '15000' || program.scenarioId !== 'VHX-09-MATIC' || s.asset !== 'MATIC'
+      || s.sliceSha256 !== '82ff2bd811e39eed37f01d72c3c204e46b7d9d9a7775a788c6a1710a351615eb'))
+    throw new RangeError('Неверная версия нормализации цели History20');
+  const rows = program.logs, width = ohlc ? 4 : 1;
+  if (!Array.isArray(rows) || rows.length < L.minRows || rows.length > L.maxRows)
+    throw new RangeError('Историческое окно: от 30 до 1500 суток источника');
+  const day = (text: unknown) => {
+    if (typeof text !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(text)) return NaN;
+    const at = Date.parse(text + 'T00:00:00.000Z');
+    return Number.isFinite(at) && new Date(at).toISOString().slice(0, 10) === text ? at : NaN;
+  };
+  const first = day(s.firstDate), last = day(s.lastDate);
+  if (!Number.isFinite(first) || !Number.isFinite(last) || last - first !== (rows.length - 1) * 86400000)
+    throw new RangeError('Даты исторического окна не совпадают с числом суток: пропуски не допускаются');
+  let max = -Infinity;
+  for (const row of rows) {
+    if (!Array.isArray(row) || row.length !== width || !row.every(v => Number.isSafeInteger(v) && Math.abs(v) <= L.maxAbsLog))
+      throw new RangeError('Неверные значения исторического окна');
+    if (ohlc && (row[1] < Math.max(row[0], row[3]) || row[2] > Math.min(row[0], row[3]))) throw new RangeError('Неверная свеча OHLC в историческом окне');
+    max = Math.max(max, ohlc ? row[1] : row[0]);
+  }
+  if (rows[0][0] !== 0) throw new RangeError('Первое значение окна должно совпадать с опорной ценой');
+  if (!(max > 0)) throw new RangeError('Максимум окна должен быть выше первой цены');
+}
+
+/** Scenario level: no stages, no hourly continuation, the cap is exactly P0 · (1 + G/100). */
+function validateHistoricalWindowControls(program: ScenarioControlsProgram, initialPrice: string): void {
+  if (program.growth !== 'historical-window' || !program.historicalGrowth)
+    throw new RangeError('Выберите историческое окно роста или вернитесь к этапам');
+  if (program.stages.length !== 0 || program.afterGrowth !== 'range' || program.historical !== undefined || program.first24hGainPercent !== '0')
+    throw new RangeError('Историческое окно заменяет этапы: этапы, продолжение по часовым свечам и рост за первые сутки не задаются');
+  validateHistoricalGrowthStructure(program.historicalGrowth);
+  const canonical = normalizeScenarioDecimal(initialPrice);
+  if (Number(initialPrice) < .00000001 || Number(initialPrice) > 1000000000 || normalizeScenarioDecimal(Number(initialPrice).toFixed(10)) !== canonical)
+    throw new RangeError('Цена не помещается в точность актива: используйте значения от 0,00000001 до 1000000000 с меньшим числом знаков');
+  if (normalizeScenarioDecimal(program.maxPrice) !== exactPriceFromGain(initialPrice, program.historicalGrowth.targetPeakGrowthPercent))
+    throw new RangeError('Максимальная цена исторического окна должна быть ровно P0 · (1 + G/100)');
+  if (Number(program.maxPrice) > 1000000000) throw new RangeError('Пик исторического окна выходит за поддерживаемую точность цены');
+  const g = program.historicalGrowth, ohlc = g.source.dataKind === 'exchange_ohlcv';
+  let max = -Infinity, min = Infinity;
+  for (const row of g.logs) { max = Math.max(max, ohlc ? row[1] : row[0]); min = Math.min(min, ohlc ? row[2] : row[0]); }
+  const alpha = Math.log(1 + Number(g.targetPeakGrowthPercent) / 100) / (max / HISTORICAL_GROWTH_LIMITS.logScale);
+  if (!(alpha > 0) || !Number.isFinite(alpha) || Number(initialPrice) * Math.exp(alpha * min / HISTORICAL_GROWTH_LIMITS.logScale) < 1e-8)
+    throw new RangeError('Историческое окно выходит за точность актива');
+}
+
 export function validateScenarioControls(program: ScenarioControlsProgram, initialPrice: string): void {
+  if (program.growth !== undefined || program.historicalGrowth !== undefined) { validateHistoricalWindowControls(program, initialPrice); return; }
   const initial = units(initialPrice), cap = units(program.maxPrice), first = units(exactPriceFromGain(initialPrice, program.first24hGainPercent));
   // Ten decimal asset precision still needs enough distinct prices for actual
   // candles. Very large decimals must survive the generator's numeric DTO.
