@@ -1,0 +1,168 @@
+{
+  "at": "2026-10-27T06:38:25.396818+00:00",
+  "scope": "Actual RU-only gateway changes plus bounded isolated synthetic QA; not all-functions financial or legal release approval",
+  "branch": "work/beget-rf-gateway-preflight-20261026",
+  "freshMain": "63d6b02cd38fe9ff52742c35ce46fa327827dd33",
+  "appliedCode": [
+    "cf3ee7e5fdfb03e622df9b5fa2e8a2ad05bb42df",
+    "dc236a3aaca436f4e670a0a4d3f7d08b3834da6c"
+  ],
+  "production": {
+    "gateway": "PASS",
+    "kycForm": "NOT_STARTED with file input and submit visible; no real document submitted",
+    "beget": "fixed opaque TCP relay with PROXY preamble; no HTTP/TLS termination",
+    "trustedTls": "Hetzner ru-only vhost18444; old18443 retained for rollback/draining",
+    "hetznerConfigSha256": "12ff7c12a2039d6086affed9ab65adf71c69339936494f309d2dfaa2b02161f6",
+    "begetConfigSha256": "09afdb6c46e8abb76bcd298c1d04b5627ae90de43b305ab8b477b627c93e66d5",
+    "apiCommit": "89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+    "apiStartedAt": "2026-10-23T16:30:08.152Z",
+    "primaryUnchanged": true,
+    "dnsChangedThisTurn": false,
+    "rollbackPerformed": false
+  },
+  "tests": {
+    "targetedNginxAndApiIp": 15,
+    "existingWorker": 39,
+    "newWorkerIp": 4,
+    "kycClientJest": 17,
+    "domCases": 2,
+    "isolatedRealBrowser": 19,
+    "frontendBuild": "PASS",
+    "workerDryRun": "PASS wrangler4.153.0",
+    "workerBundleSha256": "b488969684918cc484ed05107afdbd4caa9658b8ca1a39bef356ccec3c055cb2",
+    "rfHome": "2/2 HTTP200 verified TLS",
+    "rfProtectedKyc": "2/2 expected401 verified TLS"
+  },
+  "ruPostCutoverSpot": [
+    {
+      "alerts": [],
+      "canvases": 11,
+      "overflow": false,
+      "path": "/trade",
+      "width": 1699
+    }
+  ],
+  "ruPostCutoverFutures": [
+    {
+      "alerts": 0,
+      "canvases": 11,
+      "overflow": false,
+      "path": "/futures"
+    }
+  ],
+  "ruPostCutoverWallet": [
+    {
+      "alerts": 0,
+      "headings": [
+        "Обзор активов",
+        "Распределение портфеля",
+        "Динамика активов",
+        "История депозитов и выводов"
+      ],
+      "invalidNumbers": false,
+      "loading": false,
+      "path": "/wallet"
+    }
+  ],
+  "ruPostCutoverCopy": [
+    {
+      "alerts": 0,
+      "headings": [
+        "Copy Trading VIP"
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/copy-trading"
+    }
+  ],
+  "ruPostCutoverMarkets": [
+    {
+      "alerts": 0,
+      "invalidNumbers": false,
+      "path": "/markets",
+      "rows": 50
+    }
+  ],
+  "ruOtherPages": [
+    {
+      "alerts": 0,
+      "headings": [
+        "Обмен криптовалюты на наличные"
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/otc"
+    },
+    {
+      "alerts": 0,
+      "headings": [
+        "Криптоактивы и фиат в одном месте."
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/card"
+    },
+    {
+      "alerts": 0,
+      "headings": [
+        "Торговые боты"
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/trading-bots"
+    }
+  ],
+  "ruSettingsPages": [
+    {
+      "alerts": 0,
+      "headings": [
+        "Настройки"
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/settings?tab=security"
+    },
+    {
+      "alerts": 0,
+      "headings": [
+        "Настройки"
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/settings?tab=api"
+    },
+    {
+      "alerts": 0,
+      "headings": [
+        "Настройки"
+      ],
+      "invalidNumbers": false,
+      "login": false,
+      "path": "/settings?tab=referral"
+    }
+  ],
+  "limits": [
+    "Production KYC Worker is still b00aac7e; its per-IP KYC quota still sees Hetzner egress until separately approved narrow release.",
+    "Frontend loading-error/Retry fix exists only in review code, not primary frontend.",
+    "Browser KYC upload/selfie used actual frontend/Nginx/Worker/verifier but synthetic metadata/session/email sinks, not production API/PG or real documents.",
+    "RF measurements prove direct HTTPS transport only, not authenticated RF KYC completion or every ISP.",
+    "Deposit UI/QR/source comparisons and local clipboard checks only; no real copy notification, transfer, crediting, financial execution or new account.",
+    "31 deliberately blocked administrative/internal routes; Banking/Stocks future APIs absent from deployed API were not activated.",
+    "Beget cloud rule9 prohibits mass proxy/VPN services; no written permission exception or legal compliance approval is claimed.",
+    "Operator/licensing and applicable personal-data/localization/transborder obligations are unverified; official RKN legal-text fetch timed out."
+  ],
+  "approvalRequired": {
+    "target": "voltex-kyc-edge only",
+    "change": "clientRateIp helper/core calls and RU_GATEWAY_PEER_IP=138.199.227.130; preserve signing key, recipient, bindings, CORS and all limits",
+    "risk": "Wrong trust pin could misattribute quota; tests cover spoofed/malformed headers and peer fallback. No financial change.",
+    "rollback": "restore existing deployment version b00aac7e and its prior variables; preserve secret and receipts"
+  },
+  "rollback": [
+    "Beget: python3 /root/ri.py rollback-beget",
+    "Hetzner: python3 /root/ri.py rollback-hetzner",
+    "Only if KYC itself must be reverted after those: python3 /root/rf4.py rollback"
+  ],
+  "privateDataPublished": false,
+  "realFinancialOperations": 0,
+  "realKycSubmissions": 0
+}

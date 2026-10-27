@@ -1,0 +1,44 @@
+[
+  {
+    "attempt": "report.json",
+    "status": "FAIL",
+    "stepsPassed": 0,
+    "reason": "Error: Command failed: /workspace/scratch/46a00edda406/qa-tools/nginx-root/usr/sbin/nginx -p /tmp/voltex-ru-kyc-browser-l4mhqe -t -c /tmp/voltex-ru-kyc-browser-l4mhqe/nginx.conf",
+    "fixtureHttpStatus": null
+  },
+  {
+    "attempt": "attempt-02/report.json",
+    "status": "FAIL",
+    "stepsPassed": 0,
+    "reason": "browserType.launch: Failed to launch: Error: spawn /workspace/scratch/46a00edda406/qa-tools/chrome-headless-shell-linux64/chrome-headless-shell EACCES",
+    "fixtureHttpStatus": null
+  },
+  {
+    "attempt": "attempt-03/report.json",
+    "status": "FAIL",
+    "stepsPassed": 0,
+    "reason": "page.goto: net::ERR_EMPTY_RESPONSE at https://ru.voltextech.net:19443/settings?tab=verification",
+    "fixtureHttpStatus": null
+  },
+  {
+    "attempt": "attempt-04/report.json",
+    "status": "FAIL",
+    "stepsPassed": 0,
+    "reason": "page.goto: net::ERR_EMPTY_RESPONSE at https://ru.voltextech.net:19443/settings?tab=verification",
+    "fixtureHttpStatus": null
+  },
+  {
+    "attempt": "attempt-05/report.json",
+    "status": "FAIL",
+    "stepsPassed": 0,
+    "reason": "page.goto: net::ERR_EMPTY_RESPONSE at https://ru.voltextech.net:19443/settings?tab=verification",
+    "fixtureHttpStatus": "HTTP/1.1 200 OK"
+  },
+  {
+    "attempt": "attempt-06/report.json",
+    "status": "FAIL",
+    "stepsPassed": 17,
+    "reason": "AssertionError [ERR_ASSERTION]: no browser production or external connections",
+    "fixtureHttpStatus": "HTTP/1.1 200 OK"
+  }
+]

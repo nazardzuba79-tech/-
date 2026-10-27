@@ -1,0 +1,132 @@
+{
+  "at": "2026-10-27",
+  "source": "current primary public catalogue and RU public route, read in connected browser",
+  "versionMatch": true,
+  "configuredRows": 10,
+  "allFieldsMatch": true,
+  "addressesPublished": false,
+  "combinations": [
+    [
+      "BTC",
+      "bitcoin"
+    ],
+    [
+      "ETH",
+      "ethereum"
+    ],
+    [
+      "USDT",
+      "ethereum"
+    ],
+    [
+      "USDT",
+      "tron"
+    ],
+    [
+      "USDC",
+      "ethereum"
+    ],
+    [
+      "BNB",
+      "bsc"
+    ],
+    [
+      "SOL",
+      "solana"
+    ],
+    [
+      "POL",
+      "polygon"
+    ],
+    [
+      "XRP",
+      "xrp"
+    ],
+    [
+      "TON",
+      "ton"
+    ]
+  ],
+  "memoInLiveCatalogue": false,
+  "domVerification": {
+    "actualDialogAndSelection": true,
+    "configuredRows": 10,
+    "syntheticMemoBranches": 1,
+    "addressQrClipboardAndMinimum": "PASS",
+    "externalRequests": 0
+  },
+  "realTransfers": false,
+  "realAddressCopies": false,
+  "productionUiRead": [
+    {
+      "asset": "USDC",
+      "network": "ethereum",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "BNB",
+      "network": "bsc",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "SOL",
+      "network": "solana",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "POL",
+      "network": "polygon",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "XRP",
+      "network": "xrp",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "TON",
+      "network": "ton",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "BTC",
+      "network": "bitcoin",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "ETH",
+      "network": "ethereum",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "USDT",
+      "network": "tron",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    },
+    {
+      "asset": "USDT",
+      "network": "ethereum",
+      "matchesPrimary": true,
+      "qrVisible": true,
+      "minimumShown": true
+    }
+  ]
+}

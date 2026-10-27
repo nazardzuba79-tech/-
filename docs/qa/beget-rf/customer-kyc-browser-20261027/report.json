@@ -1,0 +1,129 @@
+{
+  "scope": "isolated real browser/Nginx/Worker; synthetic API metadata and email",
+  "steps": [
+    {
+      "name": "1440: guest uses ordinary login",
+      "pass": true
+    },
+    {
+      "name": "1440: network error and retry",
+      "pass": true
+    },
+    {
+      "name": "1440: no page overflow",
+      "pass": true
+    },
+    {
+      "name": "1440: one synthetic email and pending metadata",
+      "pass": true
+    },
+    {
+      "name": "1440: synthetic selfie accepted only with consent",
+      "pass": true
+    },
+    {
+      "name": "1440: revoked session closes protected view",
+      "pass": true
+    },
+    {
+      "name": "390: guest uses ordinary login",
+      "pass": true
+    },
+    {
+      "name": "390: network error and retry",
+      "pass": true
+    },
+    {
+      "name": "390: no page overflow",
+      "pass": true
+    },
+    {
+      "name": "390: one synthetic email and pending metadata",
+      "pass": true
+    },
+    {
+      "name": "390: synthetic selfie accepted only with consent",
+      "pass": true
+    },
+    {
+      "name": "390: revoked session closes protected view",
+      "pass": true
+    },
+    {
+      "name": "multipart Content-Length and canonical Origin preserved",
+      "pass": true
+    },
+    {
+      "name": "session header preserved for submit/materials",
+      "pass": true
+    },
+    {
+      "name": "transport client IP supplied to Worker",
+      "pass": true
+    },
+    {
+      "name": "receipt confirmation route exercised",
+      "pass": true
+    },
+    {
+      "name": "documents never sent to metadata API",
+      "pass": true
+    },
+    {
+      "name": "no browser production or external connections",
+      "pass": true
+    },
+    {
+      "name": "no page errors",
+      "pass": true
+    }
+  ],
+  "widths": [
+    1440,
+    390
+  ],
+  "outbound": [],
+  "stubbedPublicFontStylesheets": 24,
+  "errors": [],
+  "apiMultipart": 0,
+  "worker": [
+    {
+      "path": "/v1/submit",
+      "lengthMatches": true,
+      "origin": "https://voltextech.net",
+      "clientIp": "127.0.0.1",
+      "bearerPresent": true
+    },
+    {
+      "path": "/v1/confirm",
+      "lengthMatches": true,
+      "origin": "https://voltextech.net",
+      "clientIp": "127.0.0.1",
+      "bearerPresent": false
+    },
+    {
+      "path": "/v1/materials",
+      "lengthMatches": true,
+      "origin": "https://voltextech.net",
+      "clientIp": "127.0.0.1",
+      "bearerPresent": true
+    },
+    {
+      "path": "/v1/submit",
+      "lengthMatches": true,
+      "origin": "https://voltextech.net",
+      "clientIp": "127.0.0.1",
+      "bearerPresent": true
+    },
+    {
+      "path": "/v1/materials",
+      "lengthMatches": true,
+      "origin": "https://voltextech.net",
+      "clientIp": "127.0.0.1",
+      "bearerPresent": true
+    }
+  ],
+  "mailCount": 4,
+  "fixtureHttpStatus": "HTTP/1.1 200 OK",
+  "status": "PASS"
+}

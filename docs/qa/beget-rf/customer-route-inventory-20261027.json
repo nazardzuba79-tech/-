@@ -1,0 +1,194 @@
+{
+  "deployedApiCommit": "89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+  "allowlistCount": 154,
+  "unreviewedOrdinaryRoutes": [],
+  "intentionallyDenied": [
+    {
+      "method": "GET",
+      "path": "/admin/spam-emails",
+      "source": "api/routes/contactPolicy.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/spam-emails/",
+      "source": "api/routes/contactPolicy.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/deposit-watch/tick",
+      "source": "api/routes/depositWatchInternal.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue",
+      "source": "api/routes/depositCatalogue.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue",
+      "source": "api/routes/depositCatalogue.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-address-copies",
+      "source": "api/routes/depositAddressCopies.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/products",
+      "source": "api/routes/products.ts",
+      "reason": "admin_product_management"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/products",
+      "source": "api/routes/products.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "PATCH",
+      "path": "/products/:id",
+      "source": "api/routes/products.ts",
+      "reason": "admin_product_management"
+    },
+    {
+      "method": "DELETE",
+      "path": "/products/:id",
+      "source": "api/routes/products.ts",
+      "reason": "admin_product_management"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/cfd/diagnostics",
+      "source": "api/routes/cfd.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/kyc/submit",
+      "source": "api/routes/kyc.ts",
+      "reason": "legacy_upload_disabled"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/kyc/authorize",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/kyc/submission-confirmed",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/kyc/admin/delivery",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/kyc/:id/document",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_kyc_review"
+    },
+    {
+      "method": "POST",
+      "path": "/kyc/:id/review",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_kyc_review"
+    },
+    {
+      "method": "POST",
+      "path": "/kyc/:id/material-requests",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_kyc_review"
+    },
+    {
+      "method": "POST",
+      "path": "/kyc/material-requests/:requestId/acknowledge",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_kyc_review"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/kyc/materials/authorize",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/kyc/materials/confirmed",
+      "source": "api/routes/kyc.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/demo/liquidity",
+      "source": "api/routes/demoTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/demo/vta",
+      "source": "api/routes/demoTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/demo/vta/sales/:requestId",
+      "source": "api/routes/demoTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/demo/vta/sell",
+      "source": "api/routes/demoTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/copy-trading/synthetic/advance",
+      "source": "api/routes/syntheticCopyTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/copy-trading/synthetic/reset",
+      "source": "api/routes/syntheticCopyTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/copy-trading/synthetic/mode",
+      "source": "api/routes/syntheticCopyTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/copy-trading/synthetic/follower-event",
+      "source": "api/routes/syntheticCopyTrading.ts",
+      "reason": "admin_or_internal"
+    },
+    {
+      "method": "GET",
+      "path": "/analytics/diagnostics",
+      "source": "api/routes/analytics.ts",
+      "reason": "admin_diagnostics"
+    },
+    {
+      "method": "GET",
+      "path": "/market/status",
+      "source": "api/routes/marketData.ts",
+      "reason": "admin_diagnostics"
+    }
+  ],
+  "futureMainBankingAndStocksNotActivated": true
+}

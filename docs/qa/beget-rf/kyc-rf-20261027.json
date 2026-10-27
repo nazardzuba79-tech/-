@@ -1,0 +1,28 @@
+{
+  "measurement": "2snqkJUsZYopEVSMN00021ON1",
+  "createdAt": "2026-10-27T06:03:21.206Z",
+  "scope": "Direct unauthenticated HTTPS GET /api/v1/kyc/me; no VPN, no session, no document",
+  "status": "finished",
+  "rows": [
+    {
+      "country": "RU",
+      "city": "Novosibirsk",
+      "network": "MTS",
+      "asn": 8359,
+      "http": 401,
+      "authorized": true,
+      "protocol": "TLSv1.3",
+      "certificateFingerprint256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8"
+    },
+    {
+      "country": "RU",
+      "city": "Moscow",
+      "network": "SERV.HOST GROUP",
+      "asn": 207957,
+      "http": 401,
+      "authorized": true,
+      "protocol": "TLSv1.3",
+      "certificateFingerprint256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8"
+    }
+  ]
+}
