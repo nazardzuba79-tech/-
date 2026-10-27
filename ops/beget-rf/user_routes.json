@@ -598,5 +598,21 @@
   [
     "GET",
     "/kyc/me"
+  ],
+  [
+    "GET",
+    "/market/display"
+  ],
+  [
+    "GET",
+    "/market/display/futures-book/:symbol"
+  ],
+  [
+    "GET",
+    "/market/display/futures-trades/:symbol"
+  ],
+  [
+    "GET",
+    "/market/display/spot-book/:pair"
   ]
 ]

@@ -22,6 +22,9 @@ entrypoint = "KycNotifications"
 [vars]
 VOLTEX_API_ORIGIN = "https://api.voltextech.net"
 ALLOWED_ORIGINS = "https://voltextech.net,https://www.voltextech.net,https://localhost,capacitor://localhost"
+# Optional trusted ru egress. Only enabled together with the source-restricted
+# PROXY-protocol endpoint; the gateway overwrites this header after TLS ends.
+RU_GATEWAY_PEER_IP = "138.199.227.130"
 
 # Email Routing send binding. Sends to a VERIFIED destination address are
 # free on every plan; the restriction below means this Worker can address

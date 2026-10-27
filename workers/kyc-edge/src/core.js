@@ -10,6 +10,7 @@
 // the user's own open request.
 
 import { queueKycNotification, queueKycMaterialNotification } from './notifications.js';
+import { clientRateIp } from './clientIp.js';
 
 export const SERVICE = 'voltex-kyc-edge';
 export const VERSION = 'kyc-edge-v1';
@@ -461,7 +462,7 @@ async function readUpload(request, env, deps, rateKey) {
     return { response: fail(request, env, 400, 'kyc_bad_request') };
   }
 
-  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+  const ip = clientRateIp(request, env);
   if (!(await rateAllowed(env, `${rateKey}:${ip}`, now))) return { response: fail(request, env, 429, 'kyc_rate_limited') };
 
   const material = await signingMaterial(env);
@@ -761,7 +762,7 @@ async function handleConfirm(request, env, ctx, deps) {
   const now = deps.now();
   const origin = request.headers.get('origin');
   if (origin && !allowedOrigins(env).includes(origin)) return fail(request, env, 403, 'kyc_origin_forbidden');
-  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+  const ip = clientRateIp(request, env);
   if (!(await rateAllowed(env, `confirm:${ip}`, now))) return fail(request, env, 429, 'kyc_rate_limited');
   const material = await signingMaterial(env);
   if (!material || !env.VOLTEX_API_ORIGIN) return fail(request, env, 503, 'kyc_edge_not_configured');
