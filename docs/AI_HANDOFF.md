@@ -7287,3 +7287,20 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - **Gate unchanged:** `summarize-613.cjs` only gained `--pins before:after` for stored runs recorded at other pins; its tests now pass the fixture's recorded pins explicitly (14/14, one new: without `--pins` the policy pins judge and the fixture is a provenance mismatch).
 - **Local:** harness tests + self-test 51/51, CI source-head contract 37/37 (Node 22.23.3); the extended report on the stored `1d02aea3` artifact reproduces the published pooled Δp95 (+47.48 % / +39.42 %).
 - **Not claimed:** the new run's numbers (CI pending); CI_DIAGNOSTIC on a shared runner is never capacity acceptance. Release blockers unchanged; BUY/SELL silent NO-OP, flags OFF.
+- **Result on `e71b298d`:** [run 40476976956](https://github.com/nazardzuba79-tech/-/actions/runs/40476976956/job/122097500810), artifact 12720589262, zip SHA256 `cff8aacd…bca7`. Collection COMPLETE 8/8, both pins `DIAGNOSTIC_P95_FAIL`.
+
+  | Pin | Crypto p50/p95/p99 baseline → mixed (ms) | Δp95 | Viewer `/state` p95 | API CPU (ms) | Errors |
+  |---|---|---|---|---|---|
+  | before `fa92cc66` | 7.66/11.01/13.41 → 8.01/16.85/28.41 | +53.05 % | 6.39 ms | 6317 | 0 |
+  | after `a820c18e` | 7.64/11.30/13.62 → 7.85/17.16/25.08 | +51.79 % | 5.84 ms | 6005 | 0 |
+
+  - JWT effect: viewer `/state` p95 −8.5 %, API CPU −4.9 %, viewer-induced CPU −10 %. Crypto p95 is unchanged (+1.8 %, noise).
+  - Event-loop delay p99 ≈ 12 ms (10 ms resolution). ELU rises from about 0.05 to 0.19. Max RSS 208 MB.
+  - Order loss, double spend and viewer mutations: 0 in all 16 arms.
+  - Client WebSocket under 50+2 is not measured (the harness has no browser clients).
+- **Exact-head CI on `e71b298d`:** 43 checks — 40 success, 3 skipped (`deploy`, CodeRabbit, `spans-run`).
+- **Reported in:** [#613 comment 6438394224](https://github.com/nazardzuba79-tech/-/pull/613#issuecomment-6438394224); PR body updated.
+- **Blockers:**
+  - performance gate FAIL: next step is the Stocks gateway/viewer path in its own process or instance, then re-measure;
+  - data rights NO-GO for CEX sources (#618).
+- **27.10 later:** main `bd72a2af` (#620, #606, #626, #604) merged in (`ebdab2f2`). Only this file conflicted; both sides kept. Local: contract 37/37, harness 51/51, release/migration 11/11, backend `tsc` PASS.
