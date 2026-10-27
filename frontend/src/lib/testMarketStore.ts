@@ -214,6 +214,7 @@ export function testMarketListingAt(pair: string): number | null {
 }
 
 export function refreshTestMarket(pair: string): Promise<void> {
+  if (isNrxPair(pair)) return Promise.resolve();
   return storeForPair(pair).refresh();
 }
 
@@ -234,14 +235,13 @@ function useStore(store: TestMarketStore, intervalMs: number, enabled: boolean):
 export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
   const kind = pair ? (isNrxPair(pair) ? 'nrx' : isManagedListingPair(pair) ? 'managed' : 'vta') : null;
   const vta = useStore(testMarketStore, intervalMs, enabled && (!kind || kind === 'vta'));
-  const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!kind || kind === 'nrx'));
   const managed = useStore(managedListingStore, intervalMs, enabled && (!kind || kind === 'managed'));
   // One array per store change, not per render: consumers memoise on it (useMarketTickers), and a
   // fresh array each render kept the Markets page re-rendering and starved route transitions.
-  const assets = useMemo(() => [...vta.assets, ...nrx.assets, ...managed.assets], [vta.assets, nrx.assets, managed.assets]);
-  if (kind) return kind === 'nrx' ? nrx : kind === 'managed' ? managed : vta;
-  return { loaded: vta.loaded && nrx.loaded && managed.loaded, error: vta.error || nrx.error || managed.error,
-    assets, clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : managed.loaded ? managed.clockOffsetMs : vta.clockOffsetMs };
+  const assets = useMemo(() => [...vta.assets, ...managed.assets], [vta.assets, managed.assets]);
+  if (kind) return kind === 'nrx' ? { loaded: true, error: false, assets: [], clockOffsetMs: 0 } : kind === 'managed' ? managed : vta;
+  return { loaded: vta.loaded && managed.loaded, error: vta.error || managed.error,
+    assets, clockOffsetMs: managed.loaded ? managed.clockOffsetMs : vta.clockOffsetMs };
 }
 
 /** The Trade page asks the edge once whether its pair is a managed listing (the store re-reads only rarely). */

@@ -1,3 +1,4 @@
+import { isRetiredMarketPair } from '../lib/testMarkets';
 import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { DemoSpotAssets, DemoSpotOrders } from '../components/DemoSpotPanels';
 import { isDemoSpotPair, useDemoSpotMode } from '../lib/demoSpot';
@@ -88,6 +89,12 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
 ];
 
 export function TradePage() {
+  const [params] = useSearchParams();
+  if (isRetiredMarketPair(params.get('pair') ?? '')) return <div className="trade-terminal"><Nav active="/trade" staticTicker /><main style={{padding: '48px 20px', textAlign: 'center'}}><h1>NRX/USDT</h1><p role="status">Этот рынок удалён. Новые ордера недоступны.</p><a href="/markets">Рынки</a></main></div>;
+  return <ActiveTradePage />;
+}
+
+function ActiveTradePage() {
   const { t } = useLanguage();
   const demoMode = useDemoSpotMode();
   const [searchParams, setSearchParams] = useSearchParams();

@@ -17,7 +17,10 @@ export const TEST_ASSET_STATUS_LABEL = 'TEST · NOT TRADABLE';
 
 /** Known before the first response, so a deep link or a starred pair is
  *  recognised as a test market without waiting on the network. */
-export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT', 'NRX/USDT'];
+/** Removed market: retain financial history elsewhere, never display or route new trading. */
+export const isRetiredMarketPair = (value: string) => ['NRX', 'NRXUSDT'].includes(value.trim().toUpperCase().replace(/[\s/_-]/g, ''));
+
+export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT'];
 
 export interface TestMarketState {
   phase: 'pre-listing' | 'live';
@@ -128,6 +131,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
     if (isAith(raw.pair) && (!managed || raw.isTradable !== false || !validAithLease(raw.readLease, raw.version, body.serverTime))) continue;
     if (managed) {
       // A published listing: any well-formed USDT pair that is not a built-in test asset.
+      if (isRetiredMarketPair(raw.pair)) continue;
       if (!MANAGED_PAIR_PATTERN.test(raw.pair.toUpperCase()) || TEST_MARKET_PAIRS.includes(raw.pair.toUpperCase()) || typeof raw.isTradable !== 'boolean') continue;
     } else if (!isTestMarketPair(raw.pair) || raw.isTradable !== (raw.pair.toUpperCase() === 'NRX/USDT')) continue;
     const listingAt = typeof raw.listingAt === 'string' ? Date.parse(raw.listingAt) : NaN;
@@ -200,17 +204,19 @@ export function testAssetTicker(asset: TestAsset): TestMarketTicker {
  * holding one simulated market.
  */
 export function withTestMarketTickers<T extends MarketTicker>(tickers: Map<string, T>, assets: readonly TestAsset[]): Map<string, T | TestMarketTicker> {
-  if (tickers.size === 0 || assets.length === 0) return tickers;
-  const merged = new Map<string, T | TestMarketTicker>(tickers);
-  for (const asset of assets) merged.set(asset.pair, testAssetTicker(asset));
+  if (tickers.size === 0) return tickers;
+  if (assets.length === 0 && ![...tickers.keys()].some(isRetiredMarketPair)) return tickers;
+  const merged = new Map<string, T | TestMarketTicker>([...tickers].filter(([pair]) => !isRetiredMarketPair(pair)));
+  for (const asset of assets) if (!isRetiredMarketPair(asset.pair)) merged.set(asset.pair, testAssetTicker(asset));
   return merged;
 }
 
 export function withoutTestMarkets<T extends { pair: string }>(rows: readonly T[]): T[] {
-  return rows.filter((row) => !isTestMarketPair(row.pair));
+  return rows.filter((row) => !isRetiredMarketPair(row.pair) && !isTestMarketPair(row.pair));
 }
 
 export function matchesTestAssetSearch(asset: Pick<TestAsset, 'pair' | 'symbol' | 'name'>, query: string): boolean {
+  if (isRetiredMarketPair(asset.pair)) return false;
   const q = query.trim().toLowerCase().replace(/[\s/_-]/g, '');
   if (!q) return true;
   return [asset.pair.replace('/', ''), asset.symbol, asset.name].some((field) => field.toLowerCase().includes(q));
