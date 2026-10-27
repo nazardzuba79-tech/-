@@ -79,6 +79,7 @@ describe('idle backoff: the wake fires after the commit, never inside it', () =>
   function trackingPrisma(inner: (tx: any) => Promise<any>, log: string[]) {
     return {
       $queryRaw: jest.fn(async () => [{ status: 'committed' }]),
+      auditLog: { findMany: jest.fn(async () => []) }, // no simulated-sale receipts: no synthetic floor
       $transaction: jest.fn(async (fn: (tx: any) => Promise<any>) => {
         log.push('tx:start');
         const out = await fn(await inner({}));

@@ -37,20 +37,29 @@ export class SyntheticProceedsLockedError extends Error {
 }
 
 export type FloorMarks = Map<string, BigNumber>;
+const markOf = (marks: FloorMarks, asset: string) => marks.get(asset) ?? new BigNumber(0);
+const num = (v: unknown) => new BigNumber(v === null || v === undefined ? NaN : String(v));
 
 /**
  * USDT credited to this account's `Balance` by house-bought sales of anything that is not a real valued asset.
  * Every version of that sale wrote its audit row (`pair`, `proceeds`) in the same transaction as the credit; a
  * sale settled into DemoBalance (#625's opt-in) says so and taints nothing. Read through the AuditLog `userId`
- * and `action` indexes, so the Spot order path pays one small indexed read; 0 for an account that never sold.
+ * index with the model API (no raw query on the shared client before the Spot transaction, whose commit-outcome
+ * read is the only raw read there); an account that never sold reads no rows and gets 0.
  */
 export async function syntheticProceeds(db: Db, userId: string): Promise<BigNumber> {
-  const rows = await db.$queryRaw<{ v: string }[]>`
-    SELECT COALESCE(SUM((metadata->>'proceeds')::numeric), 0)::text AS v FROM "AuditLog"
-    WHERE "userId" = ${userId} AND action = ANY(${SIMULATION_ACTIONS})
-      AND split_part(metadata->>'pair', '/', 2) = 'USDT' AND NOT (split_part(metadata->>'pair', '/', 1) = ANY(${[...FLOOR_VALUED]}))
-      AND COALESCE(metadata->>'settlementLedger', 'Balance') <> 'DemoBalance'`;
-  return new BigNumber(rows[0]?.v ?? '0');
+  const rows = await db.auditLog.findMany({ where: { userId, action: { in: SIMULATION_ACTIONS } }, select: { metadata: true } });
+  let total = new BigNumber(0);
+  for (const { metadata } of rows) {
+    const m = (metadata ?? {}) as Record<string, unknown>;
+    const [base, quote] = String(m.pair ?? '').split('/');
+    if (quote !== 'USDT' || FLOOR_VALUED.includes(base) || m.settlementLedger === 'DemoBalance' || m.proceeds === null || m.proceeds === undefined) continue;
+    const proceeds = num(m.proceeds);
+    // A receipt whose amount cannot be read is never counted as zero.
+    if (!proceeds.isFinite()) throw new SyntheticProceedsLockedError();
+    total = total.plus(proceeds);
+  }
+  return total;
 }
 
 /** The account's floor (S) and the marks to judge it, or null for an account with nothing synthetic. */
@@ -67,9 +76,6 @@ export async function prepareFloor(db: Db, userId: string, prices?: FloorPriceSo
   }
   return marks;
 }
-
-const markOf = (marks: FloorMarks, asset: string) => marks.get(asset) ?? new BigNumber(0);
-const num = (v: unknown) => new BigNumber(v === null || v === undefined ? NaN : String(v));
 
 /** Worst-case real value of the account (USDT). Call inside the transaction, after `lockFloor`. */
 export async function floorValue(tx: Tx, userId: string, marks: FloorMarks): Promise<BigNumber> {
@@ -107,10 +113,13 @@ export async function floorValue(tx: Tx, userId: string, marks: FloorMarks): Pro
  * the durable allocation receipts, so it holds while the in-memory listing registry is cold or stale.
  */
 export async function isMintedListingAsset(db: Db, asset: string): Promise<boolean> {
-  const rows = await db.$queryRaw<{ n: number }[]>`
-    SELECT COUNT(*)::int AS n FROM "AuditLog" WHERE action IN ('LISTING_OWNER_ALLOCATION', 'NRX_OWNER_ALLOCATION')
-      AND upper(metadata->>'asset') = upper(${asset.trim()})`;
-  return (rows[0]?.n ?? 0) > 0;
+  const wanted = asset.trim().toUpperCase();
+  if (!wanted) return false;
+  const rows = await db.auditLog.findMany({ where: { action: { in: ['LISTING_OWNER_ALLOCATION', 'NRX_OWNER_ALLOCATION'] } }, select: { metadata: true } });
+  return rows.some(({ metadata }) => {
+    const a = (metadata as Record<string, unknown> | null)?.asset;
+    return typeof a === 'string' && a.toUpperCase() === wanted;
+  });
 }
 
 /** One floor-bound outflow at a time per account (withdrawals, OTC and Spot orders). */

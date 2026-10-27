@@ -23,7 +23,7 @@
 - whose base is not a valued real asset;
 - that were not settled into `DemoBalance`.
 
-Every version of that sale wrote the audit row in the same transaction as the credit. The read uses the `userId` and `action` indexes. A demo-settled sale (#625 opt-in) adds nothing.
+Every version of that sale wrote the audit row in the same transaction as the credit. The read goes through the `userId` index with the Prisma model API, not a raw query: before the Spot transaction the only raw read is its commit-outcome check, and a fault there must still halt the engine. A demo-settled sale (#625 opt-in) adds nothing. A receipt whose amount cannot be read refuses the operation rather than counting as zero.
 
 **Real value.** Counted only for USDT (1), USDC, BTC and ETH, at the venue's last price (`<asset>/USDT`):
 - every other asset counts 0, including listings, NRX and anything a cold registry does not recognise;

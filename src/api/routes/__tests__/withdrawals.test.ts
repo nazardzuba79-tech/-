@@ -48,7 +48,7 @@ function makePrisma(opts: {
     balance: { findMany: jest.fn().mockResolvedValue(opts.spot ?? []) },
     futuresBalance: { findMany: jest.fn().mockResolvedValue(opts.futures ?? []) },
     // Minted-listing and simulated-sale reads: none here (covered on PostgreSQL by syntheticProceedsFloor.pg.test.ts).
-    $queryRaw: jest.fn().mockResolvedValue([]),
+    auditLog: { findMany: jest.fn().mockResolvedValue([]) },
     $transaction: jest.fn(async (fn: any) => {
       const before = new Map([...rows].map(([key, row]) => [key, { ...row }]));
       try { return await fn(tx); } catch (error) {
