@@ -6,7 +6,7 @@ import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
-import { NEURIX } from './testMarkets/neurix';
+import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
@@ -296,18 +296,27 @@ export class OrderService {
   private async sellTeamSpotSimulationOnce(userId: string, pair: string, quantity: BigNumber, orderId: string) {
     const [base, quote] = pair.split('/');
 
-    const ticker = pair === NEURIX.pair
-      ? await spotPriceSource(this.priceSource).getTicker(pair)
-      : await this.priceSource.getTicker(pair);
+    // The same server price the pair's Spot ticker, chart and conditional
+    // triggers use: NRX and a published managed listing their model price,
+    // an ordinary pair the venue. A modeled pair is never priced by the venue.
+    const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
+    // Default-off P0 fence: an explicitly enabled, private simulated-asset sale
+    // settles proceeds ONLY in DemoBalance. It never mints spendable Spot USDT.
+    // No change to normal venues or existing feature switches.
+    const simulatedAsset = isTestAssetPairOrSymbol(pair);
+    if (simulatedAsset && process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED !== 'true')
+      throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
+    if (simulatedAsset && (proceeds.decimalPlaces() ?? 19) > 18)
+      throw new Error('Simulation proceeds exceed demo ledger precision');
 
     const now = Date.now();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
-    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
+    const auditAction = 'TEAM_SPOT_SIMULATION_SOLD';
 
     return this.prisma.$transaction(async tx => {
       // Re-check server-side test identity and block state inside the financial
@@ -321,7 +330,19 @@ export class OrderService {
       }
 
       await mutateSpotBalance(tx, userId, base, { available: quantity.negated() });
-      await mutateSpotBalance(tx, userId, quote, { available: proceeds });
+      if (simulatedAsset) {
+        // The debit and the non-withdrawable demo credit share one serializable transaction.
+        // DemoBalance is excluded from the real Spot book, transfers and withdrawals.
+        // A unique (userId, asset) key makes retries and concurrent credits atomic.
+        const amount = proceeds.toFixed(18);
+        await tx.demoBalance.upsert({
+          where: { userId_asset: { userId, asset: quote } },
+          create: { userId, asset: quote, available: amount },
+          update: { available: { increment: amount } },
+        });
+      } else {
+        await mutateSpotBalance(tx, userId, quote, { available: proceeds });
+      }
 
       await tx.order.create({
         data: {
@@ -365,7 +386,9 @@ export class OrderService {
             price: price.toFixed(),
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
-            source: pair === NEURIX.pair ? 'NEURIX canonical simulation' : 'VOLTEX team test Spot simulation',
+            source: 'VOLTEX team test Spot simulation',
+            settlementLedger: simulatedAsset ? 'DemoBalance' : 'Balance',
+            withdrawableProceeds: !simulatedAsset,
           },
         },
       });
