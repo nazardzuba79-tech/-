@@ -1,0 +1,15 @@
+{
+  "oldSha256": "dc95cbdd113b1273a1a3fb73d7d879bbfca93c5a49c9746dc1ff2afc846ec0b2",
+  "newSha256": "4d8db75dd4335bc03ffdb73cf6bcb4eb6b1ee6e4d729dcb559b9fdd4b6945199",
+  "review": "fe15f3556bed39e49249f3089f35dfdf58835afd",
+  "reviewedTypeScriptMethodSha256": "abe1167f92ef5c03a1deb9305e3d5e24f2489d0897682b069e49b703325d6c48",
+  "unrelatedTopLevelNodesByteIdentical": true,
+  "otherDoMethodsByteIdentical": true,
+  "eclvPeakFunctionsByteIdentical": true,
+  "scope": [
+    "ManagedListingsDO.fetch",
+    "ManagedListingsDO.deleteListing"
+  ],
+  "bytes": 390052,
+  "productionWrite": false
+}
