@@ -1,32 +1,15 @@
 #!/usr/bin/env node
 'use strict';
-/**
- * QAVENTRA (QVTR/USDT): ONE private Draft in Admin → Listings from
- * config/test-markets/qvtr-20261028.draft.json, through the same request the
- * form sends (POST /api/v1/admin/listings). It never publishes, never touches
- * a timer and never edits or deletes an existing listing.
- *
- * Read-only by default (preflight): what the store already holds for QVTR and
- * the old candidate other candidate, whether the seed is used elsewhere, the public
- * catalogue, and the time left before the listing instant.
- *
- *   VOLTEX_API=https://api.voltextech.net VOLTEX_MARKET=https://market.voltextech.net \
- *   VOLTEX_ADMIN_TOKEN=<an admin session token> node scripts/eclv-draft-import.cjs [--create]
- *
- * --create (only with the owner's go):
- *   - an QVTR listing exists → nothing is sent; same configuration = already
- *     imported (exit 0), anything else = stop (exit 2);
- *   - a other candidate listing exists → stop (exit 2): the owner decides about it;
- *   - otherwise exactly one POST; the stored draft must equal the file, seed
- *     included (exit 3 if not).
- * Exit 1: configuration, network or authorisation problem. The token is read
- * from the environment only and is never printed.
+/** QAVENTRA (QVTR/USDT) — one separate private draft, never ECLAVO.
+ * Read-only preflight is the default. With explicit owner approval, --create
+ * creates at most one private QVTR draft; no publish, timer, balance or trade.
+ * Requires VOLTEX_API and VOLTEX_ADMIN_TOKEN from the authorized environment.
+ * ECLAVO ECLV / 2026-11-03 is intentionally not an old-symbol conflict.
  */
 const fs = require('node:fs');
 const path = require('node:path');
 
 const FILE = path.resolve(__dirname, '../config/test-markets/qvtr-20261028.draft.json');
-const OLD_SYMBOLS = []; // Independent listing: do not treat existing ECLV as a conflict.
 const MIN_LEAD_MS = 60_000;
 
 const base = (name, value) => {
@@ -65,11 +48,9 @@ async function main() {
   const listings = listed.body.listings;
   const serverTime = Number(listed.body.serverTime) || Date.now();
   console.log(`admin store: ${listings.length} listing(s): ${listings.map((l) => l.symbol).join(', ') || '—'}`);
-  const eclv = listings.filter((l) => l.symbol === file.symbol);
-  const old = listings.filter((l) => OLD_SYMBOLS.includes(l.symbol));
+  const qvtr = listings.filter((l) => l.symbol === file.symbol);
   const seedElsewhere = listings.filter((l) => l.symbol !== file.symbol && (l.draft?.seed === file.seed || l.active?.seed === file.seed));
-  for (const l of eclv) console.log(`  ${file.symbol}: ${l.id} — ${state(l)}, draft revision ${l.draftRevision}, ${same(comparable(l.draft), file) ? 'SAME configuration as the file' : 'DIFFERENT configuration from the file'}`);
-  for (const l of old) console.log(`  old candidate ${l.symbol}: ${l.id} — ${state(l)}`);
+  for (const l of qvtr) console.log(`  ${file.symbol}: ${l.id} — ${state(l)}, draft revision ${l.draftRevision}, ${same(comparable(l.draft), file) ? 'SAME configuration as the file' : 'DIFFERENT configuration from the file'}`);
   for (const l of seedElsewhere) console.log(`  seed ${file.seed} also used by ${l.symbol} (${l.id})`);
   const left = Date.parse(file.listingAt) - serverTime;
   console.log(`time to the listing instant: ${(left / 3_600_000).toFixed(1)} h by the server clock`);
@@ -79,13 +60,13 @@ async function main() {
     console.log(`public catalogue: ${pairs.join(', ') || '—'}`);
   }
 
-  const conflict = eclv.some((l) => !same(comparable(l.draft), file)) || eclv.length > 1 || old.length > 0 || seedElsewhere.length > 0 || left < MIN_LEAD_MS;
+  const conflict = qvtr.some((l) => !same(comparable(l.draft), file)) || qvtr.length > 1 || seedElsewhere.length > 0 || left < MIN_LEAD_MS;
   if (!create) {
-    console.log(conflict ? 'PREFLIGHT: STOP — resolve the lines above first' : eclv.length ? 'PREFLIGHT: OK — the draft is already there, nothing to import' : 'PREFLIGHT: OK — no QVTR / other candidate; run again with --create to import one private draft');
+    console.log(conflict ? 'PREFLIGHT: STOP — resolve the lines above first' : qvtr.length ? 'PREFLIGHT: OK — the draft is already there, nothing to import' : 'PREFLIGHT: OK — no QVTR; run again with --create to import one private draft');
     return conflict ? 2 : 0;
   }
   if (conflict) { console.log('NOT CREATED: stop — resolve the lines above first'); return 2; }
-  if (eclv.length === 1) { console.log(`NOT CREATED: already imported as ${eclv[0].id}; nothing sent`); return 0; }
+  if (qvtr.length === 1) { console.log(`NOT CREATED: already imported as ${qvtr[0].id}; nothing sent`); return 0; }
 
   const created = await call('/admin/listings', { method: 'POST', body: JSON.stringify({ config }) });
   if (created.status !== 201) {
