@@ -4,6 +4,8 @@ on:
     paths:
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
+      - 'src/services/__tests__/simulationMintFence.pg.test.ts'
+      - 'src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts'
       - 'src/services/PriceWatcherService.ts'
       - 'src/services/WalletPortfolioService.ts'
       - 'frontend/src/**'
@@ -50,6 +52,7 @@ jobs:
           src/services/testMarkets/__tests__/nrxLegacyReleaseIdentity.test.ts
           src/services/testMarkets/__tests__/nrxLegacySourceProjection.test.ts
           src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
+          src/services/__tests__/simulationMintFence.pg.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
           src/services/testMarkets/__tests__/testMarketDepth.test.ts
           src/api/routes/__tests__/testMarkets.test.ts

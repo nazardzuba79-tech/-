@@ -5,8 +5,8 @@ import BigNumber from 'bignumber.js';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
-import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
-import { NEURIX } from './testMarkets/neurix';
+import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
+import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
@@ -302,18 +302,19 @@ export class OrderService {
     const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
-    // A managed listing's proceeds would be ordinary Spot USDT, which can be
-    // withdrawn, and model-priced earnings must not be. Until a non-withdrawable
-    // settlement exists its synthetic sale stops here, before any write.
-    // NRX (legacy) and ordinary pairs are unchanged.
-    if (pair !== NEURIX.pair && managedListingForPair(pair)) throw new Error('Simulation Spot sale is not available for this listing');
+    // A simulated asset's proceeds (NRX, a managed listing, any test market)
+    // would be ordinary Spot USDT priced by the model, and that ledger backs
+    // withdrawals and the real book; model-priced earnings must never be
+    // withdrawable (Issue #617 P0). Until a non-withdrawable settlement exists
+    // its synthetic sale stops here, before any write. Ordinary pairs are unchanged.
+    if (isTestAssetPairOrSymbol(pair)) throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
 
     const now = Date.now();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
-    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
+    const auditAction = 'TEAM_SPOT_SIMULATION_SOLD';
 
     return this.prisma.$transaction(async tx => {
       // Re-check server-side test identity and block state inside the financial
@@ -371,7 +372,7 @@ export class OrderService {
             price: price.toFixed(),
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
-            source: pair === NEURIX.pair ? 'NEURIX canonical simulation' : 'VOLTEX team test Spot simulation',
+            source: 'VOLTEX team test Spot simulation',
           },
         },
       });
