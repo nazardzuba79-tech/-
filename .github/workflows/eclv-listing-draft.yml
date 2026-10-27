@@ -47,7 +47,8 @@ jobs:
             frontend/src/lib/__tests__/listingMovementControls.test.ts \
             src/services/listings/__tests__/tyvnDraft.test.ts \
             src/services/listings/__tests__/listingCountdown.test.ts \
-            src/services/listings/__tests__/listingScenarioControls.test.ts
+            src/services/listings/__tests__/listingScenarioControls.test.ts \
+            src/private-trading/__tests__/nativeFundingQaBoundary.test.ts
       - name: Confirm public configuration cannot place orders or allocate funds
         shell: bash
         run: |
@@ -138,9 +139,9 @@ jobs:
           npx prisma generate
           npm run build
       - name: Actual cap, retained seed, guards and prior-path fingerprint on the patched production source
-        run: node scripts/qa-eclv-api-backport.cjs "$RUNNER_TEMP/eclv-production-api" > .eclv-api-backport-result.json
+        run: node scripts/qa-eclv-api-backport.cjs "$RUNNER_TEMP/eclv-production-api" > eclv-api-backport-result.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: eclv-production-api-source-compat
-          path: .eclv-api-backport-result.json
+          path: eclv-api-backport-result.json

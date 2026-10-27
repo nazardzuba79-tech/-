@@ -51,7 +51,7 @@ Legacy `--create` remains for compatibility and isolated tests, but is **not aut
 
 ## Production gates and rollback
 
-No production merge, API/Worker/frontend release, publication or countdown activation has been performed by this update. ADMIN access is now verified in the cloud browser. Actual production has one private ECLV with the old November3 date, cap0.518 and seed eclavo-20261103-v1. It was subsequently moved date-only toNovember6,revision3, with actual reload/Preview PASS; the new cap/recovery have not yet been installed. It remains private and unpublished.
+No ECLV production merge, API/Worker/frontend release, publication or countdown activation has been performed by this update. QVTR was subsequently published as version1 and its native countdown started once with explicit owner permission; actual main-domain checks are in PR624 and the QVTR production proof. ADMIN access is now verified in the cloud browser. Actual production has one private ECLV with the old November3 date, cap0.518 and seed eclavo-20261103-v1. It was subsequently moved date-only toNovember6,revision3, with actual reload/Preview PASS; the new cap/recovery have not yet been installed. It remains private and unpublished.
 
 The new terminal-peak semantics require compatible API validation and market-edge simulation before saving the new config. Current production exact SHAs/capability must be inspected first. Do not save a config that an old deployed generator cannot interpret. Frontend form validation also needs this compatible patch when editing via the UI. Use separately approved, exact-SHA releases with the existing immutable rollback artifacts; do not broadly deploy unrelated changes.
 

@@ -19,8 +19,13 @@
       "maxShown": 0.8182198871,
       "cap": 0.88858
     },
-    "published": false,
-    "timerStarted": false
+    "published": true,
+    "timerStarted": true,
+    "publishedVersion": 1,
+    "actualPublicRoute": "https://voltextech.net/trade?pair=QVTR%2FUSDT",
+    "spotSearch": "PASS",
+    "marketsCard": "PASS",
+    "timerAndReload": "PASS"
   },
   "eclv": {
     "existingPrivateDraft": true,
@@ -67,5 +72,19 @@
     },
     "exact1440Or390ProductionEmulation": "NOT RUN; no documented resize control; standard responsive shortcut did not change the viewport",
     "localAndCi1440x390": "PASS; independent from production viewport"
-  }
+  },
+  "hetznerReadOnly": {
+    "observedAt": "2026-10-27T14:05:31Z",
+    "access": "Secure login and email verification succeeded; existing root VNC session reused; no credential values observed",
+    "apiContainer": "voltex-cutover-api-production-1",
+    "apiImage": "sha256:10e66b427b7941fc49335a7fc251c55e6c93a0415e45897f2518798c6e5acc7a",
+    "retainedImageTag": "voltex-demo-off:89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+    "containers": "API healthy, PostgreSQL healthy; no new container started",
+    "memoryAvailableMiB": 2469,
+    "runtimeBootstrap": "Existing read-only runtime-bootstrap.cjs and readonly-egress.cjs mounts preserved; production_config and database password content NOT read",
+    "compose": "Existing full stack includes runtime, hotfix, KYC, TYVN and demo overlays. Never replace it with a standalone older compose/API. Add only an image overlay and retain existing authoritative configuration if a narrow release becomes safe.",
+    "writes": "No production image/config/container change; only read-only docker ps/inspect/images, free, grep and ls",
+    "inputRecovery": "Bulk VNC typing initially truncated; unparameterized dd read stdin/stdout only, terminated with EOF. No file writes. Stable per-character input with explicit modifier names and35ms spacing subsequently verified before execution."
+  },
+  "latestPermission": "Owner authorizes necessary task actions; missing Cloudflare current-version access/operator coordination remains an actual release gate, not missing approval"
 }

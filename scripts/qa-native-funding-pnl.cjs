@@ -30,6 +30,7 @@ const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 const BigNumber = require('bignumber.js');
+const settledBoundaries = require('./native-funding-qa-boundaries.cjs');
 const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
 const out = path.join(root, 'docs/qa/native-funding-pnl');
 const port = process.env.NATIVE_QA_PORT || '4191';
@@ -77,8 +78,6 @@ async function workspace(page, name) {
 async function accountTab(page, name) { await workspace(page, 'positions'); await page.locator(`#futures-tab-${name}`).click(); }
 /** The figure a cell shows, as a number: grouping commas and the unit stripped. */
 const shown = text => Number(String(text).replace(/≈.*$/s, '').replace(/[^0-9.+\-−]/g, '').replace('−', '-'));
-/** Boundaries a position settles at: strictly after it opened, not after `until`. */
-const boundaries = (openedAt, until) => { const all = []; for (let t = Math.floor(openedAt / F) * F + F; t <= until; t += F) if (t > openedAt) all.push(t); return all; };
 const cells = tr => Object.fromEntries([...tr.querySelectorAll('td[data-mobile-label]')].map(td => [td.getAttribute('data-mobile-label'), td.innerText]));
 
 async function session(width) {
@@ -135,7 +134,9 @@ async function verifyEngine(width, state, history, ledger) {
     const evidence = [];
     for (const p of all) {
       const lines = funding.filter(e => e.positionId === p.id);
-      const expected = boundaries(p.openedAt, p.closedAt ?? state.asOf);
+      // The production replay settles from a completed boundary candle. During
+      // its still-forming minute the liability is retained, but not yet booked.
+      const expected = settledBoundaries(p.openedAt, p.closedAt ?? state.asOf, state.asOf);
       assert.equal(lines.length, expected.length, `${p.symbol}: ${lines.length} settlements for ${expected.length} boundaries`);
       for (const line of lines) {
         assert(expected.includes(line.time), `${p.symbol}: settlement off a boundary at ${line.time}`);
