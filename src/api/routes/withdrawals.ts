@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { DemoFundsNotWithdrawableError, WithdrawalService, WithdrawalRequestError } from '../../services/WithdrawalService';
+import { FloorPriceSource, SyntheticProceedsLockedError } from '../../services/syntheticProceedsFloor';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { PrivateTradingError, type OwnerSession } from '../../private-trading/serviceTypes';
@@ -30,13 +31,15 @@ export type TradingWalletReader = (actor: OwnerSession) => Promise<{ asset: stri
 
 export interface WithdrawalsRouterOptions {
   tradingWallet?: TradingWalletReader;
+  /** Values an account holding legacy simulated-sale proceeds; without it such an account withdraws nothing. */
+  prices?: FloorPriceSource;
 }
 
 const TRADING_UNAVAILABLE = 'Trading account balance is temporarily unavailable';
 
 export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRouterOptions = {}): Router {
   const router = Router();
-  const service = new WithdrawalService(prisma);
+  const service = new WithdrawalService(prisma, options.prices);
 
   /**
    * The caller's Cross trading account rows, or `null` for an account that
@@ -136,6 +139,7 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
       const result = await service.requestWithdrawal({ userId: req.userId!, ...parsed.data });
       res.json(result);
     } catch (err) {
+      if (err instanceof SyntheticProceedsLockedError) return res.status(403).json({ error: err.message, code: err.code });
       if (err instanceof WithdrawalRequestError) return res.status(400).json({ error: err.message });
       console.error(err);
       res.status(500).json({ error: 'Failed to submit withdrawal request' });

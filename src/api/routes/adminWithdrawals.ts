@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { DemoFundsNotWithdrawableError, WithdrawalService, WithdrawalRequestError } from '../../services/WithdrawalService';
+import { FloorPriceSource, SyntheticProceedsLockedError } from '../../services/syntheticProceedsFloor';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 
@@ -15,10 +16,10 @@ import { requireAdmin } from '../middleware/admin';
  * point before SENT, which returns the funds to the client's available
  * balance.
  */
-export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
+export function adminWithdrawalsRouter(prisma: PrismaClient, prices?: FloorPriceSource): Router {
   const router = Router();
   // An unheld (demo-valued) request is never approved or sent, whatever the demo switches; it can be rejected.
-  const service = new WithdrawalService(prisma);
+  const service = new WithdrawalService(prisma, prices);
 
   router.get('/admin/withdrawals', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
@@ -51,7 +52,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
       const result = await service.approveWithdrawal({ withdrawalId: req.params.id, performedByAdminId: req.userId! });
       res.json(result);
     } catch (err) {
-      if (err instanceof DemoFundsNotWithdrawableError) return res.status(403).json({ error: err.message, code: err.code });
+      if (err instanceof DemoFundsNotWithdrawableError || err instanceof SyntheticProceedsLockedError) return res.status(403).json({ error: err.message, code: err.code });
       if (err instanceof WithdrawalRequestError) return res.status(400).json({ error: err.message });
       console.error(err);
       res.status(500).json({ error: 'Failed to approve withdrawal' });
@@ -72,7 +73,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
       });
       res.json(result);
     } catch (err) {
-      if (err instanceof DemoFundsNotWithdrawableError) return res.status(403).json({ error: err.message, code: err.code });
+      if (err instanceof DemoFundsNotWithdrawableError || err instanceof SyntheticProceedsLockedError) return res.status(403).json({ error: err.message, code: err.code });
       if (err instanceof WithdrawalRequestError) return res.status(400).json({ error: err.message });
       console.error(err);
       res.status(500).json({ error: 'Failed to mark withdrawal as sent' });

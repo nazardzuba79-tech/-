@@ -41,6 +41,9 @@ function withTransaction(prisma: any, opts: { balance?: any; withdrawal?: any } 
     auditLog: { create: jest.fn() },
   };
   prisma.rows = rows;
+  // Read before the transaction to find the request's owner; no simulated-sale proceeds, so no synthetic floor here.
+  prisma.withdrawal = { ...prisma.withdrawal, findUnique: tx.withdrawal.findUnique };
+  prisma.$queryRaw = jest.fn().mockResolvedValue([]);
   prisma.$transaction = jest.fn(async (fn: any) => {
     const before = new Map([...rows].map(([key, row]) => [key, { ...row }]));
     const previousWithdrawal = withdrawal ? { ...withdrawal } : null;

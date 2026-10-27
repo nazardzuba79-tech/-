@@ -5,6 +5,11 @@ on:
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/__tests__/simulationMintFence.pg.test.ts'
+      - 'src/services/__tests__/syntheticProceedsFloor.pg.test.ts'
+      - 'src/services/syntheticProceedsFloor.ts'
+      - 'src/services/WithdrawalService.ts'
+      - 'src/api/routes/withdrawals.ts'
+      - 'src/api/routes/adminWithdrawals.ts'
       - 'src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts'
       - 'src/services/PriceWatcherService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -53,6 +58,10 @@ jobs:
           src/services/testMarkets/__tests__/nrxLegacySourceProjection.test.ts
           src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
           src/services/__tests__/simulationMintFence.pg.test.ts
+          src/services/__tests__/syntheticProceedsFloor.pg.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
           src/services/testMarkets/__tests__/testMarketDepth.test.ts
           src/api/routes/__tests__/testMarkets.test.ts

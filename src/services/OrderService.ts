@@ -9,6 +9,7 @@ import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
 import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
+import { assertFloor, floorValue, isMintedListingAsset, lockFloor, prepareFloor } from './syntheticProceedsFloor';
 import { SpotBookTransaction } from './SpotBookTransaction';
 
 export type ExtendedOrderType = OrderType | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
@@ -159,12 +160,15 @@ export class OrderService {
       lockAmount = new BigNumber(0); // authoritative committed book is loaded inside the transaction
     }
 
+    // An account holding legacy simulated-sale proceeds may not order its value away (syntheticProceedsFloor).
+    const floorMarks = await prepareFloor(this.prisma, params.userId, this.priceSource);
     const placed = await SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
       // Under the Spot book lock: racing first attempts with one request ID place one order.
       if (requestOrderId) {
         const existing = await tx.order.findUnique({ where: { id: requestOrderId } });
         if (existing) return this.replayOrder(tx, existing, params);
       }
+      const floorBefore = floorMarks ? await this.floorStart(tx, params.userId, floorMarks) : undefined;
       const staged = conditional ? undefined : await session.book(params.pair);
       if (!conditional && params.type === 'MARKET' && params.side === 'BUY') {
         const bestAsk = staged!.getBook(params.pair).bestAsk()?.price;
@@ -201,6 +205,7 @@ export class OrderService {
       // waits. PriceWatcherService is what actually submits it to the
       // matching engine, via triggerOrder(), once the real price crosses.
       if (conditional) {
+        if (floorMarks) await assertFloor(tx, params.userId, floorMarks, floorBefore);
         return {
           order: {
             id: orderId,
@@ -233,7 +238,10 @@ export class OrderService {
         updatedAt: Date.now(),
       };
 
-      return this.matchAndSettle(tx, staged!, order, base, quote, lockAsset, lockAmount, params.price ?? null);
+      const settled = await this.matchAndSettle(tx, staged!, order, base, quote, lockAsset, lockAmount, params.price ?? null);
+      // Judged on the committed fills and the resting remainder at its limit, inside the same transaction.
+      if (floorMarks) await assertFloor(tx, params.userId, floorMarks, floorBefore);
+      return settled;
     });
     // After the commit, never inside it: a watcher woken before this row
     // is readable would query, find nothing and go back to sleep.
@@ -305,7 +313,8 @@ export class OrderService {
     // Default-off P0 fence: an explicitly enabled, private simulated-asset sale
     // settles proceeds ONLY in DemoBalance. It never mints spendable Spot USDT.
     // No change to normal venues or existing feature switches.
-    const simulatedAsset = isTestAssetPairOrSymbol(pair);
+    // A minted listing token is simulated even while the listing registry is cold or stale (durable allocation receipt).
+    const simulatedAsset = isTestAssetPairOrSymbol(pair) || await isMintedListingAsset(this.prisma, base);
     if (simulatedAsset && process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED !== 'true')
       throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
@@ -467,11 +476,13 @@ export class OrderService {
         ? BigNumber.maximum(params.takeProfitPrice.times(params.quantity), params.stopLimitPrice.times(params.quantity))
         : params.quantity;
 
+    const floorMarks = await prepareFloor(this.prisma, params.userId, this.priceSource);
     const oco = await SpotBookTransaction.run(this.prisma, this.engine, async tx => {
       if (ids) {
         const replay = await this.replayOco(tx, ids, params);
         if (replay) return replay;
       }
+      const floorBefore = floorMarks ? await this.floorStart(tx, params.userId, floorMarks) : undefined;
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
       const ocoGroupId = ids?.ocoGroupId ?? uuidv4();
@@ -509,6 +520,7 @@ export class OrderService {
         },
       });
 
+      if (floorMarks) await assertFloor(tx, params.userId, floorMarks, floorBefore);
       return { ocoGroupId, takeProfitOrderId: takeProfitId, stopOrderId: stopId };
     });
     // Both legs rest as PENDING_TRIGGER, so this always has work for the
@@ -611,9 +623,11 @@ export class OrderService {
     if (!candidate || candidate.userId !== userId || candidate.status !== 'PENDING_TRIGGER') return null;
     const ticker = await spotPriceSource(this.priceSource).getTicker(candidate.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger price');
+    const floorMarks = await prepareFloor(this.prisma, userId, this.priceSource);
     return SpotBookTransaction.run(this.prisma, this.engine, async tx => {
       const row = await tx.order.findUnique({ where: { id: orderId } });
       if (!row || row.userId !== userId || row.status !== 'PENDING_TRIGGER') return null;
+      const floorBefore = floorMarks ? await this.floorStart(tx, userId, floorMarks) : undefined;
 
       const effType = effectiveOrderType(row.type as ExtendedOrderType);
       const newTriggerPrice = updates.triggerPrice ?? new BigNumber(row.triggerPrice!.toString());
@@ -674,6 +688,7 @@ export class OrderService {
         }
       }
 
+      if (floorMarks) await assertFloor(tx, userId, floorMarks, floorBefore);
       return { id: row.id, triggerPrice: newTriggerPrice.toString(), price: newPrice?.toString() ?? row.price };
     });
   }
@@ -781,6 +796,12 @@ export class OrderService {
     if (!mustBeBelow && triggerPrice.isLessThanOrEqualTo(currentPrice)) {
       throw new Error(`Trigger price must be above the current price (${currentPrice.toString()})`);
     }
+  }
+
+  /** Take the account's floor lock and its value before this order changes anything. */
+  private async floorStart(tx: TxClient, userId: string, marks: Map<string, BigNumber>) {
+    await lockFloor(tx, userId);
+    return floorValue(tx, userId, marks);
   }
 
   private async lockFunds(tx: TxClient, userId: string, asset: string, amount: BigNumber) {
