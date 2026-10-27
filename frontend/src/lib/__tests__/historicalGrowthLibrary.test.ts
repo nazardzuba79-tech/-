@@ -10,7 +10,7 @@ import { resolve } from 'path';
 import { HISTORY20_CATALOG, HISTORY20_PACK, HISTORY20_ROTATION } from '../../pages/admin/historicalGrowthCatalog';
 import * as browser from '../../pages/admin/historicalGrowthModel';
 import * as server from '../../../../src/shared/listingHistoricalGrowth';
-import { importHistory20, packFiles, readZipEntries } from '../../pages/admin/historicalGrowthPack';
+import { history20OwnerModel, importHistory20, packFiles, readZipEntries, verifyHistoricalGrowthRecord } from '../../pages/admin/historicalGrowthPack';
 import { historicalGrowthProvenance, nextRotationScenario } from '../../pages/admin/ListingHistoricalGrowthPanel';
 import { newListingMovement, rebaseListingMovement, validateListingMovement } from '../../pages/admin/listingMovementModel';
 
@@ -55,6 +55,37 @@ describe('the committed History20 catalogue (metadata only)', () => {
 });
 
 describe('the browser model equals the server reference', () => {
+  test('owner policy v1 caps only the pinned MATIC research model; source, log shape, clock and old programs remain unchanged', () => {
+    const item = HISTORY20_CATALOG.find(item => item.id === 'VHX-09-MATIC')!;
+    const original = browser.buildHistoricalGrowthProgram({ scenarioId: item.id, source: { ...OHLC, asset: 'MATIC', sliceSha256: item.sourceSliceSha256 }, targetPeakGrowthPercent: '15324', rows: rows(90, true) });
+    const before = JSON.stringify(original), capped = history20OwnerModel(original);
+    expect(JSON.stringify(original)).toBe(before);
+    expect(capped.targetPeakGrowthPercent).toBe('15000');
+    expect(capped.logs).toBe(original.logs);
+    expect(capped.logsSha256).toBe(original.logsSha256);
+    expect(capped.source).toBe(original.source);
+    expect(capped.clock).toBe(original.clock);
+    expect(capped.targetNormalization).toEqual({ version: 1, method: 'LOG_AMPLITUDE_OWNER_CAP', sourceTargetPeakGrowthPercent: '15324', maxTargetPeakGrowthPercent: '15000' });
+    expect(browser.historicalGrowthMaxPrice('2', capped.targetPeakGrowthPercent)).toBe('302');
+    expect(browser.historicalGrowthAlpha(capped) / browser.historicalGrowthAlpha(original)).toBeCloseTo(Math.log(151) / Math.log(154.24), 14);
+    expect(browser.historicalGrowthDailyModel(capped, '2')).toEqual(server.historicalGrowthDailyModel(capped, '2'));
+    expect(browser.historicalGrowthProblem(capped)).toBeNull();
+    expect(() => server.validateHistoricalGrowthProgram(capped)).not.toThrow();
+    // The old research model is still readable; it is not silently rewritten in saved history.
+    expect(browser.historicalGrowthProblem(original)).toBeNull();
+    const other = browser.buildHistoricalGrowthProgram({ scenarioId: 'VHX-07-LINK', source: OHLC, targetPeakGrowthPercent: '10084', rows: rows(90, true) });
+    expect(history20OwnerModel(other)).toBe(other);
+    for (const bad of [{ ...capped, targetPeakGrowthPercent: '15324' }, { ...capped, scenarioId: 'VHX-07-LINK' },
+      { ...capped, targetNormalization: { ...capped.targetNormalization!, version: 2 } },
+      { ...capped, targetNormalization: { ...capped.targetNormalization!, ignored: true } }]) {
+      expect(browser.historicalGrowthProblem(bad as browser.HistoricalGrowthProgram)).toContain('Неверная версия');
+      expect(() => server.validateHistoricalGrowthProgram(bad as browser.HistoricalGrowthProgram)).toThrow('Неверная версия');
+    }
+    const record = { version: 1 as const, scenarioId: item.id, program: capped, parityMaxRelError: 0, scenarioFileSha256: item.scenarioFileSha256, catalogSha256: HISTORY20_PACK.catalogSha256, importedAt: '2026-10-27T00:00:00Z' };
+    expect(() => verifyHistoricalGrowthRecord(record)).not.toThrow();
+    expect(() => verifyHistoricalGrowthRecord({ ...record, program: original })).toThrow('каталогу');
+  });
+
   test.each([['OHLC', OHLC, true], ['reference', REF, false]] as const)('%s: same stored program, alpha, daily model and fold', (_label, source, ohlc) => {
     const input = { scenarioId: 'VHX-07-LINK', source, targetPeakGrowthPercent: '10084', rows: rows(90, ohlc) };
     const a = browser.buildHistoricalGrowthProgram(input), b = server.buildHistoricalGrowthProgram(input);

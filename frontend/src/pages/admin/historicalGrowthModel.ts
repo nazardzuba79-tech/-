@@ -54,6 +54,8 @@ export interface HistoricalGrowthProgram {
   rights: 'HISTORICAL_RIGHTS_UNVERIFIED';
   clock: { mode: 'REAL_TIME'; sourceStepSeconds: 86400; scenarioStepSeconds: 86400 };
   targetPeakGrowthPercent: string;
+  /** New import only; the original research trajectory and its hashes remain unchanged. */
+  targetNormalization?: { version: 1; method: 'LOG_AMPLITUDE_OWNER_CAP'; sourceTargetPeakGrowthPercent: '15324'; maxTargetPeakGrowthPercent: '15000' };
   intrabar: HistoricalGrowthIntrabar;
   logs: number[][];
   logsSha256: string;
@@ -123,6 +125,13 @@ export function historicalGrowthProblem(program: HistoricalGrowthProgram | undef
   const target = program.targetPeakGrowthPercent;
   if (!/^\d{4,5}(?:\.\d{1,2})?$/.test(target) || Number(target) < HISTORICAL_GROWTH_MIN_PEAK_PERCENT || Number(target) > HISTORICAL_GROWTH_MAX_PEAK_PERCENT)
     return 'Пик сценария должен быть от +7248% до +15324% от начальной цены';
+  const n = program.targetNormalization;
+  if (n !== undefined && (n.version !== 1 || n.method !== 'LOG_AMPLITUDE_OWNER_CAP'
+      || n.sourceTargetPeakGrowthPercent !== '15324' || n.maxTargetPeakGrowthPercent !== '15000'
+      || Object.keys(n).sort().join(',') !== 'maxTargetPeakGrowthPercent,method,sourceTargetPeakGrowthPercent,version'
+      || target !== '15000' || program.scenarioId !== 'VHX-09-MATIC' || s.asset !== 'MATIC'
+      || s.sliceSha256 !== '82ff2bd811e39eed37f01d72c3c204e46b7d9d9a7775a788c6a1710a351615eb'))
+    return 'Неверная версия нормализации цели History20';
   const rows = program.logs, width = ohlc ? 4 : 1;
   if (!Array.isArray(rows) || rows.length < 30 || rows.length > 1500) return 'Историческое окно: от 30 до 1500 суток источника';
   const first = dateMs(s.firstDate), last = dateMs(s.lastDate);

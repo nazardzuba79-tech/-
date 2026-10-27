@@ -75,6 +75,8 @@ export const historicalGrowthSchema = z.object({
   rights: z.literal('HISTORICAL_RIGHTS_UNVERIFIED'),
   clock: z.object({ mode: z.literal('REAL_TIME'), sourceStepSeconds: z.literal(86400), scenarioStepSeconds: z.literal(86400) }).strict(),
   targetPeakGrowthPercent: z.string().max(8),
+  targetNormalization: z.object({ version: z.literal(1), method: z.literal('LOG_AMPLITUDE_OWNER_CAP'),
+    sourceTargetPeakGrowthPercent: z.literal('15324'), maxTargetPeakGrowthPercent: z.literal('15000') }).strict().optional(),
   intrabar: z.enum(['LOG_LINEAR_REFERENCE_V1', 'SEEDED_OHLC_PATH_V1', 'SEEDED_BRIDGE_REFERENCE_V2', 'SEEDED_BRIDGE_OHLC_V2']),
   logs: z.array(z.array(z.number().int()).min(1).max(4)).min(30).max(1500),
   logsSha256: z.string().regex(/^[a-f0-9]{64}$/),

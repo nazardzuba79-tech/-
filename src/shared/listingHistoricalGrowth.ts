@@ -99,6 +99,8 @@ export interface HistoricalGrowthProgram {
   clock: { mode: 'REAL_TIME'; sourceStepSeconds: 86400; scenarioStepSeconds: 86400 };
   /** G, the agreed peak growth in percent (decimal text). */
   targetPeakGrowthPercent: string;
+  /** New import only; the original research trajectory and its hashes remain unchanged. */
+  targetNormalization?: { version: 1; method: 'LOG_AMPLITUDE_OWNER_CAP'; sourceTargetPeakGrowthPercent: '15324'; maxTargetPeakGrowthPercent: '15000' };
   intrabar: HistoricalGrowthIntrabar;
   /** round(ln(P/A) · 1e8) per source day: [ref] for a reference, [open, high, low, close] for OHLC. */
   logs: number[][];

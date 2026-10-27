@@ -132,6 +132,79 @@ async function loadWindows(page) {
   }
 }
 
+/** Real owner-pack acceptance; never replaced by the synthetic single-window CI fixture. */
+async function allOwnerWindows(page, width, listingAt, create) {
+  if (!zip) return;
+  report.ownerWindows ??= [];
+  for (const [index, item] of HISTORY20_CATALOG.entries()) {
+    const symbol = `VHX${String(index + 1).padStart(2, '0')}`;
+    if (create && index > 0) {
+      await page.locator('[data-create-listing]').click();
+      await page.fill('[data-field="name"]', `History20 local ${item.asset}`);
+      await page.fill('[data-field="symbol"]', symbol);
+      await page.fill('[data-field="initialPrice"]', '2');
+      await page.fill('[data-field="wallTime"]', listingAt.slice(0, 16));
+      await page.locator('[data-growth-mode-window]').check();
+    } else {
+      await page.goto(`${origin}/admin/listings`);
+      await page.locator(`[data-edit-listing="${symbol}"]`).click();
+    }
+    await page.locator(`[data-choose-history20="${item.id}"]`).click();
+    await page.locator(`[data-history20-selected="${item.id}"]`).waitFor();
+    assert.match(await page.locator('[data-history20-status]').innerText(), /Все 20 окон/);
+    const provenance = await page.locator('[data-provenance="observed"]').innerText();
+    assert.match(provenance, item.dataKind === 'daily_reference' ? /Дневного максимума и минимума в источнике нет/ : /дневные O\/H\/L\/C/);
+    if (item.id === 'VHX-09-MATIC') assert.match(await page.locator('[data-history20-normalization]').innerText(), /15324%.*15000%/);
+    const saving = page.waitForResponse(r => ['POST', 'PUT'].includes(r.request().method()) && /\/admin\/listings(?:\/[^/]+\/draft)?$/.test(new URL(r.url()).pathname));
+    await page.locator('[data-save-draft]').click();
+    const response = await saving;
+    assert.equal(response.status(), create && index > 0 ? 201 : 200);
+    const saved = await response.json();
+    await page.waitForFunction(() => document.querySelector('[data-preview]')?.disabled === false);
+    const listing = (await api('/admin/listings')).body.listings.find(listing => listing.id === saved.id);
+    const program = listing.draft.simulationProgram.historicalGrowth;
+    const target = item.id === 'VHX-09-MATIC' ? '15000' : item.targetPeakGrowthPercent;
+    assert.equal(program.targetPeakGrowthPercent, target);
+    assert.equal(program.source.sliceSha256, item.sourceSliceSha256);
+    assert.equal(program.source.dataKind, item.dataKind);
+    assert.equal(program.logs.length, item.rows);
+    assert.ok(program.logs.every(row => row.length === (item.dataKind === 'daily_reference' ? 1 : 4)));
+    assert.deepEqual(program.clock, { mode: 'REAL_TIME', sourceStepSeconds: 86400, scenarioStepSeconds: 86400 });
+    assert.equal(listing.draft.tradable, false);
+    assert.equal(listing.draft.ownerAllocation, '0');
+    assert.equal(listing.activeVersion, null);
+    assert.equal(await page.locator('[data-publish]').isDisabled(), true);
+    const before = JSON.stringify(program);
+    await page.reload();
+    await page.locator(`[data-edit-listing="${symbol}"]`).click();
+    await page.locator(`[data-history20-selected="${item.id}"]`).waitFor();
+    const reread = (await api('/admin/listings')).body.listings.find(listing => listing.id === saved.id);
+    assert.equal(JSON.stringify(reread.draft.simulationProgram.historicalGrowth), before);
+    assert.equal(reread.draft.listingAt, listing.draft.listingAt);
+    assert.equal(reread.draft.seed, listing.draft.seed);
+    await page.selectOption('[data-field="previewHorizon"]', 'first24h');
+    await page.selectOption('[data-field="previewInterval"]', '5m');
+    const pending = page.waitForResponse(r => r.url().includes('/preview?'));
+    const started = Date.now();
+    await page.locator('[data-preview]').click();
+    const previewResponse = await pending;
+    assert.equal(previewResponse.status(), 200);
+    const preview = await previewResponse.json();
+    await page.locator('[data-preview-window]').waitFor();
+    const cap = Number(listing.draft.simulationProgram.maxPrice);
+    assert.ok(preview.candles.length > 0 && preview.candles.length <= 360);
+    assert.equal(preview.candles[0].open, 2);
+    assert.ok(preview.candles.every(c => c.low > 0 && c.low <= Math.min(c.open, c.close) && c.high >= Math.max(c.open, c.close) && c.high <= cap));
+    assert.equal(preview.scenarioSummary.historicalGrowth.unit, 'SIMUSDT');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    assert.ok(overflow <= 1, `${item.id} at ${width}: overflow ${overflow}`);
+    report.ownerWindows.push({ id: item.id, width, sourceRows: program.logs.length, dataKind: program.source.dataKind, target, cap,
+      draftReload: true, realTime: true, privateOnly: true, candles: preview.candles.length, previewMs: Date.now() - started, overflow });
+    if (item.id === 'VHX-09-MATIC' || index === 19) await capture(page, `history20-${item.asset}-${width}`, '[data-historical-growth]');
+    check(`${width}px ${item.id}: actual ZIP → choice → private draft → save/reload → preview; cap ${cap}, no publication`);
+  }
+}
+
 async function acceptance() {
   // ── 1440: BotLab 01 proposal → window → durable draft → bounded previews → gates → clone → stages ──
   const { context, page } = await newPage(1440, 1000);
@@ -255,6 +328,7 @@ async function acceptance() {
   await page.locator('[data-growth-mode-stages]').check();
   await page.locator('[data-movement-editor]').waitFor();
   check('Clone into a new listing ID keeps the window; the rotation cursor advances per listing ID (next VHX-03-SOL); return to stages restores the legacy editor');
+  await allOwnerWindows(page, 1440, listingAt, true);
   await context.close();
 
   // ── 390: the saved draft on a phone, no sideways scroll ──
@@ -263,6 +337,7 @@ async function acceptance() {
   if (!zip) { await loadWindows(phone.page); await phone.page.reload(); }
   await phone.page.locator(`[data-edit-listing="VHX01"]`).click();
   await phone.page.locator('[data-history20-selected="VHX-01-BTC"]').waitFor();
+  if (zip) await loadWindows(phone.page);
   const overflow = await phone.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   assert.ok(overflow <= 1, `no sideways page scroll at 390 px (got ${overflow})`);
   await capture(phone.page, 'history20-form-390');
@@ -274,6 +349,7 @@ async function acceptance() {
   await phone.page.locator('[data-preview-window]').waitFor();
   await capture(phone.page, 'history20-preview-390', '[data-listing-preview]');
   check('390 px: saved window draft, 20 cards in one column, bounded preview, no sideways scroll');
+  await allOwnerWindows(phone.page, 390, listingAt, false);
   await phone.context.close();
 }
 

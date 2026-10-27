@@ -149,11 +149,13 @@ export async function importHistory20(files: Map<string, Uint8Array>, now = new 
         || scenario.source_volume_in_simulator !== false || Number(scenario.target_peak_growth_pct) !== Number(item.targetPeakGrowthPercent)
         || scenario.clock?.default !== 'REAL_TIME' || scenario.clock?.source_step_seconds !== 86400)
       throw new Error('Сценарий не соответствует каталогу: ' + item.id);
-    const program = buildHistoricalGrowthProgram({ scenarioId: item.id, source: sourceOf(item), targetPeakGrowthPercent: item.targetPeakGrowthPercent,
+    const research = buildHistoricalGrowthProgram({ scenarioId: item.id, source: sourceOf(item), targetPeakGrowthPercent: item.targetPeakGrowthPercent,
       rows: parseHistoricalGrowthCsv(csv, item.dataKind) });
+    // First attest the unchanged research path; only then derive the explicitly versioned owner model.
+    const program = history20OwnerModel(research);
     if (program.logs.length !== item.rows || program.source.firstDate !== item.windowStart || program.source.lastDate !== item.windowEnd)
       throw new Error('Окно источника не соответствует каталогу: ' + item.id);
-    const parity = historicalGrowthParity(program, scenario.normalized_path);
+    const parity = historicalGrowthParity(research, scenario.normalized_path);
     if (!(parity <= HISTORY20_PARITY_LIMIT)) throw new Error(`Траектория ${item.id} не воспроизводит normalized_path пакета`);
     worst = Math.max(worst, parity); rows += program.logs.length;
     records.push({ version: 1, scenarioId: item.id, program, parityMaxRelError: parity, scenarioFileSha256: item.scenarioFileSha256,
@@ -161,6 +163,19 @@ export async function importHistory20(files: Map<string, Uint8Array>, now = new 
   }
   return { records, report: { scenarios: records.length, rows, filesVerified: verified, maxParityRelError: worst,
     storedBytes: new TextEncoder().encode(JSON.stringify(records)).byteLength } };
+}
+
+/** Policy v1 applies only to new imports of the pinned MATIC source; saved drafts/history are never rewritten. */
+export function history20OwnerModel(research: HistoricalGrowthProgram): HistoricalGrowthProgram {
+  const problem = historicalGrowthProblem(research);
+  if (problem) throw new Error(problem);
+  if (research.scenarioId !== 'VHX-09-MATIC') return research;
+  const item = HISTORY20_CATALOG.find(item => item.id === research.scenarioId)!;
+  if (research.targetPeakGrowthPercent !== item.targetPeakGrowthPercent || research.source.sliceSha256 !== item.sourceSliceSha256)
+    throw new Error('Исходная цель MATIC не соответствует проверенному пакету');
+  return { ...research, targetPeakGrowthPercent: '15000', targetNormalization: {
+    version: 1, method: 'LOG_AMPLITUDE_OWNER_CAP', sourceTargetPeakGrowthPercent: '15324', maxTargetPeakGrowthPercent: '15000',
+  } };
 }
 
 /** Read a ZIP or the files of an extracted folder (webkitRelativePath) and import them. */
@@ -183,7 +198,8 @@ export async function importHistory20FromFiles(selected: readonly File[]) {
 export function verifyHistoricalGrowthRecord(record: HistoricalGrowthWindowRecord): void {
   const item = HISTORY20_CATALOG.find(i => i.id === record?.scenarioId);
   if (!item || record.version !== 1 || record.catalogSha256 !== HISTORY20_PACK.catalogSha256 || record.scenarioFileSha256 !== item.scenarioFileSha256
-      || record.program?.scenarioId !== item.id || record.program.targetPeakGrowthPercent !== item.targetPeakGrowthPercent
+      || record.program?.scenarioId !== item.id || record.program.targetPeakGrowthPercent !== (item.id === 'VHX-09-MATIC' ? '15000' : item.targetPeakGrowthPercent)
+      || (item.id === 'VHX-09-MATIC' && record.program.targetNormalization?.version !== 1)
       || record.program.source.sliceSha256 !== item.sourceSliceSha256 || !(record.parityMaxRelError <= HISTORY20_PARITY_LIMIT))
     throw new Error('Локальное окно не соответствует каталогу');
   const problem = historicalGrowthProblem(record.program);

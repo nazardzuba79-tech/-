@@ -128,6 +128,7 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
       unit: `${HISTORICAL_GROWTH_PREVIEW_UNIT} (simulation accounting unit only, not deposit currency)`,
       source_scenario_id: program.scenarioId, scenario_sha256: selected.scenarioFileSha256, initial_price: p0,
       target_peak_growth_pct: program.targetPeakGrowthPercent, max_price: historicalGrowthMaxPrice(p0, program.targetPeakGrowthPercent), price_tick: '0.0000000001', cap_rounding: 'FLOOR_TO_TICK',
+      source_research_target_peak_growth_pct: selected.targetPeakGrowthPercent, target_normalization: program.targetNormalization ?? null,
       legacy_growth_before_historical: false, legacy_after_growth_chain_enabled: false,
       clock: { mode: 'REAL_TIME', source_step_seconds: 86400, elapsed_days: s.days, proposed_120h_mode: 'INACTIVE_REQUIRES_OWNER_CONFIRMATION' },
       data_kind: program.source.dataKind, intrabar: program.intrabar, listing_at_utc: listingAt, published: false, tradable_in_ordinary_spot: false,
@@ -175,9 +176,10 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
           <dl>
             <div><dt>Данные</dt><dd>{DATA_KIND[item.dataKind]} · {item.sourceSymbol}</dd></div>
             <div><dt>Рост источника</dt><dd>{percent(item.rawPeakGrowthPercent)}</dd></div>
-            <div><dt>Цель модели</dt><dd>{percent(item.targetPeakGrowthPercent)}</dd></div>
-            <div><dt>α</dt><dd>{item.alpha.toFixed(4)}</dd></div>
-            <div><dt>Макс. просадка (close)</dt><dd>{item.rawMaxCloseDrawdownPercent}% → {item.modelMaxCloseDrawdownPercent}%</dd></div>
+            <div><dt>Цель исследования</dt><dd>{percent(item.targetPeakGrowthPercent)}</dd></div>
+            <div><dt>α исследования</dt><dd>{item.alpha.toFixed(4)}</dd></div>
+            <div><dt>Просадка исследования (close)</dt><dd>{item.rawMaxCloseDrawdownPercent}% → {item.modelMaxCloseDrawdownPercent}%</dd></div>
+            {item.id === 'VHX-09-MATIC' && <div><dt>Новая модель · политика v1</dt><dd>+15000% · форма ln(P/A) сохранена</dd></div>}
             <div><dt>Длительность</dt><dd>{days(item)} сут. реального времени</dd></div>
             <div><dt>Источник</dt><dd>{item.provider} · {item.license}</dd></div>
             <div><dt>SHA-256 среза</dt><dd><code>{item.sourceSliceSha256.slice(0, 12)}…</code></dd></div>
@@ -192,6 +194,7 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
     </div>
     {program && summary && <div className="listing-growth-selected" data-history20-selected={program.scenarioId}>
       <h4>{program.scenarioId}: вся форма окна</h4>
+      {program.targetNormalization && <p className="listing-hint" data-history20-normalization>Производная модель v{program.targetNormalization.version}: цель исследования +{program.targetNormalization.sourceTargetPeakGrowthPercent}% → предел владельца +{program.targetPeakGrowthPercent}%. Изменена только амплитуда в логарифмической шкале; исходные файлы, даты, ln(P/A) и их SHA-256 не изменены. Сохранённые ранее черновики не переписываются.</p>}
       <dl className="listing-preview-metrics" data-history20-summary>
         <div><dt>Начальная цена (P0)</dt><dd>{price(Number(p0))} {HISTORICAL_GROWTH_PREVIEW_UNIT}</dd></div>
         <div><dt>Пик модели = P0 · M</dt><dd data-history20-peak>{price(summary.peak)} {HISTORICAL_GROWTH_PREVIEW_UNIT} ({percent(program.targetPeakGrowthPercent)})</dd></div>

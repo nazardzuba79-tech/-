@@ -19,6 +19,7 @@ import { listingSimulationConfig, parseListingConfig } from '../listingConfig';
 import { listingScenarioPreview } from '../listingPreview';
 import { controlledScenarioHour } from '../../testMarkets/simulationScenarioControls';
 import { HISTORY20_CATALOG, HISTORY20_PACK, HISTORY20_ROTATION } from '../../../../frontend/src/pages/admin/historicalGrowthCatalog';
+import { importHistory20 } from '../../../../frontend/src/pages/admin/historicalGrowthPack';
 
 const DIR = process.env.HISTORY20_PACK_DIR ?? '';
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
@@ -56,6 +57,25 @@ test('the repository holds no copy of the pack\'s source slices or scenario path
 });
 
 if (DIR) describe('History20 pack (local only)', () => {
+  test('the real importer keeps the research files unchanged and caps the new MATIC model at the owner limit', async () => {
+    const files = new Map<string, Uint8Array>();
+    for (const name of ['catalog.json', ...HISTORY20_CATALOG.flatMap(item => [`data/source/${item.id}.csv`, `data/scenarios/${item.id}.json`])])
+      files.set(name, readFileSync(join(DIR, name)));
+    const { records } = await importHistory20(files);
+    expect(records).toHaveLength(20);
+    const matic = records.find(record => record.scenarioId === 'VHX-09-MATIC')!;
+    expect(matic.program.targetPeakGrowthPercent).toBe('15000');
+    expect(HISTORY20_CATALOG.find(item => item.id === matic.scenarioId)!.targetPeakGrowthPercent).toBe('15324');
+    expect(listing(matic.program).simulationProgram).toMatchObject({ maxPrice: '302', historicalGrowth: { targetNormalization: { version: 1, method: 'LOG_AMPLITUDE_OWNER_CAP' } } });
+    for (const record of records) {
+      const research = build(HISTORY20_CATALOG.find(item => item.id === record.scenarioId)!);
+      expect(record.program.logs).toEqual(research.logs);
+      expect(record.program.logsSha256).toBe(research.logsSha256);
+      expect(record.program.clock).toEqual(research.clock);
+      expect(listing(record.program).tradable).toBe(false);
+    }
+  });
+
   test('the committed metadata identifies exactly the pack files', () => {
     expect(existsSync(join(DIR, 'catalog.json'))).toBe(true);
     expect(sha(readFileSync(join(DIR, 'catalog.json')))).toBe(HISTORY20_PACK.catalogSha256);
