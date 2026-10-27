@@ -24,7 +24,7 @@ function fakeDb(roles: Record<string, string> = {}) {
     rows,
     inserts: 0,
     session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.slice(2), revokedAt: null, lastSeenAt: new Date() })) },
-    user: { findUnique: jest.fn(async ({ where }: any) => ({ role: roles[where.id] ?? 'USER' })) },
+    user: { findUnique: jest.fn(async ({ where }: any) => ({ role: roles[where.id] ?? 'USER', email: `${where.id}@example.invalid` })) },
     deposit: new Proxy({}, { get: forbidden }),
     balance: new Proxy({}, { get: forbidden }),
     depositClaim: new Proxy({}, { get: forbidden }),
@@ -95,6 +95,7 @@ describe('POST /deposit-address-copies', () => {
     ['markup in the address', { address: `${TRON}<script>` }],
     ['a source outside the list', { source: 'https://evil.example/x' }],
     ['an amount', { amount: '500' }],
+    ['a forged email', { email: 'another@example.invalid' }],
     ['a TXID', { txHash: 'a'.repeat(64) }],
     ['a non-UUID event ID', { eventId: 'x' }],
   ])('refuses %s', async (_name, over) => {
@@ -125,7 +126,8 @@ describe('POST /deposit-address-copies', () => {
     }));
     expect(notifyCopy.mock.calls[0][0]).not.toHaveProperty('address');
     expect(notifyCopy.mock.calls[0][0]).not.toHaveProperty('userId');
-    expect(notifyCopy.mock.calls[0][0]).not.toHaveProperty('email');
+    expect(notifyCopy.mock.calls[0][0].email).toBe(`${U1}@example.invalid`);
+    expect(notifyCopy.mock.calls[1][0].email).toBe(`${U2}@example.invalid`);
   });
 
   it('a Telegram outage cannot fail the saved copy or trigger any financial operation', async () => {
@@ -135,6 +137,16 @@ describe('POST /deposit-address-copies', () => {
     expect(result.status).toBe(201);
     expect(db.inserts).toBe(1);
     expect(rejected).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failed email lookup preserves the saved event and the existing coin/network alert', async () => {
+    const db = fakeDb();
+    db.user.findUnique.mockRejectedValueOnce(new Error('synthetic lookup failure'));
+    const result = await request(app(db)).post('/api/v1/deposit-address-copies').set('Authorization', auth(U1)).send(event());
+    expect(result.status).toBe(201);
+    expect(db.inserts).toBe(1);
+    expect(notifyCopy).toHaveBeenCalledTimes(1);
+    expect(notifyCopy.mock.calls[0][0]).toMatchObject({ asset: 'USDT', network: 'tron', email: undefined });
   });
 
   it('keeps a plausible device time and drops an implausible one', async () => {
@@ -174,6 +186,27 @@ describe('POST /deposit-address-copies', () => {
 });
 
 describe('GET /admin/deposit-address-copies', () => {
+  it('counts the global unresolved queue for admins only, without returning identities or writing finances', async () => {
+    const db = fakeDb({ [U2]: 'ADMIN' });
+    const endpoint = '/api/v1/admin/deposit-address-copies?countOnly=true';
+    expect((await request(app(db)).get(endpoint)).status).toBe(401);
+    expect((await request(app(db)).get(endpoint).set('Authorization', auth(U1))).status).toBe(403);
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+    for (const count of [0n, 1n, 37n]) {
+      db.$queryRaw.mockResolvedValueOnce([{ count }]);
+      const response = await request(app(db)).get(endpoint).set('Authorization', auth(U2));
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ pendingCount: Number(count) });
+      expect(response.headers['cache-control']).toBe('private, no-store');
+      const sql = db.$queryRaw.mock.calls.at(-1)[0];
+      expect(sql.join('?')).toContain('SELECT COUNT(*)');
+      const predicate = db.$queryRaw.mock.calls.at(-1)[1];
+      expect(predicate.text).toContain('NOT EXISTS');
+      expect(predicate.text).toContain('deposit-copy-resolution:');
+    }
+    expect(db.inserts).toBe(0);
+  });
+
   it('lists only unresolved operational signals so credited/ignored copies cannot reappear after refresh', () => {
     const source = require('fs').readFileSync(require('path').resolve(__dirname, '../depositAddressCopies.ts'), 'utf8');
     expect(source).toContain("const where: Prisma.Sql[] = [unresolvedCopy]");

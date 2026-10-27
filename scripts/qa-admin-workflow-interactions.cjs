@@ -7,7 +7,15 @@ exports.run = async ({ origin, out, state }) => {
   const browser = await chromium.launch({ channel: process.env.QA_BROWSER || 'msedge', headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const checks = [], errors = [];
-  await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+  let delayCopyCount = false;
+  await context.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.origin !== origin) return route.abort();
+    if (delayCopyCount && url.pathname === '/api/v1/admin/deposit-address-copies' && url.searchParams.get('countOnly') === 'true') {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+    }
+    return route.continue();
+  });
   if (context.routeWebSocket) await context.routeWebSocket('**/*', socket => socket.close());
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   const check = (name, condition) => { assert(condition, name); checks.push(name); console.log('PASS', name); };
@@ -38,8 +46,13 @@ exports.run = async ({ origin, out, state }) => {
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const mobilePosition = await page.evaluate(() => window.scrollY);
     assert(mobilePosition > 0, 'fixture has a genuinely scrolled mobile list');
+    delayCopyCount = true;
     await mobileOpen.click(); await page.locator('.admin-back').click();
     await page.waitForFunction(top => Math.abs(window.scrollY - top) <= 1, mobilePosition);
+    await page.locator('[data-copy-tab-count]').waitFor();
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    check('Delayed copy-count badge does not shift the restored mobile list', Math.abs(await page.evaluate(() => window.scrollY) - mobilePosition) <= 1);
+    delayCopyCount = false;
     check('Profile return restores mobile window after data renders', Math.abs(await page.evaluate(() => window.scrollY) - mobilePosition) <= 1);
     await page.setViewportSize({ width: 1440, height: 900 });
     await users();

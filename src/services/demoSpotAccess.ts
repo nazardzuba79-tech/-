@@ -21,21 +21,10 @@ export type DemoSpotRole = 'admin' | 'trader';
 export const demoSpotEnabled = (env: NodeJS.ProcessEnv = process.env) => env.DEMO_SPOT_ENABLED === 'true';
 
 /**
- * The demo-funds withdrawal guard. A Cross trading account (the pinned owner,
- * PRIVATE_TRADING_TEST_USER_IDS) is valued from the native demo ledger, and on
- * main it may file an unheld withdrawal request (`balanceHeld: false`) that an
- * admin then approves and pays by hand. With the guard on, such an account
- * files nothing (`/withdrawals/options` lists nothing, `POST /withdrawals` is
- * 403), and no unheld request — including PENDING/APPROVED ones filed before —
- * can be approved or marked sent; it can still be rejected. Nothing is
- * cancelled or rewritten automatically.
- *
- * Off by default: with every demo feature off, withdrawals behave exactly as on
- * main. Its own switch is `DEMO_WITHDRAWAL_GUARD_ENABLED=true`, and it is
- * forced on — it cannot be switched off — while `DEMO_SPOT_ENABLED` or
- * `DEMO_LIQUIDITY_ENABLED` is on, because both let demo funds change by
- * trading: demo funds traded here never become a payable claim. Requests that
- * hold `Balance` are never affected.
+ * Whether the demo-funds guard switches are on: `DEMO_WITHDRAWAL_GUARD_ENABLED=true`, or forced by `DEMO_SPOT_ENABLED`
+ * or `DEMO_LIQUIDITY_ENABLED`. It no longer decides any withdrawal: since Issue #617 a demo-valued (unheld) request is
+ * refused permanently by WithdrawalService and the withdrawal routes — never filed, approved or marked sent, whatever
+ * these switches say, including requests filed before. Kept as a configuration signal for code that reports it.
  */
 export const demoWithdrawalGuardEnabled = (env: NodeJS.ProcessEnv = process.env) =>
   env.DEMO_WITHDRAWAL_GUARD_ENABLED === 'true' || demoSpotEnabled(env) || env.DEMO_LIQUIDITY_ENABLED === 'true';
