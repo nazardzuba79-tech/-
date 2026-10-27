@@ -77,6 +77,8 @@ jobs:
           src/services/listings/__tests__/tradingGates.test.ts
           src/services/listings/__tests__/listingCountdown.test.ts
           src/services/listings/__tests__/tyvnDraft.test.ts
+          src/services/listings/__tests__/eclvDraft.test.ts
+          src/services/listings/__tests__/qvtrDraft.test.ts
           src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
