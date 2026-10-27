@@ -123,3 +123,10 @@ The owner requested preserving NRX MARKET SELL without turning model-priced proc
 The dedicated disposable PostgreSQL suite additionally proves a filled NRX synthetic sale, unchanged real USDT supply, unchanged real USDT withdrawal allowance, one-time credit after retry/restart, and insufficient-inventory rollback. The existing OFF-gate regressions stay in place.
 
 **Release limitation:** The demo proceeds need explicit portfolio UI labeling before any customer-facing activation. This branch does not enable the flag or deploy. It does not remove the separately documented real-orderbook risk (P0-3) from unbacked/mispriced listing tokens, nor the legacy minted USDT. Both require distinct reconciliation and settlement analysis; do not claim global financial go-live.
+
+**Claude review of the follow-up (27 October, on `55948fd2`, which already contains main `521f2419`):**
+- **Logic:** OFF keeps the refusal. ON debits the asset and credits only `DemoBalance` in the same transaction. Demo Spot admission still requires an admin demo credit (`DEMO_BALANCE_ADJUSTED`), so a sale credit admits nobody.
+- **Typecheck:** `decimalPlaces()` is nullable, so `1a886a49` failed backend `tsc`. `55948fd2` (owner's account) fixed it the same way this review did: unknown precision is too precise (refusal).
+- **Fixed — test type:** the retry test read `replayed` on a union type; it now narrows with `'replayed' in`.
+- **Fixed — test isolation:** the opt-in tests left `DemoBalance` rows behind. `nrxSpot.pg` shares the database and expects none, so it failed whenever it ran after this suite. The suite now removes its own rows.
+- **Added:** an opt-in concurrency case. Four parallel 2000-NRX sales against 6250: at most three fill, NRX is never oversold, the demo credit equals the filled sales, and real USDT is unchanged.

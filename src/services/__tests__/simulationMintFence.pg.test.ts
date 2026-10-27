@@ -58,6 +58,8 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
     delete process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED;
     delete process.env.PRIVATE_TRADING_TEST_USER_IDS;
     await db.auditLog.deleteMany({ where: { userId: { in: users } } });
+    // The opt-in sales credit DemoBalance; nrxSpot.pg shares this database and expects no DemoBalance row at all.
+    await db.demoBalance.deleteMany({ where: { userId: { in: users } } });
   });
   afterAll(async () => { await db.$disconnect(); }); // whole disposable cluster is removed by the runner
 
@@ -147,6 +149,24 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
     expect(await synthetic(owner)).toEqual({ trades: 1, audits: 1 });
     const credit = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
     expect(credit?.available.toString()).toBe(new BigNumber(first.trades[0].price.toString()).times('5').toFixed());
+  });
+
+  test('opt-in under concurrent sales: NRX is never oversold and every demo credit matches a filled sale', async () => {
+    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
+    await allocateNrxOwner(db, owner);
+    const realBefore = await usdtSupply();
+    // 4 × 2000 against 6250 allocated: at most three can fill.
+    const outcomes = await Promise.allSettled([sell(owner, '2000'), sell(owner, '2000'), sell(owner, '2000'), sell(owner, '2000')]);
+    const filled = outcomes.flatMap(o => (o.status === 'fulfilled' ? [o.value] : []));
+    expect(filled.length).toBeGreaterThanOrEqual(1);
+    expect(filled.length).toBeLessThanOrEqual(3);
+    const expectedDemo = filled.reduce((sum, f) => sum.plus(new BigNumber(f.trades[0].price.toString()).times('2000')), new BigNumber(0));
+    const demo = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
+    expect(demo?.available.toString()).toBe(expectedDemo.toFixed());
+    expect(await balance(owner, 'NRX')).toEqual([new BigNumber('6250').minus(2000 * filled.length).toFixed(), '0']);
+    expect(await synthetic(owner)).toEqual({ trades: filled.length, audits: filled.length });
+    expect(await usdtSupply()).toBe(realBefore);
+    expect(await balance(owner, 'USDT')).toEqual(['1000', '0']);
   });
 
   test('opt-in still rejects insufficient NRX without creating a demo credit', async () => {
