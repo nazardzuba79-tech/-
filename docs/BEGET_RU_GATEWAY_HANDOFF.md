@@ -49,3 +49,24 @@ This performs only public GETs to the gateway's homepage, login/trade/futures de
 - Existing Beget server/site/domain/IP, current reverse proxy configuration, SSL and plan cost were **not visible from the two available browser pages**.
 - No authenticated Beget configuration write/SSH mechanism exists in Chat-mode tools. Use ChatGPT **Work mode** for browser panel interaction, or an explicitly authorized terminal integration.
 - No real Russian probe or verified entry URL was available. Geographic accessibility, function coverage, maintenance cost, and upstream policy/legal compatibility therefore remain **unverified**.
+
+
+## 27 October continuation — actual origin and bounded diagnosis
+
+Owner-confirmed origin: **https://ru.voltextech.net**. The owner personally completed KYC there on 27 October; this observation is accepted and the current voltex-kyc-edge release is deliberately untouched.
+
+- Actual existing CLI probe could not connect from this Windows environment. One bounded diagnostic identified **UND_ERR_CONNECT_TIMEOUT** to the origin's TCP443; ordinary isolated Chromium navigation also timed out at 1440. Mobile390, authenticated login/logout, deposit addresses, withdrawal statuses, Telegram/support submissions and WebSocket updates are **NOT_RUN**, not PASS. No claim is made about failure for Russian customers, and no Russian ISP/ASN proof was obtained. No VPN, alternate IP, TLS bypass, credential or write was used.
+- Corrected two real preflight defects: /api/v1/pairs is not a current route (now the source-defined /api/v1/market/external/symbols); JSON parse alone accepted HTTP200 error bodies. Strict symbol/ticker/candle/catalogue envelopes now prevent that false PASS. Added register/wallet app-shell checks, response budgets, cause codes and immediate stop after an unreachable origin. Corrected live result: **1 request / 0 response bytes**, homepage FAIL with cause; remaining9 probes explicitly NOT_RUN.
+- **7/7 offline Node22.23.3 CLI tests PASS**, no external request. The error-JSON regression was RED (actual PASS instead of expected FAIL) on the original CLI and GREEN after the fix. Tests also cover redirects, absent assets, oversized responses, invalid/credential-bearing origins and no repeated connect attempts. New PR-only workflow runs these fixtures only; no production endpoint, secret, deployment or dispatch.
+
+### Residual trust risk and a concrete optional solution (NOT applied)
+
+An L7/TLS-terminating provider can replace HTML/JS or a deposit address and can observe credentials sent through that origin. Blocking /admin alone cannot prevent a user typing an administrator's password into a login page controlled by that provider. Browser-side signature verification/SRI served by the same provider is not an independent end-to-end trust anchor. The actual Beget TLS termination/key location and admin-path restrictions remain NOT_VERIFIED.
+
+A candidate stronger design, only if the existing Beget resource supports it: **TCP443/TLS passthrough** to a fixed Hetzner ingress, with certificate/private key and ACME account exclusively outside Beget; DNS remains owner-controlled outside Beget. TLS terminates on the owner-controlled Hetzner Nginx virtual host for ru.voltextech.net. Only that ingress routes the approved frontend artifact, API/market/WebSocket and existing KYC Worker paths. No DB, admin credentials, TLS key, OAuth token or arbitrary upstream is installed on Beget. It can still deny service/observe connection metadata. This requires validation of the real hosting capability and existing frontend's API/Worker origins; it is not an assertion about today's deployment.
+
+Protect future certificate issuance too: CAA issuer restriction plus **validationmethods=dns-01** and **accounturi** for an owner-controlled ACME account (including wildcard policy); no HTTP-01/TLS-ALPN validation on the provider's IP, and no DNS/ACME credential there. Review inheritance/CNAMEs, renewal and current certificates before any separately approved change. These controls reduce the provider's ability to obtain a replacement valid certificate; they are not immunity to CA/DNS/browser compromise. If only shared L7 hosting is available, this guarantee is unavailable there; use an already owned capable transport or independent out-of-band address verification. No new paid resource is proposed or purchased.
+
+Official technical references: [Nginx ssl_preread without TLS termination](https://nginx.org/en/docs/stream/ngx_stream_ssl_preread_module.html), [Let's Encrypt CAA validationmethods/accounturi](https://letsencrypt.org/docs/caa/). No TLS, CAA, DNS, Nginx, KYC or production setting has been changed.
+
+Next runtime step requires a reachable approved probe (ideally documented Russian ISP) and read-only inspection of the existing gateway configuration. Do not mark authenticated or financial flows complete from public HTML200 or the owner's separate KYC result.
