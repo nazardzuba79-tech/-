@@ -14,16 +14,27 @@ import { listingStoreFromEnvironment, UnconfiguredListingStore, type ListingStor
 import { aithLeaseDeadline, isAith, validAithLease } from '../../shared/aithPublication';
 
 export const REFRESH_MS = 60_000;
+/** A snapshot older than this (no successful read since) no longer tells which pairs are managed listings. */
+export const STALE_MS = 2 * REFRESH_MS;
 
 export class ManagedListingRegistry {
   private listings: PublishedListing[] = [];
   private attemptedAt: number | null = null;
+  private loadedAt: number | null = null;
   private inFlight: Promise<void> | null = null;
   private aithValidUntil = 0;
 
   constructor(private readonly store: ListingStore, private readonly clock: () => number = Date.now) {}
 
   get configured(): boolean { return !(this.store instanceof UnconfiguredListingStore); }
+
+  /**
+   * Whether Render currently knows the published listings: no store is
+   * configured, or a read succeeded within STALE_MS. Before the first read
+   * (cold start), after failed reads or on a stale snapshot it does not, and
+   * an unknown pair may then be a Worker-only managed listing.
+   */
+  resolved(): boolean { return !this.configured || (this.loadedAt !== null && this.clock() - this.loadedAt < STALE_MS); }
 
   snapshot(): readonly PublishedListing[] { return this.listings.filter(item => !isAith(item.config.symbol) || this.clock() < this.aithValidUntil); }
 
@@ -49,6 +60,7 @@ export class ManagedListingRegistry {
         this.listings = published.listings.filter(item => !isAith(item.config.symbol) || this.clock() < this.aithValidUntil);
         // Staged and paused listings arrive unarmed: known (restricted) everywhere, open nowhere.
         setManagedListingAssets(this.listings.map(publishedListingAsset), this.aithValidUntil);
+        this.loadedAt = this.clock();
       })
       .catch(() => {
         // AITH must never fall back to an unfenced publication; other markets retain their existing policy.

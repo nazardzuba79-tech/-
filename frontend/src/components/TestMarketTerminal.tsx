@@ -38,6 +38,8 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
   const counting = preListing && asset?.listingArmed === true && Number.isFinite(listingAt);
   const now = useServerNow(clockOffsetMs, counting);
   const presentation = asset ? testMarketPresentation(asset, now) : null;
+  // Private History20 provenance only; public managed listing presentation stays unchanged.
+  const privateModelLabel = asset?.provenanceLabel;
   const reachedRef = useRef(false);
   const left = counting ? listingAt - now : NaN;
 
@@ -59,6 +61,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
       tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} chartSettings />;
     return <div className="managed-demo-chart">
       {error && <div className="managed-demo-status" role="alert">{t('listing.dataStale')}</div>}
+      {privateModelLabel && <div className="managed-demo-status" role="status" data-private-provenance>{privateModelLabel}</div>}
       {chart}
     </div>;
   }
@@ -87,6 +90,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
         </div>
         <h2 className="vta-prelisting-name">{name}</h2>
         <div className="vta-prelisting-pair">{pair}</div>
+        {privateModelLabel && <p className="vta-prelisting-when" data-private-provenance>{privateModelLabel}</p>}
         {error && asset && <p role="alert">{t('listing.dataStale')}</p>}
         {asset ? (
           <>
