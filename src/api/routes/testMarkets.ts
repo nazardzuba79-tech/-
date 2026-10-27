@@ -23,13 +23,16 @@ import {
  */
 export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.ProcessEnv = process.env): Router {
   const router = Router();
-  // NRX public reads belong to the edge. This is a redirect, not a Render
-  // generation/proxy fallback. The original VTA endpoints remain unchanged.
+  // Retirement covers stale clients and encoded aliases, before venue fallback.
+  // Private balances/history/cancel routes do not pass through this public gate.
   router.use((req, res, next) => {
-    const publicMarketPath = /^\/(?:market\/(?:test-assets|external|display|ticker)\/|orderbook\/)/.test(req.path);
-    if (['GET', 'HEAD'].includes(req.method) && publicMarketPath && req.path.toUpperCase().includes('NRX')) {
+    let path = req.path;
+    try { path = decodeURIComponent(path); } catch { /* Express rejects invalid encodings later. */ }
+    const marketPath = /^\/(?:market(?:\/|$)|orderbook\/)/i.test(path);
+    const target = [path, req.query.pair, req.query.symbol].filter(v => typeof v === 'string').join(' ').toUpperCase();
+    if (marketPath && target.includes('NRX')) {
       res.setHeader('Cache-Control', 'no-store');
-      return res.redirect(307, `https://market.voltextech.net${req.url}`);
+      return res.status(410).json({ error: 'market_retired', symbol: 'NRX' });
     }
     next();
   });

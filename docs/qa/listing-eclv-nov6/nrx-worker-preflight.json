@@ -1,0 +1,10 @@
+{
+  "baseSha256": "4d8db75dd4335bc03ffdb73cf6bcb4eb6b1ee6e4d729dcb559b9fdd4b6945199",
+  "newSha256": "e06b9d40c6e543cd4e467ee1f227b3f56ee1ee0b768f75904fa5cde650f8ec2e",
+  "patches": [
+    "nrxPublicResponse",
+    "simulationStatusRetirement"
+  ],
+  "preservesEclvAndDelete": true,
+  "productionWrite": false
+}
