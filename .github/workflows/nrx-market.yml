@@ -6,6 +6,7 @@ on:
       - 'src/services/OrderService.ts'
       - 'src/services/__tests__/simulationMintFence.pg.test.ts'
       - 'src/services/__tests__/syntheticProceedsFloor.pg.test.ts'
+      - 'src/services/__tests__/demoReleaseOff.test.ts'
       - 'src/services/syntheticProceedsFloor.ts'
       - 'src/services/WithdrawalService.ts'
       - 'src/api/routes/withdrawals.ts'
@@ -60,6 +61,7 @@ jobs:
           src/services/__tests__/simulationMintFence.pg.test.ts
           src/services/__tests__/syntheticProceedsFloor.pg.test.ts
           src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/demoReleaseOff.test.ts
           src/api/routes/__tests__/withdrawals.test.ts
           src/api/routes/__tests__/adminWithdrawals.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
