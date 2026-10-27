@@ -141,7 +141,7 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
     service = new OrderService(db, new MatchingEngine(), source);
     const second = await place();
     expect(second.order.id).toBe(first.order.id);
-    expect(second.replayed).toBe(true);
+    expect('replayed' in second && second.replayed).toBe(true);
     expect(await balance(owner, 'NRX')).toEqual(['6245', '0']);
     expect(await usdtSupply()).toBe(realBefore);
     expect(await synthetic(owner)).toEqual({ trades: 1, audits: 1 });
