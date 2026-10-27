@@ -9,6 +9,8 @@ test('both pins name the same runtime commit; only the process topology differs'
   assert.equal(after.RC, before.RC, 'exact-head comparison: same runtime in both kinds');
   assert.equal(before.TOPOLOGY, 'single-process');
   assert.equal(after.TOPOLOGY, 'separated');
+  assert.equal(before.STOCKS_NICE, undefined, 'one process: nothing to weight');
+  assert.equal(after.STOCKS_NICE, 10, 'separated: the Stocks processes run with a lower CPU weight than the crypto API');
   const runner = fs.readFileSync(path.join(__dirname, 'diagnostic-run-613.cjs'), 'utf8');
   assert.match(runner, /require\(AFTER\?'\.\/policy-613-after\.cjs':'\.\/policy-613\.cjs'\)/);
   assert.match(runner, /TOPOLOGY_MISMATCH_/);
@@ -29,6 +31,8 @@ test('the API worker refuses an unknown topology or arm before loading any runti
   const replies = await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology: 'shared-cpu', arm: 'mixed'}}]);
   assert.deepEqual(replies, ['TOPOLOGY_OR_ARM_UNKNOWN']);
   assert.deepEqual(await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology: 'separated', arm: 'warmup'}}]), ['TOPOLOGY_OR_ARM_UNKNOWN']);
+  for (const [topology, stocksNice] of [['separated', 25], ['separated', -5], ['separated', undefined], ['single-process', 10]])
+    assert.deepEqual(await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology, arm: 'mixed', stocksNice}}]), ['STOCKS_NICE_INVALID'], topology + ' ' + stocksNice);
 });
 
 test('a Stocks worker takes one known role, loopback-only endpoints and complete shared material', async () => {

@@ -24,6 +24,9 @@ function fork(role,arm){
  const env={};for(const k of ['PATH','SystemRoot','WINDIR','TEMP','TMP','HOME','LANG','PRISMA_HIDE_UPDATE_MESSAGE','CHECKPOINT_DISABLE','TS_NODE_CACHE','RC50_RUN_ROOT','NODE_PATH'])if(process.env[k])env[k]=process.env[k];
  const child=cp.fork(path.join(__dirname,'stocks-worker.cjs'),[],{cwd:configuration.root,env,execArgv:['--max-old-space-size=384','--require',path.join(__dirname,'network-guard.cjs')],windowsHide:true,stdio:['ignore',stdout,stderr,'ipc']});
  fs.closeSync(stdout);fs.closeSync(stderr);
+ // The pin's deployable scheduling control: a lower CPU weight for the Stocks processes than for the crypto API
+ // (the release sets the same relation with cpu_shares). It takes no CPU from or adds none to the shared taskset.
+ if(configuration.stocksNice)require('node:os').setPriority(child.pid,configuration.stocksNice);
  let next=0;const waiting=new Map();
  child.on('message',m=>{const p=waiting.get(m.id);if(!p)return;waiting.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(m.error)):p.resolve(m.value);});
  child.on('exit',code=>{for(const p of waiting.values()){clearTimeout(p.timer);p.reject(Error('STOCKS_'+role.toUpperCase()+'_EXIT_'+code));}waiting.clear();});
@@ -39,6 +42,7 @@ function fork(role,arm){
 async function initialize(c){
  configuration=c;database(c.dbUrl,c.dbName);
  if(!TOPOLOGIES.includes(c.topology)||!/^(qualification|baseline|mixed)$/.test(c.arm))throw Error('TOPOLOGY_OR_ARM_UNKNOWN');
+ if(c.stocksNice!==0&&!(c.topology==='separated'&&Number.isInteger(c.stocksNice)&&c.stocksNice>=1&&c.stocksNice<=19))throw Error('STOCKS_NICE_INVALID');
  const cp=require('node:child_process'),exec=cp.execFileSync;cp.execFileSync=(file,argv,options={})=>exec(file,argv,{...options,windowsHide:true});
  const root=fs.realpathSync(c.root),generated=fs.realpathSync(c.generatedClient);
  if(!generated.startsWith(fs.realpathSync(c.runRoot)+path.sep))throw Error('OWN_GENERATED_CLIENT_REQUIRED');
@@ -117,14 +121,15 @@ async function qualification(){
   const probe=await fetch(f.apiOrigin+'/api/v1/stocks-test-cash/identity',{headers:{authorization:'Bearer '+f.tokens[0]}});assert.equal(probe.status,404);await probe.text();
   const [a,g]=await Promise.all([stocks.authority.rpc('metrics'),stocks.gateway.rpc('metrics')]);
   assert.ok(new Set([process.pid,a.pid,g.pid]).size===3&&a.role==='authority'&&g.role==='gateway');
-  separated={apiServesStocksAuthority:false,processes:3};
+  assert.ok(a.nice===configuration.stocksNice&&g.nice===configuration.stocksNice&&require('node:os').getPriority()===0,'STOCKS_NICE_NOT_APPLIED');
+  separated={apiServesStocksAuthority:false,processes:3,stocksNice:configuration.stocksNice};
  }
  return{status:'PASS_WIRING_QUALIFICATION_ONLY',topology:configuration.topology,separated,realCryptoHttp:true,realStocksHttp:true,viewerDeny:true,cashRoundTrip:true,full50Plus2Runs:0};
 }
 // cpu, memory and loop stay this (crypto API) process's own, so 'API CPU' means the same in both topologies;
 // 'processes' adds every process of the topology, and network sums every process's egress fence.
 async function metrics(){
- const own={pid:process.pid,cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),network:global.__rc50Network};
+ const own={pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),network:global.__rc50Network};
  if(configuration.topology!=='separated')return{...own,quote:f.gateway.quoteMetrics(),account:f.gateway.accountMetrics(),market:{...market.snapshot(),starts:market.starts.map(x=>({host:x.host,kind:x.kind}))},topology:configuration.topology,processes:{api:own}};
  const [a,g]=await Promise.all([stocks.authority.rpc('metrics'),stocks.gateway.rpc('metrics')]);
  return{...own,quote:g.quote,account:g.account,market:g.market,network:{blocked:own.network.blocked+a.network.blocked+g.network.blocked},topology:configuration.topology,processes:{api:own,stocksAuthority:a,stocksGateway:g}};

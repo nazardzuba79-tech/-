@@ -60,7 +60,7 @@ async function gateway(c){
  return{role,pid:process.pid,port:state.gateway.port};
 }
 function metrics(){
- const value={role,pid:process.pid,cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),network:global.__rc50Network};
+ const value={role,pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),network:global.__rc50Network};
  if(role==='gateway')Object.assign(value,{quote:state.gateway.quoteMetrics(),account:state.gateway.accountMetrics(),market:{...state.market.snapshot(),starts:state.market.starts.map(x=>({host:x.host,kind:x.kind}))}});
  return value;
 }

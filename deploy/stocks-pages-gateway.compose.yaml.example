@@ -19,6 +19,9 @@ services:
     security_opt: [no-new-privileges:true]
     # Provisional review budget, NOT a passed 50+2 capacity claim.
     cpus: '0.25'
+    # Scheduling control: about a tenth of the API's CPU weight (Docker default
+    # 1024) under contention, as the 50+2 'after' pin's nice 10.
+    cpu_shares: 102
     mem_limit: 256m
     pids_limit: 64
     tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
@@ -46,6 +49,8 @@ services:
     security_opt: [no-new-privileges:true]
     # Provisional review budget, NOT a passed 50+2 capacity claim.
     cpus: '0.25'
+    # Same scheduling control as the authority above.
+    cpu_shares: 102
     mem_limit: 256m
     pids_limit: 64
     tmpfs: [/tmp:rw,noexec,nosuid,size=16m]

@@ -7436,3 +7436,16 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - **Local smoke runs:** not evidence; the host was loaded by other sessions, load average about 6. Both topologies qualified and completed. Separated: +22…+32 % (once +75 % under load). Single process: +85…+147 %. Nice 10 on the Stocks processes made no local difference.
 - **Not claimed:** the CI result (below, once terminal). `allRecordedPidsStopped` is false locally only because this container does not reap the postmaster promptly (zombie); this was seen in both topologies.
 - **Known limit, unchanged:** the gateway calls identity on every request. 50 viewers at 1 Hz make about 3,000 calls/min, against a private quota of 120–240/min. Neither 50+2 arm mounts that quota.
+- **Merge:** main `e27117a6` (#627 referral links, frontend only) merged in as `f06e7fa9`. The PR was conflicted (`dirty`) and no PR workflow ran on `ee1cd7f2`. Only this file conflicted; both sides kept. Frontend `tsc` PASS. The benchmarked runtime equals `5d69057d`.
+- **Round 1 result (separated, no CPU weight):** [run 40510632557](https://github.com/nazardzuba79-tech/-/actions/runs/40510632557) on `f06e7fa9`, artifact 12738650014 (zip SHA256 `600e612e…440b9d`). Collection COMPLETE 8/8; both pins `DIAGNOSTIC_P95_FAIL`.
+
+  | Pin | Pooled Δp95 | Median run Δp95 | Crypto API CPU base → mixed (ms) |
+  |---|---|---|---|
+  | one process | +21.2 % | +42.8 % | 1838 → 5848 |
+  | separated | +57.7 % | +59.3 % | 1721 → 1929 |
+
+  - The `before-1` baseline has a 55 ms p95 outlier, which lowers the pooled one-process figure.
+  - Separated: crypto API ELU 0.05; server-side crypto p95 9 → 15 ms; client−server gap 1.6 → 2.1 ms.
+  - Separated mixed CPU per window (ms): authority 2280, gateway 2634, driver 1878, PostgreSQL 675.
+  - Financial invariants 0 in all 16 arms.
+- **Round 2 (this push):** the `after` pin adds the release's scheduling control: both Stocks processes at nice 10, `cpu_shares: 102` in the compose example. Runtime pin unchanged. `report.cpu` records the allowed CPUs and their SMT siblings (report only). Harness 55/55 locally.

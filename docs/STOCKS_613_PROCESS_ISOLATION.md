@@ -55,6 +55,16 @@ command; neither Dockerfile changes.
    authority (bindings, schema, issuer, principals digest) before it listens.
 3. Rollback: stop the gateway and the authority. The crypto API is not touched.
 
+## Scheduling control
+
+Both Stocks services run with a lower CPU weight than the crypto API:
+`cpu_shares: 102` against Docker's default 1024 (about a tenth under contention;
+on cgroup v2 Docker converts shares to `cpu.weight`). Outside Docker the same
+relation is `Nice=10` (or `CPUWeight=10` against the API's default 100) in the
+service units. It reserves nothing, takes no CPU away when the host is idle and
+adds nothing to the budget. The 50+2 `after` pin applies it as nice 10 on both
+Stocks processes.
+
 ## Resources
 
 Same host and no new server. One more Node process for the authority; its own
@@ -74,6 +84,38 @@ process (driver, crypto API, authority, gateway, PostgreSQL) stays inside the sa
 - 50+2 paired diagnostic: `policy-613.cjs` runs the runtime as one process,
   `policy-613-after.cjs` runs the same runtime separated
   (`scripts/qa/stocks-rc-50plus2/README.txt`). Results: `docs/AI_HANDOFF.md`.
+
+### Round 1 (separated, no CPU weight): run 40510632557 on `f06e7fa9`
+
+Collection COMPLETE 8/8; both pins `DIAGNOSTIC_P95_FAIL`.
+
+| Pin | Crypto p50/p95/p99 baseline → mixed (ms) | Pooled Δp95 | Median run Δp95 | Crypto API CPU base → mixed (ms) |
+|---|---|---|---|---|
+| one process | 5.89/12.42/74.02 → 6.48/15.05/24.55 | +21.2 % | +42.8 % | 1838 → 5848 |
+| separated | 5.64/10.61/25.19 → 7.07/16.73/26.54 | +57.7 % | +59.3 % | 1721 → 1929 |
+
+The `before-1` baseline arm contains a 55 ms p95 outlier, which lowers the pooled
+one-process Δp95. The separation did what it should for the crypto API process:
+- its CPU stays at the baseline (+12 % instead of +218 %);
+- its event-loop utilization stays at 0.05 (0.20 in one process).
+
+The crypto p95 still rose:
+- server-side crypto p95 rose from about 9 ms to 15 ms;
+- the client-minus-server gap stayed at 1.6 → 2.1 ms.
+
+Per window (mean, mixed arm), CPU in ms:
+
+| Crypto API | Authority | Gateway | Driver | PostgreSQL |
+|---|---|---|---|---|
+| 1929 | 2280 | 2634 | 1878 | 675 |
+
+That is about 9.4 s of CPU per 20 s on the shared 2-vCPU taskset.
+
+The delay is no longer in the crypto API's own CPU or event loop. Two shared
+resources remain:
+- the two vCPUs, on which the crypto request path wakes the driver, the API and
+  a PostgreSQL backend;
+- the one PostgreSQL server, which also receives the Stocks commits and session reads.
 
 ## Known limit (unchanged here)
 

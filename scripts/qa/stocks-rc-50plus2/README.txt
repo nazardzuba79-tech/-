@@ -61,6 +61,10 @@ src/stocksAuthority.ts); only the process topology differs (TOPOLOGY export):
   the authority's readiness, as release-entrypoint.mjs). Same taskset, same 384 MB
   heap cap and egress fence per process; nothing added to the CPU budget. Neither
   arm mounts the private ingress quota (see the doc's known limit).
+  STOCKS_NICE=10 (round 2): both Stocks processes run at nice 10, the release's
+  cpu_shares scheduling control; the qualification proves it (api 0, Stocks 10).
+  Round 1 (no weight) is recorded in docs/STOCKS_613_PROCESS_ISOLATION.md.
+report.cpu (report only) lists the allowed CPUs, their SMT siblings and the model.
 The runner records every process's pid (cleanup must confirm each), refuses a
 topology other than the pin's, and the qualification proves the separation (the
 crypto API answers 404 for every Stocks authority route; three distinct pids).

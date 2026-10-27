@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 // authority, gateway and synthetic market together), --after selects policy-613-after.cjs, the separated
 // release layout (crypto API alone; Stocks authority and gateway in their own processes, same taskset).
 const AFTER=process.argv.includes('--after');
-const {RC,TOPOLOGY,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,traceSha,window,invariants}=require('./driver.cjs');
+const {RC,TOPOLOGY,STOCKS_NICE=0,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,traceSha,window,invariants}=require('./driver.cjs');
 // --cpu-prof: V8 CPU profile of each measured API worker. Profiler overhead
 // applies to both arms; such a run locates hotspots and is never a p95 verdict.
 const PROFILE=process.argv.includes('--cpu-prof');
@@ -14,7 +14,7 @@ const PROFILE=process.argv.includes('--cpu-prof');
 const SPANS=process.argv.includes('--spans');
 const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'));
 let cfg,started=false,data,active,controller=new AbortController(),timer;
-const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
+const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));
 function pg(name,argv,label){
  const r=cp.spawnSync(cfg.executable(name),argv,{encoding:'utf8',windowsHide:true,timeout:20000,env:cleanEnv(),maxBuffer:1024*1024});
@@ -40,7 +40,7 @@ function startWorker(arm,viewerCount,generatedClient){
   }
  };
  const init=async()=>{
-  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,arm});
+  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,stocksNice:STOCKS_NICE,arm});
   // Every process of the topology is recorded (cleanup must confirm each) and must be the one the pin names.
   const p=info.processes??{},pids=Object.values(p);
   for(const [role,pid] of Object.entries(p))if(role!=='api')report.ownPids.push({role:arm+'-'+role,pid});
@@ -78,6 +78,12 @@ function provenance(){
   if(SPANS&&PROFILE)throw Error('ONE_INSTRUMENTATION_PER_RUN');
   cfg=environment(a);fs.mkdirSync(cfg.out);report.nonce=crypto.randomBytes(6).toString('hex');
   report.admission={scope:cfg.scope,platform:cfg.platform,node:cfg.node,nodeSha256:cfg.nodeSha256,harnessHead:cfg.harnessHead,dependencyVersions:cfg.versions,physicalFocusUsed:false,productionAccess:false,externalNetworkAllowed:false,heapLimitMb:384,resources:'Same sequential worker shape and PostgreSQL cluster/settings; Windows shared host is unpinned and not CX23 acceptance'};
+  // Report only: the CPUs this process tree may use, their SMT siblings and the model (Linux sysfs/procfs).
+  if(process.platform==='linux')try{
+   const allowed=(fs.readFileSync('/proc/self/status','utf8').match(/^Cpus_allowed_list:\s*(\S+)/m)||[])[1]??'';
+   const cpus=allowed.split(',').filter(Boolean).flatMap(range=>{const [a,b=a]=range.split('-').map(Number);return Array.from({length:b-a+1},(_,i)=>a+i);});
+   report.cpu={allowed,siblings:Object.fromEntries(cpus.map(n=>[n,fs.readFileSync('/sys/devices/system/cpu/cpu'+n+'/topology/thread_siblings_list','utf8').trim()])),model:(fs.readFileSync('/proc/cpuinfo','utf8').match(/^model name\s*:\s*(.+)$/m)||[])[1]??null};
+  }catch{report.cpu=null;}
   report.profiled=PROFILE;report.spans=SPANS;report.plan=PLAN;report.cryptoTraceSha=traceSha;provenance();json('admission.json',report);
   if(a['prepare-only']){report.status='PREPARED_NOT_RUN';return;}
   if(!a['run-local'])throw Error('EXPLICIT_RUN_LOCAL_FLAG_REQUIRED');
