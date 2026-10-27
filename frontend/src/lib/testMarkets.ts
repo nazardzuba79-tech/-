@@ -18,7 +18,11 @@ export const TEST_ASSET_STATUS_LABEL = 'TEST · NOT TRADABLE';
 /** Known before the first response, so a deep link or a starred pair is
  *  recognised as a test market without waiting on the network. */
 /** Removed market: retain financial history elsewhere, never display or route new trading. */
-export const isRetiredMarketPair = (value: string) => ['NRX', 'NRXUSDT'].includes(value.trim().toUpperCase().replace(/[\s/_-]/g, ''));
+export const isRetiredMarketPair = (value: string) => {
+  const normalized = value.trim().toUpperCase().replace(/[_-]/g, '/');
+  return normalized.split('/').some(symbol => symbol.trim() === 'NRX')
+    || ['NRXUSDT', 'NRXSIMUSDT'].includes(normalized.replace(/\s/g, ''));
+};
 
 export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT'];
 
