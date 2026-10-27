@@ -1,0 +1,63 @@
+name: SEO indexing (static heads, sitemap, robots, Pages emulation)
+on:
+  pull_request:
+    paths:
+      - 'frontend/index.html'
+      - 'frontend/contentPlugin.ts'
+      - 'frontend/vite.config.ts'
+      - 'frontend/content/**'
+      - 'frontend/public/_headers'
+      - 'frontend/public/og-image.*'
+      - 'frontend/src/App.tsx'
+      - 'frontend/src/lib/seo/**'
+      - 'frontend/src/lib/content/**'
+      - 'frontend/src/lib/legalContent.ts'
+      - 'frontend/src/pages/LegalPage.tsx'
+      - 'frontend/src/pages/knowledge/**'
+      - 'frontend/src/lib/__tests__/seo*.test.ts'
+      - 'scripts/qa-seo-indexing.cjs'
+      - '.github/workflows/seo-indexing.yml'
+permissions:
+  contents: read
+concurrency:
+  group: seo-indexing-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Production frontend build (tsc + vite, default flags)
+        run: npm run build --prefix frontend
+      - name: Policy, router, _headers, sitemap/robots and the built static heads
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/seoIndexing.test.ts
+          frontend/src/lib/__tests__/seoBuildOutput.test.ts
+          frontend/src/lib/__tests__/academyHelpContent.test.ts
+          frontend/src/lib/__tests__/academyHelpPages.test.ts
+          frontend/src/lib/__tests__/aboutPage.test.ts
+      - name: Disposable tools (local Pages emulator and browser only, not application dependencies)
+        run: |
+          npm install --prefix /tmp/seo-qa --no-save --no-audit --no-fund wrangler@4.141.0 playwright@1.63.0
+          node /tmp/seo-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Crawler without JS, Chromium without JS, Chromium 1440 and 390 on the built site
+        run: node scripts/qa-seo-indexing.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/seo-qa/node_modules/playwright
+          QA_WRANGLER_BIN: /tmp/seo-qa/node_modules/.bin/wrangler
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seo-indexing
+          path: |
+            output/seo-indexing/
+            frontend/dist/sitemap.xml
+            frontend/dist/robots.txt
+          retention-days: 7
