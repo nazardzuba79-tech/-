@@ -7,11 +7,13 @@
 import { deflateRawSync } from 'zlib';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { HISTORY20_CATALOG, HISTORY20_PACK, HISTORY20_ROTATION } from '../../pages/admin/historicalGrowthCatalog';
 import * as browser from '../../pages/admin/historicalGrowthModel';
 import * as server from '../../../../src/shared/listingHistoricalGrowth';
 import { history20OwnerModel, importHistory20, packFiles, readZipEntries, verifyHistoricalGrowthRecord } from '../../pages/admin/historicalGrowthPack';
-import { historicalGrowthProvenance, nextRotationScenario } from '../../pages/admin/ListingHistoricalGrowthPanel';
+import { historicalGrowthProvenance, ListingHistoricalGrowthPanel, nextRotationScenario } from '../../pages/admin/ListingHistoricalGrowthPanel';
 import { newListingMovement, rebaseListingMovement, validateListingMovement } from '../../pages/admin/listingMovementModel';
 
 const DAY = 86_400_000;
@@ -55,6 +57,22 @@ describe('the committed History20 catalogue (metadata only)', () => {
 });
 
 describe('the browser model equals the server reference', () => {
+  test('reference-only source view renders daily points, never manufactured historical OHLC candles', () => {
+    const program = browser.buildHistoricalGrowthProgram({ scenarioId: 'VHX-01-BTC', source: REF, targetPeakGrowthPercent: '11872.45', rows: rows(60, false) });
+    const html = renderToStaticMarkup(createElement(ListingHistoricalGrowthPanel, { program, initialPrice: '2', listingAt: '2026-11-02T00:00:00Z', rotationCursor: 0,
+      locked: false, draftSymbol: 'VHX01', onChoose() {}, onReturn() {} }));
+    expect(html.includes('data-historical-reference-chart')).toBe(true);
+    expect(html).not.toContain('data-plan-candle=');
+    expect((html.match(/data-reference-point=/g) ?? []).length).toBe(60);
+    expect(html).not.toContain('Открытие:');
+    const points = browser.historicalGrowthReferencePoints(program, '2', Date.UTC(2026, 0, 1));
+    expect(points).toHaveLength(program.logs.length);
+    expect(Object.keys(points[0]).sort()).toEqual(['time', 'value']);
+    expect(points[0].value).toBe(2);
+    expect(points.every((p, i) => p.time === points[0].time + i * 86400)).toBe(true);
+    expect(() => browser.historicalGrowthCandles(program, '2', 0)).toThrow('не содержит исторических OHLC');
+  });
+
   test('owner policy v1 caps only the pinned MATIC research model; source, log shape, clock and old programs remain unchanged', () => {
     const item = HISTORY20_CATALOG.find(item => item.id === 'VHX-09-MATIC')!;
     const original = browser.buildHistoricalGrowthProgram({ scenarioId: item.id, source: { ...OHLC, asset: 'MATIC', sliceSha256: item.sourceSliceSha256 }, targetPeakGrowthPercent: '15324', rows: rows(90, true) });

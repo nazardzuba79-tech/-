@@ -154,6 +154,11 @@ async function allOwnerWindows(page, width, listingAt, create) {
     assert.match(await page.locator('[data-history20-status]').innerText(), /Все 20 окон/);
     const provenance = await page.locator('[data-provenance="observed"]').innerText();
     assert.match(provenance, item.dataKind === 'daily_reference' ? /Дневного максимума и минимума в источнике нет/ : /дневные O\/H\/L\/C/);
+    if (item.dataKind === 'daily_reference') {
+      assert.equal(await page.locator('[data-historical-reference-chart] [data-reference-point]').count(), item.rows);
+      assert.equal(await page.locator('[data-history20-selected] [data-plan-candle]').count(), 0);
+      assert.equal(await page.locator('[data-field="history20Weekly"]').isDisabled(), true);
+    } else assert.ok(await page.locator('[data-history20-selected] [data-plan-candle]').count() > 0);
     if (item.id === 'VHX-09-MATIC') assert.match(await page.locator('[data-history20-normalization]').innerText(), /15324%.*15000%/);
     const saving = page.waitForResponse(r => ['POST', 'PUT'].includes(r.request().method()) && /\/admin\/listings(?:\/[^/]+\/draft)?$/.test(new URL(r.url()).pathname));
     await page.locator('[data-save-draft]').click();

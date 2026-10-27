@@ -179,12 +179,21 @@ export function historicalGrowthDailyModel(program: HistoricalGrowthProgram, ini
 
 /** Chart candles of the whole window (1 = daily, 7 = weekly groups of scenario days), from `listingAtMs`. */
 export function historicalGrowthCandles(program: HistoricalGrowthProgram, initialPrice: string, listingAtMs: number, daysPerCandle = 7) {
+  if (program.source.dataKind !== 'exchange_ohlcv') throw new Error('Источник не содержит исторических OHLC: используйте дневные опорные цены');
   const out: { time: number; open: number; high: number; low: number; close: number; volume: number }[] = [];
   for (const day of historicalGrowthDailyModel(program, initialPrice)) {
     if (day.day % daysPerCandle === 0) out.push({ time: (listingAtMs + day.day * DAY_MS) / 1000, open: day.open, high: day.high, low: day.low, close: day.close, volume: 0 });
     else { const last = out[out.length - 1]; last.high = Math.max(last.high, day.high); last.low = Math.min(last.low, day.low); last.close = day.close; }
   }
   return out;
+}
+
+/** Exactly one normalized observation per source day; no inferred open/high/low or intraday samples. */
+export function historicalGrowthReferencePoints(program: HistoricalGrowthProgram, initialPrice: string, listingAtMs: number) {
+  if (program.source.dataKind !== 'daily_reference') throw new Error('Источник не является дневной опорной ценой');
+  const alpha = historicalGrowthAlpha(program), p0 = Number(initialPrice), cap = Number(historicalGrowthMaxPrice(initialPrice, program.targetPeakGrowthPercent));
+  return program.logs.map((row, day) => ({ time: (listingAtMs + day * DAY_MS) / 1000,
+    value: Math.min(cap, p0 * Math.exp(alpha * row[0] / HISTORICAL_GROWTH_LOG_SCALE)) }));
 }
 
 /** Peak, final value and the largest close-to-close drawdown of the model, from P0. */

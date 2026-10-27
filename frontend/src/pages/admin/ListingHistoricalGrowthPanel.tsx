@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { HISTORY20_CATALOG, HISTORY20_PACK, HISTORY20_ROTATION, type HistoricalGrowthCatalogItem } from './historicalGrowthCatalog';
 import {
   HISTORICAL_GROWTH_LABEL, HISTORICAL_GROWTH_PREVIEW_UNIT, historicalGrowthCandles, historicalGrowthDailyModel, historicalGrowthFold,
-  historicalGrowthIntrabarVersion, historicalGrowthMaxPrice, historicalGrowthSummary, historicalGrowthWithIntrabar,
+  historicalGrowthIntrabarVersion, historicalGrowthMaxPrice, historicalGrowthReferencePoints, historicalGrowthSummary, historicalGrowthWithIntrabar,
   type HistoricalGrowthIntrabar, type HistoricalGrowthProgram, type HistoricalGrowthSource,
 } from './historicalGrowthModel';
 import {
@@ -10,7 +10,7 @@ import {
   type History20ImportReport, type HistoricalGrowthWindowRecord,
 } from './historicalGrowthPack';
 import { formatMovementPrice } from './listingMovementModel';
-import { ListingCandlePreview } from './ListingCandlePreview';
+import { ListingCandlePreview, ListingReferencePreview } from './ListingCandlePreview';
 
 const DATA_KIND = { daily_reference: 'Опорная цена за сутки (не OHLC)', exchange_ohlcv: 'Биржевые дневные OHLCV' } as const;
 const FOLD = { train: 'обучение', validation: 'валидация', test: 'тест' } as const;
@@ -205,11 +205,14 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
         <div><dt>Время</dt><dd data-history20-clock>REAL_TIME: 1 сутки источника = 24 ч, {summary.days} сут.</dd></div>
       </dl>
       <div className="listing-growth-chart-tools">
-        <label className="listing-check"><input type="checkbox" checked={weekly} onChange={e => setWeekly(e.target.checked)} data-field="history20Weekly" /> Недельные группы сценарных суток</label>
+        <label className="listing-check"><input type="checkbox" checked={program.source.dataKind === 'exchange_ohlcv' && weekly} disabled={program.source.dataKind === 'daily_reference'} onChange={e => setWeekly(e.target.checked)} data-field="history20Weekly" /> Недельные группы сценарных суток (для OHLC)</label>
         <small>Таймфрейм графика не меняет прошедшее время сценария. Этот график — только дневные значения источника, без внутрисуточной модели.</small>
       </div>
       {provenance && <p className="listing-hint" data-history20-provenance><span data-provenance="observed">{provenance.observed}</span> <span data-provenance="modeled">{provenance.modeled}</span></p>}
-      <ListingCandlePreview plan candles={historicalGrowthCandles(program, p0, listingAt ? Date.parse(listingAt) : Date.UTC(2026, 0, 1), weekly ? 7 : 1)} />
+      {program.source.dataKind === 'daily_reference'
+        ? <><p className="listing-hint">Показаны все дневные опорные цены. Линия только соединяет наблюдения; OHLC, внутрисуточных цен и объёма источника нет.</p>
+          <ListingReferencePreview points={historicalGrowthReferencePoints(program, p0, listingAt ? Date.parse(listingAt) : Date.UTC(2026, 0, 1))} /></>
+        : <ListingCandlePreview plan candles={historicalGrowthCandles(program, p0, listingAt ? Date.parse(listingAt) : Date.UTC(2026, 0, 1), weekly ? 7 : 1)} />}
       <p className="listing-hint">Сжатие всего окна, например в 120 часов, — отдельный лабораторный режим. Он не активен и включается только по отдельному подтверждению владельца. Точные свечи с тиками — в «Предпросмотре» после сохранения черновика (до 30 дней за запрос).</p>
       <div className="listing-buttons">
         <button type="button" onClick={exportDraft} data-history20-export-draft>Экспорт черновика (JSON)</button>
