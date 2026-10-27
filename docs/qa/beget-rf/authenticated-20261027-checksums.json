@@ -1,0 +1,31 @@
+{
+  "sourceCommit": "ae531c476f807dd3dafd4e10aa0d010855718c90",
+  "configSha256": "8315cc827c51c457e848d483bb35e6cbc3cf4f695e8ab4bd665dd9c8991255b3",
+  "scriptSha256": "e7641f598c927eb3fad6236b5cb9ad3836d1358b7f6b157a6edca02ccff577ca",
+  "images": {
+    "docs/qa/beget-rf/authenticated-20261027-futures-desktop.jpg": {
+      "gitBlobSha": "b3de2e9c0f36d5d416096be948651a8c2d679f00",
+      "sha256": "c6b37e377a1bb5d8bbaa4a17a638121ff4fb0b48be7585030f91821a1e5796cb"
+    },
+    "docs/qa/beget-rf/authenticated-20261027-futures-mobile.jpg": {
+      "gitBlobSha": "544c1203df1ef2be760a73215cdff3d1b8d2fb5c",
+      "sha256": "d3ddce9ea55234f858bad0b4d766e360f477b74ce79319031067ead1b756ecf1"
+    },
+    "docs/qa/beget-rf/authenticated-20261027-spot-desktop.jpg": {
+      "gitBlobSha": "a29b45626befa9786abcb119d782fbba1dccffc0",
+      "sha256": "a73d7aaa25151ea1c2f54548dd868f80aeb8ebade836b6ad6f1bf2c023fa00f9"
+    },
+    "docs/qa/beget-rf/authenticated-20261027-spot-mobile.jpg": {
+      "gitBlobSha": "1231b6b057f74eab1c6a68717a267d519023f5ec",
+      "sha256": "462255cf7d1e03b9944e460f488888510b94d0f0b1e61db7be73f66ecb7d9184"
+    },
+    "docs/qa/beget-rf/authenticated-20261027-markets-desktop.jpg": {
+      "gitBlobSha": "19b7447d0cfc9155cd2c59406aa6d47a57945143",
+      "sha256": "0875b0f355c64066cf12cf8c84855a6691902166dbf3c6dc33cde6b5cae76539"
+    },
+    "docs/qa/beget-rf/authenticated-20261027-listing-gate.jpg": {
+      "gitBlobSha": "1710e06598ae5120cfb250fd82ea3789d3eca2ac",
+      "sha256": "67f9a377a60ef6869743e53aa096e13f01a6d7202ff68c05f329e19781cff4f9"
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-27",
+  "observedAtUTC": "2026-10-27T04:58:15.286Z",
+  "target": "https://ru.voltextech.net",
+  "branch": "work/beget-rf-gateway-preflight-20261026",
+  "codeCommit": "ae531c476f807dd3dafd4e10aa0d010855718c90",
+  "mainCommit": "63d6b02cd38fe9ff52742c35ce46fa327827dd33",
+  "session": {
+    "source": "Owner signed in with an existing ordinary account in the connected browser",
+    "credentialsRead": false,
+    "tokensExtracted": false,
+    "privateAccountValuesPublished": false,
+    "loginSuccessful": true,
+    "futuresReloadRetainedAccess": true,
+    "walletReloadRetainedAccess": true
+  },
+  "browser": {
+    "futures": {
+      "desktopViewport": 1440,
+      "mobileViewport": 390,
+      "chartRendered": true,
+      "liveOrderBook": true,
+      "marketLimitSwitch": true,
+      "calculatorOpenedAndTargetTabSelected": true,
+      "mobileChartTradePositionsTabs": true,
+      "noPageHorizontalOverflow": true
+    },
+    "spot": {
+      "desktopViewport": 1440,
+      "mobileViewport": 390,
+      "chartRendered": true,
+      "marketLimitSwitch": true,
+      "noPageHorizontalOverflow": true
+    },
+    "wallet": {
+      "desktopViewport": 1440,
+      "mobileViewport": 390,
+      "overviewAndHistoryLoaded": true,
+      "noNaNOrUndefined": true,
+      "noErrorAlert": true,
+      "depositDialogOpened": true,
+      "depositAddressRenderedWithoutCopy": true,
+      "mobileDialogFitsViewport": true,
+      "mobileDialogHeight": 650.9375,
+      "mobileViewportHeight": 844,
+      "noPageHorizontalOverflow": true
+    },
+    "markets": {
+      "initialListingError": true,
+      "afterFixListingError": false,
+      "publishedListingVisibleAfterFix": true,
+      "desktopViewport": 1440,
+      "mobileViewport": 390,
+      "noPageHorizontalOverflow": true
+    },
+    "copyTrading": {
+      "opened": true,
+      "catalogueRendered": true,
+      "noDisplayedLoadError": true,
+      "copyOperationExecuted": false
+    },
+    "afterFix": {
+      "spotLoaded": true,
+      "futuresLoaded": true,
+      "walletLoaded": true
+    },
+    "logout": {
+      "clickedNormalLogoutControl": true,
+      "returnedToPublicHome": true,
+      "spotRedirectedToLogin": true,
+      "futuresRedirectedToLogin": true,
+      "walletRedirectedToLogin": true,
+      "previousTokenServerRevocationIndependentlyRetested": false
+    }
+  },
+  "discoveredDefect": {
+    "before": [
+      {
+        "path": "/api/v1/market/test-assets",
+        "status": 403
+      },
+      {
+        "path": "/_voltex/market/market/nrx",
+        "status": 404
+      },
+      {
+        "path": "/_voltex/market/_voltex/market/market/listings",
+        "status": 404
+      }
+    ],
+    "cause": "Missing public GET allowlist entries, missing NRX worker path and duplicate market base prefix from existing nrxPublicUrl",
+    "fix": "Three documented public read routes plus bounded one-or-two-prefix normalization only at trusted RU vhost"
+  },
+  "appliedGate": {
+    "status": "PASS",
+    "nginxSyntax": true,
+    "checks": 15,
+    "primaryVhostAndApiRuntimeUnchanged": true,
+    "baselineConfigSha256": "4bb1cf3749c2f5b32450a1b776409992eb3e648a217feb80ef99b4990db19a83",
+    "currentConfigSha256": "8315cc827c51c457e848d483bb35e6cbc3cf4f695e8ab4bd665dd9c8991255b3",
+    "receiptOnTrustedServer": "/opt/voltex-rf-endpoint/public-routes-result.json",
+    "backup": "Recorded in the trusted server receipt; RU-vhost-only rollback preserved"
+  },
+  "boundaries": {
+    "ordersOrTransfersByAgent": false,
+    "depositAddressCopied": false,
+    "realAccountBalancesChangedByAgent": false,
+    "tradingFlagsChanged": false,
+    "listingDataOrTimerChanged": false,
+    "apiContainerOrDatabaseModified": false,
+    "begetTlsTermination": false,
+    "mainMergeOrFrontendDeploy": false
+  },
+  "validationLimits": {
+    "localExecutionEnvironment": "offline; no new local unit/general CI run claimed",
+    "rfAuthenticatedSession": "NOT RUN: this session was verified in the connected browser; RF TLS/home probes remain the separately saved 26 October evidence",
+    "successfulNewRegistration": "NOT RUN: no account created",
+    "financialExecution": "NOT RUN: only UI/read checks and prior synthetic ownership checks",
+    "sharedPerIpLimit": "Unchanged: all RU clients share Beget source IP, including observed login 10 attempts/900 seconds",
+    "consoleWarning": "Existing public ALTHEA/USD change sanity warnings were observed; no claim of an entirely warning-free feed",
+    "screenshots": "Public chart/market crops only; mobile Markets screenshot timed out and is not supplied"
+  }
+}

@@ -1,88 +1,75 @@
-# VOLTEX Beget — owner security hold
+# VOLTEX Beget — active opaque RU gateway
 
-**NO-GO for login, customer data or financial functions through Beget.**
-The owner's urgent security order supersedes the former TLS-terminating design.
-Do not follow the historical activation instructions from earlier commits.
+Current state verified on **27 October 2026**, on owner branch
+`work/beget-rf-gateway-preflight-20261026`. The former L7 security hold is
+historical; its disabled scripts must never be used to reactivate TLS on Beget.
 
-Owner branch: `work/beget-rf-gateway-preflight-20261026`.
-Fresh main: `63d6b02cd38fe9ff52742c35ce46fa327827dd33`.
-Current evidence and route/trust analysis: `docs/qa/beget-rf/SECURITY_REVIEW.md`.
-Actual server record: `docs/qa/beget-rf/security-hold-server-result.json`.
+## Active route
 
-## Actual state
+`Browser HTTPS → Beget 185.23.35.226 TCP443 → Hetzner 138.199.227.130:18443 TLS → existing API / HTTPS public providers`.
 
-One existing `voltex-ru-gateway-01`, Saint Petersburg, Ubuntu 24.04.5,
-2 CPU / 1 GB / 20 GB NVMe, IPv4 `185.23.35.226`.
-VPS + IPv4 917.10 RUB/30 days; with owner-approved Blog 520 RUB/month,
-combined 1437.10 RUB/30 days equivalent. No additional purchase.
+- Existing Beget node only: `voltex-ru-gateway-01`, Saint Petersburg,
+  Ubuntu24.04, 2 CPU / 1GB / 20GB. No additional purchase.
+- Beget Nginx stream accepts only the RU SNI and has a fixed destination.
+  It holds no current customer TLS key and serves no frontend JavaScript.
+- Separate RU certificate/key terminate on existing Hetzner. The old
+  Beget certificate was revoked. Trusted-account-bound CAA and an actual
+  HTTP01 renewal dry-run passed; Certbot renewal runs on Hetzner.
+- TCP80 goes only to the trusted challenge-only HTTP18080 listener.
+- DNS RU A is DNS-only185.23.35.226; there is no RU AAAA.
+- Only the separate `/etc/nginx/conf.d/voltex-ru.conf` was installed.
+  Existing primary Nginx vhost, API container, PostgreSQL and financial code
+  were preserved. Beget-specific UFW rules allow18443/18080 only from Beget.
+- Admin/KYC/internal paths are denied at the trusted endpoint. Private API
+  methods are explicitly allowlisted; unknown paths fail closed.
+  JSON financial payloads are not URL-rewritten, private responses are
+  no-store, and upstream Alt-Svc is suppressed.
 
-On Beget, Nginx 1.24.0 is active only on HTTP 80. It returns a plain 503 for
-**every** ru path. It serves no JavaScript, login, admin, API, KYC or ACME files.
-There is no 443 listener, upstream or database. Logging is off in the hold config.
-The old monitor and certbot timers are disabled; old activation scripts were
-renamed `.disabled`. A root-only hold marker prevents operator confusion.
+## Current code and evidence
 
-In authoritative Cloudflare DNS, the ru A record was withdrawn; no ru AAAA exists.
-Only `ru CAA 0 issue ";"` was added, TTL Auto / public 300. This blocks new
-issuance by compliant CAs; it does **not** revoke the already issued ru certificate.
-Apex/www/API/Workers/mail/NS were not changed. The old A and configs are preserved
-for evidence, not as an approved rollback target.
+- TLS endpoint and explicit149-method/path policy: `endpoint.py`,
+  `user_routes.json`, `nginx-ru-hetzner.conf`.
+- Opaque stream and bounded read-only monitoring: `relay.py`,
+  `nginx-beget-stream.conf`.
+- Existing separate certificate lifecycle: `endpoint_renewal.py`.
+- Public listing route repair: `listing_routes.py`, code
+  `ae531c476f807dd3dafd4e10aa0d010855718c90`. The installer checks the exact prior hash,
+  creates a local RU-only backup, runs Nginx syntax validation, then15 live
+  positive/negative HTTP checks; failed acceptance restores only RU.
+- Actual new vhost SHA256:
+  `8315cc827c51c457e848d483bb35e6cbc3cf4f695e8ab4bd665dd9c8991255b3`.
+- Runtime receipt/backup pointer:
+  `/opt/voltex-rf-endpoint/public-routes-result.json`.
+- Sanitized current browser evidence:
+  `docs/qa/beget-rf/authenticated-20261027.json` and matching chart/market
+  crops/checksums. Real ordinary-account Spot/Futures/Wallet, reload,
+  Market/Limit, mobile layouts, deposit-dialog read, and logout guards
+  were checked. No order, transfer, copy-trade, deposit or withdrawal was executed.
+- Prior independent RF TLS/home probes and initial12 targeted tests remain
+  under `docs/qa/beget-rf/live-*`. They were not rerun or relabeled as an
+  authenticated RF-session test.
 
-A ru-only certificate/key and ACME account remain inactive on Beget. The primary
-VOLTEX key was never copied there by this work. Do not export these keys to the
-trusted endpoint or assume deleting a file removes provider snapshots. Existing
-ru certificate revocation and independent key generation are activation blockers.
+## Operation and limits
 
-## Code and checks
+Frontend assets follow the existing primary Pages deployment through the trusted
+proxy; this work did not deploy primary frontend or merge into main.
+New private API endpoints require explicit policy review. Public worker aliases
+accept at most the one/two prefixes produced by the existing client and keep a
+fixed upstream; they are not an arbitrary proxy.
 
-- `security_hold.py`: the actual Beget-only hold application and sanitized audit.
-  Already executed once; refuses a duplicate result. This is not a deploy script.
-- `nginx.conf` and `nginx-bootstrap.conf`: identical fail-closed hold config;
-  SHA256 matches the actual server's active config.
-- `render.py`: production/default/old bootstrap render only the hold.
-  Former L7 code survives solely for isolated loopback regression fixtures.
-- `stage1.py`, `stage2.py`, `activate_existing_tls.py`, `build_transfer.py`:
-  historical implementation retained for provenance, now fails immediately
-  with OWNER SECURITY HOLD before network, package installation or any write.
-- `passthrough_proposal.py`: OFFLINE ONLY, requires an explicitly reviewed
-  external IPv4. No production endpoint/default target, certificates, HTML or
-  HTTP parsing. Unknown/absent SNI is rejected; no arbitrary target or CONNECT.
-- `test_security.py`: 7/7 targeted synthetic tests, including endpoint certificate
-  fingerprint/body preservation and certificate rejection. No production traffic.
-- RenderTest: 5/5 focused hold/render checks. Python compile passed.
-- Historical 17/17 L7 transport results are retained; they are not a security GO.
-  No complete financial/PG/Docker/general CI or load test repeated.
+The existing API sees relayed users as one Beget IP. Its per-IP quotas, including
+the observed10 login attempts/15minutes, remain shared and unchanged.
+Broad RF capacity and authenticated sessions from RF networks are not certified.
+Successful new registration and real financial execution were not tested.
+Existing public-feed ALTHEA change sanity warnings were observed.
 
-Reproduce only locally, with Nginx stream + ssl_preread and OpenSSL:
+## Rollback boundary
 
-```sh
-NGINX_BIN=/absolute/path/to/nginx python3 -m unittest discover -s ops/beget-rf -p test_security.py -v
-python3 -m unittest discover -s ops/beget-rf -p test_gateway.py -k RenderTest -v
-```
-
-Fixtures use loopback, synthetic data and their own one-day test certificate.
-Fixture mode is single-process for this isolated runtime, never a public server
-configuration. No production secrets, sessions or provider API responses used.
-
-## No safe activation yet
-
-Beget must relay opaque TLS to a separately trusted terminator outside Beget.
-That terminator needs its own valid ru certificate/key, issuance controlled by
-DNS-01 + restrictive CAA/account binding outside Beget, a protected frontend,
-explicit HTTP route allowlists and denial of admin/KYC/finance until separately
-reviewed. The relay cannot inspect HTTP paths or rewrite SNI/Origin/JS.
-
-No trusted production terminator has been prepared or authorized under this
-work order. No passthrough was applied to Beget, Hetzner or Cloudflare Workers.
-Provider policy and applicable data-processing/crypto-service requirements remain
-unresolved. Full RF app availability and real-user login are not passed.
-
-## Rollback / next operation
-
-Keep the hold and ru DNS withdrawal. Do not restore the former L7 proxy to recover
-availability. Root-only original backup: `/root/voltex-rf-backup/20261026T174829Z`;
-pre-hold config: `/root/voltex-rf-backup/before-security-hold.conf` (historical ACME
-bootstrap, not a secure release). The security hold is a reversible Beget-only
-configuration; restoring service requires the blockers in SECURITY_REVIEW.md.
-The primary site/API/PG and exchange flags are untouched. Beget billing continues
-while the existing VPS/Blog remain provisioned; nothing was deleted or purchased.
+Withdraw only RU A if closing the entry. Stop the dedicated
+`voltex-rf-relay-health.timer`/service and use `/voltex-relay.py rollback`
+on Beget to restore its prior hold. On Hetzner, `/root/rf.py rollback`
+removes only the matching RU vhost; its receipt hash was updated by the repair.
+Remove only Beget-specific18443/18080 UFW rules if decommissioning the route.
+Never restore the former Beget TLS/L7 setup or overwrite primary Nginx/API/PG.
+Local backup directories are recorded on their respective nodes; no private
+keys or backups are exported into this repository.
