@@ -6,9 +6,10 @@
  * (shown below), while model-priced earnings must not be withdrawable (owner
  * decision 19.10). So the sale reads the pair's canonical server price (the
  * one its Spot ticker, chart, triggers and wallet valuation use; never the
- * venue) and then stops before any write. NRX (legacy) and ordinary pairs
- * keep their existing sale; the listing gates, the account policy and the
- * normal book path are unchanged.
+ * venue) and then stops before any write. Since Issue #617 P0 (27.10) NRX,
+ * model-priced as well, stops the same way; ordinary pairs keep their
+ * venue-priced sale; the listing gates, the account policy and the normal
+ * book path are unchanged.
  *
  * Synthetic users, listings and fixtures only; no venue or broker order.
  */
@@ -225,7 +226,7 @@ pg('managed listing simulation sale: canonical model price, no withdrawable mode
     expect(askedFor(pair)).toBe(false);
   });
 
-  test('unchanged: an ordinary pair keeps the venue-priced sale and NRX its canonical model-priced sale', async () => {
+  test('an ordinary pair keeps the venue-priced sale; NRX, model-priced too, now stops before any write (Issue #617 P0)', async () => {
     await db.balance.createMany({ data: [{ userId: admin, asset: 'ETH', available: '2' }, { userId: admin, asset: 'NRX', available: '4' }] });
     const eth = await sell(admin, '1.25', 'ETH/USDT');
     expect(dec(eth.trades[0].price).eq(2500)).toBe(true);
@@ -233,12 +234,13 @@ pg('managed listing simulation sale: canonical model price, no withdrawable mode
 
     const nrxAt = NEURIX.listingAt + 60_000;
     (Date.now as jest.Mock).mockReturnValue(nrxAt);
-    const nrxPrice = new BigNumber(simulationFor(NEURIX).priceAt(nrxAt)!);
-    const nrx = await sell(admin, 1, NEURIX.pair);
-    expect(nrx.trades[0]).toMatchObject({ makerUserId: 'simulation:NRX' });
-    expect(dec(nrx.trades[0].price).eq(nrxPrice)).toBe(true);
+    const usdtAfterEth = await balance(admin, 'USDT');
+    await expect(sell(admin, 1, NEURIX.pair)).rejects.toThrow('Simulation Spot sale is not available for this listing');
     expect(askedFor(NEURIX.pair)).toBe(false);
-    expect(await db.auditLog.count({ where: { userId: admin, action: 'NRX_SIMULATION_SOLD' } })).toBe(1);
-    expect(dec((await balance(admin, 'USDT'))![0]).eq(nrxPrice.plus(3125).plus(500))).toBe(true);
+    expect(await db.auditLog.count({ where: { userId: admin, action: 'NRX_SIMULATION_SOLD' } })).toBe(0);
+    expect(await db.auditLog.count({ where: { userId: admin, action: 'TEAM_SPOT_SIMULATION_SOLD' } })).toBe(1); // the ETH sale only
+    expect(await db.trade.count({ where: { takerUserId: admin, makerUserId: 'simulation:NRX' } })).toBe(0);
+    expect(await balance(admin, 'NRX')).toEqual(['4', '0']);
+    expect(await balance(admin, 'USDT')).toEqual(usdtAfterEth);
   });
 });

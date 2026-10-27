@@ -7,7 +7,7 @@ import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
 import { NEURIX } from './testMarkets/neurix';
-import { isSimulationSettled, SIMULATION_QUOTE } from './testMarkets/testAssetConfig';
+import { isSimulationSettled, SIMULATION_QUOTE, isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
 import { privateTestAdmitted } from './listings/privateTest';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
@@ -312,22 +312,24 @@ export class OrderService {
     const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
-    // A managed listing's proceeds would be ordinary Spot USDT, which can be
-    // withdrawn, and model-priced earnings must not be: its synthetic sale
-    // stops here, before any write. NRX (legacy) and ordinary pairs are
-    // unchanged. The one exception is a History20 private test market quoted
-    // exactly in the restricted SIMUSDT unit, sold by a verified participant.
+    // History20 keeps its separately admitted, non-withdrawable SIMUSDT ledger.
+    // All other simulated assets retain main's default-OFF DemoBalance-only P0 fence.
     const managed = pair === NEURIX.pair ? null : managedListingForPair(pair);
     const privateMarket = !!managed?.privateTest && quote === SIMULATION_QUOTE && managed.quote === SIMULATION_QUOTE;
-    if (managed && !privateMarket) throw new Error('Simulation Spot sale is not available for this listing');
     if (privateMarket && !(await privateTestAdmitted(this.prisma, userId))) throw new Error('Simulation Spot sale is not available for this account');
+    const simulatedAsset = isTestAssetPairOrSymbol(pair);
+    const demoSettlement = simulatedAsset && !privateMarket;
+    if (demoSettlement && process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED !== 'true')
+      throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
+    if (demoSettlement && (proceeds.decimalPlaces() ?? 19) > 18)
+      throw new Error('Simulation proceeds exceed demo ledger precision');
 
     const now = Date.now();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
-    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : privateMarket ? 'HISTORY20_PRIVATE_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
+    const auditAction = privateMarket ? 'HISTORY20_PRIVATE_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
 
     return this.prisma.$transaction(async tx => {
       // Re-check server-side test identity and block state inside the financial
@@ -342,7 +344,19 @@ export class OrderService {
       }
 
       await mutateSpotBalance(tx, userId, base, { available: quantity.negated() });
-      await mutateSpotBalance(tx, userId, quote, { available: proceeds });
+      if (demoSettlement) {
+        // The debit and the non-withdrawable demo credit share one serializable transaction.
+        // DemoBalance is excluded from the real Spot book, transfers and withdrawals.
+        // A unique (userId, asset) key makes retries and concurrent credits atomic.
+        const amount = proceeds.toFixed(18);
+        await tx.demoBalance.upsert({
+          where: { userId_asset: { userId, asset: quote } },
+          create: { userId, asset: quote, available: amount },
+          update: { available: { increment: amount } },
+        });
+      } else {
+        await mutateSpotBalance(tx, userId, quote, { available: proceeds });
+      }
 
       await tx.order.create({
         data: {
@@ -386,8 +400,9 @@ export class OrderService {
             price: price.toFixed(),
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
-            source: pair === NEURIX.pair ? 'NEURIX canonical simulation'
-              : privateMarket ? 'History20 private test model (SIMUSDT, non-withdrawable)' : 'VOLTEX team test Spot simulation',
+            source: privateMarket ? 'History20 private test model (SIMUSDT, non-withdrawable)' : 'VOLTEX team test Spot simulation',
+            settlementLedger: demoSettlement ? 'DemoBalance' : 'Balance',
+            withdrawableProceeds: !simulatedAsset,
           },
         },
       });

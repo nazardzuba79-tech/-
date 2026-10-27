@@ -61,7 +61,7 @@ function walk(days: number, seed: number): HistoricalGrowthSourceRow[] {
 }
 const growth = buildHistoricalGrowthProgram({ scenarioId: 'VHX-07-SOL', targetPeakGrowthPercent: '9348', rows: walk(40, 9),
   source: { provider: 'Binance Vision', asset: 'SOL', quote: 'USDT', metric: 'spot daily OHLCV', dataKind: 'exchange_ohlcv', timeframe: '1d', sliceSha256: 'b'.repeat(64), license: 'CC-BY-NC-SA-4.0 plus Binance Vision Dataset Terms' } });
-const ENV = ['PRIVATE_TRADING_ENABLED', 'PRIVATE_TRADING_OWNER_ID', 'PRIVATE_TRADING_TEST_USER_IDS', 'HISTORY20_PRIVATE_TEST'] as const;
+const ENV = ['PRIVATE_TRADING_ENABLED', 'PRIVATE_TRADING_OWNER_ID', 'PRIVATE_TRADING_TEST_USER_IDS', 'HISTORY20_PRIVATE_TEST', 'SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED'] as const;
 
 pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => {
   let db: PrismaClient, owner: string, tester: string, otherAdmin: string, user: string, symbol: string, pair: string, slug: string;
@@ -100,6 +100,7 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
   beforeEach(async () => {
     [owner, tester, otherAdmin, user] = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
     for (const key of ENV) saved[key] = process.env[key];
+    delete process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED;
     Object.assign(process.env, { PRIVATE_TRADING_ENABLED: 'true', PRIVATE_TRADING_OWNER_ID: owner, PRIVATE_TRADING_TEST_USER_IDS: tester, HISTORY20_PRIVATE_TEST: 'enabled' });
     symbol = privateSymbol(); pair = `${symbol}/SIMUSDT`; slug = `${symbol}-SIMUSDT`;
     await retire([pair]);
@@ -119,6 +120,23 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     for (const key of ENV) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; }
   });
   const usdtUntouched = async () => { for (const id of [owner, tester, otherAdmin, user]) expect(await balance(id, 'USDT')).toEqual(['500', '0']); };
+
+  test.each([undefined, 'true'])('P0 demo-ledger flag %s never diverts a History20 private sale from restricted SIMUSDT', async (flag) => {
+    if (flag === undefined) delete process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED;
+    else process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = flag;
+    await fundPrivateTestAccount(db, published, owner);
+    const orders = new OrderService(db, new MatchingEngine(), venue);
+    const sale = await orders.placeOrder({ userId: owner, pair, side: 'SELL', type: 'MARKET', quantity: new BigNumber(2) });
+    expect(sale.trades).toHaveLength(1);
+    expect(sale.trades[0].price.eq(modelPrice(AT))).toBe(true);
+    expect(await balance(owner, symbol)).toEqual(['98', '0']);
+    expect(await balance(owner, 'SIMUSDT')).toEqual([new BigNumber(1000).plus(sale.trades[0].price.times(2)).toFixed(), '0']);
+    expect(await db.demoBalance.count({ where: { userId: owner } })).toBe(0);
+    const audit = await db.auditLog.findFirst({ where: { userId: owner, action: 'HISTORY20_PRIVATE_SIMULATION_SOLD' } });
+    expect(audit?.metadata).toMatchObject({ settlementLedger: 'Balance', withdrawableProceeds: false });
+    expect(venue.getTicker).not.toHaveBeenCalled();
+    await usdtUntouched();
+  });
 
   test('admission: the owner and the allowlisted tester only; another ADMIN, an ordinary user, the switch off and before the listing are refused before any row', async () => {
     await fundPrivateTestAccount(db, published, owner);

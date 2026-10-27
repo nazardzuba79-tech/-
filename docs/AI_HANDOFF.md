@@ -6953,6 +6953,8 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Preserved:** every other #553 guard and test; NRX, AITH, ordinary Spot and Futures code untouched; #555 untouched.
 - **Not run:** exact-head CI at the time of writing; production checks (still BLOCKED).
 - **Unresolved:** the launch approvals, data rights, the production checks and a post-test cleanup plan (separate review, no automatic deletion).
+
+
 ### Claude — 2026-10-21 — Next listing (26.10.2026 13:00 UTC / 16:00 МСК): pre-listing timer with start / pause / stop, UTC + МСК everywhere, runbook
 - **Task:** prepare the next listing in the existing listings system: the fixed instant `2026-10-26T13:00:00Z` shown in both UTC and МСК (admin, listing page, timer); a countdown that is inactive until the admin presses «Запустить таймер», always counts to that instant by server time, survives a reload, can be paused or hidden without changing the date, and never activates anything by itself when the date passes; orders refused before the opening; automatic status transition at 13:00 UTC; tests; before/after screenshots. No new engine, no new design.
 - **Branch / commit:** `claude/voltex-mobile-audit-7rpjni-listing-20261026` from `main` `f81df788`, the commit that adds this entry. A separate branch: the session's earlier branch is PR #553 (History20), which another session now drives.
@@ -7360,3 +7362,100 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Preserved:** Codex's adverse test intent; #596/#599 reject-only handling and docs SQL; ordinary and mixed accounts keep held `Balance` withdrawals (approve → SENT) whatever the switches; tester without a Cross wallet keeps the `Balance` path.
 - **Docs:** `docs/DEMO_TRADING.md`, `docs/DEMO_LIQUIDITY.md` — guard switch no longer part of activation/rollback; fence is permanent.
 - **Open:** configured simulation-only accounts that have a Cross wallet are still routed to it (as on main), so they cannot use the held `Balance` path (fail-closed; owner decision to change). P1-3 (admin `Balance` credits withdrawable, #592 provenance), owner limits/inventory numbers. Codex local candidate `b88abbd3` is not on the remote and was not reconciled. No merge, deploy, production, DB or real-data change.
+
+
+## 2026-10-23 — Claude — #502 Futures chart: recheck on main (no code change)
+- Main `3e79f2a9` (includes #507 chart UX, #511 rail toggle, #607 historical TP/SL acceptance). Nothing to fix; no PR for this stage.
+- **Verified locally:** `qa-futures-chart-ux.cjs` 129/129 at 1366/1440/1707/1920 (+390 sanity): «Индикаторы» trigger without a visible count, right price scale #FFFFFF (pixel-measured) surviving reload/symbol/interval, Cancel reverts, rail 56px with collapse, indicator panes release/restore; `qa-historical-entry.cjs` PASS at 1440 and 390 (historical candle pick → HISTORICAL_DEMO position, TP/SL, liquidation, close); `qa-futures-proportions.cjs` 0 violations; `qa-futures-figma-desktop.cjs` 4/4.
+- **Open:** none found for #502.
+
+## 2026-10-23 — Claude — #144 customer-facing technical text: audit on main + Banking wording
+- Branch `claude/voltex-mobile-audit-7rpjni-customer-errors-144` from main. The three source findings of #144 were already fixed on main (`futures.collateralIncomplete` plain wording in 7 locales; `futuresOrderErrors.ts` and `privateTradingApi.ts` behind the `customerError.ts` boundary; `customerFacingErrors.test.ts` scans for raw-message reads).
+- **Extended `scripts/qa-customer-error-wording.cjs`** from 5 to 20 customer routes (home, markets, banking, earn, card, arbitrage, otc, analytics, trading-bots, tools, dashboard, help, academy, login, register added) × normal / failing (HTML 502 page with stack, connection string, engine code) / partial (null figures); real-shaped fixtures for Banking (programmes as `src/banking/config.ts`), Card eligibility and Analytics; wallet overview fixture now sends numbers as `WalletPortfolioService` does (strings were concatenated by the page and printed `NaN%` — a fixture defect, not production); new banned class «developer jargon» (BigNumber, ledger, undefined, NaN, [object Object]).
+- **Found and fixed (customer copy, `BankingPage.tsx`):** «Расчёт выполняется на сервере через BigNumber…», «Данные из Banking ledger», «Данные сохранены в Banking ledger» → plain Russian without implementation names. Source guard added to `customerFacingErrors.test.ts` (fails on the old text).
+- **Verified locally:** extended guard 852/860 on the old bundle (the 8 failures = Banking/Earn «ledger» ×6 and the fixture `NaN` ×2), 860/860 after the fix; Jest `customerFacingErrors.test.ts` 66/66; frontend `tsc` PASS; workflow timeout 15 → 25 min (local browser time 315 s).
+- **Not changed (by design):** truthful data-failure messages («Данные временно недоступны», «Не удалось загрузить данные») — #144 requires failures to stay visible; Stocks pages (separate scope); admin pages (operator diagnostics). `scripts/qa-mobile-client-fixture.cjs` still uses a percent instead of a fraction for Banking `monthlyRate` (test fixture only; shows 142% there) — not touched here.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — #612 customer wording: network failure states
+- **Started from** #612 head `201b53f1` (the owner's account merged main `9c90dc31`, with #620 and #606, into #612 at 09:34 UTC).
+  - That merge kept the #612 code, but its handoff resolution dropped this branch's two 23.10 entries (#502 recheck, #144 audit).
+  - Both are restored above, unchanged, after the #620 entry it added.
+- **Extended `scripts/qa-customer-error-wording.cjs`:**
+  - Three states added to the 20 customer routes:
+    - `offline`: every `/api/` request is aborted as a failed connection;
+    - `timeout`: every request is dropped as a network timeout;
+    - `slow`: the normal answer arrives only after 8 s, so the screen is read while it is still loading.
+  - New banned class «a browser network error»: `Failed to fetch`, `NetworkError`, `Load failed`, `net::ERR_`, `TypeError`, `AbortError`, aborted signal, «timed out».
+  - The «unknown value is not printed as zero» check now runs in all four degraded states.
+- **Workflow change:** the job timeout goes from 25 to 40 min, because six states take about 11 min of local browser time.
+- **Verified locally** (Node 22.23.3, production bundle of `10e890c7`; `201b53f1` changes no frontend file):
+  - `customerFacingErrors.test.ts`: 66/66;
+  - three-state wording QA: 860/860;
+  - six-state QA with the network classes: 1820/1820;
+  - final six-state rerun with the widened zero check: 1880/1880, 0 FAIL, 10 min 45 s.
+  - No product code changed; no customer screen printed a browser error, raw code or an invented zero.
+- **Not covered:**
+  - real production slow-network behaviour and the RU-domain login/KYC flow (no production access here);
+  - Stocks and admin pages, which are out of #144 scope.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale priced by the model, not the venue (CTO review on PR #544, Spot only)
+- **Task:** CTO comment on #544 (19.10, 07:01 UTC): `OrderService.sellTeamSpotSimulation` priced NRX with `spotPriceSource` but every other pair with the raw venue `getTicker`, so the owner/test-account MARKET SELL of a published managed listing asked the venue for a simulated pair. Use the same server model price the Spot ticker, chart and triggers use; change nothing else.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, from `main` `f81df788`.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource(this.priceSource)` for every pair (NRX and published managed listings: model price; ordinary pairs: the venue, as before).
+- **Added:** `src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts` (disposable loopback PostgreSQL, synthetic users/listings), wired into `admin-listings.yml`:
+  - owner (ADMIN) and an allowlisted tester sell at the model price, equal to the Spot ticker/trigger source and the chart's last 5m close; exact debit/credit; audit row; the venue is never asked; no book liquidity; no Futures/DemoBalance rows;
+  - refused before any write: before the listing time, a non-tradable listing, a scenario listing (DEMO_ONLY, the kind a History20 window is), more than the available balance;
+  - an ordinary user and a blocked admin get no synthetic fill (normal book path);
+  - a stale snapshot (refresh fails) keeps the last good listing and its model price;
+  - an unknown pair the venue cannot price is refused before any write;
+  - ordinary pair (ETH) keeps the venue price; NRX keeps its canonical model price.
+  - Mutation: with main's line restored, 3 of 6 fail (the modeled pair is priced by the venue).
+- **Preserved:** NRX pricing and records, listing gates, `isSimulationOnlyUser` policy, atomic debit/credit, no artificial liquidity, `DEMO_ONLY`, `HISTORICAL_RIGHTS_UNVERIFIED`; #544/#546/#548 untouched; Stocks/#543/Futures/NativeDemo untouched.
+- **Verified locally:** new test 6/6; with `ownerAllocation.pg`, `historicalDemoContour.pg`, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `adminListings`: 165/165; `nrxSpot.pg` 12/12 on a fresh database (it fails on a database other suites have written DemoBalance rows into, as before); broader listings/testMarkets/OrderService/PriceWatcher/matching-engine/routes run 39/40 suites, the 40th being that `nrxSpot.pg` shared-database case; backend `tsc` and `npm run build`.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** the sale credits ordinary Spot `Balance` USDT, potentially withdrawable (unchanged); a pair Render does not yet know (cold registry) still falls to the venue read, which refuses only if the venue cannot price it — #548's unresolved-pair gate closes that case; Buy/Sell on scenario listings stays `DEMO_ONLY`.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale: no withdrawable model proceeds (owner decision on PR #544, 07:18 UTC)
+- **Task:** owner decision «так без змін»: History20 is a private Spot test mode (verified owner and allowlisted testers only); profit from a model price must not be withdrawable; NRX/AITH byte-for-byte unchanged; fix the non-NRX owner SELL price source; if non-withdrawability cannot be guaranteed with the existing data model, stop before real credits and propose a design.
+- **Commit:** the commit that adds this entry, on top of `a495d030` (branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, PR #551). It supersedes `a495d030`'s behaviour, which let that sale credit model-priced USDT.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource` for every pair, then stops before any write for a published managed listing (`Simulation Spot sale is not available for this listing`). `src/services/testMarkets/nrxSpot.ts`: `managedListingForPair` exported. NRX and ordinary pairs are unchanged.
+- **Tests:** `managedListingSimulationSale.pg.test.ts`, 7 tests, disposable PostgreSQL:
+  - Spot USDT is withdrawable and the listing asset is not (the blocker, shown);
+  - owner/tester sale reads ticker = chart = valuation = model, never the venue, and writes nothing;
+  - prelisting / non-tradable / scenario refused before any venue read;
+  - ordinary user and blocked admin: normal book, no synthetic fill;
+  - stale snapshot: still stopped;
+  - unknown unpriced pair: refused;
+  - ETH and NRX sales unchanged.
+  - RED on `main` and on `a495d030` (2 of 7: model proceeds credited), GREEN here; mutation (venue price with the stop kept) also fails 2.
+- **Design:** `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`. Blocker: one fungible Spot USDT row backs withdrawals, and owner/testers fall back to it when their native wallet is unavailable. Proposal without a migration: a restricted `SIMUSDT` quote for History20 private pairs, exact admission via `isSimulationOnlyUser`, private publication, audited per-tester allocations. Not implemented.
+- **Verified locally:** 12 suites / 200 tests (`managedListingSimulationSale.pg`, `ownerAllocation.pg`, `historicalDemoContour.pg`, `nrxSpot.pg` on a fresh DB, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `WithdrawalService`, `adminListings`, `withdrawals`); backend `tsc`.
+- **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — Issue #617 P0: the Spot simulation sale minted withdrawable USDT (fix candidate, owner decision)
+- **Found by** the independent adversarial verification of #620 (fresh subagent, disposable PostgreSQL, real routes): an ADMIN or simulation-only MARKET SELL of NRX goes to `sellTeamSpotSimulation`, which credits model-priced USDT to `Balance`; it was withdrawn to SENT (owner +41.4 M USDT from the 6250 NRX allocation; tester +689 744 USDT from 100 book-bought NRX) and reached an ordinary USER through the real book (40 000 USDT, SENT). Pre-existing on main; outside #620's diff. #620's own demo fence held on every path (27 PASS).
+- **Branch** `claude/voltex-mobile-audit-7rpjni-simulation-mint-fence` from main `63d6b02c`: merge of #551 (`a9aee9cc`, managed listings already stopped; only the append-only handoff conflicted, both kept) + one fix: the synthetic sale refuses every simulated asset (`isTestAssetPairOrSymbol`, NRX included) before any write. Ordinary pairs, book path, allocations and withdrawals unchanged.
+- **Tests:** new `simulationMintFence.pg.test.ts` (3; RED 3/3 on main + #551, GREEN after); NRX expectations in `nrxSpot.pg.test.ts` (3) and `managedListingSimulationSale.pg.test.ts` (1) now assert refusal with nothing written. Local 13 suites / 174 tests, backend `tsc`. Operator SQL in `docs/SIMULATION_SALE_P0_617.md` syntax-checked read-only on the disposable DB only.
+- **Owner decision required:** this reverses the 19.10 «NRX sale unchanged» decision (options A/B/C in the doc). Existing minted USDT on production is not touched; read-only queries provided. P1 (ordinary-asset synthetic sale at venue price, no counterparty) and P2 (approve does not verify a held row's lock) documented, not changed.
+
+## 2026-10-27 — Claude (session 01EmV3Pt) — #625: review of the owner-account DemoBalance settlement, test fixes, restored handoff
+- **Base state:**
+  - main moved to `521f2419` at 09:34 UTC: #620, #606 and #626 merged by the owner's account.
+  - The owner's account then pushed three commits to this branch:
+    - `1a886a49`: default-OFF `SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED`, which settles proceeds only in DemoBalance (option B);
+    - `5cb7945a`: merge of main;
+    - `55948fd2`: nullable `decimalPlaces()` typecheck;
+    - `f6596d4d`: the replay test's union narrowing.
+  - This commit is on top of `f6596d4d`; the settlement logic is not changed.
+- **Restored:** the `5cb7945a` merge dropped this branch's three handoff entries (two from 19.10, #551 managed-listing sale; one from 27.10, #625). They are restored above, unchanged.
+- **Test fixes:**
+  - The retry test read `replayed` on a union type, which failed ts-jest. `f6596d4d` (owner's account) made the same fix this review had: `'replayed' in second`.
+  - The suite's `afterEach` removes its DemoBalance rows. Without that, `nrxSpot.pg` failed 2 tests (global `demoBalance.count() === 0`) whenever it ran after this suite on the shared database. Reproduced locally (2 failed / 176 passed), then fixed.
+- **Added:** an opt-in concurrency test (4 × 2000 NRX against 6250). NRX is never oversold, the demo credit equals the filled sales, and real USDT is unchanged.
+- **Review notes:** `docs/SIMULATION_SALE_P0_617.md` §6. Demo Spot admission still requires `DEMO_BALANCE_ADJUSTED`, so a sale credit admits nobody.
+- **Open (owner):**
+  - activation of the flag;
+  - portfolio labelling of demo proceeds;
+  - P0-3 real-book exposure and reconciliation of production USDT already minted (read-only SQL in the doc).

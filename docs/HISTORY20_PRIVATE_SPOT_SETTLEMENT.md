@@ -1,3 +1,5 @@
+> Integration update 2026-10-27, main #625: the historical notes below predate the permanent synthetic-sale fence. NRX/other model-priced USDT sales stay default-OFF and, when separately enabled, settle only in DemoBalance. History20 uses its separate admitted SIMUSDT path, with restricted Balance rows; it never credits USDT or DemoBalance. Both paths remain atomic, and the global demo-settlement flag does not bypass History20 admission or a cold registry. No production flag was changed.
+
 # History20 private Spot test mode: why model proceeds are stopped, and the smallest safe design
 
 Owner decision of 2026-10-19 (PR #544):

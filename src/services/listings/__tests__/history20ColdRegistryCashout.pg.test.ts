@@ -79,7 +79,7 @@ pg('History20 private asset with a cold, stale or empty registry: no real money,
   // A venue that "knows" every pair: the guard may not lean on a missing venue price either.
   const venue = { getTicker: jest.fn(async (_pair: string) => ({ lastPrice: '5' })) };
   const saved: Record<string, string | undefined> = {};
-  const ENV = ['PRIVATE_TRADING_ENABLED', 'PRIVATE_TRADING_OWNER_ID', 'PRIVATE_TRADING_TEST_USER_IDS', 'HISTORY20_PRIVATE_TEST'];
+  const ENV = ['PRIVATE_TRADING_ENABLED', 'PRIVATE_TRADING_OWNER_ID', 'PRIVATE_TRADING_TEST_USER_IDS', 'HISTORY20_PRIVATE_TEST', 'SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED'];
   const balance = async (userId: string, asset: string) => {
     const row = await db.balance.findUnique({ where: { userId_asset: { userId, asset } } });
     return row ? [row.available.toString(), row.locked.toString()] : null;
@@ -96,7 +96,7 @@ pg('History20 private asset with a cold, stale or empty registry: no real money,
   beforeEach(async () => {
     [owner, tester, buyer, otherAdmin] = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
     for (const key of ENV) saved[key] = process.env[key];
-    Object.assign(process.env, { PRIVATE_TRADING_ENABLED: 'true', PRIVATE_TRADING_OWNER_ID: owner, PRIVATE_TRADING_TEST_USER_IDS: tester, HISTORY20_PRIVATE_TEST: 'enabled' });
+    Object.assign(process.env, { PRIVATE_TRADING_ENABLED: 'true', PRIVATE_TRADING_OWNER_ID: owner, PRIVATE_TRADING_TEST_USER_IDS: tester, HISTORY20_PRIVATE_TEST: 'enabled', SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED: 'true' });
     await db.user.createMany({ data: ([[owner, 'ADMIN'], [tester, 'USER'], [buyer, 'USER'], [otherAdmin, 'ADMIN']] as const)
       .map(([id, role]) => ({ id, email: `${id}@h20-cold-registry.invalid`, referralCode: id, passwordHash: 'fixture', role })) });
     // FIXTURE: private inventory as funding and private fills would leave it, next to real money.
