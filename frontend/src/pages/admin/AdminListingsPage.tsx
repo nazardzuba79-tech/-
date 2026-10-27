@@ -139,6 +139,8 @@ export function AdminListingsPage() {
   const [previewHorizon, setPreviewHorizon] = useState<'first24h' | 'growth' | 'afterGrowth' | 'history'>('first24h');
   const [previewInterval, setPreviewInterval] = useState('5m');
   const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string; startTimer: boolean } | null>(null);
+  const [deleting, setDeleting] = useState<AdminListing | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   // Server clock from the last list read: the timer statuses never trust the browser's clock alone.
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
   const [timerError, setTimerError] = useState<string | null>(null);
@@ -340,6 +342,23 @@ export function AdminListingsPage() {
     } finally { setBusy(false); }
   }
 
+  async function confirmDelete() {
+    if (!deleting || busy || deleteConfirmText !== `УДАЛИТЬ ${deleting.symbol}`) return;
+    setBusy(true); setTimerError(null);
+    try {
+      const result = await adminListingsApi.deleteListing(deleting);
+      if (!result.deleted || result.id !== deleting.id || result.symbol !== deleting.symbol)
+        throw new Error('Сервер не подтвердил удаление выбранного листинга.');
+      if (editing?.id === deleting.id) { setEditing(null); invalidatePreview(); }
+      setDeleting(null); setDeleteConfirmText('');
+      setNotice(`Листинг ${result.symbol} удалён. Публичный каталог обновится в течение нескольких секунд.`);
+      await load();
+    } catch (error) {
+      setTimerError(errorText(error));
+      await load();
+    } finally { setBusy(false); }
+  }
+
   /** Start, pause or stop the public timer of a published listing. The listing time itself never moves here. */
   async function timer(listing: AdminListing, action: ListingCountdownAction) {
     if (busy || !listing.active) return;
@@ -404,6 +423,9 @@ export function AdminListingsPage() {
                 <span className={`listing-status listing-status-${status.tone}`} data-listing-status={status.tone}>{status.text}</span>
                 <span className="listing-actions">
                   <button type="button" onClick={() => openEdit(listing)} data-edit-listing={listing.draft.symbol}>Изменить</button>
+                   <button type="button" className="listing-delete-button" disabled={busy} onClick={() => {
+                     setDeleting(listing); setDeleteConfirmText(''); setTimerError(null);
+                   }} data-delete-listing={listing.draft.symbol}>Удалить</button>
                   {listing.activeVersion !== null && <Link to={`/trade?pair=${listing.draft.symbol}/USDT`} data-open-market={listing.draft.symbol}>Открыть рынок</Link>}
                 </span>
                 {timerStatus && listing.active && (
@@ -536,6 +558,26 @@ export function AdminListingsPage() {
             </section>
           )}
         </form>
+      )}
+
+      {deleting && (
+        <div className="listing-dialog-backdrop" role="presentation">
+          <div className="listing-dialog" role="dialog" aria-modal="true" aria-label="Удаление листинга" data-delete-dialog>
+            <h2>Удалить листинг {deleting.symbol}?</h2>
+            <p><b>{deleting.draft.name}</b> · {deleting.activeVersion === null ? 'Черновик' : `Опубликованная версия ${deleting.activeVersion}`}</p>
+            <p>Будут удалены черновик, опубликованные версии и таймер только этого листинга. Рынок исчезнет из Spot и «Рынки». Восстановление в админке невозможно.</p>
+            <p>При наличии средств, ордеров или сделок сервер откажет в удалении.</p>
+            <label className="listing-delete-confirm">Введите <b>УДАЛИТЬ {deleting.symbol}</b> для подтверждения
+              <input type="text" autoComplete="off" spellCheck={false} value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)} disabled={busy} data-field="deleteConfirmation" />
+            </label>
+            <div className="listing-buttons">
+              <button type="button" className="listing-delete-button" disabled={busy || deleteConfirmText !== `УДАЛИТЬ ${deleting.symbol}`}
+                onClick={() => void confirmDelete()} data-confirm-delete>Удалить навсегда</button>
+              <button type="button" disabled={busy} onClick={() => { setDeleting(null); setDeleteConfirmText(''); }}>Отмена</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {publishing && (

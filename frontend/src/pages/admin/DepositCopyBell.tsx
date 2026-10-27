@@ -40,8 +40,10 @@ export function depositCopyLabel(event: DepositCopyNotice) {
 function Bell() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>;
 }
-export function DepositCopyTabBell() {
-  return <span data-copy-tab-bell aria-label="Есть необработанные копирования адреса" title="Копировали адрес — требуется ручная проверка" style={{ display: 'inline-flex', color: '#94600e', marginRight: 4, verticalAlign: 'middle' }}><Bell/></span>;
+export function DepositCopyTabBell({ count }: { count?: number } = {}) {
+  return <span data-copy-tab-bell aria-label="Есть необработанные копирования адреса" title="Копировали адрес — требуется ручная проверка" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#94600e', marginRight: 6, verticalAlign: 'middle' }}><Bell/>
+    {count !== undefined && <span data-copy-tab-count aria-label={`Необработанных копирований адреса: ${count}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 21, height: 21, padding: '0 5px', boxSizing: 'border-box', borderRadius: 11, background: '#c93625', color: '#fff', fontSize: 12, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{count > 99 ? '99+' : count}</span>}
+  </span>;
 }
 
 /** Expand/collapse is local and never acknowledges anything. Only the explicit
