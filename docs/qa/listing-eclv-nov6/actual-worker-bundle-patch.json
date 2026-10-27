@@ -1,0 +1,13 @@
+{
+  "source": "Actual production Worker6985ddd7-301b-4c66-a6fe-9ad6b178a097",
+  "originalSha256": "654ffae2bc3c0ffd350ae1354bb049ef376db76e1d2b719d483d5aab73a6daa8",
+  "patchedSha256": "dc95cbdd113b1273a1a3fb73d7d879bbfca93c5a49c9746dc1ff2afc846ec0b2",
+  "originalBytes": 387433,
+  "patchedBytes": 387992,
+  "changedRuntimeFunctions": [
+    "priceAt",
+    "validateScenarioControls"
+  ],
+  "allOtherTopLevelNodesIdentical": true,
+  "staleSourceMapRemoved": true
+}

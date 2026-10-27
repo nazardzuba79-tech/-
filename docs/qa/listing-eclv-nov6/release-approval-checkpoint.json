@@ -1,0 +1,79 @@
+{
+  "at": "2026-10-27T17:00:08Z",
+  "reviewHead": "9571649b7d5f680e5c010f4c49a9dd5255b81ef4",
+  "main": "e58e35d97361e9a1c9ba2862123e7d3609bc2dc0",
+  "cloudflareAccess": {
+    "pages": "HTTP200",
+    "worker": "HTTP200",
+    "mode": "Connected Cloudflare API; no browser session dependency"
+  },
+  "alreadyApplied": {
+    "scope": "PR627 frontend only",
+    "source": "b6b9ecc2b336b191ea10aa1508b64294b6266556",
+    "deployment": "05ed592d-8340-4a88-99e0-1c4fe1bdea01",
+    "status": "success",
+    "base": "a7593324be9118cfda91ee8fc6bad0b6ff3acba9",
+    "targetedTests": 70,
+    "original627WorkflowsSuccess": 19,
+    "liveProfileToggleAndCopyBothOrigins": "PASS",
+    "liveBankingRegionAndCopy": "PASS; clipboard read after completed UI confirmation",
+    "autoDeploy": false,
+    "previews": "none",
+    "apiChanged": false,
+    "workerChanged": false
+  },
+  "pendingEclv": {
+    "frontendSource": "a4dcdd42bfc1e1303407085d767d140124e885fd",
+    "frontendFilesChangedFromApplied627": 1,
+    "frontendBuild": "PASS; unchanged three public Pages build env values",
+    "apiSource": "754de3fc5bbe5b00b96dd0504ed0d5eabd6c5683",
+    "apiBase": "89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+    "apiRollbackImage": "sha256:10e66b427b7941fc49335a7fc251c55e6c93a0415e45897f2518798c6e5acc7a",
+    "apiRuntimeModules": 2,
+    "apiOperatorScopeGuardTests": 8,
+    "observedExistingComposeProfile": "cutover",
+    "apiImageBuilt": false,
+    "apiRuntimeReleased": false,
+    "workerVersionBefore": "6985ddd7-301b-4c66-a6fe-9ad6b178a097",
+    "workerOriginalBundleSha256": "654ffae2bc3c0ffd350ae1354bb049ef376db76e1d2b719d483d5aab73a6daa8",
+    "workerPatchedBundleSha256": "dc95cbdd113b1273a1a3fb73d7d879bbfca93c5a49c9746dc1ff2afc846ec0b2",
+    "workerChangedFunctions": [
+      "priceAt",
+      "validateScenarioControls"
+    ],
+    "workerActualBundleQa": "PASS;3601 candles,88 unchanged hourly fingerprints,4 invalid cases rejected",
+    "workerPluginReadOnlyPreflight": "PASS; settings fingerprint1171918d1cf3726f52727bf8e89c8873ec4116fe72ad2934a77dc66436b14865",
+    "workerReleased": false,
+    "frontendEclvPublished": false,
+    "draftDate": "2026-11-06T13:00:00Z",
+    "savedCap": 0.518,
+    "savedFinalRecovery": 0.435,
+    "newScenarioSaved": false,
+    "tradable": false,
+    "ownerAllocation": "0",
+    "seed": "eclavo-20261103-v1"
+  },
+  "automaticApprovalReview": {
+    "action": "Stage/upload ECLV prebuilt frontend to production Pages asset store",
+    "result": "REJECTED",
+    "reason": "ECLAVO instructions require separate explicit approval for production deployment",
+    "workaroundAttempted": false,
+    "temporaryUploadCredentialRemoved": true,
+    "currentCanonicalStillApplied627": true
+  },
+  "initialOperatorFailure": {
+    "result": "STOPPED_BEFORE_IMAGE_BUILD_OR_RUNTIME_CHANGE",
+    "reason": "Compose config omitted existing production service without its cutover profile",
+    "fixedInApiSource": "754de3fc5bbe5b00b96dd0504ed0d5eabd6c5683",
+    "profileMeasuredReadOnly": true,
+    "notRetriedOnProductionAfterApprovalRejection": true
+  },
+  "limitations": [
+    "Exact production1440/390 not executed; existing isolated browser QA1440/390 passed",
+    "Page13 clipped screenshot timed out twice; no screenshot PASS claimed",
+    "No real Russian ISP proof",
+    "No ECLV publication/countdown authorized"
+  ],
+  "nextApproval": "One narrow ECLV API image+market Worker content+frontend validator release, then CAS update SAME private Draft; no ECLV publication/timer, DB, balance or financial flag changes",
+  "rollbackOrder": "If Draft was saved, restore old compatible private config using fresh CAS first; then Worker old retained version, API old retained image, frontend627 deployment05ed592d (not October23)"
+}
