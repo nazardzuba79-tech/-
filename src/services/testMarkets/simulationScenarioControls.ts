@@ -74,6 +74,13 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
   const label = `scenario-controls-v2:${p.index}`;
   const envelope = Math.min(1, t / (5 * MINUTE), (p.end - at) / (5 * MINUTE));
   let base = baseline(config, p, at);
+  // At the explicit terminal peak, ease into the existing bounded range over
+  // one real hour. No History20 or other main-branch code is backported.
+  const lastStage = c.stages[c.stages.length - 1];
+  if (c.scenario === 'DEEP_RECOVERY' && c.afterGrowth === 'range'
+      && p.index === c.stages.length && lastStage.type === 'recovery' && p.open === cap) {
+    base = cap * (1 - .06 * smooth(Math.min(1, t / HOUR)));
+  }
   // An episode is a local peak -> local percentage drawdown -> recovery, all
   // part of the same price flow. It cannot leak across a configured endpoint.
   const duration = c.pullbacks.durationMinutes * MINUTE;

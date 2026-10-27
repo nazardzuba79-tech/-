@@ -74,10 +74,14 @@ export function validateScenarioControls(program: ScenarioControlsProgram, initi
   if (Number(program.first24hGainPercent) <= 0 || Number(program.first24hGainPercent) > 100000) throw new RangeError('Рост за первые сутки должен быть больше нуля и не выше 100000%');
   if (units(program.pullbacks.minDepthPercent) > units(program.pullbacks.maxDepthPercent)) throw new RangeError('Минимальная глубина отката не может быть больше максимальной');
   let elapsed = 0, previous = initial, foundDayOne = false;
-  for (const stage of program.stages) {
+  for (const [index, stage] of program.stages.entries()) {
     elapsed += stage.durationHours;
     const target = units(stage.targetPrice);
-    if (target <= 0n || target > cap * 97n / 100n || target + 2n >= cap) throw new RangeError('Цель этапа должна оставлять не менее 3% до максимальной цены для колебаний и теней');
+    // Only the explicit final DEEP_RECOVERY peak may touch the cap.
+    // Every previously valid program keeps the existing headroom behavior.
+    const terminalPeak = program.scenario === 'DEEP_RECOVERY' && program.afterGrowth === 'range'
+      && index === program.stages.length - 1 && stage.type === 'recovery' && target === cap;
+    if (target <= 0n || (!terminalPeak && (target > cap * 97n / 100n || target + 2n >= cap))) throw new RangeError('Цель этапа должна оставлять не менее 3% до максимальной цены для колебаний и теней');
     if ((stage.type === 'growth' || stage.type === 'recovery') && target <= previous) throw new RangeError('Цена в конце роста или восстановления должна быть выше цены в начале этапа');
     if (stage.type === 'range' && target !== previous) throw new RangeError('Для боковика цена в начале и конце этапа должна совпадать');
     if (stage.type === 'pullback' && target >= previous) throw new RangeError('Цена в конце отката должна быть ниже цены в начале этапа');
