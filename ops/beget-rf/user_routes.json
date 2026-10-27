@@ -582,5 +582,17 @@
   [
     "PUT",
     "/me/avatar"
+  ],
+  [
+    "GET",
+    "/market/test-assets"
+  ],
+  [
+    "GET",
+    "/market/test-assets/:pair"
+  ],
+  [
+    "GET",
+    "/market/test-assets/:pair/candles"
   ]
 ]
