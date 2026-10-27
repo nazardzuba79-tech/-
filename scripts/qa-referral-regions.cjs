@@ -55,7 +55,8 @@ app.get('/api/v1/banking/referral', auth, async (req, res) => {
   const user = await db.user.findUnique({ where: { id: req.userId }, select: { referralCode: true } });
   res.json({ referralCode: user.referralCode, referredCount: await db.user.count({ where: { referredById: req.userId } }), referralPercent: 20, rewardsByAsset: [], recentRewards: [] });
 });
-app.use('/api/v1', (_, res) => res.json([]));
+// Unrelated market feeds are explicitly unavailable, never successful malformed JSON.
+app.use('/api/v1', (_, res) => res.status(503).json({ error: 'Offline market fixture' }));
 const dist = path.resolve('frontend/dist');
 app.use(express.static(dist));
 app.get('*', (_, res) => res.sendFile(path.join(dist, 'index.html')));
@@ -92,7 +93,7 @@ async function finances() {
       }
       // Home's market providers/fonts are offline fixtures; nothing reaches a public network.
       if (url.hostname === 'fonts.googleapis.com') return route.fulfill({ contentType: 'text/css', body: '' });
-      return route.fulfill({ json: [] });
+      return route.fulfill({ status: 503, json: { error: 'Offline market fixture' } });
     });
     if (ctx.routeWebSocket) await ctx.routeWebSocket('**/*', ws => ws.close());
     return ctx;
@@ -117,6 +118,8 @@ async function finances() {
       const homeSignup = page.locator('a[href="/register"]:visible').first();
       await homeSignup.click();
       await page.waitForURL(url => url.origin === origin && url.pathname === '/register');
+      // Exercise the existing safe return path and avoid mounting an unrelated trading terminal.
+      await page.evaluate(() => history.replaceState(history.state, '', '/register?next=%2Fsettings%3Ftab%3Dreferral'));
       const email = `${region}-${nonce}@example.invalid`;
       await page.locator('#reg-email').fill(email);
       await page.locator('#reg-password').fill(password);
