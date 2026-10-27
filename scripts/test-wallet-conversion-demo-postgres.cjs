@@ -56,7 +56,7 @@ async function main() {
     const drains = Array.from({ length: 6 }, (_, i) => `qa-drain-${i}`);
     const people = { 'qa-admin': 'ADMIN', [LIQ]: 'USER', [NATIVE]: 'USER', 'qa-zero': 'USER', 'qa-tester': 'USER', 'qa-racer': 'USER', 'qa-double': 'USER',
       'qa-revoked': 'USER', 'qa-blocked': 'USER', 'qa-switch': 'USER', 'qa-dual': 'USER', 'qa-third': 'USER', 'qa-daily': 'USER', 'qa-off': 'USER',
-      'qa-stale': 'USER', 'qa-roll': 'USER', 'qa-other': 'USER',
+      'qa-stale': 'USER', 'qa-roll': 'USER', 'qa-other': 'USER', 'qa-lockwait': 'USER',
       ...Object.fromEntries(drains.map(id => [id, 'USER'])) };
     for (const [id, role] of Object.entries(people)) {
       await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`,
@@ -109,7 +109,7 @@ async function main() {
 
     // Liquidity inventory: credited through demo top-up only, as on production.
     await topUp(LIQ, 'BTC', '1'); await topUp(LIQ, 'USDT', '10000'); await topUp(LIQ, 'USD', '10000'); await topUp(LIQ, 'EUR', '10000');
-    for (const who of ['qa-tester', 'qa-double', 'qa-revoked', 'qa-blocked', 'qa-switch', 'qa-dual', NATIVE, 'qa-off', 'qa-stale', 'qa-roll', 'qa-other']) await topUp(who, 'USDT', '50');
+    for (const who of ['qa-tester', 'qa-double', 'qa-revoked', 'qa-blocked', 'qa-switch', 'qa-dual', NATIVE, 'qa-off', 'qa-stale', 'qa-roll', 'qa-other', 'qa-lockwait']) await topUp(who, 'USDT', '50');
     await topUp('qa-racer', 'USDT', '100'); await topUp('qa-daily', 'USDT', '200');
     for (const id of drains) await topUp(id, 'USDT', '100');
     await topUp('qa-admin', 'USDT', '50');
@@ -410,6 +410,30 @@ async function main() {
       assert.deepEqual((await api('GET', '/wallet/activity', 'qa-zero')).body, []);
       assert.equal(await demoOf('qa-double', 'USDT'), '20');
       failFeed = false;
+    });
+    await check('a demo quote that expires, or a block set, while the confirm waits for the demo book lock is refused; nothing moves', async () => {
+      // A demo Spot fill (or another conversion) holds the demo book lock: a separate session takes it the same way.
+      const holder = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_wallet_demo_conversion_fixture' }); await holder.connect();
+      const waiting = async () => (await sql.query(`SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`)).rows[0].n;
+      try {
+        for (const during of ['expiry', 'block']) {
+          now = Date.now();
+          const q = await conversion.quote('qa-lockwait', 'USDT', 'BTC', '10');
+          const before = await rowsOf('qa-lockwait'), liqBefore = await rowsOf(LIQ);
+          await holder.query(`SELECT pg_advisory_lock(hashtextextended('demo-spot-book', 0))`);
+          const outcome = conversion.confirm('qa-lockwait', q.quoteId).then(receipt => ({ receipt }), error => ({ error }));
+          for (let i = 0; i < 400 && await waiting() === 0; i++) await new Promise(resolve => setTimeout(resolve, 25));
+          assert.equal(await waiting(), 1, 'the confirm waits on the demo book lock');
+          if (during === 'expiry') now += 15001; else await prisma.user.update({ where: { id: 'qa-lockwait' }, data: { blockedAt: new Date() } });
+          await holder.query(`SELECT pg_advisory_unlock(hashtextextended('demo-spot-book', 0))`);
+          const { receipt, error } = await outcome;
+          assert.equal(error?.code, during === 'expiry' ? 'QUOTE_EXPIRED' : 'ACCOUNT_BLOCKED', `${during}: ${receipt ? 'APPLIED ' + receipt.operationId : error}`);
+          assert.equal(await rowsOf('qa-lockwait'), before); assert.equal(await rowsOf(LIQ), liqBefore);
+          assert.equal(await prisma.auditLog.count({ where: { id: `conversion:${q.quoteId}` } }), 0);
+          await prisma.user.update({ where: { id: 'qa-lockwait' }, data: { blockedAt: null } });
+        }
+      } finally { await holder.end(); now = Date.now(); }
+      await conserved();
     });
     await check('third-party balances unchanged; no demo account holds ordinary Balance; every demo unit accounted for', async () => {
       assert.equal(await rowsOf('qa-third'), thirdBefore);

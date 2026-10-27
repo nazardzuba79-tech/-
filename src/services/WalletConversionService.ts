@@ -312,6 +312,10 @@ export class WalletConversionService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`wallet-conversion:${userId}`}, 0))`;
       const previous = await tx.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: { in: RECEIPT_ACTIONS } } });
       if (previous) return this.receipt(previous);
+      // The final shared lock — over every account's Balance conversions (reserve check), or the demo book — is
+      // taken BEFORE the checks below, so a quote that expires, a block or a ledger change set while this waits
+      // for it cannot pass. Taken after the account lock, in this order everywhere, so the two cannot deadlock.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${quote.ledger === 'demo' ? DEMO_SPOT_LEDGER.lock : 'wallet-conversion:reserves'}, 0))`;
       if (this.now() >= quote.expiresAt) throw new ConversionError('QUOTE_EXPIRED');
       // Re-checked at execution: an admission list changed by a restart, a block set after the quote.
       if (!this.supported(quote.fromAsset) || !this.supported(quote.toAsset)) throw new ConversionError('UNSUPPORTED_ASSET');
@@ -323,10 +327,8 @@ export class WalletConversionService {
       if (feed.bid.get(quote.fromAsset) !== quote.fromPriceUsd || feed.ask.get(quote.toAsset) !== quote.toPriceUsd) throw new ConversionError('QUOTE_CHANGED');
       if (admitError) throw admitError;
       if (quote.ledger === 'demo') return this.settleDemo(tx, userId, quoteId, quote);
-      // One lock over every account's conversions: the reserve check and this receipt commit together, so
-      // concurrent conversions into one asset can never jointly exceed its reserve. Taken after the account
-      // lock, in this order everywhere, so the two locks cannot deadlock.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'wallet-conversion:reserves'}, 0))`;
+      // Under the reserve lock taken above: the reserve check and this receipt commit together, so concurrent
+      // conversions into one asset can never jointly exceed its reserve.
       await this.withinTotals(tx, userId, quote);
       try {
         await mutateSpotBalance(tx, userId, quote.fromAsset, { available: new BigNumber(quote.fromAmount).negated() });
@@ -340,13 +342,13 @@ export class WalletConversionService {
     }, { maxWait: 10_000, timeout: 20_000 });
   }
   /**
-   * The demo swap, inside the confirm transaction and after the account lock. The demo book lock serializes it
-   * with every demo Spot order and liquidity fill (nothing takes these two locks in the reverse order). Each
-   * debit is conditional on committed available funds, so neither account can go below zero; the user pays
-   * exactly what the liquidity account receives and the reverse, so no DemoBalance total changes.
+   * The demo swap, inside the confirm transaction, under the account lock and then the demo book lock (both taken
+   * by confirm). The demo book lock serializes it with every demo Spot order and liquidity fill (nothing takes
+   * these two locks in the reverse order). Each debit is conditional on committed available funds, so neither
+   * account can go below zero; the user pays exactly what the liquidity account receives and the reverse, so no
+   * DemoBalance total changes.
    */
   private async settleDemo(tx: Prisma.TransactionClient, userId: string, quoteId: string, quote: ConversionQuote) {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${DEMO_SPOT_LEDGER.lock}, 0))`;
     await this.withinTotals(tx, userId, quote);
     const accountId = await this.demoBacking(tx, userId, quote, true);
     const take = async (owner: string, asset: string, amount: string) => (await tx.demoBalance.updateMany({

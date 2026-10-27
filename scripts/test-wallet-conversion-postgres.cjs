@@ -378,6 +378,30 @@ async function main() {
       // A receipt once committed is returned even when the book later empties (lost-response recovery).
       thinBook['BTC:ask'] = null; assert.deepEqual(await conversion.confirm(thin, q.quoteId), ok); delete thinBook['BTC:ask'];
     });
+    await check('a quote that expires, or a block set, while the confirm waits for the shared reserve lock is refused; nothing moves', async () => {
+      const waiter = 'qa-wallet-lockwait'; await fund(waiter, 'USD', '10');
+      // Another account's confirm holds the shared lock: a separate session takes it, as a committing conversion would.
+      const holder = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_wallet_conversion_fixture' }); await holder.connect();
+      const waiting = async () => (await sql.query(`SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`)).rows[0].n;
+      try {
+        for (const during of ['expiry', 'block']) {
+          now = Date.now();
+          const q = await conversion.quote(waiter, 'USD', 'EUR', '1');
+          const before = JSON.stringify(await prisma.balance.findMany({ where: { userId: waiter }, orderBy: { asset: 'asc' } }));
+          await holder.query(`SELECT pg_advisory_lock(hashtextextended('wallet-conversion:reserves', 0))`);
+          const outcome = conversion.confirm(waiter, q.quoteId).then(receipt => ({ receipt }), error => ({ error }));
+          for (let i = 0; i < 400 && await waiting() === 0; i++) await new Promise(resolve => setTimeout(resolve, 25));
+          assert.equal(await waiting(), 1, 'the confirm waits on the shared lock');
+          if (during === 'expiry') now += 15001; else await prisma.user.update({ where: { id: waiter }, data: { blockedAt: new Date() } });
+          await holder.query(`SELECT pg_advisory_unlock(hashtextextended('wallet-conversion:reserves', 0))`);
+          const { receipt, error } = await outcome;
+          assert.equal(error?.code, during === 'expiry' ? 'QUOTE_EXPIRED' : 'ACCOUNT_BLOCKED', `${during}: ${receipt ? 'APPLIED ' + receipt.operationId : error}`);
+          assert.equal(JSON.stringify(await prisma.balance.findMany({ where: { userId: waiter }, orderBy: { asset: 'asc' } })), before);
+          assert.equal(await prisma.auditLog.count({ where: { id: `conversion:${q.quoteId}` } }), 0);
+          await prisma.user.update({ where: { id: waiter }, data: { blockedAt: null } });
+        }
+      } finally { await holder.end(); now = Date.now(); }
+    });
     if (process.env.WALLET_QA_BROWSER === '1') liveApi = walletActivityRouter(prisma, conversion, true);
     if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: jwt.sign({ sub: user }, process.env.JWT_SECRET), prisma, user, out, thinBook, fund });
     const report = { database: 'disposable loopback PostgreSQL', passed: checks, checks: checks.length, fee: '0', finalBalances: await snapshot(), productionTouched: false };
