@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
-import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
+import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
 import { NEURIX } from './testMarkets/neurix';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
@@ -296,11 +296,17 @@ export class OrderService {
   private async sellTeamSpotSimulationOnce(userId: string, pair: string, quantity: BigNumber, orderId: string) {
     const [base, quote] = pair.split('/');
 
-    const ticker = pair === NEURIX.pair
-      ? await spotPriceSource(this.priceSource).getTicker(pair)
-      : await this.priceSource.getTicker(pair);
+    // The same server price the pair's Spot ticker, chart and conditional
+    // triggers use: NRX and a published managed listing their model price,
+    // an ordinary pair the venue. A modeled pair is never priced by the venue.
+    const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
+    // A managed listing's proceeds would be ordinary Spot USDT, which can be
+    // withdrawn, and model-priced earnings must not be. Until a non-withdrawable
+    // settlement exists its synthetic sale stops here, before any write.
+    // NRX (legacy) and ordinary pairs are unchanged.
+    if (pair !== NEURIX.pair && managedListingForPair(pair)) throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
 
