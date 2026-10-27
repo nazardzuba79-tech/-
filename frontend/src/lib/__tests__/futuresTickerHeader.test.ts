@@ -43,7 +43,7 @@ function normalizeApiTs(text: string): string {
     // Exclude only conversion additions from the existing Futures/Spot fingerprint.
     .replace(/export interface WalletConversionQuote \{[\s\S]*?export interface WalletConversionReceipt[^\n]*\n\n/, '')
     .replace(/^  getConversionReceipt:[^\n]*\n\n/m, '')
-    .replace(/^  (?:getWalletActivity|getConversionAssets|quoteConversion|confirmConversion):[^\n]*\n/gm, '')
+    .replace(/^  (?:getWalletActivity|getConversionAvailability|getConversionAssets|quoteConversion|confirmConversion):[^\n]*\n/gm, '')
     // Demo Spot (Issue #592): additive demo-ledger methods only; no Futures/Spot method changes.
     .replace("  // Demo Spot (Issue #592): with the server's DEMO_SPOT_ENABLED an\n  // admin-credited account trades the demo ledger too (see lib/demoSpot).\n  getDemoSpotAccess: () => request<{ enabled: boolean; admitted: boolean; ledger?: 'spot' | 'demo' | 'none' }>('/demo/spot/access'),\n\n  /** `requestId` makes a retry after a lost response return the same order. */\n  placeDemoSpotOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string; requestId: string }) =>\n    request('/demo/orders', { method: 'POST', body: JSON.stringify(params) }),\n\n  getDemoOrderHistory: () =>\n    request<\n      {\n        id: string;\n        pair: string;\n        side: 'BUY' | 'SELL';\n        type: 'LIMIT' | 'MARKET';\n        price: string | null;\n        originalQuantity: string;\n        remainingQuantity: string;\n        status: string;\n        createdAt: string;\n      }[]\n    >('/demo/orders/history'),\n\n", '')
     // Demo Spot on: the optional request ID on the two ordinary Spot order calls (Issue #592 review).

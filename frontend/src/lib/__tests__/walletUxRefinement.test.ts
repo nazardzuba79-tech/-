@@ -648,7 +648,8 @@ test.each([
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
   // Re-pinned 2026-10-23 for the reviewed Wallet Conversion history (adjustment/conversion rows, string decimals):
   // the whole file now, as the typography reversal above no longer applies to its changed rows.
-  [wallet + 'TransactionHistory.tsx', 'e043298701b504be26441b88e75e7b5bbcaf3df4d800bd9cd61d0a600a24b277'],
+  // Re-pinned 2026-10-27: a DemoBalance conversion row carries its non-withdrawable account line (walletConversion.test.ts).
+  [wallet + 'TransactionHistory.tsx', 'f312e3cf4f2d2daa89e401cf6321ef7082861eebdc269062456c045c6a9c5311'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
