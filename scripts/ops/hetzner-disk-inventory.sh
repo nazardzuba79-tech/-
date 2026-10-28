@@ -5,6 +5,7 @@
 set -u
 set -o pipefail
 export LC_ALL=C
+export TZ=UTC
 
 if [[ "${1:-}" == "--help" ]]; then
   cat <<'USAGE'
@@ -50,7 +51,9 @@ printf '%s\n' 'READ_ONLY=true; PRODUCTION_MUTATIONS=none; RECOVERED_BYTES=0'
 run 'filesystem capacities' df -hT
 run 'inode capacities' df -ih
 run 'block devices' lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
-run 'mount details' findmnt -rn -o TARGET,SOURCE,FSTYPE,OPTIONS / /var/lib/docker /opt
+run 'root mount details' findmnt -rn -o TARGET,SOURCE,FSTYPE,OPTIONS -T /
+if [[ -d /var/lib/docker ]]; then run 'Docker mount details' findmnt -rn -o TARGET,SOURCE,FSTYPE,OPTIONS -T /var/lib/docker; fi
+if [[ -d /opt ]]; then run 'operations mount details' findmnt -rn -o TARGET,SOURCE,FSTYPE,OPTIONS -T /opt; fi
 
 # Only directory sizes, never file content or a secret-bearing path listing.
 for dir in /var /opt /srv /home /root /tmp; do
