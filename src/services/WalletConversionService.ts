@@ -165,6 +165,10 @@ export interface ConversionQuote {
   fromPriceUsd: string; toPriceUsd: string; fee: '0'; source: 'kraken'; pricing: 'bid-ask'; fetchedAt: number; expiresAt: number;
   ledger: ConversionLedger;
 }
+export interface ConversionAuthority {
+  sessionId: string;
+  expiresAt: number;
+}
 export interface ConversionReceipt extends ConversionQuote { status: 'APPLIED'; operationId: string; createdAt: string }
 
 type Db = Pick<PrismaClient, 'user'> | Prisma.TransactionClient;
@@ -307,7 +311,7 @@ export class WalletConversionService {
     const row = await this.prisma.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: { in: RECEIPT_ACTIONS } } });
     return row ? this.receipt(row) : null;
   }
-  async confirm(userId: string, quoteId: string): Promise<ConversionReceipt> {
+  async confirm(userId: string, quoteId: string, authority?: ConversionAuthority): Promise<ConversionReceipt> {
     // Receipt first: a committed operation remains recoverable even if the provider is down.
     const applied = await this.status(userId, quoteId); if (applied) return applied;
     const record = await this.prisma.auditLog.findFirst({ where: { id: quoteId, userId, action: 'WALLET_CONVERSION_QUOTED' } });
@@ -330,6 +334,28 @@ export class WalletConversionService {
       // taken BEFORE the checks below, so a quote that expires, a block or a ledger change set while this waits
       // for it cannot pass. Taken after the account lock, in this order everywhere, so the two cannot deadlock.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${quote.ledger === 'demo' ? DEMO_SPOT_LEDGER.lock : 'wallet-conversion:reserves'}, 0))`;
+      // The HTTP route supplies the already-verified Session identity. Recheck it
+      // *inside this fund-moving transaction*, after any shared lock wait.
+      // A logout/block committed while the command was waiting must not execute.
+      // Direct service fixture calls without an actor remain internal-only.
+      if (authority) {
+        if (!authority.sessionId || !Number.isSafeInteger(authority.expiresAt) || this.now() >= authority.expiresAt)
+          throw new ConversionError('SESSION_REVOKED');
+        let authorized: Array<{ id: string }>;
+        try {
+          authorized = await tx.$queryRaw<Array<{ id: string }>>`
+            SELECT s.id FROM "User" u JOIN "Session" s ON s."userId" = u.id
+            WHERE u.id = ${userId} AND s.id = ${authority.sessionId}
+              AND s."revokedAt" IS NULL AND u."blockedAt" IS NULL
+            FOR SHARE OF u, s NOWAIT`;
+        } catch (error) {
+          const pgCode = (error as { meta?: { code?: string }; code?: string }).meta?.code;
+          if (pgCode === '55P03' || (error as { code?: string }).code === '55P03')
+            throw new ConversionError('AUTHORITY_BUSY');
+          throw error;
+        }
+        if (authorized.length !== 1) throw new ConversionError('SESSION_REVOKED');
+      }
       if (this.now() >= quote.expiresAt) throw new ConversionError('QUOTE_EXPIRED');
       // Re-checked at execution: an admission list changed by a restart, a block set after the quote.
       if (!this.supported(quote.fromAsset) || !this.supported(quote.toAsset)) throw new ConversionError('UNSUPPORTED_ASSET');
