@@ -46,9 +46,12 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
-#613 candidate pins (repinned 2026-10-27, Claude, task #153: process isolation)
-Both policies pin the same runtime, 5d69057d (#613 head runtime plus
-src/stocksAuthority.ts); only the process topology differs (TOPOLOGY export):
+#613 candidate pins (repinned 2026-10-28, Claude: P1 gateway identity multiplexing)
+Both policies pin the same runtime, 386f7fc8 (#613 P1: identity checks
+multiplexed, no pre-command re-identity with the PostgreSQL authority); the plan,
+thresholds, taskset, ABBA order and PAIRS are unchanged. Rounds 1-2 pinned
+5d69057d (#613 head runtime plus src/stocksAuthority.ts). Only the process topology
+differs between the policies (TOPOLOGY export):
 - policy-613.cjs, 'single-process': api-worker.cjs hosts the crypto API, the Stocks
   authority (stocksTestCashRouter + PostgreSQL authority), the gateway and the
   synthetic market, exactly as before this change (the head's behaviour).
