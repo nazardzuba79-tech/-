@@ -9,6 +9,18 @@
 // client-minus-server gap. Per pin: pooled numbers, and after vs before for the viewer
 // path. Reads stored runs; starts no workload.
 const fs = require('node:fs'), path = require('node:path');
+const {delayMs} = require('./sched.cjs');
+// Runnable-but-waiting time (schedstat) of each process over the measured window, all threads; PostgreSQL summed
+// over the backends alive at the end (a backend that connected during the window counts from zero).
+function waiting(result) {
+  const b = result.metrics?.before, a = result.metrics?.after, hb = result.metrics?.host?.before, ha = result.metrics?.host?.after;
+  const out = {api: delayMs(b?.sched, a?.sched)?.all ?? null};
+  for (const [name, x] of Object.entries(a?.processes ?? {})) if (name !== 'api') out[name] = delayMs(b?.processes?.[name]?.sched, x?.sched)?.all ?? null;
+  out.driver = delayMs(hb?.driver?.sched, ha?.driver?.sched)?.all ?? null;
+  const backends = ha?.postgres?.backends;
+  out.postgres = backends ? Object.entries(backends).reduce((t, [pid, x]) => x ? t + (x.delayNs - (hb?.postgres?.backends?.[pid]?.delayNs ?? 0)) / 1e6 : t, 0) : null;
+  return out;
+}
 
 const percentile = (a, p) => a.length ? [...a].sort((x, y) => x - y)[Math.ceil(a.length * p) - 1] : null;
 const finite = x => typeof x === 'number' && Number.isFinite(x);
@@ -51,6 +63,7 @@ function arm(result) {
     postgresCpuMs: delta(result.metrics?.host?.after?.postgres?.cpuMs, result.metrics?.host?.before?.postgres?.cpuMs),
     serverCrypto: stats(of('crypto').map(s => result.serverTimings?.[s.requestId]).filter(finite)),
     clientMinusServerCrypto: stats(of('crypto').filter(s => finite(result.serverTimings?.[s.requestId])).map(s => s.ms - result.serverTimings[s.requestId])),
+    runQueueWaitMs: waiting(result),
     websocket: {connectionsAfter: a?.market?.connections ?? null, subscribeControls: delta(market(a, 'controls'), market(b, 'controls')), restFetches: delta(market(a, 'starts'), market(b, 'starts'))},
   };
 }
@@ -83,7 +96,9 @@ function report(runsDir) {
       meanDriverCpuMs: {baseline: meanOf('baseline', x => x.driver.cpuMs), mixed: meanOf('mixed', x => x.driver.cpuMs)},
       meanPostgresCpuMs: {baseline: meanOf('baseline', x => x.postgresCpuMs), mixed: meanOf('mixed', x => x.postgresCpuMs)},
       serverCryptoP95Ms: {baseline: meanOf('baseline', x => x.serverCrypto.p95), mixed: meanOf('mixed', x => x.serverCrypto.p95)},
-      clientMinusServerCryptoP95Ms: {baseline: meanOf('baseline', x => x.clientMinusServerCrypto.p95), mixed: meanOf('mixed', x => x.clientMinusServerCrypto.p95)}};
+      clientMinusServerCryptoP95Ms: {baseline: meanOf('baseline', x => x.clientMinusServerCrypto.p95), mixed: meanOf('mixed', x => x.clientMinusServerCrypto.p95)},
+      meanRunQueueWaitMs: Object.fromEntries(['baseline', 'mixed'].map(armName => [armName, Object.fromEntries([...new Set(done.flatMap(r => Object.keys(r[armName].runQueueWaitMs ?? {})))]
+        .map(name => [name, meanOf(armName, x => x.runQueueWaitMs?.[name])]))]))};
     const k = kinds[kind];
     k.pooledCryptoP95ChangePercent = pct(k.mixedCrypto.p95, k.baselineCrypto.p95);
     k.pooledCryptoP99ChangePercent = pct(k.mixedCrypto.p99, k.baselineCrypto.p99);
@@ -111,6 +126,8 @@ function markdown(r) {
     const names = Object.keys(k.meanProcessCpuMs.mixed);
     lines.push(`| ${kind} | ${k.topology.join(',') || '—'} | ${names.map(n => `${n} ${f(k.meanProcessCpuMs.baseline[n], 0)} → ${f(k.meanProcessCpuMs.mixed[n], 0)}`).join('; ') || '—'} | ${names.map(n => `${n} ${f(k.maxMixedProcessRssMb[n], 0)}`).join('; ') || '—'} | ${f(k.meanDriverCpuMs.baseline, 0)} → ${f(k.meanDriverCpuMs.mixed, 0)} | ${f(k.meanPostgresCpuMs.baseline, 0)} → ${f(k.meanPostgresCpuMs.mixed, 0)} | ${f(k.serverCryptoP95Ms.baseline)} → ${f(k.serverCryptoP95Ms.mixed)} | ${f(k.clientMinusServerCryptoP95Ms.baseline)} → ${f(k.clientMinusServerCryptoP95Ms.mixed)} |`);
   }
+  lines.push('', 'Time runnable but waiting for a CPU per measured window (schedstat, all threads, mean ms; growth from baseline to mixed is CPU contention):', '', '| pin | baseline | mixed |', '|---|---|---|');
+  for (const [kind, k] of Object.entries(r.kinds)) { const w = k.meanRunQueueWaitMs ?? {}; const row = armName => Object.entries(w[armName] ?? {}).map(([n, x]) => `${n} ${f(x, 0)}`).join('; ') || '—'; lines.push(`| ${kind} | ${row('baseline')} | ${row('mixed')} |`); }
   if (r.afterVsBefore) {
     const v = r.afterVsBefore;
     lines.push('', `After vs before (mixed arm): crypto p95 ${f(v.mixedCryptoP95Percent)} %, viewer state p50 ${f(v.viewerStateP50Percent)} % / p95 ${f(v.viewerStateP95Percent)} %, mean API CPU ${f(v.mixedApiCpuPercent)} %; viewer-induced API CPU ${f(v.viewerInducedApiCpuMs.before, 0)} → ${f(v.viewerInducedApiCpuMs.after, 0)} ms.`);

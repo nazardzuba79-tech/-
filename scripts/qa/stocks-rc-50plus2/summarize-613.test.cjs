@@ -174,3 +174,17 @@ test('a measured p95 PASS is reported as such; collection does not depend on the
   edit(dir, 'after-1', 'result.json', j => { j.status = 'FAIL_LOCAL_DIAGNOSTIC'; });
   incomplete(summarize(dir, {pairs: 1}), 'after-1:STATUS_INCONSISTENT');
 });
+
+test('statistics are report only: spread, run bootstrap and the A/A baseline reference never change the verdict', t => {
+  const one = summarize(FIXTURE, {pairs: 1}).kinds.after.statistics;
+  assert.equal(one.runs, 1); assert.equal(one.bootstrapPooledDeltaPercent95, null); assert.equal(one.aaBaselineOddVsEvenPooledDeltaPercent, null);
+  // Two identical pairs: no spread, the bootstrap collapses on the pooled value, and A/A is exactly zero.
+  const dir = copy(t);
+  for (const k of ['before', 'after']) fs.cpSync(path.join(dir, k + '-1'), path.join(dir, k + '-2'), {recursive: true});
+  const r = summarize(dir, {pairs: 2}), s = r.kinds.after.statistics;
+  assert.equal(r.collection.status, 'COMPLETE');
+  assert.deepEqual(r.capacity.kinds, {before: 'DIAGNOSTIC_P95_FAIL', after: 'DIAGNOSTIC_P95_FAIL'});
+  assert.equal(s.runs, 2); assert.equal(s.sdRunDeltaPercent, 0); assert.equal(s.aaBaselineOddVsEvenPooledDeltaPercent, 0);
+  assert.deepEqual(s.bootstrapPooledDeltaPercent95.map(x => x.toFixed(9)), [r.kinds.after.pooledDeltaPercent, r.kinds.after.pooledDeltaPercent].map(x => x.toFixed(9)));
+  assert.match(markdown(r), /\| after \| 2 \| /);
+});

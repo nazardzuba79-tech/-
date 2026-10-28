@@ -192,6 +192,37 @@ baselines): the commit that writes the order with fsync, on the `DemoBalance` of
 a Stocks trader (cause 2 above). Under the agreed rule the release layout is still **FAIL** at +8.6 %.
 The next push replicates the measurement unchanged on the same runtime.
 
+**Replicate, same runtime and method:** [run 40735098249](https://github.com/nazardzuba79-tech/-/actions/runs/40735098249)
+on `fcc0c3c2` (artifact SHA-256 `ea3bd143…`), COMPLETE 8/8. Separated +22.9 % pooled, +22.4 % median, every
+run over the line (+10.7, +21.2, +23.7, +26.6 %); one process −3.5 % pooled, +8.7 % median (its first baseline
+arm had a 45 ms p95 outlier). Across the eight separated runs of rounds 3 and 3b the median is about +19 %:
+the separated layout has a real regression, not noise. Per operation (pooled over the four runs) every crypto
+operation slows at p90, reads included: `balances` 4.32 → 5.18 ms, `open` 4.41 → 5.57 ms, `place-limit`
+9.97 → 12.18 ms, `cancel` 9.07 → 10.69 ms. The added time is server-side (server p95 8.4 → 10.3 ms; the
+client−server gap is unchanged) while the crypto API's own CPU and event-loop use do not change. Reads hold no
+`DemoBalance` lock, so the trader-0 row lock cannot be the main cause; waiting for a CPU or for PostgreSQL can.
+
+### Method changes of 28.10 (owner request) and the profiling that decides the cause
+
+- **Normal load within the limits.** The harness's trader made 7 private requests every 4 s (state, limit,
+  cancel, buy, replay, sell, replay): 210 a minute for two traders before the viewers' identity batches, about
+  300 against the reviewed 240/min ceiling. A trader now reads its state every 4 s and runs that order cycle
+  every 8 s (`driver.cjs` `PLAN.traderOrderEvery`). The separated topology's authority sits behind the real
+  private ingress (240/min), so a run over the quota fails instead of passing unseen.
+- **Over the limit, on purpose and apart:** `identity-load.pg.test.cjs` 'over the private quota' drives both
+  traders far over the quota with the 50 viewers polling. Local: 429 from about 24 s, only 200 / 429 / the
+  market-data `QUOTE_STALE` anywhere, no order or receipt for a refused intent, every accepted market order
+  filled once, limits cancelled exactly when the cancel was accepted, nothing for viewers, service back about
+  33 s later, and a forged or signed-out token still refused.
+- **Repeats and statistics:** PAIRS 8 (was 4); the summary adds per-run spread, a run bootstrap of the pooled
+  Δp95 and an A/A reference (baseline arms of odd vs even runs). The verdict and the +5 % line are unchanged.
+- **Profiling:** every run records each process's time runnable but waiting for a CPU (`sched.cjs`,
+  `/proc/<pid>/task/*/schedstat`), PostgreSQL backends included. A `pg-profile` job logs every lock wait
+  over 1 ms with its holder process, statements over 2 ms, checkpoints, autovacuum and WAL sync time, with each
+  process's connections named; `pg-profile-613.cjs` compares the slowest 5 % of crypto requests with all of
+  them. A `driver-placement` job runs the separated pin with the load driver on the server's two vCPUs and on
+  two other CPUs, interleaved on the same runner: in production the 50 viewers' clients are their own devices.
+
 ## Gateway → authority identity checks (P1, resolved)
 
 Before: the gateway called `GET identity` on the authority for every gateway request, and a

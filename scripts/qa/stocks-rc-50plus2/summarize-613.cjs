@@ -31,6 +31,27 @@ const cpuMs = m => CPU.every(k => [m?.before?.cpu?.[k], m?.after?.cpu?.[k]].ever
 const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const finite = x => typeof x === 'number' && Number.isFinite(x);
+const sd = a => { const m = mean(a); return a.length > 1 ? Math.sqrt(a.reduce((t, x) => t + (x - m) ** 2, 0) / (a.length - 1)) : null; };
+const pooledDelta = (base, mixed) => { const pb = percentile(base, .95), pm = percentile(mixed, .95); return pb ? (pm - pb) / pb * 100 : null; };
+// Report only, never the verdict. Spread of the per-run Δp95, a seeded bootstrap of the pooled Δp95 over whole
+// runs (95 % interval), and an A/A reference: the baseline arms (no Stocks load at all) of the odd-numbered runs
+// against those of the even-numbered runs, on the same runner. A pooled Δp95 inside the A/A spread cannot be told
+// apart from run-to-run noise with this many pairs.
+function statistics(done) {
+  const deltas = done.map(r => r.comparison.cryptoP95ChangePercent);
+  let seed = 613; const random = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const samples = [];
+  if (done.length > 1) for (let b = 0; b < 2000; b++) {
+    const pick = Array.from({length: done.length}, () => done[Math.floor(random() * done.length)]);
+    samples.push(pooledDelta(pick.flatMap(r => r.baseline.latencies), pick.flatMap(r => r.mixed.latencies)));
+  }
+  const odd = done.filter((_, i) => i % 2 === 0), even = done.filter((_, i) => i % 2 === 1);
+  return {runs: done.length, runDeltaPercent: deltas, meanRunDeltaPercent: mean(deltas), sdRunDeltaPercent: sd(deltas),
+    minRunDeltaPercent: deltas.length ? Math.min(...deltas) : null, maxRunDeltaPercent: deltas.length ? Math.max(...deltas) : null,
+    baselineP95Ms: done.map(r => r.baseline.p95), sdBaselineP95Ms: sd(done.map(r => r.baseline.p95)),
+    bootstrapPooledDeltaPercent95: samples.length ? [percentile(samples, .025), percentile(samples, .975)] : null,
+    aaBaselineOddVsEvenPooledDeltaPercent: odd.length && even.length ? pooledDelta(odd.flatMap(r => r.baseline.latencies), even.flatMap(r => r.baseline.latencies)) : null};
+}
 
 function readJson(file, problems, missing, corrupt) {
   if (!fs.existsSync(file)) { problems.push(missing); return null; }
@@ -121,7 +142,8 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies()} = {}) {
       pooledBaselineP95Ms: pb, pooledMixedP95Ms: pm, pooledDeltaPercent: pooled,
       meanBaselineApiCpuMs: mean(done.map(r => r.baseline.apiCpuMs)), meanMixedApiCpuMs: mean(done.map(r => r.mixed.apiCpuMs)),
       meanViewerInducedApiCpuMs: mean(done.map(r => r.mixed.apiCpuMs - r.baseline.apiCpuMs)),
-      diagnosticP95: evaluated ? (pooled <= THRESHOLD_PERCENT ? 'DIAGNOSTIC_P95_PASS' : 'DIAGNOSTIC_P95_FAIL') : 'NOT_EVALUATED_INCOMPLETE_COLLECTION'};
+      diagnosticP95: evaluated ? (pooled <= THRESHOLD_PERCENT ? 'DIAGNOSTIC_P95_PASS' : 'DIAGNOSTIC_P95_FAIL') : 'NOT_EVALUATED_INCOMPLETE_COLLECTION',
+      statistics: statistics(done)};
   }
   const capacity = {acceptance: false, scope: 'CI_DIAGNOSTIC_NOT_CAPACITY_ACCEPTANCE', thresholdPercent: THRESHOLD_PERCENT, kinds: Object.fromEntries(KINDS.map(k => [k, kinds[k].diagnosticP95]))};
   return {collection, capacity, kinds, runs};
@@ -135,6 +157,8 @@ function markdown({collection, capacity, kinds, runs}) {
   for (const r of runs) lines.push(`| ${r.name} | ${(r.runtime || '').slice(0, 8)} | ${r.status} | ${r.complete ? 'yes' : 'no'} | ${f(r.comparison?.cryptoP95ChangePercent)} | ${f(r.baseline?.p95)} | ${f(r.mixed?.p95)} | ${f(r.baseline?.apiCpuMs, 0)} | ${f(r.mixed?.apiCpuMs, 0)} | ${r.mixed?.timeouts ?? '—'} | ${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join(' / ') : '—'} |`);
   lines.push('', '| pin | complete runs | median run Δp95 % | pooled baseline p95 ms | pooled mixed p95 ms | pooled Δp95 % | mean viewer-induced API CPU ms | diagnostic p95 |', '|---|---|---|---|---|---|---|---|');
   for (const [kind, k] of Object.entries(kinds)) lines.push(`| ${kind} ${(k.pin || '').slice(0, 8)} | ${k.completeRuns}/${k.runs} | ${f(k.medianRunDeltaPercent)} | ${f(k.pooledBaselineP95Ms)} | ${f(k.pooledMixedP95Ms)} | ${f(k.pooledDeltaPercent)} | ${f(k.meanViewerInducedApiCpuMs, 0)} | ${k.diagnosticP95} |`);
+  lines.push('', 'Statistics (report only; the verdict above is the pooled Δp95 against the threshold, unchanged):', '', '| pin | runs | per-run Δp95 % | mean ± SD % | bootstrap 95 % of pooled Δp95 % | A/A: baseline odd vs even runs, pooled Δp95 % | baseline p95 SD ms |', '|---|---|---|---|---|---|---|');
+  for (const [kind, k] of Object.entries(kinds)) { const t = k.statistics; lines.push(`| ${kind} | ${t.runs} | ${t.runDeltaPercent.map(x => f(x, 1)).join(', ')} | ${f(t.meanRunDeltaPercent, 1)} ± ${f(t.sdRunDeltaPercent, 1)} | ${t.bootstrapPooledDeltaPercent95 ? f(t.bootstrapPooledDeltaPercent95[0], 1) + ' … ' + f(t.bootstrapPooledDeltaPercent95[1], 1) : '—'} | ${f(t.aaBaselineOddVsEvenPooledDeltaPercent, 1)} | ${f(t.sdBaselineP95Ms)} |`); }
   lines.push('', `Target: crypto p95 <= +${capacity.thresholdPercent}% with 50 viewers + 2 traders. CI_DIAGNOSTIC only (GitHub-hosted runner, 2 vCPUs via taskset, own PostgreSQL, synthetic users); not capacity acceptance.`);
   return lines.join('\n');
 }

@@ -25,8 +25,22 @@ No automatic repeat or retry is permitted.
 Both arms: same Node/PG/settings, API worker heap cap, initial logical state,
 5s crypto warmup, 20s fixed arrivals, 80 crypto cycles and 320 crypto requests.
 Mixed: 50 distinct viewer sessions (one state/sec each, staggered), 50 direct
-mutation denials, 2 allowlisted traders, 5 cycles each of Limit/cancel plus
-Market buy/sell and exact intent replays. Source TTL and rate gates unchanged.
+mutation denials, 2 allowlisted traders (5 state reads each, 2 order cycles of
+Limit/cancel plus Market buy/sell and exact intent replays). Source TTL and rate
+gates unchanged.
+Normal load since 28.10 (driver.cjs PLAN.traderOrderEvery=2): each trader reads its
+state every 4 s and runs the order cycle (Limit/cancel, Market buy/sell, exact
+replays) on every second read, every 8 s. The old every-4 s cycle was 7 private
+authority requests per trader every 4 s (210/min for two) before the viewers'
+identity batches: about 300/min against the release ingress's 240/min ceiling.
+The separated topology's authority now sits behind that real private ingress
+(capability, loopback, 240/min), so a run over the quota fails on the 429.
+Over-limit behaviour is tested apart, on purpose: services/stocks-global/
+identity-load.pg.test.cjs ('over the private quota').
+Diagnostics (report only, never the verdict): --pg-profile (PostgreSQL lock waits,
+slow statements, WAL; pg-profile-613.cjs), --driver-apart (load driver on other
+CPUs than the server), schedstat run-queue waiting per process (sched.cjs, in
+every run's metrics) and per-pin statistics in summarize-613.cjs.
 The shared DemoBalance is exercised concurrently by actual Demo Spot/Stocks.
 Cash/order/receipt/viewer invariants and HTTP timeouts are checked independently.
 

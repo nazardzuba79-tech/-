@@ -38,7 +38,7 @@ function arm(name) {
       raw.push({name: 'http.server', start: 0, ms: 2.5, request: rid, route: '/__stocks_global/state'}, {name: 'http.server', start: 0, ms: 1.25, request: rid, route: '/api/v1/stocks-test-cash/identity'});
       if (cycle === 0) samples.push({requestId: id(), kind: 'viewer', op: 'deny-order', status: 401, ms: 3, at: i * 20});
     }
-    for (let i = 0; i < 2; i++) for (let cycle = 0; cycle < 5; cycle++) for (const op of TRADER) samples.push({requestId: id(), kind: 'trader', op, status: 200, ms: 15, at: 500 + i * 2000 + cycle * 4000});
+    for (let i = 0; i < 2; i++) for (let cycle = 0; cycle < 5; cycle++) for (const op of TRADER) if (op === 'state' || cycle % 2 === 1) samples.push({requestId: id(), kind: 'trader', op, status: 200, ms: 15, at: 500 + i * 2000 + cycle * 4000});
   }
   raw.push({name: 'gc', start: 0, ms: 99, request: null, durationMs: 1.5}, {name: 'pg.wait.sample', start: 0, ms: 1, request: null, rows: [{type: 'LWLock', event: 'WALWrite', count: 1}]});
   const result = {arm: name, warmup: false, cryptoJobs: 80, traceSha, viewerCount: name === 'mixed' ? 50 : 0, traderCount: name === 'mixed' ? 2 : 0,

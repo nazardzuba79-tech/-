@@ -27,9 +27,11 @@ jobs:
     name: 50+2 paired before/after (2 vCPU, report only)
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 60
     env:
-      PAIRS: '4'
+      # 8 pairs since 28.10 (was 4): one run's p95 varies by about ±25 %, so the pooled verdict needs more runs;
+      # the summary adds the per-run spread, a bootstrap interval and an A/A baseline reference (report only).
+      PAIRS: '8'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,6 +132,159 @@ jobs:
           path: output/rc50-613
           retention-days: 14
           if-no-files-found: error
+
+  # PostgreSQL profile of the separated layout (owner request 28.10: find the concrete cause of the separated
+  # p95 tail by profiling, e.g. whether trader 0's DemoBalance row locks delay the crypto requests). Two runs of
+  # the after pin with --pg-profile: lock waits over 1 ms with their holder process, statements over 2 ms,
+  # connections named per process, checkpoints, autovacuum, WAL sync time. pg-profile-613.cjs compares the
+  # slowest 5 % of crypto requests with all of them. Logging costs both arms: never a p95 verdict.
+  pg-profile:
+    name: 50+2 PostgreSQL profile, separated (diagnostic, not a p95 verdict)
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Profile analysis self-test on a captured PostgreSQL log (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/pg-profile-613.test.cjs
+      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-pg"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "PG_DIR=$W" >> "$GITHUB_ENV"
+      - name: Two profiled runs, each pinned to 2 vCPUs
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          for i in 1 2; do
+            rc=0; mkdir -p "$PG_DIR/runs/after-$i"
+            (cd "$PG_DIR/after" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --pg-profile \
+              --root . --pg-bin "$PG_BIN" --out "$PG_DIR/runs/after-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$PG_DIR/runs/after-$i/exit-code"
+          done
+      - name: What overlapped the slow crypto requests (report only)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/pg-profile-613.cjs "$PG_DIR"/runs/after-*/out --json "$PG_DIR/pg-profile.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports and the PostgreSQL logs (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-pg
+          cp "$PG_DIR/pg-profile.json" output/rc50-613-pg/ 2>/dev/null || true
+          for r in "$PG_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-pg/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-pg/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-pg-profile-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/rc50-613-pg
+          retention-days: 14
+          if-no-files-found: error
+
+  # Experiment (report only): where the load driver runs. In the paired runs the driver, which stands in for the
+  # 50 viewers' and 2 traders' own devices, shares the server's two vCPUs; production clients do not. Same runner,
+  # same after pin and plan, interleaved: 'together' (everything on CPUs 0,1, as the paired runs) and 'apart'
+  # (server on 0,1, driver on 2,3: diagnostic-run-613.cjs --driver-apart). The extended report compares their
+  # Δp95 and the per-process time spent waiting for a CPU. Never a verdict; needs a runner with 4 CPUs.
+  driver-placement:
+    name: 50+2 driver placement experiment, separated (report only)
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-placement"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "PLACEMENT_DIR=$W" >> "$GITHUB_ENV"
+          echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
+      - name: Interleaved runs (ABBA), together on 0,1 and apart (server 0,1, driver 2,3)
+        run: |
+          set -uo pipefail
+          if [ "$(nproc --all)" -lt 4 ]; then echo "::notice title=driver placement::NOT_RUN: this runner has $(nproc --all) CPUs"; exit 0; fi
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          run() {
+            local kind=$1 i=$2 cpus=0,1 flag="" rc=0; [ "$kind" = apart ] && { cpus=2,3; flag="--driver-apart"; }
+            mkdir -p "$PLACEMENT_DIR/runs/$kind-$i"
+            (cd "$PLACEMENT_DIR/after" && taskset -c "$cpus" node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after $flag \
+              --root . --pg-bin "$PG_BIN" --out "$PLACEMENT_DIR/runs/$kind-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$PLACEMENT_DIR/runs/$kind-$i/exit-code"
+          }
+          for i in 1 2 3 4; do
+            if [ $((i % 2)) -eq 1 ]; then run together "$i"; run apart "$i"; else run apart "$i"; run together "$i"; fi
+          done
+      - name: Together vs apart (report only)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$PLACEMENT_DIR/runs" "$PLACEMENT_DIR/placement.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-placement
+          cp "$PLACEMENT_DIR/placement.json" output/rc50-613-placement/ 2>/dev/null || true
+          for r in "$PLACEMENT_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-placement/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-placement/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-driver-placement-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/rc50-613-placement
+          retention-days: 14
+          if-no-files-found: warn
 
   # One server-side spans run (spans.cjs in BOTH measured arms) of the current
   # runtime pin (policy-613-after.cjs) with the unchanged plan, to separate auth,

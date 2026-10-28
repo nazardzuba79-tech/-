@@ -1,6 +1,12 @@
 'use strict';
 const assert=require('node:assert/strict'),{performance}=require('node:perf_hooks'),{sha,loopback}=require('./policy.cjs');
-const PLAN=Object.freeze({warmupMs:5000,measureMs:20000,cryptoPeriodMs:250,viewerPeriodMs:1000,traderPeriodMs:4000,timeoutMs:3000,maxJitterMs:250,maxInflight:80,viewers:50,traders:2});
+// Normal load (#613, 28.10): a trader reads its state every 4 s and runs the order cycle (limit, cancel, market buy,
+// its exact replay, market sell, its exact replay) on every second read, every 8 s. At the old every-4 s cycle two
+// traders alone made 210 private authority requests a minute, plus 60-90 identity batches for the viewers: about
+// 300 against the release ingress's reviewed 240/min ceiling (docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md).
+// Going over that ceiling on purpose is a separate scenario (services/stocks-global/identity-load.pg.test.cjs).
+const PLAN=Object.freeze({warmupMs:5000,measureMs:20000,cryptoPeriodMs:250,viewerPeriodMs:1000,traderPeriodMs:4000,traderOrderEvery:2,timeoutMs:3000,maxJitterMs:250,maxInflight:80,viewers:50,traders:2});
+const traderOrders=cycle=>cycle%PLAN.traderOrderEvery===PLAN.traderOrderEvery-1;
 const trace=Array.from({length:PLAN.measureMs/PLAN.cryptoPeriodMs},(_,i)=>({at:i*PLAN.cryptoPeriodMs,cycle:i,operations:['POST demo/orders LIMIT BTC/USDT BUY 0.01 @100','GET demo/orders/open','DELETE exact created order','GET demo/balances']}));
 const traceSha=sha(JSON.stringify(trace));
 const decimal=s=>{const m=String(s).match(/^(-?)(\d+)(?:\.(\d{1,18}))?$/);if(!m)throw Error('INVALID_DECIMAL');return BigInt(m[1]+m[2])*10n**18n+BigInt((m[1]||'')+(m[3]||'').padEnd(18,'0'));};
@@ -26,13 +32,13 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
  const duration=warmup?PLAN.warmupMs:PLAN.measureMs,r={arm,warmup,startedAt:new Date().toISOString(),cryptoJobs:0,cryptoLatencies:[],traceSha,viewerCount:mixed?50:0,traderCount:mixed?2:0,timeouts:0,unexpectedErrors:0,missedJobs:0,orderLoss:0,doubleSpend:0,viewerMutations:0,viewerDenials:0,requests:0,maxInflight:0,maxStartJitterMs:0,errors:[],samples:[],expected:{crypto:[],stock:[[],[]]}};
  let stopped=false,inflight=0;const start=performance.now(),jobs=[],pending=[];
  const problem=(label,error)=>{r.unexpectedErrors++;if(r.errors.length<15)r.errors.push({label,error:String(error.message??error).slice(0,240)});stopped=true;};
- async function request(origin,route,{method='GET',body,token,csrf,view,expected=200,kind,op}){
+ async function request(origin,route,{method='GET',body,token,csrf,view,expected=200,kind,op,index=null}){
   if(signal?.aborted)throw Error('RUN_ABORTED');
   if(++r.requests>2500)throw Error('HTTP_BUDGET_EXCEEDED');
   const requestId=arm+'-'+(warmup?'warm':'measure')+'-'+r.requests;
   const at=performance.now(),response=await fetch(origin+route,{method,headers:{'x-rc50-request':requestId,authorization:'Bearer '+token,...(view?{'x-stocks-view':view}:{}),...(body===undefined?{}:{'content-type':'application/json','x-stocks-token':csrf??''})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(PLAN.timeoutMs)}).catch(e=>{if(e.name==='TimeoutError'||e.name==='AbortError')r.timeouts++;throw e;});
   const text=await response.text().catch(e=>{if(e.name==='TimeoutError'||e.name==='AbortError')r.timeouts++;throw e;}),value=text?JSON.parse(text):null,ms=performance.now()-at;
-  r.samples.push({requestId,kind,op,status:response.status,ms,at:at-start});if(kind==='crypto')r.cryptoLatencies.push(ms);
+  r.samples.push({requestId,kind,op,index,status:response.status,ms,at:at-start});if(kind==='crypto')r.cryptoLatencies.push(ms);
   if(response.status!==expected)throw Error('HTTP_'+response.status+'_'+op+'_'+JSON.stringify(value?.error??null));
   return value;
  }
@@ -46,19 +52,20 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
  };
  const viewerJob=async(index,cycle)=>{
   const token=info.viewerTokens[index],view='diag-viewer-'+index,id=info.instruments[index%info.instruments.length];
-  const state=await request(info.stocksOrigin,'/__stocks_global/state?id='+encodeURIComponent(id),{token,view,kind:'viewer',op:'state'});
+  const state=await request(info.stocksOrigin,'/__stocks_global/state?id='+encodeURIComponent(id),{token,view,kind:'viewer',op:'state',index});
   assert.equal(state.account.canTrade,false);
   if(state.errors?.[id])throw Error('VIEWER_QUOTE_'+state.errors[id]);
   if(cycle===0){
-   const result=await request(info.stocksOrigin,'/__stocks_global/orders',{method:'POST',token,view,csrf:state.token,body:{id:'rc50-viewer-deny-'+index,instrumentId:id,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.01'},expected:401,kind:'viewer',op:'deny-order'});
+   const result=await request(info.stocksOrigin,'/__stocks_global/orders',{method:'POST',token,view,csrf:state.token,body:{id:'rc50-viewer-deny-'+index,instrumentId:id,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.01'},expected:401,kind:'viewer',op:'deny-order',index});
    assert.equal(result.error,'AUTH_REQUIRED');r.viewerDenials++;
   }
  };
  const traderJob=async(index,cycle)=>{
   const token=info.traderTokens[index],view='diag-trader-'+index,id=info.stockId;
-  const state=await request(info.stocksOrigin,'/__stocks_global/state?id='+encodeURIComponent(id),{token,view,kind:'trader',op:'state'});
+  const state=await request(info.stocksOrigin,'/__stocks_global/state?id='+encodeURIComponent(id),{token,view,kind:'trader',op:'state',index});
   assert.equal(state.account.canTrade,true);if(state.errors?.[id])throw Error('TRADER_QUOTE_'+state.errors[id]);
-  const common={token,view,csrf:state.token,kind:'trader',method:'POST'};
+  if(!traderOrders(cycle))return;
+  const common={token,view,csrf:state.token,kind:'trader',method:'POST',index};
   const prefix='rc50-'+arm+'-'+index+'-'+cycle;
   const submit=async(suffix,side,type,extra={})=>{
    const order={id:prefix+'-'+suffix,instrumentId:id,currency:'USDT',side,type,quantity:'0.01',...extra};
@@ -91,4 +98,4 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
  if(mixed&&!warmup&&r.viewerDenials!==50)r.viewerMutations++;
  return r;
 }
-module.exports={PLAN,trace,traceSha,window,invariants,decimal};
+module.exports={PLAN,trace,traceSha,window,invariants,decimal,traderOrders};

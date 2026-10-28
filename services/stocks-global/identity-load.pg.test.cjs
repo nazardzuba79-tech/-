@@ -275,3 +275,100 @@ test('the 50+2 harness schedule on the release chain: warm-up and every measured
   }
   assert.equal(await viewerRows(), 0, 'viewers hold no balance');
 });
+
+// #613, the deliberate over-limit scenario, kept apart from the normal load above. The two traders loop back to back
+// with 20 ms between requests (a state read, five limit orders each cancelled, then buy, its replay, sell, its
+// replay), far over the 240/min private quota, while the 50 viewers keep polling. A market order without a fresh
+// stream trade is refused QUOTE_STALE by the market-data rule; that is a business refusal, not the quota. The ingress must refuse the excess with 429 and nothing else may go wrong: no server error, no order or
+// receipt for a refused intent, no fill twice, no row for a viewer, no other account's data. Once the 60 s quota
+// window has passed the same processes serve again, and a sign-out or a forged token is still refused.
+test('over the private quota: the excess is refused with 429, nothing refused is written, money stays consistent and service returns', {
+  timeout: 240000, skip: disposableUrl() ? false : 'NOT_RUN: disposable PostgreSQL required',
+}, async t => {
+  assert.equal(process.versions.node, '22.23.3');
+  assert.equal(process.env.STOCKS_PG_COMPILED_ROUTER, 'true');
+  const f = await fixture(t), jwt = require('jsonwebtoken');
+  const viewers = await syntheticViewers(f, jwt), viewerIds = viewers.map(v => v.id);
+  // The stream market of the harness gateway (as the schedule test above): the traders' order cycles work on it.
+  const { CATALOG } = await import(path.join(__dirname, 'catalog.mjs')), stockId = CATALOG.find(i => i.provider === 'binance').id;
+  const { authority, gateway } = await releaseChain(t, f, ['--stream-market']);
+  const call = async (route, token, body, csrf) => {
+    const begun = performance.now();
+    const response = await fetch(gateway + route, { method: body ? 'POST' : 'GET', signal: AbortSignal.timeout(10000),
+      headers: { authorization: 'Bearer ' + token, ...(body ? { 'content-type': 'application/json', 'x-stocks-token': csrf ?? '' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    return { status: response.status, body: await response.json().catch(() => null), ms: performance.now() - begun };
+  };
+  const state = token => call('state?id=' + encodeURIComponent(stockId), token);
+  // Every gateway request is identity-checked first (batched, paced), so the loops slow to about one request per
+  // batch interval once the burst is spent; the storm runs until the quota refuses commands (3 s more), at most 45 s.
+  const startedAt = Date.now(), outcomes = [], viewerStatus = {};
+  let until = startedAt + 45000;
+  const storm = async i => {
+    for (let n = 0; Date.now() < until; n++) {
+      const read = await state(f.tokens[i]);
+      outcomes.push({ trader: i, route: 'state', intent: null, status: read.status, error: read.body?.error ?? null, retryAfterMs: read.body?.retryAfterMs ?? null, ms: read.ms });
+      if (read.status !== 200 || read.body.errors?.[stockId]) { await sleep(120); continue; }
+      const order = (suffix, side, type, extra = {}) => ({ id: `rc50-storm-${i}-${n}-${suffix}`, instrumentId: stockId, currency: 'USDT', side, type, quantity: '0.01', ...extra });
+      const steps = [...[1, 2, 3, 4, 5].flatMap(k => [['orders', order('limit' + k, 'BUY', 'LIMIT', { limitPrice: '98' })], ['cancel', { id: `rc50-storm-${i}-${n}-limit${k}` }]]),
+        ['orders', order('buy', 'BUY', 'MARKET')], ['orders', order('buy', 'BUY', 'MARKET')], ['orders', order('sell', 'SELL', 'MARKET')], ['orders', order('sell', 'SELL', 'MARKET')]];
+      for (const [route, body] of steps) {
+        const r = await call(route, f.tokens[i], body, read.body.token);
+        outcomes.push({ trader: i, route, intent: body.id, status: r.status, error: r.body?.error ?? null, retryAfterMs: r.body?.retryAfterMs ?? null, ms: r.ms });
+        if (r.status === 429) until = Math.min(until, Date.now() + 3000);
+        await sleep(20);
+      }
+    }
+  };
+  const watch = async viewer => { while (Date.now() < until) { const r = await state(viewer.token); viewerStatus[r.status] = (viewerStatus[r.status] ?? 0) + 1;
+    if (r.status === 200) { assert.equal(r.body.account.canTrade, false); assert.deepEqual([r.body.orders, r.body.fills], [[], []]); } await sleep(1000); } };
+  await Promise.all([storm(0), storm(1), ...viewers.map((viewer, i) => sleep(i * 20).then(() => watch(viewer)))]);
+  const log = (await authority.requestLog()).filter(([at]) => at >= startedAt);
+  const refused = outcomes.filter(o => o.status === 429), statuses = outcomes.reduce((m, o) => ({ ...m, [o.status + ' ' + (o.error ?? '')]: (m[o.status + ' ' + (o.error ?? '')] ?? 0) + 1 }), {});
+  t.diagnostic('OVER_LIMIT ' + JSON.stringify({ stormMs: until - startedAt, traderRequests: outcomes.length, statuses, viewerStatus, privateRequests: log.length, private429: log.filter(([, , , s]) => s === 429).length }));
+  // Refused with 429 by the transport quota, and nothing but 200 or 429 anywhere.
+  assert.ok(refused.length > 0 && log.some(([, , , s]) => s === 429), 'the quota was actually exceeded');
+  assert.deepEqual(Object.keys(statuses).filter(k => !['200 ', '429 AUTH_RATE_LIMIT', '422 QUOTE_STALE'].includes(k)), [], 'traders: only 200, 429 AUTH_RATE_LIMIT or the market-data refusal');
+  assert.ok(outcomes.filter(o => o.status === 429 && o.route !== 'state').length > 0, 'commands themselves were refused by the quota');
+  for (const o of refused) assert.ok(Number.isInteger(o.retryAfterMs) && o.retryAfterMs >= 1000 && o.retryAfterMs <= 60000);
+  assert.deepEqual(Object.keys(viewerStatus).filter(k => !['200', '429'].includes(k)), [], 'viewers: only 200 or 429');
+  // The gateway never retries a refused command on its own: no more private commands than trader requests.
+  assert.ok(log.filter(([, method, url]) => method === 'POST' && url.endsWith('/command')).length <= outcomes.length);
+
+  // Service returns after the quota window, on the same processes.
+  let back;
+  for (const end = Date.now() + 75000; Date.now() < end; await sleep(2000)) { back = await state(f.tokens[0]); if (back.status === 200) break; }
+  t.diagnostic('SERVED_AGAIN_AFTER_MS ' + (Date.now() - until));
+  assert.equal(back.status, 200, 'served again after the window');
+  assert.equal((await state(f.tokens[1])).status, 200);
+  // Money and orders: exactly the intents some request had accepted, each order once, each market order filled once.
+  const rows = await f.rows();
+  for (let i = 0; i < 2; i++) {
+    const ledger = rows.accounts.find(a => a.userId === f.users[i]).ledger, ids = ledger.orders.map(o => o.id).filter(id => id.startsWith('rc50-storm-'));
+    const accepted = new Set(outcomes.filter(o => o.trader === i && o.route === 'orders' && o.status === 200).map(o => o.intent));
+    assert.equal(new Set(ids).size, ids.length, 'no order twice');
+    assert.deepEqual([...ids].sort(), [...accepted].sort(), 'an order exists exactly when a submit (or its replay) was accepted');
+    const fills = ledger.fills.reduce((m, x) => ({ ...m, [x.orderId]: (m[x.orderId] ?? 0) + 1 }), {});
+    for (const id of ids.filter(id => !/-limit\d$/.test(id))) assert.equal(fills[id], 1, 'each accepted market order filled exactly once: ' + id);
+    for (const id of ids.filter(id => /-limit\d$/.test(id))) {
+      const cancelled = outcomes.some(o => o.trader === i && o.route === 'cancel' && o.intent === id && o.status === 200);
+      assert.equal(ledger.orders.find(o => o.id === id).status, cancelled ? 'CANCELLED' : 'OPEN', 'a limit is cancelled exactly when its cancel was accepted: ' + id);
+      assert.equal(fills[id], undefined);
+    }
+    // The authority's own projection still matches the DemoBalance row (a mismatch refuses every read).
+    const view = (await state(f.tokens[i])).body;
+    assert.equal(view.account.canTrade, true);
+    const cash = rows.cash.find(c => c.userId === f.users[i]);
+    assert.ok(cash.available.gte(0) && cash.locked.gte(0));
+  }
+  const receipts = rows.receipts.map(r => r.principalHash + '|' + r.intentId);
+  assert.equal(new Set(receipts).size, receipts.length, 'no receipt twice');
+  assert.equal(rows.audit.length, rows.receipts.length, 'one audit row per receipt');
+  for (const o of outcomes.filter(o => o.route === 'orders' && o.status !== 200)) if (!outcomes.some(x => x.intent === o.intent && x.route === 'orders' && x.status === 200))
+    assert.ok(!rows.receipts.some(r => r.intentId === o.intent), 'no receipt for a refused intent: ' + o.intent);
+  assert.equal(await f.other.demoBalance.count({ where: { userId: { in: viewerIds } } }), 0, 'viewers hold no balance');
+  assert.equal(await f.other.stocksTestAccount.count({ where: { userId: { in: viewerIds } } }), 0, 'viewers hold no account');
+  // Security still holds after the storm: forged and signed-out tokens are refused at once.
+  assert.equal((await state(jwt.sign({ sub: f.users[0], sid: f.sessions[0] }, 'another-synthetic-signing-key', { expiresIn: '1h' }))).status, 401);
+  await f.other.session.update({ where: { id: f.sessions[1] }, data: { revokedAt: new Date() } });
+  assert.equal((await state(f.tokens[1])).status, 401, 'signed out: refused at the next request');
+});

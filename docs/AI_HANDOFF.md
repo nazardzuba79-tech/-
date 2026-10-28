@@ -8043,3 +8043,25 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
   - the ceiling was not raised; the regression runs the order cycle every 8 s. Documented in the isolation and quota docs. Owner decision needed if pilot traders need more.
 - Local: PG 33/33 (incl. both identity-load tests); harness self-tests + node22 route test 52/52.
 - Not touched: #591, #630, #636, ECLAVO/QVTR (#639), NRX, production, secrets. No merge or deploy.
+
+## 2026-10-28 — Claude (session 01EmV3Pt) — #613: normal-load method, over-limit scenario, profiling jobs
+- **Owner instruction (28.10, evening).** Keep the 240/min ceiling. Fix the 50+2 method so that normal load fits the limits, and test over-limit behaviour separately. Find the separated p95 cause by profiling. Repeat measurements with statistics.
+- **Replicate run 40735098249.** Same runtime `e92cbd8a`, unchanged method:
+  - separated +22.9 % pooled; all runs between +10.7 and +26.6 %;
+  - every crypto operation slows at p90, reads included. So the trader-0 row lock is not the main cause;
+  - server-side time grows, while the crypto API's CPU/ELU stay flat.
+- **Harness changes** (`scripts/qa/stocks-rc-50plus2`):
+  - the trader order cycle now runs every 8 s; state is still read every 4 s;
+  - the separated authority sits behind the real private ingress (240/min);
+  - PAIRS is 8;
+  - the summary adds statistics: spread, bootstrap and an A/A reference;
+  - new report-only diagnostics:
+    - `sched.cjs`: schedstat run-queue waiting per process and per PG backend;
+    - `--pg-profile` with `pg-profile-613.cjs` (lock waits with holder, statements over 2 ms, WAL, checkpoints, autovacuum; tested on a captured PostgreSQL 16 log);
+    - `--driver-apart` experiment job.
+- **Over-limit PG test** (third test in `identity-load.pg.test.cjs`): passes locally. 429 from about 24 s; no write for refused intents; each accepted market order filled once; service back after about 33 s; revocation still refused.
+- **Local results:**
+  - identity-load 3/3;
+  - harness self-tests 49/49;
+  - smoke of the separated topology through the private ingress: qualification PASS, mixed window 1,404 requests, 0 errors, invariants intact.
+- **Runtime unchanged in this step.** The fix waits for the profile data.

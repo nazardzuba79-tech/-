@@ -17,7 +17,7 @@
 // Usage: node spans-summary-613.cjs <runOutDir> [out.json]
 const fs = require('node:fs'), path = require('node:path');
 const {percentile} = require('./policy.cjs');
-const {PLAN, traceSha: TRACE_SHA} = require('./driver.cjs');
+const {PLAN, traceSha: TRACE_SHA, traderOrders} = require('./driver.cjs');
 
 const ARMS = ['baseline', 'mixed'];
 const STATUS = 'SPANS_ONLY_NOT_A_P95_VERDICT';
@@ -31,7 +31,9 @@ const EXPECTED = {
   baseline: {crypto: Object.fromEntries(Object.keys(CRYPTO_OPS).map(op => [op, CRYPTO_JOBS]))},
   mixed: {crypto: Object.fromEntries(Object.keys(CRYPTO_OPS).map(op => [op, CRYPTO_JOBS])),
     viewer: {state: PLAN.viewers * PLAN.measureMs / PLAN.viewerPeriodMs, 'deny-order': PLAN.viewers},
-    trader: Object.fromEntries(TRADER_OPS.map(op => [op, PLAN.traders * PLAN.measureMs / PLAN.traderPeriodMs]))}};
+    // Every trader read is a state request; the order cycle runs on every PLAN.traderOrderEvery-th read.
+    trader: Object.fromEntries(TRADER_OPS.map(op => [op, PLAN.traders * Array.from({length: PLAN.measureMs / PLAN.traderPeriodMs}, (_, cycle) => cycle)
+      .filter(cycle => op === 'state' || traderOrders(cycle)).length]))}};
 // The API handler span each crypto op must correlate with (driver routes).
 const ROUTE = {'place-limit': ['POST', r => r === '/api/v1/demo/orders'], open: ['GET', r => r === '/api/v1/demo/orders/open'],
   cancel: ['DELETE', r => r.startsWith('/api/v1/demo/orders/') && r !== '/api/v1/demo/orders/open'], balances: ['GET', r => r === '/api/v1/demo/balances']};

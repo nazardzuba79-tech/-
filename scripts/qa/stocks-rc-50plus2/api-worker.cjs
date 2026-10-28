@@ -58,7 +58,9 @@ async function initialize(c){
   f=await require('./crypto-api.cjs').cryptoApi(root,fn=>cleanup.push(fn));
   const shared=f.stocksProcess;
   stocks.authority=fork('authority',c.arm);cleanup.push(()=>stocks.authority.close());
-  const authority=await stocks.authority.rpc('init',{role:'authority',root,runRoot:c.runRoot,generatedClient:generated,dbUrl:c.dbUrl,dbName:c.dbName,shared});
+  // --pg-profile names each process's PostgreSQL connections (application_name) for the lock and statement log.
+  const authority=await stocks.authority.rpc('init',{role:'authority',root,runRoot:c.runRoot,generatedClient:generated,dbUrl:c.dbUrl.replace('application_name=rc50_crypto_api','application_name=rc50_stocks_authority'),dbName:c.dbName,shared});
+  stocks.endpoint=authority.endpoint;
   stocks.gateway=fork('gateway',c.arm);cleanup.push(()=>stocks.gateway.close());
   const gateway=await stocks.gateway.rpc('init',{role:'gateway',root,endpoint:authority.endpoint,shared:{issuer:shared.issuer,principals:shared.principals,gatewayKey:shared.gatewayKey}});
   f.attachGateway(gateway.port);gatewayPort=gateway.port;
@@ -122,14 +124,16 @@ async function qualification(){
   const [a,g]=await Promise.all([stocks.authority.rpc('metrics'),stocks.gateway.rpc('metrics')]);
   assert.ok(new Set([process.pid,a.pid,g.pid]).size===3&&a.role==='authority'&&g.role==='gateway');
   assert.ok(a.nice===configuration.stocksNice&&g.nice===configuration.stocksNice&&require('node:os').getPriority()===0,'STOCKS_NICE_NOT_APPLIED');
-  separated={apiServesStocksAuthority:false,processes:3,stocksNice:configuration.stocksNice};
+  // The authority sits behind the release's private ingress: no capability, no service.
+  const bare=await fetch(stocks.endpoint+'/readiness');assert.equal(bare.status,403);await bare.text();
+  separated={apiServesStocksAuthority:false,processes:3,stocksNice:configuration.stocksNice,privateIngress:true};
  }
  return{status:'PASS_WIRING_QUALIFICATION_ONLY',topology:configuration.topology,separated,realCryptoHttp:true,realStocksHttp:true,viewerDeny:true,cashRoundTrip:true,full50Plus2Runs:0};
 }
 // cpu, memory and loop stay this (crypto API) process's own, so 'API CPU' means the same in both topologies;
 // 'processes' adds every process of the topology, and network sums every process's egress fence.
 async function metrics(){
- const own={pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),network:global.__rc50Network};
+ const own={pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),sched:require('./sched.cjs').read(),network:global.__rc50Network};
  if(configuration.topology!=='separated')return{...own,quote:f.gateway.quoteMetrics(),account:f.gateway.accountMetrics(),market:{...market.snapshot(),starts:market.starts.map(x=>({host:x.host,kind:x.kind}))},topology:configuration.topology,processes:{api:own}};
  const [a,g]=await Promise.all([stocks.authority.rpc('metrics'),stocks.gateway.rpc('metrics')]);
  return{...own,quote:g.quote,account:g.account,market:g.market,network:{blocked:own.network.blocked+a.network.blocked+g.network.blocked},topology:configuration.topology,processes:{api:own,stocksAuthority:a,stocksGateway:g}};

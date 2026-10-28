@@ -3,7 +3,7 @@
 // taskset (no CPU or memory added to the budget). Role 'authority' serves src/stocksAuthority.ts's app (the
 // unchanged stocksTestCashRouter with its PostgreSQL authority) on loopback; role 'gateway' runs the Stocks
 // gateway, its authority adapter and the synthetic market. Neither hosts any crypto route.
-const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),Module=require('node:module'),{pathToFileURL}=require('node:url');
+const fs=require('node:fs'),path=require('node:path'),net=require('node:net'),Module=require('node:module'),{pathToFileURL}=require('node:url');
 const {database,loopback}=require('./policy.cjs');
 const {performance:perf,monitorEventLoopDelay}=require('node:perf_hooks'),loopDelay=monitorEventLoopDelay({resolution:10});loopDelay.enable();
 const loop=()=>{const ms=x=>x/1e6,v={elu:perf.eventLoopUtilization(),delay:{count:loopDelay.count,minMs:ms(loopDelay.min),meanMs:ms(loopDelay.mean),p50Ms:ms(loopDelay.percentile(50)),p99Ms:ms(loopDelay.percentile(99)),maxMs:ms(loopDelay.max)}};loopDelay.reset();return v;};
@@ -21,6 +21,7 @@ function shared(s){
  if(!s||typeof s.issuer!=='string'||!Array.isArray(s.principals)||s.principals.length!==2||typeof s.gatewayKey!=='string'||s.gatewayKey.length<32)throw Error('STOCKS_PROCESS_SHARED_INVALID');
  return s;
 }
+const freePort=()=>new Promise((resolve,reject)=>{const probe=net.createServer();probe.once('error',reject);probe.listen(0,'127.0.0.1',()=>{const {port}=probe.address();probe.close(()=>resolve(port));});});
 async function authority(c){
  database(c.dbUrl,c.dbName);const s=shared(c.shared);
  if(typeof s.secret!=='string'||s.secret.length<32)throw Error('STOCKS_PROCESS_SHARED_INVALID');
@@ -34,14 +35,18 @@ async function authority(c){
  Module._load=function(request,parent,isMain){return realLoad.call(this,request==='@prisma/client'?generated:request,parent,isMain);};
  require(require.resolve('ts-node/register/transpile-only',{paths:[root]}));
  const {PrismaClient}=require('@prisma/client'),{createStocksAuthorityApp}=require(path.join(root,'src/stocksAuthority.ts'));
+ const {createStocksAuthorityIngress}=require(path.join(root,'src/api/middleware/stocksAuthorityIngress.ts'));
  const prisma=new PrismaClient({datasources:{db:{url:c.dbUrl}}});state.prisma=prisma;
  // Same router configuration as the single-process fixture: both server gates on, no injected authority, so
- // the router opens the real PostgreSQL authority (and its readiness route) exactly as in the release. The
- // private ingress quota is not mounted, as in the single-process arm: no arm measures that transport quota.
- const app=createStocksAuthorityApp(prisma,{router:{enabled:true,catalogueEnabled:true,orderExecutionEnabled:true,issuer:s.issuer,principals:s.principals,gatewayKey:s.gatewayKey,secret:s.secret}});
- const server=state.server=await new Promise((resolve,reject)=>{const x=http.createServer(app);x.once('error',reject);x.listen(0,'127.0.0.1',()=>resolve(x));});
+ // the router opens the real PostgreSQL authority (and its readiness route) exactly as in the release. Since
+ // 28.10 behind the release's private ingress too (loopback listener, capability header, the default 240/min
+ // service quota): the normal 50+2 load must fit in it, and a run over it fails on the 429 instead of passing
+ // unseen. The single-process arm has no transport between gateway and authority, so no ingress either.
+ const port=await freePort(),ingress=createStocksAuthorityIngress({port,gatewayKey:s.gatewayKey});
+ const app=createStocksAuthorityApp(prisma,{router:{enabled:true,catalogueEnabled:true,orderExecutionEnabled:true,issuer:s.issuer,principals:s.principals,gatewayKey:s.gatewayKey,secret:s.secret},ingress:ingress.middleware});
+ const server=state.server=await ingress.listen(app);
  const endpoint='http://127.0.0.1:'+server.address().port+'/api/v1/stocks-test-cash';loopback(endpoint);
- return{role,pid:process.pid,endpoint};
+ return{role,pid:process.pid,endpoint,ingress:{port,requestsPerMinute:240}};
 }
 async function gateway(c){
  const s=shared(c.shared),endpoint=c.endpoint;loopback(endpoint);
@@ -60,7 +65,7 @@ async function gateway(c){
  return{role,pid:process.pid,port:state.gateway.port};
 }
 function metrics(){
- const value={role,pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),network:global.__rc50Network};
+ const value={role,pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),sched:require('./sched.cjs').read(),network:global.__rc50Network};
  if(role==='gateway')Object.assign(value,{quote:state.gateway.quoteMetrics(),account:state.gateway.accountMetrics(),market:{...state.market.snapshot(),starts:state.market.starts.map(x=>({host:x.host,kind:x.kind}))}});
  return value;
 }
