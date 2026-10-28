@@ -1,0 +1,42 @@
+{
+  "base": "f8805b0073d17c3072f37803cb7efbce538ab170",
+  "previousDeployment": "ec6734c9-6c1e-4985-8d57-023edc505e9d",
+  "frontendTree": "82c6cd48743fbcf89f30cbbbb31ba2de33feaef7",
+  "branch": "release/eclv-628-frontend-20261027",
+  "project": "voltex-exchange",
+  "account": "c379227476dedde6dff09c787ffdb510",
+  "allowedPaths": [
+    "docs/SEO_INDEXING.md",
+    "frontend/contentPlugin.ts",
+    "frontend/index.html",
+    "frontend/public/_headers",
+    "frontend/public/og-image.png",
+    "frontend/src/App.tsx",
+    "frontend/src/lib/__tests__/seoBuildOutput.test.ts",
+    "frontend/src/lib/__tests__/seoIndexing.test.ts",
+    "frontend/src/lib/content/compile.ts",
+    "frontend/src/lib/content/usePageMeta.ts",
+    "frontend/src/lib/seo/RouteSeo.tsx",
+    "frontend/src/lib/seo/head.ts",
+    "frontend/src/lib/seo/legalMeta.ts",
+    "frontend/src/lib/seo/pages.ts",
+    "frontend/src/lib/seo/site.ts",
+    "frontend/src/pages/LegalPage.tsx",
+    "frontend/src/pages/knowledge/AcademyPage.tsx",
+    "frontend/src/pages/licenses/LicencesPage.tsx",
+    "scripts/qa-seo-indexing.cjs",
+    "scripts/render-og-image.cjs",
+    "frontend/src/lib/__tests__/managedListings.test.ts",
+    "scripts/qa-seo-release-compat.cjs",
+    "scripts/release-seo632.mjs",
+    ".github/workflows/pages-reviewed-production-release.yml",
+    "ops/pages/seo632-release.json",
+    "docs/AI_HANDOFF.md",
+    "docs/SEO632_PRODUCTION_RELEASE.md"
+  ],
+  "env": {
+    "VITE_API_URL": "https://api.voltextech.net/api/v1",
+    "VITE_DEPOSIT_CATALOGUE_URL": "https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev",
+    "VITE_MANUAL_DEPOSIT_CATALOGUE": "true"
+  }
+}

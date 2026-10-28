@@ -1,0 +1,15 @@
+# Issue #632 narrow Pages release
+
+Base: actual canonical production `f8805b0073d17c3072f37803cb7efbce538ab170`, deployment `ec6734c9-6c1e-4985-8d57-023edc505e9d`. Source: merged SEO #634 delta applied cleanly over that base. No broad main deployment.
+
+The existing `release/eclv-628-frontend-20261027` operator branch is reused; no new PR. The branch copy of the existing Pages release workflow temporarily accepts one explicit `[release-seo632]` push. It only uses the existing Pages-specific environment secret in the final publication step. The immutable checked-out commit must directly descend from f880, match the reviewed frontend tree and exact allowed paths. After completion restore this branch's original workflow. Main's workflow is untouched.
+
+The runner builds fresh static output using exactly the three current public VITE values. Other features retain their actual defaults. Before publication the operator checks canonical deployment/source, auto-deployment OFF, previews NONE, no active deployment, exact environment values and no Pages Functions. Wrangler Direct Upload uses the tested directory and source SHA, without asking Cloudflare to build raw main. The prior successful deployment is retained. On post-publication failure, rollback only occurs if this candidate still owns canonical production.
+
+Local validation: frontend TypeScript/build PASS; 11 suites/220 tests PASS, zero skipped; real Pages emulator/42 sitemap URLs/25 unlisted addresses/32 desktop+mobile rendered routes:114 PASS. Actual built frontend at1440/390: ECLV/QVTR dates/price/countdown/reload, five NRX routes removed, Banking/referral and Admin Delete confirmation/receipt:18 PASS. These checks use synthetic isolated sessions/responses, never real accounts, listing changes, financial operations or timer mutations.
+
+Two old managedListings expectations still required retired NRX to be visible/in the public memoized array. Only test expectations were aligned with already-shipped retirement, with explicit empty-NRX/no-subscription assertions. No runtime change. Initial compatibility-harness assertions were corrected to read identity outside the facts-only block and await the asynchronous referral response; no application fix was needed.
+
+Local tool issues were resolved without changing application code: Playwright CDN download was truncated, so npm-packaged Chromium153 was used for loopback-only QA; browser archives were extracted without ownership changes. Pages emulator network-interface enumeration fails in this restricted container, so a tool-only wrapper supplies loopback when libuv cannot enumerate interfaces. Pages routing, header handling and assertions are unchanged. The Ubuntu runner uses standard unmodified Chromium/Pages tools.
+
+After publication verify actual canonical SHA, exact sitemap/robots bytes and MIME, all42 public canonical heads, protected-route noindex and built entry JS hash. Then perform authorized read-only checks on the real site. This does not claim Google/Yandex indexing or access from a Russian ISP.

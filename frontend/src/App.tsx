@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
+import { RouteSeo } from './lib/seo/RouteSeo';
 import { RouteShell } from './RouteShell';
 import { defaultTradingPath } from './lib/tradingMode';
 import { loginPathFor, readNext } from './lib/returnTo';
@@ -98,6 +99,7 @@ export function App() {
   usePrefetchLikelyRoutes();
   return (
     <BrowserRouter>
+      <RouteSeo />
       <Suspense fallback={<RouteShell />}>
       <Routes>
         {stocksEnabled && <><Route path="/stocks" element={<StocksPage/>}/><Route path="/stocks/:instrumentId" element={<StocksPage/>}/></>}

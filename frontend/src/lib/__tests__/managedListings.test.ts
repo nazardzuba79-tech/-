@@ -98,11 +98,12 @@ describe('managed listings in the frontend', () => {
 });
 
 describe('test-market list identity', () => {
-  test('the merged VTA + NRX + managed list is memoised per store change, never rebuilt per render', () => {
+  test('the VTA + managed list is memoised and never reintroduces retired NRX', () => {
     // A fresh array each render made useMarketTickers rebuild its Map on every render, which kept the
     // Markets page re-rendering and starved React Router transitions (Markets → Trade never committed).
     const source = require('fs').readFileSync(require('path').join(__dirname, '../testMarketStore.ts'), 'utf8') as string;
-    expect(source).toMatch(/const assets = useMemo\(\(\) => \[\.\.\.vta\.assets, \.\.\.nrx\.assets, \.\.\.managed\.assets\], \[vta\.assets, nrx\.assets, managed\.assets\]\);/);
+    expect(source).toMatch(/const assets = useMemo\(\(\) => \[\.\.\.vta\.assets, \.\.\.managed\.assets\], \[vta\.assets, managed\.assets\]\);/);
+    expect(source).not.toMatch(/\.\.\.nrx\.assets/);
     expect(source).not.toMatch(/assets: \[\.\.\.vta\.assets/);
   });
 });
@@ -310,7 +311,7 @@ describe('managed catalogue scheduling with the real store', () => {
     off();
   });
 
-  test.each(['VTA', 'NRX'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {
+  test.each(['VTA'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {
     const listingAt = Date.now() + 86_400_000;
     const read = jest.fn(async (_url: string) => ({ serverTime: Date.now(), assets: [managed({
       pair: `${symbol}/USDT`, symbol, managed: false, isTradable: symbol === 'NRX', listingAt: new Date(listingAt).toISOString(),
@@ -328,6 +329,18 @@ describe('managed catalogue scheduling with the real store', () => {
     await jest.advanceTimersByTimeAsync(listingAt - Date.now() + 1_000);
     expect(read).toHaveBeenCalledTimes(2);
     offAgain();
+  });
+
+  test('a retired NRX response stays empty and the public hook never subscribes to its legacy store', async () => {
+    const read = jest.fn(async () => ({ serverTime: Date.now(), assets: [managed({
+      pair: 'NRX/USDT', symbol: 'NRX', managed: false, isTradable: true,
+    })] }));
+    const market = stores(read);
+    await market.nrxMarketStore.refresh();
+    expect(market.nrxMarketStore.getState().assets).toEqual([]);
+    const source = readFileSync(resolve(frontend, 'src/lib/testMarketStore.ts'), 'utf8');
+    expect(source).not.toMatch(/useStore\(nrxMarketStore/);
+    expect(source).toContain("kind === 'nrx' ? { loaded: true, error: false, assets: [], clockOffsetMs: 0 }");
   });
 
   test.each(['VTA', 'NRX'])('%s unarmed preview stays silent after visibility changes', async (symbol) => {
