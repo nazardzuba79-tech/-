@@ -17,6 +17,9 @@ if (url) {
 }
 const pg = url ? describe : describe.skip;
 const locked = { code: 'SYNTHETIC_PROCEEDS_LOCKED' };
+// The negative control uses the old five-argument API; extra pricing is ignored there.
+// Runtime assertions and the fixed implementation remain identical.
+const transfer = (...args: unknown[]): Promise<void> => Reflect.apply(transferWalletBalance, undefined, args);
 const marks: Record<string, string> = { 'BTC/USDT': '60000', 'ETH/USDT': '3000', 'USDC/USDT': '1' };
 const prices = { getTicker: async (pair: string) => marks[pair] ? { lastPrice: marks[pair] } : null };
 pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
@@ -66,19 +69,19 @@ pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
     await expect(otc.create({ userId, sessionId }, { ...input, quantity: '10001' })).rejects.toMatchObject({ code: 'IDEMPOTENCY_MISMATCH' });
   });
   test('synthetic principal cannot become ordinary Futures collateral', async () => {
-    await expect(transferWalletBalance(db, userId, 'USDT', new BigNumber(20000), 'TO_FUTURES', prices)).rejects.toMatchObject(locked);
+    await expect(transfer(db, userId, 'USDT', new BigNumber(20000), 'TO_FUTURES', prices)).rejects.toMatchObject(locked);
     expect(await balance()).toEqual(['110000', '0']);
     expect(await db.futuresBalance.count({ where: { userId } })).toBe(0);
   });
   test('genuine Futures excess transfers and returns without duplicating either ledger', async () => {
-    await transferWalletBalance(db, userId, 'USDT', new BigNumber(10000), 'TO_FUTURES', prices);
-    await expect(transferWalletBalance(db, userId, 'USDT', new BigNumber(1), 'TO_FUTURES', prices)).rejects.toMatchObject(locked);
-    await transferWalletBalance(db, userId, 'USDT', new BigNumber(10000), 'TO_SPOT', prices);
+    await transfer(db, userId, 'USDT', new BigNumber(10000), 'TO_FUTURES', prices);
+    await expect(transfer(db, userId, 'USDT', new BigNumber(1), 'TO_FUTURES', prices)).rejects.toMatchObject(locked);
+    await transfer(db, userId, 'USDT', new BigNumber(10000), 'TO_SPOT', prices);
     expect(await balance()).toEqual(['110000', '0']);
     expect((await db.futuresBalance.findUniqueOrThrow({ where: { userId_asset: { userId, asset: 'USDT' } } })).available.toFixed()).toBe('0');
   });
   test('withdrawal and Futures transfer racing share the same excess budget', async () => {
-    const results = await Promise.allSettled([request('8000'), transferWalletBalance(db, userId, 'USDT', new BigNumber(8000), 'TO_FUTURES', prices)]);
+    const results = await Promise.allSettled([request('8000'), transfer(db, userId, 'USDT', new BigNumber(8000), 'TO_FUTURES', prices)]);
     expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
     expect((results.find(r => r.status === 'rejected') as PromiseRejectedResult).reason.code).toBe(locked.code);
     expect(new BigNumber((await balance())[0]).gte(100000)).toBe(true);
@@ -132,7 +135,7 @@ pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
     await db.balance.update({ where: { userId_asset: { userId: other, asset: 'USDT' } }, data: { available: '0' } });
     await db.demoBalance.create({ data: { userId: other, asset: 'USDT', available: '1000000' } });
     await expect(request('1', other)).rejects.toThrow('Insufficient');
-    await expect(transferWalletBalance(db, other, 'USDT', new BigNumber(1), 'TO_FUTURES', prices)).rejects.toThrow('Insufficient');
+    await expect(transfer(db, other, 'USDT', new BigNumber(1), 'TO_FUTURES', prices)).rejects.toThrow('Insufficient');
     expect((await db.demoBalance.findUniqueOrThrow({ where: { userId_asset: { userId: other, asset: 'USDT' } } })).available.toFixed()).toBe('1000000');
   });
 });

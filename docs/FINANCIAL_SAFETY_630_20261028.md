@@ -57,3 +57,14 @@ No migration, price/fee/margin/PnL math change, new ledger, activation switch, u
 ## Release boundary
 
 Continue only existing #630; no duplicate PR. A later production candidate must be composed over actual API210aefac and retain the ECLV peak interpreter,629 fences,619 notifications,633 Admin Delete and NRX alternate-pair guard. Do not deploy the stale original branch image or all of main. Exact runtime identity, no-migration diff, measured flags, encrypted backup/restore proof and retained immutable rollback must be checked again before a separately authorized release.
+
+## Production aggregate inventory (same read-only operator session)
+
+Executed `BEGIN READ ONLY`, 3-second statement timeout, 500ms lock timeout; output explicitly `readOnly:on`. Audit-derived legacy affected accounts:1. For those accounts: nonzero ordinary FuturesBalance rows0, open Futures positions0, Banking placements0, PENDING/APPROVED withdrawals0. No amounts, identities or individual rows were retrieved or published. This reduces the observed active-obligation scope; it does not establish absence of historical downstream transfers or approve a settlement policy.
+
+## Additional observed checks
+
+-7 Futures, order-sizing, protected native accounts, async error and idle-sweep suites256/256 PASS locally after adding the missing transactional audit delegate to one old fixture; no assertion relaxed. Combined with the separate148 set this is404 distinct local unit/route checks.
+- Exact-head job at76dbc0e1 (run40677970677, job122781109662): Node22.23.3 buildPASS; new cross-ledger PG12/12 and floor PG11/11 PASS; total185PASS,13 History20 checks skipped because their separate DB URL was missing. This is not an all-gatesPASS claim.
+- Follow-up2bac451b provided the isolated History20 database; its negative-control job failed before any test (old five-argument transfer signature vs the test's new sixth pricing argument). Artifact12811642523 SHA2560dd5d9bf8f18e2f25c07abbe5bcd9f24813ce8d7fe82f2f808c58fc8a096855d records the exact TS2554. Corrected only the test invocation to call both API generations via Reflect.apply; all runtime financial assertions retained. The negative control must still execute12 actual tests with no skips and reproduce≥6 failures plus≥3 passing controls; it may not pass on a compilation error.
+- Current final-head CI results are available on existing PR630; record the final actual job/SHAs before any release decision. No financial release approval is implied.

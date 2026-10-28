@@ -10,6 +10,7 @@ on:
       - 'src/services/syntheticProceedsFloor.ts'
       - 'src/services/__tests__/syntheticProceedsFloor.test.ts'
       - 'src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts'
+      - 'scripts/check-financial630-negative-control.cjs'
       - 'src/otc/**'
       - 'src/banking/**'
       - 'src/services/WalletTransferService.ts'
