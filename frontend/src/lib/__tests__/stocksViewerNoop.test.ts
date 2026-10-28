@@ -118,6 +118,7 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
         onSessionChange: (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); }, api: { logout: jest.fn() } },
       './accountSession': compile('src/pages/stocks/global/accountSession.ts'),
       './readWork': compile('src/pages/stocks/global/readWork.ts'),
+      './catalogueVersion': compile('src/pages/stocks/global/catalogueVersion.ts'),
       './overload': compile('src/pages/stocks/global/overload.ts', { './stockText': { stockTranslator: () => (s: string) => s } }),
       './DesktopShell': { DesktopHeader: Empty, DesktopMarketStats: Empty,
         DesktopQuotes: ({ fills }: { fills: unknown[] }) => React.createElement('div', { 'data-testid': 'quote-fills', 'data-fill-count': fills.length }),

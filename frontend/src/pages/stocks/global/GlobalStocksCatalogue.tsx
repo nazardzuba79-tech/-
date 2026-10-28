@@ -67,7 +67,9 @@ export default function GlobalStocksCatalogue() {
   const shown = useMemo(() => filterCatalogue(assets, { tab, query, provider, currency, descending }, favorites, locale), [assets, tab, query, provider, currency, descending, favorites, locale]);
   const providers = [...new Set(assets.map(asset => asset.provider))].sort(), currencies = [...new Set(assets.map(asset => asset.currency))].sort();
   const toggle = (id: string) => setFavorites(previous => { const next = previous.includes(id) ? previous.filter(value => value !== id) : [...previous, id]; try { localStorage.setItem(STOCKS_FAVORITES_KEY, JSON.stringify(next)); } catch { /* Preferences do not affect account state. */ } return next; });
-  const number = (value: string | number) => Number(value).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  // One formatter per locale for every row (toLocaleString with options builds a new one per call); same output.
+  const format = useMemo(() => new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 4 }), [locale]);
+  const number = (value: string | number) => format.format(Number(value));
   return <div className="vxo-original-page">
     <OriginalStocksHeader />
     <main className="vxo-original-catalogue">

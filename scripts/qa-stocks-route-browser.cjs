@@ -59,7 +59,10 @@ async function step(name, fn) {
     page.on('pageerror', error => report.pageErrors.push(String(error.message || error)));
     const requests = [];
     page.on('request', request => { const url = new URL(request.url()); if (url.origin === base && url.pathname.startsWith('/__stocks_global/')) requests.push({ at: Date.now(), method: request.method(), path: url.pathname.slice('/__stocks_global/'.length), query: url.searchParams }); });
-    return { context, page, requests };
+    // State answers that carried the full catalogue (the terminal names the version it holds; the gateway then leaves it out).
+    const catalogues = [];
+    page.on('response', async response => { const url = new URL(response.url()); if (url.origin === base && url.pathname === '/__stocks_global/state' && response.status() === 200) { try { const body = await response.json(); catalogues.push({ at: Date.now(), full: Array.isArray(body.catalogue), asked: url.searchParams.has('catalogue') }); } catch {} } });
+    return { context, page, requests, catalogues };
   };
   const shot = async (page, name) => { await page.screenshot({ path: path.join(out, name), fullPage: false }); report.screenshots.push(name); };
   const login = async (page, email) => {
@@ -84,7 +87,7 @@ async function step(name, fn) {
     const accounts = [['viewer', viewer.email], ['trader', `${f.users[0]}@example.invalid`]];
     for (const [who, email] of accounts) for (const width of [1440, 390]) {
       const tag = `${who} ${width}`;
-      const { context, page, requests } = await open(width);
+      const { context, page, requests, catalogues } = await open(width);
       let second;
       await step(`${tag}: login → «Торговля» → «Акции» → catalogue → asset → chart with candles`, async () => {
         await page.goto(base + '/login');
@@ -147,6 +150,21 @@ async function step(name, fn) {
         await page.reload(); await terminalReady(page); await loaded;
         assert.equal(new URL(page.url()).pathname, terminalOf(second));
       });
+      await step(`${tag}: the asset drawer renders its list only while open and switches the asset`, async () => {
+        // The drawer is display:none until opened at every width; its rows are not rendered while it is closed.
+        assert.equal(await page.locator('.vxg-roster .vxg-asset').count(), 0, 'a closed drawer renders no rows');
+        await page.locator('.vxg-active-asset').click();
+        const rows = page.locator('.vxg-roster.vxg-open .vxg-assets > div:not(.selected) .vxg-asset');
+        await rows.first().waitFor({ timeout: 10000 });
+        assert.ok(await page.locator('.vxg-roster.vxg-open .vxg-asset').count() > 1);
+        const before = page.url();
+        await rows.first().click();
+        await page.waitForURL(url => url.href !== before && url.pathname.startsWith('/stocks/'));
+        await terminalReady(page);
+        assert.equal(await page.locator('.vxg-roster.vxg-open').count(), 0, 'the drawer closes on a choice');
+        assert.equal(await page.locator('.vxg-roster .vxg-asset').count(), 0);
+        await page.goBack(); await page.waitForURL(url => url.href === before); await terminalReady(page);
+      });
       await step(`${tag}: network lost for 7 s and back — the terminal reads again on its own`, async () => {
         await context.setOffline(true); await pause(7000);
         const resumed = page.waitForResponse(r => new URL(r.url()).pathname === '/__stocks_global/state' && r.status() === 200, { timeout: 15000 });
@@ -163,6 +181,24 @@ async function step(name, fn) {
         assert(count('state') >= 8 && count('state') <= 12, 'state reads ' + count('state'));
         assert(count('history') >= 1 && count('history') <= 3, 'history reads ' + count('history'));
         assert.deepEqual(seen.filter(r => r.method !== 'GET'), []);
+        // The catalogue (about 17 KB) travels again only when it changed (a reload at most once a minute).
+        const answers = catalogues.filter(c => c.at >= from);
+        report.requests[tag].stateWithCatalogue = answers.filter(c => c.full).length;
+        assert(answers.every(c => c.asked), 'every state read names the catalogue version it holds');
+        assert(answers.filter(c => c.full).length <= 1, 'full catalogue answers in 30 s: ' + answers.filter(c => c.full).length);
+      });
+      await step(`${tag}: a gateway that refuses the catalogue version (rolled back) — the next read takes the full catalogue`, async () => {
+        // An older gateway answers ?catalogue= with 422; the terminal drops what it holds instead of asking the same way again.
+        let refused = 0;
+        const versioned = url => url.origin === base && url.pathname === '/__stocks_global/state' && url.searchParams.has('catalogue');
+        const refuse = route => { refused++; return route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'ACCOUNT_SELECTOR_FORBIDDEN' }) }); };
+        await page.route(versioned, refuse);
+        const full = await page.waitForResponse(r => { const u = new URL(r.url()); return u.pathname === '/__stocks_global/state' && !u.searchParams.has('catalogue') && r.status() === 200; }, { timeout: 20000 });
+        await page.unroute(versioned, refuse);
+        assert.equal(refused, 1, 'one refused read, then the full catalogue');
+        assert.ok(Array.isArray((await full.json()).catalogue));
+        await page.waitForResponse(r => versioned(new URL(r.url())) && r.status() === 200, { timeout: 15000 });
+        await terminalReady(page);
       });
       await step(`${tag}: BUY at Market stays silent`, async () => {
         const before = await f.rows(), posts = requests.length;

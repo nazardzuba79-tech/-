@@ -2,7 +2,7 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import { openStore } from './store.mjs';
 import { accountId } from './accounts.mjs';
@@ -159,7 +159,11 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
   else if(!accounts)contexts.set('legacy',context(null,'legacy'));
   const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
   const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
-  let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
+  // The catalogue (about 17 KB of the state answer) changes only when it is reloaded, at most once a minute. Every
+  // state answer names its version; a client that already holds that version (?catalogue=<version>) gets the
+  // state without it. Without the parameter, or with any other value, the answer carries the catalogue as before.
+  const catalogueVersionOf=list=>createHash('sha256').update(JSON.stringify(list)).digest('hex').slice(0,16);
+  let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false}))),catalogueVersion=catalogueVersionOf(catalogue);
   const accountView=ctx=>({id:ctx.id,mode:ctx.ownerMayTrade?'isolated-paper':'viewer',quoteView:'volatile',canTrade:ctx.ownerMayTrade===true,...(twoTraderMode?{fundingMode:'existing-only'}:{})});
   const readinessView=ctx=>{
     const at=now(),readiness={};
@@ -172,8 +176,8 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     }
     return Object.keys(readiness).length?{readiness}:{};
   };
-  const status=async(ctx,committed,signal)=>{const snapshot=committed??(!financialEnabled||accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()));hub.setStockOrders?.(ctx.id,snapshot.orders??[]);const invalid={};if(hub.quoteValid){snapshot.quotes={...snapshot.quotes};for(const[id,q]of Object.entries(snapshot.quotes))if(!hub.quoteValid(q,id)){delete snapshot.quotes[id];invalid[id]='QUOTE_UNAVAILABLE';}}return{...snapshot,...(accounts?{account:accountView(ctx)}:{}),catalogue,errors:{...ctx.errors,...invalid},...readinessView(ctx),metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}};};
-  const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
+  const status=async(ctx,committed,signal)=>{const snapshot=committed??(!financialEnabled||accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()));hub.setStockOrders?.(ctx.id,snapshot.orders??[]);const invalid={};if(hub.quoteValid){snapshot.quotes={...snapshot.quotes};for(const[id,q]of Object.entries(snapshot.quotes))if(!hub.quoteValid(q,id)){delete snapshot.quotes[id];invalid[id]='QUOTE_UNAVAILABLE';}}return{...snapshot,...(accounts?{account:accountView(ctx)}:{}),catalogue,catalogueVersion,errors:{...ctx.errors,...invalid},...readinessView(ctx),metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}};};
+  const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);catalogueVersion=catalogueVersionOf(catalogue);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async(req,signal)=>{
     if(!accounts)return contexts.get('legacy');
     const principal=await authenticate(req,{signal});
@@ -277,7 +281,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
       // trade policy inside every command's own transaction, so a network re-identity just
       // before a command only repeats it. The local SQLite worker cannot, and keeps it.
       const beforeCommand=accountAuthority?undefined:authorize;
-      check(![...u.searchParams.keys()].some(k=>!['id','interval','before'].includes(k)),'ACCOUNT_SELECTOR_FORBIDDEN');
+      check(![...u.searchParams.keys()].some(k=>!['id','interval','before','catalogue'].includes(k)),'ACCOUNT_SELECTOR_FORBIDDEN');
       if(req.method==='GET'&&u.pathname===API+'state'){
         if(res.destroyed)return;
         if(ctx.ownerMayTrade)await requireAccount(ctx);
@@ -294,7 +298,8 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
               view=projectViewerQuote(view,id,q,now());delete view.errors[id];
             }catch(e){if(readAbort.signal.aborted)return;delete view.quotes[id];view.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}
           }
-          if(!res.destroyed)send(res,200,{...view,token:ctx.token});return;
+          const body={...view,token:ctx.token};if(u.searchParams.get('catalogue')===body.catalogueVersion)delete body.catalogue;
+          if(!res.destroyed)send(res,200,body);return;
         }finally{res.off('close',onClose);}
       }
       if(req.method==='GET'&&u.pathname===API+'portfolio'){

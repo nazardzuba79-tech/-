@@ -18,6 +18,7 @@ on:
       - 'frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - 'frontend/src/lib/__tests__/stockOrderPanel.test.ts'
+      - 'frontend/src/lib/__tests__/stockCatalogueVersion.test.ts'
       - 'frontend/src/pages/stocks/StockOrderPanel.tsx'
       - '.github/workflows/stocks-focused-review.yml'
       - 'scripts/qa-stocks-hosted-browser.cjs'
@@ -135,6 +136,7 @@ jobs:
           services/stocks-global/identity-batch.test.mjs
           services/stocks-global/authority-adapter.test.mjs
           services/stocks-global/authority-rate-limit.test.mjs
+          services/stocks-global/catalogue-version.test.mjs
       - name: Pilot read-only preflight contract (mock database only)
         run: node --test services/stocks-global/pilot-preflight.test.cjs
       - name: Read-only preflight attempt gate on disposable PostgreSQL
@@ -157,6 +159,7 @@ jobs:
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
           frontend/src/lib/__tests__/stockOrderPanel.test.ts
           frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts
+          frontend/src/lib/__tests__/stockCatalogueVersion.test.ts
       - name: Bounded harness admission and financial assertion regressions (no workload run)
         run: node --test scripts/qa/stocks-rc-50plus2/self-test.cjs
       - name: Behavioral default-OFF, catalogue-only and explicit financial opt-in contract; dedicated authority process

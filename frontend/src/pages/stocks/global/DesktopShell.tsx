@@ -6,9 +6,16 @@ import BigNumber from 'bignumber.js';
 import { quoteAge } from './tradeMarkers';
 import type { Asset, Candle, Currency, Fill, Quote } from './types';
 
-const formatNumber = (locale: string, value: string | number | null | undefined, digits = 2) =>
-  value == null || !Number.isFinite(Number(value)) ? '—' :
-    Number(value).toLocaleString(locale, { maximumFractionDigits: digits });
+// One Intl.NumberFormat per locale and precision: toLocaleString with options builds a new one on every call, and
+// these numbers re-render with the terminal's 1 s clock. Same output (toLocaleString is this formatter).
+const numberFormats = new Map<string, Intl.NumberFormat>();
+const formatNumber = (locale: string, value: string | number | null | undefined, digits = 2) => {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const key = locale + '|' + digits;
+  let format = numberFormats.get(key);
+  if (!format) numberFormats.set(key, format = new Intl.NumberFormat(locale, { maximumFractionDigits: digits }));
+  return format.format(Number(value));
+};
 
 export function allocationQuantity(available: string, price: string, side: 'BUY' | 'SELL', percent: number) {
   const balance = new BigNumber(available), unit = new BigNumber(price);

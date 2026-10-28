@@ -1,7 +1,7 @@
 // Shared, dependency-free wire contract. Never contains deployment credentials.
 export const PREFIX = '/__stocks_global/';
 export const PROOF = 'x-voltex-stocks-edge-';
-export const READS = new Map([['catalogue', []], ['state', ['id']], ['portfolio', []], ['history', ['id', 'interval', 'before']], ['lease', ['id']]]);
+export const READS = new Map([['catalogue', []], ['state', ['id', 'catalogue']], ['portfolio', []], ['history', ['id', 'interval', 'before']], ['lease', ['id']]]);
 export const FINANCIAL = new Set(['orders', 'cancel', 'balances', 'refresh']);
 export const FORWARD = ['authorization', 'x-stocks-token', 'x-stocks-view'];
 export function reject(code, status = 403) { throw Object.assign(new Error(code), { code, status }); }
@@ -19,6 +19,8 @@ export function route(raw, method) {
   if (!READS.has(name) || method !== (name === 'lease' ? 'DELETE' : 'GET')) reject('ROUTE_NOT_FOUND', 404);
   const keys = [...url.searchParams.keys()];
   if (keys.some(k => !READS.get(name).includes(k)) || new Set(keys).size !== keys.length || /%0[0ad]/i.test(url.search)) reject('ROUTE_NOT_FOUND', 404);
+  // state?catalogue= names the catalogue version the browser already holds (16 lowercase hex); nothing else.
+  if (url.searchParams.has('catalogue') && !/^[a-f0-9]{16}$/.test(url.searchParams.get('catalogue'))) reject('ROUTE_NOT_FOUND', 404);
   return raw;
 }
 export function validateBrowser(request, publicUrl) {
