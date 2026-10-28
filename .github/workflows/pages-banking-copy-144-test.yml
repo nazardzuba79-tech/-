@@ -1,0 +1,40 @@
+name: Pages Banking copy release candidate #144
+on:
+  push:
+    branches:
+      - 'release/pages-banking-copy-144-20261028'
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Assert reviewed customer copy (three strings)
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const assert = require('node:assert/strict');
+          const t = fs.readFileSync('frontend/src/pages/BankingPage.tsx', 'utf8');
+          for(const str of ['Размещение создано. Оно появилось в разделе «Мои размещения».','По данным вашего счёта Banking','Расчёт выполняется на сервере и учитывает только завершённые календарные месяцы.']) assert(t.includes(str), str);
+          assert(!t.includes('Banking ledger'));
+          assert(!t.includes('BigNumber'));
+          console.log('PASS: exact three customer-facing copy strings');
+          NODE
+      - name: Frontend build
+        run: npm run build --prefix frontend
+      - name: Customer wording and UI preservation
+        run: npx jest frontend/src/lib/__tests__/customerFacingErrors.test.ts --runInBand
