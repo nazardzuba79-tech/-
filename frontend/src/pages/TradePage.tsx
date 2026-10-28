@@ -88,13 +88,14 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
   { id: 'assets', labelKey: 'trade.tabAssets' },
 ];
 
-export function TradePage() {
+/** Guard at the route boundary: no account/venue/market hooks run for retired NRX. */
+export function RetiredMarketTradeRoute() {
   const [params] = useSearchParams();
   if (isRetiredMarketPair(params.get('pair') ?? '')) return <div className="trade-terminal"><Nav active="/trade" staticTicker /><main style={{padding: '48px 20px', textAlign: 'center'}}><h1>NRX/USDT</h1><p role="status">Этот рынок удалён. Новые ордера недоступны.</p><a href="/markets">Рынки</a></main></div>;
-  return <ActiveTradePage />;
+  return <TradePage />;
 }
 
-function ActiveTradePage() {
+export function TradePage() {
   const { t } = useLanguage();
   const demoMode = useDemoSpotMode();
   const [searchParams, setSearchParams] = useSearchParams();
