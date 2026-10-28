@@ -4,8 +4,6 @@ import BigNumber from 'bignumber.js';
 import { allocateNrxOwner } from '../nrxAllocation';
 import { NEURIX } from '../neurix';
 import { OrderService } from '../../OrderService';
-import { PriceWatcherService } from '../../PriceWatcherService';
-import { simulationFor } from '../testMarketSimulation';
 import { MatchingEngine } from '../../../matching-engine/MatchingEngine';
 
 const url = process.env.VOLTEX_NRX_TEST_URL;

@@ -1,7 +1,6 @@
 import { NEURIX } from '../neurix';
 import { VOLTORA } from '../testAssetConfig';
 import { aggregateCandles, CANDLE_MS, DAY_MS, HOUR_MS, MINUTE_MS, simulationFor, TestMarketSimulation, TICK_MS } from '../testMarketSimulation';
-import { testMarketCandles } from '../testMarketService';
 import { nrxPublicResponse } from '../nrxPublic';
 import { spotPriceSource } from '../nrxSpot';
 import { scheduledScenarioHour } from '../simulationSchedule';
