@@ -9,6 +9,7 @@ import { confirmedTransaction } from './confirmedTransaction';
 import { ACTIVE_OTC_STATUSES, CreateOtc, decimal, OtcAction, OtcError, OtcPolicy, OTC_ASSETS, OTC_POLICY, OTC_TIERS } from './policy';
 import { cityFor } from './geography';
 import { assertReserveCoverage } from './reserveCoverage';
+import { assertFloor, lockFloor, prepareFloor } from '../services/syntheticProceedsFloor';
 
 type Tx = Prisma.TransactionClient;
 export type OtcActor = { userId: string; sessionId?: string };
@@ -64,6 +65,7 @@ export class OtcCashService {
     // repeated in the transaction below; this lookup never returns private data.
     const previous = await this.db.otcCashRequest.findUnique({ where: { userId_idempotencyKey: { userId: actor.userId, idempotencyKey: input.idempotencyKey } }, select: { id: true } });
     const valuation = previous ? null : await valueInUsd(input.asset, quantity, this.prices);
+    const floor = previous ? null : await prepareFloor(this.db, actor.userId, this.prices);
     return confirmedTransaction(this.db, async tx => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`otc-create:${actor.userId}`},0))::text`;
       const user = await this.actor(tx, actor);
@@ -82,9 +84,11 @@ export class OtcCashService {
       if (await tx.otcCashRequest.count({ where: { userId: actor.userId, status: { in: ACTIVE_OTC_STATUSES } } }) >= this.policy.maxActive)
         throw new OtcError('ACTIVE_REQUEST_LIMIT', 409);
       await assertReserveCoverage(tx, actor.userId, input.asset);
+      if (floor) await lockFloor(tx, actor.userId);
       await mutateSpotBalance(tx, actor.userId, input.asset, { available: quantity.negated(), locked: quantity });
       const row = await tx.otcCashRequest.create({ data: { userId: actor.userId, ...input, quantity: quantity.toFixed(), fingerprint,
         policyVersion: this.policy.version, reservation: { create: { asset: input.asset, quantity: quantity.toFixed() } } } });
+      if (floor) await assertFloor(tx, actor.userId, floor);
       await this.ledger(tx, row, 'RESERVE', actor.userId);
       if (valuation.pricedAt && Date.now() - valuation.pricedAt.getTime() > DEPOSIT_PRICE_MAX_AGE_MS)
         throw new OtcError('PRICE_UNAVAILABLE', 503);
@@ -139,6 +143,8 @@ export class OtcCashService {
 
   async act(actor: OtcActor, id: string, input: OtcAction, admin = false) {
     const fingerprint = hash([actor.userId, input]);
+    // Existing obligations may predate the fence; rejection/cancellation must
+    // stay available without quotes. The transaction still performs all auth.
     return confirmedTransaction(this.db, async tx => {
       const row = await this.owned(tx, actor, id, admin, true);
       const old = await tx.otcCashCommand.findUnique({ where: { requestId_idempotencyKey: { requestId: id, idempotencyKey: input.idempotencyKey } } });
@@ -147,6 +153,9 @@ export class OtcCashService {
         return old.result;
       }
       if (row.version !== input.version) throw new OtcError('VERSION_CHANGED');
+      const floor = ['begin-payout', 'complete'].includes(input.action)
+        ? await prepareFloor(tx, row.userId, this.prices) : null;
+      if (floor) { await lockFloor(tx, row.userId); await assertFloor(tx, row.userId, floor); }
       const requireState = (...states: string[]) => { if (!states.includes(row.status)) throw new OtcError('INVALID_STATE'); };
       const requireAdmin = () => { if (!admin) throw new OtcError('ADMIN_REQUIRED', 403); };
       const requireOwner = () => { if (admin || row.userId !== actor.userId) throw new OtcError('OWNER_REQUIRED', 403); };

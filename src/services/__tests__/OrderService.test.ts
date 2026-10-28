@@ -22,6 +22,7 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
     },
     auditLog: {
       create: jest.fn(async ({ data }: any) => { audits.push(data); return data; }),
+      findMany: jest.fn(async () => []),
     },
     $queryRaw: jest.fn(async () => [{ id: '1' }]),
     balance: walletDelegate(balances),

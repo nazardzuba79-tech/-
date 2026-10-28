@@ -455,7 +455,12 @@ export function futuresRouter(
     const transferAmount = new BigNumber(amount);
 
     try {
-      await transferWalletBalance(prisma, userId, asset, transferAmount, direction);
+      await transferWalletBalance(prisma, userId, asset, transferAmount, direction, {
+        getTicker: async pair => {
+          const price = await markPriceService.getIndexPrice(pair);
+          return price ? { lastPrice: price.toFixed() } : null;
+        },
+      });
       res.json({ status: 'ok' });
     } catch (err: any) {
       // The engine's sentence, plus a code for the refusals the client can name.

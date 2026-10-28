@@ -5,6 +5,21 @@ on:
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/__tests__/simulationMintFence.pg.test.ts'
+      - 'src/services/__tests__/syntheticProceedsFloor.pg.test.ts'
+      - 'src/services/__tests__/demoReleaseOff.test.ts'
+      - 'src/services/syntheticProceedsFloor.ts'
+      - 'src/services/__tests__/syntheticProceedsFloor.test.ts'
+      - 'src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts'
+      - 'scripts/check-financial630-negative-control.cjs'
+      - 'src/otc/**'
+      - 'src/banking/**'
+      - 'src/services/WalletTransferService.ts'
+      - 'src/api/routes/futures.ts'
+      - 'src/api/routes/otcCash.ts'
+      - 'src/api/routes/banking.ts'
+      - 'src/services/WithdrawalService.ts'
+      - 'src/api/routes/withdrawals.ts'
+      - 'src/api/routes/adminWithdrawals.ts'
       - 'src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts'
       - 'src/services/PriceWatcherService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -15,6 +30,76 @@ on:
 permissions:
   contents: read
 jobs:
+  financial-cross-ledger:
+    name: Financial floor isolated PostgreSQL (exact head)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-fixture-only
+          POSTGRES_DB: voltex_nrx_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_nrx_test
+      DIRECT_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_nrx_test
+      VOLTEX_NRX_TEST_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_nrx_test
+      VOLTEX_LISTING_TEST_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_listing_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.23.3' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - name: Separate disposable History20 compatibility database
+        run: |
+          node <<'NODE'
+          const {PrismaClient}=require('@prisma/client');
+          const db=new PrismaClient();
+          (async()=>{try{await db.$executeRawUnsafe('CREATE DATABASE voltex_listing_test');}finally{await db.$disconnect();}})().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
+          DATABASE_URL="$VOLTEX_LISTING_TEST_URL" DIRECT_URL="$VOLTEX_LISTING_TEST_URL" npx prisma migrate deploy
+      - run: npm run build
+      - name: Prove original630 fails the new real-transaction checks, then restore reviewed source
+        run: node scripts/check-financial630-negative-control.cjs
+      - name: Financial invariants, real transactions, synthetic users only
+        run: >-
+          mkdir -p output/financial630 &&
+          npx jest --runInBand --json --outputFile=output/financial630/exact-head.json --runTestsByPath
+          src/services/__tests__/syntheticProceedsFloor.test.ts
+          src/services/__tests__/syntheticProceedsFloor.pg.test.ts
+          src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+          src/api/routes/__tests__/futuresRefusalCodes.test.ts
+          src/services/__tests__/demoReleaseOff.test.ts
+          src/services/__tests__/idleSweepSafety.test.ts
+          src/services/testMarkets/__tests__/nrxRetirement.test.ts
+          src/services/listings/__tests__/history20ColdRegistryCashout.pg.test.ts
+          src/services/listings/__tests__/history20SimusdtSettlement.pg.test.ts
+      - name: Explicitly retain owner-policy release blocker, independent of green code tests
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs'),cp=require('node:child_process');
+          const source=cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+          fs.writeFileSync('output/financial630/release-gate.json',JSON.stringify({source,githubEventSha:process.env.GITHUB_SHA,releaseDecision:'NO_GO',legacyProvenance:'BLOCKED',reason:'Nominal S with unrealized venue marks can unlock old synthetic USDT. Existing funds and settlement policy are not approved; no merge/deploy authorized.'},null,2));
+          console.log('Code test success does not approve legacy funds: releaseDecision=NO_GO');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: financial630-exact-head
+          path: output/financial630
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -53,6 +138,11 @@ jobs:
           src/services/testMarkets/__tests__/nrxLegacySourceProjection.test.ts
           src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
           src/services/__tests__/simulationMintFence.pg.test.ts
+          src/services/__tests__/syntheticProceedsFloor.pg.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/demoReleaseOff.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
           src/services/testMarkets/__tests__/testMarketDepth.test.ts
           src/api/routes/__tests__/testMarkets.test.ts

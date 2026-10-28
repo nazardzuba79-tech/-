@@ -295,9 +295,9 @@ app.use('/api/v1', adminListingsRouter(prisma, listingStoreFromEnvironment(), {
 void managedListingRegistry.ensureFresh(0);
 app.use('/api/v1', depositAddressCopiesRouter(prisma));
 app.use('/api/v1', depositCatalogueRouter(prisma, new DepositCatalogue(catalogueStoreFromEnvironment(), () => coinGeckoService.getRankings())));
-app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: nativeWithdrawableRows(prisma, privateTradingService) }));
+app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: nativeWithdrawableRows(prisma, privateTradingService), prices: marketDataService }));
 app.use('/api/v1', otcCashRouter(prisma, marketDataService));
-app.use('/api/v1', adminWithdrawalsRouter(prisma));
+app.use('/api/v1', adminWithdrawalsRouter(prisma, marketDataService));
 app.use('/api/v1', authRouter(prisma));
 app.use('/api/v1', contactPolicyRouter(prisma));
 app.use('/api/v1', supportRequestRouter(prisma));

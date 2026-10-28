@@ -3,6 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { BANKING_PROGRAMS, BANKING_REFERRAL_REWARD_PERCENT, VOLTEX_CARD_YIELD, bankingAsset, bankingProgram, minimumAssetQuantity, type BankingAsset } from './config';
 import { addCalendarMonthsClamped, calculateBankingProgram, completedCalendarMonths, placementTerms, rewardForMonth } from './math';
+import { assertFloor, lockFloor, prepareFloor } from '../services/syntheticProceedsFloor';
 
 export class BankingError extends Error {
   constructor(readonly code: string, readonly status = 400) { super(code); }
@@ -118,11 +119,19 @@ export class BankingService {
         if (old[0].request_hash !== requestHash) throw new BankingError('idempotency_key_reused',409);
         return old[0].result_json;
       }
+      // Do not turn legacy model-priced principal into interest/referral
+      // payments on the ordinary ledger. Existing placements are not rewritten.
+      const floor = await prepareFloor(tx, userId, { getTicker: async pair => {
+        const price = prices[pair.split('/')[0] as BankingAsset];
+        return price ? { lastPrice: price } : null;
+      } });
+      if (floor) await lockFloor(tx, userId);
       const debited = await tx.$queryRaw<{available:string}[]>`
         UPDATE "Balance" SET "available"="available"-${amount.toFixed()}::numeric, "updatedAt"=NOW()
         WHERE "userId"=${userId} AND asset=${asset} AND "available">=${amount.toFixed()}::numeric
         RETURNING "available"::text AS available`;
       if (!debited[0]) throw new BankingError('insufficient_available_balance');
+      if (floor) await assertFloor(tx, userId, floor);
       const id=randomUUID(), now=new Date(), maturity=addCalendarMonthsClamped(now, program.termMonths);
       await tx.$executeRaw`
         INSERT INTO banking_placements(id,user_id,program_id,asset,principal,monthly_rate,term_months,compound,payout_frequency,lock_rule,opened_at,matures_at,created_at)

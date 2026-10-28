@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
+import { assertFloor, FloorPriceSource, isMintedListingAsset, lockFloor, prepareFloor } from './syntheticProceedsFloor';
 
 export class WithdrawalRequestError extends Error {}
 
@@ -45,7 +46,15 @@ export interface WithdrawalResult {
  * exists can only be rejected.
  */
 export class WithdrawalService {
-  constructor(private prisma: PrismaClient) {}
+  /** `prices` values an account that holds legacy simulated-sale proceeds (syntheticProceedsFloor); without it such
+   * an account withdraws nothing. No other account is priced. */
+  constructor(private prisma: PrismaClient, private prices?: FloorPriceSource) {}
+
+  /** The floor marks of the withdrawal's owner, read before its transaction; null for an ordinary account. */
+  private async floorOf(withdrawalId: string) {
+    const row = await this.prisma.withdrawal.findUnique({ where: { id: withdrawalId }, select: { userId: true } });
+    return row?.userId ? prepareFloor(this.prisma, row.userId, this.prices) : null;
+  }
 
   /**
    * An unheld request held nothing: it is valued from demo funds and is never approved or paid. Decided on the row
@@ -56,6 +65,11 @@ export class WithdrawalService {
     if (withdrawal.balanceHeld === false) throw new DemoFundsNotWithdrawableError();
   }
 
+  private async requireRealAsset(db: PrismaClient | Prisma.TransactionClient, asset: string) {
+    if (isTestAssetPairOrSymbol(asset) || await isMintedListingAsset(db, asset))
+      throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+  }
+
   async requestWithdrawal(params: {
     userId: string;
     asset: string;
@@ -63,13 +77,16 @@ export class WithdrawalService {
     toAddress: string;
     amount: string;
   }): Promise<WithdrawalResult> {
-    if (isTestAssetPairOrSymbol(params.asset)) throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    // A minted listing token stays refused while the in-memory listing registry is cold or stale.
+    await this.requireRealAsset(this.prisma, params.asset);
     const amount = new BigNumber(params.amount);
     if (!amount.isFinite() || amount.isLessThanOrEqualTo(0)) {
       throw new WithdrawalRequestError('Amount must be greater than zero');
     }
 
+    const floor = await prepareFloor(this.prisma, params.userId, this.prices);
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (floor) await lockFloor(tx, params.userId);
       try {
         await mutateSpotBalance(tx, params.userId, params.asset, { available: amount.negated(), locked: amount });
       } catch (error) {
@@ -87,6 +104,8 @@ export class WithdrawalService {
           status: 'PENDING',
         },
       });
+      // Judged with this request counted as leaving: the account keeps at least its synthetic proceeds.
+      if (floor) await assertFloor(tx, params.userId, floor);
 
       await tx.auditLog.create({
         data: {
@@ -128,9 +147,13 @@ export class WithdrawalService {
   /** Admin has reviewed the request and intends to send the funds — the
    * hold stays locked (nothing has actually moved on-chain yet). */
   async approveWithdrawal(params: { withdrawalId: string; performedByAdminId: string }): Promise<WithdrawalResult> {
+    const floor = await this.floorOf(params.withdrawalId);
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['PENDING']);
       this.refuseDemoFunds(withdrawal);
+      await this.requireRealAsset(tx, withdrawal.asset);
+      // Also a request filed before this fence: the account must still cover its synthetic proceeds.
+      if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor); }
 
       const updated = await tx.withdrawal.update({
         where: { id: withdrawal.id },
@@ -153,9 +176,12 @@ export class WithdrawalService {
    * treasury wallet — releases the locked hold without returning anything
    * to `available`, since the funds genuinely left, and records the txHash. */
   async markSent(params: { withdrawalId: string; performedByAdminId: string; txHash: string }): Promise<WithdrawalResult> {
+    const floor = await this.floorOf(params.withdrawalId);
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['APPROVED']);
       this.refuseDemoFunds(withdrawal);
+      await this.requireRealAsset(tx, withdrawal.asset);
+      if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor); }
 
       // An unheld request moved nothing, so there is no lock to release.
       if (withdrawal.balanceHeld !== false) {
