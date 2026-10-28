@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),os=require('node:os');
 // Same runtime as policy-613-after.cjs; this pin runs it as ONE process (crypto API, Stocks authority,
 // gateway and synthetic market together): the current head's behaviour.
-const RC='78e78d647d9a399f95d1effee4ebf5e188ccc41d',TOPOLOGY='single-process';
+const RC='e92cbd8a5c87fa34f92f356e5b7d0c8fac1382ec',TOPOLOGY='single-process';
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){

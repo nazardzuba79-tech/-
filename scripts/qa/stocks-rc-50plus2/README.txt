@@ -47,9 +47,10 @@ known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
 #613 candidate pins (repinned 2026-10-28, Claude: P1 gateway identity multiplexing)
-Both policies pin the same runtime, 78e78d64 (#613 P1: identity checks
-multiplexed with a quota-sized budget, no pre-command re-identity with the
-PostgreSQL authority; 386f7fc8, burst 2, collected 0/8 in run 40719580431); the plan,
+Both policies pin the same runtime, e92cbd8a (#613 P1: identity checks
+multiplexed with a quota-sized budget and arrival-spaced answers, no pre-command
+re-identity with the PostgreSQL authority; earlier: 386f7fc8 0/8 in run 40719580431,
+78e78d64 single 4/4 +187 % / separated 0/4 in run 40726294118); the plan,
 thresholds, taskset, ABBA order and PAIRS are unchanged. Rounds 1-2 pinned
 5d69057d (#613 head runtime plus src/stocksAuthority.ts). Only the process topology
 differs between the policies (TOPOLOGY export):
