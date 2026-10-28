@@ -22,6 +22,7 @@ on:
       - '.github/workflows/stocks-focused-review.yml'
       - 'scripts/qa-stocks-hosted-browser.cjs'
       - 'scripts/qa-stocks-hosted-silent.cjs'
+      - 'scripts/qa-stocks-route-browser.cjs'
       - 'scripts/qa-stocks-source-chart-browser.cjs'
       - 'frontend/src/pages/stocks/**'
       - '.github/workflows/stocks-legacy-unsupported.yml'
@@ -323,7 +324,7 @@ jobs:
     # Same-app hosted Stocks in Chromium over the disposable PostgreSQL authority: ordinary login, the menu,
     # silent viewers, two bound traders' Market/Limit orders, logout. Synthetic only; no secrets, no deploy.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40  # the whole-route QA adds about 6 minutes
     env:
       STOCKS_TEST_CASH_ENABLED: 'false'
       DATABASE_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
@@ -380,6 +381,12 @@ jobs:
           QA_STOCKS_DIST: .stocks-hosted-dist
           QA_STOCKS_EXECUTION_DIST: .stocks-hosted-execution-dist
           QA_OUT: /tmp/stocks-hosted-browser
+      - name: Whole user route — menu → catalogue → asset → every timeframe → «История» → back → another asset → reload → offline/online, request volume, silent BUY — viewer and trader, 1440 and 390
+        run: node scripts/qa-stocks-route-browser.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_OUT: /tmp/stocks-hosted-browser/route
       # #613 + #621: the real chart with in-page synthetic source pages; no gateway, provider or RPC.
       - name: Own-source chart — ACCEPTED 1m with a gap, UNKNOWN 1m/5m/1h, native bar excluded, silent viewer — 1440 and 390
         run: node scripts/qa-stocks-source-chart-browser.cjs

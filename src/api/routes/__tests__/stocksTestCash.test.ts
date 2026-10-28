@@ -290,3 +290,10 @@ test('identity batch admits and refuses exactly what GET identity does, judged a
   }
  }finally{now.mockRestore();clock=T0*1000;}
 });
+test('identity batch: a driver fault while reading a session answers that bearer AUTH_UNAVAILABLE, never a subject',async()=>{
+ const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true);
+ const read=f.prisma.$queryRaw.getMockImplementation();
+ f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>{const rows=await read(...args);return args[args.length-1]==='session-synthetic-a'?[new Proxy(rows[0],{get(target,key){if(key==='lastSeenAt')throw Error('synthetic driver fault');return target[key];}})]:rows;});
+ const res=await identities(f.app,[f.token('synthetic-a'),f.token('synthetic-b')]);
+ expect([res.status,res.body]).toEqual([200,{results:[{error:'AUTH_UNAVAILABLE'},{issuer,subject:'synthetic-b'}]}]);
+});

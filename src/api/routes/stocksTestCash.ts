@@ -88,17 +88,22 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
     if (!req.body || typeof req.body !== 'object' || Object.keys(req.body).length !== 1 || !Array.isArray(tokens) || tokens.length < 1 || tokens.length > IDENTITY_BATCH_MAX
       || tokens.some((token: unknown) => typeof token !== 'string' || !BEARER.test(token)) || new Set(tokens).size !== tokens.length || Buffer.byteLength(JSON.stringify(tokens)) > IDENTITY_BATCH_BYTES)
       return void res.status(422).json({ error: 'IDENTITY_BATCH_INVALID' });
-    const results = [];
-    for (const token of tokens as string[]) {
-      const one = { headers: { authorization: 'Bearer ' + token } } as unknown as AuthedRequest;
-      let status = 200, passed = false;
-      const outcome = { status(code: number) { status = code; return outcome; }, json() { return outcome; } };
-      await auth(one, outcome as never, () => { passed = true; });
-      if (!passed) { results.push({ error: status === 503 ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED' }); continue; }
-      try { const value = actor(one); results.push({ issuer: value.issuer, subject: value.subject }); }
-      catch (error: any) { results.push({ error: typeof error?.code === 'string' && error.code.startsWith('AUTH_') ? error.code : 'AUTH_REQUIRED' }); }
+    try {
+      const results = [];
+      for (const token of tokens as string[]) {
+        const one = { headers: { authorization: 'Bearer ' + token } } as unknown as AuthedRequest;
+        let status = 200, passed = false;
+        const outcome = { status(code: number) { status = code; return outcome; }, json() { return outcome; } };
+        await auth(one, outcome as never, () => { passed = true; });
+        if (!passed) { results.push({ error: status === 503 ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED' }); continue; }
+        try { const value = actor(one); results.push({ issuer: value.issuer, subject: value.subject }); }
+        catch (error: any) { results.push({ error: typeof error?.code === 'string' && error.code.startsWith('AUTH_') ? error.code : 'AUTH_REQUIRED' }); }
+      }
+      res.json({ results });
+    } catch {
+      // Fail closed for the whole batch; the gateway answers every waiting request AUTH_UNAVAILABLE.
+      if (!res.headersSent) res.status(503).json({ error: 'AUTH_UNAVAILABLE' });
     }
-    res.json({ results });
   });
   // Catalogue/identity access never grants a financial capability. Off means no
   // wallet or command route, even for an allowed principal or forged gateway call.
