@@ -31,3 +31,53 @@
 # must NOT be weakened to `no-cache` while chasing the staleness above.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# SEARCH ENGINES. Signed-in areas, the admin console, the sign-in screens and
+# the licences page (already noindex in the page itself) stay out of search. A different
+# header from the cache rules above, so their order and meaning are untouched;
+# the build writes the same directive into these pages' static HTML as a
+# robots meta (src/lib/seo/site.ts is the list; a test keeps this in step).
+/trade
+  X-Robots-Tag: noindex, nofollow
+/futures
+  X-Robots-Tag: noindex, nofollow
+/markets
+  X-Robots-Tag: noindex, nofollow
+/banking
+  X-Robots-Tag: noindex, nofollow
+/earn
+  X-Robots-Tag: noindex, nofollow
+/settings
+  X-Robots-Tag: noindex, nofollow
+/card
+  X-Robots-Tag: noindex, nofollow
+/wallet
+  X-Robots-Tag: noindex, nofollow
+/otc
+  X-Robots-Tag: noindex, nofollow
+/dashboard
+  X-Robots-Tag: noindex, nofollow
+/copy-trading
+  X-Robots-Tag: noindex, nofollow
+/arbitrage
+  X-Robots-Tag: noindex, nofollow
+/tools
+  X-Robots-Tag: noindex, nofollow
+/trading-bots
+  X-Robots-Tag: noindex, nofollow
+/analytics
+  X-Robots-Tag: noindex, nofollow
+/stocks
+  X-Robots-Tag: noindex, nofollow
+/stocks/*
+  X-Robots-Tag: noindex, nofollow
+/admin
+  X-Robots-Tag: noindex, nofollow
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+/login
+  X-Robots-Tag: noindex, follow
+/register
+  X-Robots-Tag: noindex, follow
+/legal/licenses
+  X-Robots-Tag: noindex, nofollow

@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 
-/** Sets the tab title and the description of an Academy/Help page while it
- * is shown, and puts back what was there when the visitor leaves. The build
- * writes the same values into a static copy of index.html for search engines
- * (see frontend/contentPlugin.ts); this keeps them right after in-app moves. */
-export function usePageMeta(title: string, description: string) {
+/** Sets the tab title and the description of an Academy, Help or legal page
+ * while it is shown, and puts back what was there when the visitor leaves.
+ * The build writes the same values into a static copy of index.html for
+ * search engines (see frontend/contentPlugin.ts); this keeps them right after
+ * in-app moves. A null title leaves the head alone. */
+export function usePageMeta(title: string | null, description: string) {
   useEffect(() => {
+    if (title === null) return;
     const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     const previousTitle = document.title;
     const previousDescription = meta?.getAttribute('content') ?? null;

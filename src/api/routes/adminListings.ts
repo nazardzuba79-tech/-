@@ -21,7 +21,7 @@ import {
 } from '../../services/listings/listingConfig';
 import { ListingStoreError, type ListingStore } from '../../services/listings/store';
 import { managedListingRegistry, type ManagedListingRegistry } from '../../services/listings/registry';
-import { simulationFor } from '../../services/testMarkets/testMarketSimulation';
+import { SIM_INTERVALS, simulationFor } from '../../services/testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
 import { AITH_PUBLICATION_PROTOCOL, isAith } from '../../shared/aithPublication';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
@@ -158,12 +158,14 @@ export function adminListingsRouter(
       const horizon = typeof req.query.horizon === 'string' ? req.query.horizon : null;
       const requested = typeof req.query.at === 'string' ? Date.parse(req.query.at) : NaN;
       const interval = typeof req.query.interval === 'string' ? req.query.interval : '5m';
+      // A day inside a historical growth window (horizon=window); anything else is refused by the preview.
+      const fromDay = typeof req.query.fromDay === 'string' && /^\d{1,4}$/.test(req.query.fromDay) ? Number(req.query.fromDay) : 0;
       let scenario: ReturnType<typeof listingScenarioPreview> | undefined;
       if (horizon !== null) {
-        const key = JSON.stringify([listing.id, listing.draftRevision, listing.draft, horizon, interval]);
+        const key = JSON.stringify([listing.id, listing.draftRevision, listing.draft, horizon, interval, fromDay]);
         scenario = previewCache.get(key);
         if (scenario) previewCache.delete(key);
-        else scenario = listingScenarioPreview(listing.draft, interval, horizon);
+        else scenario = listingScenarioPreview(listing.draft, interval, horizon, { fromDay });
         previewCache.set(key, scenario);
         if (previewCache.size > 12) previewCache.delete(previewCache.keys().next().value!);
       }
@@ -172,7 +174,11 @@ export function adminListingsRouter(
       res.json({
         listingId: listing.id, draftRevision: listing.draftRevision, previewAt: at, serverTime: clock(),
         asset: { ...publicTestAsset(asset, at), logo: listing.draft.logo, displayTimeZone: listing.draft.displayTimeZone },
-        candles: scenario?.candles ?? testMarketCandles(asset, interval, at, 200),
+        // A historical growth window spans years: without a horizon, at most 30 days of candles
+        // around `at` (≤ 200), so a coarse interval never asks for the whole window's ticks.
+        candles: scenario?.candles ?? testMarketCandles(asset, interval, at, listing.draft.simulationProgram?.kind === 'scenario-controls-v2'
+          && listing.draft.simulationProgram.growth === 'historical-window' && SIM_INTERVALS[interval]
+          ? Math.max(1, Math.min(200, Math.floor(30 * 24 * 60 * 60_000 / SIM_INTERVALS[interval]))) : 200),
         ...(scenario ? { scenarioSummary: scenario.scenarioSummary } : {}),
         book: testMarketDepth(simulation, at),
         trades: simulation.recentTrades(at, 30).map((trade) => ({ ...trade, time: trade.timestamp })),
@@ -219,6 +225,43 @@ export function adminListingsRouter(
       if (!store.countdown) return res.status(503).json({ error: 'COUNTDOWN_UNAVAILABLE', message: 'The listing store does not support the timer yet' });
       const result = await store.countdown(req.params.id, action as ListingCountdownAction, req.userId!);
       // The Spot gate and the restricted-asset guards follow the timer on the next order/valuation.
+      registry.invalidate();
+      res.json(result);
+    } catch (error) { failure(res, error); }
+  });
+
+  /** ADMIN-only hard delete. The economic read is intentionally fail-closed. */
+  router.post('/admin/listings/:id/delete', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    const { symbol, draftRevision, activeVersion, confirmation } = (req.body ?? {}) as Record<string, unknown>;
+    if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    if (typeof symbol !== 'string' || !/^[A-Z0-9]{2,10}$/.test(symbol) ||
+      !Number.isSafeInteger(draftRevision) || Number(draftRevision) < 1 ||
+      (activeVersion !== null && (!Number.isSafeInteger(activeVersion) || Number(activeVersion) < 1)) ||
+      confirmation !== `УДАЛИТЬ ${symbol}`) return res.status(400).json({ error: 'DELETE_CONFIRMATION_REQUIRED' });
+    try {
+      if (!store.deleteListing) return res.status(503).json({ error: 'DELETE_UNAVAILABLE' });
+      const listing = (await store.list()).listings.find(item => item.id === req.params.id);
+      if (!listing) return res.status(404).json({ error: 'not_found' });
+      if (listing.symbol !== symbol || listing.draftRevision !== draftRevision || listing.activeVersion !== activeVersion)
+        return res.status(409).json({ error: 'LISTING_CHANGED', message: 'Листинг изменился. Обновите список перед удалением.' });
+      if (listing.draft.tradable || listing.active?.tradable)
+        return res.status(422).json({ error: 'LISTING_TRADABLE', message: 'Активный торгуемый рынок нельзя удалить до отключения торговли.' });
+      const pairs = [`${symbol}/USDT`, `${symbol}-USDT`, `${symbol}USDT`, `${symbol}/SIMUSDT`, `${symbol}-SIMUSDT`];
+      const counts = await Promise.all([
+        prisma.order.count({ where: { pair: { in: pairs } } }),
+        prisma.trade.count({ where: { pair: { in: pairs } } }),
+        prisma.futuresOrder.count({ where: { symbol: { in: pairs } } }),
+        prisma.futuresPosition.count({ where: { symbol: { in: pairs } } }),
+        prisma.balance.count({ where: { asset: symbol, OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+        prisma.demoBalance.count({ where: { asset: symbol, OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+        prisma.demoOrder.count({ where: { pair: { in: pairs } } }),
+        prisma.demoTrade.count({ where: { pair: { in: pairs } } }),
+      ]);
+      if (counts.some(count => count !== 0))
+        return res.status(422).json({ error: 'LISTING_HAS_ACTIVITY', message: 'По активу найдены ордера, сделки, позиции или остатки средств. Удаление отменено.' });
+      const result = await store.deleteListing(req.params.id, symbol, Number(draftRevision), activeVersion as number | null, req.userId!);
+      previewCache.clear();
       registry.invalidate();
       res.json(result);
     } catch (error) { failure(res, error); }

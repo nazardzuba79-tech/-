@@ -173,10 +173,13 @@ export class WalletPortfolioService {
     // Managed listings (Admin → Listings) the same way: their own canonical
     // price, never a colliding venue symbol. Only held assets are looked up.
     const { managedListingAssets } = await import('./listings/managedSnapshot');
+    const { isSimulationSettled } = await import('./testMarkets/testAssetConfig');
     const { isHistoricalDemoAsset } = await import('./listings/simulationContour');
     // A historical simulation (demo contour) is never valued: no price at all, not its model's.
     for (const asset of managedListingAssets()) if (wanted.has(asset.symbol) && isHistoricalDemoAsset(asset)) byBase.delete(asset.symbol);
-    const held = managedListingAssets().filter((asset) => wanted.has(asset.symbol) && !isHistoricalDemoAsset(asset));
+    // A market quoted in the restricted SIMUSDT unit (History20 private-test design) is not USD money: no USD value.
+    for (const asset of managedListingAssets()) if (wanted.has(asset.symbol) && asset.quote !== 'USDT') byBase.delete(asset.symbol);
+    const held = managedListingAssets().filter((asset) => wanted.has(asset.symbol) && !isHistoricalDemoAsset(asset) && asset.quote === 'USDT');
     if (held.length) {
       const { simulationFor } = await import('./testMarkets/testMarketSimulation');
       for (const asset of held) byBase.set(asset.symbol, simulationFor(asset).priceAt(Date.now()) ?? asset.initialPrice);
@@ -195,7 +198,9 @@ export class WalletPortfolioService {
     }
 
     for (const asset of wanted) {
-      if (USD_PEGGED.has(asset)) out.set(asset, 1);
+      // SIMUSDT-settled value is never USD, whatever the registry or a venue says.
+      if (isSimulationSettled(asset)) out.set(asset, null);
+      else if (USD_PEGGED.has(asset)) out.set(asset, 1);
       else if (asset === 'EUR') out.set(asset, eurUsd);
       else out.set(asset, byBase.get(asset) ?? null);
     }

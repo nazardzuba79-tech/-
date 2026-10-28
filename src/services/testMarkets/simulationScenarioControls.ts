@@ -5,6 +5,7 @@
 import type { ListingScenario, ScenarioControlsProgram } from '../../shared/listingScenarioControls';
 import type { RealismTick } from './simulationRealism';
 import type { HistoricalMoveClip, HistoricalMoveProgram, HistoricalMoveBar } from '../../shared/listingHistoricalReplay';
+import type { HistoricalGrowthProgram } from '../../shared/listingHistoricalGrowth';
 import { seededRandom } from './simulationRandom';
 
 const HOUR = 3_600_000, MINUTE = 60_000, TICK = 10_000;
@@ -219,7 +220,213 @@ function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, ho
   return {open,ticks,regime:delta > 0.001 ? 'impulse' : delta < -0.001 ? 'pullback' : 'consolidation'};
 }
 
+/* Historical GROWTH WINDOW (voltex.historical-growth.v1): inlined copy of
+ * historicalGrowthLogAt / historicalGrowthOpenLogAt / historicalGrowthTickVolume /
+ * historicalGrowthPrice in shared/listingHistoricalGrowth.ts (pinned equal by
+ * test, tick for tick). REAL_TIME: tick t of the listing reads source day
+ * ceil(t / 1 day) - 1. Intraday v1 (straight-line baseline): a reference is
+ * log-linear between samples; an OHLC day runs open → extreme (8 h) →
+ * extreme (16 h) → close (24 h), its order drawn from the seed. Intraday v2
+ * (SEEDED_BRIDGE_*_V2): the seeded bridge below, the reference's code with
+ * the historicalBridge prefix. After the last source value the price stops. */
+const HISTORICAL_BRIDGE_DEPTH = 14;
+interface HistoricalBridgeSegment { t0: number; t1: number; v0: number; v1: number; edge: number; lam0: number; lam1: number; sigma: number; stream: number }
+interface HistoricalBridgeDay { key: number; lo: number; hi: number; rate: number; total: number; volume: number; bursts: number[][]; segments: HistoricalBridgeSegment[] }
+
+function historicalBridgeKey(seed: string, scenarioId: string, day: number): number {
+  const text = `voltex.history20.bridge.v2:${seed}:${scenarioId}:${day}`;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+/** A uniform number in [0, 1) for (day key, stream a, index b); `imul` is Math.imul. */
+function historicalBridgeUnit(imul: (x: number, y: number) => number, key: number, a: number, b: number): number {
+  let h = (key ^ imul(a, 0x9e3779b1)) >>> 0;
+  h = imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = imul(h ^ (h >>> 13) ^ imul(b, 0xc2b2ae35), 0x27d4eb2f);
+  h ^= h >>> 15; h = imul(h, 0x165667b1); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+/** Standard Brownian bridge on [0, 1] (0 at both ends), Lévy midpoint construction, random access. */
+function historicalBridgeNoise(key: number, stream: number, w: number): number {
+  if (!(w > 0 && w < 1)) return 0;
+  const imul = Math.imul;
+  let left = 0, right = 0, from = 0, size = 1, index = 0, scale = 0.5;
+  for (let level = 0; level < HISTORICAL_BRIDGE_DEPTH; level++) {
+    const mid = (left + right) / 2 + (historicalBridgeUnit(imul, key, 1000 + stream * 16 + level, index) - 0.5) * 3.4641016151377544 * scale;
+    size /= 2; scale *= 0.7071067811865476; index *= 2;
+    if (w < from + size) right = mid;
+    else { left = mid; from += size; index += 1; }
+  }
+  return left + (right - left) * (w - from) / size;
+}
+/** The day's activity clock: a quiet base rate plus seeded bursts (strictly increasing). */
+function historicalBridgeClock(day: HistoricalBridgeDay, t: number): number {
+  const tanh = Math.tanh;
+  let value = day.rate * t;
+  for (const [center, width, mass] of day.bursts) value += mass * (tanh((t - center) / width) + tanh(center / width)) / 2;
+  return value;
+}
+/** Activity rate at t, mean 1 over the day: drives the pace of moves and the modeled volume. */
+function historicalBridgeActivity(day: HistoricalBridgeDay, t: number): number {
+  const cosh = Math.cosh;
+  let rate = day.rate;
+  for (const [center, width, mass] of day.bursts) { const c = cosh((t - center) / width); rate += mass / (2 * width * c * c); }
+  return rate * 86400 / day.total;
+}
+function historicalBridgeDay(program: HistoricalGrowthProgram, seed: string, day: number, top: number): HistoricalBridgeDay {
+  const rows = program.logs, key = historicalBridgeKey(seed, program.scenarioId, day);
+  const unit = (a: number) => historicalBridgeUnit(Math.imul, key, a, 0), snap = (t: number) => Math.round(t / 10) * 10;
+  const bursts: number[][] = [];
+  for (let k = 0, n = 3 + Math.floor(unit(1) * 4); k < n; k++) bursts.push([86400 * unit(10 + k), 1200 * Math.exp(2.0149030205422647 * unit(20 + k)), 0.04 + 0.16 * unit(30 + k)]);
+  const out: HistoricalBridgeDay = { key, lo: 0, hi: 0, rate: (0.5 + 0.3 * unit(2)) / 86400, total: 0, volume: 18 + 50 * unit(3), bursts, segments: [] };
+  out.total = historicalBridgeClock(out, 86400);
+  let points: number[][], sigma: number;
+  if (program.source.dataKind === 'exchange_ohlcv') {
+    // Source open at 0 s, high and low exactly at seeded tick times, close at 24 h.
+    const [o, h, l, c] = rows[day], range = h - l;
+    out.lo = l; out.hi = h; sigma = 0.6 * range;
+    points = [[0, o]];
+    if (range > 0) {
+      const highFirst = o === h || c === l ? true : o === l || c === h ? false : unit(4) < 0.5 + 0.4 * (o - c) / range;
+      const first = highFirst ? h : l, second = highFirst ? l : h;
+      if (first !== o && second !== c) {
+        const t1 = snap(86400 * (0.04 + 0.56 * unit(5) * (0.3 + 0.7 * Math.abs(first - o) / range)));
+        points.push([t1, first], [snap(t1 + (86400 - t1) * (0.12 + 0.8 * unit(6))), second]);
+      } else if (first !== o) points.push([snap(86400 * (0.15 + 0.7 * unit(5))), first]);
+      else if (second !== c) points.push([snap(86400 * (0.15 + 0.7 * unit(5))), second]);
+    }
+    points.push([86400, c]);
+  } else {
+    // Both daily samples exactly; the band is modeled from the current and six previous daily moves (no later sample).
+    const a = rows[day][0], b = rows[day + 1][0];
+    let sum = 0, n = 0;
+    for (let j = Math.max(0, day - 6); j <= day; j++) { sum += Math.abs(rows[j + 1][0] - rows[j][0]); n++; }
+    sigma = Math.min(6e6, Math.max(4e5, 1.25 * sum / n));
+    out.lo = Math.min(a, b) - 1.25 * sigma; out.hi = Math.min(top, Math.max(a, b) + 1.25 * sigma);
+    points = [[0, a], [86400, b]];
+  }
+  const edge = (v: number) => out.hi > out.lo ? (v === out.hi ? 1 : v === out.lo ? -1 : 0) : 0;
+  const push = (t0: number, v0: number, t1: number, v1: number) => {
+    const lam0 = historicalBridgeClock(out, t0), lam1 = historicalBridgeClock(out, t1);
+    out.segments.push({ t0, t1, v0, v1, edge: edge(v0) || edge(v1), lam0, lam1, sigma: sigma * Math.sqrt((lam1 - lam0) / out.total), stream: 3 * out.segments.length });
+  };
+  for (let i = 0; i + 1 < points.length; i++) {
+    const [t0, v0] = points[i], [t1, v1] = points[i + 1];
+    if (edge(v0) !== 0 && edge(v1) !== 0) {
+      // Edge to edge: through a seeded interior point, so each piece touches at most one edge.
+      const tm = t0 + snap((t1 - t0) * (0.3 + 0.4 * unit(40 + i))), vm = out.lo + (out.hi - out.lo) * (0.3 + 0.4 * unit(50 + i));
+      push(t0, v0, tm, vm); push(tm, vm, t1, v1);
+    } else push(t0, v0, t1, v1);
+  }
+  return out;
+}
+/**
+ * ln(P/A)·1e8 at `into` seconds of the day. Vertices are returned exactly.
+ * Between them the drift is linear on the activity clock. The noise lives in
+ * a coordinate where the band cannot be reached: logit for a piece inside the
+ * band; for a piece that ends on an edge (a source high or low), the distance
+ * to that edge is the norm of a 3-D bridge (a Bessel-3 bridge: repelled from
+ * the edge, touching it only at the vertex). The path never leaves [lo, hi];
+ * the final min/max only absorbs floating-point rounding.
+ */
+function historicalBridgeLog(day: HistoricalBridgeDay, into: number): number {
+  const segments = day.segments;
+  let i = 0;
+  while (i < segments.length - 1 && into > segments[i].t1) i++;
+  const s = segments[i], range = day.hi - day.lo;
+  if (into <= s.t0) return s.v0;
+  if (into >= s.t1) return s.v1;
+  if (!(range > 0)) return s.v0;
+  const w = (historicalBridgeClock(day, into) - s.lam0) / (s.lam1 - s.lam0);
+  const p = (s.v0 - day.lo + (s.v1 - s.v0) * w) / range, b = historicalBridgeNoise(day.key, s.stream, w);
+  if (s.edge === 0) return Math.min(day.hi, Math.max(day.lo, day.lo + range / (1 + Math.exp(-(Math.log(p / (1 - p)) + 4 * s.sigma / range * b)))));
+  const k = 1.6 * s.sigma / range, near = -Math.log(s.edge > 0 ? p : 1 - p) + k * b;
+  const c2 = k * historicalBridgeNoise(day.key, s.stream + 1, w), c3 = k * historicalBridgeNoise(day.key, s.stream + 2, w);
+  const z = Math.sqrt(near * near + c2 * c2 + c3 * c3);
+  return Math.min(day.hi, Math.max(day.lo, s.edge > 0 ? day.lo + range * Math.exp(-z) : day.hi - range * Math.exp(-z)));
+}
+
+function historicalGrowthDayHash(seed: string, scenarioId: string, day: number): number {
+  let h = 5381;
+  for (const ch of `${seed}:${scenarioId}:${day}`) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
+  return h;
+}
+function historicalGrowthLog(program: HistoricalGrowthProgram, seed: string, seconds: number): number {
+  const rows = program.logs;
+  if (!(seconds > 0)) return rows[0][0];
+  const day = Math.ceil(seconds / 86400) - 1;
+  const into = seconds - day * 86400;
+  if (program.source.dataKind === 'daily_reference') {
+    if (day >= rows.length - 1) return rows[rows.length - 1][0];
+    const a = rows[day][0], b = rows[day + 1][0];
+    return a + (b - a) * into / 86400;
+  }
+  if (day >= rows.length) return rows[rows.length - 1][3];
+  const [o, h, l, c] = rows[day];
+  const upFirst = (historicalGrowthDayHash(seed, program.scenarioId, day) & 1) === 0;
+  const points = upFirst ? [o, h, l, c] : [o, l, h, c];
+  const third = 86400 / 3;
+  const leg = Math.min(2, Math.floor((into - 1e-9) / third));
+  const u = (into - leg * third) / third;
+  return points[leg] + (points[leg + 1] - points[leg]) * u;
+}
+function historicalGrowthHour(program: HistoricalGrowthProgram, initialPrice: number, cap: number, hour: number, seed: string): { open: number; ticks: RealismTick[]; regime: Regime } {
+  // Persisted configurations are validated by parseListingConfig (with the
+  // logs checksum) and validateScheduledScenario before reaching here.
+  if (!Number.isSafeInteger(hour) || hour < 0) throw new RangeError('Час истории должен быть неотрицательным');
+  const ohlc = program.source.dataKind === 'exchange_ohlcv';
+  let max = -Infinity;
+  for (const row of program.logs) max = Math.max(max, ohlc ? row[1] : row[0]);
+  const alpha = Math.log(1 + Number(program.targetPeakGrowthPercent) / 100) / (max / 100000000);
+  // Locals, not a global lookup per tick (slow in sandboxed VMs); the values are identical.
+  const { abs, exp, imul, log: ln, max: top, min: bottom } = Math, finite = Number.isFinite;
+  const priceOf = (log: number) => {
+    const price = initialPrice * exp(alpha * log / 100000000);
+    if (!finite(price) || price <= 0) throw new RangeError('Историческая цена не представима');
+    // Only the floating-point rounding of the peak (P0 · M) is floored to the cap.
+    if (price > cap) {
+      if (price > cap * (1 + 1e-9) + 1e-10) throw new RangeError('Историческое окно превышает максимальную цену');
+      return cap;
+    }
+    return price;
+  };
+  const start = hour * 3600, day = Math.floor(start / 86400);
+  const bridge = program.intrabar === 'SEEDED_BRIDGE_REFERENCE_V2' || program.intrabar === 'SEEDED_BRIDGE_OHLC_V2';
+  const ticks: RealismTick[] = [];
+  let open: number, previous: number;
+  if (bridge && day < (ohlc ? program.logs.length : program.logs.length - 1)) {
+    // Every tick of this hour lies in one source day; an OHLC day opens at its source open.
+    const params = historicalBridgeDay(program, seed, day, max), from = start - day * 86400;
+    open = priceOf(historicalBridgeLog(params, from)); previous = open;
+    for (let i = 1; i <= 360; i++) {
+      const into = from + i * 10, price = priceOf(historicalBridgeLog(params, into));
+      const move = abs(ln(price / previous));
+      // Modeled activity (bursts, pauses, move size); never the source's volume.
+      const quoteVolume = params.volume * historicalBridgeActivity(params, into) * (0.55 + 0.9 * historicalBridgeUnit(imul, params.key, 7, into / 10)) * (1 + bottom(3, 3000 * move));
+      ticks.push({ price, high: top(previous, price), low: bottom(previous, price), quoteVolume, volume: quoteVolume / ((previous + price) / 2) });
+      previous = price;
+    }
+  } else {
+    open = priceOf(historicalGrowthLog(program, seed, start)); previous = open;
+    for (let i = 1; i <= 360; i++) {
+      const price = priceOf(historicalGrowthLog(program, seed, start + i * 10));
+      const move = Math.abs(Math.log(price / previous));
+      // Model-only activity; the source's volume is neither imported nor claimed.
+      const quoteVolume = 20 + Math.min(300, move * 20000);
+      ticks.push({ price, high: Math.max(previous, price), low: Math.min(previous, price), quoteVolume, volume: quoteVolume / ((previous + price) / 2) });
+      previous = price;
+    }
+  }
+  const delta = Math.log(previous / open);
+  return { open, ticks, regime: delta > 0.001 ? 'impulse' : delta < -0.001 ? 'pullback' : 'consolidation' };
+}
+
 export function controlledScenarioHour(config: ControlledScenarioConfig, seed: string, hour: number): { open: number; ticks: RealismTick[]; regime: Regime } {
+  if (config.controls.growth === 'historical-window' && config.controls.historicalGrowth) {
+    // The growth window replaces the stages: no stage, pullback or wick model applies.
+    return historicalGrowthHour(config.controls.historicalGrowth, Number(config.initialPrice), Number(config.controls.maxPrice), hour, seed);
+  }
   const stagesEnd = config.controls.stages.reduce((total, stage) => total + stage.durationHours, 0);
   if (config.controls.afterGrowth === 'historical' && config.controls.historical && hour >= stagesEnd) {
     // A 10-second synthetic tick is drawn once per real 10 seconds. Hour N

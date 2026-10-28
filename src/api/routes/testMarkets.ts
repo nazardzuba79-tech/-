@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { TEST_ASSETS, testAssetForPair, type TestAssetConfig } from '../../services/testMarkets/testAssetConfig';
+import { isSimulationSettled, TEST_ASSETS, testAssetForPair, type TestAssetConfig } from '../../services/testMarkets/testAssetConfig';
 import { getCurrentTestMarketState, simulationFor } from '../../services/testMarkets/testMarketSimulation';
+import { isRetiredNrx } from '../../shared/nrxRetirement';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
 import {
   effectiveTestMarketNow, publicTestAsset, resolveSimulationNow, testMarketCandles, UnsupportedTestIntervalError,
@@ -23,13 +24,17 @@ import {
  */
 export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.ProcessEnv = process.env): Router {
   const router = Router();
-  // NRX public reads belong to the edge. This is a redirect, not a Render
-  // generation/proxy fallback. The original VTA endpoints remain unchanged.
+  // Retirement covers stale clients and encoded aliases, before venue fallback.
+  // Private balances/history/cancel routes do not pass through this public gate.
   router.use((req, res, next) => {
-    const publicMarketPath = /^\/(?:market\/(?:test-assets|external|display|ticker)\/|orderbook\/)/.test(req.path);
-    if (['GET', 'HEAD'].includes(req.method) && publicMarketPath && req.path.toUpperCase().includes('NRX')) {
+    let path = req.path;
+    try { path = decodeURIComponent(path); } catch { /* Express rejects invalid encodings later. */ }
+    const marketPath = /^\/(?:market(?:\/|$)|orderbook\/)/i.test(path);
+    const pathHasNrx = path.split('/').some(segment => segment && isRetiredNrx(segment));
+    const queryHasNrx = [req.query.pair, req.query.symbol].some(value => typeof value === 'string' && isRetiredNrx(value));
+    if (marketPath && (pathHasNrx || queryHasNrx)) {
       res.setHeader('Cache-Control', 'no-store');
-      return res.redirect(307, `https://market.voltextech.net${req.url}`);
+      return res.status(410).json({ error: 'market_retired', symbol: 'NRX' });
     }
     next();
   });
@@ -43,7 +48,7 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
   });
 
   router.get('/market/test-assets/:pair', (req, res) => {
-    const asset = testAssetForPair(pairFromSlug(req.params.pair));
+    const asset = publicTestAssetForPair(pairFromSlug(req.params.pair));
     if (!asset) return res.status(404).json({ error: 'unknown_test_asset' });
     noStore(res);
     res.json(publicTestAsset(asset, nowFor(req)));
@@ -63,7 +68,7 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
     }
   };
   router.get('/market/test-assets/:pair/candles', (req, res) => {
-    const asset = testAssetForPair(pairFromSlug(req.params.pair));
+    const asset = publicTestAssetForPair(pairFromSlug(req.params.pair));
     if (!asset) return res.status(404).json({ error: 'unknown_test_asset' });
     sendCandles(asset, req, res);
   });
@@ -71,7 +76,11 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
   // ── The shared Spot endpoints, answered for test pairs only ─────────
   const forTestPair = (handler: (asset: TestAssetConfig, req: Request, res: Response) => void) =>
     (req: Request, res: Response, next: NextFunction) => {
-      const asset = testAssetForPair(pairFromSlug(req.params.pair));
+      const pair = pairFromSlug(req.params.pair);
+      // A History20 private test pair is answered nowhere public and never handed to a venue
+      // route — whether the registry knows it or not.
+      if (isSimulationSettled(pair)) return res.status(404).json({ error: 'unknown_test_asset' });
+      const asset = testAssetForPair(pair);
       if (!asset) return next();
       handler(asset, req, res);
     };
@@ -113,4 +122,9 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
 
 function pairFromSlug(slug: string): string {
   return decodeURIComponent(slug).toUpperCase().replace('-', '/');
+}
+
+/** A test asset the public may read: never a History20 private test pair. */
+function publicTestAssetForPair(pair: string): TestAssetConfig | null {
+  return isSimulationSettled(pair) ? null : testAssetForPair(pair);
 }

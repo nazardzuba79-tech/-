@@ -98,11 +98,11 @@ describe('managed listings in the frontend', () => {
 });
 
 describe('test-market list identity', () => {
-  test('the merged VTA + NRX + managed list is memoised per store change, never rebuilt per render', () => {
+  test('the merged VTA + managed list excludes retired NRX and is memoised per store change', () => {
     // A fresh array each render made useMarketTickers rebuild its Map on every render, which kept the
     // Markets page re-rendering and starved React Router transitions (Markets → Trade never committed).
     const source = require('fs').readFileSync(require('path').join(__dirname, '../testMarketStore.ts'), 'utf8') as string;
-    expect(source).toMatch(/const assets = useMemo\(\(\) => \[\.\.\.vta\.assets, \.\.\.nrx\.assets, \.\.\.managed\.assets\], \[vta\.assets, nrx\.assets, managed\.assets\]\);/);
+    expect(source).toMatch(/const assets = useMemo\(\(\) => \[\.\.\.vta\.assets, \.\.\.managed\.assets, \.\.\.privateTests\.assets\], \[vta\.assets, managed\.assets, privateTests\.assets\]\);/);
     expect(source).not.toMatch(/assets: \[\.\.\.vta\.assets/);
   });
 });
@@ -128,7 +128,7 @@ function stores(read: (url: string) => Promise<unknown>) {
   new Function('exports', 'document', 'globalThis', compile(resolve(frontend, 'src/lib/browserActivity.ts')))(activity, document, { fetch });
   const output: any = {};
   new Function('require', 'exports', 'document', 'fetch', compile(resolve(frontend, 'src/lib/testMarketStore.ts')))((name: string) => {
-    if (name === './api') return { API_BASE: '/api/v1' };
+    if (name === './api') return { API_BASE: '/api/v1', getToken: () => null, onSessionChange: () => () => {} };
     if (name === './testMarkets') return testMarketHelpers;
     if (name === './nrxMarket') return { ...nrxHelpers, fetchNrxPublic: read };
     if (name === './browserActivity') return activity;
@@ -310,7 +310,7 @@ describe('managed catalogue scheduling with the real store', () => {
     off();
   });
 
-  test.each(['VTA', 'NRX'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {
+  test.each(['VTA'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {
     const listingAt = Date.now() + 86_400_000;
     const read = jest.fn(async (_url: string) => ({ serverTime: Date.now(), assets: [managed({
       pair: `${symbol}/USDT`, symbol, managed: false, isTradable: symbol === 'NRX', listingAt: new Date(listingAt).toISOString(),
@@ -330,7 +330,7 @@ describe('managed catalogue scheduling with the real store', () => {
     offAgain();
   });
 
-  test.each(['VTA', 'NRX'])('%s unarmed preview stays silent after visibility changes', async (symbol) => {
+  test.each(['VTA'])('%s unarmed preview stays silent after visibility changes', async (symbol) => {
     const read = jest.fn(async (_url: string) => ({ serverTime: Date.now(), assets: [managed({
       pair: `${symbol}/USDT`, symbol, managed: false, isTradable: symbol === 'NRX', listingArmed: false,
     })] }));

@@ -6494,6 +6494,467 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
 
+### Claude — 2026-10-18 — History20: historical growth window in Admin → Listings (private preview only)
+
+- **Task (owner pack «VOLTEX_History20_Claude_20261018», `03_CLAUDE_TASK_UA.md`):** 20 reusable historical growth windows for separate model listings, as an isolated, labelled bot-research simulator / private preview, plus the BotLab 01 draft. No merge, deploy, migration or new service.
+- **Branch:** `claude/peaceful-volta-h5zw7g-history20` from main `5d14647c` (the pack's control main, unchanged at fetch); the commit carrying this entry.
+- **Pack verified independently** (own Node check, not the pack's script):
+  - archive 100/100 and pack 97/97 SHA-256;
+  - 20 distinct scenarios, 8637 daily rows, no gaps, no BLOCKED_DATA, VALIDATION_REPORT PASS;
+  - the alpha transform reproduces normalized_path to 1.1e-15.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (new reference: format, maths, checksum, observation, folds);
+  - `src/shared/listingScenarioControls.ts` (inert validation, mutual exclusion);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert tick generator inside the existing v2 dispatch);
+  - `src/services/listings/{listingConfig,listingPreview,simulationContour}.ts`, `src/api/routes/adminListings.ts` (bounded preview);
+  - `frontend/src/pages/admin/{historicalGrowthModel,historicalGrowthPack,historicalGrowthCatalog,ListingHistoricalGrowthPanel}.ts(x)`, `AdminListingsPage.tsx`, `listingMovementModel.ts`, `adminListingsApi.ts`, `adminListings.css`;
+  - tests, `scripts/qa-listing-history20.cjs`, `.github/workflows/admin-listings.yml`, `docs/HISTORY20_GROWTH_WINDOW.md`.
+- **Preserved:**
+  - Legacy stages and the PR #518 hourly continuation are untouched; the new mode is a separate, mutually exclusive branch.
+  - The NRX/VTA/AITH release identity and projection guards pass unchanged: no edit to `simulationSchedule.ts` or `testMarketSimulation.ts`, and the v2 modules stay inert.
+  - Funding, KYC, Stocks #538–#540, Copy Trading, the mobile admin (#500) and the seven locales are not touched.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the contour isolation now also cover the window.
+- **Rights:**
+  - The repository is public and the sources are non-commercial (CC BY-NC / CC BY-NC-SA + Binance Vision Terms). Only code, synthetic tests and catalogue metadata/hashes are committed.
+  - The trajectories are imported on the admin's device from the owner's ZIP (hash-checked against the committed metadata, rebuilt from source CSV, parity ≤ 1e-7, `ln(P/A)` only).
+  - Screenshots from the real pack are kept out of the repository.
+- **Verified locally:**
+  - backend `tsc` and frontend `tsc -b`; Worker listings integration on workerd 18/18;
+  - new suites: `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 10/10 (including the real ZIP via `HISTORY20_ZIP`), `adminListings` 18/18;
+  - local-only pack suite 3/3 (`HISTORY20_PACK_DIR`):
+    - all 20 windows ≤ 1.31e-8 vs normalized_path, drafts 5–33 KB;
+    - VHX-01 all 7,439,040 ticks of 861 days peak exactly 239.449;
+  - full Jest 530 passed / 4 failed suites (9 tests). The same 9 fail on clean main `5d14647c` (market-data provider matrix, CFD, live isolation, copy canonical pins);
+  - QA script at 1440/390: synthetic 8/8 and real pack 9/9 (import 0.3 s, previews 0.1–0.2 s, no sideways scroll, publish refused by the Durable Object).
+- **Not run:** production, real phones, any bot execution (no offline harness exists; none added; ordinary Spot not opened).
+- **Unresolved, for the owner:**
+  - a licence for the intended use;
+  - a unique symbol and start time for BotLab 01;
+  - an authorised isolated bot harness;
+  - bearish/range/OOD control sets;
+  - the 120 h compression mode (inactive, needs explicit approval).
+
+### Claude — 2026-10-18 — History20 intraday model v2: seeded bridge instead of straight lines (PR #544, owner work order Phase 1)
+- **Task:** the owner/CTO found the 5m/1h previews unnaturally straight. Replace the piecewise straight intraday paths with a deterministic, bounded, realistic-looking synthetic model. Keep the daily source truths, REAL_TIME, the cap and every guard; label observed vs modeled.
+- **Commit:** see PR #544 (branch `claude/peaceful-volta-h5zw7g-history20`, on top of the owner's `c0e7777f`; no reset, no force-push).
+- **What changed:**
+  - `intrabar` now versions the intraday model.
+    - `SEEDED_BRIDGE_REFERENCE_V2` / `SEEDED_BRIDGE_OHLC_V2` are the default for new choices.
+    - The v1 ids stay valid as the labelled straight-line baseline (admin selector «Модель внутри суток»).
+    - Stored logs and their checksum do not change.
+  - v2 is a seeded Lévy Brownian bridge on an activity clock (bursts and pauses), with random access in O(14) per tick and no state. Near a source high or low it uses a Bessel-3 bridge, so there is no flat top.
+  - **OHLC day:** opens at the source open, reaches the source H and L exactly, never leaves [L, H] and closes on C.
+    - So the 1d candle is the source bar. v1 differed by up to 1.8e-3.
+    - The source's own close→open gap stays at 00:00.
+  - **Reference day:** both samples are exact. Wicks stay in a modeled band (± 1.25 σ of local daily moves, under the cap) and are labelled MODELED.
+  - Volume is modeled from activity and moves.
+  - The preview summary carries `intrabar/provider/metric`. The admin shows «Наблюдение» / «МОДЕЛЬ» lines, and the preview marks 1d as observation and finer candles as the model.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (reference v2, `historicalGrowthOpenLogAt`, `historicalGrowthTickVolume`, observation by ticks);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert verbatim copy);
+  - `src/shared/listingScenarioControls.ts` and `src/services/listings/listingConfig.ts` (accept v2 ids per data kind);
+  - `src/services/listings/listingPreview.ts`;
+  - `frontend/src/pages/admin/{historicalGrowthModel.ts,ListingHistoricalGrowthPanel.tsx,AdminListingsPage.tsx,adminListingsApi.ts,adminListings.css}`;
+  - tests: new `historicalGrowthIntraday.test.ts`, `historicalGrowthWindow.test.ts`, `historicalGrowthPack.local.test.ts` (opt-in registration plus an always-on "no pack file in repo" check), `historicalGrowthLibrary.test.ts`;
+  - `scripts/qa-listing-history20.cjs`, `docs/HISTORY20_GROWTH_WINDOW.md`, `docs/qa/history20-20261018/` (synthetic evidence only).
+- **Preserved:**
+  - The owner's opt-in ZIP test and the bounded ZIP inflation (`67a755cc`, `c0e7777f`).
+  - The NRX/VTA/AITH projection and release identity: NRX fingerprint `63610d3e…` is identical on main `f81df788` and on this branch.
+  - The legacy stages and the #518 continuation.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the demo isolation.
+  - No change to `simulationSchedule.ts`, `testMarketSimulation.ts`, Stocks, Wallet or #543 files.
+- **Verified locally (exact working tree before commit):**
+  - backend `npm run build`, frontend `tsc -b` and `vite build`;
+  - `historicalGrowthIntraday` 16/16, `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 12/12, `adminListings`;
+  - local pack (`HISTORY20_PACK_DIR`) 5/5: all 20 windows under v2 with 0 mismatches vs the daily source values and 0 cap breaches on sampled days; BotLab 01 all 7,439,040 ticks peak exactly 239.449;
+  - ZIP import test (`HISTORY20_ZIP`) PASS;
+  - Worker `test:listings` 18/18 and `test:smoke` 4/4 on workerd, plus the Worker contract;
+  - browser QA at 1440/390: synthetic 9/9, real pack 10/10.
+- **Not run locally:**
+  - the `*.pg.test.ts` suites. A local PostgreSQL could not reach the root-only scratch directory, so these are left to CI's disposable PostgreSQL;
+  - production, real phones, any bot execution.
+- **Unresolved:**
+  - The forming day's bridge is conditioned on that day's own source bar, so it is training data, not evidence of bot profitability.
+  - The price stays flat after the window ends (no tail by design).
+  - The licence, a unique symbol and start time, the bot harness and the control sets remain the owner's.
+
+### Claude — 2026-10-18 — History20: Futures account non-interference regression (owner contract on PR #544)
+- **Task:** the owner requires that «Угоди на історії мають залишатись як і були на фючерсному акаунті». Prove that the History20 changes leave Futures history, positions, balances and funding unchanged.
+- **Added:** `src/services/listings/__tests__/historicalGrowthFutures.pg.test.ts`, a disposable PostgreSQL test.
+  - **Seeded data:**
+    - a Futures account: margin balance; an open LONG with SL/TP; a closed SHORT and a liquidation with realized PnL; open, filled and reduce-only orders; a funding rate record and funding payments;
+    - the native Futures TEST account (state, revisions, live projection) with a HISTORICAL_DEMO deal;
+    - Spot and demo rows.
+  - **History20 paths exercised**, for v1 and v2, reference and OHLC:
+    - the draft gate, the first24h and window previews, 48 h of ticks, 5m candles and a bot observation;
+    - every real-money refusal: Spot order, admin simulation sale, OCO, demo order, owner allocation, Futures collateral, wallet price.
+  - **Assertions:** every row is byte-for-byte unchanged, and the served `/futures/balances`, `/futures/orders/me` and `/futures/positions/history` are equal.
+- **Verified locally:**
+  - the new test passes, on PostgreSQL 16 loopback;
+  - a mutation check (one funding payment changed by 1e-10) makes it fail;
+  - backend `tsc` passes.
+- **Material files:** the test only. No production code changed in this commit. It runs in CI through the existing `historicalGrowth` pattern step of `admin-listings.yml`, which has the disposable database.
+- **Not done:** wiring History20 windows into the native Futures TEST account. A proposal only, in the PR comment; it needs owner approval.
+
+### Claude — 2026-10-18 — History20: price path of an ordinary Spot scenario listing (owner final instruction, Spot only)
+- **Task:** owner comment on PR #544 (10:08 UTC): Futures work stopped (#549 closed by the owner; my #550 closed unmerged, nothing carried over). History20 is only the price-shape source of new Spot scenario listings, on the existing Spot price model, chart and market; no new wallet, engine or funds; no change to admission, roles, fees, accounting, NRX/AITH or published history.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-history20` (PR #544), on top of `e7f2667a`; no rebase, no force-push.
+- **Finding:** the window was already priced by the existing Spot path (`listingSimulationConfig` → `simulationFor` → `spotPriceSource`, `testMarketCandles`, preview, wallet). The only detachment was this PR's own extension of the #518 no-ledger contour to windows.
+- **What changed:**
+  - `src/services/listings/simulationContour.ts`: back to main's predicates (comment only); a window is no longer in the no-ledger contour.
+  - `frontend/src/pages/admin/AdminListingsPage.tsx`: the owner-allocation field is locked only for the #518 continuation; choosing a window no longer forces it to 0. The publish gate is unchanged.
+  - Tests: new `historicalGrowthSpot.pg.test.ts` (one model for Spot ticker, public chart and Admin preview; Buy/Sell/OCO refused with the ordinary `DEMO_ONLY` refusal and no order rows; allocation once to ADMIN, no USDT moved, no DemoBalance/FuturesBalance rows; wallet = model price; a resting take-profit fires on the model crossing; venue never asked). `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg` and `adminListings` updated to the ordinary scenario-listing rules.
+  - `docs/HISTORY20_GROWTH_WINDOW.md`: Spot connection map and rules.
+- **Preserved:** `checkPublishable` / `HISTORICAL_RIGHTS_UNVERIFIED`; `DEMO_ONLY`; HISTORY_LOCKED; the #518 continuation contour; NRX/AITH configs, schedules, quotes and trade records; Futures and NativeDemo untouched; Codex Stocks files and Wallet #543 files untouched.
+- **Verified locally (this working tree):**
+  - `historicalGrowthSpot.pg` 3/3 on disposable loopback PostgreSQL 16; mutation (window back in the contour) makes all 3 fail;
+  - `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg`, `adminListings` pass; broader listings/testMarkets/OrderService/PriceWatcher/WalletPortfolio/routes run: 40 suites passed;
+  - `nrxSpot.pg`, `vtaDemoSales`, `vtaNativeCoexistence` 31/31 on a freshly migrated database (a first run on a stale database failed on leftover rows);
+  - frontend `tsc -b`; admin-related frontend suites 7/7; `scripts/qa-listing-history20.cjs` 9/9 at 1440/390 (synthetic).
+- **Not run:** CI on this commit (pending at time of writing); production; real phones; any bot execution.
+- **Unresolved (owner):** rights (publication refused); Buy/Sell on a scenario listing needs an owner decision on `DEMO_ONLY` admission; Spot `Balance` USDT from legacy NRX sales may be withdrawable (unchanged, no isolation claimed); the preview's `SIMUSDT` unit vs the listing's USDT quote; the #544 PR body still says no allocations.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale priced by the model, not the venue (CTO review on PR #544, Spot only)
+- **Task:** CTO comment on #544 (19.10, 07:01 UTC): `OrderService.sellTeamSpotSimulation` priced NRX with `spotPriceSource` but every other pair with the raw venue `getTicker`, so the owner/test-account MARKET SELL of a published managed listing asked the venue for a simulated pair. Use the same server model price the Spot ticker, chart and triggers use; change nothing else.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, from `main` `f81df788`.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource(this.priceSource)` for every pair (NRX and published managed listings: model price; ordinary pairs: the venue, as before).
+- **Added:** `src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts` (disposable loopback PostgreSQL, synthetic users/listings), wired into `admin-listings.yml`:
+  - owner (ADMIN) and an allowlisted tester sell at the model price, equal to the Spot ticker/trigger source and the chart's last 5m close; exact debit/credit; audit row; the venue is never asked; no book liquidity; no Futures/DemoBalance rows;
+  - refused before any write: before the listing time, a non-tradable listing, a scenario listing (DEMO_ONLY, the kind a History20 window is), more than the available balance;
+  - an ordinary user and a blocked admin get no synthetic fill (normal book path);
+  - a stale snapshot (refresh fails) keeps the last good listing and its model price;
+  - an unknown pair the venue cannot price is refused before any write;
+  - ordinary pair (ETH) keeps the venue price; NRX keeps its canonical model price.
+  - Mutation: with main's line restored, 3 of 6 fail (the modeled pair is priced by the venue).
+- **Preserved:** NRX pricing and records, listing gates, `isSimulationOnlyUser` policy, atomic debit/credit, no artificial liquidity, `DEMO_ONLY`, `HISTORICAL_RIGHTS_UNVERIFIED`; #544/#546/#548 untouched; Stocks/#543/Futures/NativeDemo untouched.
+- **Verified locally:** new test 6/6; with `ownerAllocation.pg`, `historicalDemoContour.pg`, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `adminListings`: 165/165; `nrxSpot.pg` 12/12 on a fresh database (it fails on a database other suites have written DemoBalance rows into, as before); broader listings/testMarkets/OrderService/PriceWatcher/matching-engine/routes run 39/40 suites, the 40th being that `nrxSpot.pg` shared-database case; backend `tsc` and `npm run build`.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** the sale credits ordinary Spot `Balance` USDT, potentially withdrawable (unchanged); a pair Render does not yet know (cold registry) still falls to the venue read, which refuses only if the venue cannot price it — #548's unresolved-pair gate closes that case; Buy/Sell on scenario listings stays `DEMO_ONLY`.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale: no withdrawable model proceeds (owner decision on PR #544, 07:18 UTC)
+- **Task:** owner decision «так без змін»: History20 is a private Spot test mode (verified owner and allowlisted testers only); profit from a model price must not be withdrawable; NRX/AITH byte-for-byte unchanged; fix the non-NRX owner SELL price source; if non-withdrawability cannot be guaranteed with the existing data model, stop before real credits and propose a design.
+- **Commit:** the commit that adds this entry, on top of `a495d030` (branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, PR #551). It supersedes `a495d030`'s behaviour, which let that sale credit model-priced USDT.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource` for every pair, then stops before any write for a published managed listing (`Simulation Spot sale is not available for this listing`). `src/services/testMarkets/nrxSpot.ts`: `managedListingForPair` exported. NRX and ordinary pairs are unchanged.
+- **Tests:** `managedListingSimulationSale.pg.test.ts`, 7 tests, disposable PostgreSQL:
+  - Spot USDT is withdrawable and the listing asset is not (the blocker, shown);
+  - owner/tester sale reads ticker = chart = valuation = model, never the venue, and writes nothing;
+  - prelisting / non-tradable / scenario refused before any venue read;
+  - ordinary user and blocked admin: normal book, no synthetic fill;
+  - stale snapshot: still stopped;
+  - unknown unpriced pair: refused;
+  - ETH and NRX sales unchanged.
+  - RED on `main` and on `a495d030` (2 of 7: model proceeds credited), GREEN here; mutation (venue price with the stop kept) also fails 2.
+- **Design:** `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`. Blocker: one fungible Spot USDT row backs withdrawals, and owner/testers fall back to it when their native wallet is unavailable. Proposal without a migration: a restricted `SIMUSDT` quote for History20 private pairs, exact admission via `isSimulationOnlyUser`, private publication, audited per-tester allocations. Not implemented.
+- **Verified locally:** 12 suites / 200 tests (`managedListingSimulationSale.pg`, `ownerAllocation.pg`, `historicalDemoContour.pg`, `nrxSpot.pg` on a fresh DB, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `WithdrawalService`, `adminListings`, `withdrawals`); backend `tsc`.
+- **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
+### Claude — 2026-10-18 — Managed listings: bot triggers preserved, unresolved pairs fail closed, ledger map (CTO triage on PR #546, as overridden by the owner)
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-managed-failclosed` (#548) from main `f81df788`.
+  - The first commit `e7e04f2` also blocked triggers for `tradable:false` listings. The owner withdrew that instruction (override at 08:32 UTC, before this PR was opened), so the block is **reverted**.
+  - `spotPriceSource` and `triggerOrder` are as on main.
+- **Kept, P0-2:**
+  - `ManagedListingRegistry.resolved()`: a successful read within `STALE_MS` (2 × `REFRESH_MS`).
+  - While the registry is unresolved, `assertSpotListingReady(pair, venue)` refuses a pair that is not NRX, not a known listing or test asset, and not venue-priced, with `Операция временно недоступна` (an existing localized phrase).
+  - Venue pairs are never rejected, and bot triggers are not affected.
+- **Pinned, owner-required:** a listing closed to new public orders keeps triggering resting conditional and OCO orders on its model price (unit + PostgreSQL characterization).
+- **Ledger map** (read-only, in `docs/qa/managed-listing-failclosed-20261018.md`):
+  - Practice-market fills, model-price triggers and the admin `simulation:NRX` sale settle in the ordinary Spot `balance`, the ledger deposits and withdrawals use.
+  - Test assets are not withdrawable, but the USDT proceeds are.
+  - Futures and the native demo engine use their own tables.
+  - This is reported for owner review and not changed.
+- **Material files:**
+  - `src/services/testMarkets/nrxSpot.ts`, `src/services/listings/registry.ts`, `src/services/OrderService.ts` (gate argument only);
+  - tests `tradingGates.test.ts` and `managedListingFailClosed.pg.test.ts` (wired into `.github/workflows/admin-listings.yml`);
+  - the doc above.
+- **Verified locally:** see the PR for the exact head.
+  - Unit `tradingGates` 10/10.
+  - Disposable PostgreSQL 16: `managedListingFailClosed.pg` 4/4, `ownerAllocation.pg` + `historicalDemoContour.pg` 15/15, `nrxSpot.pg` + `vta*.pg` 31/31.
+  - Full Jest: same 4 pre-existing local failures as on clean main.
+- **Preserved:** bot paper triggers and execution; NRX; settlement and reserves; Futures history; Wallet (#543); Stocks; locales.
+- **Not done (needs owner and financial review):** P1 (idempotency key, simulation-fill labelling and card eligibility, Wallet modeled valuation, practice-ledger separation) and P2 (pause/stop/unpublish).
+- **Not run:** production, migrations, deploy.
+
+### Claude — 2026-10-18 — Owner-required demo trading on a model price, pinned (PR #548, follow-up)
+- **Task:** the owner's correction of 09:04 UTC. Demo debits are allowed, and the existing flow must be kept. Tests were required for: Buy/Sell balance, insufficient funds, cancel release, retries, STOP/TP on model prices, Futures history, and no venue call.
+- **Done:** new `src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts` (2 tests), wired into `.github/workflows/admin-listings.yml`. A requirements-to-test table is in `docs/qa/managed-listing-failclosed-20261018.md`.
+- **Production code:** none changed. Every requirement already holds on the existing OrderService / PriceWatcherService / `balance` path.
+- **Mutation check:** I let `cancelOrder` and `triggerOrder` act on an already-cancelled or filled order. Both new tests fail; the code was restored.
+- **Verified locally:**
+  - disposable PostgreSQL 16 (loopback, port 55432);
+  - the new test 2/2;
+  - together with `managedListingFailClosed.pg`, `tradingGates`, `ownerAllocation.pg` and `historicalDemoContour.pg`: 31/31.
+- **Preserved:** P0-2 gate, bot triggers on `tradable:false`, NRX, Futures, Wallet (#543), Stocks, locales.
+- **Not done:**
+  - idempotency of the admin simulation sale (P1-3, needs a migration);
+  - History20 execution (proposal on #544, needs owner design approval).
+- **Not run:** production, migrations, deploy, full Jest on this commit.
+
+### Claude — 2026-10-18 — Simulated listings flow review on main f81df788 (owner work order Phase 2)
+- **Task:** verify NRX/AITH scheduling, admin scenario management, candle precision, observed vs modeled feeds, pause/stop/delete, status and accidental live trading. Collect source repros first; fix only what does not alter settlement.
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-sim-flows` from main `f81df788`, separate Draft PR. Commit: see the PR.
+- **Fixed:** test-market price display.
+  - Below 0.01 a price keeps ≥ 4 significant digits, down to the 1e-10 listing step (`frontend/src/lib/testMarkets.ts`).
+  - On main, 1e-7 showed as 0.000000.
+  - The repro test is in `frontend/src/lib/__tests__/testMarkets.test.ts`; existing expectations are kept.
+- **Documented with proposals, not changed** (`docs/qa/simulator-flows-20261018/README.md`):
+  - admin MARKET SELL against `simulation:NRX` has no idempotency key;
+  - model prices of non-tradable managed listings still trigger pending conditional orders, and `triggerOrder` does not re-check the listing gate;
+  - a Worker-only managed pair passes the Spot gate before the registry loads;
+  - `/trades/me` mixes simulation sales unlabelled, and card eligibility counts them;
+  - Wallet values NRX at the model price without a label;
+  - the Spot pair list carries no practice badge (an owner design choice per `qa-nrx-market.cjs`);
+  - there is no pause/stop/delete/unpublish lifecycle.
+- **NRX/AITH:** no scheduling defect. The NRX fingerprint `63610d3e…` is identical on main and on PR #544.
+- **Preserved:** settlement, the trading engine, Wallet (#543 files), Stocks, the locales (no new keys), and the NRX/VTA/AITH history.
+- **Verified locally:**
+  - frontend `tsc -b` and `npm run build`;
+  - test-market suites 76/76;
+  - full frontend lib Jest 280/280 suites, 4525/4525 tests, 0 skipped;
+  - on clean main for Phase 3: `customerFacingErrors` 64/64, `qa-customer-error-wording` 200/200, `qa-futures-chart-ux` 4 cases / 129 assertions / 0 failed.
+- **Not run:** production, PostgreSQL suites (no change to those paths), real accounts.
+
+### Claude — 2026-10-19 — History20: explicit time limit for the heavy Futures-account regression
+- **Task:** during the #551 compatibility review (CTO, 19.10), `historicalGrowthFutures.pg.test.ts` timed out at Jest's 5 s default. It ran 4920–5593 ms on this branch alone and on the #551+#548+#544+#546 review tree, so the cause is pre-existing and was not introduced by the merge.
+- **Commit:** the commit that adds this entry (branch `claude/peaceful-volta-h5zw7g-history20`, PR #544), on top of `6a0f5599`.
+- **Changed:** only that test's limit (30 s). No assertion changed; nothing skipped.
+- **Verified locally:** 3 consecutive runs pass (4648–5034 ms) on disposable PostgreSQL.
+- **Not run:** CI on this commit (pending at time of writing).
+
+### Claude — 2026-10-19 — History20 SIMUSDT settlement spike and #551 legacy audit (CTO review on PR #551, owner approval 08:07; code only, default off)
+- **Task:** CTO comment on #551 (08:04 UTC):
+  - audit AITH and older managed-listing sales before/after #551;
+  - confirm #551 compatibility with #544, #546 and #548;
+  - build and test the smallest non-withdrawable History20 settlement (`SIMUSDT` restricted unit in the existing Spot `Balance`), covering every withdrawal, deposit, transfer, collateral and conversion path.
+
+  The owner approved `SIMUSDT` as the design at 08:07, not activation.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni`, the commit that adds this entry. The review merges #544 `46e2024f`, #546 `1a575d5a`, #548 `bc329bb4` and #551 `a9aee9cc`. Conflicts were only in this file and in `admin-listings.yml`; both sides were kept.
+- **Not merged: #552** (another Claude session's SIMUSDT refusals spike, `99064e93`). An automated permission check refused merging another session's open PR into this branch. The two overlap in `testAssetConfig.ts`, `WalletTransferService.ts` and `PurchaseService.ts`; see the "Overlap with #552" section in `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`.
+- **Material files:**
+  - `testAssetConfig.ts`: `SIMULATION_QUOTE`, `isSimulationQuote`, `isSimulationSettled`; `isTestAssetPairOrSymbol` includes them.
+  - `OrderService.ts`: the #551 stop lets through only a `SIMUSDT`-quoted market.
+  - `WalletTransferService.ts`, `PurchaseService.ts`: refuse `SIMUSDT`-settled value.
+  - `WalletPortfolioService.ts`: no USD value for a non-USDT quote.
+  - `listings/privateTest.ts`: unwired helpers.
+  - `managedSnapshot.ts`: back to `main`.
+  - New `history20SimusdtSettlement.pg.test.ts`.
+  - `legacySimulationSaleEquivalence.pg.test.ts` (earlier commit `d8e2a462`).
+  - `admin-listings.yml`: both tests added; the transfer and purchase files added to the trigger paths.
+  - `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`: evidence section.
+- **Preserved from the other session:**
+  - #551's model-priced sale and its stop for `/USDT` managed pairs;
+  - #551's legacy pins;
+  - #544's 30 s limit for `historicalGrowthFutures.pg` (my own 60 s change was dropped in its favour);
+  - #548's fail-closed registry;
+  - #546's precision work;
+  - NRX and AITH code and configs, untouched.
+- **Defect found and fixed (RED→GREEN):** the window asset bought with `SIMUSDT` could rest as a LIMIT SELL on `X/USDT` in the ordinary book, an indirect cash-out. `isSimulationSettled` now refuses any other pair for a `SIMUSDT`-quoted base.
+- **Verified locally** (disposable loopback PostgreSQL 16, fresh migrated DBs):
+  - `history20SimusdtSettlement.pg` 6/6. Mutation check: each of the 6 new guards, when removed, fails at least one test.
+  - listings + testMarkets + `adminListings`: 41 suites / 510 tests, including `nrxSpot.pg`, `vtaDemoSales.pg`, `vtaNativeCoexistence.pg`, `legacySimulationSaleEquivalence.pg`, `managedListingSimulationSale.pg` and `historicalGrowthFutures.pg`.
+  - services, routes, private-trading, banking, OTC and futures: 147 suites passed, 2397 tests. 1 failure, `CfdMarketDataService` "Gold Spot" vs "Gold US Dollar": also present on `main` (catalog vs test), not touched here.
+  - Backend `tsc` clean.
+- **Legacy behaviour found, not changed** (NRX rule; probed on synthetic rows): an NRX holder can sell on `NRX/BTC` to another user for withdrawable BTC; `USDT/NRX` is accepted; NRX moves to `FuturesBalance` via transfer; a product priced in NRX can be bought. Owner decision.
+- **Not run:**
+  - frontend (no frontend change);
+  - Worker tests;
+  - CI on this commit (pending at time of writing);
+  - production, real accounts, any activation.
+- **Unresolved:**
+  - wiring: private channel (Worker DO + Render registry), per-user admission ahead of the ADMIN synthetic-sale branch, terminal, one-time audited tester funding, OCO/stop-loss and restart proofs on the private pair;
+  - activation approval;
+  - rights for any non-synthetic data (`HISTORICAL_RIGHTS_UNVERIFIED` stays);
+  - pick one name between this branch and #552;
+  - the legacy NRX cross-pair, transfer and purchase findings.
+
+### Claude — 2026-10-19 — History20 SIMUSDT: fail closed without the registry, one guard, scope diff with #552 (CTO coordination on PR #553)
+- **Task:** the CTO coordination comment on #553 (08:56 UTC):
+  - exact-head CI for #553;
+  - a scope diff #552↔#553 without merging #552;
+  - one canonical guard name;
+  - prove base-token guards fail closed when the private asset is absent from `managedListingAssets()` (cold, stale or withheld registry);
+  - keep NRX and AITH unchanged.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni`, the commit that adds this entry, on top of `fa6b2cb9`.
+- **CI on `fa6b2cb9`:** 21 workflows / 24 check runs: 23 succeeded, `deploy` skipped. Includes "Admin Listings (managed simulated markets)" run 39225835398, which runs `history20SimusdtSettlement.pg` and `legacySimulationSaleEquivalence.pg`.
+- **Defect (RED→GREEN):** with the listing absent from the registry, `VHX86/USDT` was not recognised as restricted, so a holder's base token would have counted as an ordinary asset. Fixed with reserved History20 private tickers `VHX01`–`VHX99`, matched without the registry. `privateTestSimulationConfig` and `checkPrivateTestable` (`PRIVATE_TEST_SYMBOL`) now refuse any other ticker.
+- **Bug found by the new tests before commit:** the first version read bare `SIMUSDT` through pair normalisation as `SIM/USDT`. Fixed: the unit is matched first.
+- **One guard:** `isSimulationSettled` everywhere. `isSimulationQuote` was removed; `OrderService` uses `isSimulationSettled(quote)`.
+- **Worker safety:** the reserved-ticker rule lives in the pure `src/shared/history20PrivateSymbol.ts`. `listingConfig.ts`, which the market-edge Worker imports, therefore still imports only a type from `testAssetConfig.ts`; that file reads `process.env` at load. A first draft imported it as a value; it was moved before commit as a precaution. The broken state was not tested.
+- **Material files:**
+  - `testAssetConfig.ts`, `OrderService.ts`, `listings/privateTest.ts`;
+  - `listings/listingConfig.ts`: `checkPrivateTestable` and `PRIVATE_TEST_SYMBOL_MESSAGE`;
+  - `history20SimusdtSettlement.pg.test.ts`: now 11 tests, including a no-database recognition block, the cold/withheld registry case and per-owner fixture listing ids;
+  - `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`: the scope diff and the reserved-ticker caveat.
+- **Preserved:** #552 untouched and not merged. No #552 code was copied; the missing cases (recognition negatives, legacy guard results, OTC assets, no venue call) were written independently. NRX and AITH code, configs and the legacy sale tests are unchanged.
+- **Verified locally** (disposable PostgreSQL 16):
+  - `history20SimusdtSettlement.pg` 11/11, five consecutive runs on a reused database;
+  - 10/10 guard mutations caught;
+  - listings + testMarkets + `adminListings`: 41 suites / 515 tests (fresh NRX database);
+  - services, routes, private-trading, banking, OTC and futures: 147 suites passed, 2397 tests. The same single failure, `CfdMarketDataService`, is also present on `main`;
+  - backend `tsc` and frontend `tsc -b` clean;
+  - Worker `test:listings` on workerd: 18/18.
+- **Not run:**
+  - CI on this commit (pending at time of writing);
+  - production.
+- **Unresolved:**
+  - wiring: private channel, per-user admission ahead of the ADMIN synthetic-sale branch, participant terminal, one-time audited tester funding, OCO/stop-loss and restart proofs on the private pair;
+  - activation approval;
+  - rights;
+  - the reserved-ticker caveat for any existing non-window `VHX01`–`VHX99` listing (production store not checked);
+  - consolidating with #552 (refusal text, compact form);
+  - the legacy NRX cross-pair, transfer and purchase findings.
+
+### Claude — 2026-10-19 — #553 final integration: cold-registry cash-out fixed, History20 private Spot test wired, participant terminal (owner assignment)
+- **Task:** the owner assigned this session (#551/#552) the final #553 integration: port the needed parts of reference branch `538926e2` without duplicating code; first fix the confirmed cold-registry cash-out (a private History20 token must never become real USDT/BTC or reach Futures, whatever the cache or registry state); then the private Spot terminal (owner and allowlisted testers only), one-time audited SIMUSDT funding and the tests. NRX/AITH unchanged, no public trading, no merge/deploy.
+- **Commits on `claude/voltex-mobile-audit-7rpjni`:**
+  - `78f7ad6c`: P0, on top of the #553 session's `c7561624`. Reconciled with its reserved `VHX01`–`VHX99` rule as the one canonical guard; my duplicate helper was dropped.
+  - `6c9b951f`: wiring.
+  - `f23ca6b3`: frontend, docs, timeout, the `walletUxRefinement` fix.
+  - `4d5092da`: the `idle-sleep` fix.
+  - `895e7d72`: the second CI round below.
+  - `dc4abc63`: merge of Draft #555 (the CFD QA fix).
+  - The commit that updates this entry: the Mobile analysis.
+- **P0:**
+  - the exploit is preserved as `history20ColdRegistryCashout.pg` (empty registry, `VHX07/USDT` into a real USDT bid);
+  - RED on `fa6b2cb9` (4/5) and on `c7561624` (3/5: venue-priced USD valuation, venue price fallback, publish reservation); GREEN now;
+  - added: no venue price for an unknown private pair; never USD-valued; public routes 404; a reserved ticker never trades as an ordinary managed listing even if the registry says so; no ordinary publication under a reserved ticker.
+- **Wired (adapted, not merged):**
+  - `privateTest` config;
+  - DB-verified `privateTestAdmitted` before and inside every financial transaction;
+  - SIMUSDT-only synthetic sale;
+  - Worker private channel and `HISTORY20_PRIVATE_TEST` switch;
+  - `privateTestFunding` and its script;
+  - `/api/v1/private-test/markets` reads;
+  - card volume skip;
+  - frontend private store, chart, book and discovery, plus the Admin control.
+- **Material files:**
+  - `src/shared/history20PrivateSymbol.ts`, `testAssetConfig.ts`, `nrxSpot.ts`, `OrderService.ts`;
+  - `listings/{listingConfig,listingPublic,privateTest,privateTestFunding}.ts`, `api/routes/{privateTestMarkets,testMarkets,candles,orders}.ts`, `index.ts`;
+  - `WalletPortfolioService.ts`, `CardApplicationService.ts`;
+  - `workers/market-edge/src/listingsStore.ts`, `scripts/fund-history20-private.cjs`;
+  - frontend `lib/{testMarkets,testMarketStore,testMarketCandles,spotPublicMarket}.ts`, `pages/TradePage.tsx`, `components/TestMarketTerminal.tsx`, `pages/admin/{AdminListingsPage.tsx,adminListingsApi.ts}`;
+  - tests (4 new), `admin-listings.yml`, `docs/HISTORY20_PRIVATE_SPOT_MODE.md`.
+- **Preserved:**
+  - the #553 session's guard, tests and docs, with its tests updated only where the wired gate changes behaviour (stub removed, admission now real, card completeness, a USDT fixture moved off the reserved namespace);
+  - #548's fail-closed registry, now also given a non-reserved unknown pair;
+  - NRX/AITH code and configs; #552 untouched.
+- **Verified locally** (disposable PostgreSQL 16, fresh DBs):
+  - `--findRelatedTests` over every changed backend file: 101 suites passed, 1528 tests. One timeout, fixed with a 30 s limit and re-run;
+  - Worker `test:listings` 22/22 and `test.mjs`;
+  - backend and frontend `tsc`;
+  - frontend `jest frontend/src`: 284/288 suites passed in a run that started mid-edit; the 4 suites edited during it re-ran 82/82. Frontend `npm run build` passed.
+- **Regression found by CI and fixed:** `78f7ad6c` added a static import to `WalletPortfolioService.ts`. The `walletUxRefinement` harness evaluates that module and could not resolve it; CI `complete-suite` failed 1/4794. It is now a dynamic import like the file's others.
+- **Regression found by CI and fixed (`idle-sleep` on `f23ca6b3`):** `/trade` stayed in the wake barrier's `error` phase. The private list's 404 (any non-participant) rejected a tracked read during `syncing`.
+  - Now a 404 is an answer: the store goes dormant until the session changes, so it asks once per session.
+  - The private read uses `browserFallbackFetch`, and its tracked read never reports a failure, so a 401 or outage on this optional list cannot hold the page.
+  - Regression test added to `privateTestMarkets.test.ts`; RED on the old store, GREEN now.
+  - `scripts/qa-browser-sleep.cjs` was run locally with `QA_LABEL=candidate`, using preinstalled Chromium through a Playwright shim (CI uses msedge on Windows):
+    - old store: `/trade` wake `TimeoutError`, as in CI;
+    - fixed: PASS, 16 scenarios.
+  - `node --test scripts/test-browser-activity.cjs scripts/test-idle-read-budget.cjs` 53/53; related frontend suites 233/233; frontend `tsc` and build passed.
+- **Second CI round (on `f23ca6b3`/`4d5092da`), fixed:**
+  - `wording`, `complete-suite`, `isolated-review` and `api-and-browser` all failed on one line: `customerFacingErrors` forbids reading `error.message` outside the display boundary, and `4d5092da` compared it to `private_test_http_404`. It is now a typed `PrivateTestHttpError` with a `status`.
+  - `browser` (chart workspace): `spot.1440.errors`, `aith.spot.1440.errors` and three `transition…AITH` checks failed on `console: Failed to load resource: 404`. Cause: the Spot pair list subscribed every signed-in session to `/private-test/markets`.
+    - Now only a private pair's terminal subscribes; lists `watch` the store and never cause a request.
+    - A rendered-hook test proves it (RED with the old subscription).
+    - Locally the five `errors` checks pass.
+  - Frontend `jest frontend/src`: 288/288 suites, 4800 tests. `tsc` and build pass.
+  - `idle-sleep` locally: PASS, 16 scenarios, with no `/private-test/markets` request in any of them.
+- **Not this PR's:** CFD `validate` fails `cfd.1440.goto` (`gotoClosed:false`). The check goes to "now − 2 days", which on Monday 2026-10-19 is Saturday, when the CFD market has no bars.
+  - `qa-cfd-workspace.cjs` on clean `main` `f81df788`, run locally today, fails the same check with the same detail.
+  - #553 changes no CFD or chart-workspace code; only the `cfdTerminal.test.ts` stub.
+  - Fixed separately in Draft #555 (`b387d4b6`, QA script only; the terminal is unchanged). The same commit is merged into #553 (`dc4abc63`) so this PR's exact-head check is meaningful; it no-ops once `main` carries #555.
+- **Mobile clients `fixtures-only` on `895e7d72`:** `report.errors = ['Value is null']`. Green on every earlier #553 head, including `4d5092da`.
+  - The message is `lightweight-charts`' `ensureNotNull`; the artifact holds no stack or route.
+  - The only frontend source change since `4d5092da` is `testMarketStore.ts`. In mobile-review it is inert:
+    - the only consumer, `TerminalChart` → `useCompareInstruments`, mounts with `market="futures"`, so `useTestMarkets(…, market === 'spot')` is disabled before and after;
+    - there is no session token;
+    - there is no subscription, watcher or request either way.
+  - CI's own Playwright 1.63.0 / Chromium headless shell 153.0.8010.12, local, on `895e7d72`: 7/7 runs PASS with no page error, 3 of them pinned to one CPU. Page errors were logged with stack and URL.
+  - No concrete regression found, so nothing was changed. The assertion stays. The next exact-head run on this PR is the re-check: a second failure is real and gets a root cause.
+- **Local-only timing observation:** `qa-chart-workspace.cjs` locally failed `spot.1440.data.window` twice on this branch: one `/market/listings` fetch in the 400 ms hover window, at about 15.3 s. `main` passed locally, hovering at about 16.25 s.
+  - That fetch is the existing 15 s AITH catalogue poll (`setTimeout`, identical on `main`). The fixture's isolation defers only `setInterval`.
+  - CI passed this check on both #553 runs.
+  - Not changed here; recorded so it is not mistaken for new traffic.
+- **Not run:** CI on the final commit (pending at time of writing); the PostgreSQL and native parts of the idle-sleep job (`qa-browser-sleep-postgres.cjs`, `qa-browser-sleep-native.cjs`); production.
+- **Unresolved:** activation approval (deploy, both switches, start, `--confirm` funding); data rights; checking the production store for non-window `VHX01`–`VHX99` drafts; the legacy NRX cross-pair findings (owner decision).
+
+### Claude — 2026-10-19 — CFD QA: `cfd.1440.goto` target stepped off the weekend (QA script only; owner and CTO on PR #553)
+- **Task:** `scripts/qa-cfd-workspace.cjs` jumped to "now − 2 days". On Monday and Tuesday that is a weekend, when CFD has no bars, so `cfd.1440.goto` failed with `{"gotoClosed":false,"futureWarn":"Дата в будущем"}` on every PR that ran the CFD workflow. Fix it separately, without changing the CFD terminal.
+- **Change:** that target now steps back to the last weekday. The future-date refusal check, the dialog and the terminal are unchanged.
+- **Material file:** `scripts/qa-cfd-workspace.cjs` (+2 lines).
+- **Verified locally** on 2026-10-19 (Monday) on `main` `f81df788`, with Playwright 1.56.1 and the preinstalled Chromium:
+  - without the change, `cfd.1440.goto` fails with the CI detail;
+  - with it, 74/74 pass.
+- **Preserved:** every CFD, chart-workspace and Codex file.
+- **Unresolved:** none for this check.
+
+### Claude — 2026-10-19 — History20 night shift: final read-only security review of #553 and the launch playbook (owner night-shift comment on #553)
+- **Task:** a final code and security review of Draft #553, then a dry-run integration, activation and rollback playbook. Fix only a reproducible defect. No merge, deploy, switch change, funding or production write.
+- **Reviewed head:** `c28689dc` (base `main` `f81df788`). 31 workflows / 36 check runs: 35 success, `deploy` skipped. Heads were re-fetched before the review; nothing had changed.
+- **Result:** no reproducible defect, so no code changed. This commit adds documentation only.
+- **Verified, with the evidence used:**
+  - **Every order and balance path.** The only engine submissions are `OrderService` (the gate) and `DemoTradingService` (`isTestAssetPairOrSymbol`, which includes `isSimulationSettled`).
+    - Every `DemoBalance` write refuses the reserved assets or is USDT/VTA only.
+    - Funding credits Spot `Balance`: once, under an advisory lock, with an AuditLog receipt, re-checking admission inside the transaction, never USDT.
+  - **Admission:**
+    - the owner needs `PRIVATE_TRADING_ENABLED=true`, a matching `PRIVATE_TRADING_OWNER_ID` and an unblocked `ADMIN`;
+    - a tester needs a valid UUID allowlist (an invalid list disables it all) and must be unblocked;
+    - any other ADMIN is refused;
+    - `HISTORY20_PRIVATE_TEST` must be exactly `enabled`.
+  - **Public surfaces:**
+    - Render's test-market, ticker, book and trades routes answer 404 for a private pair before any registry lookup;
+    - `/orderbook/:pair` answers 404;
+    - `/market/tradable` lists venue symbols only;
+    - no engine event is broadcast over a socket; the only WebSocket server is the venue collector;
+    - the Worker serves private tests only behind `authorizeListingsAdmin` (`/internal/listings/published`).
+  - **No dependency or schema change:** the Worker `package.json` diff only adds a test file to a script. No Prisma change, and no file under `src/futures`, `src/private-trading`, Stocks or Codex paths.
+  - **NRX and AITH:**
+    - in `nrxSpot.ts` the NRX branch and the AITH refusal are untouched;
+    - CI on `c28689dc` passed NRX investor market review (28 suites / 386 tests) and Admin Listings (`aithReplacement`, `legacySimulationSaleEquivalence`).
+  - **Production public catalogue:** a read-only GET of `market.voltextech.net/market/listings` at about 19:45 UTC returned `revision 4`, one listing, `AITH/USDT`. The repository's configs and seeds contain no `VHX\d{2}` or `SIMUSDT` symbol.
+- **Observations, not defects (not changed):**
+  - Render parses published listings by shape only (`publishedListingSchema` → `listingConfigSchema`). The semantic private-test rules are enforced when the Worker publishes:
+    - reserved ticker;
+    - funding ≤ 1e6;
+    - `ownerAllocation` 0.
+    A forged store entry could therefore exceed the funding bound or carry an owner allocation. That yields only non-withdrawable units: VHX and SIMUSDT stay refused syntactically on every exit. Possible hardening: re-check the bound in `fundPrivateTestAccount`, and refuse `privateTest` in `ownerAllocation`.
+  - The Native Futures TEST collateral filter (`src/private-trading/native/service.ts`, `testAssetForSymbol`) does not recognise SIMUSDT or a VHX asset on a cold registry. It is not reachable: native holdings are `DemoBalance` rows, and no `DemoBalance` write admits those assets.
+- **BLOCKED (no production access):**
+  - drafts in the production Worker store;
+  - production database rows for VHX/SIMUSDT;
+  - venue symbol lists for `VHX01`–`VHX99`.
+  The read-only queries are in the playbook.
+- **Material files:**
+  - `docs/HISTORY20_PRIVATE_SPOT_LAUNCH_PLAN.md` (new): switches, data-rights restrictions, merge order, deploy with switches off, production checks, activation, financial checks, rollback, monitoring;
+  - a pointer in `docs/HISTORY20_PRIVATE_SPOT_MODE.md`;
+  - this entry.
+- **Preserved:** all #553 code and tests unchanged; #555 untouched; Stocks and Codex files untouched.
+- **Not run:**
+  - local test re-runs (the exact-head CI evidence was used);
+  - production checks;
+  - CI on the commit that adds this entry, at the time of writing.
+- **Unresolved:**
+  - owner approvals for each launch step;
+  - data rights;
+  - the production checks above;
+  - a post-test cleanup procedure for inert VHX/SIMUSDT balances (not implemented; the admin adjustment refuses them by design);
+  - the legacy NRX findings (owner decision).
+
+### Claude — 2026-10-20 — History20 funding: every private-listing rule re-checked before any write (CTO morning follow-up on #553; owner asked for it in-session)
+- **Task:** the CTO asked whether `fundPrivateTestAccount` enforces every private-listing constraint itself, since Render parses the Worker's published listings by shape only. It did not: it required `privateTest`, admission and a reserved ticker, and trusted the stored funding and owner allocation. The owner asked to do the proposed hardening in this session.
+- **Change (new commits on `claude/voltex-mobile-audit-7rpjni`):**
+  - `src/services/listings/privateTestFunding.ts`: `assertFundablePrivateListing` runs `parseListingConfig` and `checkPrivateTestable(config, config, now)` on the listing before the transaction. That is the Worker's own publish-time rule set: reserved ticker, History20 window, owner allocation 0, funding ≤ 1 000 000 and not both zero, no replay after the window, reserved names. Checked against itself, so nothing is locked and no clock dependence is introduced.
+  - `src/services/listings/ownerAllocation.ts`: a listing with `privateTest` is refused.
+  - `history20PrivateSpot.pg` gains one test: seven forged entries, six concurrent calls each, never credit; the genuine listing still funds once; the allocation path refuses the private test. USDT untouched throughout.
+- **RED→GREEN (disposable PostgreSQL 16, loopback):** with the old two files restored, the forged "funding 1 000 001" entry credited on all six concurrent calls (`FULFILLED`); with the change every row is refused and no balance or receipt exists.
+- **Not changed, by rule:** the Native Futures TEST collateral filter (`src/private-trading/native/service.ts`). Futures/NativeDemo are frozen for this work, and the path is unreachable: native holdings are `DemoBalance` rows, and no `DemoBalance` write admits VHX or SIMUSDT. Recorded as an observation.
+- **Verified locally:** the Admin Listings backend list (16 suites) on a fresh cluster; backend `tsc`.
+- **Preserved:** every other #553 guard and test; NRX, AITH, ordinary Spot and Futures code untouched; #555 untouched.
+- **Not run:** exact-head CI at the time of writing; production checks (still BLOCKED).
+- **Unresolved:** the launch approvals, data rights, the production checks and a post-test cleanup plan (separate review, no automatic deletion).
+
+
 ### Claude — 2026-10-21 — Next listing (26.10.2026 13:00 UTC / 16:00 МСК): pre-listing timer with start / pause / stop, UTC + МСК everywhere, runbook
 - **Task:** prepare the next listing in the existing listings system: the fixed instant `2026-10-26T13:00:00Z` shown in both UTC and МСК (admin, listing page, timer); a countdown that is inactive until the admin presses «Запустить таймер», always counts to that instant by server time, survives a reload, can be paused or hidden without changing the date, and never activates anything by itself when the date passes; orders refused before the opening; automatic status transition at 13:00 UTC; tests; before/after screenshots. No new engine, no new design.
 - **Branch / commit:** `claude/voltex-mobile-audit-7rpjni-listing-20261026` from `main` `f81df788`, the commit that adds this entry. A separate branch: the session's earlier branch is PR #553 (History20), which another session now drives.
@@ -6892,6 +7353,12 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Release pending approval: notification Worker first (backward compatible), then API, then frontend. No merge, deploy, actual Telegram send, production DB/config/runtime changes. Read-only Pages check: production auto-deploy false, previews none.
 - CI at `1b72afa6` exposed a real layout race: a late copy-count badge increased the mobile KPI height and shifted restored scroll by 10px. Reproduced locally with a 1200ms delayed count. Scoped label geometry now reserves the badge height; the existing browser interaction assertion is preserved and extended to check the position after the delayed badge arrives. Local rebuilt frontend, delayed-count reproduction, 1440/390/320 screenshot checks and the full interaction sequence pass. The failed attempt remains visible in CI history; no assertions or tests were disabled.
 
+## 2026-10-26 — ChatGPT (browser Chat mode): Beget RU entry preflight
+- Baseline: main `63d6b02cd38fe9ff52742c35ce46fa327827dd33`; `integration/claude-codex` not found by GitHub API.
+- Branch: `chore/beget-ru-preflight-20261026`.
+- Added `scripts/qa-beget-ru-preflight.mjs` (public read-only checks) and `docs/BEGET_RU_GATEWAY_HANDOFF.md` (source map, deployment conditions).
+- Preserved existing trading/API/Worker/frontend code. No costs, Beget config writes, merge, production deploy, or financial traffic.
+- Blocker: Beget hosting/DNS/SSL inventory unavailable in read-only browser session; no Russian ISP probe. Requires Work-mode browser control to finish gateway deployment; preflight not tested against an actual gateway.
 ## 2026-10-25 — Claude (session 01EmV3Pt) — Issue #617 P0: permanent demo-funds withdrawal fence, independent of every switch
 - **Correction:** my earlier #617 statement «P0 не знайдено» was wrong. Codex's disposable-PostgreSQL test (Issue #617 comment 6395962055) is right: on main `63d6b02c`, with `DEMO_WITHDRAWAL_GUARD_ENABLED`, `DEMO_SPOT_ENABLED` and `DEMO_LIQUIDITY_ENABLED` all off, the owner or a native tester with a Cross wallet (`NativeDemoAccount` `source: DEMO_BALANCE`, valued from `DemoBalance`) can file an unheld (`balanceHeld=false`) withdrawal and an admin can take it to APPROVED and SENT.
 - **Root cause (main):** the refusal was flag-only — `src/services/demoSpotAccess.ts:40-41` `demoWithdrawalGuardEnabled`; consumed by `src/api/routes/withdrawals.ts:41-42,109,142` (otherwise `requestUnheldWithdrawal` at `:146`) and `src/services/WithdrawalService.ts:55,60,137` (approve/markSent/create). Unheld requests exist only for the Cross trading wallet, so every `balanceHeld=false` row is demo-valued.
@@ -6901,6 +7368,7 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Preserved:** Codex's adverse test intent; #596/#599 reject-only handling and docs SQL; ordinary and mixed accounts keep held `Balance` withdrawals (approve → SENT) whatever the switches; tester without a Cross wallet keeps the `Balance` path.
 - **Docs:** `docs/DEMO_TRADING.md`, `docs/DEMO_LIQUIDITY.md` — guard switch no longer part of activation/rollback; fence is permanent.
 - **Open:** configured simulation-only accounts that have a Cross wallet are still routed to it (as on main), so they cannot use the held `Balance` path (fail-closed; owner decision to change). P1-3 (admin `Balance` credits withdrawable, #592 provenance), owner limits/inventory numbers. Codex local candidate `b88abbd3` is not on the remote and was not reconciled. No merge, deploy, production, DB or real-data change.
+
 
 ## 2026-10-23 — Claude — #502 Futures chart: recheck on main (no code change)
 - Main `3e79f2a9` (includes #507 chart UX, #511 rail toggle, #607 historical TP/SL acceptance). Nothing to fix; no PR for this stage.
@@ -6998,6 +7466,15 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - portfolio labelling of demo proceeds;
   - P0-3 real-book exposure and reconciliation of production USDT already minted (read-only SQL in the doc).
 
+## 2026-10-27 — Codex — #616/#553 original History20 pack and all20 acceptance
+
+- Code commit `85a55a5b4aac8c3f88afa2a2e02cd18ebf1b722f`; original ZIP SHA256 `82255d3a1502c901734304d3e2e1eb3cef0f9d7e53e5932d7c74e73d7b3482bb` verified. All97/43 manifests, 20 pinned sources, 8,637 daily rows. Raw archive/data stay in ignored local output, never public Git/CI artifacts.
+- Historical importer/model/schema/UI only: verify the original research path, then apply explicit MATIC normalization v1 +15324%→+15000% for new imports. Preserve raw logs/hash, dates, 1× clock, original catalogue and saved history; other19 targets unchanged. At P0=2, cap302 SIMUSDT. Strict browser/server metadata validation and storage roundtrip.
+- RED→GREEN actual ZIP test; local6/6 pack +14/14 frontend/model tests, 7 suites/120 affected-model regressions, 4/4 isolated PostgreSQL Spot/Futures tests, backend/frontendTS and Vite build PASS. Actual Chromium/router/workerd all20 at1440/390: 40/40 matrix cases, 51 checks, zero errors/external calls/financial writes/overflow. Environment-gated checks not executed locally are explicitly distinguished in the integration note.
+- Preserved main620/625 financial fences, restricted SIMUSDT and private-admission replay/transaction guards. Work628 candidate `1f423a282227ceda7ea7af37f5f08d2b674a5e94` preview-merges cleanly; none of its ECLAVO records/config/date/seed/timers were imported or changed. New main QVTR changes retained as-is. Referral627 author/operator continues independently; no duplicate workspace edits or production operations.
+- Evidence and remaining boundary: `docs/HISTORY20_INTEGRATION_616_20261027.md`; all20 derived data/screenshots local-only. `HISTORICAL_RIGHTS_UNVERIFIED` remains; no public publication, funding, timer start, financial switch, main merge or deploy. Final exact-head CI belongs to the existing553 PR, separate from private local archive evidence.
+- Source-view follow-up commit `ce62e2357c53a78cda0952e245ce92814e501c20`: actual React render proved that reference-only data were still shown as source OHLC candles. Replaced only that source view with all daily reference points (no inferred O/H/L/volume); the source-candle helper refuses reference input. Original OHLC view and the simulation generator are unchanged. RED→GREEN; final local15/15 model/UI tests, TS/build and the actual all20×1440/390 matrix PASS again (51 checks, including exact reference-point counts and no source-candle elements for all7 reference scenarios). Preserved the already-merged referral627 main without conflicts. Previous35/35 CI at86c94194 is retained as an earlier checkpoint; final-head CI is separate.
+
 
 ## 2026-10-27 — Codex — PR624 exact QVTR integration preparation; production admin access blocked
 - Owner-selected existing branch work/qaventra-20261028-distinct-listing; started fdbe00c82063c88ae8c4a48df23dd175b29821c9, reconciled fresh main4ac8a45eeeb19ed6cd4677021d677134c438674f without conflicts (35 intervening commits). This enclosing merge/follow-up commit preserves all new financial fences and other-agent work. ECLAVO config/logo/importer/QA script byte-identical to main; no rename/reschedule. No merge INTO main, deploy, production Draft/publication/timer/financial operation.
@@ -7014,69 +7491,20 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Actual RU check: DNS resolves, synthetic deep-link HTTPS connect timeout from this workstation; no Russian ISP vantage. Details in `docs/REFERRAL_REGIONS.md`; no “without VPN” claim, infrastructure/configuration changes, merge or production deploy.
 - Follow-up validation on PR #627: local built-browser Profile switch/copy/reload/Banking at 1440/390 PASS; guest clean-link -> real home CTA -> RegisterPanel sends the preserved ref and keeps the origin (synthetic API locally). CI fixture configures the disposable password vault and explicitly returns unavailable for unrelated market feeds; no malformed successful market mocks or trading-terminal startup. PostgreSQL/browser evidence still requires final-head CI. Obsolete queued CI from this branch only was cancelled, never another agent's runs or deployments.
 
-## Codex — 2026-10-08 — funded wallet conversion and customer credit history
-- Separate branch `codex/wallet-conversion-history` from fresh main `964d62daf07cc545bcf085b2d5836c7f8e913da4`; auth/card work remains in published #475. Open #477 only moves admin adjustment UI; its files are not changed here. Remote integration/claude-codex is absent. No merge/deploy/production writes.
-- Latest owner decision supersedes 0.5%: conversion commission **0%**, latest available market price. Source is ordinary available Funding/Spot Balance credited by existing manual adjustments or confirmed deposits; no Demo/native simulation/locked funds. Existing real spot price feed supplies actual USD and inverse fiat quotes; synthetic assets, mirror aliases, stale/missing/invalid prices fail closed. No invented stablecoin peg, new provider, polling, credentials or schema.
-- Explicit read-only price preview and explicit confirmation; exact decimal output, conditional atomic debit/credit plus one durable AuditLog receipt. Per-user transaction lock, owner-filtered recovery, no automatic retry. Replayed confirmations return the same committed receipt even after price outage/expiry, including an in-flight commit/expiry race. Browser retains pending opaque quote ID across reload; unknown result blocks a new operation.
-- Customer history adds audited real credits/debits and conversions without reasons/admin identity/Demo/preview events; ordinary deposit/withdrawal/fill feeds remain, with explicit partial-outage display and hidden-amount protection. Shared modal wired from both existing conversion controls; seven additive locale sets. Existing auth, deposit verification/minimum, admin UI, trading formulas, transport and financial source fingerprints remain guarded.
-- Local final verification: 227 frontend suites / 3709 tests PASS, six backend suites / 110 tests PASS, 12 real disposable PostgreSQL cases and five built-browser scenarios PASS at 1920/1440/1366/430/390/360/320. Actual conversion/activity routes and ledger used; unrelated read/deposit display fixtures and external network denial are documented. Backend typecheck and frontend production build PASS; existing bundle-size warning retained. Fresh exact-head CI still required after push.
-- Operator/reviewer details and reproducible isolated QA: docs/WALLET_CONVERSION_REVIEW.md. No production credentials or financial operations were used. Backend/frontend coordinated release, financial review and owner approval remain future rollout gates.
+## 2026-10-27 — Claude (session 01EmV3Pt) — Native funding QA clock (port from Codex #611 before closing it)
+- Base main `b2387f96`; one file, `scripts/qa-native-funding-pnl.cjs`: the isolated fixture's clock is moved forward (existing `/qa/clock` lever) to 5 min past a 4-hour mark so the scenario never expects a forming 00/08/16 funding candle to have settled. Preserved verbatim from Codex `d362fb80` (#611); no assertion relaxed.
+- Verified locally: the script on main + change 36/36 PASS with pre-installed Playwright Chromium; the time-of-day failure was not reproduced. Regenerated QA screenshots/report not committed.
+- Open: merge on the owner's word; #611 can then close (everything else in it is superseded by #613).
 
-## 2026-10-23 — Claude — Wallet Conversion: integration candidate on current main (from Codex #478 → #543)
-- Branch `claude/voltex-mobile-audit-7rpjni-wallet-conversion` from main `9265e997`. Port commit `f9c00d29` (the #543 change set `f81df788..d800233c` applied as one patch; conflicts resolved by hand: Convert buttons wired through `onConvert` without the «convert unavailable» title removed in #582; handoff append-only), review fixes in the next commits. #478 and #543 left open/untouched.
-- **Preserved from Codex:** the whole #478/#543 design — server-owned quote in `AuditLog`, per-user advisory lock, conditional debit + credit via `mutateSpotBalance` and the unique `conversion:<uuid>` receipt in one transaction, receipt-first recovery, pending-ID-before-send UI, owner-filtered `/wallet/activity`, default-OFF server (`WALLET_CONVERSION_ENABLED`) and frontend (`VITE_WALLET_CONVERSION_ENABLED`) flags, its 13 PostgreSQL and 5 browser checks; Stocks Wallet projection/refresh and every main-side change.
-- **Defects found and fixed:** (1) price was the last trade with zero spread → now the market bid for the source and ask for the destination (0% fee keeps the spread; round trip can never gain; crossed or >2% books refused); (2) any Kraken-priced asset was convertible → server list `WALLET_CONVERSION_ASSETS` (default `USD:2,EUR:2,USDT:6,USDC:6,BTC:8,ETH:18`; listing symbols can never be configured; malformed = off); (3) results floored to 18 places for every asset (sub-cent USD, dust BTC) → per-asset places, finer inputs refused, zero results refused; (4) an admin-blocked account with a live session could convert → `blockedAt` checked at quote and inside the confirm transaction (403); (5) UI showed no debit amount and computed the rate from the rounded result → debit + credit rows, bid/ask rate; (6) «unavailable» error copy → neutral wording in 7 languages; (7) the history-file fingerprint test had been dropped in #543 → re-pinned to the reviewed file.
-- **Verified locally (this tree):** backend `tsc` + frontend `tsc -b` PASS; unit `WalletConversionService` 24/24; related backend suites (portfolio, deposits ×3, withdrawals, balance adjustment ×2) 146/146; **full frontend Jest 292 suites / 4866 tests PASS**; disposable PostgreSQL 16 (new loopback cluster, repository migrations only there) **19/19**: default-OFF 404 without writes, owner-filtered history, 12 concurrent retries → one receipt, exact decimals, double-spend refused, receipt/destination failure rolls back both legs, expiry/changed price/outage/other owner/malformed, concurrent credit + reserve, lost response recovery, receipt after a new service + DB client with feed down, revoked/2FA/deleted/anonymous denied, history once, concurrent expiry, admin block (quote + confirm), admission at quote and confirm, spread round trip, DemoBalance untouched, 10 conversions + 3 real `WithdrawalService` requests racing one balance (never overdrawn, conserved). Browser (production bundle, real routes, network denied): ON build 5 groups at 1920–320 px, default-OFF build: Convert inert, no dialog, zero conversion requests, no «unavailable» text. Local PostgreSQL ran through a QA-only wrapper executing `initdb`/`pg_ctl` as the `postgres` user (root cannot run `initdb`); CI uses the runner tools directly.
-- **Not done / open:** exact-head CI pending at the time of this entry (see the PR); no production activation, migration, deploy or real balance; liquidity/treasury policy, size limits and the final asset list are owner decisions (docs/WALLET_CONVERSION_REVIEW.md → *Risks*). Production activation: NO-GO until those are decided and an independent financial review signs off.
+## 2026-10-27 — Claude (session 01EmV3Pt) — PR backlog closed with proof (owner's 27.10 canonical plan)
+- Closed with a proof comment each (branches kept, nothing deleted): Stocks #545 #547 #554 #556 #559 #560 #563 #564 #609 #610 (heads are ancestors of #613 `ee1cd7f2`); #611 (rest in #613; its only unique fix carried unchanged in #631); History20 #544 #548 (ancestors of Codex's #553 `47e82ecd`), #551 (in main); #552 (SIMUSDT option C, superseded by the merged option B #625); #605 (in main; its one missing test carried unchanged in #630); #594 #597 (one-shot TYVN GET-only diagnostics, branch-gated); #578 (head is an ancestor of the live API `89c3ac00`); #438 (prod snapshot, not to be restored); #543 #478 (canonical #591).
+- Open after cleanup (11): #631 #630 #629 #628 (Work) #622 #621 (Codex) #613 #591 #553 (Codex) #541 (research) #473 (no decorative work).
 
-## 2026-10-23 — Claude — Wallet Conversion #591: owner demo-only policy (Issue #558, PR #591 review comment)
-- Read the PR #591 review comment (6359047262) and the Issue #558 owner override (6358905908): VOLTEX holds no real customer funds; balances are owner/admin-issued; registration grants nothing; no withdrawable balance may result.
-- **Ledger facts verified on main `9265e997`:**
-  - Two admin credit paths: `balance-adjustments`/`adjust-balance` → `Balance` (`BalanceAdjustmentService` → `mutateSpotBalance`; Spot orders, confirmed deposits, banking rewards and listing owner allocation use the same table) and `demo-topup` → `DemoBalance` (used only by the admin-only `/demo/orders`; reconciliation tracked in Issue #592).
-  - Conversion touches only `Balance`; `DemoBalance` is untouched.
-  - `auth.ts` registration writes no balance.
-  - `WithdrawalService.requestWithdrawal` accepts any positive non-test `Balance`: the amount is locked and an admin sends it by hand. This applies already before any conversion.
-  - So conversion adds no cash-out path. Whether owner-issued balances may be requested for withdrawal at all is a `WithdrawalService` question on main, left to the owner and not changed here: it is a financial rule.
-- **Changed:**
-  - `docs/WALLET_CONVERSION_REVIEW.md`: new section «Which ledger this is». Treasury obligations are now stated as hypothetical, applying only if real cash-out operates. Activation now needs the owner's withdrawal policy. Bid/ask and precision safeguards unchanged.
-  - New PostgreSQL check: an account without issued funds is refused before any write and is granted nothing. Now 20/20 locally, plus browser 5/5 with Playwright 1.63.0.
-- **Open:** owner decision on withdrawals of owner-issued balances; flags stay OFF; Draft; no merge/deploy.
-
-## 2026-10-23 — Claude — Wallet Conversion #591: fail-closed limits, reserves and liquidity
-- Merged main `6a2355fb` into the branch (merge commit; conflicts: `docs/AI_HANDOFF.md` append-only, `futuresTickerHeader.test.ts` both replace chains kept).
-- **Added (`src/services/WalletConversionService.ts`, wired in `src/index.ts`):** per-conversion limit `WALLET_CONVERSION_MAX_USD` (default 1000, at the source's bid), per-account rolling-24 h limit `WALLET_CONVERSION_DAILY_USD` (default 5000, from committed receipts), operator-verified reserve per destination `WALLET_CONVERSION_RESERVES` (default empty → nothing is credited, `RESERVE_UNVERIFIED`; net created exposure + this credit ≤ reserve, else `RESERVE_EXHAUSTED`), Kraken book depth within 0.5 % of the touch for both legs (`INSUFFICIENT_LIQUIDITY`; unknown/stale/inverse-fiat depth refuses). Checked at quote and again in the confirm transaction under the per-account lock plus one global conversion lock (fixed order). Malformed settings keep conversion off.
-- **Preserved:** Codex #478/#543 design and every earlier fix (bid/ask, admission list, per-asset places, block check, receipt-first recovery, pending-ID-before-send UI, default-OFF flags), the 20 existing PostgreSQL and 5 browser checks unchanged except that their service now gets explicit synthetic reserves; the existing 20/min write limiter is unchanged (the PG runner gives the browser phase a fresh API instance instead).
-- **UI:** `ConversionModal.tsx` maps the new codes to three messages in 7 languages (no «unavailable» wording); a confirm refusal releases the pending state. `walletConversion.test.ts` now asserts every refusal code is mapped (mutation-checked).
-- **Verified locally (this tree):** backend `tsc` and frontend `tsc` PASS; Jest 12 suites / 320 tests PASS (unit conversion 31/31); disposable PostgreSQL 16 (via local wrapper) 25/25 incl. concurrent reserve (8 accounts → exactly 2 credited), concurrent daily limit and the rolling 24 h window (a receipt 25 h old excluded, 23 h old counted; the daily sum is a typed Prisma query, no time-zone-dependent raw SQL); flagged build browser 6/6 (Playwright 1.63.0 on local Chromium); default-OFF build browser 1/1.
-- **Open:** owner decisions on reserve figures, limits and the withdrawal policy; flags stay OFF; Draft; no merge, deploy or production write. Exact-head CI: see PR #591.
-
-## 2026-10-24 — Claude — Wallet Conversion #591: demo-credited funds convert on DemoBalance only
-- Merged main `98261cc8` into the branch (merge commit `91cbd363`, no conflicts). Stocks #613, ECLAVO/TYVN, production and both conversion switches untouched; switches stay OFF.
-- **Blocker checked:** #591 converted only `Balance`; demo-topup testers hold `DemoBalance`, so they could convert nothing, and nothing moved `DemoBalance` into `Balance` (no file writes both). Withdrawals hold `Balance` only; native Cross (DemoBalance-valued) requests are refused while the guard is on, and the guard is forced on by `DEMO_SPOT_ENABLED`. Registration writes no balance.
-- **Changed (`WalletConversionService.ts`, `walletActivity.ts`):** the existing service now settles on the ledger `demoSpotLedger` gives the account. 'demo' = an atomic swap with the existing Demo Liquidity account's demo-credited `DemoBalance` inventory under the account lock + `demo-spot-book` lock, conditional debits, same Kraken bid/ask, 0% fee and rounding, limits 1000/5000 (both ledgers counted) plus the liquidity per-order cap, receipt `WALLET_DEMO_CONVERTED` (outside reserve exposure), history item `ledger: 'demo'`. Ledger stored in the quote and re-checked at confirm (`QUOTE_CHANGED`). Fail closed (`INSUFFICIENT_LIQUIDITY`) without Demo Liquidity, guard, or a valid liquidity account. 'spot' path unchanged.
-- **Preserved:** Codex #478/#543 design and all earlier #591 fixes; `DemoTradingService`, `DemoLiquidity`, `WithdrawalService` and withdrawal rules unchanged.
-- **Verified locally:** backend `tsc` PASS; unit `WalletConversionService` 40/40 (9 new demo cases; one assertion updated to the new both-ledger daily query); new `scripts/test-wallet-conversion-demo-postgres.cjs` on a fresh disposable PostgreSQL 16: 20/20 (zero user, 50 demo USDT, insufficient, concurrent orders + conversions, inventory race, double confirm, lost response, withdrawal attempts, revocation, block, listing assets, switches, daily limit, restart history, third party unchanged, DemoBalance conservation, no outbound); two deliberate mutations (unconditional debit, no ledger re-check) both caught; existing `test-wallet-conversion-postgres.cjs` 25/25 (no browser phase). Browser QA not re-run (no frontend change). CI job *Wallet conversion safety* runs the new script.
-- **Open:** wallet Funding view still lists `Balance` only (demo results show in the conversion form, history and the Spot terminal); owner approval of limits, the demo-conversion policy and the existing withdrawability of admin `Balance` credits; no merge/deploy.
-
-## 2026-10-25 — Claude — Issue #617: Wallet Conversion financial isolation review (PR #591)
-- Fresh-fetch: main `98261cc8` unchanged, PR #591 head was `780b2901`; no merge needed. Stocks #613/#618, ECLAVO/TYVN, production and both conversion switches untouched (OFF).
-- **Review:** every writer of `Balance`, `FuturesBalance`, `Withdrawal` and `DemoBalance` mapped (withdrawals, OTC cash-out, Spot↔Futures transfer, futures/CFD/liquidation/funding, banking, purchases, deposits, admin credits, listing/NRX allocation, demo Spot, VTA, private/native trading, Stocks test cash). No file writes both a real ledger and `DemoBalance`; no P0. Write-up with invariant matrix (20 rows), P1/P2 and owner numbers: `docs/WALLET_CONVERSION_SAFETY_REVIEW.md`.
-- **Fixed (P1-1):** a price-provider failure at confirm (and quote/assets, and a throwing depth read) surfaced as a raw 500, so the form showed «result not confirmed». Now `feed()` maps it to `PRICE_UNAVAILABLE`, `admit()` treats a failing depth read as unknown depth, and `ConversionModal` treats `PRICE_UNAVAILABLE` at confirm as a definite refusal (decided after the receipt check, before any write).
-- **Documented, not changed (owner decisions):** P1-2 pre-existing native Cross unheld withdrawals valued from `DemoBalance` reopen only if Demo Spot, Demo Liquidity and the guard are all switched off (patch proposed in the review); P1-3 admin `Balance` credits withdrawable (#592), not widened by conversion with the default empty reserves.
-- **Verified locally:** backend `tsc` PASS; Jest `WalletConversionService` + `walletConversion` 46/46; demo PG 24/24 (4 new: stale/changed/missing price and abandoned quote, foreign account, four-leg rollback + short-liquidity rollback, rounding/oversize) — the outage case failed on `780b2901` before the fix; `Balance` PG 25/25 (outage now asserts `PRICE_UNAVAILABLE`). Browser QA not re-run locally.
-- **Open:** owner approval of limits/inventory/P1-2; Wallet Funding view does not list `DemoBalance` for demo-ledger testers (P2).
-
-## 2026-10-27 — Claude (session 01EmV3Pt) — #591 on top of #620; conversion confirm takes the shared lock before its checks
-- **Merged #620** (`5b80fc3e`, permanent demo-withdrawal fence on main `63d6b02c`) into #591 (`2457bc29`); only the append-only handoff conflicted, both sides kept (#620's file an exact prefix). PR base retargeted to #620's branch so #591's diff is conversion only; #620 stays independently mergeable.
-- **P1-4 fixed (`4b2e055f`):** a quote expiring, or an account blocked, while the confirm waited for the shared reserve / demo-book lock was still APPLIED. The final shared lock is now taken right after the receipt check, before every admission check (same lock order). New PG check in each suite (second session holds the lock): before — Balance 25 PASS then FAIL, demo 22 PASS then FAIL ("expiry: APPLIED"); after — Balance 26/26, demo 25/25. Unit/route suites 185/185, frontend contract 5/5, `tsc`. Finding first reported by Codex (local candidate, unpublished; its session-authority guards were not reimplemented).
-- **Docs:** `WALLET_CONVERSION_SAFETY_REVIEW.md` marks P1-2 as P0 closed by #620, adds P1-4 and points to the separate simulation-sale P0 (#625). Exact-head CI on `4b2e055f`: 34 success, 1 skipped (CodeRabbit).
-- **Open:** owner numbers (limits, inventory, reserves); Codex's unpublished authority/session hardening (`d1e348db`) still not on GitHub; activation NO-GO.
-
-## 2026-10-27 — Claude (session 01EmV3Pt) — #591: Convert offered only when the server accepts it; DemoBalance conversions labelled apart from Funding
-- Base: #591 head `37ed0a50` (main `b2387f96` already contained). Production, flags (both conversion switches OFF), Stocks #613, ECLAVO/QAVENTRA untouched.
-- **Owner requirement:** the Convert button must not look usable when the server would refuse. New `GET /wallet/conversion/availability` (exists only with the server switch; 404 otherwise) → `WalletConversionService.availability()`: false for a blocked account, for a Balance account with no operator-verified reserve on an admitted asset, and on DemoBalance unless Demo Liquidity + guard are usable and the account is not the liquidity account itself. `WalletPage` enables both Convert buttons only on `convertible: true`; any error/404 keeps them inactive (no «unavailable» note).
-- **Separate display:** a DemoBalance account's form now reads "Spot trading balance · for trading only, not withdrawable" instead of "Funding funds" (was a mislabel), and its conversions in History carry the same account line (`ledger: 'demo'` from the existing activity route). 2 additive keys × 7 languages, registered in the i18n digest's additive list.
-- **Preserved:** Codex #478/#543 design, every earlier #591 fix, the P1-4 lock order, #620/#625 fences; no service settlement path changed.
-- **Verified locally:** backend + frontend `tsc` PASS; unit `WalletConversionService` 45/45 (5 new availability cases); frontend `walletConversion`/i18n/`walletOverview` 108/108; disposable PG Balance 27/27 (new availability check, OFF route list +1), demo 26/26 (new availability check); browser flagged build 7/7 incl. new "blocked account → Convert inactive, no dialog, no quote request; unblocked → works", default-OFF build 1/1.
-- **Open:** Codex's session-authority hardening still unpublished (no matching `codex/*` branch; `codex/wallet-conversion-history` is the already-ported #478 source); owner numbers (limits/reserves/inventory) and activation remain NO-GO; exact-head CI on this commit pending.
-- **CI follow-up:** exact-head CI on `0300640f` failed only on two source fingerprints (full frontend run: 2 suites / 3 tests): `walletUxRefinement` TransactionHistory pin re-taken with a dated comment; `futuresTickerHeader` api.ts conversion exclusion now also names `getConversionAvailability` (same rule as the other conversion lines). Local frontend Jest after the fix: these suites 81/81.
+## 2026-10-27 — Claude (session 01EmV3Pt) — Issue #632 technical SEO: sitemap, robots, canonical heads, noindex
+- Base: main `a680f2ef`. Frontend/build only; Workers, API, DB, listings (ECLAVO/QVTR/TYVN), simulations, balances and Work's #628 untouched. No deploy.
+- Found on main (and live, read-only): `/robots.txt` and `/sitemap.xml` returned the SPA HTML; no canonical anywhere; `/academy/faq`, `/academy/knowledge`, `/academy/learn` and legal pages had no static head; legacy `/help/*` copies looked like separate pages; private routes carried no noindex. Live HTML shows `cache-control: public, max-age=0, must-revalidate`, not the repo `_headers` value, so `_headers` may not be applied on production.
+- Change: `frontend/src/lib/seo/site.ts` is the one policy (public/private, canonical, robots), used by the build and by `RouteSeo` in App.tsx. The existing `seoPages()`/`withPageHead()` pipeline is extended, not replaced: +3 Academy hub pages, legacy Help copies canonical to their Academy targets, `withPageHead` writes canonical/og:url. New in the build (`lib/seo/pages.ts`, `contentPlugin.ts`): legal page heads, noindex static copies for every signed-in/admin/sign-in address, `sitemap.xml` (42 URLs, no lastmod) and `robots.txt`. `index.html`: home canonical/og:url, absolute `og-image.png` (raster of the unchanged SVG, `scripts/render-og-image.cjs`), title "VOLTEX — криптобиржа" (the existing og:title). `_headers`: cache rules untouched; X-Robots-Tag rules appended. No hreflang (7 languages share URLs). ru.voltextech.net: canonical to the main domain, no redirect.
+- Preserved: LicencesPage's own `noindex, nofollow` and title (policy aligned to it); boot guard; content pipeline; `/academy/learn` runtime title now "Обучение — Академия VOLTEX" to match its static head.
+- Verified locally: frontend `tsc -b` + build; full frontend Jest 300 suites / 4951 tests; new `seoIndexing` + `seoBuildOutput` + Academy/About suites 63/63 (negative check: dropping a private route fails 2 tests); `scripts/qa-seo-indexing.cjs` on `wrangler pages dev` (local Pages emulation) 114/114 — 42 sitemap URLs, 25 noindex addresses, no-JS Chromium, Chromium 1440×900 and 390×844 (16 routes each). Exact-head CI must be read on the PR.
+- Open (owner): production publication; after it, submit the sitemap in Google Search Console and Yandex Webmaster and set voltextech.net as the main mirror there. Indexing itself is not proven by tests.
+- Follow-up on PR #634: CI `publication-and-layout` (`scripts/qa-regulatory-documents.cjs`) failed on `2939b1a2` because `/legal/licenses` carried two `noindex, nofollow` metas (RouteSeo + LicencesPage). The owner's account pushed `217d0370` (LicencesPage reuses an existing robots meta and only adds/removes its own); kept as is, Claude's alternative (RouteSeo yields to page-owned tags) was not pushed. Verified locally on `217d0370`: frontend `tsc -b` + build (one robots meta in `dist/legal/licenses.html`), the 5 SEO/Academy/About Jest suites 63/63, `qa-regulatory-documents.cjs` PASS (426 checks), `qa-seo-indexing.cjs` 114/114.

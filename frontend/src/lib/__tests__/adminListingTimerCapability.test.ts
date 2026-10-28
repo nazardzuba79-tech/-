@@ -32,11 +32,31 @@ test('every way to a first publication goes through the same rule: button, its h
   const page = readFileSync(resolve(__dirname, '../../pages/admin/AdminListingsPage.tsx'), 'utf8');
   expect(page).toContain('const timerSupported = listingTimerSupported(listings);');
   expect(page).toContain('const publicationBlocked = Boolean(current && !listingPublicationAllowed(current, timerSupported));');
-  expect(page).toContain('disabled={busy || !draftIsSaved || historicalMode || publicationBlocked} onClick={openPublish} data-publish');
+  expect(page).toContain('disabled={busy || !draftIsSaved || (historicalMode && !privateMode) || publicationBlocked} onClick={openPublish} data-publish');
   expect(page).toMatch(/function openPublish\(\) \{\s*if \(!current \|\| busy \|\| !draftIsSaved \|\| !listingPublicationAllowed\(current, timerSupported\)\) return;/);
   expect(page).toMatch(/async function confirmPublish\(\) \{\s*if \([^)]*[\s\S]*?\|\| !listingPublicationAllowed\(publishing\.listing, timerSupported\)\) return;\s*setBusy\(true\);/);
   expect(page).toContain('disabled={busy || !draftIsSaved || !listingPublicationAllowed(publishing.listing, timerSupported)} onClick={() => void confirmPublish()} data-confirm-publish');
   expect(page).toContain('listingTimerStatus(listing, Date.now() + clockOffsetMs, timerSupported)');
   expect(page).toMatch(/if \(!timerSupported\) \{\s*const status = listingTimerStatus\(listing, serverNow\);\s*return status && \{ \.\.\.status, actions: \[\] \};/);
   expect(page).toContain('data-publish-needs-timer>Первая публикация закрыта: сервер API пока без таймера листинга и показал бы рынок на бирже сразу. Черновик и предпросмотр доступны.');
+});
+
+// Evaluate the actual JSX guard: neither the private exception nor a future refactor
+// may bypass an unsupported timer, unsaved draft or in-flight request.
+test('the actual publication button preserves timer and draft guards for every public/private combination', () => {
+  const page = readFileSync(resolve(__dirname, '../../pages/admin/AdminListingsPage.tsx'), 'utf8');
+  const match = page.match(/disabled=\{([^}]+)\} onClick=\{openPublish\} data-publish/);
+  expect(match).not.toBeNull();
+  const disabled = new Function('busy', 'draftIsSaved', 'historicalMode', 'privateMode', 'publicationBlocked', 'return (' + match![1] + ');');
+  let combinations = 0;
+  for (const busy of [false, true]) for (const saved of [false, true])
+    for (const historical of [false, true]) for (const privateMode of [false, true])
+      for (const timerUnsupported of [false, true]) {
+        const result = disabled(busy, saved, historical, privateMode, timerUnsupported);
+        if (busy || !saved || timerUnsupported) expect(result).toBe(true);
+        else if (historical && !privateMode) expect(result).toBe(true);
+        else expect(result).toBe(false);
+        combinations++;
+      }
+  expect(combinations).toBe(32);
 });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, getToken, onSessionChange } from './api';
-import { isManagedTradablePair, isTestMarketPair } from './testMarkets';
+import { isManagedTradablePair, isRetiredMarketPair, isTestMarketPair } from './testMarkets';
 
 /**
  * Demo Spot (Issue #592): an account an admin credited with demo funds trades
@@ -31,7 +31,7 @@ export type DemoLedgerMode = Extract<DemoSpotMode, 'trader' | 'silent'>;
 
 /** Test markets, managed listings and VTA keep their own paths unchanged. */
 export function isDemoSpotPair(pair: string): boolean {
-  return !isTestMarketPair(pair) && !isManagedTradablePair(pair) && pair.toUpperCase() !== 'VTA/USDT';
+  return !isRetiredMarketPair(pair) && !isTestMarketPair(pair) && !isManagedTradablePair(pair) && pair.toUpperCase() !== 'VTA/USDT';
 }
 
 let cached: { token: string; mode: Promise<DemoSpotMode> } | null = null;

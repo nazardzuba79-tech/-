@@ -17,7 +17,14 @@ export const TEST_ASSET_STATUS_LABEL = 'TEST · NOT TRADABLE';
 
 /** Known before the first response, so a deep link or a starred pair is
  *  recognised as a test market without waiting on the network. */
-export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT', 'NRX/USDT'];
+/** Removed market: retain financial history elsewhere, never display or route new trading. */
+export const isRetiredMarketPair = (value: string) => {
+  const normalized = value.trim().toUpperCase().replace(/[_-]/g, '/');
+  return normalized.split('/').some(symbol => symbol.trim() === 'NRX')
+    || ['NRXUSDT', 'NRXSIMUSDT'].includes(normalized.replace(/\s/g, ''));
+};
+
+export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT'];
 
 export interface TestMarketState {
   phase: 'pre-listing' | 'live';
@@ -52,6 +59,10 @@ export interface TestAsset {
   version?: number;
   readLease?: ListingReadLease;
   leaseDeadline?: number;
+  /** History20 private test market (owner and allowlisted testers only), from the authenticated API. */
+  privateTest?: true;
+  /** What the terminal shows beside a private market: a model, settled in SIMUSDT, never withdrawable. */
+  provenanceLabel?: string;
 }
 
 export interface TestMarketsSnapshot {
@@ -91,13 +102,38 @@ export function registerManagedListings(assets: readonly TestAsset[]): void {
   }
 }
 
+/**
+ * History20 private test markets (owner and allowlisted testers only): a
+ * reserved ticker quoted in SIMUSDT, served by the authenticated API
+ * (/private-test/markets) and never by the public edge. The pair shape alone
+ * keeps it off every public and venue route, before or without discovery;
+ * the registry below only says which ones this session may open.
+ */
+export const PRIVATE_TEST_PAIR_PATTERN = /^VHX\d{2}\/SIMUSDT$/;
+const privateTestMarkets = new Map<string, { symbol: string; logo: string | null }>();
+
+export function isPrivateTestPair(pair: string | null | undefined): boolean {
+  return typeof pair === 'string' && PRIVATE_TEST_PAIR_PATTERN.test(pair.toUpperCase());
+}
+
+/** Replaces what this session may open (the authenticated list is the whole truth). */
+export function registerPrivateTestMarkets(assets: readonly TestAsset[]): void {
+  privateTestMarkets.clear();
+  for (const asset of assets) if (asset.privateTest) privateTestMarkets.set(asset.pair, { symbol: asset.symbol, logo: asset.logo ?? null });
+}
+
+export function isKnownPrivateTestMarket(pair: string | null | undefined): boolean {
+  return typeof pair === 'string' && privateTestMarkets.has(pair.toUpperCase());
+}
+
 export function isManagedListingPair(pair: string | null | undefined): boolean {
   return isAith(pair) || (typeof pair === 'string' && managedListings.has(pair.toUpperCase()));
 }
 
 /** A managed listing that trades on ordinary Spot once listed (the server enforces the time). */
 export function isManagedTradablePair(pair: string | null | undefined): boolean {
-  return !isAith(pair) && typeof pair === 'string' && managedListings.get(pair.toUpperCase())?.tradable === true;
+  // A private market this session was served is open to it; the server re-checks every order.
+  return !isAith(pair) && typeof pair === 'string' && (managedListings.get(pair.toUpperCase())?.tradable === true || isKnownPrivateTestMarket(pair));
 }
 
 export function managedListingVersion(pair: string): number | undefined {
@@ -108,26 +144,60 @@ export function managedListingVersion(pair: string): number | undefined {
 /** The logo a published listing carries, by ticker. Never a registry lookup by ticker. */
 export function managedListingLogo(symbol: string): string | null | undefined {
   for (const listing of managedListings.values()) if (listing.symbol === symbol.toUpperCase()) return listing.logo;
+  for (const listing of privateTestMarkets.values()) if (listing.symbol === symbol.toUpperCase()) return listing.logo;
   return undefined;
 }
 
 export function isTestMarketPair(pair: string | null | undefined): boolean {
-  return typeof pair === 'string' && (TEST_MARKET_PAIRS.includes(pair.toUpperCase()) || isManagedListingPair(pair));
+  return typeof pair === 'string' && (TEST_MARKET_PAIRS.includes(pair.toUpperCase()) || isManagedListingPair(pair) || isKnownPrivateTestMarket(pair));
 }
 
 const finiteOrNull = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
-/** Accepts only the shape the server serves; anything else is `null`, never a guess. */
-export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
+/**
+ * Accepts only the shape the server serves; anything else is `null`, never a guess.
+ * `private` reads the authenticated private-test list: only reserved SIMUSDT
+ * pairs with their provenance. A public source never yields one.
+ */
+export function parseTestMarkets(payload: unknown, source: 'public' | 'private' = 'public'): TestMarketsSnapshot | null {
   const body = payload as { serverTime?: unknown; assets?: unknown } | null;
   if (!body || typeof body.serverTime !== 'number' || !Array.isArray(body.assets)) return null;
   const assets: TestAsset[] = [];
   for (const raw of body.assets as any[]) {
     const managed = raw?.managed === true;
     if (!raw || typeof raw.pair !== 'string' || raw.isTestAsset !== true) continue;
+    const privateRow = isPrivateTestPair(raw.pair) || /SIMUSDT/i.test(raw.pair);
+    if (privateRow !== (source === 'private')) continue;
+    if (source === 'private') {
+      const provenance = raw.provenance;
+      if (!isPrivateTestPair(raw.pair) || provenance?.mode !== 'HISTORY20_PRIVATE_TEST' || provenance?.withdrawable !== false || provenance?.settlement !== 'SIMUSDT') continue;
+      const listingAt = typeof raw.listingAt === 'string' ? Date.parse(raw.listingAt) : NaN;
+      const state = raw.state ?? {};
+      if (!Number.isFinite(listingAt) || (state.phase !== 'pre-listing' && state.phase !== 'live')) continue;
+      assets.push({
+        pair: raw.pair.toUpperCase(), symbol: String(raw.symbol ?? raw.pair.split('/')[0]), name: String(raw.name ?? raw.symbol),
+        quote: 'SIMUSDT', isTestAsset: true,
+        // Served only to an admitted participant; the server still decides every order.
+        isTradable: true, status: typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
+        listingArmed: typeof raw.listingArmed === 'boolean' ? raw.listingArmed : true, listingAt: raw.listingAt,
+        initialPrice: finiteOrNull(raw.initialPrice) ?? 0,
+        state: {
+          phase: state.phase, lastPrice: finiteOrNull(state.lastPrice), openPrice24h: finiteOrNull(state.openPrice24h),
+          change24hPercent: finiteOrNull(state.change24hPercent), high24h: finiteOrNull(state.high24h), low24h: finiteOrNull(state.low24h),
+          volume24h: finiteOrNull(state.volume24h), quoteVolume24h: finiteOrNull(state.quoteVolume24h),
+          serverTime: finiteOrNull(state.serverTime) ?? body.serverTime,
+        },
+        privateTest: true, version: raw.version,
+        logo: typeof raw.logo === 'string' && /^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(raw.logo) ? raw.logo : null,
+        displayTimeZone: typeof raw.displayTimeZone === 'string' ? raw.displayTimeZone : 'UTC',
+        provenanceLabel: typeof provenance.label === 'string' ? provenance.label : 'SIMUSDT',
+      });
+      continue;
+    }
     if (isAith(raw.pair) && (!managed || raw.isTradable !== false || !validAithLease(raw.readLease, raw.version, body.serverTime))) continue;
     if (managed) {
       // A published listing: any well-formed USDT pair that is not a built-in test asset.
+      if (isRetiredMarketPair(raw.pair)) continue;
       if (!MANAGED_PAIR_PATTERN.test(raw.pair.toUpperCase()) || TEST_MARKET_PAIRS.includes(raw.pair.toUpperCase()) || typeof raw.isTradable !== 'boolean') continue;
     } else if (!isTestMarketPair(raw.pair) || raw.isTradable !== (raw.pair.toUpperCase() === 'NRX/USDT')) continue;
     const listingAt = typeof raw.listingAt === 'string' ? Date.parse(raw.listingAt) : NaN;
@@ -200,17 +270,19 @@ export function testAssetTicker(asset: TestAsset): TestMarketTicker {
  * holding one simulated market.
  */
 export function withTestMarketTickers<T extends MarketTicker>(tickers: Map<string, T>, assets: readonly TestAsset[]): Map<string, T | TestMarketTicker> {
-  if (tickers.size === 0 || assets.length === 0) return tickers;
-  const merged = new Map<string, T | TestMarketTicker>(tickers);
-  for (const asset of assets) merged.set(asset.pair, testAssetTicker(asset));
+  if (tickers.size === 0) return tickers;
+  if (assets.length === 0 && ![...tickers.keys()].some(isRetiredMarketPair)) return tickers;
+  const merged = new Map<string, T | TestMarketTicker>([...tickers].filter(([pair]) => !isRetiredMarketPair(pair)));
+  for (const asset of assets) if (!isRetiredMarketPair(asset.pair)) merged.set(asset.pair, testAssetTicker(asset));
   return merged;
 }
 
 export function withoutTestMarkets<T extends { pair: string }>(rows: readonly T[]): T[] {
-  return rows.filter((row) => !isTestMarketPair(row.pair));
+  return rows.filter((row) => !isRetiredMarketPair(row.pair) && !isTestMarketPair(row.pair));
 }
 
 export function matchesTestAssetSearch(asset: Pick<TestAsset, 'pair' | 'symbol' | 'name'>, query: string): boolean {
+  if (isRetiredMarketPair(asset.pair)) return false;
   const q = query.trim().toLowerCase().replace(/[\s/_-]/g, '');
   if (!q) return true;
   return [asset.pair.replace('/', ''), asset.symbol, asset.name].some((field) => field.toLowerCase().includes(q));

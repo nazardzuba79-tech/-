@@ -1,8 +1,9 @@
 import { setManagedListingAssets } from '../managedSnapshot';
 import { listingSimulationConfig, type ListingConfig, type PublishedListing } from '../listingConfig';
-import { ManagedListingRegistry, REFRESH_MS } from '../registry';
+import { ManagedListingRegistry, REFRESH_MS, STALE_MS } from '../registry';
 import { UnconfiguredListingStore, type ListingStore } from '../store';
-import { assertSpotListing, spotPriceSource } from '../../testMarkets/nrxSpot';
+import { assertSpotListing, assertSpotListingReady, SPOT_PAIR_UNRESOLVED_MESSAGE, spotPriceSource } from '../../testMarkets/nrxSpot';
+import { NEURIX } from '../../testMarkets/neurix';
 import { isTestAssetPairOrSymbol, testAssetForSymbol } from '../../testMarkets/testAssetConfig';
 import { collateralMarket } from '../../../private-trading/native/service';
 import { simulationFor } from '../../testMarkets/testMarketSimulation';
@@ -95,5 +96,61 @@ describe('Render registry budget', () => {
     const started = Date.now();
     await registry.ensureFresh(50);
     expect(Date.now() - started).toBeLessThan(1_000);
+  });
+});
+
+describe('bot triggers are preserved; unresolved pairs are never ordinary', () => {
+  const storeWith = (published: () => Promise<{ revision: string; listings: PublishedListing[] }>): ListingStore =>
+    ({ published: jest.fn(published), list: jest.fn(), saveDraft: jest.fn(), publish: jest.fn() } as unknown as ListingStore);
+  // The venue prices ordinary crypto only; a Worker-only listing has no venue price.
+  const venue = { getTicker: jest.fn(async (pair: string) => (pair === 'BTC/USDT' ? { lastPrice: '60000' } : null)) };
+  beforeEach(() => venue.getTicker.mockClear());
+
+  test('owner-required: a listing closed to new public orders (tradable:false) keeps its model price for resting bot triggers', async () => {
+    const at = listingAt + 3_600_000;
+    const model = String(simulationFor(listingSimulationConfig(config())).priceAt(at));
+    setManagedListingAssets([listingSimulationConfig(config({ tradable: false }))]);
+    // New public orders stay refused, but the model price still drives existing STOP/TAKE_PROFIT/OCO orders.
+    expect(() => assertSpotListing('QAX/USDT', at)).toThrow('QA Example is not available for trading.');
+    expect(await spotPriceSource(venue, () => at).getTicker('QAX/USDT')).toEqual({ lastPrice: model });
+    expect(venue.getTicker).not.toHaveBeenCalled();
+  });
+
+  test('registry resolution: unconfigured; cold start; success; failures until stale; upstream timeout; recovery', async () => {
+    expect(new ManagedListingRegistry(new UnconfiguredListingStore()).resolved()).toBe(true);
+    let now = 1_000, fail = false;
+    const registry = new ManagedListingRegistry(storeWith(async () => { if (fail) throw new Error('down'); return { revision: '1', listings: [published()] }; }), () => now);
+    expect(registry.resolved()).toBe(false); // cold start: nothing read yet
+    await registry.ensureFresh();
+    expect(registry.resolved()).toBe(true);
+    fail = true;
+    now += REFRESH_MS; await registry.ensureFresh();
+    expect(registry.resolved()).toBe(true); // one failed read inside STALE_MS keeps the recent snapshot authoritative
+    now = 1_000 + STALE_MS; await registry.ensureFresh();
+    expect(registry.resolved()).toBe(false); // stale: no successful read for STALE_MS
+    expect(registry.snapshot()).toHaveLength(1); // the last good snapshot is kept for its own listings
+    fail = false; now += REFRESH_MS; await registry.ensureFresh();
+    expect(registry.resolved()).toBe(true); // recovered
+    const slow = new ManagedListingRegistry(storeWith(() => new Promise(() => {})));
+    await slow.ensureFresh(20);
+    expect(slow.resolved()).toBe(false); // an upstream timeout is not a resolution
+  });
+
+  test('while unresolved, an unknown venue-unpriced pair is refused; venue pairs and known listings keep their gate while retired NRX is rejected', async () => {
+    const unresolved = { ensureFresh: jest.fn(async () => {}), resolved: () => false };
+    await expect(assertSpotListingReady('VHX9/USDT', venue, listingAt, unresolved)).rejects.toThrow(SPOT_PAIR_UNRESOLVED_MESSAGE);
+    await expect(assertSpotListingReady('BTC/USDT', venue, listingAt, unresolved)).resolves.toBeUndefined();
+    const failing = { getTicker: jest.fn(async () => { throw new Error('venue down'); }) };
+    await expect(assertSpotListingReady('VHX9/USDT', failing, listingAt, unresolved)).rejects.toThrow(SPOT_PAIR_UNRESOLVED_MESSAGE);
+    await expect(assertSpotListingReady(NEURIX.pair, venue, NEURIX.listingAt + 60_000, unresolved)).rejects.toThrow('NRX is no longer available');
+    setManagedListingAssets([listingSimulationConfig(config())]);
+    await expect(assertSpotListingReady('QAX/USDT', venue, listingAt + 1, unresolved)).resolves.toBeUndefined();
+    setManagedListingAssets([listingSimulationConfig(config({ tradable: false }))]);
+    await expect(assertSpotListingReady('QAX/USDT', venue, listingAt + 1, unresolved)).rejects.toThrow('QA Example is not available for trading.');
+    expect(venue.getTicker).not.toHaveBeenCalledWith('QAX/USDT');
+    // Resolved: an unknown pair is not a managed listing, so its ordinary path is unchanged.
+    const resolved = { ensureFresh: jest.fn(async () => {}), resolved: () => true };
+    await expect(assertSpotListingReady('VHX9/USDT', venue, listingAt, resolved)).resolves.toBeUndefined();
+    expect(unresolved.ensureFresh).toHaveBeenCalled();
   });
 });
