@@ -50,5 +50,7 @@ describe('NRX retirement without deleting economic history', () => {
     expect(nrxPublicResponse(new Request('https://market.local/market/nrx', { method: 'OPTIONS' }))!.status).toBe(204);
     expect(nrxPublicResponse(new Request('https://market.local/market/nrx', { method: 'POST' }))!.status).toBe(405);
     expect(nrxPublicResponse(new Request('https://market.local/market/listings'))).toBeNull();
+    expect(nrxPublicResponse(new Request('https://market.local/market/ticker/NRXCOIN-USDT'))).toBeNull();
+    expect(nrxPublicResponse(new Request('https://market.local/market/ticker/BTC-USDT?pair=NRX/BTC'))?.status).toBe(410);
   });
 });
