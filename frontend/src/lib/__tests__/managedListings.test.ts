@@ -310,7 +310,7 @@ describe('managed catalogue scheduling with the real store', () => {
     off();
   });
 
-  test.each(['VTA', 'NRX'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {
+  test.each(['VTA'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {
     const listingAt = Date.now() + 86_400_000;
     const read = jest.fn(async (_url: string) => ({ serverTime: Date.now(), assets: [managed({
       pair: `${symbol}/USDT`, symbol, managed: false, isTradable: symbol === 'NRX', listingAt: new Date(listingAt).toISOString(),
@@ -330,7 +330,7 @@ describe('managed catalogue scheduling with the real store', () => {
     offAgain();
   });
 
-  test.each(['VTA', 'NRX'])('%s unarmed preview stays silent after visibility changes', async (symbol) => {
+  test.each(['VTA'])('%s unarmed preview stays silent after visibility changes', async (symbol) => {
     const read = jest.fn(async (_url: string) => ({ serverTime: Date.now(), assets: [managed({
       pair: `${symbol}/USDT`, symbol, managed: false, isTradable: symbol === 'NRX', listingArmed: false,
     })] }));

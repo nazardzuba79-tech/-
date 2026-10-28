@@ -232,10 +232,13 @@ test('whole workerd restart keeps drafts, versions and the active configuration'
   assert.equal(created.draft.wickModel, 'NATURAL_V1');
 });
 
-test('the existing NRX edge is untouched and calls out to nothing', async () => {
+test('retired NRX edge responds 410 without generation or outbound IO', async () => {
   const before = outbound;
-  const nrx = await (await pub('/market/nrx')).json();
-  assert.equal(nrx.assets[0].pair, 'NRX/USDT');
+  for (const path of ['/market/nrx', '/market/ticker/NRX-USDT', '/market/test-assets/NRX-USDT/candles']) {
+    const response = await pub(path);
+    assert.equal(response.status, 410, path);
+    assert.deepEqual(await response.json(), { error: 'market_retired', symbol: 'NRX' });
+  }
   assert.equal(outbound, before);
 });
 
