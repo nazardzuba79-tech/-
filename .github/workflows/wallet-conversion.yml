@@ -1,5 +1,15 @@
 name: Wallet conversion safety
 on:
+  # Run exact branch-head QA even while the wallet integration PR is Draft.
+  # This workflow has no deployment jobs or production credentials.
+  push:
+    branches:
+      - 'claude/voltex-mobile-audit-7rpjni-wallet-conversion'
+    paths:
+      - 'src/services/WalletConversionService.ts'
+      - 'src/api/routes/walletActivity.ts'
+      - 'scripts/test-wallet-conversion-demo-postgres.cjs'
+      - '.github/workflows/wallet-conversion.yml'
   pull_request:
     paths:
       - 'src/services/WalletConversionService.ts'
