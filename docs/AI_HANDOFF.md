@@ -7993,3 +7993,21 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
   - P2 crypto p95: rerun the 50+2 diagnostic with the unchanged method.
   - An admin block (`User.blockedAt`) still leaves a viewer's market-only access until the session ends. That is platform-wide `requireAuth` behaviour, unchanged here.
   - Exact-head CI is pending after push.
+
+## 2026-10-28 — Claude (session 01EmV3Pt) — #613 P1 follow-up: identity budget sized from the private quota
+- **50+2 diagnostic on `386f7fc8` (run 40719580431): collection 0/8 INCOMPLETE.** No p95 verdict was reached.
+  - Cause: the fixed identity burst of 2 slowed the harness's sequential warm-up of 50 viewers from 0.3 s to 25 s. The 12 s market-data demand leases lapsed before the measured arm.
+  - At measure start, viewers 10/12/13/14/16 (Binance stream instruments) answered `QUOTE_UNAVAILABLE` on their first read, and trader 0 answered `QUOTE_STALE`. The driver stops on the first error.
+  - Reproduced locally with the same schedule against the fixture plus the synthetic stream market: same viewers, same codes. The old code took 0.33 s with 0 errors.
+- **Fix (`authority-adapter.mjs`).** The token bucket is now sized from the private quota Q announced in `RateLimit-Limit` (accepted 120..240; default 240): Q/120 batches per second, bursts of Q/4.
+  - Identity requests stay ≤ 3/4 of Q per minute; commands keep at least a quarter.
+  - This also fixes a latent P1 flaw: with a configured quota of 120, the fixed 2/s alone would have used the whole quota.
+  - Exposed in `metrics().identityBudget`.
+- Local verification on this tree: harness schedule 0.33–0.45 s warm-up with 0 errors (3/3); Stocks node unit 384/384; PG 32/32.
+  - The load test now shows 216 private requests (182 identity + 34 commands), busiest minute 212/240 (identity 180 ≤ 180), 0×429, and 3,144 Session reads for 3,082 requests.
+- **Not changed:** a bounded first-trade wait in `binance-stream-market.mjs` was tried and reverted. It lengthened the warm-up, and the owner asked not to rework working market-data modules.
+  - The existing behaviour stays: a just-demanded Binance stream symbol answers its first read `QUOTE_UNAVAILABLE`, and the next poll succeeds. Recorded as a known behaviour in `docs/STOCKS_613_PROCESS_ISOLATION.md`.
+- Also on this head: `asyncRouteAudit` fix for `POST identities` and the whole-route browser QA (`qa-stocks-route-browser.cjs`, local 33/33).
+- **Open:**
+  - The 50+2 diagnostic needs re-running on the new runtime pin.
+  - The `Admin Listings` QVTR QA is time-dependent; it is red on every branch after 28.10 13:00 UTC and is not in this PR's scope ([comment](https://github.com/nazardzuba79-tech/-/pull/613#issuecomment-6474169377)).

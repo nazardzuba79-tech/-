@@ -191,15 +191,28 @@ Now, with the quota, Host, path/method, capability, connection and timeout limit
    - a request only joins a batch that has not been sent yet, so its bearer is checked after the
      request arrived; no answer is reused by another batch or request;
    - the same bearer twice in one unsent batch is checked once and answers both;
-   - at most 2 batches per second leave (burst 2): at most 122 identity requests in any minute,
-     half of the default quota, so commands keep the other half;
+   - a token bucket sized from the private quota Q that every private response announces
+     (`RateLimit-Limit`, 120..240): Q/120 batches per second and bursts of Q/4. Identity requests
+     take at most 3/4 of Q in any minute (180 of 240, 90 of 120); commands keep at least a quarter.
+     The burst lets a quiet gateway answer sequential requests at once; under load the rate holds;
    - every request keeps its own 3 s deadline and cancellation; a missing, short, malformed or
      foreign-issuer answer fails closed (`AUTH_REQUIRED` / `AUTH_UNAVAILABLE`); `close()` aborts
      batches in flight;
    - the batch carries the gateway capability only, never a user `Authorization` header; the
      private ingress allows it only as `POST`, and the public listener refuses it like the others.
 
-Cost: under load a request waits for the next send slot, on average a quarter of a second.
+Cost: under sustained load a request waits for the next send slot, on average a quarter of a second.
+
+The first version (`386f7fc8`) used a fixed burst of 2. The 50+2 diagnostic on it
+([run 40719580431](https://github.com/nazardzuba79-tech/-/actions/runs/40719580431)) collected 0/8:
+the harness's sequential warm-up of 50 viewers then took about 25 s instead of 0.3 s, the 12 s
+market-data demand leases lapsed before the measured arm, and the first reads of the Binance
+stream instruments answered `QUOTE_UNAVAILABLE` / `QUOTE_STALE`, which the driver treats as a
+failure. Reproduced locally on the same schedule (errors on exactly the same viewers), and fixed by
+the quota-sized burst; the old code's timing is restored (warm-up 0.3-0.45 s, 0 errors in 3 runs).
+That a just-demanded Binance stream instrument answers its very first read with `QUOTE_UNAVAILABLE`
+(and the next poll succeeds) is existing market-data behaviour, also on the old code; it is left
+unchanged here.
 
 ### Evidence (local, disposable PostgreSQL 16, Node 22.23.3, compiled `dist/`)
 
@@ -212,7 +225,8 @@ served; PostgreSQL counts the `Session` scans.
 | Code | Gateway requests | 200 | 429 | Private requests | Busiest minute | Session reads | Viewer p50 / p95 |
 |---|---|---|---|---|---|---|---|
 | before (`8f0e1f63`) | 3,082 | 285 | 2,797 | 3,096 (3,088 `GET identity`) | 3,047 | 345 | 3 / 6 ms (refused) |
-| after | 3,082 | 3,082 | 0 | 158 (124 `POST identities` + 34 commands) | 154 of 240 | 3,131 | 286 / 506 ms |
+| after (burst 2, `386f7fc8`) | 3,082 | 3,082 | 0 | 158 (124 `POST identities` + 34 commands) | 154 of 240 | 3,131 | 286 / 506 ms |
+| after (quota-sized burst) | 3,082 | 3,082 | 0 | 216 (182 `POST identities` + 34 commands) | 212 of 240 (identity 180) | 3,144 | 284 / 511 ms |
 
 On the same running processes right after the load, each change is refused on the very next request:
 forged, expired, 2FA-purpose and cross-session tokens; a signed-out device; a blocked contact address

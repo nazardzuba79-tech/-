@@ -5,7 +5,9 @@ import { check, SimError } from './engine.mjs';
 
 // One identity batch (src/api/routes/stocksTestCash.ts accepts up to 32 bearers, 64 KiB).
 const IDENTITY_BATCH_MAX = 32, IDENTITY_BATCH_BYTES = 60 * 1024, IDENTITY_TIMEOUT_MS = 3000;
-const IDENTITY_BATCHES_PER_SECOND = 2, IDENTITY_BURST = 2;
+// The private ingress quota (stocksAuthorityIngress.ts: 120..240 per minute, default 240). Each private
+// response announces it in RateLimit-Limit; the identity budget follows the announced value.
+const INGRESS_QUOTA_DEFAULT = 240, INGRESS_QUOTA_MIN = 120, INGRESS_QUOTA_MAX = 240;
 
 // Credentials belong to the immutable HTTP request context, not the shared
 // per-principal quote context or a cached account handle (two tabs may differ).
@@ -15,6 +17,8 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
   check(typeof issuer === 'string' && issuer.length > 0 && typeof gatewayKey === 'string' && gatewayKey.length >= 32, 'AUTH_CONFIG_INVALID');
   const requests = new AsyncLocalStorage(), inFlight = new Set(); let closed = false, lastMetrics = null;
   const counters = { requests: 0, failures: 0, mutations: 0, identityBatches: 0, identityChecks: 0 };
+  let quota = INGRESS_QUOTA_DEFAULT;
+  const observeQuota = response => { const limit = Number(response?.headers?.get?.('ratelimit-limit')); if (Number.isInteger(limit) && limit >= INGRESS_QUOTA_MIN && limit <= INGRESS_QUOTA_MAX) quota = limit; };
   async function transport(path, { body, signal } = {}) {
     check(!closed, 'ACCOUNT_UNAVAILABLE');
     const ctx = requests.getStore(); check(ctx && /^Bearer [A-Za-z0-9._~-]{16,4096}$/.test(ctx.authorization ?? ''), 'AUTH_REQUIRED');
@@ -25,6 +29,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
     try {
       counters.requests++;
       response = await fetchImpl(base.href + '/' + path, { method: encoded === undefined ? 'GET' : 'POST', redirect: 'error', headers: { Authorization: ctx.authorization, Accept: 'application/json', 'X-Stocks-Authority-Key': gatewayKey, ...(encoded === undefined ? {} : { 'Content-Type': 'application/json' }) }, body: encoded, signal: controller.signal });
+      observeQuota(response);
       // A proxy/limiter may return text. Classify rejection before parsing its
       // body; never retry a command, including a known rate-limit rejection.
       if (!response.ok) {
@@ -52,10 +57,12 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
   // caching). A request only ever joins a batch that has not been sent yet, so its bearer
   // is checked live by the authority (POST identities: the same requireAuth and actor
   // binding as GET identity) after the request arrived; no result outlives its batch.
-  // At most IDENTITY_BATCHES_PER_SECOND batches leave per second (burst 2): half of the
-  // authority's 240/min private envelope, so commands keep the other half.
-  const waiting = [], batchAborts = new Set(); let pumpTimer = null, budget = IDENTITY_BURST, refilledAt = performance.now();
-  const refill = () => { const at = performance.now(); budget = Math.min(IDENTITY_BURST, budget + (at - refilledAt) * IDENTITY_BATCHES_PER_SECOND / 1000); refilledAt = at; };
+  // Token bucket sized from the private quota Q: Q/120 batches per second (half of Q per minute) and
+  // bursts of Q/4, so identity checks take at most 3/4 of Q in any minute (180 of 240, 90 of 120) and
+  // commands always keep a quarter. The burst lets a quiet gateway answer sequential requests at once.
+  const ratePerSecond = () => quota / 120, burst = () => quota / 4;
+  const waiting = [], batchAborts = new Set(); let pumpTimer = null, budget = burst(), refilledAt = performance.now();
+  const refill = () => { const at = performance.now(); budget = Math.min(burst(), budget + (at - refilledAt) * ratePerSecond() / 1000); refilledAt = at; };
   const settle = (item, error, value) => {
     if (item.done) return; item.done = true; clearTimeout(item.deadline); item.signal?.removeEventListener('abort', item.abort);
     const at = waiting.indexOf(item); if (at >= 0) waiting.splice(at, 1);
@@ -64,7 +71,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
   const schedule = () => {
     if (pumpTimer || !waiting.length || closed) return;
     refill();
-    pumpTimer = budget >= 1 ? { immediate: setImmediate(pump) } : { timeout: setTimeout(pump, Math.ceil((1 - budget) * 1000 / IDENTITY_BATCHES_PER_SECOND)) };
+    pumpTimer = budget >= 1 ? { immediate: setImmediate(pump) } : { timeout: setTimeout(pump, Math.ceil((1 - budget) * 1000 / ratePerSecond())) };
   };
   function pump() {
     pumpTimer = null; refill();
@@ -91,6 +98,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
     try {
       counters.requests++; counters.identityBatches++; counters.identityChecks += tokens.length;
       response = await fetchImpl(base.href + '/identities', { method: 'POST', redirect: 'error', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Stocks-Authority-Key': gatewayKey }, body: JSON.stringify({ tokens }), signal: controller.signal });
+      observeQuota(response);
       if (!response.ok) {
         counters.failures++;
         if ([401,403].includes(response.status)) return failAll(new SimError('AUTH_REQUIRED'));
@@ -152,7 +160,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
       const result = await execute(owner, 'ensure'); check(result.id === id, 'AUTH_REQUIRED');
       return { id, read: () => execute(owner, 'read'), execute: (type, input, options) => execute(owner, type, input, options) };
     },
-    metrics() { return { workerAlive: Number(!closed), authority: 'existing-demo-balance', transport: { ...counters }, authorityMetrics: lastMetrics }; },
+    metrics() { return { workerAlive: Number(!closed), authority: 'existing-demo-balance', transport: { ...counters }, identityBudget: { quota, burst: burst(), perSecond: ratePerSecond() }, authorityMetrics: lastMetrics }; },
     async close() {
       closed = true; if (pumpTimer) { clearImmediate(pumpTimer.immediate); clearTimeout(pumpTimer.timeout); pumpTimer = null; }
       for (const item of [...waiting]) settle(item, new SimError('ACCOUNT_UNAVAILABLE'));

@@ -108,7 +108,7 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
     gatewayRequests, viewerStatus: statuses(results.viewer), traderStatus: statuses(results.trader),
     viewerP50: Math.round(quantile(results.viewer.map(r => r[1]), 0.5)), viewerP95: Math.round(quantile(results.viewer.map(r => r[1]), 0.95)),
     authorityRequests: load.length, authorityKinds: kinds, authorityStatus: statuses(load.map(([, , , status]) => [status])),
-    busiestMinute: busiestMinute(load), sessionReads: reads,
+    busiestMinute: busiestMinute(load), busiestIdentityMinute: busiestMinute(load.filter(([, method, url]) => method === 'POST' && url.endsWith('/identities'))), sessionReads: reads,
   };
   t.diagnostic('LOAD ' + JSON.stringify(summary));
   assert.ok(results.viewer.length >= VIEWERS * 55, 'every viewer kept polling');
@@ -116,7 +116,9 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
   assert.deepEqual(summary.traderStatus, { 200: results.trader.length });
   assert.equal(summary.authorityStatus[429], undefined, 'the private quota never refused the gateway');
   assert.equal(kinds['GET identity'], undefined, 'no per-request identity hop');
-  assert.ok(summary.busiestMinute <= QUOTA * 0.75, `busiest minute ${summary.busiestMinute} of ${QUOTA}`);
+  // The gateway's identity budget is 3/4 of the quota per minute (authority-adapter.mjs); commands keep the rest.
+  assert.ok(summary.busiestIdentityMinute <= QUOTA * 0.75, `identity batches in the busiest minute ${summary.busiestIdentityMinute} of ${QUOTA}`);
+  assert.ok(summary.busiestMinute <= QUOTA, `busiest minute ${summary.busiestMinute} of ${QUOTA}`);
   // Multiplexing, not caching: at least one live Session read per gateway request.
   assert.ok(reads >= gatewayRequests, `session reads ${reads} for ${gatewayRequests} requests`);
 
