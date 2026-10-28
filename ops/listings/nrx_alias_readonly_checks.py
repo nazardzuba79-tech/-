@@ -50,7 +50,7 @@ def backup():
     assert (folder/'complete.json').is_file() and (folder/'manifest.json').is_file(), 'Backup completion marker or manifest missing'
     return {'job':status,'snapshot':folder.name,'encryptedFiles':files,'completionMarkerPresent':True,'manifestPresent':True,'decrypted':False,'restorePerformed':False}
 
-def public_checks():
+def public_checks(only=None):
     result=[]
     def positive(v):
         try: return math.isfinite(float(v)) and float(v)>0
@@ -60,13 +60,16 @@ def public_checks():
       ('ETH/USDT','/market/external/tickers/ETH-USDT','ticker'),
       ('CFD','/cfd/tickers','cfd'),
       ('Futures candles','/market/futures/candles/BTC-USDT?interval=15m&limit=3','candles')]:
+        if only is not None and name != only: continue
         try:
             with urllib.request.urlopen('http://127.0.0.1:13020/api/v1'+path,timeout=12) as r: body=json.load(r); status=r.status
             if kind=='ticker': ok=positive(body.get('ticker',{}).get('lastPrice'))
             elif kind=='cfd': ok=any(positive(row.get('price',row.get('lastPrice'))) for row in body.get('tickers',[]))
             else:
-                rows=body if isinstance(body,list) else body.get('candles',[])
-                ok=bool(rows) and all(positive(row.get('close')) for row in rows)
+                # Existing FuturesChartCandles returns the validated Bybit V5 envelope.
+                # Keep the real contract: category/symbol/retCode and OHLC tuple positions.
+                rows=body.get('result',{}).get('list',[])
+                ok=body.get('retCode')==0 and body.get('result',{}).get('category')=='linear' and body.get('result',{}).get('symbol')=='BTCUSDT' and 0<len(rows)<=3 and all(isinstance(row,list) and len(row)>=6 and positive(row[0]) and all(positive(v) for v in row[1:5]) for row in rows)
             result.append({'check':name,'http':status,'result':'PASS' if ok else 'FAIL_SHAPE'})
         except Exception as error: result.append({'check':name,'result':'BLOCKED','cause':type(error).__name__})
     return result
@@ -117,7 +120,7 @@ def main():
         assert report['fatalLogLines']==0,'Fatal runtime log'
     report['publicGetChecks']=public_checks()
     private_write(SNAPSHOT.with_name('nrx-alias-readonly-20261028.'+a.phase+'.json'),report)
-    print(json.dumps(report,indent=2))
+    print(json.dumps(report,separators=(',',':')))
 
 if __name__=='__main__':
     try:main()
