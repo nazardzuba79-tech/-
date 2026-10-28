@@ -131,7 +131,7 @@ async function main() {
     const sessions = new Map();
     const token = async who => {
       if (!sessions.has(who)) { const id = randomUUID(); await prisma.session.create({ data: { id, userId: who, lastSeenAt: new Date() } }); sessions.set(who, id); }
-      return jwt.sign({ sub: who, sid: sessions.get(who) }, process.env.JWT_SECRET);
+      return jwt.sign({ sub: who, sid: sessions.get(who) }, process.env.JWT_SECRET, { expiresIn: '12h' });
     };
     const api = async (method, route, who, body, { drop = false, base = '/api/v1' } = {}) => {
       const headers = { 'Content-Type': 'application/json', ...(drop ? { 'X-Fixture-Drop-Response': 'yes' } : {}) };
@@ -438,6 +438,35 @@ async function main() {
         }
       } finally { await holder.end(); now = Date.now(); }
       await conserved();
+    });
+    await check('session revoked during a queued confirmation: HTTP funds path rejects before commit', async () => {
+      const holder = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_wallet_demo_conversion_fixture' });
+      await holder.connect();
+      let locked = false;
+      try {
+        const q = await api('POST', '/wallet/conversion/quote', 'qa-lockwait', { fromAsset: 'USDT', toAsset: 'BTC', amount: '10' });
+        assert.equal(q.status, 200);
+        const before = await rowsOf('qa-lockwait'), liqBefore = await rowsOf(LIQ);
+        await holder.query(`SELECT pg_advisory_lock(hashtextextended('demo-spot-book', 0))`); locked = true;
+        const pending = api('POST', '/wallet/conversion/confirm', 'qa-lockwait', { quoteId: q.body.quoteId });
+        let waiting = 0;
+        for (let i = 0; i < 400; i++) {
+          waiting = (await sql.query(`SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`)).rows[0].n;
+          if (waiting > 0) break;
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        assert(waiting > 0, 'confirm must be blocked on the shared book lock before revocation');
+        await prisma.session.update({ where: { id: sessions.get('qa-lockwait') }, data: { revokedAt: new Date() } });
+        await holder.query(`SELECT pg_advisory_unlock(hashtextextended('demo-spot-book', 0))`); locked = false;
+        const response = await pending;
+        assert.equal(response.status, 401, JSON.stringify(response.body));
+        assert.equal(response.body.code, 'SESSION_REVOKED');
+        assert.equal(await rowsOf('qa-lockwait'), before); assert.equal(await rowsOf(LIQ), liqBefore);
+        assert.equal(await prisma.auditLog.count({ where: { id: `conversion:${q.body.quoteId}` } }), 0);
+      } finally {
+        if (locked) await holder.query(`SELECT pg_advisory_unlock(hashtextextended('demo-spot-book', 0))`);
+        await holder.end();
+      }
     });
     await check('third-party balances unchanged; no demo account holds ordinary Balance; every demo unit accounted for', async () => {
       assert.equal(await rowsOf('qa-third'), thirdBefore);
