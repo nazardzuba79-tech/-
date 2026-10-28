@@ -6,7 +6,7 @@ import { resolve } from 'path';
 import { requireAuth, verifiedBearerAtUse, AuthedRequest } from '../middleware/auth';
 
 /** One identity batch: the gateway's own bound (authority-adapter.mjs) and the bearer form it sends. */
-export const IDENTITY_BATCH_MAX = 32, IDENTITY_BATCH_BYTES = 64 * 1024;
+export const IDENTITY_BATCH_MAX = 64, IDENTITY_BATCH_BYTES = 64 * 1024;
 const BEARER = /^[A-Za-z0-9._~-]{16,4096}$/;
 interface Config { catalogueEnabled?: boolean; enabled?: boolean; orderExecutionEnabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
 interface Actor { issuer:string;subject:string;userId:string;sessionId:string;expiresAt:number }

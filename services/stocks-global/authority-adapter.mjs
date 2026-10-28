@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { accountId } from './accounts.mjs';
 import { check, SimError } from './engine.mjs';
 
-// One identity batch (src/api/routes/stocksTestCash.ts accepts up to 32 bearers, 64 KiB).
-const IDENTITY_BATCH_MAX = 32, IDENTITY_BATCH_BYTES = 60 * 1024, IDENTITY_TIMEOUT_MS = 3000;
+// One identity batch (src/api/routes/stocksTestCash.ts accepts up to 64 bearers, 64 KiB): at Q/160
+// batches per second that carries 96 requests per second at the default quota.
+const IDENTITY_BATCH_MAX = 64, IDENTITY_BATCH_BYTES = 60 * 1024, IDENTITY_TIMEOUT_MS = 3000;
 // The private ingress quota (stocksAuthorityIngress.ts: 120..240 per minute, default 240). Each private
 // response announces it in RateLimit-Limit; the identity budget follows the announced value.
 const INGRESS_QUOTA_DEFAULT = 240, INGRESS_QUOTA_MIN = 120, INGRESS_QUOTA_MAX = 240;
@@ -57,16 +58,25 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
   // caching). A request only ever joins a batch that has not been sent yet, so its bearer
   // is checked live by the authority (POST identities: the same requireAuth and actor
   // binding as GET identity) after the request arrived; no result outlives its batch.
-  // Token bucket sized from the private quota Q: Q/120 batches per second (half of Q per minute) and
-  // bursts of Q/4, so identity checks take at most 3/4 of Q in any minute (180 of 240, 90 of 120) and
-  // commands always keep a quarter. The burst lets a quiet gateway answer sequential requests at once.
-  const ratePerSecond = () => quota / 120, burst = () => quota / 4;
-  const waiting = [], batchAborts = new Set(); let pumpTimer = null, budget = burst(), refilledAt = performance.now();
+  // Token bucket sized from the private quota Q: Q/160 batches per second (3/8 of Q per minute) and
+  // bursts of 3Q/8, so identity checks take at most 3/4 of Q in any minute (180 of 240, 90 of 120) and
+  // commands always keep a quarter. The burst lets a quiet gateway answer a run of sequential requests
+  // (a page load, a restart) at once; under sustained load the rate holds.
+  // A batch's answers are handed back with the spacing in which their requests arrived (each request
+  // waits as long as the oldest one in its batch), so the work behind them keeps the arrival pattern
+  // instead of starting together: a released burst would queue the crypto requests on the same CPUs.
+  const ratePerSecond = () => quota / 160, burst = () => quota * 3 / 8;
+  const waiting = [], batchAborts = new Set(), releasing = new Set(); let pumpTimer = null, budget = burst(), refilledAt = performance.now();
   const refill = () => { const at = performance.now(); budget = Math.min(burst(), budget + (at - refilledAt) * ratePerSecond() / 1000); refilledAt = at; };
   const settle = (item, error, value) => {
-    if (item.done) return; item.done = true; clearTimeout(item.deadline); item.signal?.removeEventListener('abort', item.abort);
+    if (item.done) return; item.done = true; clearTimeout(item.deadline); clearTimeout(item.release); releasing.delete(item); item.signal?.removeEventListener('abort', item.abort);
     const at = waiting.indexOf(item); if (at >= 0) waiting.splice(at, 1);
     if (error) item.reject(error); else item.resolve(value);
+  };
+  const release = (item, value, delay) => {
+    if (item.done) return;
+    if (delay < 1) return settle(item, null, value);
+    releasing.add(item); item.release = setTimeout(() => settle(item, null, value), delay);
   };
   const schedule = () => {
     if (pumpTimer || !waiting.length || closed) return;
@@ -91,7 +101,8 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
     schedule();
   }
   async function sendIdentities(batch) {
-    const tokens = [...batch.keys()], failAll = error => { for (const items of batch.values()) for (const item of items) settle(item, error); };
+    const tokens = [...batch.keys()], failAll = error => { for (const items of batch.values()) for (const item of items) if (!releasing.has(item)) settle(item, error); };
+    const oldest = Math.min(...[...batch.values()].flat().map(item => item.arrivedAt));
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), IDENTITY_TIMEOUT_MS);
     batchAborts.add(controller);
     let response;
@@ -116,7 +127,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
       tokens.forEach((token, i) => {
         const result = results[i];
         for (const item of batch.get(token)) {
-          if (result && result.issuer === issuer && typeof result.subject === 'string' && result.subject.length > 0) settle(item, null, { issuer, subject: result.subject });
+          if (result && result.issuer === issuer && typeof result.subject === 'string' && result.subject.length > 0) release(item, { issuer, subject: result.subject }, item.arrivedAt - oldest);
           else settle(item, new SimError(result?.error === 'AUTH_UNAVAILABLE' ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED'));
         }
       });
@@ -125,7 +136,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
     } finally { clearTimeout(timer); batchAborts.delete(controller); failAll(new SimError('AUTH_UNAVAILABLE')); if (controller.signal.aborted || response && !response.ok) { try { await response?.body?.cancel(); } catch {} } }
   }
   const identify = (authorization, signal) => new Promise((resolve, reject) => {
-    const item = { authorization, resolve, reject, signal, done: false };
+    const item = { authorization, resolve, reject, signal, done: false, arrivedAt: performance.now() };
     // The request's own deadline covers the wait for a send slot and the batch itself.
     item.deadline = setTimeout(() => settle(item, new SimError('AUTH_UNAVAILABLE')), IDENTITY_TIMEOUT_MS);
     item.abort = () => settle(item, new SimError('AUTH_UNAVAILABLE'));
@@ -163,7 +174,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
     metrics() { return { workerAlive: Number(!closed), authority: 'existing-demo-balance', transport: { ...counters }, identityBudget: { quota, burst: burst(), perSecond: ratePerSecond() }, authorityMetrics: lastMetrics }; },
     async close() {
       closed = true; if (pumpTimer) { clearImmediate(pumpTimer.immediate); clearTimeout(pumpTimer.timeout); pumpTimer = null; }
-      for (const item of [...waiting]) settle(item, new SimError('ACCOUNT_UNAVAILABLE'));
+      for (const item of [...waiting, ...releasing]) settle(item, new SimError('ACCOUNT_UNAVAILABLE'));
       // An identity answer is useless after close; commands keep their own outcome semantics.
       for (const controller of batchAborts) controller.abort();
       await Promise.allSettled([...inFlight]);

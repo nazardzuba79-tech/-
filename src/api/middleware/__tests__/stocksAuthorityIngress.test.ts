@@ -190,9 +190,9 @@ test('opt-in configuration rejects unsafe ports/keys and unreviewed quotas', () 
   expect(() => createStocksAuthorityIngress({ port: 3002, gatewayKey: 'short' })).toThrow();
 });
 
-test('one private request carries up to 32 live checks: the quota counts requests, every bearer reads its own session', async () => {
+test('one private request carries up to 64 live checks: the quota counts requests, every bearer reads its own session', async () => {
   const f = await fixture();
-  const subjects = Array.from({ length: 32 }, (_, n) => n < 2 ? principals[n].subject : 'viewer-' + n);
+  const subjects = Array.from({ length: 64 }, (_, n) => n < 2 ? principals[n].subject : 'viewer-' + n);
   const batch = (list: string[]) => f.call(identities, { body: { tokens: list.map(subject => f.token(subject)) }, headers: { authorization: '' } });
   const first = await batch(subjects);
   expect(first.status).toBe(200);
@@ -203,8 +203,8 @@ test('one private request carries up to 32 live checks: the quota counts request
   f.revoked.add('session-alice-fixture');
   const second = await batch(subjects.slice(0, 3));
   expect(JSON.parse(second.text).results).toEqual([{ error: 'AUTH_REQUIRED' }, { issuer, subject: 'bob-fixture' }, { issuer, subject: 'viewer-2' }]);
-  expect(f.sessionReads).toHaveLength(35);
-  const tooMany = await batch(Array.from({ length: 33 }, (_, n) => 'viewer-' + n));
-  expect(tooMany.status).toBe(422); expect(f.sessionReads).toHaveLength(35);
+  expect(f.sessionReads).toHaveLength(67);
+  const tooMany = await batch(Array.from({ length: 65 }, (_, n) => 'viewer-' + n));
+  expect(tooMany.status).toBe(422); expect(f.sessionReads).toHaveLength(67);
   expect(f.authority.execute).not.toHaveBeenCalled();
 });

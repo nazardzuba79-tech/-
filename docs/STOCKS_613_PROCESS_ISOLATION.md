@@ -184,7 +184,7 @@ Now, with the quota, Host, path/method, capability, connection and timeout limit
    command only repeated that. `server.mjs` keeps it for the local SQLite worker, which cannot.
    `/portfolio` keeps its post-read re-check; the request-start identity check stays for everyone.
 2. **Identity checks travel together (multiplexing, not caching).** `authority-adapter.mjs` puts
-   the bearers of concurrent gateway requests into one `POST identities` (at most 32 bearers,
+   the bearers of concurrent gateway requests into one `POST identities` (at most 64 bearers,
    60 KiB). The authority (`stocksTestCash.ts`) runs the very same `requireAuth` live session read
    and `actor` binding as `GET identity` for each bearer, one after another, and answers each by
    position. Rules:
@@ -192,24 +192,35 @@ Now, with the quota, Host, path/method, capability, connection and timeout limit
      request arrived; no answer is reused by another batch or request;
    - the same bearer twice in one unsent batch is checked once and answers both;
    - a token bucket sized from the private quota Q that every private response announces
-     (`RateLimit-Limit`, 120..240): Q/120 batches per second and bursts of Q/4. Identity requests
+     (`RateLimit-Limit`, 120..240): Q/160 batches per second and bursts of 3Q/8. Identity requests
      take at most 3/4 of Q in any minute (180 of 240, 90 of 120); commands keep at least a quarter.
-     The burst lets a quiet gateway answer sequential requests at once; under load the rate holds;
+     The burst lets a quiet gateway answer a run of sequential requests at once; under load the rate
+     holds (64 bearers per batch: 96 requests per second at the default quota);
+   - answers are handed back with the spacing in which their requests arrived: each request of a
+     batch waits as long as the oldest one, so the work behind the answers keeps the arrival pattern
+     instead of starting together (a released burst queues the crypto requests on the same CPUs);
    - every request keeps its own 3 s deadline and cancellation; a missing, short, malformed or
      foreign-issuer answer fails closed (`AUTH_REQUIRED` / `AUTH_UNAVAILABLE`); `close()` aborts
      batches in flight;
    - the batch carries the gateway capability only, never a user `Authorization` header; the
      private ingress allows it only as `POST`, and the public listener refuses it like the others.
 
-Cost: under sustained load a request waits for the next send slot, on average a quarter of a second.
+Cost: under sustained load every request waits about one batch interval (≈0.7 s at the default
+quota); a quiet gateway answers at once.
 
 The first version (`386f7fc8`) used a fixed burst of 2. The 50+2 diagnostic on it
 ([run 40719580431](https://github.com/nazardzuba79-tech/-/actions/runs/40719580431)) collected 0/8:
 the harness's sequential warm-up of 50 viewers then took about 25 s instead of 0.3 s, the 12 s
 market-data demand leases lapsed before the measured arm, and the first reads of the Binance
 stream instruments answered `QUOTE_UNAVAILABLE` / `QUOTE_STALE`, which the driver treats as a
-failure. Reproduced locally on the same schedule (errors on exactly the same viewers), and fixed by
-the quota-sized burst; the old code's timing is restored (warm-up 0.3-0.45 s, 0 errors in 3 runs).
+failure. Reproduced locally on the same schedule (errors on exactly the same viewers). The next
+version (`78e78d64`, burst Q/4 at Q/120 per second, answers released together) ran in
+[run 40726294118](https://github.com/nazardzuba79-tech/-/actions/runs/40726294118): the single-process
+pin collected 4/4 but crypto p95 rose +187 % (the slowest crypto requests sat exactly at the batch
+releases, every 500 ms), and the separated pin still stopped on the same first reads because its
+warm-up needs 86 identity checks. Hence the current shape: a 3Q/8 burst covers that warm-up, and the
+arrival-spaced release keeps the load as even as the requests themselves (local: warm-up 0.8-1 s,
+0 errors, completions spread evenly over each second, viewer p50/p95 0.70/0.71 s).
 That a just-demanded Binance stream instrument answers its very first read with `QUOTE_UNAVAILABLE`
 (and the next poll succeeds) is existing market-data behaviour, also on the old code; it is left
 unchanged here.
@@ -226,7 +237,7 @@ served; PostgreSQL counts the `Session` scans.
 |---|---|---|---|---|---|---|---|
 | before (`8f0e1f63`) | 3,082 | 285 | 2,797 | 3,096 (3,088 `GET identity`) | 3,047 | 345 | 3 / 6 ms (refused) |
 | after (burst 2, `386f7fc8`) | 3,082 | 3,082 | 0 | 158 (124 `POST identities` + 34 commands) | 154 of 240 | 3,131 | 286 / 506 ms |
-| after (quota-sized burst) | 3,082 | 3,082 | 0 | 216 (182 `POST identities` + 34 commands) | 212 of 240 (identity 180) | 3,144 | 284 / 511 ms |
+| after (3Q/8 burst, Q/160 per second, arrival-spaced release) | 3,082 | 3,082 | 0 | 216 (182 `POST identities` + 34 commands) | 212 of 240 (identity 180) | 3,147 | 693 / 708 ms |
 
 On the same running processes right after the load, each change is refused on the very next request:
 forged, expired, 2FA-purpose and cross-session tokens; a signed-out device; a blocked contact address

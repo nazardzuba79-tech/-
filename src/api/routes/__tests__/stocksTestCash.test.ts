@@ -239,15 +239,15 @@ test('identity batch needs the gateway capability and a well-formed list before 
  for(const capability of [null,'',key.slice(1),key+'x','forged-capability-of-the-same-length-000'])
   expect([capability,(await identities(f.app,[good],capability)).status]).toEqual([capability,403]);
  const invalid:unknown[]=[undefined,[],'not-a-list',[good,good],[good,42],['short'],['contains space and more than sixteen'],['x'.repeat(4097)],
-  Array.from({length:33},(_,n)=>f.token('viewer-'+n))];
+  Array.from({length:65},(_,n)=>f.token('viewer-'+n))];
  for(const tokens of invalid){const res=await identities(f.app,tokens);expect(res.status).toBe(422);expect(res.body.error).toBe('IDENTITY_BATCH_INVALID');}
  expect((await request(f.app).post('/api/v1/stocks-test-cash/identities').set('x-stocks-authority-key',key).send({tokens:[good],extra:true})).status).toBe(422);
  expect((await request(f.app).get('/api/v1/stocks-test-cash/identities').set('x-stocks-authority-key',key)).status).toBe(404);
  expect(f.prisma.$queryRaw).not.toHaveBeenCalled();expect(f.prisma.user.findUnique).not.toHaveBeenCalled();
- const max=Array.from({length:32},(_,n)=>f.token('viewer-'+n)),res=await identities(f.app,max);
+ const max=Array.from({length:64},(_,n)=>f.token('viewer-'+n)),res=await identities(f.app,max);
  expect(res.status).toBe(200);expect(res.headers['cache-control']).toBe('no-store');
  expect(res.body.results).toEqual(max.map((_,n)=>({issuer,subject:'viewer-'+n})));
- expect(f.prisma.$queryRaw).toHaveBeenCalledTimes(32);expect(f.authority.execute).not.toHaveBeenCalled();
+ expect(f.prisma.$queryRaw).toHaveBeenCalledTimes(64);expect(f.authority.execute).not.toHaveBeenCalled();
 });
 test('identity batch answers each bearer by position with its own live session, block and binding decision',async()=>{
  const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true);

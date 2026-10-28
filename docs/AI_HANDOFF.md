@@ -8011,3 +8011,18 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - **Open:**
   - The 50+2 diagnostic needs re-running on the new runtime pin.
   - The `Admin Listings` QVTR QA is time-dependent; it is red on every branch after 28.10 13:00 UTC and is not in this PR's scope ([comment](https://github.com/nazardzuba79-tech/-/pull/613#issuecomment-6474169377)).
+
+## 2026-10-28 — Claude (session 01EmV3Pt) — #613 P1: even release of identity answers (50+2 run 40726294118)
+- Run 40726294118 on `78e78d64` (burst Q/4, rate Q/120 per second, answers released together):
+  - the single-process pin collected 4/4, but crypto p95 rose +187 % pooled. The slowest crypto requests coincide with the batch releases every 500 ms;
+  - the separated pin still collected 0/4. Its warm-up makes 86 identity checks, more than the 60 burst, so the same viewers 10/12/13/14/16 got `QUOTE_UNAVAILABLE` and trader 0 got `QUOTE_STALE`.
+- Change (`authority-adapter.mjs`, `stocksTestCash.ts`):
+  - bucket of 3Q/8 burst at Q/160 per second, so identity stays ≤ 3/4 Q per minute as before;
+  - up to 64 bearers per batch (was 32);
+  - every answer is released with the spacing in which its request arrived, so each request waits as long as the oldest in its batch and nothing is released in a burst. Unit test added.
+- Local (fixture + synthetic stream market, the harness schedule including the 86-check warm-up):
+  - warm-up 0.8–1.0 s, 0 errors;
+  - completions spread evenly over each second, against two spikes per second before;
+  - viewer latency p50/p95 0.70/0.71 s.
+- Tests: Stocks unit 385/385; PG 32/32 (load: 216 private requests, busiest minute 212/240, identity 180, 0×429, 3,147 Session reads); harness self-tests 52/52; Jest Stocks/ingress/route audit 35/35.
+- Open: re-run 50+2 on the new pin. The owner-visible cost is that a viewer's poll is answered about 0.7 s later under 50-viewer load; a quiet gateway answers at once.
