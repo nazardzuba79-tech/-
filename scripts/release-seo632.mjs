@@ -8,7 +8,7 @@ const cfg=JSON.parse(fs.readFileSync('ops/pages/seo632-release.json','utf8'));
 const out='output/seo632-release';
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim();
 const digest=b=>crypto.createHash('sha256').update(b).digest('hex');
-const commit=git('rev-parse','HEAD');
+const commit=process.argv[2]==='smoke' && process.env.SEO632_EXPECTED_SOURCE ? process.env.SEO632_EXPECTED_SOURCE : git('rev-parse','HEAD');
 const apiPath=`/accounts/${cfg.account}/pages/projects/${cfg.project}`;
 fs.mkdirSync(out,{recursive:true});
 const save=(name,body)=>fs.writeFileSync(path.join(out,name),JSON.stringify(body,null,2));
@@ -60,6 +60,11 @@ async function get(relative) {
   return {status:r.status,type:r.headers.get('content-type')||'',xRobots:r.headers.get('x-robots-tag'),body:await r.text()};
 }
 async function smoke() {
+  assert(/^[a-f0-9]{40}$/.test(commit));
+  assert.equal(git('rev-parse',`${commit}^`),cfg.base);
+  assert.equal(git('rev-parse','HEAD:frontend'),cfg.frontendTree);
+  assert.equal(git('rev-parse',`${commit}:frontend`),cfg.frontendTree);
+  assert.equal(git('rev-parse','HEAD:src/shared'),git('rev-parse',`${commit}:src/shared`));
   const robots=await get('/robots.txt'),sitemap=await get('/sitemap.xml');
   assert.equal(robots.status,200);assert(robots.type.startsWith('text/plain'));assert.equal(robots.body,fs.readFileSync('frontend/dist/robots.txt','utf8'));
   assert.equal(sitemap.status,200);assert(/xml/.test(sitemap.type));assert.equal(sitemap.body,fs.readFileSync('frontend/dist/sitemap.xml','utf8'));
@@ -74,9 +79,13 @@ async function smoke() {
   const home=await get('/');const entry=/src="([^\"]+\/index-[^\"]+\.js)"/.exec(home.body)?.[1];assert(entry,'Production entry missing');
   const local=fs.readFileSync(path.join('frontend/dist',entry.replace(/^\//,'')));const remote=await fetch(`https://voltextech.net${entry}`,{signal:AbortSignal.timeout(30000)});assert.equal(remote.status,200);
   assert.equal(digest(Buffer.from(await remote.arrayBuffer())),digest(local),'Published entry does not match tested artifact');
-  const marker=await get('/voltex-seo-release.json');assert.equal(marker.status,200);assert.equal(JSON.parse(marker.body).source,commit);
+  // Native Pages Git builds do not create the Direct Upload-only marker.
+  // Their exact source is checked through the authenticated provider API;
+  // the actual published JS is still compared byte-for-byte here.
+  if(process.env.SEO632_GIT_BUILD!=='true') {const marker=await get('/voltex-seo-release.json');assert.equal(marker.status,200);assert.equal(JSON.parse(marker.body).source,commit);}
   save('live-smoke.json',{checkedAt:new Date().toISOString(),commit,robots:{status:robots.status,type:robots.type,sha256:digest(robots.body)},
-    sitemap:{status:sitemap.status,type:sitemap.type,sha256:digest(sitemap.body),urls:urls.length},pages,entry:{path:entry,sha256:digest(local)},financialRequests:0});
+    sitemap:{status:sitemap.status,type:sitemap.type,sha256:digest(sitemap.body),urls:urls.length},pages,entry:{path:entry,sha256:digest(local)},sourceChannel:process.env.SEO632_GIT_BUILD==='true'?'Pages Git canonical API plus published JS hash':'Direct Upload marker plus published JS hash',financialRequests:0});
+  console.log(JSON.stringify({result:'LIVE_SMOKE_PASS',source:commit,robotsType:robots.type,sitemapType:sitemap.type,urls:urls.length,checkedPages:pages.length,entry,entrySHA256:digest(local)}));
 }
 
 async function release() {

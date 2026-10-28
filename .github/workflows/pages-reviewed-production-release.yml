@@ -1,7 +1,5 @@
 name: Deploy reviewed VOLTEX frontend to Cloudflare Pages
-
-# One owner-authorized artifact on the existing isolated operator branch.
-# Main's workflow is untouched; restore this branch copy after completion.
+# Temporary read-only final verification. No deployment credentials or write operations.
 on:
   push:
     branches: [release/eclv-628-frontend-20261027]
@@ -11,17 +9,16 @@ concurrency:
   group: voltex-pages-production-release
   cancel-in-progress: false
 jobs:
-  deploy-frontend:
-    if: contains(github.event.head_commit.message, '[release-seo632]')
+  verify-live-seo:
+    if: contains(github.event.head_commit.message, '[verify-seo632]')
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    environment: pages-production
+    timeout-minutes: 15
     env:
       VITE_API_URL: https://api.voltextech.net/api/v1
       VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
       VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
-      QA_PLAYWRIGHT_MODULE: /tmp/seo-qa/node_modules/playwright
-      QA_WRANGLER_BIN: /tmp/seo-qa/node_modules/.bin/wrangler
+      SEO632_EXPECTED_SOURCE: 6118e18e49edd226a6b250154d3893773b4522e2
+      SEO632_GIT_BUILD: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,47 +28,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Exact source, allowed diff, preserved runtime and unsafe-state guards
-        run: |
-          node scripts/release-seo632.mjs verify
-          node scripts/release-seo632.mjs self-test
-      - name: Locked dependencies without install scripts
+      - name: Reproduce already-tested frontend tree for exact artifact comparison
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
-      - name: Build exact production-configured static artifact
-        run: npm run build --prefix frontend
-      - name: SEO and preserved listing/referral/Admin presentation tests
-        run: |
-          mkdir -p output
-          node node_modules/jest/bin/jest.js --runInBand --json --outputFile=output/seo-unit.json --runTestsByPath \
-            frontend/src/lib/__tests__/seoIndexing.test.ts frontend/src/lib/__tests__/seoBuildOutput.test.ts \
-            frontend/src/lib/__tests__/academyHelpContent.test.ts frontend/src/lib/__tests__/academyHelpPages.test.ts \
-            frontend/src/lib/__tests__/aboutPage.test.ts frontend/src/lib/__tests__/nrxRetirement.test.ts \
-            frontend/src/lib/__tests__/managedListings.test.ts frontend/src/lib/__tests__/listingMovementControls.test.ts \
-            frontend/src/lib/__tests__/listingTimeSafety.test.ts frontend/src/lib/__tests__/referralLinks.test.ts \
-            frontend/src/lib/__tests__/adminListingsRussianCopy.test.ts
-          node -e "const r=require('./output/seo-unit.json');if(!r.success||r.numPendingTests||r.numTodoTests||r.numPassedTests!==220)throw Error('Incomplete exact-head checks')"
-      - name: Disposable Pages emulator and Chromium using chart QA install scheme
-        run: |
-          npm install --prefix /tmp/seo-qa --no-save --no-audit --no-fund wrangler@4.141.0 playwright@1.63.0
-          node /tmp/seo-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Raw HTML, sitemap, robots, desktop1440/mobile390 and isolated preserved features
-        run: |
-          node scripts/qa-seo-indexing.cjs
-          node scripts/qa-seo-release-compat.cjs
-      - name: Lease f880 production, publish artifact once, verify live or rollback
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
-        run: node scripts/release-seo632.mjs release
+          npm run build --prefix frontend
+      - name: Actual robots, XML, all42 public canonical heads, private noindex and entry hash
+        run: node scripts/release-seo632.mjs smoke
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: seo632-reviewed-production-evidence
-          path: |
-            output/seo-unit.json
-            output/seo-indexing
-            output/seo-release-compat
-            output/seo632-release
+          name: seo632-live-http-evidence
+          path: output/seo632-release
           retention-days: 7
           if-no-files-found: warn
