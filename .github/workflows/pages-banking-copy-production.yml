@@ -43,8 +43,7 @@ jobs:
       - name: Banking customer text and original finance/user safeguards
         run: |
           npx jest frontend/src/lib/__tests__/customerFacingErrors.test.ts \
-            frontend/src/lib/__tests__/banking.test.ts \
-            frontend/src/lib/__tests__/walletConversion.test.ts --runInBand --passWithNoTests=false
+            src/banking/__tests__/math.test.ts --runInBand --passWithNoTests=false
       - name: Install pinned Pages publish tool
         run: |
           npm install --prefix /tmp/banking144-release --no-save --ignore-scripts --no-audit --no-fund wrangler@4.141.0
