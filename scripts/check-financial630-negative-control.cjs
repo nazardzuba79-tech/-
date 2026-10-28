@@ -22,10 +22,10 @@ try {
   fs.writeFileSync(path.join(out, 'baseline-pg.log'), (result.stdout || '') + (result.stderr || ''));
   assert.equal(result.status, 1, 'Negative control must fail its financial assertions');
   const report = JSON.parse(fs.readFileSync(path.join(out, 'baseline-pg.json'), 'utf8'));
-  assert.equal(report.numTotalTests, 12);
+  assert.equal(report.numTotalTests, 13);
   assert.equal(report.numPendingTests, 0);
   assert.ok(report.numFailedTests >= 6, 'Expected missing cross-ledger guards were not reproduced');
-  assert.ok(report.numPassedTests >= 3, 'Positive controls must actually run');
+  assert.ok(report.numPassedTests >= 4, 'Positive controls and the documented policy diagnostic must actually run');
   console.log(JSON.stringify({baseline, failed:report.numFailedTests, passed:report.numPassedTests, skipped:report.numPendingTests}));
 } finally {
   for (const [file, bytes] of saved) fs.writeFileSync(file, bytes);

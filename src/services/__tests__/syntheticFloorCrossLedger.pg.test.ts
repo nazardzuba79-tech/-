@@ -138,4 +138,24 @@ pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
     await expect(transfer(db, other, 'USDT', new BigNumber(1), 'TO_FUTURES', prices)).rejects.toThrow('Insufficient');
     expect((await db.demoBalance.findUniqueOrThrow({ where: { userId_asset: { userId: other, asset: 'USDT' } } })).available.toFixed()).toBe('1000000');
   });
+
+  test('POLICY BLOCKER evidence: unrealized BTC appreciation unlocks unreconciled legacy USDT under the existing floor rule', async () => {
+    // Diagnostic of the current proposed policy, NOT a claim that cash-out is
+    // safe. No extra genuine USDT is credited to the legacy account here.
+    await db.balance.update({ where: { userId_asset: { userId, asset: 'USDT' } }, data: { available: '100000' } });
+    await order(other, 'SELL', '60000');
+    await order(userId, 'BUY', '60000');
+    expect(await balance()).toEqual(['40000', '0']);
+    await expect(request('40000')).rejects.toMatchObject(locked);
+    marks['BTC/USDT'] = '120000';
+    try {
+      // This succeeds under both original630 and the perimeter fixes: S is
+      // nominal, while backing uses unrealized marks. It needs an owner rule,
+      // not an unapproved change to old balances or a hidden financial switch.
+      await expect(request('40000')).resolves.toMatchObject({ status: 'PENDING', balanceHeld: true });
+      expect(await balance()).toEqual(['0', '40000']);
+      expect(await balance(userId, 'BTC')).toEqual(['1', '0']);
+      console.log('LEGACY_PROVENANCE_GATE=BLOCKED: unrealized-mark cashout reproduced on synthetic PostgreSQL fixture; no real transfer');
+    } finally { marks['BTC/USDT'] = '60000'; }
+  });
 });
