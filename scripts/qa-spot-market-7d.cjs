@@ -7,7 +7,7 @@
  * and panel widths 240/250/258/300/340:
  *   - Price + 24h fit without cutting ticker/logo;
  *   - logo stays visible even at 240px;
- *   - search keeps NRX/VTA/BTC/ETH readable;
+ *   - search keeps VTA/BTC/ETH readable and never resurrects retired NRX;
  *   - «Новые» promotes simulated/listed assets newest-first and toggles back;
  *   - no horizontal overflow or wrapped rows.
  */
@@ -80,7 +80,7 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
       await page.addInitScript(() => { window.WebSocket = class { close() {} addEventListener() {} removeEventListener() {} }; });
       await page.addInitScript(() => { try { localStorage.setItem('exchange_token', 'local-qa'); localStorage.setItem('exchange_lang', 'ru'); } catch {} });
       await page.goto(`${base}/trade`, { waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(() => document.querySelector('.spot-terminal .pair-row[data-pair="NRX/USDT"] .p-price')?.textContent?.trim(), null, { timeout: 30000 });
+      await page.waitForFunction(() => document.querySelector('.spot-terminal .pair-row[data-pair="BTC/USDT"] .p-price')?.textContent?.trim(), null, { timeout: 30000 });
       if (await page.locator('.spot-terminal .p-change-7d').count()) fail(`${w}: 7d cell still exists in terminal rail`);
       if (await page.locator('.spot-terminal .pairs-sort [data-sort-field="change7d"]').count()) fail(`${w}: 7d sorter still exists in terminal rail`);
 
@@ -129,7 +129,7 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
         for (const pair of m.names) fail(`${tag}: name runs into price on ${pair}`);
         for (const pair of m.broken) fail(`${tag}: row wrapped on ${pair}`);
         if (m.iconsMissing.length) fail(`${tag}: hidden logos ${m.iconsMissing.join(', ')}`);
-        for (const pair of ['NRX/USDT', 'VTA/USDT', 'BTC/USDT', 'ETH/USDT']) {
+        for (const pair of ['VTA/USDT', 'BTC/USDT', 'ETH/USDT']) {
           const symbol = m.baseSymbols.find(row => row.pair === pair);
           if (!symbol || symbol.clipped || symbol.text !== pair.split('/')[0]) fail(`${tag}: base ticker clipped/missing: ${pair}`);
         }
@@ -138,7 +138,7 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
         report.viewports.push({ viewport: `${w}x${h}`, panel: width, ...m });
 
         const search = page.locator('.spot-terminal .pairs-search input');
-        for (const symbol of ['NRX', 'VTA', 'BTC', 'ETH']) {
+        for (const symbol of ['VTA', 'BTC', 'ETH']) {
           await search.fill(symbol);
           const row = page.locator(`.spot-terminal .pair-row[data-pair="${symbol}/USDT"]`);
           const result = await row.evaluate(el => {
@@ -152,6 +152,8 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
           if (result.text !== symbol || result.textWidth > result.width + .01 || result.overlapsPrice || result.quote !== '/USDT' || !result.iconVisible)
             fail(`${tag}: search ${symbol} truncated/overlaps/icon: ${JSON.stringify(result)}`);
         }
+        await search.fill('NRX');
+        if (await page.locator('.spot-terminal .pair-row[data-pair="NRX/USDT"]').count()) fail(`${tag}: retired NRX appeared in Spot search`);
         await search.fill('');
         if ([240, 258, 340].includes(width)) {
           const box = await page.locator('.spot-terminal .pairs-section').boundingBox();
@@ -178,7 +180,8 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
     const before = await order();
     await button.click();
     const newest = await order();
-    if (newest[0] !== 'NRX/USDT' || newest[1] !== 'VTA/USDT') fail(`newest: expected NRX,VTA first; got ${newest.slice(0, 4).join(',')}`);
+    if (newest[0] !== 'VTA/USDT') fail(`newest: expected active VTA first; got ${newest.slice(0, 4).join(',')}`);
+    if (newest.includes('NRX/USDT') || before.includes('NRX/USDT')) fail('newest: retired NRX returned via stale fixture');
     if (await button.getAttribute('aria-pressed') !== 'true') fail('newest: button is not active after click');
     await button.click();
     const reset = await order();

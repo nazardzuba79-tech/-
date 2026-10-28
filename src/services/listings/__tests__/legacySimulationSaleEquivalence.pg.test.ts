@@ -154,19 +154,20 @@ pg('legacy simulation sales: AITH, an older managed listing and NRX (disposable 
     outcomes['managed.venueCollision'].balances = { listingAsset: outcome.balances[symbol], USDT: outcome.balances.USDT };
   });
 
-  test('NRX: canonical display price is unchanged, but main #625 forbids the legacy synthetic USDT credit by default', async () => {
+  test('NRX: internal historical modeled price is unchanged, but public Spot pricing/trading is retired', async () => {
     const nrxAt = NEURIX.listingAt + 60_000;
     (Date.now as jest.Mock).mockReturnValue(nrxAt);
     await db.balance.create({ data: { userId: owner, asset: 'NRX', available: '4' } });
     const price = new BigNumber(simulationFor(NEURIX).priceAt(nrxAt)!);
     const ticker = await spotPriceSource(venue).getTicker(NEURIX.pair);
-    expect(new BigNumber(ticker!.lastPrice).eq(price)).toBe(true);
+    expect(price.isFinite()).toBe(true);
+    expect(ticker).toBeNull(); // The retired ticker cannot be used to execute a new order.
     // Before main #625 this case expected FILLED, a 1-NRX debit and
     // Balance.USDT = 500 + model price. That legacy mint is now forbidden.
     // Keep the same real-PG exercise and prove every ledger/write stays intact.
     const outcome = await record('nrx.ownerMarketSell', owner, NEURIX.pair, ['NRX', 'USDT'], { quantity: 1 });
     expect(outcome).toMatchObject({
-      refused: 'Simulation Spot sale is not available for this listing',
+      refused: 'NRX is no longer available for trading.',
       writes: [0, 0, 0], balances: { NRX: ['4', '0'], USDT: ['500', '0'] },
     });
     expect(await db.demoBalance.count({ where: { userId: owner } })).toBe(0);

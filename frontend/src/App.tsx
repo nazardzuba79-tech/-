@@ -14,7 +14,7 @@ import { isBrowserInactive } from './lib/browserActivity';
 import './pages/stocks/stockNavigation.css';
 
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
-const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
+const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.RetiredMarketTradeRoute })));
 const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
 const PrivateTradingPage = lazy(() => import('./pages/private-trading/PrivateTradingPage').then((m) => ({ default: m.PrivateTradingPage })));
 const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));

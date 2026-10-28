@@ -1,41 +1,39 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fetchNrxPublic, nrxListingTime, nrxPublicUrl } from '../nrxMarket';
-import { getSpotPublicCandles } from '../spotPublicMarket';
-import { parseTestMarkets } from '../testMarkets';
+import { parseTestMarkets, isRetiredMarketPair } from '../testMarkets';
 import { NEURIX } from '../../../../src/services/testMarkets/neurix';
 import { publicTestAsset } from '../../../../src/services/testMarkets/testMarketService';
 import { WalletPortfolioService } from '../../../../src/services/WalletPortfolioService';
 
-test('metadata parses, listing time states UTC and Moscow exactly', () => {
+test('NRX retains historical time/identity but does not appear in the public markets catalogue', () => {
   expect(nrxListingTime(new Date(NEURIX.listingAt).toISOString())).toBe('03.10.2026 · 13:00 UTC / 16:00 МСК');
-  expect(parseTestMarkets({ serverTime: NEURIX.listingAt, assets: [publicTestAsset(NEURIX, NEURIX.listingAt)] })!.assets[0].symbol).toBe('NRX');
+  const body = parseTestMarkets({ serverTime: NEURIX.listingAt, assets: [publicTestAsset(NEURIX, NEURIX.listingAt)] });
+  expect(body?.assets.some(item => item.symbol === 'NRX')).toBe(false);
+  for (const alias of ['NRX/USDT', 'NRX/BTC', 'BTC/NRX', 'NRXSIMUSDT']) expect(isRetiredMarketPair(alias)).toBe(true);
 });
-test('every public NRX path resolves to Cloudflare without account credentials or outage fallback', async () => {
-  const fetch = jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ candles: [] })));
+
+test('deprecated NRX edge fetch has no account credential or venue fallback on a 410 response', async () => {
+  const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify({ error:'market_retired',symbol:'NRX' }), { status:410 }));
   try {
     expect(nrxPublicUrl('https://render.invalid/api/v1/market/test-assets/NRX-USDT/candles?interval=5m'))
       .toBe('https://market.voltextech.net/market/test-assets/NRX-USDT/candles?interval=5m');
-    await getSpotPublicCandles('NRX/USDT', '5m', 20, undefined, Date.now());
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('https://market.voltextech.net/'), expect.objectContaining({ credentials: 'omit' }));
-    fetch.mockRejectedValue(new Error('edge unavailable'));
-    await expect(fetchNrxPublic('/market/nrx')).rejects.toThrow('edge unavailable');
-    expect(fetch).toHaveBeenCalledTimes(2);
-  } finally { fetch.mockRestore(); }
+    await expect(fetchNrxPublic('/market/nrx')).rejects.toThrow('market_http_410');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('https://market.voltextech.net/'), expect.objectContaining({ credentials: 'omit' }));
+  } finally { fetchSpy.mockRestore(); }
 });
-test('ordinary form/account submission is retained; only VTA uses restricted private sale', () => {
+
+test('retirement is a UI-route guard, not deletion of historic balance/audit records', () => {
   const read = (file: string) => readFileSync(resolve(__dirname, '../..', file), 'utf8');
-  const form = read('components/OrderForm.tsx');
-  expect(form).toContain("const privateVta = pair.toUpperCase() === 'VTA/USDT'");
-  expect(form).toContain("pair.toUpperCase() !== 'NRX/USDT'");
-  expect(form).toContain('api.placeOrder(');
-  expect(form).toContain('api.placeOcoOrder(');
-  expect(form).not.toMatch(/NRX.{0,20}(?:disabled|unavailable)/);
+  expect(read('pages/TradePage.tsx')).toContain('function RetiredMarketTradeRoute()');
+  expect(read('lib/demoSpot.ts')).toContain('!isRetiredMarketPair(pair)');
   expect(read('components/CryptoIcon.tsx')).toContain('NRX: neurixLogo');
   expect(read('lib/testMarketStore.ts')).toContain('new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`)');
 });
-test('seeded Spot inventory values at $5,000 before listing; live value canonical, never venue NRX', async () => {
+
+test('historic NRX holdings can be valued without creating a new order or using the venue', async () => {
   const feed = { getTickers: jest.fn().mockResolvedValue([{ pair: 'NRX/USDT', lastPrice: '999' }]) };
   const portfolio = new WalletPortfolioService({} as any, feed as any, { isConfigured: () => false } as any);
   const now = jest.spyOn(Date, 'now').mockReturnValue(NEURIX.listingAt - 1);

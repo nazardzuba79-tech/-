@@ -85,63 +85,33 @@ async function screenshot(page, name) {
         if (p.startsWith('/api/v1/')) return json([]);
         return route.abort();
       });
+      // The edge's stale fixture must never resurrect this retired ticker.
       await page.goto(origin + '/markets', { waitUntil: 'domcontentloaded' });
-      const row = page.locator('.test-market-row[data-pair="NRX/USDT"]');
-      await row.waitFor({ state: 'visible' });
-      assert.match(await row.innerText(), /13:00 UTC \/ 16:00 МСК/);
-      assert.doesNotMatch(await row.innerText(), prohibited);
-      await row.scrollIntoViewIfNeeded();
-      await screenshot(page, `markets-${width}.png`);
+      await page.waitForTimeout(1200);
+      assert.equal(await page.locator('.test-market-row[data-pair="NRX/USDT"]').count(), 0,
+        'Retired NRX must not appear as a tradable Markets row');
+      await screenshot(page, `markets-retired-${width}.png`);
 
-      setClock(NEURIX.listingAt - 8000);
       await page.goto(origin + '/trade?pair=NRX%2FUSDT', { waitUntil: 'domcontentloaded' });
-      await page.locator('.vta-countdown').waitFor({ state: 'visible' });
-      assert.match(await page.locator('.vta-prelisting-facts').innerText(), /13:00 UTC \/ 16:00 МСК/);
-      assert.equal(await page.locator('.order-form-area form.order-form-content').count(), 1);
-      assert.doesNotMatch(await page.locator('body').innerText(), prohibited);
-      await screenshot(page, `before-${width}.png`);
-      // No reload / client clock override: the edge response crosses the boundary.
-      await page.locator('.vta-prelisting').waitFor({ state: 'detached', timeout: 20000 });
-      await page.locator('.chart-area canvas').first().waitFor({ state: 'attached' });
-      if (width === 1440) await page.locator('.ob-row').first().waitFor({ state: 'visible' });
-      assert.doesNotMatch(await page.locator('body').innerText(), prohibited);
-      await screenshot(page, `boundary-${width}.png`);
-
-      // A later canonical session gives the review screenshot visible history.
-      // The automatic boundary above was already verified on the original page.
-      setClock(NEURIX.listingAt + 6 * 3600000);
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.locator('.chart-area canvas').first().waitFor({ state: 'attached' });
-      await page.waitForFunction(() => Number(document.querySelector('.ticker-bar .value.price')?.textContent?.replace(/,/g, '')) > .8, undefined, { timeout: 15000 });
-      // owner, 2026-10-04: phone opens on Trade once the market is live — bring the chart forward first.
-      if (width <= 900) await page.locator('#mobile-trade-chart').click();
-      await Promise.all([
-        page.waitForResponse(response => response.url().includes('NRX-USDT/candles?interval=5m')),
-        pickTimeframe(page, '5m'),
-      ]);
-      await screenshot(page, `after-${width}.png`);
-
-      if (width === 1440) {
-        await page.locator('.nrx-book-tabs-bar').getByRole('tab', { name: 'Сделки', exact: true }).click();
-        await page.locator('.nrx-tape-row time').first().waitFor();
-        assert.ok(await page.locator('.nrx-tape-row time').count() > 0);
-        await screenshot(page, 'trades-1440.png');
-      } else await page.locator('#mobile-trade-trade').click();
-      const form = page.locator('.order-form-area');
-      await form.getByLabel('Цена', { exact: true }).first().fill('0.8');
-      await form.getByLabel('Количество', { exact: true }).first().fill('1');
-      assert.equal(await form.locator('.order-form-tab.buy').isEnabled(), true);
-      assert.equal(await form.locator('.order-form-tab.sell').isEnabled(), true);
-      await form.locator('button[type="submit"]').click();
-      await page.getByText('Недостаточно USDT на балансе.', { exact: true }).first().waitFor();
-      assert.equal(writes, 1, 'Submission must use the ordinary API, not a private NRX form or asset refusal');
+      await page.getByText('Этот рынок удалён. Новые ордера недоступны.', { exact: true })
+        .waitFor({ state: 'visible', timeout: 30000 });
+      assert.equal(await page.locator('.order-form-area form').count(), 0,
+        'The retired pair must not render a trading form');
+      assert.equal(await page.locator('.chart-area canvas').count(), 0,
+        'The retired pair must not display a model chart');
+      assert.equal(await page.locator('.nrx-tape-row').count(), 0,
+        'The retired pair must not display its old tape');
+      await screenshot(page, `trade-retired-${width}.png`);
+      assert.equal(writes, 0, 'No order or account write in retired market');
+      assert.equal(nrxRequests.length, 0, 'Retired direct link must not fetch model prices');
       assert.deepEqual(errors, []);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert.ok(overflow <= 1, `overflow ${overflow}`);
-      report.push({ width, normalSpotForm: true, listingTransitionWithoutReload: true, localFixtureSubmissions: writes, productionWrites: 0, errors, overflow, nrxRequests });
+      report.push({ width, retiredNRX: true, noOrderInputs: true, noChart: true, fixtureWrites: writes,
+        productionWrites: 0, errors, overflow, nrxRequests });
       await context.close();
     }
     fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
-    console.log('NRX browser QA PASS: 1440/390, before/after without reload, markets, tape, standard form, CF-only public data; production writes 0');
+    console.log('Retired NRX browser QA PASS: 1440/390, Markets absent, direct link closed, no order form/price chart, writes 0');
   } finally { await browser?.close(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -235,7 +235,7 @@ pg('managed listing simulation sale: canonical model price, no withdrawable mode
     const nrxAt = NEURIX.listingAt + 60_000;
     (Date.now as jest.Mock).mockReturnValue(nrxAt);
     const usdtAfterEth = await balance(admin, 'USDT');
-    await expect(sell(admin, 1, NEURIX.pair)).rejects.toThrow('Simulation Spot sale is not available for this listing');
+    await expect(sell(admin, 1, NEURIX.pair)).rejects.toThrow('NRX is no longer available');
     expect(askedFor(NEURIX.pair)).toBe(false);
     expect(await db.auditLog.count({ where: { userId: admin, action: 'NRX_SIMULATION_SOLD' } })).toBe(0);
     expect(await db.auditLog.count({ where: { userId: admin, action: 'TEAM_SPOT_SIMULATION_SOLD' } })).toBe(1); // the ETH sale only

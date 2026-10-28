@@ -1,6 +1,5 @@
 import existingWorker from './index.js';
 import { nrxPublicResponse } from '../../../src/services/testMarkets/nrxPublic';
-import { NEURIX } from '../../../src/services/testMarkets/neurix';
 import { managedListingResponse, PUBLIC_CATALOGUE_PATH, listingForPath } from '../../../src/services/listings/listingPublic';
 import { authorizeListingsAdmin, listingsStub, publishedListings, ManagedListingsDO, type ListingsEnv } from './listingsStore';
 
@@ -12,7 +11,7 @@ const unavailable = () => new Response(JSON.stringify({ error: 'listings_unavail
 
 /**
  * Order matters:
- * 1. NRX — unchanged, fully static, zero IO.
+ * 1. Retired NRX — 410, zero IO; no venue fallback.
  * 2. /internal/listings/* — backend-only admin store API (Bearer secret, no browser Origin).
  * 3. Published managed listings — the public catalogue and each listed pair.
  * 4. Everything else — the existing public display edge.
@@ -21,7 +20,7 @@ export default {
   async fetch(request: Request, env: ListingsEnv = {}): Promise<Response> {
     if (new URL(request.url).pathname === '/market/simulations/status' && ['GET', 'HEAD'].includes(request.method)) {
       return new Response(request.method === 'HEAD' ? null : JSON.stringify({
-        source: 'simulation', nrx: { pair: NEURIX.pair, schedule: NEURIX.scheduledScenario ?? null },
+        source: 'simulation',
         boundedDemoProgram: 'capped-growth-range-v1',
       }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });
     }
