@@ -1,0 +1,21 @@
+name: Hetzner read-only inventory review
+on:
+  pull_request:
+    paths:
+      - 'scripts/ops/hetzner-disk-inventory.sh'
+      - 'scripts/ops/test-hetzner-disk-inventory.sh'
+      - '.github/workflows/hetzner-disk-inventory-review.yml'
+permissions:
+  contents: read
+jobs:
+  safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify syntax and non-destructive operator contract
+        run: |
+          bash -n scripts/ops/hetzner-disk-inventory.sh
+          bash scripts/ops/test-hetzner-disk-inventory.sh
