@@ -34,6 +34,11 @@ jobs:
           assert(!t.includes('BigNumber'));
           console.log('PASS: exact three customer-facing copy strings');
           NODE
+      - name: Audit one-shot release syntax and no-write source/lease guards
+        run: |
+          node --check scripts/release-banking144.mjs
+          node scripts/release-banking144.mjs verify
+          node scripts/release-banking144.mjs self-test
       - name: Frontend build
         run: npm run build --prefix frontend
       - name: Customer wording and UI preservation
