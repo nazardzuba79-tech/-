@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import { asyncRoute } from '../asyncRoute';
 import { AuthedRequest, requireAuth } from '../middleware/auth';
 import { ConversionError, WalletConversionService } from '../../services/WalletConversionService';
@@ -46,7 +47,7 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
       res.setHeader('Cache-Control', 'private, no-store');
       try { res.json(await fn(req)); }
       catch (error) {
-        if (error instanceof ConversionError) return res.status(error.code === 'PRICE_UNAVAILABLE' ? 503 : error.code === 'ACCOUNT_BLOCKED' ? 403 : 409).json({ code: error.code });
+        if (error instanceof ConversionError) return res.status(error.code === 'PRICE_UNAVAILABLE' ? 503 : error.code === 'ACCOUNT_BLOCKED' ? 403 : error.code === 'SESSION_REVOKED' ? 401 : 409).json({ code: error.code });
         throw error;
       }
     });
@@ -62,7 +63,15 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
   router.post('/wallet/conversion/confirm', writeLimit, asyncRoute(async (req, res, next) => {
     if (!confirmSchema.safeParse(req.body).success) return res.status(400).json({ code: 'INVALID_CONVERSION' });
     next();
-  }), guarded(req => conversion.confirm(req.userId!, req.body.quoteId)));
+  }), guarded(req => {
+    // requireAuth already validated this same bearer; decode only its expiry.
+    // Passing the session gives confirm a transactional final authority fence.
+    const claims = jwt.decode(req.headers.authorization!.slice(7)) as jwt.JwtPayload | null;
+    return conversion.confirm(req.userId!, req.body.quoteId, {
+      sessionId: req.sessionId ?? '',
+      expiresAt: typeof claims?.exp === 'number' ? claims.exp * 1000 : 0,
+    });
+  }));
   router.get('/wallet/conversion/receipt/:quoteId', asyncRoute(async (req, res, next) => {
     if (!z.string().uuid().safeParse(req.params.quoteId).success) return res.status(400).json({ code: 'INVALID_CONVERSION' });
     next();
