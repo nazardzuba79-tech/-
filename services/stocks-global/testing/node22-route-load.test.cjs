@@ -55,6 +55,8 @@ test('enabled route loads its REAL ESM authority on Node 22 and declares only ex
   const paths = router.stack.filter(layer => layer.route).map(layer => layer.route.path).sort();
   assert.deepEqual(paths, [
     '/stocks-test-cash/command',
+    // #613 P1: the multiplexed live identity checks (capability only; same requireAuth + actor).
+    '/stocks-test-cash/identities',
     '/stocks-test-cash/identity',
     '/stocks-test-cash/readiness',
     '/stocks-test-cash/wallet',

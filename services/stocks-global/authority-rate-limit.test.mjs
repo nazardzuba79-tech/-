@@ -61,9 +61,9 @@ test('rate-limited mutation is not retried; lost mutation ACK stays outcome unkn
   const principal = { issuer, subject: 'fabricated-a' };
   let submissions = 0;
   const adapter = await fixture(t, async (request, response) => {
-    if (request.method === 'GET') return response.end(JSON.stringify(principal));
     const chunks = []; for await (const chunk of request) chunks.push(chunk);
     const body = JSON.parse(Buffer.concat(chunks));
+    if (request.url.endsWith('/identities')) return response.end(JSON.stringify({ results: body.tokens.map(() => principal) }));
     if (body.type === 'ensure') return response.end(JSON.stringify({ value: { id: accountId(principal) } }));
     submissions++;
     if (submissions === 1) { response.writeHead(429, { 'Retry-After': '28' }); response.end('limited'); }
@@ -81,7 +81,7 @@ test('rate-limited mutation is not retried; lost mutation ACK stays outcome unkn
 test('actual gateway returns safe429 and bounded Retry-After, with no account or order command', async t => {
   let calls = 0, commands = 0;
   const adapter = await fixture(t, (request, response) => {
-    calls++; if (request.method !== 'GET') commands++;
+    calls++; if (!request.url.endsWith('/identities')) commands++;
     response.writeHead(429, { 'Retry-After': '28' }); response.end('private upstream detail');
   });
   const gateway = await createServer({

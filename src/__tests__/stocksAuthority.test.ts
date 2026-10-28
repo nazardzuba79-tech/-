@@ -81,11 +81,18 @@ test('serves only the private authority surface with the unchanged session, capa
   // Capability, path and method are judged before any session read; wallet is not a service endpoint here.
   const reads = r.sessionReads.length;
   for (const [path, opts] of [['/api/v1/stocks-test-cash/identity', { key: 'forged' }], ['/api/v1/stocks-test-cash/wallet', {}],
-    ['/api/v1/stocks-test-cash/identity', { method: 'POST' }], ['/api/v1/demo/orders', {}], ['/health', {}]] as const)
+    ['/api/v1/stocks-test-cash/identity', { method: 'POST' }], ['/api/v1/stocks-test-cash/identities', {}],
+    ['/api/v1/stocks-test-cash/identities', { key: 'forged', body: { tokens: [token()] } }], ['/api/v1/demo/orders', {}], ['/health', {}]] as const)
     expect((await call(path, opts)).status).toBe(403);
   expect(r.sessionReads).toHaveLength(reads);
+  // The batched identity path of the same process: one live read per bearer.
+  const batch = await call('/api/v1/stocks-test-cash/identities', { body: { tokens: [token(), token('bob-fixture')] } });
+  expect(batch).toMatchObject({ status: 200, body: { results: [{ issuer, subject: 'alice-fixture' }, { issuer, subject: 'bob-fixture' }] } });
+  expect(r.sessionReads).toHaveLength(reads + 2);
   // Revocation is read live on every request, never cached by the process.
   r.revoked.add('session-alice-fixture');
+  expect((await call('/api/v1/stocks-test-cash/identities', { body: { tokens: [token(), token('bob-fixture')] } })).body.results)
+    .toEqual([{ error: 'AUTH_REQUIRED' }, { issuer, subject: 'bob-fixture' }]);
   expect((await call('/api/v1/stocks-test-cash/identity')).status).toBe(401);
   expect((await call('/api/v1/stocks-test-cash/command', { body: { type: 'readView' } })).status).toBe(401);
   expect(r.authority.execute).toHaveBeenCalledTimes(1);

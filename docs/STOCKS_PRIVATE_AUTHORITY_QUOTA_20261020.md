@@ -47,7 +47,8 @@ The listener binds **127.0.0.1** only, in the API network namespace. A private
 WeakSet marks requests arriving on that actual Node listener; it is transport
 provenance, never an authorization cache. Admission additionally requires:
 loopback local/remote socket addresses, the bound local port, exact Host,
-exact path/method (GET identity/readiness, POST command), no forwarded/edge
+exact path/method (GET identity/readiness, POST command, and since #613 P1 POST
+identities: the multiplexed live identity checks, docs/STOCKS_613_PROCESS_ISOLATION.md), no forwarded/edge
 headers, one nonduplicated capability header and constant-time key comparison.
 Headers cannot mark a request arriving on the public listener as internal.
 The existing authenticated public `/wallet` projection remains public and

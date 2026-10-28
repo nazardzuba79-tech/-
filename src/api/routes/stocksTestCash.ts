@@ -5,6 +5,9 @@ import { timingSafeEqual, createPublicKey, createSecretKey } from 'crypto';
 import { resolve } from 'path';
 import { requireAuth, verifiedBearerAtUse, AuthedRequest } from '../middleware/auth';
 
+/** One identity batch: the gateway's own bound (authority-adapter.mjs) and the bearer form it sends. */
+export const IDENTITY_BATCH_MAX = 32, IDENTITY_BATCH_BYTES = 64 * 1024;
+const BEARER = /^[A-Za-z0-9._~-]{16,4096}$/;
 interface Config { catalogueEnabled?: boolean; enabled?: boolean; orderExecutionEnabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
 interface Actor { issuer:string;subject:string;userId:string;sessionId:string;expiresAt:number }
 interface Authority { execute(actor:Actor,type:string,input?:unknown,options?:{signal?:AbortSignal;occurrenceId?:string}):Promise<any>; metrics():unknown }
@@ -73,6 +76,30 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
     res.status(status).json({ error: code });
   };
   router.get('/stocks-test-cash/identity', auth, (req: AuthedRequest, res) => { try { const value = actor(req); res.set('Cache-Control','no-store').json({ issuer: value.issuer, subject: value.subject }); } catch (error) { failure(res,error); } });
+  // The identity checks of several concurrent gateway requests in ONE private request
+  // (multiplexing, not caching): every bearer runs the very same requireAuth live read and
+  // actor binding as GET identity above, one after another, after its browser request arrived.
+  // Nothing is kept between bearers or requests. Gateway capability only; no user bearer here.
+  router.post('/stocks-test-cash/identities', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const supplied = req.headers['x-stocks-authority-key'];
+    if (typeof supplied !== 'string' || Buffer.byteLength(supplied) !== Buffer.byteLength(gatewayKey) || !timingSafeEqual(Buffer.from(supplied), Buffer.from(gatewayKey))) return void res.status(403).json({ error: 'AUTH_REQUIRED' });
+    const tokens = req.body?.tokens;
+    if (!req.body || typeof req.body !== 'object' || Object.keys(req.body).length !== 1 || !Array.isArray(tokens) || tokens.length < 1 || tokens.length > IDENTITY_BATCH_MAX
+      || tokens.some((token: unknown) => typeof token !== 'string' || !BEARER.test(token)) || new Set(tokens).size !== tokens.length || Buffer.byteLength(JSON.stringify(tokens)) > IDENTITY_BATCH_BYTES)
+      return void res.status(422).json({ error: 'IDENTITY_BATCH_INVALID' });
+    const results = [];
+    for (const token of tokens as string[]) {
+      const one = { headers: { authorization: 'Bearer ' + token } } as unknown as AuthedRequest;
+      let status = 200, passed = false;
+      const outcome = { status(code: number) { status = code; return outcome; }, json() { return outcome; } };
+      await auth(one, outcome as never, () => { passed = true; });
+      if (!passed) { results.push({ error: status === 503 ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED' }); continue; }
+      try { const value = actor(one); results.push({ issuer: value.issuer, subject: value.subject }); }
+      catch (error: any) { results.push({ error: typeof error?.code === 'string' && error.code.startsWith('AUTH_') ? error.code : 'AUTH_REQUIRED' }); }
+    }
+    res.json({ results });
+  });
   // Catalogue/identity access never grants a financial capability. Off means no
   // wallet or command route, even for an allowed principal or forged gateway call.
   if (!enabled) {

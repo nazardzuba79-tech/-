@@ -9,6 +9,7 @@ import { contactEmailHash } from '../../../services/ContactEmailPolicy';
 const key = 'fabricated-gateway-capability-'.repeat(2), issuer = 'isolated-ingress';
 const principals = ['alice-fixture', 'bob-fixture'].map(subject => ({ issuer, subject }));
 const identity = '/api/v1/stocks-test-cash/identity', command = '/api/v1/stocks-test-cash/command';
+const identities = '/api/v1/stocks-test-cash/identities';
 const open: Server[] = [];
 afterEach(async () => {
   await Promise.all(open.splice(0).map(server => new Promise<void>(resolve => {
@@ -103,8 +104,8 @@ test('listener is loopback-only; duplicate capabilities and a forged Host cannot
 
 test('public listener cannot claim private quota even with the correct key and spoofed proxy headers', async () => {
   const f = await fixture();
-  for (const path of [identity, command, '/api/v1/stocks-test-cash/readiness']) {
-    expect((await f.call(path, { public: true, method: path === command ? 'POST' : 'GET',
+  for (const path of [identity, command, identities, '/api/v1/stocks-test-cash/readiness']) {
+    expect((await f.call(path, { public: true, method: path === command || path === identities ? 'POST' : 'GET',
       headers: { 'x-forwarded-for': '127.0.0.1', 'x-forwarded-host': '127.0.0.1', 'forwarded': 'for=127.0.0.1' } })).status).toBe(403);
   }
   expect(f.sessionReads).toHaveLength(0); expect(f.authority.execute).not.toHaveBeenCalled();
@@ -113,6 +114,7 @@ test('public listener cannot claim private quota even with the correct key and s
   expect(f.authority.execute).toHaveBeenCalledTimes(1);
   for (const path of ['/api/v1/stocks-test-cash/IDENTITY/', identity + '?spoof=1'])
     expect((await f.call(path, { public: true })).status).toBe(403);
+  expect((await f.call('/api/v1/stocks-test-cash/Identities/', { public: true, body: { tokens: [f.token()] } })).status).toBe(403);
   const r = await f.call(identity); expect(r.status).toBe(200);
   expect(r.headers.get('ratelimit-remaining')).toBe('239');
 });
@@ -129,9 +131,12 @@ test('private listener rejects forged capabilities, proxy headers, wrong path an
     { method: 'POST' },
   ];
   for (const opts of cases) expect((await f.call(identity, opts)).status).toBe(403);
+  // The batch path has its own exact method; a forged capability never reaches a session read.
+  expect((await f.call(identities)).status).toBe(403);
+  expect((await f.call(identities, { body: { tokens: [f.token()] }, headers: { 'x-stocks-authority-key': 'forged' } })).status).toBe(403);
   for (const path of [identity + '?spoof=1', '/api/v1/stocks-test-cash/%69dentity', '/public-probe'])
     expect((await f.call(path)).status).toBe(403);
-  for (let i = 10; i < 120; i++) expect((await f.call(identity, { headers: { 'x-stocks-authority-key': 'forged' } })).status).toBe(403);
+  for (let i = 12; i < 120; i++) expect((await f.call(identity, { headers: { 'x-stocks-authority-key': 'forged' } })).status).toBe(403);
   expect((await f.call(identity, { headers: { 'x-stocks-authority-key': 'forged' } })).status).toBe(429);
   expect(f.sessionReads).toHaveLength(0);
   const valid = await f.call(identity); expect(valid.status).toBe(200);
@@ -183,4 +188,23 @@ test('opt-in configuration rejects unsafe ports/keys and unreviewed quotas', () 
   for (const cap of [119, 241, Infinity, 120.5])
     expect(() => createStocksAuthorityIngress({ port: 3002, gatewayKey: key, requestsPerMinute: cap })).toThrow();
   expect(() => createStocksAuthorityIngress({ port: 3002, gatewayKey: 'short' })).toThrow();
+});
+
+test('one private request carries up to 32 live checks: the quota counts requests, every bearer reads its own session', async () => {
+  const f = await fixture();
+  const subjects = Array.from({ length: 32 }, (_, n) => n < 2 ? principals[n].subject : 'viewer-' + n);
+  const batch = (list: string[]) => f.call(identities, { body: { tokens: list.map(subject => f.token(subject)) }, headers: { authorization: '' } });
+  const first = await batch(subjects);
+  expect(first.status).toBe(200);
+  expect(JSON.parse(first.text).results).toEqual(subjects.map(subject => ({ issuer, subject })));
+  expect(first.headers.get('ratelimit-remaining')).toBe('239');
+  expect(f.sessionReads).toEqual(subjects.map(subject => 'session-' + subject));
+  // A sign-out between two batches is seen by the next one; nothing is reused.
+  f.revoked.add('session-alice-fixture');
+  const second = await batch(subjects.slice(0, 3));
+  expect(JSON.parse(second.text).results).toEqual([{ error: 'AUTH_REQUIRED' }, { issuer, subject: 'bob-fixture' }, { issuer, subject: 'viewer-2' }]);
+  expect(f.sessionReads).toHaveLength(35);
+  const tooMany = await batch(Array.from({ length: 33 }, (_, n) => 'viewer-' + n));
+  expect(tooMany.status).toBe(422); expect(f.sessionReads).toHaveLength(35);
+  expect(f.authority.execute).not.toHaveBeenCalled();
 });

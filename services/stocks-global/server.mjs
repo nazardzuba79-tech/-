@@ -273,16 +273,20 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         check(!requestAbort.signal.aborted,'AUTH_UNAVAILABLE');
         check(accountId(principal)===requestPrincipalId&&mayTrade(principal),'AUTH_REQUIRED');
       }:undefined;
+      // The PostgreSQL authority re-checks the live session, block, binding, token expiry and
+      // trade policy inside every command's own transaction, so a network re-identity just
+      // before a command only repeats it. The local SQLite worker cannot, and keeps it.
+      const beforeCommand=accountAuthority?undefined:authorize;
       check(![...u.searchParams.keys()].some(k=>!['id','interval','before'].includes(k)),'ACCOUNT_SELECTOR_FORBIDDEN');
       if(req.method==='GET'&&u.pathname===API+'state'){
         if(res.destroyed)return;
         if(ctx.ownerMayTrade)await requireAccount(ctx);
         if(res.destroyed)return;
-        if(authorize&&ctx.ownerMayTrade&&(!autoPoll||!u.searchParams.get('id')))await authorize();
+        if(beforeCommand&&ctx.ownerMayTrade&&(!autoPoll||!u.searchParams.get('id')))await beforeCommand();
         const readAbort=new AbortController();let demandEpoch;const onClose=()=>{if(!res.writableFinished){readAbort.abort();if(ownerOnlyMode&&demandEpoch===ctx.demandEpoch)release(ctx);}};
         res.once('close',onClose);
         try{
-          let observedView;const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,authorize);else if(changed)refreshInBackground(ctx);}}
+          let observedView;const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);else if(changed)refreshInBackground(ctx);}}
           let view=await status(ctx,observedView,readAbort.signal);
           // Read-only users share market data, never the owner matcher or ledger.
           if(!ctx.ownerMayTrade&&id){
@@ -325,7 +329,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
       check(input&&typeof input==='object'&&!Array.isArray(input),'INVALID_JSON');
       check(!['userId','accountId','owner','subject','issuer','account','user'].some(k=>k in input),'ACCOUNT_SELECTOR_FORBIDDEN');
       await requireAccount(ctx);
-      if(authorize)await authorize();
+      if(beforeCommand)await beforeCommand();
       if(res.destroyed)return;
       let committed,result;if(u.pathname===API+'orders'){if(accounts && ownerOnlyMode)check(input.currency==='USDT','INVALID_ORDER');sourceAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:hub.quoteValid?.(ctx.observedQuotes.get(input.instrumentId),input.instrumentId)===false||!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]||(ownerOnlyMode&&(ctx.selected!==input.instrumentId||ctx.lease===0||now()-ctx.lease>=12000))}:input,commitFence(authorize));result=committed.result;}
       else if(u.pathname===API+'cancel'){committed=await ctx.store.execute('cancel',{id:input.id},commitFence(authorize));result=committed.result;}
@@ -334,7 +338,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         sourceAllowed(input.id);if(ownerOnlyMode)demand(ctx,input.id,req.headers['x-stocks-view']);else{ctx.selected=input.id;ctx.lease=now();}
         const epoch=ctx.demandEpoch,abort=new AbortController(),onClose=()=>{if(!res.writableFinished){abort.abort();if(ownerOnlyMode&&epoch===ctx.demandEpoch)release(ctx);}};
         res.once('close',onClose);
-        try{committed={snapshot:await refreshContext(ctx,ctx.selected,false,abort.signal,authorize)};if(res.destroyed)return;}
+        try{committed={snapshot:await refreshContext(ctx,ctx.selected,false,abort.signal,beforeCommand)};if(res.destroyed)return;}
         finally{res.off('close',onClose);}
       }
       else throw new SimError('ROUTE_NOT_FOUND');send(res,200,{...await status(ctx,committed?.snapshot),result});return;

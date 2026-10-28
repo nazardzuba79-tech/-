@@ -17,6 +17,7 @@ const ROUTES = new Map([
   ['/api/state', 'stocks.state'], ['/api/portfolio', 'stocks.portfolio'],
   ['/api/orders', 'stocks.orders'], ['/api/order', 'stocks.order'],
   ['/api/v1/me', 'identity.me'], ['/api/v1/stocks-test-cash/identity', 'identity.stocks'],
+  ['/api/v1/stocks-test-cash/identities', 'identity.stocks.batch'],
   ['/api/v1/stocks-test-cash/command', 'authority.command'],
   ['/api/v1/stocks-test-cash/wallet', 'authority.wallet'],
   ['/api/v1/orders', 'crypto.orders'], ['/api/v1/balances', 'crypto.balances'],

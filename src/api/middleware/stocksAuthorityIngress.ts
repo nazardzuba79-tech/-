@@ -9,7 +9,7 @@ export interface StocksAuthorityIngressConfig {
   requestsPerMinute?: number;
 }
 const PREFIX = '/api/v1/stocks-test-cash/';
-const METHODS = new Map([['identity', 'GET'], ['readiness', 'GET'], ['command', 'POST']]);
+const METHODS = new Map([['identity', 'GET'], ['identities', 'POST'], ['readiness', 'GET'], ['command', 'POST']]);
 const loopback = (address?: string) => address === '127.0.0.1' || address === '::ffff:127.0.0.1';
 
 // Explicit opt-in, no implicit public/forwarded-IP trust or automatic migration
@@ -84,7 +84,7 @@ export function createStocksAuthorityIngress(
     return publicLimit(req, res, () => {
       // When the private listener is explicitly enabled, authority-only paths
       // are not accessible through a public proxy even with a copied capability.
-      if (enabled && /^\/api\/v1\/stocks-test-cash\/(?:identity|command|readiness)\/?$/i.test(req.path))
+      if (enabled && /^\/api\/v1\/stocks-test-cash\/(?:identity|identities|command|readiness)\/?$/i.test(req.path))
         return void res.status(403).json({ error: 'AUTH_REQUIRED' });
       next();
     });

@@ -34,13 +34,15 @@ command; neither Dockerfile changes.
 
 - Router code (`src/api/routes/stocksTestCash.ts`): `requireAuth` with the single
   live session read, revocation, contact block, actor binding, gateway capability,
-  readiness that re-reads the bindings, both server gates.
+  readiness that re-reads the bindings, both server gates. (P1 later added the
+  `POST identities` batch route; see below.)
 - PostgreSQL authority: `User`/`Session` `FOR NO KEY UPDATE` and
   `StocksTestAccount`/`DemoBalance` `FOR UPDATE` fences, blocked users refused
   inside the transaction, atomic commands, receipts and idempotent replays.
 - Private ingress: loopback-only listener, exact Host/path/method, no forwarded
   headers, constant-time capability, finite transport quota (120–240 per minute,
-  default 240), 128 connections, 15 s / 10 s / 5 s deadlines.
+  default 240), 128 connections, 15 s / 10 s / 5 s deadlines. (P1 added
+  `POST identities` to the exact path/method list only.)
 - Exactly one authority process. Its per-principal admission queue is per
   process; correctness rests on the PostgreSQL locks. Run one instance only.
 - `STOCKS_ORDER_EXECUTION_ENABLED` stays `false` in production: readiness reports
@@ -167,11 +169,62 @@ Within the stated limits (same budget, unchanged workload), no further deployabl
 step removes these two shared resources. Separate physical cores, or a separate
 database or host for Stocks, would be a resource or topology decision for the owner.
 
-## Known limit (unchanged here)
+## Gateway → authority identity checks (P1, resolved)
 
-The gateway calls the authority's identity route on every gateway request. 50
-viewers polling once per second make about 3,000 calls per minute, far above the
-private ingress quota of 120–240 per minute. The 50+2 harness mounts the router
-without the ingress in both arms, as before, so it does not measure this quota.
-Raising or restructuring the quota needs its own review
-(`docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md`).
+Before: the gateway called `GET identity` on the authority for every gateway request, and a
+trader's command path called it once more (`authorize()`) before each command. 50 viewers at one
+request per second need about 3,000 private requests per minute against the private ingress quota
+of 120–240 per minute. The 50+2 harness mounts the router without the ingress, so it never saw this.
+
+Now, with the quota, Host, path/method, capability, connection and timeout limits unchanged:
+
+1. **No duplicate re-identity before a command (PostgreSQL authority only).** The PostgreSQL
+   authority re-reads the session (`revokedAt`, binding, expiry), the user block (`blockedAt`) and
+   the trade principals inside every command's own transaction, so `authorize()` right before a
+   command only repeated that. `server.mjs` keeps it for the local SQLite worker, which cannot.
+   `/portfolio` keeps its post-read re-check; the request-start identity check stays for everyone.
+2. **Identity checks travel together (multiplexing, not caching).** `authority-adapter.mjs` puts
+   the bearers of concurrent gateway requests into one `POST identities` (at most 32 bearers,
+   60 KiB). The authority (`stocksTestCash.ts`) runs the very same `requireAuth` live session read
+   and `actor` binding as `GET identity` for each bearer, one after another, and answers each by
+   position. Rules:
+   - a request only joins a batch that has not been sent yet, so its bearer is checked after the
+     request arrived; no answer is reused by another batch or request;
+   - the same bearer twice in one unsent batch is checked once and answers both;
+   - at most 2 batches per second leave (burst 2): at most 122 identity requests in any minute,
+     half of the default quota, so commands keep the other half;
+   - every request keeps its own 3 s deadline and cancellation; a missing, short, malformed or
+     foreign-issuer answer fails closed (`AUTH_REQUIRED` / `AUTH_UNAVAILABLE`); `close()` aborts
+     batches in flight;
+   - the batch carries the gateway capability only, never a user `Authorization` header; the
+     private ingress allows it only as `POST`, and the public listener refuses it like the others.
+
+Cost: under load a request waits for the next send slot, on average a quarter of a second.
+
+### Evidence (local, disposable PostgreSQL 16, Node 22.23.3, compiled `dist/`)
+
+`services/stocks-global/identity-load.pg.test.cjs`: the compiled authority process with the default
+quota 240/min and the release gateway (`testing/synthetic-release-gateway.mjs`: the release entrypoint
+with a synthetic market, so the traders' commands run offline), 50 synthetic viewers every 1 s and the
+2 synthetic traders every 4 s for 61 s. `testing/count-requests.cjs` records what the private listener
+served; PostgreSQL counts the `Session` scans.
+
+| Code | Gateway requests | 200 | 429 | Private requests | Busiest minute | Session reads | Viewer p50 / p95 |
+|---|---|---|---|---|---|---|---|
+| before (`8f0e1f63`) | 3,082 | 285 | 2,797 | 3,096 (3,088 `GET identity`) | 3,047 | 345 | 3 / 6 ms (refused) |
+| after | 3,082 | 3,082 | 0 | 158 (124 `POST identities` + 34 commands) | 154 of 240 | 3,131 | 286 / 506 ms |
+
+On the same running processes right after the load, each change is refused on the very next request:
+forged, expired, 2FA-purpose and cross-session tokens; a signed-out device; a blocked contact address
+(read live, no revoke needed); the previous account after an account switch (the switched view is the
+market-only shape, nothing of the trader); an admin-blocked trader (`User.blockedAt`, refused by the
+PostgreSQL authority). No cash, account, receipt or audit row changed.
+
+Unit and route tests: `identity-batch.test.mjs` (batching rules above), `authority-adapter.test.mjs`,
+`authority-rate-limit.test.mjs`, `src/api/routes/__tests__/stocksTestCash.test.ts` (capability and
+shape before any session read, per-bearer live decisions, same admit/refuse as `GET identity`),
+`src/api/middleware/__tests__/stocksAuthorityIngress.test.ts`, `src/__tests__/stocksAuthority.test.ts`.
+
+An admin block (`User.blockedAt`) still does not end a viewer's market-only access: `requireAuth`
+does not read it anywhere in the platform (existing sessions expire naturally, see
+`src/api/routes/adminUsers.ts`). The contact-address block revokes and refuses at once.

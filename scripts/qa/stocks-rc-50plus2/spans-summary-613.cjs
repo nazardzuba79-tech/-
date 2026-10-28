@@ -47,7 +47,7 @@ const COMPONENTS = ['client', 'server', ...PARTS, 'outsideWindow', 'sameCategory
 // demoSpot gate -> reads, DemoTradingService -> trading Prisma; place and
 // cancel run SpotBookTransaction -> prisma.$transaction).
 const REQUIRED = op => ({jwt: 1, authAccessDb: 1, tradeDb: 1, txAdmission: ['place-limit', 'cancel'].includes(op) ? 1 : 0});
-const VIEWER_ROUTES = {gateway: '/__stocks_global/state', identity: '/api/v1/stocks-test-cash/identity'};
+const VIEWER_ROUTES = {gateway: '/__stocks_global/state', identity: '/api/v1/stocks-test-cash/identity', identityBatch: '/api/v1/stocks-test-cash/identities'};
 
 const finite = x => typeof x === 'number' && Number.isFinite(x);
 const nonNegative = x => finite(x) && x >= 0;
@@ -109,7 +109,7 @@ function processStats(spans, raw) {
     spans: {total: raw.length, dropped: spans.dropped},
     pgWaits: {samples: waits.length, errors: raw.filter(s => s.name === 'pg.wait.sample.error').length,
       waitingSamples: waits.filter(w => (w.rows || []).some(r => r.type)).length, events},
-    viewer: {gatewayStateMs: route(VIEWER_ROUTES.gateway), identityMs: route(VIEWER_ROUTES.identity)},
+    viewer: {gatewayStateMs: route(VIEWER_ROUTES.gateway), identityMs: route(VIEWER_ROUTES.identity), identityBatchMs: route(VIEWER_ROUTES.identityBatch)},
     authorityQueueWaitMs: stats(raw.filter(s => s.name === 'authority.queue.wait').map(s => s.ms))};
 }
 

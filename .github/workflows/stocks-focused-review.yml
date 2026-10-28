@@ -128,6 +128,12 @@ jobs:
           services/stocks-global/cash-authority-contract.test.mjs
           services/stocks-global/two-trader-http.test.mjs
           services/stocks-global/account-existing-only.test.mjs
+      - name: Gateway to authority transport and identity multiplexing (no cache, bounded batches)
+        run: >-
+          node --test
+          services/stocks-global/identity-batch.test.mjs
+          services/stocks-global/authority-adapter.test.mjs
+          services/stocks-global/authority-rate-limit.test.mjs
       - name: Pilot read-only preflight contract (mock database only)
         run: node --test services/stocks-global/pilot-preflight.test.cjs
       - name: Read-only preflight attempt gate on disposable PostgreSQL
@@ -168,8 +174,9 @@ jobs:
       source-sha: ${{ steps.source-check.outputs.sha }}
     # Compiled API + disposable PostgreSQL on the exact runtime.
     # No production-image, ingress, provider or deployment attestation.
+    # identity-load.pg.test.cjs holds the 50+2 cadence for a full minute (about 75 s).
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       STOCKS_TEST_CASH_ENABLED: 'false'
       DATABASE_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
@@ -258,7 +265,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/release-authority.pg.test.cjs services/stocks-global/separated-authority.pg.test.cjs | tee /tmp/stocks-node22-pg.tap
+          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/release-authority.pg.test.cjs services/stocks-global/separated-authority.pg.test.cjs services/stocks-global/identity-load.pg.test.cjs | tee /tmp/stocks-node22-pg.tap
           grep -Eq '^# skipped 0$' /tmp/stocks-node22-pg.tap
           grep -Eq '^# fail 0$' /tmp/stocks-node22-pg.tap
           grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-node22-pg.tap

@@ -7974,3 +7974,22 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - On top of the session-authority commits and the main `fed5ee6a` merge pushed from the owner's account (2e1b71cd…a9c6fce9, kept as is; an independent local merge of the same main gave a byte-identical tree apart from this file). Main's overlapping changes (SIMUSDT valuation in WalletPortfolioService, History20 router in src/index.ts) need nothing here: conversion admission already refuses SIMUSDT-settled assets via `isTestAssetPairOrSymbol`.
 - `scripts/test-wallet-conversion-postgres.cjs` +2 checks: a bearer without `sid`, or without `exp`, is refused at confirm (401 SESSION_REVOKED, nothing moves); ordinary Spot limit bids (`OrderService`) and conversions racing on one Balance never overdraw, and the USDT hold equals the open orders.
 - Verified locally on the merged tree (disposable PostgreSQL, synthetic users): backend tsc/build, frontend tsc + flagged build; Jest 322/322 (conversion, portfolio, adjustments, deposits, OrderService, wallet UI, fingerprints, i18n); Balance fixture 29/29 + browser (flag ON) and default-OFF browser; DemoBalance fixture 27/27. No flag enabled, no deploy, no production data.
+
+## 2026-10-28 — Claude (session 01EmV3Pt) — #613 P1: Gateway → Authority identity checks fit the private quota
+- Base: #613 `fbcb2508` + local merge of main `ad5bd1a7` (#591; `8f0e1f63`, only `docs/AI_HANDOFF.md` overlapped). Quota (120–240/min, default 240), Host/path/method/capability rules, 128 connections and 15/10/5 s deadlines unchanged; no cache of any authorization decision.
+- Cause: one `GET identity` per gateway request, plus one more `authorize()` before every trader command. With 50 viewers at 1/s, that is about 3,000/min against 240/min.
+- Change:
+  - `server.mjs`: the pre-command re-identity is dropped only with the PostgreSQL authority, which re-checks session, block, binding, expiry and principals inside each command's transaction. The SQLite worker keeps it.
+  - `authority-adapter.mjs`, `stocksTestCash.ts` `POST identities`, ingress allowlist: concurrent requests' live identity checks are multiplexed. A batch holds ≤32 bearers, ≤2 batches/s (burst 2). A request only joins a batch that has not been sent yet. Each bearer gets the same `requireAuth` + `actor` as `GET identity`, and every request keeps its own 3 s deadline.
+- Measured locally: disposable PG 16, Node 22.23.3, compiled `dist/stocksAuthority.js` with the default quota, release gateway with a synthetic market (`identity-load.pg.test.cjs`). Load was 50 viewers at 1 s plus 2 traders at 4 s, for 61 s:
+  - before (`8f0e1f63`): 2,797 of 3,082 gateway requests were 429; 3,096 private requests;
+  - after: 3,082/3,082 were 200; 158 private requests (124 batches + 34 commands); busiest minute 154/240; 3,131 `Session` reads.
+  - Cost: viewer `/state` p50/p95 went to 286/506 ms, from waiting for a send slot.
+  - After the load, on the same processes, each of these was refused on the very next request: forged/expired/2FA/cross-session tokens, sign-out, contact block, the previous account after a switch, and an admin-blocked trader. No financial row changed.
+- Tests run locally: backend tsc/build; Stocks node unit 383/383; PG suites (postgres-authority, session-read, release-authority, separated-authority) 31/31 plus the new load test 1/1; Jest `stocks|auth` 21 suites / 384 tests.
+- CI wiring: new tests added to `stocks-focused-review.yml`; the PG job timeout went from 10 to 15 min for the 75 s test.
+- Preserved: Codex/earlier #613 work, #621 pipeline, #591 (main), JWT at-use semantics (`fa92cc66`). Untouched: #630, Issue #636, ECLAVO/QVTR/NRX, production, secrets.
+- Open:
+  - P2 crypto p95: rerun the 50+2 diagnostic with the unchanged method.
+  - An admin block (`User.blockedAt`) still leaves a viewer's market-only access until the session ends. That is platform-wide `requireAuth` behaviour, unchanged here.
+  - Exact-head CI is pending after push.

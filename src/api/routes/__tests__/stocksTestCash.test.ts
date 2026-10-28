@@ -27,7 +27,7 @@ test('release default-OFF uses actual environment defaults and registers no surf
    const f=fixture(false),router=stocksTestCashRouter(f.prisma,{principals:[]});
    expect(router.stack).toHaveLength(0);
    const app=express();app.use('/api/v1',router);
-   for(const route of ['identity','readiness','wallet','command'])
+   for(const route of ['identity','identities','readiness','wallet','command'])
     for(const method of ['get','post'] as const)
      expect((await request(app)[method]('/api/v1/stocks-test-cash/'+route)).status).toBe(404);
    expect(f.prisma.user.findUnique).not.toHaveBeenCalled();
@@ -229,4 +229,64 @@ test('second gate: with STOCKS_ORDER_EXECUTION_ENABLED unset both bound traders 
     const f=fixture(true,undefined,undefined,false,null);
     expect((await request(f.app).post('/api/v1/stocks-test-cash/command').set('Authorization','Bearer '+f.token('synthetic-b')).set('x-stocks-authority-key',key).send({type:'ensure'})).status).toBe(200);
   }finally{if(previous===undefined)delete process.env.STOCKS_ORDER_EXECUTION_ENABLED;else process.env.STOCKS_ORDER_EXECUTION_ENABLED=previous;}
+});
+
+// #613 P1: the gateway sends the live identity checks of concurrent browser requests together.
+// Multiplexing, not caching: each bearer runs the same requireAuth + actor as GET identity.
+const identities=(app:any,tokens:unknown,capability:string|null=key)=>{const r=request(app).post('/api/v1/stocks-test-cash/identities');return(capability===null?r:r.set('x-stocks-authority-key',capability)).send(tokens===undefined?{}:{tokens});};
+test('identity batch needs the gateway capability and a well-formed list before any session read',async()=>{
+ const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true),good=f.token();
+ for(const capability of [null,'',key.slice(1),key+'x','forged-capability-of-the-same-length-000'])
+  expect([capability,(await identities(f.app,[good],capability)).status]).toEqual([capability,403]);
+ const invalid:unknown[]=[undefined,[],'not-a-list',[good,good],[good,42],['short'],['contains space and more than sixteen'],['x'.repeat(4097)],
+  Array.from({length:33},(_,n)=>f.token('viewer-'+n))];
+ for(const tokens of invalid){const res=await identities(f.app,tokens);expect(res.status).toBe(422);expect(res.body.error).toBe('IDENTITY_BATCH_INVALID');}
+ expect((await request(f.app).post('/api/v1/stocks-test-cash/identities').set('x-stocks-authority-key',key).send({tokens:[good],extra:true})).status).toBe(422);
+ expect((await request(f.app).get('/api/v1/stocks-test-cash/identities').set('x-stocks-authority-key',key)).status).toBe(404);
+ expect(f.prisma.$queryRaw).not.toHaveBeenCalled();expect(f.prisma.user.findUnique).not.toHaveBeenCalled();
+ const max=Array.from({length:32},(_,n)=>f.token('viewer-'+n)),res=await identities(f.app,max);
+ expect(res.status).toBe(200);expect(res.headers['cache-control']).toBe('no-store');
+ expect(res.body.results).toEqual(max.map((_,n)=>({issuer,subject:'viewer-'+n})));
+ expect(f.prisma.$queryRaw).toHaveBeenCalledTimes(32);expect(f.authority.execute).not.toHaveBeenCalled();
+});
+test('identity batch answers each bearer by position with its own live session, block and binding decision',async()=>{
+ const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true);
+ const live=f.prisma.session.findUnique.getMockImplementation();
+ f.prisma.session.findUnique.mockImplementation(async(args:any)=>{const s=await live(args);return args.where.id==='session-revoked'?{...s,revokedAt:new Date()}:args.where.id==='session-gone'?null:s;});
+ const read=f.prisma.$queryRaw.getMockImplementation();
+ f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>{if(args[args.length-1]==='session-broken')throw Error('synthetic database outage');const rows=await read(...args);return args[args.length-1]==='session-blocked'?rows.map((row:any)=>({...row,contactAction:'CONTACT_EMAIL_BLOCKED'})):rows;});
+ const tokens=[f.token('synthetic-a'),f.token('revoked'),f.token('synthetic-b'),f.token('blocked'),f.token('gone'),f.token('synthetic-a',false),
+  jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a',purpose:'2fa'},process.env.JWT_SECRET!,{expiresIn:'1h'}),
+  jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a'},process.env.JWT_SECRET!),
+  jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a'},'different-synthetic-key',{expiresIn:'1h'}),
+  jwt.sign({sub:'synthetic-b',sid:'session-synthetic-a'},process.env.JWT_SECRET!,{expiresIn:'1h'}),
+  f.token('broken'),f.token('viewer')];
+ const res=await identities(f.app,tokens);
+ expect(res.status).toBe(200);
+ expect(res.body.results).toEqual([{issuer,subject:'synthetic-a'},{error:'AUTH_REQUIRED'},{issuer,subject:'synthetic-b'},{error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'},
+  {error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'},{error:'AUTH_UNAVAILABLE'},{issuer,subject:'viewer'}]);
+ // Nothing outlives the batch: the very next batch re-reads, and a sign-out in between is refused.
+ const again=f.token('synthetic-b');
+ expect((await identities(f.app,[again])).body.results).toEqual([{issuer,subject:'synthetic-b'}]);
+ f.prisma.session.findUnique.mockImplementation(async(args:any)=>({...(await live(args)),revokedAt:new Date()}));
+ expect((await identities(f.app,[again])).body.results).toEqual([{error:'AUTH_REQUIRED'}]);
+ expect(f.authority.execute).not.toHaveBeenCalled();
+});
+test('identity batch admits and refuses exactly what GET identity does, judged at use',async()=>{
+ const now=jest.spyOn(Date,'now').mockImplementation(()=>clock);
+ try{
+  // Header replacement cases cannot apply: a batch carries no user Authorization header.
+  for(const c of atUseCases.filter(c=>!/^bearer (replaced|removed)/.test(c.name))){
+   clock=T0*1000;
+   const f=fixture(true,c.routerKey??process.env.JWT_SECRET!);
+   f.prisma.session.findUnique.mockImplementation(async({where}:any)=>({id:where.id,userId:where.id.replace('session-',''),revokedAt:null,lastSeenAt:new Date(Date.now()),remembered:false,user:{email:'synthetic@example.invalid'}}));
+   const read=f.prisma.$queryRaw.getMockImplementation();
+   f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>{const rows=await read(...args);c.during?.({headers:{}});return rows;});
+   const single=(await hop('identity',c)).outcome;
+   clock=T0*1000;
+   const res=await identities(f.app,[c.token()]);
+   expect([c.name,res.status]).toEqual([c.name,200]);
+   expect([c.name,res.body.results[0].subject??res.body.results[0].error,String(single).startsWith('200')]).toEqual([c.name,typeof c.expected==='number'?'synthetic-a':'AUTH_REQUIRED',typeof c.expected==='number']);
+  }
+ }finally{now.mockRestore();clock=T0*1000;}
 });
