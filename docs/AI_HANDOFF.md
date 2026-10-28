@@ -8026,3 +8026,20 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
   - viewer latency p50/p95 0.70/0.71 s.
 - Tests: Stocks unit 385/385; PG 32/32 (load: 216 private requests, busiest minute 212/240, identity 180, 0×429, 3,147 Session reads); harness self-tests 52/52; Jest Stocks/ingress/route audit 35/35.
 - Open: re-run 50+2 on the new pin. The owner-visible cost is that a viewer's poll is answered about 0.7 s later under 50-viewer load; a quiet gateway answers at once.
+
+## 2026-10-28 — Claude (session 01EmV3Pt) — #613: 50+2 round 3 and the release-chain regression of the harness schedule
+- 50+2 run 40731206335 on `5e06c6f8` (runtime `e92cbd8a`), method unchanged:
+  - collection COMPLETE 8/8, 0 errors;
+  - one process: pooled Δp95 −10.7 %, median −19.4 % → DIAGNOSTIC_P95_PASS;
+  - separated (the release layout): +8.6 % pooled, +6.4 % median → DIAGNOSTIC_P95_FAIL against +5 %;
+  - per-run spread: separated −12.9 % to +69.4 %; the baseline arm alone spans 10.0–15.7 ms p95. Crypto p50 and crypto API CPU are unchanged. In the two failing runs the slowest op is `place-limit`, a fsync commit on trader 0's `DemoBalance`, shared with Stocks.
+  - Round 2 for comparison: +52.1 % / +27.8 %. Artifact SHA-256 aa5a1c50….
+- Comment 6475055421 (owner account) asked for a release-chain regression before the next ABBA. Added it as a second test in `services/stocks-global/identity-load.pg.test.cjs`:
+  - setup: the harness warm-up and the 20 s schedule against the compiled authority, behind the real private ingress at the default 240/min, and the release gateway with the synthetic stream market (`testing/synthetic-release-gateway.mjs --stream-market`);
+  - result: RED on `78e78d64`, reproducing run 40726294118 (viewers 10/12/13/14/16 `QUOTE_UNAVAILABLE`, traders `QUOTE_STALE`); GREEN on `e92cbd8a`, 3 of 3 local runs.
+- Finding, not changed:
+  - the harness's trader cadence is 7 private requests every 4 s per trader, i.e. 210 commands a minute for the two traders, plus 60–90 identity batches a minute — about 300 against the reviewed 240 ceiling;
+  - run at that cadence through the real ingress, both traders got 429 at their fifth cycle;
+  - the ceiling was not raised; the regression runs the order cycle every 8 s. Documented in the isolation and quota docs. Owner decision needed if pilot traders need more.
+- Local: PG 33/33 (incl. both identity-load tests); harness self-tests + node22 route test 52/52.
+- Not touched: #591, #630, #636, ECLAVO/QVTR (#639), NRX, production, secrets. No merge or deploy.

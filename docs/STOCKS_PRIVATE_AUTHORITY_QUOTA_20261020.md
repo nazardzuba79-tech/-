@@ -30,6 +30,13 @@ Operators can choose an integer120..240; values outside that reviewed ceiling
 fail startup. If the completed hosted scenario needs more, do not raise it
 automatically. Independently review request amplification.
 
+**#613, 28.10 (measured, not raised).** With identity checks multiplexed (`POST identities`), 50 viewers
+need 60–90 private requests a minute. A trader's order cycle in the 50+2 harness (state, limit, cancel,
+buy, replay, sell, replay) is 7 private requests; at the harness's 4 s cadence two traders alone make 210
+a minute, so the harness's full trader load needs about 300/min and two traders got 429 at their fifth
+cycle through this ingress. The ceiling stays 240; the release-chain regression runs the order cycle every
+8 s. Details: `docs/STOCKS_613_PROCESS_ISOLATION.md`.
+
 ## Provenance and activation contract
 
 Disabled by default. No production config, listener or trading flag is changed.

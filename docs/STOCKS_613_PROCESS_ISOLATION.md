@@ -169,6 +169,29 @@ Within the stated limits (same budget, unchanged workload), no further deployabl
 step removes these two shared resources. Separate physical cores, or a separate
 database or host for Stocks, would be a resource or topology decision for the owner.
 
+### Round 3 (P1 runtime `e92cbd8a`): run 40731206335 on `5e06c6f8`
+
+[Run 40731206335](https://github.com/nazardzuba79-tech/-/actions/runs/40731206335): same plan, thresholds,
+taskset, ABBA order and PAIRS=4; only the runtime moved to the P1 identity multiplexing (section below).
+Collection COMPLETE 8/8 (1440 requests per run, 0 errors, 0 timeouts, no order loss or double spend).
+Artifact SHA-256 `aa5a1c50b0b2b69f5be0e8fd7afe19b167a0a4a5ab6abd23e4853567f01f7538`.
+
+| Pin | Crypto p95 baseline → mixed, pooled (ms) | Pooled Δp95 | Median run Δp95 | Per-run Δp95 | Verdict |
+|---|---|---|---|---|---|
+| one process | 13.19 → 11.78 | −10.7 % | −19.4 % | −25.6, −22.2, −16.7, +31.7 % | DIAGNOSTIC_P95_PASS |
+| separated, nice 10 | 10.87 → 11.80 | +8.6 % | +6.4 % | −12.9, −5.2, +17.9, +69.4 % | DIAGNOSTIC_P95_FAIL |
+
+Against round 2 (one process +52.1 %, separated +27.8 % pooled): the systematic part of the regression
+is gone. Separated, the crypto API's own CPU is unchanged (1,679 → 1,720 ms per window); the Stocks
+processes use 960 ms (authority) and 1,360 ms (gateway) per 20 s window, the driver 1,450 ms. Crypto p50
+does not move (5.9 ms in both arms). What remains is the p95 tail, and the method's own spread is of
+the same size: the baseline arm alone (no Stocks load) ranges 10.0–15.7 ms p95 across the eight runs,
+and the one-process pin comes out *faster* under load in three of four runs. In the two failing separated
+runs the slowest crypto operation is `place-limit` (p95 56 and 18 ms against 15 and 10 ms in their
+baselines): the commit that writes the order with fsync, on the `DemoBalance` of trader 0, who is also
+a Stocks trader (cause 2 above). Under the agreed rule the release layout is still **FAIL** at +8.6 %.
+The next push replicates the measurement unchanged on the same runtime.
+
 ## Gateway → authority identity checks (P1, resolved)
 
 Before: the gateway called `GET identity` on the authority for every gateway request, and a
@@ -221,6 +244,29 @@ releases, every 500 ms), and the separated pin still stopped on the same first r
 warm-up needs 86 identity checks. Hence the current shape: a 3Q/8 burst covers that warm-up, and the
 arrival-spaced release keeps the load as even as the requests themselves (local: warm-up 0.8-1 s,
 0 errors, completions spread evenly over each second, viewer p50/p95 0.70/0.71 s).
+On this runtime the 50+2 run collected 8/8 (round 3 above).
+
+**Release-chain regression of the harness schedule.** `identity-load.pg.test.cjs` also runs the harness's
+warm-up (each trader until its quote is ready, then one read per viewer), the 5 s pause and the 20 s
+measured window of `driver.cjs` (50 viewers every second from 0, 20, 40 … ms, the deny-order at the first
+cycle, traders from 500 and 2,500 ms every 4 s) against the compiled authority behind the real private
+ingress (default 240/min) and the release gateway with the synthetic Binance stream market in its own
+process (`synthetic-release-gateway.mjs --stream-market`). It requires every job to finish with no
+unexpected error, timeout or late start, no 429, the exact orders, and nothing for viewers. On `78e78d64`
+it fails exactly as run 40726294118 (warm-up 12 s; viewers 10, 12, 13, 14, 16 `QUOTE_UNAVAILABLE`,
+both traders `QUOTE_STALE`); on `e92cbd8a` it passes (3 of 3 local runs: warm-up 4.9 s, 1,010 jobs,
+0 errors, job p50/p95 0.70/0.72 s, 208 private requests in the first quota window).
+
+**Known limit: the harness's trader cadence does not fit the private quota.** The harness's own authority
+has no ingress. Its trader job (state, then limit, cancel, buy, replay, sell, replay every 4 s) is 7 private
+requests per trader every 4 s: 210 commands a minute for the two traders, before the 60–90 identity
+batches a minute that 50 viewers need. That is about 300 against the reviewed 240/min ceiling. Run at
+that cadence through the real ingress, both traders got 429 `AUTH_RATE_LIMIT` at their fifth cycle
+(warm-up 123 + measured 119 private requests in one 60 s window). The ceiling is not raised for a test
+(`docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md`); the regression keeps the harness's poll cadence and
+runs the order cycle every 8 s (120 commands a minute). Whether two pilot traders need more than about
+150 commands a minute, and so a higher reviewed ceiling, is an owner decision.
+
 That a just-demanded Binance stream instrument answers its very first read with `QUOTE_UNAVAILABLE`
 (and the next poll succeeds) is existing market-data behaviour, also on the old code; it is left
 unchanged here.

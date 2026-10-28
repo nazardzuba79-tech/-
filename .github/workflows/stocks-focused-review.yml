@@ -175,7 +175,8 @@ jobs:
       source-sha: ${{ steps.source-check.outputs.sha }}
     # Compiled API + disposable PostgreSQL on the exact runtime.
     # No production-image, ingress, provider or deployment attestation.
-    # identity-load.pg.test.cjs holds the 50+2 cadence for a full minute (about 75 s).
+    # identity-load.pg.test.cjs holds the 50+2 cadence for a full minute (about 75 s), then runs the
+    # 50+2 harness schedule through the private ingress with the synthetic stream market (about 35 s).
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

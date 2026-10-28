@@ -2,13 +2,21 @@
 // market clients, so a disposable-PostgreSQL test can exercise the two-trader path (both server gates
 // asserted by the authority's readiness) without any outbound request. Same release authority
 // (openReleaseAuthority: readiness, issuer, principals digest) and the same gateway createServer.
+// --stream-market: the Binance stream hub on the loopback synthetic public market instead (demand leases and
+// stream freshness, as the 50+2 harness's gateway process: scripts/qa/stocks-rc-50plus2/stocks-worker.cjs).
 import { openReleaseAuthority } from '../release-authority.mjs';
 import { CATALOG, instrument } from '../catalog.mjs';
 
 try {
   const { config, authority } = await openReleaseAuthority();
   const { createServer } = await import('../server.mjs');
-  const hub = {
+  let market;
+  const hub = process.argv.includes('--stream-market') ? await (async () => {
+    const { syntheticPublicMarket, loopbackFetch } = await import('./synthetic-public-market.mjs');
+    const { BinanceStreamMarketHub } = await import('../binance-stream-market.mjs');
+    market = await syntheticPublicMarket();
+    return new BinanceStreamMarketHub({ enabled: true, fetchImpl: loopbackFetch(market.origin), feedOptions: { url: market.wsUrl, synthetic: true }, now: Date.now });
+  })() : {
     metrics: { syntheticSourceStarts: 0 },
     catalogue: async () => CATALOG.map(row => ({ ...row, online: row.provider !== 'moex', exists: true })),
     history: async (id, interval = '15m') => {
@@ -26,7 +34,8 @@ try {
   };
   const app = await createServer({ port: config.port, financialEnabled: config.tradingEnabled, accountAuthority: authority, tradePrincipals: config.tradePrincipals, hub });
   console.log('STOCKS_RELEASE_LISTENING ' + app.port);
-  const stop = () => app.close();
+  // The stream feed keeps its own socket and timers: a signal ends the launcher once the listeners are closed.
+  const stop = () => Promise.resolve(app.close()).then(() => market?.close()).finally(() => process.exit());
   process.on('SIGINT', stop); process.on('SIGTERM', stop);
 } catch (error) {
   console.error(/^STOCKS_RELEASE_[A-Z_]+$/.test(error?.code) ? error.code : 'STOCKS_RELEASE_START_FAILED');

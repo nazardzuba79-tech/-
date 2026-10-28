@@ -43,6 +43,32 @@ async function start(t, args, env, ready) {
   };
   return child;
 }
+async function syntheticViewers(f, jwt) {
+  const viewers = [];
+  for (let i = 0; i < VIEWERS; i++) {
+    const id = `synthetic-stock-viewer-${i}-${crypto.randomUUID()}`;
+    await f.other.user.create({ data: { id, email: id + '@example.invalid', passwordHash: 'synthetic-no-password-login', referralCode: crypto.randomBytes(10).toString('hex') } });
+    const session = await f.other.session.create({ data: { userId: id } });
+    viewers.push({ id, session: session.id, email: id + '@example.invalid', token: jwt.sign({ sub: id, sid: session.id }, process.env.JWT_SECRET, { expiresIn: '1h' }) });
+  }
+  return viewers;
+}
+// The compiled authority (default private quota: nothing is raised for these tests) and the release gateway
+// (testing/synthetic-release-gateway.mjs: release-entrypoint.mjs with a synthetic market, so the traders' commands
+// run without any outbound request).
+async function releaseChain(t, f, gatewayArgs = []) {
+  const env = { ...clean(), NODE_ENV: 'production', DATABASE_URL: f.target.raw, JWT_SECRET: process.env.JWT_SECRET,
+    STOCKS_TEST_CASH_ENABLED: 'true', STOCKS_CATALOGUE_ENABLED: 'true', STOCKS_ORDER_EXECUTION_ENABLED: 'true',
+    STOCKS_IDENTITY_ISSUER: f.issuer, STOCKS_TRADE_PRINCIPALS: JSON.stringify(f.principals), STOCKS_TEST_CASH_GATEWAY_KEY: f.gatewayKey };
+  const authorityPort = await freePort();
+  const authority = await start(t, ['--require', counter, authorityEntry], { ...env, STOCKS_AUTHORITY_INTERNAL_PORT: String(authorityPort) }, 'STOCKS_AUTHORITY_LISTENING ' + authorityPort);
+  const gatewayPort = await freePort();
+  await start(t, [path.join(__dirname, 'testing/synthetic-release-gateway.mjs'), ...gatewayArgs], { ...clean(), NODE_ENV: 'production',
+    STOCKS_TEST_CASH_AUTHORITY_URL: `http://127.0.0.1:${authorityPort}/api/v1/stocks-test-cash`,
+    STOCKS_IDENTITY_ISSUER: f.issuer, STOCKS_TEST_CASH_GATEWAY_KEY: f.gatewayKey, STOCKS_TRADE_PRINCIPALS: JSON.stringify(f.principals),
+    STOCKS_GLOBAL_PORT: String(gatewayPort) }, 'STOCKS_RELEASE_LISTENING ' + gatewayPort);
+  return { authority, gateway: `http://127.0.0.1:${gatewayPort}/__stocks_global/` };
+}
 const quantile = (values, q) => { const sorted = [...values].sort((a, b) => a - b); return sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : null; };
 const busiestMinute = log => { let best = 0; for (let i = 0, j = 0; j < log.length; j++) { while (log[j][0] - log[i][0] >= 60000) i++; best = Math.max(best, j - i + 1); } return best; };
 
@@ -53,27 +79,8 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
   assert.equal(process.env.STOCKS_PG_COMPILED_ROUTER, 'true');
   const f = await fixture(t), jwt = require('jsonwebtoken');
   const before = await f.rows();
-  const viewers = [];
-  for (let i = 0; i < VIEWERS; i++) {
-    const id = `synthetic-stock-viewer-${i}-${crypto.randomUUID()}`;
-    await f.other.user.create({ data: { id, email: id + '@example.invalid', passwordHash: 'synthetic-no-password-login', referralCode: crypto.randomBytes(10).toString('hex') } });
-    const session = await f.other.session.create({ data: { userId: id } });
-    viewers.push({ id, session: session.id, email: id + '@example.invalid', token: jwt.sign({ sub: id, sid: session.id }, process.env.JWT_SECRET, { expiresIn: '1h' }) });
-  }
-  const env = { ...clean(), NODE_ENV: 'production', DATABASE_URL: f.target.raw, JWT_SECRET: process.env.JWT_SECRET,
-    STOCKS_TEST_CASH_ENABLED: 'true', STOCKS_CATALOGUE_ENABLED: 'true', STOCKS_ORDER_EXECUTION_ENABLED: 'true',
-    STOCKS_IDENTITY_ISSUER: f.issuer, STOCKS_TRADE_PRINCIPALS: JSON.stringify(f.principals), STOCKS_TEST_CASH_GATEWAY_KEY: f.gatewayKey };
-  // The default private quota (no STOCKS_AUTHORITY_REQUESTS_PER_MINUTE): nothing is raised for this test.
-  const authorityPort = await freePort();
-  const authority = await start(t, ['--require', counter, authorityEntry], { ...env, STOCKS_AUTHORITY_INTERNAL_PORT: String(authorityPort) }, 'STOCKS_AUTHORITY_LISTENING ' + authorityPort);
-  const endpoint = `http://127.0.0.1:${authorityPort}/api/v1/stocks-test-cash`;
-  const gatewayPort = await freePort();
-  // The release gateway (testing/synthetic-release-gateway.mjs: release-entrypoint.mjs with a synthetic market, so
-  // the traders' commands run without any outbound request).
-  await start(t, [path.join(__dirname, 'testing/synthetic-release-gateway.mjs')], { ...clean(), NODE_ENV: 'production', STOCKS_TEST_CASH_AUTHORITY_URL: endpoint,
-    STOCKS_IDENTITY_ISSUER: f.issuer, STOCKS_TEST_CASH_GATEWAY_KEY: f.gatewayKey, STOCKS_TRADE_PRINCIPALS: JSON.stringify(f.principals),
-    STOCKS_GLOBAL_PORT: String(gatewayPort) }, 'STOCKS_RELEASE_LISTENING ' + gatewayPort);
-  const gateway = `http://127.0.0.1:${gatewayPort}/__stocks_global/`;
+  const viewers = await syntheticViewers(f, jwt);
+  const { authority, gateway } = await releaseChain(t, f);
   const state = async token => {
     const response = await fetch(gateway + 'state?id=' + encodeURIComponent(f.ID), { headers: { Authorization: 'Bearer ' + token } });
     return { status: response.status, body: await response.json().catch(() => null) };
@@ -158,4 +165,113 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
   const all = await authority.requestLog();
   assert.equal(all.filter(([, , , status]) => status === 429).length, 0);
   assert.deepEqual(await f.rows(), before, 'no cash, account, receipt or audit change');
+});
+
+// #613: the 50+2 harness schedule (scripts/qa/stocks-rc-50plus2/api-worker.cjs warm-up, driver.cjs PLAN and jobs) on
+// the same release chain through the real private ingress, with the synthetic Binance stream market in the gateway
+// process (demand leases and stream freshness, as the harness's separated gateway). Run 40726294118 stopped at the
+// first measured polls with QUOTE_UNAVAILABLE (viewers) and QUOTE_STALE (trader 0): the warm-up's identity checks
+// outran the gateway's identity budget, the warm-up outlasted the market's demand leases, and the first polls found
+// their symbols cold again. Every job here must finish without an unexpected error, a timeout or a late start.
+// One deviation, the private quota's envelope: the harness's own authority has no ingress, and its trader cadence
+// (state plus limit, cancel, buy, replay, sell, replay every 4 s: 7 private requests) is 210 commands a minute for
+// the two traders before any identity check, more than the reviewed 240/min ceiling leaves (identity takes 60-90 a
+// minute for 50 viewers). Run at that cadence here, both traders got 429 AUTH_RATE_LIMIT at their fifth cycle. The
+// ceiling is not raised for a test (docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md); here the traders poll at the
+// harness cadence and run the harness's order cycle every second poll (every 8 s, 120 commands a minute).
+test('the 50+2 harness schedule on the release chain: warm-up and every measured job finish without an unexpected error', {
+  timeout: 180000, skip: disposableUrl() ? false : 'NOT_RUN: disposable PostgreSQL required',
+}, async t => {
+  assert.equal(process.versions.node, '22.23.3');
+  assert.equal(process.env.STOCKS_PG_COMPILED_ROUTER, 'true');
+  const f = await fixture(t), jwt = require('jsonwebtoken');
+  const { CATALOG } = await import(path.join(__dirname, 'catalog.mjs'));
+  const instruments = CATALOG.filter(i => i.provider !== 'moex').slice(0, 20).map(i => i.id), stockId = CATALOG.find(i => i.provider === 'binance').id;
+  const viewers = await syntheticViewers(f, jwt), viewerRows = async () => f.other.demoBalance.count({ where: { userId: { in: viewers.map(v => v.id) } } });
+  const { authority, gateway } = await releaseChain(t, f, ['--stream-market']);
+  const PLAN = { measureMs: 20000, timeoutMs: 3000, maxJitterMs: 250, maxInflight: 80 };
+  const request = async (route, { token, view, body, csrf, expected = 200 }) => {
+    const response = await fetch(gateway + route, { method: body === undefined ? 'GET' : 'POST', signal: AbortSignal.timeout(PLAN.timeoutMs),
+      headers: { authorization: 'Bearer ' + token, 'x-stocks-view': view, ...(body === undefined ? {} : { 'content-type': 'application/json', 'x-stocks-token': csrf ?? '' }) },
+      body: body === undefined ? undefined : JSON.stringify(body) });
+    const value = await response.json().catch(() => null);
+    if (response.status !== expected) throw Error(`HTTP_${response.status}_${route.split('?')[0]}_${JSON.stringify(value?.error ?? null)}`);
+    return value;
+  };
+  const state = (id, token, view) => request('state?id=' + encodeURIComponent(id), { token, view });
+
+  // Warm-up as api-worker.cjs: each trader until its quote is ready (4.5 s at most), then one state per viewer.
+  const warmStart = performance.now();
+  for (const [i, token] of f.tokens.entries()) {
+    let last, ready = false;
+    for (const end = Date.now() + 4500; !ready && Date.now() < end;) {
+      last = await state(stockId, token, 'diag-trader-' + i);
+      ready = last.account?.canTrade === true && Boolean(last.quotes?.[stockId]) && !last.errors?.[stockId];
+      if (!ready) await sleep(120);
+    }
+    assert.ok(ready, `trader ${i} quote readiness: ${JSON.stringify(last?.errors ?? null)}`);
+  }
+  for (const [i, viewer] of viewers.entries()) assert.equal((await state(instruments[i % 20], viewer.token, 'diag-viewer-' + i)).account.canTrade, false);
+  const warmMs = Math.round(performance.now() - warmStart);
+  await sleep(5000); // the harness's crypto-only warm-up window between this and the measured window
+
+  // The measured window, exactly driver.cjs's Stocks jobs (no crypto jobs: this is about the Stocks chain).
+  const errors = [], latencies = [], placed = [[], []];
+  let missed = 0, inflight = 0, maxJitter = 0, denials = 0;
+  const viewerJob = async (i, cycle) => {
+    const id = instruments[i % 20], view = 'diag-viewer-' + i, answer = await state(id, viewers[i].token, view);
+    assert.equal(answer.account.canTrade, false);
+    if (answer.errors?.[id]) throw Error('VIEWER_QUOTE_' + answer.errors[id]);
+    if (cycle === 0) {
+      const denied = await request('orders', { token: viewers[i].token, view, csrf: answer.token, expected: 401,
+        body: { id: 'rc50-viewer-deny-' + i, instrumentId: id, currency: 'USDT', side: 'BUY', type: 'MARKET', quantity: '0.01' } });
+      assert.equal(denied.error, 'AUTH_REQUIRED'); denials++;
+    }
+  };
+  const traderJob = async (i, cycle) => {
+    const token = f.tokens[i], view = 'diag-trader-' + i, answer = await state(stockId, token, view);
+    assert.equal(answer.account.canTrade, true);
+    if (answer.errors?.[stockId]) throw Error('TRADER_QUOTE_' + answer.errors[stockId]);
+    if (cycle % 2 === 0) return; // the order cycle every 8 s (see above)
+    const command = (route, body) => request(route, { token, view, csrf: answer.token, body });
+    const submit = async (suffix, side, type, extra = {}) => {
+      const order = { id: `rc50-mixed-${i}-${cycle}-${suffix}`, // the harness's ids (at least 16 characters)
+         instrumentId: stockId, currency: 'USDT', side, type, quantity: '0.01', ...extra };
+      await command('orders', order); placed[i].push({ id: order.id, status: type === 'LIMIT' ? 'CANCELLED' : 'FILLED' });
+      return order;
+    };
+    const limit = await submit('limit', 'BUY', 'LIMIT', { limitPrice: '98' });
+    await command('cancel', { id: limit.id });
+    const buy = await submit('buy', 'BUY', 'MARKET'); await command('orders', buy);
+    const sell = await submit('sell', 'SELL', 'MARKET'); await command('orders', sell);
+  };
+  const jobs = [];
+  for (let i = 0; i < VIEWERS; i++) for (let at = i * 20, cycle = 0; at < PLAN.measureMs; at += 1000, cycle++) jobs.push({ at, label: `viewer-${i}-${cycle}`, fn: () => viewerJob(i, cycle) });
+  for (let i = 0; i < 2; i++) for (let at = 500 + i * 2000, cycle = 0; at < PLAN.measureMs; at += 4000, cycle++) jobs.push({ at, label: `trader-${i}-${cycle}`, fn: () => traderJob(i, cycle) });
+  const startedAt = Date.now(), start = performance.now();
+  await Promise.all(jobs.map(job => new Promise(resolve => setTimeout(() => {
+    const jitter = performance.now() - start - job.at; maxJitter = Math.max(maxJitter, jitter);
+    if (jitter > PLAN.maxJitterMs || inflight >= PLAN.maxInflight) { missed++; resolve(); return; }
+    inflight++; const begun = performance.now();
+    job.fn().then(() => latencies.push(performance.now() - begun), error => errors.push(job.label + ' ' + String(error.message ?? error).slice(0, 160)))
+      .finally(() => { inflight--; resolve(); });
+  }, Math.max(0, job.at - (performance.now() - start))))));
+  const log = await authority.requestLog(), load = log.filter(([at]) => at >= startedAt);
+  const kinds = rows => rows.reduce((count, [, method, url, status]) => { const key = `${method} ${url.replace('/api/v1/stocks-test-cash/', '')} ${status}`; return { ...count, [key]: (count[key] ?? 0) + 1 }; }, {});
+  t.diagnostic('PRIVATE_REQUESTS ' + JSON.stringify({ warmUp: kinds(log.filter(([at]) => at < startedAt)), measured: kinds(load) }));
+  const summary = { warmMs, jobs: jobs.length, errors: errors.length, firstErrors: errors.slice(0, 8), missed, maxJitterMs: Math.round(maxJitter),
+    p50: Math.round(quantile(latencies, 0.5)), p95: Math.round(quantile(latencies, 0.95)), authorityRequests: load.length, busiestMinute: busiestMinute(load) };
+  t.diagnostic('HARNESS_SCHEDULE ' + JSON.stringify(summary));
+  assert.deepEqual(errors, [], 'no unexpected error (QUOTE_UNAVAILABLE, QUOTE_STALE, AUTH_RATE_LIMIT, timeouts included)');
+  assert.equal(missed, 0, 'every job started on time and under the in-flight bound');
+  assert.equal(denials, VIEWERS);
+  assert.equal(load.filter(([, , , status]) => status === 429).length, 0, 'the private quota never refused the gateway');
+  // Exactly the intended orders: each LIMIT cancelled, each MARKET filled once despite its replay; nothing for viewers.
+  const accounts = await f.rows();
+  for (const [i, expected] of placed.entries()) {
+    assert.equal(expected.length, 6);
+    const orders = Object.fromEntries(accounts.accounts.find(a => a.userId === f.users[i]).ledger.orders.filter(o => o.id.startsWith('rc50-mixed-')).map(o => [o.id, o.status]));
+    assert.deepEqual(orders, Object.fromEntries(expected.map(o => [o.id, o.status])));
+  }
+  assert.equal(await viewerRows(), 0, 'viewers hold no balance');
 });
