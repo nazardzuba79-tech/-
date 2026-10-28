@@ -50,9 +50,14 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
   await request(info.apiOrigin,'/api/v1/demo/orders/'+encodeURIComponent(placed.order.id),{...common,method:'DELETE',expected:204,op:'cancel'});
   await request(info.apiOrigin,'/api/v1/demo/balances',{...common,op:'balances'});
  };
+ // As the terminal (GlobalStocks.tsx, catalogueVersion.ts): a client's first state read gets the full catalogue;
+ // every later read names the version it holds and the gateway leaves the unchanged catalogue out.
+ const held={viewer:new Map(),trader:new Map()};
+ const stateRoute=(kind,index,id)=>'/__stocks_global/state?id='+encodeURIComponent(id)+(held[kind].has(index)?'&catalogue='+held[kind].get(index):'');
+ const keep=(kind,index,state)=>{if(Array.isArray(state.catalogue)&&/^[a-f0-9]{16}$/.test(state.catalogueVersion??''))held[kind].set(index,state.catalogueVersion);else if(!Array.isArray(state.catalogue)&&state.catalogueVersion!==held[kind].get(index))throw Error('CATALOGUE_VERSION_LOST');};
  const viewerJob=async(index,cycle)=>{
   const token=info.viewerTokens[index],view='diag-viewer-'+index,id=info.instruments[index%info.instruments.length];
-  const state=await request(info.stocksOrigin,'/__stocks_global/state?id='+encodeURIComponent(id),{token,view,kind:'viewer',op:'state',index});
+  const state=await request(info.stocksOrigin,stateRoute('viewer',index,id),{token,view,kind:'viewer',op:'state',index});keep('viewer',index,state);
   assert.equal(state.account.canTrade,false);
   if(state.errors?.[id])throw Error('VIEWER_QUOTE_'+state.errors[id]);
   if(cycle===0){
@@ -62,7 +67,7 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
  };
  const traderJob=async(index,cycle)=>{
   const token=info.traderTokens[index],view='diag-trader-'+index,id=info.stockId;
-  const state=await request(info.stocksOrigin,'/__stocks_global/state?id='+encodeURIComponent(id),{token,view,kind:'trader',op:'state',index});
+  const state=await request(info.stocksOrigin,stateRoute('trader',index,id),{token,view,kind:'trader',op:'state',index});keep('trader',index,state);
   assert.equal(state.account.canTrade,true);if(state.errors?.[id])throw Error('TRADER_QUOTE_'+state.errors[id]);
   if(!traderOrders(cycle))return;
   const common={token,view,csrf:state.token,kind:'trader',method:'POST',index};

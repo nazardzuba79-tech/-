@@ -60,11 +60,15 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
-#613 candidate pins (repinned 2026-10-28, Claude: P1 gateway identity multiplexing)
-Both policies pin the same runtime, e92cbd8a (#613 P1: identity checks
-multiplexed with a quota-sized budget and arrival-spaced answers, no pre-command
-re-identity with the PostgreSQL authority; earlier: 386f7fc8 0/8 in run 40719580431,
-78e78d64 single 4/4 +187 % / separated 0/4 in run 40726294118); the plan,
+#613 candidate pins (repinned 2026-10-28, Claude: catalogue sent only when it changed)
+Both policies pin the same runtime, 8d560d01 (#613: e92cbd8a's P1 identity
+multiplexing plus state answers that leave the 16.6 KB catalogue out when the
+client names the version it holds; the driver does as the real terminal does, so
+this runtime is required: an older gateway refuses ?catalogue= with 422). Earlier:
+e92cbd8a (P1: identity checks multiplexed with a quota-sized budget and
+arrival-spaced answers, no pre-command re-identity with the PostgreSQL authority),
+386f7fc8 0/8 in run 40719580431, 78e78d64 single 4/4 +187 % / separated 0/4 in run
+40726294118; the plan,
 thresholds, taskset, ABBA order and PAIRS are unchanged. Rounds 1-2 pinned
 5d69057d (#613 head runtime plus src/stocksAuthority.ts). Only the process topology
 differs between the policies (TOPOLOGY export):
