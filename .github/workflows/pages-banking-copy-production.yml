@@ -1,0 +1,62 @@
+name: Reviewed Banking #144 production Pages release
+on:
+  push:
+    branches:
+      - release/pages-banking-copy-144-20261028
+permissions:
+  contents: read
+concurrency:
+  group: voltex-pages-production-release
+  cancel-in-progress: false
+jobs:
+  one-reviewed-frontend:
+    if: contains(github.event.head_commit.message, '[banking144-production-release]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: pages-production
+    env:
+      VITE_API_URL: https://api.voltextech.net/api/v1
+      VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
+      VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+      VITE_WALLET_CONVERSION_ENABLED: 'false'
+      VITE_STOCKS_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Canonical SHA and exact three-string source lease
+        run: |
+          node scripts/release-banking144.mjs verify
+          node scripts/release-banking144.mjs self-test
+      - name: Install locked dependencies, no lifecycle scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Build reviewed original SEO-compatible frontend
+        run: npm run build --prefix frontend
+      - name: Banking customer text and original finance/user safeguards
+        run: |
+          npx jest frontend/src/lib/__tests__/customerFacingErrors.test.ts \
+            frontend/src/lib/__tests__/banking.test.ts \
+            frontend/src/lib/__tests__/walletConversion.test.ts --runInBand --passWithNoTests=false
+      - name: Install pinned Pages publish tool
+        run: |
+          npm install --prefix /tmp/banking144-release --no-save --ignore-scripts --no-audit --no-fund wrangler@4.141.0
+      - name: Lease production, publish one reviewed static artifact, check live and rollback if needed
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+          QA_WRANGLER_BIN: /tmp/banking144-release/node_modules/.bin/wrangler
+        run: node scripts/release-banking144.mjs release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: banking144-production-evidence
+          path: output/banking144-release
+          retention-days: 7
+          if-no-files-found: warn
