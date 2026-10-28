@@ -121,6 +121,7 @@ describe('idle backoff: the wake fires after the commit, never inside it', () =>
       order: { create: jest.fn(async (a: any) => a), update: jest.fn(async (a: any) => a), findUnique: jest.fn(async () => null), findMany: jest.fn(async () => []) },
       balance: { findUnique: async () => ({ available: '999999', locked: '0' }), updateMany: async () => ({ count: 1 }) },
       trade: { create: jest.fn(async (a: any) => a) },
+      auditLog: { findMany: jest.fn(async () => []) }, // transactional ordinary account has no synthetic receipts
     };
     const prisma = trackingPrisma(async () => tx, log);
     const engine = new MatchingEngine();
