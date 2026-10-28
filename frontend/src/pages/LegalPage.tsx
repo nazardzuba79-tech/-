@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom';
 import { getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { LEGAL_CONTENT, LegalDoc } from '../lib/legalContent';
+import { usePageMeta } from '../lib/content/usePageMeta';
+import { legalMeta } from '../lib/seo/legalMeta';
 import { Nav } from '../components/Nav';
 import { Logo } from '../components/Logo';
 import { AboutPage } from './about/AboutPage';
@@ -19,6 +21,9 @@ export function LegalPage() {
   const isValid = VALID_DOCS.includes(doc as LegalDoc);
   const content = isValid ? LEGAL_CONTENT[lang][doc as LegalDoc] : null;
   const loggedIn = !!getToken();
+  // The licences page sets its own title and noindex (LicencesPage).
+  const meta = isValid ? legalMeta(doc as LegalDoc, lang) : null;
+  usePageMeta(meta?.title ?? null, meta?.description ?? '');
 
   if (doc === 'licenses') return <LicencesPage />;
 

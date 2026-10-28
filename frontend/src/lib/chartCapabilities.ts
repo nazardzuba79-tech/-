@@ -15,7 +15,7 @@
  * the loaders come in through the context (lib/chartCandleLoaders holds the
  * product's three), so the answer is the same for a test and for the terminal.
  */
-import { isTestMarketPair } from './testMarkets';
+import { isRetiredMarketPair, isTestMarketPair } from './testMarkets';
 import {
   CHART_TIMEFRAMES, DEFAULT_CHART_TIMEFRAME, NATIVE_TIMEFRAMES, SOURCE_HAS_VOLUME, SOURCE_RAW_LIMIT, timeframePlan, timeframeSpec,
   type CandleSourceKind, type ChartTimeframe, type TimeframePlan,
@@ -64,7 +64,8 @@ export interface ChartCapabilities {
 export function candleSourceFor(market: ChartMarket, pair: string): CandleSourceKind {
   if (market === 'futures') return 'futures-public';
   if (market === 'cfd') return 'cfd-display';
-  return isTestMarketPair(pair) ? 'test-market' : 'spot-public';
+  // Retired NRX must never fall through to a real public Spot venue feed.
+  return isRetiredMarketPair(pair) || isTestMarketPair(pair) ? 'test-market' : 'spot-public';
 }
 
 /**
@@ -77,7 +78,7 @@ export function candleSourceFor(market: ChartMarket, pair: string): CandleSource
 export function candleLoaderFor(market: ChartMarket, pair: string, loaders: CandleLoaderTable, own?: ChartCandleLoader | null): ChartCandleLoader {
   if (market === 'futures') return own ?? loaders.futures;
   if (market === 'cfd') return own ?? loaders.cfd;
-  if (isTestMarketPair(pair)) return loaders.testMarket;
+  if (isRetiredMarketPair(pair) || isTestMarketPair(pair)) return loaders.testMarket;
   return own ?? loaders.spot;
 }
 

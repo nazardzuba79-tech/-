@@ -6,6 +6,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
+import { RouteSeo } from './lib/seo/RouteSeo';
 import { RouteShell } from './RouteShell';
 import { defaultTradingPath } from './lib/tradingMode';
 import { loginPathFor, readNext } from './lib/returnTo';
@@ -15,7 +16,7 @@ import { isBrowserInactive } from './lib/browserActivity';
 import './pages/stocks/stockNavigation.css';
 
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
-const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
+const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.RetiredMarketTradeRoute })));
 const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
 const PrivateTradingPage = lazy(() => import('./pages/private-trading/PrivateTradingPage').then((m) => ({ default: m.PrivateTradingPage })));
 const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));
@@ -100,6 +101,7 @@ export function App() {
   usePrefetchLikelyRoutes();
   return (
     <BrowserRouter>
+      <RouteSeo />
       <Suspense fallback={<RouteShell />}>
       <Routes>
         {/* The ordinary VOLTEX login, as for Spot and Futures, on every Stocks build (#611). */}

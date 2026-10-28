@@ -99,6 +99,7 @@ export function PortfolioStrip({
   onDeposit,
   onWithdraw,
   onTransfer,
+  onConvert,
   onHistory,
 }: {
   account: UnifiedAccount | null;
@@ -112,6 +113,7 @@ export function PortfolioStrip({
   onDeposit: () => void;
   onWithdraw: () => void;
   onTransfer: () => void;
+  onConvert?: () => void;
   onHistory: () => void;
 }) {
   const { t, lang } = useLanguage();
@@ -204,7 +206,8 @@ export function PortfolioStrip({
             <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.withdraw')}
           </button>
-          <button type="button" disabled aria-disabled="true" className={`${ACTION_OFF} wallet-action-convert`}>
+          <button type="button" onClick={onConvert} disabled={!onConvert} aria-disabled={!onConvert}
+            className={onConvert ? `${ACTION_SECONDARY} wallet-action-convert` : `${ACTION_OFF} wallet-action-convert`}>
             <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.convert')}
           </button>

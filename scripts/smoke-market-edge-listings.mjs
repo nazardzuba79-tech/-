@@ -37,7 +37,7 @@ check('public catalogue never carries a seed or owner allocation', !/"seed"|owne
 check('public catalogue is readable cross-origin', catalogue.headers.get('access-control-allow-origin') === '*');
 
 const nrx = await get('/market/nrx');
-check('existing NRX edge unchanged', nrx.status === 200, String(nrx.status));
+check('retired NRX edge refuses public quotes', nrx.status === 410 && nrx.json?.error === 'market_retired' && nrx.json?.symbol === 'NRX', String(nrx.status));
 
 const browser = await get('/internal/listings', { Origin: 'https://voltextech.net' });
 check('admin store refuses a browser Origin', [403, 503].includes(browser.status) && !browser.headers.get('access-control-allow-origin'), String(browser.status));

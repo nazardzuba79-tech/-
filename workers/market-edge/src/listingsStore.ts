@@ -164,6 +164,35 @@ export class ManagedListingsDO {
     });
   }
 
+
+  /** Atomic exact-target removal; no public DELETE endpoint. */
+  private deleteListing(id: string, input: Record<string, unknown> | undefined): Response {
+    const symbol = input?.symbol, revision = input?.draftRevision, activeVersion = input?.activeVersion;
+    if (typeof symbol !== 'string' || !/^[A-Z0-9]{2,10}$/.test(symbol)
+      || !Number.isSafeInteger(revision) || Number(revision) < 1
+      || (activeVersion !== null && (!Number.isSafeInteger(activeVersion) || Number(activeVersion) < 1))
+      || input?.confirmation !== `УДАЛИТЬ ${symbol}`)
+      return reply({ error: 'DELETE_CONFIRMATION_REQUIRED' }, 400);
+    if (this.replacement()?.id === id) return reply({ error: 'replacement_in_progress' }, 409);
+    return this.state.storage.transactionSync(() => {
+      const row = this.sql.exec('SELECT id, symbol, draft_revision, draft, active_version FROM listing WHERE id = ?', id).toArray()[0];
+      if (!row) return reply({ error: 'not_found' }, 404);
+      if (row.symbol !== symbol || Number(row.draft_revision) !== revision ||
+        (row.active_version === null ? null : Number(row.active_version)) !== activeVersion)
+        return reply({ error: 'LISTING_CHANGED', message: 'Reload the listing before deleting it' }, 409);
+      const draft = JSON.parse(String(row.draft)) as ListingConfig;
+      const version = activeVersion === null ? null : this.version(id, Number(activeVersion));
+      if (activeVersion !== null && !version) return reply({ error: 'LISTING_CHANGED' }, 409);
+      const active = version ? JSON.parse(String(version.config)) as ListingConfig : null;
+      if (draft.tradable || active?.tradable)
+        return reply({ error: 'LISTING_TRADABLE', message: 'Disable actual trading before deletion' }, 422);
+      this.sql.exec('DELETE FROM listing_version WHERE listing_id = ?', id);
+      this.sql.exec('DELETE FROM meta WHERE k = ?', `countdown:${id}`);
+      this.sql.exec('DELETE FROM listing WHERE id = ? AND symbol = ?', id, symbol);
+      return reply({ id, symbol, deleted: true, catalogueRevision: this.bumpCatalogueRevision() });
+    });
+  }
+
   private replaceAith(id: string, input: Record<string, unknown> | undefined, actor: string, now: number): Response {
     const key = input?.operationKey;
     if (!input || typeof key !== 'string' || !PUBLISH_KEY.test(key) || !['prepare', 'commit', 'cancel'].includes(String(input.phase))) return reply({ error: 'invalid_replacement_request' }, 400);
@@ -377,11 +406,12 @@ export class ManagedListingsDO {
         return row ? reply({ id: history[1], version: Number(row.version), config: JSON.parse(String(row.config)),
           publishedAt: new Date(Number(row.published_at)).toISOString(), publishedBy: String(row.published_by) }) : reply({ error: 'not_found' }, 404);
       }
-      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting|countdown)$/.exec(url.pathname);
+      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting|countdown|delete)$/.exec(url.pathname);
       if (!match || !LISTING_ID_PATTERN.test(match[1])) return reply({ error: 'not_found' }, 404);
       if (!ACTOR.test(actor)) return reply({ error: 'actor_required' }, 400);
       const body = await readJson(request);
       if (body.error) return body.error;
+      if (match[2] === 'delete' && request.method === 'POST') return this.deleteListing(match[1], body.value);
       if (match[2] === 'replace-prelisting' && request.method === 'POST') {
         if (request.headers.get('X-Voltex-Listing-Protocol') !== AITH_PUBLICATION_PROTOCOL) return reply({ error: 'replacement_protocol_required' }, 428);
         return this.replaceAith(match[1], body.value, actor, Date.now());

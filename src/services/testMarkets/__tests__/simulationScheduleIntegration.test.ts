@@ -1,7 +1,6 @@
 import { NEURIX } from '../neurix';
 import { VOLTORA } from '../testAssetConfig';
 import { aggregateCandles, CANDLE_MS, DAY_MS, HOUR_MS, MINUTE_MS, simulationFor, TestMarketSimulation, TICK_MS } from '../testMarketSimulation';
-import { testMarketCandles } from '../testMarketService';
 import { nrxPublicResponse } from '../nrxPublic';
 import { spotPriceSource } from '../nrxSpot';
 import { scheduledScenarioHour } from '../simulationSchedule';
@@ -159,27 +158,16 @@ test('range-selloff-range stops growth prospectively, falls 60%, then stays bala
   }
 });
 
-test('attached v4 terminal schedule keeps public edge and backend Spot price identical', async () => {
-  const at = terminalScenario.selloffEndAt + HOUR_MS, source = { getTicker: jest.fn() };
-  const request = async (path: string) => nrxPublicResponse(new Request(`https://market.voltextech.net${path}`), () => at)!.json();
-  const ticker = await request('/market/ticker/NRX-USDT');
-  const trades = await request('/market/external/trades/NRX-USDT');
-  expect(Number(ticker.ticker.lastPrice)).toBe(simulationFor(NEURIX).priceAt(at));
-  expect(Number(trades.trades[0].price)).toBe(Number(ticker.ticker.lastPrice));
-  expect((await spotPriceSource(source, () => at).getTicker(NEURIX.pair))?.lastPrice).toBe(ticker.ticker.lastPrice);
-  expect(source.getTicker).not.toHaveBeenCalled();
-});
-
-test('public edge ticker/trades/candles and backend Spot price use the same future NRX simulation', async () => {
+test('internal historical NRX price remains auditable, while public routes and Spot ticker stay retired', async () => {
   const at = scenario.thirdTargetAt, source = { getTicker: jest.fn() };
-  const request = async (path: string) => nrxPublicResponse(new Request(`https://market.voltextech.net${path}`), () => at)!.json();
-  const ticker = await request('/market/ticker/NRX-USDT');
-  const trades = await request('/market/external/trades/NRX-USDT');
-  const candles = await request('/market/test-assets/NRX-USDT/candles?interval=1m');
-  // The new v4 program activates later, so this historical point remains byte-identical.
-  expect(Number(ticker.ticker.lastPrice)).toBe(simulationFor(NEURIX).priceAt(at));
-  expect(Number(trades.trades[0].price)).toBe(Number(ticker.ticker.lastPrice));
-  expect(candles.candles).toEqual(testMarketCandles(NEURIX, '1m', at));
-  expect((await spotPriceSource(source, () => at).getTicker(NEURIX.pair))?.lastPrice).toBe(ticker.ticker.lastPrice);
+  const model = simulationFor(NEURIX);
+  expect(model.priceAt(at)).toBeGreaterThan(0);
+  for (const path of ['/market/ticker/NRX-USDT', '/market/external/trades/NRX-USDT',
+    '/market/test-assets/NRX-USDT/candles?interval=1m']) {
+    const response = nrxPublicResponse(new Request(`https://market.voltextech.net${path}`), () => at)!;
+    expect(response.status).toBe(410);
+    expect(await response.json()).toEqual({ error: 'market_retired', symbol: 'NRX' });
+  }
+  expect(await spotPriceSource(source, () => at).getTicker(NEURIX.pair)).toBeNull();
   expect(source.getTicker).not.toHaveBeenCalled();
 });
