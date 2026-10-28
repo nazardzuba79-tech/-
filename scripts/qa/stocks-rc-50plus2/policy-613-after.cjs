@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 // Stocks authority (src/stocksAuthority.ts) and the gateway in their own processes, under the same taskset.
 // STOCKS_NICE: the release's scheduling control, a lower CPU weight for both Stocks processes than for the
 // crypto API (cpu_shares in deploy/stocks-pages-gateway.compose.yaml.example); it adds no CPU to the budget.
-const RC='386f7fc866d2d5a68fd18521e71697dd5d7b13c7',TOPOLOGY='separated',STOCKS_NICE=10;
+const RC='78e78d647d9a399f95d1effee4ebf5e188ccc41d',TOPOLOGY='separated',STOCKS_NICE=10;
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){
