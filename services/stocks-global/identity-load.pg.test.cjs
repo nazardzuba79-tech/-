@@ -86,7 +86,9 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
     return { status: response.status, body: await response.json().catch(() => null) };
   };
   // Every scan of the Session table, as PostgreSQL counts it (a tiny table may be read by index or sequentially).
-  const sessionReads = async () => Number((await f.other.$queryRawUnsafe(`SELECT coalesce(seq_scan, 0) + coalesce(idx_scan, 0) AS scans FROM pg_stat_user_tables WHERE relname = 'Session'`))[0].scans);
+  // PostgreSQL's own counters for the Session table: reads (scans) and the rows they examined. An identity
+  // batch reads all of its sessions in one query, so it is one scan that examines at least one row per bearer.
+  const sessionReads = async () => { const [row] = await f.other.$queryRawUnsafe(`SELECT (coalesce(seq_scan, 0) + coalesce(idx_scan, 0))::int AS scans, (coalesce(seq_tup_read, 0) + coalesce(idx_tup_fetch, 0))::int AS rows FROM pg_stat_user_tables WHERE relname = 'Session'`); return row; };
 
   // Load: the 50+2 cadence for a full minute.
   const readsBefore = await sessionReads(), startedAt = Date.now(), deadline = performance.now() + LOAD_MS;
@@ -109,8 +111,8 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
   const kinds = load.reduce((count, [, method, url]) => { const key = method + ' ' + url.replace('/api/v1/stocks-test-cash/', ''); return { ...count, [key]: (count[key] ?? 0) + 1 }; }, {});
   const gatewayRequests = results.viewer.length + results.trader.length;
   // Session reads are counted by PostgreSQL itself; its statistics reach the view within ~10 s.
-  let reads = 0;
-  for (let i = 0; i < 60 && reads < gatewayRequests; i++) { reads = await sessionReads() - readsBefore; if (reads < gatewayRequests) await sleep(250); }
+  let reads = { scans: 0, rows: 0 };
+  for (let i = 0; i < 60 && (reads.rows < gatewayRequests || reads.scans < load.length); i++) { const now = await sessionReads(); reads = { scans: now.scans - readsBefore.scans, rows: now.rows - readsBefore.rows }; if (reads.rows < gatewayRequests || reads.scans < load.length) await sleep(250); }
   const summary = {
     gatewayRequests, viewerStatus: statuses(results.viewer), traderStatus: statuses(results.trader),
     viewerP50: Math.round(quantile(results.viewer.map(r => r[1]), 0.5)), viewerP95: Math.round(quantile(results.viewer.map(r => r[1]), 0.95)),
@@ -126,8 +128,10 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
   // The gateway's identity budget is 3/4 of the quota per minute (authority-adapter.mjs); commands keep the rest.
   assert.ok(summary.busiestIdentityMinute <= QUOTA * 0.75, `identity batches in the busiest minute ${summary.busiestIdentityMinute} of ${QUOTA}`);
   assert.ok(summary.busiestMinute <= QUOTA, `busiest minute ${summary.busiestMinute} of ${QUOTA}`);
-  // Multiplexing, not caching: at least one live Session read per gateway request.
-  assert.ok(reads >= gatewayRequests, `session reads ${reads} for ${gatewayRequests} requests`);
+  // Multiplexing, not caching: every private request (identity batch or command) read the Session table live,
+  // and the rows examined cover at least one live Session row per gateway request.
+  assert.ok(reads.scans >= load.length, `session reads ${reads.scans} for ${load.length} private requests`);
+  assert.ok(reads.rows >= gatewayRequests, `session rows read ${reads.rows} for ${gatewayRequests} requests`);
 
   // Same running processes. Each change is followed immediately by the next request; nothing waits for a cache.
   const forged = [jwt.sign({ sub: viewers[0].id, sid: viewers[0].session }, 'another-synthetic-signing-key', { expiresIn: '1h' }),

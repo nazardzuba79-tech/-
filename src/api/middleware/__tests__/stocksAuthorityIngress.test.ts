@@ -27,11 +27,15 @@ async function fixture(options: { enabled?: boolean; finance?: boolean; cap?: nu
           lastSeenAt: new Date(), remembered: false, user: { email: 'fixture@example.invalid' } };
       }), update: jest.fn(),
     }, auditLog: { findFirst: jest.fn(async () => null) },
-    // requireAuth singleSessionRead: the one-query session read, from the rows above.
+    // requireAuth singleSessionRead: the one-query session read (one id, or all of an identity batch), from the rows above.
     $queryRaw: jest.fn(async (_sql: unknown, ...values: any[]) => {
-      const s = await prisma.session.findUnique({ where: { id: values[values.length - 1] } }); if (!s) return [];
-      const event = await prisma.auditLog.findFirst({});
-      return [{ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null }];
+      const rows = [];
+      for (const id of [values[values.length - 1]].flat()) {
+        const s = await prisma.session.findUnique({ where: { id } }); if (!s) continue;
+        const event = await prisma.auditLog.findFirst({});
+        rows.push({ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null });
+      }
+      return rows;
     }),
   };
   const authority = { execute: jest.fn(async (actor: any) => ({

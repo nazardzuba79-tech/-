@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { timingSafeEqual, createPublicKey, createSecretKey } from 'crypto';
 import { resolve } from 'path';
-import { requireAuth, verifiedBearerAtUse, AuthedRequest } from '../middleware/auth';
+import { requireAuth, requireAuthBatch, verifiedBearerAtUse, AuthedRequest } from '../middleware/auth';
 
 /** One identity batch: the gateway's own bound (authority-adapter.mjs) and the bearer form it sends. */
 export const IDENTITY_BATCH_MAX = 64, IDENTITY_BATCH_BYTES = 64 * 1024;
@@ -61,6 +61,7 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   // Every gateway request (viewer polls included) re-validates the session here,
   // so the session, owner and contact-block checks are read in one query.
   const auth = requireAuth(prisma, { prepareVerificationKey: true, singleSessionRead: true });
+  const authBatch = requireAuthBatch(prisma);
   const actor = (req: AuthedRequest): Actor => {
     if (!req.userId || !req.sessionId) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
     // Judged at use: the bearer requireAuth verified in this request is re-checked now
@@ -77,9 +78,10 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   };
   router.get('/stocks-test-cash/identity', auth, (req: AuthedRequest, res) => { try { const value = actor(req); res.set('Cache-Control','no-store').json({ issuer: value.issuer, subject: value.subject }); } catch (error) { failure(res,error); } });
   // The identity checks of several concurrent gateway requests in ONE private request
-  // (multiplexing, not caching): every bearer runs the very same requireAuth live read and
-  // actor binding as GET identity above, one after another, after its browser request arrived.
-  // Nothing is kept between bearers or requests. Gateway capability only; no user bearer here.
+  // (multiplexing, not caching): every bearer gets the very same requireAuth judgement and
+  // actor binding as GET identity above, after its browser request arrived; the sessions of the
+  // batch are read in one query (requireAuthBatch). Nothing is kept between bearers or requests.
+  // Gateway capability only; no user bearer here.
   router.post('/stocks-test-cash/identities', async (req, res) => {
     res.set('Cache-Control', 'no-store');
     const supplied = req.headers['x-stocks-authority-key'];
@@ -90,13 +92,9 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
       return void res.status(422).json({ error: 'IDENTITY_BATCH_INVALID' });
     try {
       const results = [];
-      for (const token of tokens as string[]) {
-        const one = { headers: { authorization: 'Bearer ' + token } } as unknown as AuthedRequest;
-        let status = 200, passed = false;
-        const outcome = { status(code: number) { status = code; return outcome; }, json() { return outcome; } };
-        await auth(one, outcome as never, () => { passed = true; });
-        if (!passed) { results.push({ error: status === 503 ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED' }); continue; }
-        try { const value = actor(one); results.push({ issuer: value.issuer, subject: value.subject }); }
+      for (const one of await authBatch(tokens as string[])) {
+        if ('status' in one && typeof one.status === 'number') { results.push({ error: one.status === 503 ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED' }); continue; }
+        try { const value = actor(one as AuthedRequest); results.push({ issuer: value.issuer, subject: value.subject }); }
         catch (error: any) { results.push({ error: typeof error?.code === 'string' && error.code.startsWith('AUTH_') ? error.code : 'AUTH_REQUIRED' }); }
       }
       res.json({ results });

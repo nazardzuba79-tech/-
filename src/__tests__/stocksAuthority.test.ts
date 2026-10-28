@@ -31,8 +31,12 @@ function rows() {
       }), update: jest.fn(),
     }, auditLog: { findFirst: jest.fn(async () => null) },
     $queryRaw: jest.fn(async (_sql: unknown, ...values: any[]) => {
-      const s = await prisma.session.findUnique({ where: { id: values[values.length - 1] } });
-      return [{ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: null }];
+      const rows = [];
+      for (const id of [values[values.length - 1]].flat()) {
+        const s = await prisma.session.findUnique({ where: { id } });
+        if (s) rows.push({ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: null });
+      }
+      return rows;
     }),
   };
   const authority = { execute: jest.fn(async (actor: any, type: string) => ({ type, subject: actor.subject })), metrics: () => ({}) };

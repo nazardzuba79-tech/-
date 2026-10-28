@@ -67,3 +67,35 @@ pg('a stale last-seen time is still refreshed after the combined read',async t=>
   while(Date.now()<end){seen=(await s.f.db.session.findUnique({where:{id:x.id}})).lastSeenAt;if(seen>before)break;await new Promise(r=>setTimeout(r,20));}
   assert.ok(seen>before,'lastSeenAt refreshed');
 });
+
+pg('an identity batch reads its sessions together and answers every bearer exactly as it would alone',async t=>{
+  const s=await setup(t),old=new Date(Date.now()-13*3600_000);
+  const alice=await s.user('batch-alice'),bob=await s.user('batch-bob'),admin=await s.user('batch-admin',{role:'ADMIN'});
+  const outside=await s.user('batch-outside',{email:' Outside.Case-'+crypto.randomBytes(4).toString('hex')+'@Example.INVALID '});
+  const blocked=await s.user('batch-blocked'),a=await s.session(alice),revoked=await s.session(bob,{revokedAt:new Date()});
+  await s.contact(blocked.email,'CONTACT_EMAIL_BLOCKED');await s.contact(outside.email,'CONTACT_EMAIL_BLOCKED');
+  const tokens=[a.token,
+    s.jwt.sign({sub:alice.id,sid:a.id},process.env.JWT_SECRET,{expiresIn:'2h'}),
+    revoked.token,
+    s.jwt.sign({sub:bob.id,sid:a.id},process.env.JWT_SECRET,{expiresIn:'1h'}),
+    s.jwt.sign({sub:alice.id,sid:crypto.randomUUID()},process.env.JWT_SECRET,{expiresIn:'1h'}),
+    (await s.session(blocked)).token,(await s.session(outside)).token,
+    (await s.session(await s.user('batch-remembered'),{remembered:true,createdAt:old})).token,
+    (await s.session(admin,{remembered:true,createdAt:old})).token,
+    s.jwt.sign({sub:alice.id},process.env.JWT_SECRET,{expiresIn:'1h'}),
+    s.jwt.sign({sub:alice.id,sid:a.id,exp:Math.floor(Date.now()/1000)-10},process.env.JWT_SECRET),
+    (await s.session(bob)).token];
+  const alone=[];
+  for(const token of tokens){
+    const r=await fetch(s.f.apiOrigin+'/api/v1/stocks-test-cash/identity',{headers:{authorization:'Bearer '+token}});
+    alone.push(r.status===200?{issuer:s.f.issuer,subject:(await r.json()).subject}:{error:r.status===503?'AUTH_UNAVAILABLE':'AUTH_REQUIRED'});
+  }
+  assert.deepEqual(alone.map(x=>x.subject??x.error),[alice.id,alice.id,'AUTH_REQUIRED','AUTH_REQUIRED','AUTH_REQUIRED','AUTH_REQUIRED','AUTH_REQUIRED','AUTH_REQUIRED',admin.id,'AUTH_REQUIRED','AUTH_REQUIRED',bob.id]);
+  const r=await fetch(s.f.apiOrigin+'/api/v1/stocks-test-cash/identities',{method:'POST',headers:{'content-type':'application/json','x-stocks-authority-key':s.f.gatewayKey},body:JSON.stringify({tokens})});
+  assert.equal(r.status,200);
+  assert.deepEqual((await r.json()).results,alone);
+  // Nothing is kept: a sign-out between two batches is refused by the next one.
+  await s.f.db.session.update({where:{id:a.id},data:{revokedAt:new Date()}});
+  const again=await fetch(s.f.apiOrigin+'/api/v1/stocks-test-cash/identities',{method:'POST',headers:{'content-type':'application/json','x-stocks-authority-key':s.f.gatewayKey},body:JSON.stringify({tokens:tokens.slice(0,2)})});
+  assert.deepEqual((await again.json()).results,[{error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'}]);
+});

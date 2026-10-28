@@ -8,8 +8,8 @@ const issuer='synthetic-api-unit',key='synthetic-api-internal-key-000000000000';
 const principals=[{issuer,subject:'synthetic-a'},{issuer,subject:'synthetic-b'}];
 function fixture(enabled=true,verificationSecret=process.env.JWT_SECRET!,routerFactory=stocksTestCashRouter,catalogueEnabled=false,orderExecutionEnabled:boolean|null=true){
   const prisma:any={user:{findUnique:jest.fn(async({where}:any)=>({id:where.id}))},session:{findUnique:jest.fn(async({where}:any)=>({id:where.id,userId:where.id.replace('session-',''),revokedAt:null,lastSeenAt:new Date(),remembered:false,user:{email:'synthetic@example.invalid'}})),update:jest.fn()},auditLog:{findFirst:jest.fn(async()=>null)}};
-  // requireAuth singleSessionRead: the one-query session read, from the rows above.
-  prisma.$queryRaw=jest.fn(async(_sql:unknown,...values:any[])=>{const s=await prisma.session.findUnique({where:{id:values[values.length-1]}});if(!s)return[];const event=await prisma.auditLog.findFirst({});return[{...s,createdAt:null,email:s.user.email,role:null,emailHash:contactEmailHash(s.user.email),contactAction:event?.action??null}];});
+  // requireAuth singleSessionRead: the one-query session read (one session id, or all of an identity batch), from the rows above.
+  prisma.$queryRaw=jest.fn(async(_sql:unknown,...values:any[])=>{const rows=[];for(const id of [values[values.length-1]].flat()){const s=await prisma.session.findUnique({where:{id}});if(!s)continue;const event=await prisma.auditLog.findFirst({});rows.push({...s,createdAt:null,email:s.user.email,role:null,emailHash:contactEmailHash(s.user.email),contactAction:event?.action??null});}return rows;});
   const authority={execute:jest.fn(async(actor:any,type:string)=>{if(!principals.some(p=>p.subject===actor.subject))throw Object.assign(Error('AUTH_REQUIRED'),{code:'AUTH_REQUIRED'});return type==='readView'?{wallets:{USDT:{cash:'731.25000000',reserved:'0.00000000',available:'731.25000000'}}}:{id:'synthetic-result'};}),metrics:()=>({unitFixture:true})};
   const config={enabled,catalogueEnabled,orderExecutionEnabled:orderExecutionEnabled??undefined,issuer,principals,gatewayKey:key,secret:verificationSecret};
   const app=express();app.use(express.json());app.use('/api/v1',routerFactory(prisma,config,authority));
@@ -247,14 +247,20 @@ test('identity batch needs the gateway capability and a well-formed list before 
  const max=Array.from({length:64},(_,n)=>f.token('viewer-'+n)),res=await identities(f.app,max);
  expect(res.status).toBe(200);expect(res.headers['cache-control']).toBe('no-store');
  expect(res.body.results).toEqual(max.map((_,n)=>({issuer,subject:'viewer-'+n})));
- expect(f.prisma.$queryRaw).toHaveBeenCalledTimes(64);expect(f.authority.execute).not.toHaveBeenCalled();
+ // Every bearer is judged on its own live row, read for the whole batch in one round trip.
+ expect(f.prisma.$queryRaw).toHaveBeenCalledTimes(1);expect(f.prisma.$queryRaw.mock.calls[0].at(-1)).toEqual(max.map((_,n)=>'session-viewer-'+n));
+ expect(f.prisma.session.findUnique).toHaveBeenCalledTimes(64);expect(f.authority.execute).not.toHaveBeenCalled();
 });
 test('identity batch answers each bearer by position with its own live session, block and binding decision',async()=>{
  const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true);
  const live=f.prisma.session.findUnique.getMockImplementation();
  f.prisma.session.findUnique.mockImplementation(async(args:any)=>{const s=await live(args);return args.where.id==='session-revoked'?{...s,revokedAt:new Date()}:args.where.id==='session-gone'?null:s;});
  const read=f.prisma.$queryRaw.getMockImplementation();
- f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>{if(args[args.length-1]==='session-broken')throw Error('synthetic database outage');const rows=await read(...args);return args[args.length-1]==='session-blocked'?rows.map((row:any)=>({...row,contactAction:'CONTACT_EMAIL_BLOCKED'})):rows;});
+ // The batch's sessions are read together; 'broken' has an address outside SQL normalization whose own
+ // block lookup fails, so only that bearer is unavailable.
+ const brokenEmail='Broken Synthetic@example.invalid',brokenHash=contactEmailHash(brokenEmail);
+ f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>(await read(...args)).map((row:any)=>row.id==='session-blocked'?{...row,contactAction:'CONTACT_EMAIL_BLOCKED'}:row.id==='session-broken'?{...row,email:brokenEmail,emailHash:null}:row));
+ f.prisma.auditLog.findFirst.mockImplementation(async(args:any)=>{if(args?.where?.metadata?.equals===brokenHash)throw Error('synthetic database outage');return null;});
  const tokens=[f.token('synthetic-a'),f.token('revoked'),f.token('synthetic-b'),f.token('blocked'),f.token('gone'),f.token('synthetic-a',false),
   jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a',purpose:'2fa'},process.env.JWT_SECRET!,{expiresIn:'1h'}),
   jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a'},process.env.JWT_SECRET!),
@@ -270,6 +276,10 @@ test('identity batch answers each bearer by position with its own live session, 
  expect((await identities(f.app,[again])).body.results).toEqual([{issuer,subject:'synthetic-b'}]);
  f.prisma.session.findUnique.mockImplementation(async(args:any)=>({...(await live(args)),revokedAt:new Date()}));
  expect((await identities(f.app,[again])).body.results).toEqual([{error:'AUTH_REQUIRED'}]);
+ // A failed batch read refuses with AUTH_UNAVAILABLE every bearer that needed it; the others keep their own answer.
+ f.prisma.$queryRaw.mockImplementationOnce(async()=>{throw Error('synthetic database outage');});
+ expect((await identities(f.app,[f.token('synthetic-a'),f.token('synthetic-b'),'invalid-bearer-0000000000'])).body.results)
+  .toEqual([{error:'AUTH_UNAVAILABLE'},{error:'AUTH_UNAVAILABLE'},{error:'AUTH_REQUIRED'}]);
  expect(f.authority.execute).not.toHaveBeenCalled();
 });
 test('identity batch admits and refuses exactly what GET identity does, judged at use',async()=>{
@@ -293,7 +303,8 @@ test('identity batch admits and refuses exactly what GET identity does, judged a
 test('identity batch: a driver fault while reading a session answers that bearer AUTH_UNAVAILABLE, never a subject',async()=>{
  const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true);
  const read=f.prisma.$queryRaw.getMockImplementation();
- f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>{const rows=await read(...args);return args[args.length-1]==='session-synthetic-a'?[new Proxy(rows[0],{get(target,key){if(key==='lastSeenAt')throw Error('synthetic driver fault');return target[key];}})]:rows;});
+ // Both sessions come back in the batch's one read; only synthetic-a's row is faulty.
+ f.prisma.$queryRaw.mockImplementation(async(...args:any[])=>(await read(...args)).map((row:any)=>row.id==='session-synthetic-a'?new Proxy(row,{get(target,key){if(key==='lastSeenAt')throw Error('synthetic driver fault');return target[key];}}):row));
  const res=await identities(f.app,[f.token('synthetic-a'),f.token('synthetic-b')]);
  expect([res.status,res.body]).toEqual([200,{results:[{error:'AUTH_UNAVAILABLE'},{issuer,subject:'synthetic-b'}]}]);
 });
