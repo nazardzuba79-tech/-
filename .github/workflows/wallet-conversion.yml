@@ -9,6 +9,7 @@ on:
       - 'src/services/WalletConversionService.ts'
       - 'src/api/routes/walletActivity.ts'
       - 'scripts/test-wallet-conversion-demo-postgres.cjs'
+      - 'scripts/test-wallet-conversion-postgres.cjs'
       - '.github/workflows/wallet-conversion.yml'
   pull_request:
     paths:
