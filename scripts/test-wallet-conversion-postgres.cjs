@@ -94,8 +94,12 @@ async function main() {
     app.use((error, req, res, next) => res.status(500).json({ code: 'FIXTURE_ERROR' }));
     server = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
     const origin = `http://127.0.0.1:${server.address().port}`;
+    // Use an actual durable session for every money-moving HTTP request.
+    const primarySessionId = randomUUID();
+    await prisma.session.create({ data: { id: primarySessionId, userId: user, lastSeenAt: new Date() } });
+    const activeToken = jwt.sign({ sub: user, sid: primarySessionId }, process.env.JWT_SECRET, { expiresIn: '12h' });
     const api = async (route, body, actor = user, drop = false, purpose) => {
-      const response = await fetch(origin + '/api/v1' + route, { method: body === undefined ? 'GET' : 'POST', headers: { ...(actor ? { Authorization: 'Bearer ' + jwt.sign({ sub: actor, ...(purpose ? { purpose } : {}) }, process.env.JWT_SECRET) } : {}), 'Content-Type': 'application/json', ...(drop ? { 'X-Fixture-Drop-Response': 'yes' } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+      const response = await fetch(origin + '/api/v1' + route, { method: body === undefined ? 'GET' : 'POST', headers: { ...(actor ? { Authorization: 'Bearer ' + (actor === user && !purpose ? activeToken : jwt.sign({ sub: actor, ...(purpose ? { purpose } : {}) }, process.env.JWT_SECRET, { expiresIn: '12h' })) } : {}), 'Content-Type': 'application/json', ...(drop ? { 'X-Fixture-Drop-Response': 'yes' } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
       return { status: response.status, body: await response.json() };
     };
     await check('default-OFF conversion denies quote/confirm/receipt without any write', async () => {
@@ -104,7 +108,7 @@ async function main() {
       const disabled = async (route, body) => {
         const response = await fetch(origin + '/__wallet_default_off' + route, {
           method: body === undefined ? 'GET' : 'POST',
-          headers: { Authorization: 'Bearer ' + jwt.sign({ sub: user }, process.env.JWT_SECRET), 'Content-Type': 'application/json' },
+          headers: { Authorization: 'Bearer ' + activeToken, 'Content-Type': 'application/json' },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
         return { status: response.status, body: await response.json() };
@@ -411,7 +415,7 @@ async function main() {
       } finally { await holder.end(); now = Date.now(); }
     });
     if (process.env.WALLET_QA_BROWSER === '1') liveApi = walletActivityRouter(prisma, conversion, true);
-    if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: jwt.sign({ sub: user }, process.env.JWT_SECRET), prisma, user, out, thinBook, fund });
+    if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: activeToken, prisma, user, out, thinBook, fund });
     const report = { database: 'disposable loopback PostgreSQL', passed: checks, checks: checks.length, fee: '0', finalBalances: await snapshot(), productionTouched: false };
     fs.writeFileSync(path.join(out, 'postgres-results.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));
   } finally {
