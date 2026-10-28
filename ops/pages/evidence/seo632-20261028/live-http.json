@@ -1,0 +1,216 @@
+{
+  "checkedAt": "2026-10-28T10:21:17.202Z",
+  "commit": "6118e18e49edd226a6b250154d3893773b4522e2",
+  "robots": {
+    "status": 200,
+    "type": "text/plain; charset=utf-8",
+    "sha256": "f4da0800de59ca9c70997ebc2c62b626ca419783aa5cd304839f66e21f9a2498"
+  },
+  "sitemap": {
+    "status": 200,
+    "type": "application/xml",
+    "sha256": "68ad8233ee42cfa9d83b85269544f96dd6671d9aec2363aa375b1485b3cd66ed",
+    "urls": 42
+  },
+  "pages": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/academy",
+      "status": 200
+    },
+    {
+      "path": "/academy/faq",
+      "status": 200
+    },
+    {
+      "path": "/academy/futures",
+      "status": 200
+    },
+    {
+      "path": "/academy/futures/cross-vs-isolated",
+      "status": 200
+    },
+    {
+      "path": "/academy/futures/funding-rate",
+      "status": 200
+    },
+    {
+      "path": "/academy/futures/leverage-and-margin",
+      "status": 200
+    },
+    {
+      "path": "/academy/futures/mark-and-index-price",
+      "status": 200
+    },
+    {
+      "path": "/academy/futures/perpetual",
+      "status": 200
+    },
+    {
+      "path": "/academy/glossary",
+      "status": 200
+    },
+    {
+      "path": "/academy/knowledge",
+      "status": 200
+    },
+    {
+      "path": "/academy/learn",
+      "status": 200
+    },
+    {
+      "path": "/academy/orders",
+      "status": 200
+    },
+    {
+      "path": "/academy/orders/maker-taker",
+      "status": 200
+    },
+    {
+      "path": "/academy/orders/order-book",
+      "status": 200
+    },
+    {
+      "path": "/academy/orders/order-types",
+      "status": 200
+    },
+    {
+      "path": "/academy/orders/slippage",
+      "status": 200
+    },
+    {
+      "path": "/academy/osnovy",
+      "status": 200
+    },
+    {
+      "path": "/academy/osnovy/chto-takoe-kriptovalyuta",
+      "status": 200
+    },
+    {
+      "path": "/academy/osnovy/kak-popolnit-schet",
+      "status": 200
+    },
+    {
+      "path": "/academy/osnovy/spot-vs-futures",
+      "status": 200
+    },
+    {
+      "path": "/academy/osnovy/stablecoins",
+      "status": 200
+    },
+    {
+      "path": "/academy/risk",
+      "status": 200
+    },
+    {
+      "path": "/academy/risk/beginner-mistakes",
+      "status": 200
+    },
+    {
+      "path": "/academy/risk/liquidation",
+      "status": 200
+    },
+    {
+      "path": "/academy/risk/position-size",
+      "status": 200
+    },
+    {
+      "path": "/academy/risk/stop-loss",
+      "status": 200
+    },
+    {
+      "path": "/academy/security",
+      "status": 200
+    },
+    {
+      "path": "/academy/security/2fa",
+      "status": 200
+    },
+    {
+      "path": "/academy/security/phishing",
+      "status": 200
+    },
+    {
+      "path": "/academy/security/wallets-seed",
+      "status": 200
+    },
+    {
+      "path": "/academy/ta",
+      "status": 200
+    },
+    {
+      "path": "/academy/ta/candles",
+      "status": 200
+    },
+    {
+      "path": "/academy/ta/support-resistance",
+      "status": 200
+    },
+    {
+      "path": "/academy/ta/trend-ma",
+      "status": 200
+    },
+    {
+      "path": "/academy/ta/volume",
+      "status": 200
+    },
+    {
+      "path": "/help/status",
+      "status": 200
+    },
+    {
+      "path": "/legal/about",
+      "status": 200
+    },
+    {
+      "path": "/legal/privacy",
+      "status": 200
+    },
+    {
+      "path": "/legal/risk",
+      "status": 200
+    },
+    {
+      "path": "/legal/support",
+      "status": 200
+    },
+    {
+      "path": "/legal/terms",
+      "status": 200
+    },
+    {
+      "path": "/banking",
+      "status": 200,
+      "noindex": true
+    },
+    {
+      "path": "/admin/listings",
+      "status": 200,
+      "noindex": true
+    },
+    {
+      "path": "/trade?pair=ECLV%2FUSDT",
+      "status": 200,
+      "noindex": true
+    },
+    {
+      "path": "/trade?pair=QVTR%2FUSDT",
+      "status": 200,
+      "noindex": true
+    },
+    {
+      "path": "/trade?pair=NRX%2FBTC",
+      "status": 200,
+      "noindex": true
+    }
+  ],
+  "entry": {
+    "path": "/assets/index-DGXlUZ5S.js",
+    "sha256": "62d2f4cc22dbbcd596175b8ca137053832eec2ec7f682d67b35e1ae9c7dfcffe"
+  },
+  "sourceChannel": "Pages Git canonical API plus published JS hash",
+  "financialRequests": 0
+}

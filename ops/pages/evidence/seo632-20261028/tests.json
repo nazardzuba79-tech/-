@@ -1,0 +1,141 @@
+{
+  "source": "6118e18e49edd226a6b250154d3893773b4522e2",
+  "frontendTree": "82c6cd48743fbcf89f30cbbbb31ba2de33feaef7",
+  "qaRun": 40669960893,
+  "unit": {
+    "suites": 11,
+    "passed": 220,
+    "failed": 0,
+    "skipped": 0
+  },
+  "seo": {
+    "sitemapUrls": 42,
+    "unlistedAddresses": 25,
+    "renderedChecks": 32,
+    "passed": 114,
+    "failed": 0
+  },
+  "compatibility": {
+    "scope": "Actual production bundle; synthetic isolated sessions and HTTP responses; all network intercepted; no production writes",
+    "results": [
+      {
+        "case": "ECLV",
+        "width": 1440,
+        "pass": true,
+        "reload": true,
+        "listingAt": "2026-11-06T13:00:00Z"
+      },
+      {
+        "case": "QVTR",
+        "width": 1440,
+        "pass": true,
+        "reload": true,
+        "listingAt": "2026-10-28T13:00:00Z"
+      },
+      {
+        "case": "NRX/USDT",
+        "width": 1440,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "NRX/BTC",
+        "width": 1440,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "BTC/NRX",
+        "width": 1440,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "NRX/SIMUSDT",
+        "width": 1440,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "NRXSIMUSDT",
+        "width": 1440,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "Banking/referral",
+        "width": 1440,
+        "pass": true
+      },
+      {
+        "case": "Admin Delete",
+        "width": 1440,
+        "pass": true,
+        "syntheticDeletes": 1,
+        "unexpectedWrites": 0
+      },
+      {
+        "case": "ECLV",
+        "width": 390,
+        "pass": true,
+        "reload": true,
+        "listingAt": "2026-11-06T13:00:00Z"
+      },
+      {
+        "case": "QVTR",
+        "width": 390,
+        "pass": true,
+        "reload": true,
+        "listingAt": "2026-10-28T13:00:00Z"
+      },
+      {
+        "case": "NRX/USDT",
+        "width": 390,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "NRX/BTC",
+        "width": 390,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "BTC/NRX",
+        "width": 390,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "NRX/SIMUSDT",
+        "width": 390,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "NRXSIMUSDT",
+        "width": 390,
+        "pass": true,
+        "orderInputs": 0
+      },
+      {
+        "case": "Banking/referral",
+        "width": 390,
+        "pass": true
+      },
+      {
+        "case": "Admin Delete",
+        "width": 390,
+        "pass": true,
+        "syntheticDeletes": 1,
+        "unexpectedWrites": 0
+      }
+    ]
+  },
+  "liveHttpRun": 40671305906,
+  "liveCheckedPages": 47,
+  "initialPublishAttempt": "STOPPED_BEFORE_WRITE_MISSING_EXISTING_PAGES_TOKEN",
+  "actualPublication": "Cloudflare authorized native Git build of exact tested source; temporary production source branch restored; auto deploy remained OFF",
+  "qaArtifactSHA256": "d0c6df8de92222810e36de502e6eec7fcc95da040c10242989b88408081c35bb",
+  "liveArtifactSHA256": "82b1330c72d14f1dbf1d72e36fba01187681752518758be654e60ff9fb81c22e"
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "banking": true,
+    "canonical": null,
+    "case": "Banking",
+    "entry": "/assets/index-DGXlUZ5S.js",
+    "loginForm": false,
+    "page": "https://voltextech.net/banking",
+    "referralLinkPresent": true,
+    "robots": "noindex, nofollow"
+  },
+  {
+    "canonical": null,
+    "case": "ECLV",
+    "clip": {
+      "height": 393,
+      "width": 560,
+      "x": 124,
+      "y": 263
+    },
+    "countdown": "09Дни02Часы36Минуты58Секунды",
+    "facts": "Дата листинга06.11.2026 — 13:00 UTC / 16:00 МСКСтартовая цена0.014000 USDT",
+    "logoLoaded": true,
+    "name": "ECLAVO",
+    "robots": "noindex, nofollow"
+  },
+  {
+    "canonical": null,
+    "case": "QVTR",
+    "clip": {
+      "height": 393,
+      "width": 560,
+      "x": 124,
+      "y": 263
+    },
+    "countdown": "00Дни02Часы36Минуты44Секунды",
+    "facts": "Дата листинга28.10.2026 — 13:00 UTC / 16:00 МСКСтартовая цена0.014000 USDT",
+    "logoLoaded": true,
+    "name": "QAVENTRA",
+    "robots": "noindex, nofollow"
+  },
+  {
+    "canonical": null,
+    "canvases": 0,
+    "case": "NRX/BTC",
+    "orderInputs": 0,
+    "removed": true,
+    "robots": "noindex, nofollow"
+  },
+  {
+    "canonical": null,
+    "case": "Admin Delete",
+    "confirmationClosed": true,
+    "deleteSubmitted": false,
+    "eclvStillPresent": true,
+    "qvtrStillPresent": true,
+    "robots": "noindex, nofollow",
+    "wrongConfirmationBlocked": true
+  },
+  {
+    "canonical": "https://voltextech.net/academy/faq",
+    "case": "RU public canonical",
+    "entry": "/assets/index-DGXlUZ5S.js",
+    "ogUrl": "https://voltextech.net/academy/faq",
+    "realRussiaNetworkTest": false,
+    "title": "Вопросы и ответы — Академия VOLTEX"
+  },
+  {
+    "case": "RU public canonical",
+    "page": "https://ru.voltextech.net/academy/faq",
+    "title": "Вопросы и ответы — Академия VOLTEX",
+    "canonical": "https://voltextech.net/academy/faq",
+    "ogUrl": "https://voltextech.net/academy/faq",
+    "entry": "/assets/index-DGXlUZ5S.js",
+    "realRussiaNetworkTest": false
+  }
+]

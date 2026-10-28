@@ -67,3 +67,7 @@ QA_PLAYWRIGHT_MODULE=<…/node_modules/playwright> QA_WRANGLER_BIN=<…/node_mod
 - Збірка фронтенду на production змінилася протягом 27.10: entry-файл `index-CkXTxp8o.js`. Зі збіркою поточного `main` вона не збігається; що саме зараз розгорнуто, не встановлено.
 
 Індексацію в Google чи Яндексі тести не доводять. Її видно лише після публікації та обходу пошуковиками.
+
+## Production update — 28.10.2026
+
+The earlier «Production не змінено» statement above describes the original PR preparation. The owner-authorized narrow release is now actually published: source6118e18e49edd226a6b250154d3893773b4522e2, Pages95010b1c-b13f-4c52-b08c-a90ffa7d5d60. Real HTTP robots200text/plain and sitemap200application/xml42URLs;47page smoke and exact entry hashPASS. Details: ops/pages/evidence/seo632-20261028/RESULT.md. Google/Yandex verification and actual indexing are still not claimed.

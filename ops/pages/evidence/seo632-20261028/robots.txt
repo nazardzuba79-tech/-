@@ -1,0 +1,7 @@
+# VOLTEX. Every page may be crawled. Signed-in areas and the sign-in screens
+# are kept out of search results by their robots meta and X-Robots-Tag, not
+# here: robots.txt is public and is not access control.
+User-agent: *
+Disallow:
+
+Sitemap: https://voltextech.net/sitemap.xml

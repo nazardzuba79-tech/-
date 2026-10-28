@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-10-28T10:25:58.707Z",
+  "project": "voltex-exchange",
+  "source": "6118e18e49edd226a6b250154d3893773b4522e2",
+  "deployment": "95010b1c-b13f-4c52-b08c-a90ffa7d5d60",
+  "deployedAt": "2026-10-28T10:18:33.868619Z",
+  "status": "success",
+  "gitBuildBranch": "release/eclv-628-frontend-20261027",
+  "productionBranch": "main",
+  "autoDeploy": false,
+  "previews": "none",
+  "environmentUnchanged": true,
+  "usesFunctions": false,
+  "build": {
+    "build_command": "npm run build",
+    "destination_dir": "dist",
+    "root_dir": "frontend"
+  },
+  "rollback": {
+    "available": true,
+    "performed": false,
+    "deployment": "ec6734c9-6c1e-4985-8d57-023edc505e9d",
+    "source": "f8805b0073d17c3072f37803cb7efbce538ab170",
+    "status": "success",
+    "path": "/accounts/c379227476dedde6dff09c787ffdb510/pages/projects/voltex-exchange/deployments/ec6734c9-6c1e-4985-8d57-023edc505e9d/rollback"
+  }
+}
