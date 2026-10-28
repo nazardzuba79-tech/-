@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { isSimulationSettled, TEST_ASSETS, testAssetForPair, type TestAssetConfig } from '../../services/testMarkets/testAssetConfig';
 import { getCurrentTestMarketState, simulationFor } from '../../services/testMarkets/testMarketSimulation';
+import { isRetiredNrx } from '../../shared/nrxRetirement';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
 import {
   effectiveTestMarketNow, publicTestAsset, resolveSimulationNow, testMarketCandles, UnsupportedTestIntervalError,
@@ -29,8 +30,9 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
     let path = req.path;
     try { path = decodeURIComponent(path); } catch { /* Express rejects invalid encodings later. */ }
     const marketPath = /^\/(?:market(?:\/|$)|orderbook\/)/i.test(path);
-    const target = [path, req.query.pair, req.query.symbol].filter(v => typeof v === 'string').join(' ').toUpperCase();
-    if (marketPath && target.includes('NRX')) {
+    const pathHasNrx = path.split('/').some(segment => segment && isRetiredNrx(segment));
+    const queryHasNrx = [req.query.pair, req.query.symbol].some(value => typeof value === 'string' && isRetiredNrx(value));
+    if (marketPath && (pathHasNrx || queryHasNrx)) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(410).json({ error: 'market_retired', symbol: 'NRX' });
     }

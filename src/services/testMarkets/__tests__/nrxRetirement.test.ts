@@ -30,6 +30,11 @@ describe('NRX retirement without deleting economic history', () => {
     expect(response.status).toBe(410); expect(response.headers['cache-control']).toBe('no-store');
     expect(response.body).toEqual({ error: 'market_retired', symbol: 'NRX' }); expect(fallback).not.toHaveBeenCalled();
   });
+  test('retirement does not block a different symbol containing the letters NRX', async () => {
+    const app = express(); app.use(testMarketsRouter()); app.use((_req, res) => res.json({ venue: true }));
+    const r = await request(app).get('/market/ticker/NRXCOIN-USDT');
+    expect(r.status).toBe(200); expect(r.body).toEqual({ venue: true });
+  });
   test('public gate leaves private balance/history/cancellation and other markets alone', async () => {
     const app = express(); app.use(testMarketsRouter()); app.use((_req, res) => res.json({ untouched: true }));
     for (const path of ['/orders/NRX/cancel', '/balances/NRX', '/market/ticker/BTC-USDT']) expect((await request(app).get(path)).body).toEqual({ untouched: true });
