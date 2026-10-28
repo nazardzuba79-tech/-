@@ -1,3 +1,4 @@
+import { isRetiredMarketPair } from './testMarkets';
 import { isBrowserInactive, browserSetInterval, browserClearInterval } from './browserActivity';
 import { API_BASE } from './api';
 import { readDisplayJson, DISPLAY_REFRESH_MS } from './displaySnapshotCache';
@@ -93,7 +94,7 @@ function initialState(): MarketState {
     ...EMPTY_STATE,
     status: 'ready',
     loaded: true,
-    tickers: new Map(warm.tickers.map(ticker => [ticker.pair, ticker])),
+    tickers: new Map(warm.tickers.filter(ticker => !isRetiredMarketPair(ticker.pair)).map(ticker => [ticker.pair, ticker])),
     // Browser cache is only a first-paint bridge. It is never represented
     // as live, even when it was written a few seconds ago.
     tickersMeta: { source: warm.source, fetchedAt: warm.fetchedAt, stale: true },
@@ -208,7 +209,7 @@ class MarketDataStore {
 
     if (snapshot.tickers.available) {
       const map = new Map<string, MarketTicker>();
-      for (const ticker of snapshot.tickers.value) map.set(ticker.pair, ticker);
+      for (const ticker of snapshot.tickers.value) if (!isRetiredMarketPair(ticker.pair)) map.set(ticker.pair, ticker);
       next.tickers = map;
       next.tickersMeta = { source: snapshot.tickers.source, fetchedAt: snapshot.tickers.fetchedAt, stale: snapshot.tickers.stale };
 
@@ -217,7 +218,7 @@ class MarketDataStore {
       if (now - this.lastWarmCacheWriteAt >= WARM_CACHE_WRITE_INTERVAL_MS) {
         this.lastWarmCacheWriteAt = now;
         writeSpotWarmCache({
-          tickers: snapshot.tickers.value,
+          tickers: snapshot.tickers.value.filter(ticker => !isRetiredMarketPair(ticker.pair)),
           source: snapshot.tickers.source,
           fetchedAt: snapshot.tickers.fetchedAt,
         }, undefined, now);

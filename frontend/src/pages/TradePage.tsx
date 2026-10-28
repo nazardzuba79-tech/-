@@ -1,3 +1,4 @@
+import { isRetiredMarketPair } from '../lib/testMarkets';
 import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { DemoSpotAssets, DemoSpotOrders } from '../components/DemoSpotPanels';
 import { isDemoSpotPair, useDemoSpotMode } from '../lib/demoSpot';
@@ -86,6 +87,13 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
   { id: 'orderHistory', labelKey: 'trade.tabOrderHistory' },
   { id: 'assets', labelKey: 'trade.tabAssets' },
 ];
+
+/** Guard at the route boundary: no account/venue/market hooks run for retired NRX. */
+export function RetiredMarketTradeRoute() {
+  const [params] = useSearchParams();
+  if (isRetiredMarketPair(params.get('pair') ?? '')) return <div className="trade-terminal"><Nav active="/trade" staticTicker /><main style={{padding: '48px 20px', textAlign: 'center'}}><h1>NRX/USDT</h1><p role="status">Этот рынок удалён. Новые ордера недоступны.</p><a href="/markets">Рынки</a></main></div>;
+  return <TradePage />;
+}
 
 export function TradePage() {
   const { t } = useLanguage();

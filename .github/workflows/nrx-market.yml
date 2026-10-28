@@ -8,6 +8,14 @@ on:
       - 'src/services/__tests__/syntheticProceedsFloor.pg.test.ts'
       - 'src/services/__tests__/demoReleaseOff.test.ts'
       - 'src/services/syntheticProceedsFloor.ts'
+      - 'src/services/__tests__/syntheticProceedsFloor.test.ts'
+      - 'src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts'
+      - 'src/otc/**'
+      - 'src/banking/**'
+      - 'src/services/WalletTransferService.ts'
+      - 'src/api/routes/futures.ts'
+      - 'src/api/routes/otcCash.ts'
+      - 'src/api/routes/banking.ts'
       - 'src/services/WithdrawalService.ts'
       - 'src/api/routes/withdrawals.ts'
       - 'src/api/routes/adminWithdrawals.ts'
@@ -21,6 +29,55 @@ on:
 permissions:
   contents: read
 jobs:
+  financial-cross-ledger:
+    name: Financial floor isolated PostgreSQL (exact head)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-fixture-only
+          POSTGRES_DB: voltex_nrx_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_nrx_test
+      DIRECT_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_nrx_test
+      VOLTEX_NRX_TEST_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/voltex_nrx_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.23.3' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - run: npm run build
+      - name: Financial invariants, real transactions, synthetic users only
+        run: >-
+          mkdir -p output/financial630 &&
+          npx jest --runInBand --json --outputFile=output/financial630/exact-head.json --runTestsByPath
+          src/services/__tests__/syntheticProceedsFloor.test.ts
+          src/services/__tests__/syntheticProceedsFloor.pg.test.ts
+          src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+          src/api/routes/__tests__/futuresRefusalCodes.test.ts
+          src/services/__tests__/demoReleaseOff.test.ts
+          src/services/testMarkets/__tests__/nrxRetirement.test.ts
+          src/services/listings/__tests__/history20ColdRegistryCashout.pg.test.ts
+          src/services/listings/__tests__/history20SimusdtSettlement.pg.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: financial630-exact-head
+          path: output/financial630
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15

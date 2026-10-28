@@ -1,5 +1,5 @@
 import type { PriceSource } from '../OrderService';
-import { NEURIX } from './neurix';
+import { isRetiredNrx, NRX_RETIRED_MESSAGE } from '../../shared/nrxRetirement';
 import { simulationFor } from './testMarketSimulation';
 import { isSimulationSettled, isTestAssetPairOrSymbol, SIMULATION_QUOTE, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
 import { managedListingAssets } from '../listings/managedSnapshot';
@@ -13,7 +13,7 @@ export const managedListingForPair = (pair: string) => {
 };
 
 /**
- * NRX and tradable managed listings use ordinary Spot accounts/orders; display
+ * Tradable managed listings use ordinary Spot accounts/orders; NRX is retired; display
  * depth is NEVER executable liquidity. Before its listing time a listed pair
  * refuses orders; a non-tradable one refuses them always.
  *
@@ -24,11 +24,8 @@ export const managedListingForPair = (pair: string) => {
  * refuses everyone else like any non-tradable listing.
  */
 export function assertSpotListing(pair: string, now = Date.now(), privateAdmitted = false): void {
+  if (isRetiredNrx(pair)) throw new Error(NRX_RETIRED_MESSAGE);
   if (isAith(pair.replace(/[_-]/g, '/').replace(/^AITHUSDT$/i, 'AITH/USDT'))) throw new Error('Aitheron AI is not available for trading.');
-  if (pair === NEURIX.pair) {
-    if (!NEURIX.listingArmed || now < NEURIX.listingAt) throw new Error('Trading has not started yet');
-    return;
-  }
   const managed = managedListingForPair(pair);
   if (managed) {
     if (isHistoricalDemoAsset(managed)) throw new Error(HISTORICAL_DEMO_MESSAGE);
@@ -60,9 +57,10 @@ export const SPOT_PAIR_UNRESOLVED_MESSAGE = 'Операция временно �
  */
 export async function assertSpotListingReady(pair: string, venue: PriceSource, now?: number,
   registry: Pick<ManagedListingRegistry, 'ensureFresh' | 'resolved'> = managedListingRegistry, privateAdmitted = false): Promise<void> {
+  if (isRetiredNrx(pair)) throw new Error(NRX_RETIRED_MESSAGE);
   await registry.ensureFresh();
   assertSpotListing(pair, now, privateAdmitted);
-  if (registry.resolved() || pair === NEURIX.pair || managedListingForPair(pair)) return;
+  if (registry.resolved() || managedListingForPair(pair)) return;
   const ticker = await venue.getTicker(pair).catch(() => null);
   if (!ticker) throw new Error(SPOT_PAIR_UNRESOLVED_MESSAGE);
 }
@@ -70,10 +68,7 @@ export async function assertSpotListingReady(pair: string, venue: PriceSource, n
 /** Same canonical price as Cloudflare, used for conditional Spot validation/triggering. */
 export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSource {
   return { getTicker: async (pair) => {
-    if (pair === NEURIX.pair) {
-      const last = NEURIX.listingArmed ? simulationFor(NEURIX).priceAt(clock()) : null;
-      return last === null ? null : { lastPrice: String(last) };
-    }
+    if (isRetiredNrx(pair)) return null;
     const managed = managedListingForPair(pair);
     if (isAith(pair) && !managed) return null;
     // A private-test pair the registry does not know (cold, stale) has no price: never the venue's.

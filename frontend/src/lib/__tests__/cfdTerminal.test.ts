@@ -52,7 +52,7 @@ function mount(file:string,options:any={}){
     if(name.endsWith('/useCfdPracticePositions'))return{useCfdPracticePositionLines:()=>[]};
     return req(name);
   },output,{setInterval,clearInterval,setTimeout,clearTimeout,location:options.location},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
-  return{components,render(props={}){index=0;const fn:any=Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};
+  return{components,render(props={}){index=0;const fn:any = file.endsWith('/TradePage.tsx') ? output.TradePage : Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};
 }
 
 beforeEach(()=>jest.useFakeTimers().setSystemTime(Date.UTC(2026,8,13,12,0,0)));

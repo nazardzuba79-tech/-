@@ -1,60 +1,44 @@
-// Test the actual bundled Worker entry in an edge-like runtime, with ALL IO forbidden.
+// Verify the deployed-entry Worker source NEVER reactivates retired NRX from a build.
+// Uses the actual bundled Worker in an edge-like runtime with all outbound IO denied.
+// Historical model math is independently exercised in simulationScheduleIntegration.
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const { buildSync } = require('../frontend/node_modules/esbuild');
-const bundled = buildSync({ entryPoints: ['workers/market-edge/src/worker.ts'], bundle: true, write: false, platform: 'browser', format: 'cjs', target: 'es2022' }).outputFiles[0].text;
+const bundled = buildSync({ entryPoints: ['workers/market-edge/src/worker.ts'], bundle: true,
+  write: false, platform: 'browser', format: 'cjs', target: 'es2022' }).outputFiles[0].text;
 assert.doesNotMatch(bundled, /process\.env|@prisma|node:|DATABASE_URL/);
-const listing = Date.parse('2026-10-03T13:00:00Z');
-let now = listing - 1, external = 0;
+let external = 0, calls = 0;
 const moduleObject = { exports: {} };
-const sandbox = { module: moduleObject, exports: moduleObject.exports, Request, Response, URL, URLSearchParams, Headers,
-  Date: class extends Date { static now() { return now; } },
-  fetch() { external++; throw new Error('NRX attempted external IO'); }, console };
+const sandbox = {
+  module: moduleObject, exports: moduleObject.exports, Request, Response, URL, URLSearchParams, Headers,
+  Date, console, fetch() { external++; throw new Error('Retired market attempted external IO'); },
+};
 vm.runInNewContext(bundled, sandbox);
 const worker = moduleObject.exports.default;
-const get = path => worker.fetch(new Request('https://market.voltextech.net' + path));
+const get = path => { calls++; return worker.fetch(new Request('https://market.voltextech.net' + path)); };
 (async () => {
-  assert.equal((await (await get('/market/nrx?simulationPreviewTime=2099-01-01')).json()).assets[0].state.phase, 'pre-listing');
-  now = listing;
-  assert.equal((await (await get('/market/nrx')).json()).assets[0].state.lastPrice, .8);
-  now += 120000;
-  for (const path of ['/market/nrx', '/market/test-assets/NRX-USDT', '/market/test-assets/NRX-USDT/candles', '/market/ticker/NRX-USDT', '/market/display/spot-book/NRX-USDT', '/market/external/trades/NRX-USDT']) {
-    assert.equal((await get(path)).status, 200, path);
+  for (const path of [
+    '/market/nrx', '/market/nrx?simulationPreviewTime=2099-01-01',
+    '/market/test-assets/NRX-USDT', '/market/test-assets/NRX-USDT/candles',
+    '/market/ticker/NRX-USDT', '/market/display/spot-book/NRX-USDT',
+    '/market/external/trades/NRX-USDT', '/market/external/candles/NRX-USDT',
+    '/market/display/futures-book/NRXUSDT',
+  ]) {
+    const response = await get(path);
+    assert.equal(response.status, 410, path);
+    assert.deepEqual(await response.json(), { error: 'market_retired', symbol: 'NRX' }, path);
+    assert.equal(response.headers.get('cache-control'), 'no-store', path);
   }
-  assert.equal((await get('/market/display/futures-book/NRXUSDT')).status, 404);
+  const options = await worker.fetch(new Request('https://market.voltextech.net/market/nrx', { method: 'OPTIONS' }));
+  assert.equal(options.status, 204);
+  const head = await worker.fetch(new Request('https://market.voltextech.net/market/nrx', { method: 'HEAD' }));
+  assert.equal(head.status, 410);
+  assert.equal(await head.text(), '');
   assert.equal((await (await get('/health')).json()).service, 'voltex-market-edge');
   const program = await (await get('/market/simulations/status')).json();
-  assert.equal(program.nrx.schedule.version, 5);
-  assert.equal(program.nrx.schedule.from, Date.parse('2026-10-06T17:00:00Z'));
+  assert.equal(program.nrx, undefined, 'no NRX schedule advertised from a retired market');
   assert.equal(program.boundedDemoProgram, 'capped-growth-range-v1');
-  // Historical fixtures stay byte-identical through the prospective v5 activation.
-  for (const [at, price] of [
-    ['2026-10-03T21:00:00Z', 2.7420778],
-    ['2026-10-04T09:00:00Z', 46.509268],
-    ['2026-10-04T13:00:00Z', 45.828573],
-  ]) {
-    now = Date.parse(at);
-    const state = (await (await get('/market/nrx')).json()).assets[0].state;
-    assert.equal(state.lastPrice, price, at);
-    const trades = await (await get('/market/external/trades/NRX-USDT')).json();
-    assert.equal(Number(trades.trades[0].price), price, 'trade tape contains the same historical price');
-  }
-
-  // v5: stop growth at the exact activation tick, balance 48h, sell off 60%
-  // over six hours, then remain in a bounded terminal balance forever.
-  now = Date.parse('2026-10-06T17:00:00Z');
-  const anchor = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
-  now = Date.parse('2026-10-06T17:30:00Z');
-  assert.equal((await (await get('/market/nrx')).json()).assets[0].state.lastPrice, anchor, '30m pump exhaustion returns to activation anchor');
-  now = Date.parse('2026-10-06T23:30:00Z');
-  const terminal = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
-  assert.ok(Math.abs(terminal - anchor * .4) <= Math.max(1e-8, anchor * 1e-8), 'six-hour selloff ends exactly 60% below anchor');
-  now += 24 * 60 * 60 * 1000;
-  const balanced = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
-  assert.ok(balanced > terminal * .5 && balanced < terminal * 1.6, 'post-selloff market remains balanced');
-  const trades = await (await get('/market/external/trades/NRX-USDT')).json();
-  assert.equal(Number(trades.trades[0].price), balanced, 'trade tape follows the terminal balance');
-
   assert.equal(external, 0);
-  console.log('Bundled NRX Worker: historical path + v5 balance/selloff/balance PASS; zero IO; no Node runtime/DB dependency');
+  assert.ok(calls >= 11);
+  console.log('Bundled Worker NRX retirement PASS: HTTP410, no public schedule, zero outbound IO');
 })().catch(error => { console.error(error); process.exitCode = 1; });

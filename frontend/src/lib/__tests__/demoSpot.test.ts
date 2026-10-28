@@ -40,7 +40,7 @@ test('the server picks the ledger: ordinary Balance funds keep the ordinary term
 test('only ordinary pairs use the demo ledger; test markets, listings and VTA keep their own paths', () => {
   expect(isDemoSpotPair('BTC/USDT')).toBe(true);
   expect(isDemoSpotPair('ETH/USDT')).toBe(true);
-  for (const pair of ['NRX/USDT', 'VTA/USDT', 'vta/usdt']) expect(isDemoSpotPair(pair)).toBe(false);
+  for (const pair of ['NRX/USDT', 'NRX/BTC', 'BTC/NRX', 'NRX/SIMUSDT', 'NRXSIMUSDT', 'VTA/USDT', 'vta/usdt']) expect(isDemoSpotPair(pair)).toBe(false);
   const page = read('pages/TradePage.tsx');
   expect(page).toContain("const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);");
   expect(page).toContain("demo={demoPair ? demoMode : 'off'}");

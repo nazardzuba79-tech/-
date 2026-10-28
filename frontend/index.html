@@ -177,19 +177,31 @@
 
     <meta name="theme-color" content="#0b0e11" />
     <meta name="description" content="VOLTEX — криптобиржа со спотовой и фьючерсной торговлей: лимитные, рыночные, стоп- и тейк-профит ордера, маржинальная торговля с плечом и депозиты/выводы в поддерживаемых сетях." />
+    <!-- SEARCH. As written, this head is the home page's. The build copies
+         it per public Academy, Help and legal address with that page's title,
+         description and canonical, and per signed-in or sign-in address with
+         a noindex robots meta and no canonical (frontend/contentPlugin.ts,
+         src/lib/seo). Every host serving this build, ru.voltextech.net
+         included, names the main domain. -->
+    <link rel="canonical" href="https://voltextech.net/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="VOLTEX" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:url" content="https://voltextech.net/" />
     <meta property="og:title" content="VOLTEX — криптобиржа" />
     <meta property="og:description" content="Спот и фьючерсы, ордера Stop-Loss/Take-Profit/OCO, маржинальная торговля с плечом. Реальные рыночные данные, без фейковых котировок." />
-    <meta property="og:image" content="/og-image.svg" />
+    <meta property="og:image" content="https://voltextech.net/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="VOLTEX" />
 
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="VOLTEX — криптобиржа" />
     <meta name="twitter:description" content="Спот и фьючерсы, ордера Stop-Loss/Take-Profit/OCO, маржинальная торговля с плечом." />
-    <meta name="twitter:image" content="/og-image.svg" />
+    <meta name="twitter:image" content="https://voltextech.net/og-image.png" />
 
-    <title>VOLTEX</title>
+    <title>VOLTEX — криптобиржа</title>
   </head>
   <body>
     <div id="root"></div>

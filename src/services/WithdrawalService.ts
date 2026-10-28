@@ -65,6 +65,11 @@ export class WithdrawalService {
     if (withdrawal.balanceHeld === false) throw new DemoFundsNotWithdrawableError();
   }
 
+  private async requireRealAsset(db: PrismaClient | Prisma.TransactionClient, asset: string) {
+    if (isTestAssetPairOrSymbol(asset) || await isMintedListingAsset(db, asset))
+      throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+  }
+
   async requestWithdrawal(params: {
     userId: string;
     asset: string;
@@ -73,9 +78,7 @@ export class WithdrawalService {
     amount: string;
   }): Promise<WithdrawalResult> {
     // A minted listing token stays refused while the in-memory listing registry is cold or stale.
-    if (isTestAssetPairOrSymbol(params.asset) || await isMintedListingAsset(this.prisma, params.asset)) {
-      throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    }
+    await this.requireRealAsset(this.prisma, params.asset);
     const amount = new BigNumber(params.amount);
     if (!amount.isFinite() || amount.isLessThanOrEqualTo(0)) {
       throw new WithdrawalRequestError('Amount must be greater than zero');
@@ -148,6 +151,7 @@ export class WithdrawalService {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['PENDING']);
       this.refuseDemoFunds(withdrawal);
+      await this.requireRealAsset(tx, withdrawal.asset);
       // Also a request filed before this fence: the account must still cover its synthetic proceeds.
       if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor); }
 
@@ -176,6 +180,7 @@ export class WithdrawalService {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['APPROVED']);
       this.refuseDemoFunds(withdrawal);
+      await this.requireRealAsset(tx, withdrawal.asset);
       if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor); }
 
       // An unheld request moved nothing, so there is no lock to release.

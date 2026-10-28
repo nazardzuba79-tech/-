@@ -38,7 +38,7 @@ function withTransaction(prisma: any, opts: { balance?: any; withdrawal?: any } 
       }),
     },
     $queryRaw: jest.fn().mockResolvedValue([]), // Actual row-lock semantics covered by disposable PostgreSQL tests.
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
   };
   prisma.rows = rows;
   // Read before the transaction to find the request's owner; no simulated-sale proceeds, so no synthetic floor here.

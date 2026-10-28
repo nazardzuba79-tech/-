@@ -52,11 +52,14 @@ export async function syntheticProceeds(db: Db, userId: string): Promise<BigNumb
   let total = new BigNumber(0);
   for (const { metadata } of rows) {
     const m = (metadata ?? {}) as Record<string, unknown>;
-    const [base, quote] = String(m.pair ?? '').split('/');
-    if (quote !== 'USDT' || FLOOR_VALUED.includes(base) || m.settlementLedger === 'DemoBalance' || m.proceeds === null || m.proceeds === undefined) continue;
+    if (m.settlementLedger === 'DemoBalance') continue;
+    const parts = String(m.pair ?? '').split('/');
+    const [base, quote] = parts;
+    if (parts.length !== 2 || !base || !quote) throw new SyntheticProceedsLockedError('Unreconciled simulation receipt');
+    if (quote !== 'USDT' || FLOOR_VALUED.includes(base)) continue;
     const proceeds = num(m.proceeds);
     // A receipt whose amount cannot be read is never counted as zero.
-    if (!proceeds.isFinite()) throw new SyntheticProceedsLockedError();
+    if (!proceeds.isFinite() || proceeds.isNegative()) throw new SyntheticProceedsLockedError();
     total = total.plus(proceeds);
   }
   return total;
@@ -78,7 +81,7 @@ export async function prepareFloor(db: Db, userId: string, prices?: FloorPriceSo
 }
 
 /** Worst-case real value of the account (USDT). Call inside the transaction, after `lockFloor`. */
-export async function floorValue(tx: Tx, userId: string, marks: FloorMarks): Promise<BigNumber> {
+export async function floorValue(tx: Tx, userId: string, marks: FloorMarks, ignoreOrders: ReadonlySet<string> = new Set()): Promise<BigNumber> {
   let value = new BigNumber(0);
   for (const b of await tx.balance.findMany({ where: { userId } })) value = value.plus(num(b.available).plus(num(b.locked)).times(markOf(marks, b.asset)));
   // Leaving the account: requested withdrawals that hold Balance, and held OTC reserves.
@@ -93,6 +96,7 @@ export async function floorValue(tx: Tx, userId: string, marks: FloorMarks): Pro
   // The two legs of an OCO share one hold and only one can fill: count the worse leg once.
   const worstOco = new Map<string, BigNumber>();
   for (const o of open) {
+    if (ignoreOrders.has(o.id)) continue;
     const [base, quote] = o.pair.split('/');
     const r = num(o.remainingQuantity), mb = markOf(marks, base), mq = markOf(marks, quote);
     let delta: BigNumber;
@@ -105,6 +109,7 @@ export async function floorValue(tx: Tx, userId: string, marks: FloorMarks): Pro
     else value = value.plus(delta);
   }
   for (const delta of worstOco.values()) value = value.plus(delta);
+  if (!value.isFinite()) throw new SyntheticProceedsLockedError('Unreconciled wallet value');
   return value;
 }
 

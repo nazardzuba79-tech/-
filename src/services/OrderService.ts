@@ -603,21 +603,19 @@ export class OrderService {
       // list, cancelOrder) once it's a live book order.
       await tx.order.update({ where: { id: row.id }, data: { type: effType } });
 
-      const result = await this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, price);
-
       if (row.ocoGroupId) {
         const sibling = await tx.order.findFirst({
           where: { ocoGroupId: row.ocoGroupId, id: { not: row.id }, status: 'PENDING_TRIGGER' },
         });
         if (sibling) {
-          // The shared lock was already fully accounted for by this leg's
-          // own settlement above — cancelling the sibling must NOT touch
+          // This leg consumes the shared hold. Cancel the sibling in the same
+          // transaction BEFORE the floor projection; it must not disguise an
+          // adverse fill as a loss that already happened. Do NOT touch
           // the balance again, or the same funds get refunded twice.
           await tx.order.update({ where: { id: sibling.id }, data: { status: 'CANCELLED' } });
         }
       }
-
-      return result;
+      return this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, price);
     });
   }
 
@@ -731,6 +729,20 @@ export class OrderService {
     }
     const { trades, order: finalOrder } = engine.submitOrder(order);
     const changedMakers = new Set<string>();
+    // Placement-only checks miss legacy resting makers and conditional
+    // activation. Check every actual participant, including an ordinary
+    // taker's floor-bound maker. Exclude the executing orders from the BEFORE
+    // projection: their adverse fill is not a loss that already happened.
+    const executing = new Set([order.id, ...trades.map(trade => trade.makerOrderId)]);
+    const floors = new Map<string, { marks: Map<string, BigNumber>; before: BigNumber }>();
+    const participants = [...new Set([order.userId, ...trades.map(trade => trade.makerUserId)])].sort();
+    for (const userId of participants) {
+      const marks = await prepareFloor(tx, userId, this.priceSource);
+      if (marks) {
+        await lockFloor(tx, userId);
+        floors.set(userId, { marks, before: await floorValue(tx, userId, marks, executing) });
+      }
+    }
 
     for (const trade of trades) {
       makerRemaining.set(trade.makerOrderId, makerRemaining.get(trade.makerOrderId)!.minus(trade.quantity));
@@ -786,6 +798,8 @@ export class OrderService {
     if (refund.isGreaterThan(0)) {
       await this.adjustBalance(tx, order.userId, lockAsset, { available: refund, locked: refund.negated() });
     }
+
+    for (const [userId, floor] of floors) await assertFloor(tx, userId, floor.marks, floor.before);
 
     return { order: finalOrder, trades };
   }

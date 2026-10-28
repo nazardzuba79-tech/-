@@ -289,6 +289,7 @@ export function testMarketListingAt(pair: string): number | null {
 }
 
 export function refreshTestMarket(pair: string): Promise<void> {
+  if (isNrxPair(pair)) return Promise.resolve();
   return storeForPair(pair).refresh();
 }
 
@@ -316,7 +317,6 @@ function useWatchedStore(store: TestMarketStore, enabled: boolean): TestMarketsS
 export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
   const kind = pair ? (isNrxPair(pair) ? 'nrx' : isPrivateTestPair(pair) ? 'private' : isManagedListingPair(pair) ? 'managed' : 'vta') : null;
   const vta = useStore(testMarketStore, intervalMs, enabled && (!kind || kind === 'vta'));
-  const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!kind || kind === 'nrx'));
   const managed = useStore(managedListingStore, intervalMs, enabled && (!kind || kind === 'managed'));
   // Only a private pair's own terminal asks (a participant's link; the server answers participants and nobody
   // else). Every list just shows what this session already found, so an ordinary page never sends the request.
@@ -325,11 +325,11 @@ export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enable
   const privateTests = kind === 'private' ? privateAsked : privateSeen;
   // One array per store change, not per render: consumers memoise on it (useMarketTickers), and a
   // fresh array each render kept the Markets page re-rendering and starved route transitions.
-  const assets = useMemo(() => [...vta.assets, ...nrx.assets, ...managed.assets, ...privateTests.assets], [vta.assets, nrx.assets, managed.assets, privateTests.assets]);
-  if (kind) return kind === 'nrx' ? nrx : kind === 'private' ? privateTests : kind === 'managed' ? managed : vta;
+  const assets = useMemo(() => [...vta.assets, ...managed.assets, ...privateTests.assets], [vta.assets, managed.assets, privateTests.assets]);
+  if (kind) return kind === 'nrx' ? { loaded: true, error: false, assets: [], clockOffsetMs: 0 } : kind === 'private' ? privateTests : kind === 'managed' ? managed : vta;
   // The private list never decides whether the public markets loaded or failed.
-  return { loaded: vta.loaded && nrx.loaded && managed.loaded, error: vta.error || nrx.error || managed.error,
-    assets, clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : managed.loaded ? managed.clockOffsetMs : vta.clockOffsetMs };
+  return { loaded: vta.loaded && managed.loaded, error: vta.error || managed.error,
+    assets, clockOffsetMs: managed.loaded ? managed.clockOffsetMs : vta.clockOffsetMs };
 }
 
 /** The Trade page asks the edge once whether its pair is a managed listing (the store re-reads only rarely). */

@@ -33,6 +33,7 @@ pg('legacy simulated-sale proceeds cannot leave the account; genuine funds and o
   const source = { getTicker: jest.fn(async (pair: string) => {
     if (pricesDown) throw new Error('venue down');
     if (pair === 'TYVN/USDT') return { lastPrice: '5' }; // a venue that happens to list the same ticker
+    if (pair === 'FLOORX/USDT') return { lastPrice: '0.01' }; // unvalued synthetic fixture, NRX stays retired
     return MARKS[pair] ? { lastPrice: MARKS[pair] } : null;
   }) };
   const give = async (userId: string, asset: string, amount: string) => {
@@ -106,11 +107,11 @@ pg('legacy simulated-sale proceeds cannot leave the account; genuine funds and o
   });
 
   test('the real book, buying: an extreme bid for a simulated asset cannot pay the synthetic USDT to a user', async () => {
-    await give(honest, 'NRX', '1');
-    await expect(limit(owner, NEURIX.pair, 'BUY', '40000', '1')).rejects.toMatchObject(LOCKED);
+    await give(honest, 'FLOORX', '1');
+    await expect(limit(owner, 'FLOORX/USDT', 'BUY', '40000', '1')).rejects.toMatchObject(LOCKED);
     expect(await db.order.count({ where: { userId: owner, status: 'OPEN' } })).toBe(0);
     expect(await balance(owner, 'USDT')).toEqual(['41385724', '0']);
-    const sold = await limit(honest, NEURIX.pair, 'SELL', '40000', '1');
+    const sold = await limit(honest, 'FLOORX/USDT', 'SELL', '40000', '1');
     expect(sold.trades).toHaveLength(0);
     expect(await balance(honest, 'USDT')).toBeNull();
   });
@@ -146,10 +147,10 @@ pg('legacy simulated-sale proceeds cannot leave the account; genuine funds and o
     await limit(owner, 'BTC/USDT', 'BUY', '60000', '1');
     MARKS['BTC/USDT'] = '30000';
     try {
-      await give(owner, 'NRX', '100');
+      await give(owner, 'FLOORX', '100');
       await give(honest, 'USDT', '1');
-      await limit(honest, NEURIX.pair, 'BUY', '0.01', '100');
-      expect((await limit(owner, NEURIX.pair, 'SELL', '0.01', '100')).trades).toHaveLength(1);
+      await limit(honest, 'FLOORX/USDT', 'BUY', '0.01', '100');
+      expect((await limit(owner, 'FLOORX/USDT', 'SELL', '0.01', '100')).trades).toHaveLength(1);
       // At the mark nothing moves; one unit above it would hand value to the seller.
       await expect(limit(owner, 'BTC/USDT', 'BUY', '30000', '0.001')).resolves.toMatchObject({ order: { status: 'OPEN' } });
       await expect(limit(owner, 'BTC/USDT', 'BUY', '30001', '0.001')).rejects.toMatchObject(LOCKED);

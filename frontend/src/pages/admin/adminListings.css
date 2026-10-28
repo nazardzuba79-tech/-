@@ -200,3 +200,7 @@
   .listing-history-growth { padding: 14px 10px; }
   .listing-growth-cards { grid-template-columns: minmax(0, 1fr); }
 }
+
+.admin-listings .listing-delete-button { color: var(--sell) !important; border-color: var(--sell) !important; }
+.listing-delete-confirm { display: grid; gap: 8px; font-size: 13px; }
+.listing-delete-confirm input { box-sizing: border-box; width: 100%; min-height: 38px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
