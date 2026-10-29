@@ -186,13 +186,17 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
   expect(existsSync(resolve(repository, 'frontend/src/components/prelaunchNotice.css'))).toBe(false);
 });
 
-test('CopyTradingPage preserves the approved base except the exact display-only demo provider wiring', () => {
+test('CopyTradingPage preserves the approved base except the exact display-only demo and Issue #640 social provider wiring', () => {
   // PR #536 authorizes exactly this import and wrapper around the existing
   // avatar/content tree. Normalize those three required lines only, then
   // compare all remaining bytes with fresh base 2e7acf15. This protects
   // marketplace data, financial adapters, routing and eligibility unchanged.
   let text = source('frontend/src/pages/CopyTradingPage.tsx');
   const additions = [
+    // Issue #640 adds only identity links/editor state. All existing page bytes remain protected.
+    "import { StrategySocialProvider } from './copy-trading-bolt/StrategySocials';\n",
+    '            <StrategySocialProvider identities={identities}>\n',
+    '            </StrategySocialProvider>\n',
     "import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';\n",
     '            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>\n',
     '            </DemoRoiProvider>\n',

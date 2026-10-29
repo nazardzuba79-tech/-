@@ -5,6 +5,8 @@ on:
     paths:
       - 'src/services/copyTrading/**'
       - 'src/api/routes/copyPerformance.ts'
+      - 'src/api/routes/copyStrategySocials.ts'
+      - 'src/shared/copyStrategySocials.ts'
       - 'src/api/routes/syntheticCopyTrading.ts'
       - 'frontend/src/lib/copyMarketplace*.ts'
       - 'frontend/src/lib/copyDemoRoi.ts'
@@ -114,6 +116,8 @@ on:
     paths:
       - 'src/services/copyTrading/**'
       - 'src/api/routes/copyPerformance.ts'
+      - 'src/api/routes/copyStrategySocials.ts'
+      - 'src/shared/copyStrategySocials.ts'
       - 'src/api/routes/syntheticCopyTrading.ts'
       - 'frontend/src/lib/copyMarketplace*.ts'
       - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'

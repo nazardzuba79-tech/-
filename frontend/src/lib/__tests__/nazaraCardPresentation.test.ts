@@ -33,6 +33,7 @@ const React = frontendRequire('react');
 const { renderToStaticMarkup } = frontendRequire('react-dom/server');
 const empty = () => null;
 const dependencies = {
+  StrategySocialLinks: empty, StrategySocialEditor: empty,
   ...liveMetricModule(), ...languageModule('ru'), ...demoRoiModule(),
   useFiguresPending: () => false,
   useFollowing: () => ({ following: new Set<string>() }),
