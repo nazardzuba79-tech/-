@@ -8,6 +8,7 @@ import { createServer } from './server.mjs';
 import { createViewerStream } from './viewer-stream.mjs';
 import { CATALOG } from './catalog.mjs';
 import { SimError } from './engine.mjs';
+import { readFileSync } from 'node:fs';
 
 // #613 R9 prototype (viewer-stream.mjs): public quote events for viewers instead of a state poll each. These cases pin
 // what it may never become: a way to receive personal data, a delivery without a live judgement after the previous
@@ -23,11 +24,16 @@ function authorityDouble() {
       const tokens = JSON.parse(options.body).tokens; batches.push(tokens.map(token => token[0]).sort().join(''));
       return new Response(JSON.stringify({ results: tokens.map(token => revoked.has(token[0]) ? { error: 'AUTH_REQUIRED' } : { issuer: ISSUER, subject: renamed.get(token[0]) ?? SUBJECTS[token[0]] }) }));
     }
-    return new Response(JSON.stringify({ error: 'UNEXPECTED_COMMAND' }), { status: 500 });
+    // A trader's commands (its own gated state path): an existing account with an empty ledger.
+    const subject = SUBJECTS[options.headers.Authorization[7]], body = JSON.parse(options.body);
+    const value = body.type === 'ensure' ? { id: accountId({ issuer: ISSUER, subject }) } : { schema: 2, revision: 1, serverTime: 1, wallets: { USDT: { cash: '0', reserved: '0' }, USDC: { cash: '0', reserved: '0' } }, positions: {}, orders: [], fills: [], quotes: {} };
+    return new Response(JSON.stringify({ value, metrics: {}, actor: { issuer: ISSUER, subject } }));
   };
   return { batches, revoked, renamed, adapter: createAuthorityAdapter({ endpoint: 'http://127.0.0.1:1/api/v1/stocks-test-cash', issuer: ISSUER, gatewayKey: KEY, fetchImpl }) };
 }
-const quoteOf = id => ({ instrumentId: id, provider: 'bybit', nativeCurrency: 'USDT', bid: '100', ask: '100.5', timestamp: Date.now(), receivedAt: Date.now(), verified: true, marketOpen: true, eventId: 'stream-' + Date.now(), capacity: '1.00000000', prices: { USDT: { buy: '100.5', sell: '100' }, USDC: { buy: '100.5', sell: '100' } }, fx: {} });
+// A source quote as the hub returns it, with fields that must never reach a viewer's stream (native candles, the
+// source event id, the matching capacity).
+const quoteOf = id => ({ instrumentId: id, provider: 'bybit', nativeCurrency: 'USDT', bid: '100', ask: '100.5', last: '100.25', timestamp: Date.now(), receivedAt: Date.now(), verified: true, marketOpen: true, eventId: 'stream-' + Date.now(), capacity: '1.00000000', nativeCandles: { '15m': { time: 1, open: 1, high: 1, low: 1, close: 1, volume: 1 } }, prices: { USDT: { buy: '100.5', sell: '100' }, USDC: { buy: '100.5', sell: '100' } }, fx: {} });
 async function gateway(t, { viewerStream = true, quote = async id => quoteOf(id) } = {}) {
   const double = authorityDouble();
   const app = await createServer({ port: 0, autoPoll: false, financialEnabled: true, accountAuthority: double.adapter, viewerStream,
@@ -55,12 +61,17 @@ test('a viewer stream carries the public quote only, each delivery after its own
   const v = subscribe(app.port, 'V'), w = subscribe(app.port, 'W');
   await until(() => v.events.filter(e => e.event === 'quote').length >= 2 && w.events.filter(e => e.event === 'quote').length >= 2);
   assert.equal(v.status, 200); assert.equal(v.headers['content-type'], 'text/event-stream'); assert.equal(v.headers['cache-control'], 'no-store');
-  for (const { event, data } of [...v.events, ...w.events].filter(e => e.event === 'quote')) {
-    assert.deepEqual(Object.keys(data).sort(), ['instrumentId', 'quote', 'serverTime']);
+  for (const { data } of [...v.events, ...w.events].filter(e => e.event === 'quote')) {
+    assert.deepEqual(Object.keys(data).sort(), ['instrumentId', 'quote', 'seq', 'serverTime']);
     assert.equal(data.instrumentId, X); assert.equal(data.quote.instrumentId, X);
+    // The public quote only: price, freshness and per-currency status; never a candle, source event id or capacity.
+    assert.equal(data.quote.last, '100.25'); assert.equal(data.quote.status.USDT, 'READY'); assert.ok(Number.isInteger(data.quote.timestamp));
+    for (const field of ['nativeCandles', 'eventId', 'capacity']) assert.equal(field in data.quote, false, field);
   }
+  // Each stream's events come in increasing period order.
+  for (const client of [v, w]) { const seqs = client.events.map(e => e.data.seq); assert.deepEqual(seqs, [...seqs].sort((a, b) => a - b)); assert.equal(new Set(seqs).size, seqs.length); }
   // Nothing personal on the wire: no account, wallet, position, order, fill or CSRF token.
-  for (const word of ['account', 'wallets', 'positions', 'orders', 'fills', 'token', 'canTrade']) assert.equal(v.raw.includes('"' + word + '"'), false, word);
+  for (const word of ['account', 'wallets', 'positions', 'orders', 'fills', 'token', 'canTrade', 'nativeCandles']) assert.equal(v.raw.includes('"' + word + '"'), false, word);
   // After the two opening checks (one per request), every period judged both bearers again, together.
   assert.ok(batches.filter(b => b === 'VW').length >= 2, JSON.stringify(batches));
   assert.equal(app.streamMetrics().streams, 2);
@@ -87,7 +98,8 @@ test('no live quote: the event says so and carries no price', async t => {
   const { app } = await gateway(t, { quote: async () => { throw new SimError('QUOTE_UNAVAILABLE'); } });
   const v = subscribe(app.port, 'V');
   await until(() => v.events.some(e => e.event === 'unavailable'));
-  assert.deepEqual(v.events.find(e => e.event === 'unavailable').data, { instrumentId: X, error: 'QUOTE_UNAVAILABLE' });
+  const { seq, ...unavailable } = v.events.find(e => e.event === 'unavailable').data;
+  assert.deepEqual(unavailable, { instrumentId: X, error: 'QUOTE_UNAVAILABLE' }); assert.ok(Number.isInteger(seq));
   assert.equal(v.events.some(e => e.event === 'quote'), false);
 });
 
@@ -97,6 +109,28 @@ test('off unless the gateway is created with viewerStream: the release has no st
   await until(() => v.ended);
   assert.notEqual(v.status, 200); assert.notEqual(v.headers['content-type'], 'text/event-stream');
   assert.equal(app.streamMetrics(), null);
+});
+
+test('a viewer\'s state answer offers the stream, a trader\'s never does; a trader cannot open one', async t => {
+  const { app } = await gateway(t);
+  const read = async letter => { const r = await fetch(`http://127.0.0.1:${app.port}/__stocks_global/state?id=${encodeURIComponent(X)}`, { headers: { authorization: bearer(letter) } }); return { status: r.status, body: await r.json() }; };
+  const viewer = await read('V');
+  assert.equal(viewer.status, 200); assert.equal(viewer.body.viewerStream, 'v1'); assert.equal(viewer.body.account.canTrade, false);
+  const trader = await read('A');
+  assert.equal(trader.status, 200); assert.equal(trader.body.account.canTrade, true); assert.equal('viewerStream' in trader.body, false);
+  const a = subscribe(app.port, 'A');
+  await until(() => a.ended);
+  assert.equal(a.status, 422); assert.equal(JSON.parse(a.raw).error, 'VIEWER_STREAM_ONLY');
+  assert.equal(app.streamMetrics().opened, 0);
+});
+
+test('off by default: no offer in the state answer, and neither the release entrypoint nor the hosted ingress can turn it on', async t => {
+  const { app } = await gateway(t, { viewerStream: false });
+  const r = await fetch(`http://127.0.0.1:${app.port}/__stocks_global/state?id=${encodeURIComponent(X)}`, { headers: { authorization: bearer('V') } });
+  assert.equal(r.status, 200); assert.equal('viewerStream' in await r.json(), false);
+  const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
+  assert.equal(/viewerStream|viewer-stream/.test(read('./release-entrypoint.mjs')), false, 'the release entrypoint never enables the stream');
+  assert.equal(/\['stream'/.test(read('./hosted-ingress.mjs')), false, 'the hosted ingress has no stream route');
 });
 
 // The module alone, with stand-in responses: the bounds.
@@ -116,6 +150,6 @@ test('bounded: at most maxStreams streams, a subscriber that does not read is cl
   const limited = moduleStream({ authorize: async () => { throw Object.assign(new SimError('AUTH_RATE_LIMIT'), { retryAfterMs: 2000 }); } }), c = fakeResponse();
   limited.open(c, { authorization: 'c', principalId: 'c', instrumentId: X });
   await limited.tick();
-  assert.equal(c.written.at(-1), 'event: wait\ndata: {"retryAfterMs":2000}\n\n'); assert.equal(c.ended, undefined, 'the stream stays');
+  assert.equal(c.written.at(-1), 'event: wait\ndata: {"seq":1,"retryAfterMs":2000}\n\n'); assert.equal(c.ended, undefined, 'the stream stays');
   assert.equal(c.written.some(chunk => chunk.startsWith('event: quote')), false, 'no price without a live judgement');
 });

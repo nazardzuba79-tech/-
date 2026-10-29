@@ -133,6 +133,7 @@ describe('native CEX bars vs own-source history admission (combined #613 + #621 
       './accountSession': compile('src/pages/stocks/global/accountSession.ts'),
       './readWork': compile('src/pages/stocks/global/readWork.ts'),
       './catalogueVersion': compile('src/pages/stocks/global/catalogueVersion.ts'),
+      './viewerPush': compile('src/pages/stocks/global/viewerPush.ts'),
       './overload': compile('src/pages/stocks/global/overload.ts', { './stockText': { stockTranslator: () => (s: string) => s } }),
       './DesktopShell': { DesktopMarketStats: Empty, DesktopQuotes: Empty, DesktopFooter: Empty, DesktopAllocation: Empty },
     }).default;

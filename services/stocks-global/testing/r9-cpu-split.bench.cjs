@@ -7,8 +7,11 @@
 // it records the CPU time of the gateway, the authority and the PostgreSQL cluster (/proc, every thread and every
 // backend), the private requests the authority served by route, and the clients' answers. Phases run in ABBA order.
 // Server processes are pinned to CPUs 0,1 and the clients to 2,3 when the host has 4 CPUs.
+// PUSH_DIAGNOSTIC (#613 viewer push, R10): the kinds `push-viewers` and `push` (with the traders) replace the viewers'
+// 1 s state reads by the gateway's public quote stream (the gateway in the isolated push profile, --viewer-stream);
+// they also record the gateway's established connections and how old each delivered quote is.
 // Usage: STOCKS_DISPOSABLE_PG_URL=... STOCKS_PG_DISPOSABLE_CONFIRM=... STOCKS_PG_COMPILED_ROUTER=true \
-//        R9_BENCH_OUT=<file.json> [R9_BENCH_ROUNDS=2] [R9_KINDS=idle,viewers,traders,both] [R9_COOL_MS=45000]
+//        R9_BENCH_OUT=<file.json> [R9_BENCH_ROUNDS=2] [R9_KINDS=idle,viewers,traders,both,push-viewers,push] [R9_COOL_MS=45000]
 //        [R9_PROF_DIR=<dir>] node --test <this file>
 const test = require('node:test'), assert = require('node:assert/strict');
 const { spawn, execFileSync } = require('node:child_process');
@@ -45,6 +48,8 @@ function pgPids(port) {
   const children = procs().filter(pid => { try { return Number(statFields(pid)[2]) === postmaster; } catch { return false; } });
   return { postmaster, children };
 }
+// Established TCP connections the gateway holds (its listening port as the local end), from /proc/net/tcp{,6}.
+const connections = port => { let n = 0; for (const file of ['/proc/net/tcp', '/proc/net/tcp6']) { try { for (const row of fs.readFileSync(file, 'utf8').split('\n').slice(1)) { const f = row.trim().split(/\s+/); if (f.length > 3 && parseInt(f[1].split(':').pop(), 16) === port && f[3] === '01') n++; } } catch {} } return n; };
 const pgCpuMs = port => { const { postmaster, children } = pgPids(port), s = statFields(postmaster);
   // utime + stime + cutime + cstime of the postmaster (exited backends) plus the live children.
   return (Number(s[12]) + Number(s[13]) + Number(s[14]) + Number(s[15])) * 1000 / TICK + children.reduce((sum, pid) => sum + cpuMs(pid), 0); };
@@ -102,7 +107,9 @@ test('R9 CPU split of the Stocks chain: viewers, traders, both (report only)', {
     const market = await syntheticPublicMarket(); console.log('MARKET ' + market.origin + ' ' + market.wsUrl + ' READY'); process.on('SIGTERM', () => market.close().finally(() => process.exit()));`], clean(), ' READY');
   const [, marketOrigin, marketWs] = /MARKET (\S+) (\S+) READY/.exec(marketProcess.output());
   const gatewayPort = await freePort();
-  const gatewayProcess = await start(t, [...profArgs('gateway'), path.join(__dirname, 'synthetic-release-gateway.mjs'), '--stream-market'], { ...clean(), NODE_ENV: 'production',
+  const kindsWanted = process.env.R9_KINDS ? process.env.R9_KINDS.split(',') : ['idle', 'viewers', 'traders', 'both'];
+  const pushWanted = kindsWanted.some(kind => kind.startsWith('push'));
+  const gatewayProcess = await start(t, [...profArgs('gateway'), path.join(__dirname, 'synthetic-release-gateway.mjs'), '--stream-market', ...(pushWanted ? ['--viewer-stream'] : [])], { ...clean(), NODE_ENV: 'production',
     STOCKS_SYNTHETIC_MARKET_ORIGIN: marketOrigin, STOCKS_SYNTHETIC_MARKET_WS: marketWs,
     STOCKS_TEST_CASH_AUTHORITY_URL: `http://127.0.0.1:${authorityPort}/api/v1/stocks-test-cash`,
     STOCKS_IDENTITY_ISSUER: f.issuer, STOCKS_TEST_CASH_GATEWAY_KEY: f.gatewayKey, STOCKS_TRADE_PRINCIPALS: JSON.stringify(f.principals),
@@ -146,6 +153,37 @@ test('R9 CPU split of the Stocks chain: viewers, traders, both (report only)', {
   } };
   const warmViewers = async () => { for (const [i, viewer] of viewers.entries()) await state(instruments[i % 20], viewer.token, 'r9-viewer-' + i); };
 
+  // PUSH_DIAGNOSTIC: each viewer holds one stream of its instrument (bearer in the header, as the terminal).
+  const openStreams = () => {
+    const stats = { open: 0, quotes: 0, other: {}, errors: [], ages: [], delays: [] }, controllers = [];
+    const ready = Promise.all(viewers.map(async (viewer, i) => {
+      const controller = new AbortController(); controllers.push(controller);
+      try {
+        const response = await fetch(gateway + 'stream?id=' + encodeURIComponent(instruments[i % 20]), { headers: { authorization: 'Bearer ' + viewer.token }, signal: controller.signal });
+        if (response.status !== 200) { stats.errors.push('STREAM_HTTP_' + response.status); return; }
+        stats.open++;
+        let first; const firstEvent = new Promise(resolve => { first = resolve; });
+        (async () => {
+          const reader = response.body.getReader(), decoder = new TextDecoder(); let buffer = '';
+          for (;;) {
+            const { value, done } = await reader.read(); if (done) break;
+            buffer += decoder.decode(value, { stream: true }); let end;
+            while ((end = buffer.indexOf('\n\n')) >= 0) {
+              const block = buffer.slice(0, end); buffer = buffer.slice(end + 2);
+              const name = /^event: (.+)$/m.exec(block)?.[1]; if (!name) continue;
+              const data = JSON.parse(/^data: (.+)$/m.exec(block)[1]);
+              if (name === 'quote') { stats.quotes++; if (stats.measuring) { stats.ages.push(Date.now() - data.quote.timestamp); stats.delays.push(Date.now() - data.serverTime); } }
+              else stats.other[name] = (stats.other[name] ?? 0) + 1;
+              first();
+            }
+          }
+        })().catch(error => { if (!controller.signal.aborted) stats.errors.push('STREAM_' + String(error.message ?? error).slice(0, 60)); }).finally(first);
+        await firstEvent;
+      } catch (error) { if (!controller.signal.aborted) stats.errors.push('STREAM_' + String(error.message ?? error).slice(0, 60)); }
+    }));
+    return { stats, ready, close: () => controllers.forEach(c => c.abort()) };
+  };
+
   let round = 0;
   const viewerJob = async (i, cycle, tag) => {
     const id = instruments[i % 20], view = 'r9-viewer-' + i, answer = await state(id, viewers[i].token, view);
@@ -165,15 +203,21 @@ test('R9 CPU split of the Stocks chain: viewers, traders, both (report only)', {
   };
   async function phase(kind) {
     const tag = kind + '-' + (++round), jobs = [];
+    const push = kind === 'push' || kind === 'push-viewers';
     if (kind === 'viewers' || kind === 'both') for (let i = 0; i < VIEWERS; i++) for (let at = i * 20, cycle = 0; at < PHASE_MS; at += 1000, cycle++) jobs.push({ at, kind: 'viewer', fn: () => viewerJob(i, cycle, tag) });
-    if (kind === 'traders' || kind === 'both') for (let i = 0; i < 2; i++) for (let at = 500 + i * 2000, cycle = 0; at < PHASE_MS; at += 4000, cycle++) jobs.push({ at, kind: 'trader', fn: () => traderJob(i, cycle, tag) });
+    if (kind === 'traders' || kind === 'both' || kind === 'push') for (let i = 0; i < 2; i++) for (let at = 500 + i * 2000, cycle = 0; at < PHASE_MS; at += 4000, cycle++) jobs.push({ at, kind: 'trader', fn: () => traderJob(i, cycle, tag) });
     // Between phases the last minute's private requests age out, so no phase starts against a nearly full quota.
     await sleep(COOL_MS);
     warming = true;
-    if (kind === 'traders' || kind === 'both') await warmTraders();
+    if (kind === 'traders' || kind === 'both' || kind === 'push') await warmTraders();
     if (kind === 'viewers' || kind === 'both') await warmViewers();
+    // Streams open (and deliver a first event) before the window, as the viewers' first state reads warm the polls.
+    const streams = push ? openStreams() : null;
+    if (streams) await streams.ready;
     warming = false;
     await sleep(1000);
+    if (streams) streams.stats.measuring = true;
+    const sampled = []; const sampler = setInterval(() => sampled.push(connections(gatewayPort)), 500);
     const errors = [], latencies = { viewer: [], trader: [] };
     const before = { gateway: cpuMs(gatewayProcess.pid), authority: cpuMs(authority.pid), postgres: pgCpuMs(pgPort), market: cpuMs(marketProcess.pid), clients: process.cpuUsage(), threads: { gateway: threadCpuMs(gatewayProcess.pid), authority: threadCpuMs(authority.pid) } };
     const startedAt = Date.now(), start = performance.now();
@@ -182,6 +226,7 @@ test('R9 CPU split of the Stocks chain: viewers, traders, both (report only)', {
       job.fn().then(() => latencies[job.kind].push(performance.now() - begun), error => errors.push(job.kind + ' ' + String(error.message ?? error).slice(0, 120))).finally(resolve);
     }, Math.max(0, job.at - (performance.now() - start))))));
     const rest = PHASE_MS - (performance.now() - start); if (rest > 0) await sleep(rest);
+    clearInterval(sampler);
     const after = { gateway: cpuMs(gatewayProcess.pid), authority: cpuMs(authority.pid), postgres: pgCpuMs(pgPort), market: cpuMs(marketProcess.pid), clients: process.cpuUsage(before.clients), threads: { gateway: threadCpuMs(gatewayProcess.pid), authority: threadCpuMs(authority.pid) } };
     const log = (await authority.requestLog()).filter(([at]) => at >= startedAt && at < startedAt + PHASE_MS + 2000);
     const routes = log.reduce((count, [, method, url, status]) => { const key = `${method} ${url.replace('/api/v1/stocks-test-cash/', '')} ${status}`; return { ...count, [key]: (count[key] ?? 0) + 1 }; }, {});
@@ -189,13 +234,17 @@ test('R9 CPU split of the Stocks chain: viewers, traders, both (report only)', {
     const result = { kind, tag, wallMs: Math.round(performance.now() - start), jobs: jobs.length, errors: errors.length, firstErrors: errors.slice(0, 5),
       cpuMs: { gateway: Math.round(after.gateway - before.gateway), authority: Math.round(after.authority - before.authority), postgres: Math.round(after.postgres - before.postgres), market: Math.round(after.market - before.market), clients: Math.round((after.clients.user + after.clients.system) / 1000) },
       threadCpuMs: { gateway: diffThreads(before.threads.gateway, after.threads.gateway), authority: diffThreads(before.threads.authority, after.threads.authority) },
-      privateRequests: routes, viewer: { n: latencies.viewer.length, p50: q(latencies.viewer, 0.5), p95: q(latencies.viewer, 0.95) }, trader: { n: latencies.trader.length, p50: q(latencies.trader, 0.5), p95: q(latencies.trader, 0.95) } };
+      privateRequests: routes, viewer: { n: latencies.viewer.length, p50: q(latencies.viewer, 0.5), p95: q(latencies.viewer, 0.95) }, trader: { n: latencies.trader.length, p50: q(latencies.trader, 0.5), p95: q(latencies.trader, 0.95) },
+      gatewayConnections: { max: Math.max(0, ...sampled), mean: sampled.length ? Math.round(sampled.reduce((s, x) => s + x, 0) / sampled.length) : 0 },
+      ...(streams ? { push: { streams: streams.stats.open, quotes: streams.stats.ages.length, other: streams.stats.other, errors: streams.stats.errors.length, firstErrors: streams.stats.errors.slice(0, 5),
+        quoteAgeP50: q(streams.stats.ages, 0.5), quoteAgeP95: q(streams.stats.ages, 0.95), deliveryDelayP95: q(streams.stats.delays, 0.95) } } : {}) };
+    if (streams) { streams.close(); result.errors += streams.stats.errors.length; }
     t.diagnostic('PHASE ' + JSON.stringify(result));
     return result;
   }
   const phases = [];
   for (let r = 0; r < rounds; r++) {
-    const kinds = process.env.R9_KINDS ? process.env.R9_KINDS.split(',') : ['idle', 'viewers', 'traders', 'both'];
+    const kinds = kindsWanted;
     const order = r % 2 === 0 ? kinds : [...kinds].reverse();
     for (const kind of order) phases.push(await phase(kind));
   }

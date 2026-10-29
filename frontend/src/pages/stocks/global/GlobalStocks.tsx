@@ -21,6 +21,7 @@ import { StockOverloadCircuit, stockOverloadCode, stockOverloadText } from './ov
 import type { StockOverloadState, StockReadResult } from './overload';
 import { DesktopMarketStats, DesktopQuotes, DesktopFooter, DesktopAllocation } from './DesktopShell';
 import { catalogueQuery, settleCatalogue, type CatalogueCache } from './catalogueVersion';
+import { ViewerPush } from './viewerPush';
 import './desktopProfessional.css';
 import './stocksOriginal.css';
 const API='/__stocks_global/';
@@ -59,6 +60,15 @@ export default function GlobalStocks(){
   const circuit=useRef(new StockOverloadCircuit(setOverload,()=>document.hidden));
   const reads=useRef(new VisibleStockReads(()=>document.hidden));
   const demand=useRef(new StockChartDemand()),catalogueCache=useRef<CatalogueCache<Asset>>(null);
+  // Viewer push (#613): offered only by a gateway in the isolated push profile. Public quote events replace the 3 s
+  // state read while they arrive; a quote older than the shown one never replaces it; nothing reaches the chart.
+  const recheck=useRef<()=>void>(()=>{});
+  const push=useRef<ViewerPush|null>(null);
+  if(!push.current)push.current=new ViewerPush(instrument=>API+'stream?id='+encodeURIComponent(instrument),{
+    quote:(instrument,quote)=>{if(selected.current!==instrument)return;setState(old=>{if(!old||(old.quotes[instrument]?.timestamp??-Infinity)>quote.timestamp)return old;const errors={...old.errors};delete errors[instrument];return{...old,quotes:{...old.quotes,[instrument]:quote},errors};});setConnected(true);},
+    unavailable:(instrument,code)=>{if(selected.current!==instrument)return;setState(old=>{if(!old)return old;const quotes={...old.quotes};delete quotes[instrument];return{...old,quotes,errors:{...old.errors,[instrument]:code}};});},
+    recheck:()=>recheck.current(),down:()=>recheck.current(),
+  });
   const token=useRef(''),gate=useRef(false),selected=useRef(id),historyGeneration=useRef(0),historyClass=useRef({generation:-1,ownSource:false});selected.current=id;
   // Accepted permission belongs to the response's session. A stale render must
   // never turn the next credential into an order, even before React rerenders.
@@ -80,6 +90,7 @@ export default function GlobalStocks(){
   const pause=useCallback((code:unknown,hint?:unknown)=>{const blocked=circuit.current.trip(code,hint);if(blocked)setConnected(false);return blocked;},[]);
   const poll=useCallback((recovery=false):Promise<StockReadResult>=>{
     if(circuit.current.paused&&!recovery)return Promise.resolve({kind:'failed'});
+    if(push.current?.live(id))return Promise.resolve({kind:'ready'});
     return reads.current.run('state:'+id,async():Promise<StockReadResult>=>{
       const request=session.current.capture(()=>selected.current===id);
       const visit=demand.current.open(id,request.headers);
@@ -92,14 +103,16 @@ export default function GlobalStocks(){
         if(!r.ok){if(code){if(!recovery)pause(code,s.retryAfterMs);return{kind:'overload',code,retryAfterMs:s.retryAfterMs};}catalogueCache.current=null;throw Error();}
         const settled=settleCatalogue<Asset>(catalogueCache.current,s);if(!settled){catalogueCache.current=null;throw Error();}catalogueCache.current=settled.cache;s.catalogue=settled.list;
         if(s.schema!==2)throw Error();if(s.token)visit.accept(s.token);accept(s,request.current);setAuthRequired(false);setConnected(!code);
+        if(s.viewerStream==='v1'&&s.account?.canTrade!==true&&request.current())push.current?.want(id,()=>session.current.capture(()=>selected.current===id));
         if(code){if(!recovery)pause(code);return{kind:'prior-overload',code};}
         return{kind:'ready'};
       }catch{if(request.current())setConnected(false);return{kind:'failed'};}
     })??Promise.resolve({kind:'failed'});
   },[id,accept,pause]);
-  useEffect(()=>onSessionChange(()=>{acceptedAccount.current=null;demand.current.close();session.current.invalidate();reads.current.reset();circuit.current.reset();token.current='';setState(null);setConnected(false);setQuantity('');setLimit('');setMessage(null);setError('');setChartError('');setBalances({USDT:'',USDC:''});void poll();}),[poll]);
-  useEffect(()=>{const stop=startVisibleStockPolling(()=>void poll(),3000);return()=>{acceptedAccount.current=null;demand.current.close();session.current.invalidate();reads.current.reset();stop();};},[poll]);
-  useEffect(()=>{const hidden=()=>{if(document.hidden){demand.current.close();circuit.current.cancelRecovery();}};document.addEventListener('visibilitychange',hidden);return()=>{document.removeEventListener('visibilitychange',hidden);circuit.current.reset(false);};},[]);
+  recheck.current=()=>void poll();
+  useEffect(()=>onSessionChange(()=>{push.current?.stop();acceptedAccount.current=null;demand.current.close();session.current.invalidate();reads.current.reset();circuit.current.reset();token.current='';setState(null);setConnected(false);setQuantity('');setLimit('');setMessage(null);setError('');setChartError('');setBalances({USDT:'',USDC:''});void poll();}),[poll]);
+  useEffect(()=>{const stop=startVisibleStockPolling(()=>void poll(),3000);return()=>{push.current?.stop();acceptedAccount.current=null;demand.current.close();session.current.invalidate();reads.current.reset();stop();};},[poll]);
+  useEffect(()=>{const hidden=()=>{if(document.hidden){push.current?.pause();demand.current.close();circuit.current.cancelRecovery();}};document.addEventListener('visibilitychange',hidden);return()=>{document.removeEventListener('visibilitychange',hidden);circuit.current.reset(false);};},[]);
   const act=async(path:string,body:unknown)=>{if(!mayTrade()||(path==='balances'&&acceptedAccount.current?.existingOnly))return null;if(gate.current||circuit.current.paused)return null;const request=session.current.capture();gate.current=true;setBusy(true);setError('');setMessage(null);try{const r=await fetch(API+path,{method:'POST',credentials:'omit',headers:{...request.headers,...demand.current.headers(),'Content-Type':'application/json','X-Stocks-Token':token.current},body:JSON.stringify(body),signal:path==='refresh'&&demand.current.signal()?AbortSignal.any([demand.current.signal()!,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const s=await r.json();if(!request.current())return null;if(r.status===401){request.reject(clearToken);token.current='';setState(null);setConnected(false);setAuthRequired(true);}if(!r.ok){if(pause(s.error,s.retryAfterMs))return null;throw new StockRequestError(s.error);}accept(s,request.current);pause(s.errors?.[selected.current]);return s;}catch(e){if(request.current())setError(e instanceof StockRequestError?e.code:'LOCAL_SERVICE_ERROR');return null;}finally{gate.current=false;setBusy(false);}};
   const visibleAccount=mayReadAccount()?state:null;
   const asset=state?.catalogue.find(a=>a.id===id),q=state?.quotes[id],price=type==='LIMIT'?limit:q?.prices[currency]?.[side==='BUY'?'buy':'sell']||'',ready=connected&&q?.status[currency]==='READY'&&now-q.receivedAt<30000&&now-q.timestamp<((asset?.delaySeconds||0)+60)*1000;

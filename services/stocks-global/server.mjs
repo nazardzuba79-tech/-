@@ -16,7 +16,7 @@ import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError, snapshot } from './engine.mjs';
 import { projectViewerQuote } from './viewer-projection.mjs';
-import { createViewerStream } from './viewer-stream.mjs';
+import { createViewerStream, publicQuote } from './viewer-stream.mjs';
 import { preDemandReadiness } from './quote-readiness.mjs';
 import { twoTraderPolicy, configuredTraders, marketOnlyState } from './trader-policy.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
@@ -226,12 +226,14 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     await contextFlights.get(ctx.id);
   };
   const quote=createQuoteReader({hub,now,sourceAllowed});
-  // #613 R9 prototype (viewer-stream.mjs), off unless viewerStream is true; the release never sets it: public quote
-  // events for viewers instead of a state poll each. Every delivery follows its own live identity judgement.
+  // #613 viewer push (viewer-stream.mjs), off unless viewerStream is true: only the isolated test launchers set it
+  // (testing/disposable-postgres.cjs, testing/synthetic-release-gateway.mjs --viewer-stream), never the release
+  // entrypoint. Public quote events for viewers instead of a state poll each; every delivery follows its own live
+  // identity judgement. A viewer's state answer says the stream exists (viewerStream: 'v1'); a trader's never does.
   const stream=viewerStream===true&&accountAuthority?createViewerStream({
     authorize:authorization=>accountAuthority.runWithRequest({headers:{authorization}},async()=>accountId(await authenticate(null,{}))),
     readQuote:id=>quote(id,{}),
-    project:(id,q)=>projectViewerQuote(marketOnlyState(now()),id,q,now()).quotes[id],
+    project:(id,q)=>publicQuote(projectViewerQuote(marketOnlyState(now()),id,q,now()).quotes[id]),
     onDelivered:s=>hub.setStockDemand?.(s.principalId,s.instrumentId)}):null;
   // The local SQLite worker cannot see a revocation in its own transaction, so
   // it re-runs the request's authorization at its pre-COMMIT fence. The
@@ -345,7 +347,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
               view=projectViewerQuote(view,id,q,now());delete view.errors[id];
             }catch(e){if(readAbort.signal.aborted)return;delete view.quotes[id];view.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}
           }
-          const body={...view,token:ctx.token};if(u.searchParams.get('catalogue')===body.catalogueVersion)delete body.catalogue;
+          const body={...view,token:ctx.token,...(stream&&!ctx.ownerMayTrade?{viewerStream:'v1'}:{})};if(u.searchParams.get('catalogue')===body.catalogueVersion)delete body.catalogue;
           await confirmed();if(!res.destroyed)send(res,200,body);return;
         }finally{res.off('close',onClose);}
       }
@@ -370,7 +372,8 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         }finally{res.off('close',onClose);}return;
       }
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();await confirmed();send(res,200,{catalogue});return;}
-      if(stream&&req.method==='GET'&&u.pathname===API+'stream'){const id=u.searchParams.get('id');sourceAllowed(id);await confirmed();if(res.destroyed)return;hub.setStockDemand?.(ctx.id,id);stream.open(res,{authorization:req.headers.authorization,principalId:ctx.id,instrumentId:id});return;}
+      // Viewers only: a trader keeps its own gated state reads (observation, lease, ledger) and never reads a stream.
+      if(stream&&req.method==='GET'&&u.pathname===API+'stream'){check(!ctx.ownerMayTrade,'VIEWER_STREAM_ONLY');const id=u.searchParams.get('id');sourceAllowed(id);await confirmed();if(res.destroyed)return;hub.setStockDemand?.(ctx.id,id);stream.open(res,{authorization:req.headers.authorization,principalId:ctx.id,instrumentId:id});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');
       // Refuse every financial/observation command before body, CSRF token,
       // account binding or authority work; enforced even for both trusted traders.

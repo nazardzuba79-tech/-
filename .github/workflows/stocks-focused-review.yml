@@ -15,6 +15,7 @@ on:
       - 'prisma/schema.prisma'
       - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
+      - 'frontend/src/lib/__tests__/stocksViewerPush.test.ts'
       - 'frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - 'frontend/src/lib/__tests__/stockOrderPanel.test.ts'
@@ -25,6 +26,7 @@ on:
       - 'scripts/qa-stocks-hosted-silent.cjs'
       - 'scripts/qa-stocks-route-browser.cjs'
       - 'scripts/qa-stocks-source-chart-browser.cjs'
+      - 'scripts/qa-stocks-viewer-push.cjs'
       - 'frontend/src/pages/stocks/**'
       - '.github/workflows/stocks-legacy-unsupported.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
@@ -138,6 +140,14 @@ jobs:
           services/stocks-global/authority-adapter.test.mjs
           services/stocks-global/authority-rate-limit.test.mjs
           services/stocks-global/catalogue-version.test.mjs
+      # #613 R9/R10: the private quota over whole minutes (simulated time), the explicit 503 near the connection bound,
+      # and the viewers' public quote stream (live judgement per delivery, bounds, viewer-only, off in the release).
+      - name: Private-quota window, connection admission and the viewer quote stream
+        run: >-
+          node --test
+          services/stocks-global/quota-sim.test.mjs
+          services/stocks-global/connection-admission.test.mjs
+          services/stocks-global/viewer-stream.test.mjs
       - name: Pilot read-only preflight contract (mock database only)
         run: node --test services/stocks-global/pilot-preflight.test.cjs
       - name: Read-only preflight attempt gate on disposable PostgreSQL
@@ -157,6 +167,7 @@ jobs:
         run: >-
           npx jest --runInBand --runTestsByPath
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/stocksViewerPush.test.ts
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
           frontend/src/lib/__tests__/stockOrderPanel.test.ts
           frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts
@@ -400,6 +411,13 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
           QA_STOCKS_DIST: .stocks-hosted-dist
           QA_OUT: /tmp/stocks-hosted-browser/source-chart
+      # #613 viewer push: the gateway in the isolated push profile (test fixture only; the release never enables it).
+      - name: Viewer push — header-only bearer, stale/fresh price, no reads while live, hidden tab, crafted out-of-order events, busy fallback, offline, dropped connections, instrument switch, sign-out, traders unchanged — 1440 and 390
+        run: node scripts/qa-stocks-viewer-push.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_OUT: /tmp/stocks-hosted-browser/viewer-push
       - uses: actions/upload-artifact@v4
         if: always()
         with:

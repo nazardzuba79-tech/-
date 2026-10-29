@@ -4,6 +4,7 @@
 // (openReleaseAuthority: readiness, issuer, principals digest) and the same gateway createServer.
 // --stream-market: the Binance stream hub on the loopback synthetic public market instead (demand leases and
 // stream freshness, as the 50+2 harness's gateway process: scripts/qa/stocks-rc-50plus2/stocks-worker.cjs).
+// --viewer-stream: the isolated viewer push profile (#613): createServer({ viewerStream: true }), test launchers only.
 import { openReleaseAuthority } from '../release-authority.mjs';
 import { CATALOG, instrument } from '../catalog.mjs';
 
@@ -36,7 +37,7 @@ try {
         fx: item.currency === 'USDT' ? {} : { USDT: { rate: '1', timestamp: at, maxAgeMs: 180000 } } };
     },
   };
-  const app = await createServer({ port: config.port, financialEnabled: config.tradingEnabled, accountAuthority: authority, tradePrincipals: config.tradePrincipals, hub });
+  const app = await createServer({ port: config.port, financialEnabled: config.tradingEnabled, accountAuthority: authority, tradePrincipals: config.tradePrincipals, hub, viewerStream: process.argv.includes('--viewer-stream') });
   console.log('STOCKS_RELEASE_LISTENING ' + app.port);
   // The stream feed keeps its own socket and timers: a signal ends the launcher once the listeners are closed.
   const stop = () => Promise.resolve(app.close()).then(() => market?.close()).finally(() => process.exit());

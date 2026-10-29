@@ -119,6 +119,7 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
       './accountSession': compile('src/pages/stocks/global/accountSession.ts'),
       './readWork': compile('src/pages/stocks/global/readWork.ts'),
       './catalogueVersion': compile('src/pages/stocks/global/catalogueVersion.ts'),
+      './viewerPush': compile('src/pages/stocks/global/viewerPush.ts'),
       './overload': compile('src/pages/stocks/global/overload.ts', { './stockText': { stockTranslator: () => (s: string) => s } }),
       './DesktopShell': { DesktopHeader: Empty, DesktopMarketStats: Empty,
         DesktopQuotes: ({ fills }: { fills: unknown[] }) => React.createElement('div', { 'data-testid': 'quote-fills', 'data-fill-count': fills.length }),

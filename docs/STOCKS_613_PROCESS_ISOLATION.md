@@ -937,3 +937,100 @@ With the trader path unchanged even zero viewer CPU leaves the traders' ≈ 42 %
 2. **Sustained load at the original scenario:** with R9 the ingress no longer refuses and trader commands keep their
    room, but 50 viewers at 1 s still exceed what 240 − 210 leaves; about a third of polls get 429 + `Retry-After`.
 3. Not run: CI acceptance/sustained on R9 (needs separate permission and the stop condition), the 3 s diagnostic in CI.
+
+## R10 (29.10): viewer push in the terminal (owner decision 6503972575)
+
+Owner decision of 29.10: push updates for viewers instead of the `/state` poll, built on the R9 `viewer-stream.mjs`, in
+this Draft PR; code and isolated checks only — no production, merge, deploy, quota raise or paid server. The R8
+acceptance (50 × 1 s polling / 2 × 4 s, +22.73 % FAIL) stays as recorded; the push scenario is a separate diagnostic,
+PUSH_DIAGNOSTIC. No full 50+2 run without separate permission. Stocks BUY/SELL stays off for every account.
+
+### Server (`services/stocks-global/server.mjs`, `viewer-stream.mjs`)
+
+- **Profile:** `createServer({ viewerStream: true })` only from the isolated test launchers
+  (`testing/disposable-postgres.cjs` option `viewerStream`, `testing/synthetic-release-gateway.mjs --viewer-stream`).
+  The release entrypoint never sets it and the hosted ingress has no `stream` route (asserted by a test), so production
+  stays OFF.
+- **Offer:** a viewer's state answer carries `viewerStream: 'v1'` only when the gateway runs the stream; a trader's
+  never does. `GET /__stocks_global/stream` answers a trader (`canTrade`) 422 `VIEWER_STREAM_ONLY`: the two traders keep
+  their own gated state reads, observation and ledger.
+- **Payload:** each event carries `seq` (the delivery period, increasing for the gateway's life) and the public quote
+  only — a whitelist of instrument, bid/ask/last, timestamps, age, per-currency prices and status, FX and multiplier;
+  native candles, source event ids and matching capacity never travel. Live authorization before every delivery, the
+  64-stream / 64 KiB bounds, `unavailable` / `wait` / `revoked` are R9's, unchanged.
+
+### Terminal (`frontend/src/pages/stocks/global/viewerPush.ts`, `GlobalStocks.tsx`)
+
+- Opened only when the state answer offers it and the account is not a trader. Read with `fetch` and a streamed body:
+  the bearer is in the `Authorization` header, never in a URL (no `EventSource`, no query token).
+- **No double reads:** while the stream delivers, the 3 s state read is skipped. When the stream is not offered,
+  refused, ended, silent for 5 s or busy, the ordinary visible 3 s read takes over at once; the stream reopens with
+  backoff (1 s doubling to 30 s) plus up to 1 s jitter, never before `Retry-After`; refused for another reason
+  (unsupported), the ordinary reads run for a minute before the next attempt.
+- **Closed at once** on another instrument, a hidden tab, sign-out / another account (session fence), unmount; on
+  `revoked` or 401 the terminal reads its state again (the 401 path asks to log in) and nothing reopens without a new
+  offer.
+- **Order and freshness:** an event with `seq` not above the last one, for another instrument, or a quote older than the
+  one shown is dropped; `unavailable` clears the price and shows the code; a stale source quote is shown as stale (the
+  existing freshness rules), never replaced by an invented value. Stream events never reach the chart: candles keep
+  their own admitted history path (`admitStockHistory`).
+- **Price sources (unchanged):** the stream reads the gateway's existing quote reader, the same one the state answer
+  uses — no source is added. CEX venues stay behind their rights gate (`DATA_RIGHTS_UNVERIFIED`); a
+  `SOLANA:<mint>:<pool>` own-source identity gets no stream and no price (422 `INVALID_PAIR`), and its chart keeps
+  `voltex.solana-ohlcv.v1` / `admitStockHistory` with the six gates (0 accepted markets → UNKNOWN). A live own-source
+  quote feed does not exist yet; until it does, real viewers would see no price on push as on polling.
+
+### Checks run
+
+- **Unit / mounted terminal (Jest):** `stocksViewerPush.test.ts` 12/12 — event parsing (public fields only, malformed
+  and unknown blocks ignored), header-only bearer, in-order / older / foreign events, 5 s stall, 503 + Retry-After and
+  422 back-off, revoked / 401, instrument switch, hidden tab, sign-out, a trader or a missing offer never opening a
+  stream. The terminal suites that compile `GlobalStocks.tsx` were updated for the new module and pass unchanged
+  otherwise. Stocks frontend set 15 suites / 148 tests; all frontend lib suites 301 passed + 1 skipped (4 782 tests
+  passed, 9 skipped).
+- **Gateway (node):** `viewer-stream.test.mjs` 7/7 (adds the offer, the trader refusal, `seq`, the whitelist and the
+  release/ingress OFF contract). Stocks node unit 409/409.
+- **Browser, real terminal, disposable PostgreSQL, ordinary login (`scripts/qa-stocks-viewer-push.cjs`, Chromium 1440
+  and 390): 26/26.** Per width: stream with the bearer in the header and no token in any URL; stale source quote shown
+  stale with the source's price, then fresh; pushed prices shown with **0 state reads in 9 s** while live; wire carries
+  the public quote only (no wallet, position, order, account, token, native candles); a trader's stream 422; a SOLANA
+  identity 422 and no price in the terminal; hidden tab closes the stream at the gateway at once and reopens when
+  visible; a crafted stream with out-of-order, older and foreign events never shows them; busy 503 + `Retry-After: 6`:
+  3 fallback state reads, reopened after 6.6–6.9 s; offline 7 s and back: next price after ≈ 0.95 s (Chromium's offline
+  emulation leaves an open response running); every gateway connection dropped: reopened after 1.0–1.9 s; instrument
+  switch closes the old stream and opens the new one; sign-out (API logout): stream closed at the gateway after
+  0.9–1.0 s, the terminal goes to `/login`, no stream reopens. The two bound traders: 3 state reads per 9.5 s, no stream,
+  no financial request (shipped bundle, execution gate OFF). No page error, nothing left the two local origins.
+- **PG / contracts:** Stocks PG suites 47/47 + `catalogue-missing-tables` 1/1 in its own empty database; 50+2 harness
+  67/67; release / package / source-head / infra contracts 64/64; frontend `tsc` and the hosted `vite build` pass.
+- **CI:** the R9 node tests (`quota-sim`, `connection-admission`, `viewer-stream`) were not in any CI step; they now are
+  (`stocks-focused-review.yml`), with `stocksViewerPush.test.ts` and the browser check in the hosted-browser job.
+
+### PUSH_DIAGNOSTIC (local, `testing/r9-cpu-split.bench.cjs` kinds `push`, `push-viewers`; report only)
+
+Same release chain and method as R9 §1 (authority + gateway + PostgreSQL on CPUs 0,1, clients and synthetic market on
+2,3; 20 s phases, 2 rounds ABBA; `r10-push-1`). Viewers on the stream hold one connection each; traders unchanged.
+
+| Phase (mean of 2) | Gateway | Authority | PostgreSQL | Stocks total | Identity batches | Commands | Gateway connections mean (max) | Errors |
+|---|---|---|---|---|---|---|---|---|
+| 50 viewers polling 1 s + 2 traders | 2 035 ms | 1 130 ms | 240 ms | **3 405 ms** | 41–43 | 70 | 41 (61–65) | 0 |
+| 50 viewers on push + 2 traders | 600 ms | 975 ms | 235 ms | **1 810 ms (−47 %)** | 20 | 70 | 52 (52) | 0 |
+| 50 viewers polling 1 s | 1 965 ms | 180 ms | 30 ms | 2 175 ms | 42–43 | — | 40 (61–66) | 0 |
+| 50 viewers on push | 320 ms | 120 ms | 35 ms | 475 ms (−78 %) | 20 | — | 50 (50) | 0 |
+
+- Push delivered 1 000 quotes per 20 s (50 × 1/s, as many as the polls answered); delivery delay p95 25–29 ms; quote
+  age p50 ≈ 1.0 s, p95 ≈ 2.1 s (the shared reader reuses a quote for up to 2 s, the same for polling). Trader p95
+  152–177 ms on push vs 178–186 ms polling. Client CPU 2 815 → 528 ms.
+- **Crypto p95 is not measured:** it needs the 50+2 harness, whose runtime pins (`47f5d04d`) have no push; a
+  PUSH_DIAGNOSTIC 50+2 run needs a driver mode with viewers on the stream, a re-pin to this runtime and separate
+  permission. Linear model on R8: +22.73 % × 0.53 ≈ **+12 %**, above +5 %. R9's stop condition (≥ 50 % less Stocks
+  server CPU) is narrowly missed (−47 %); the identity batches halve (20 instead of 41–43 per 20 s), which also leaves
+  more of the 240/min quota to the traders.
+
+### R10 remaining blockers
+
+1. Acceptance unchanged: +22.73 % FAIL (R8). Push alone projects ≈ +12 %; the traders' authority path (≈ 1.1–1.3 s per
+   20 s) is now the larger share of Stocks CPU.
+2. Push is a test-profile feature: production needs the owner's decision to enable it (release flag, hosted ingress
+   route with streams kept outside its 80-request bound, the frontend offer) and a live own-source quote feed.
+3. Not run: CI on this head (follows), any 50+2 run (needs the push driver mode, a re-pin and permission).
