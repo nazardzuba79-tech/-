@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 // crypto API (cpu_shares in deploy/stocks-pages-gateway.compose.yaml.example); it adds no CPU to the budget.
 // R6 also ran the gateway in Linux's idle scheduling class (STOCKS_SCHED 'gateway-idle'); run 40838996816 showed no
 // measurable p95 effect, so the release control is nice 10 / cpu_shares only again (docs/STOCKS_613_PROCESS_ISOLATION.md).
-const RC='d6da2c84f3dfff590fa9bc093749a5a54cc4183e',TOPOLOGY='separated',STOCKS_NICE=10;
+const RC='47f5d04d70dc0f9d978bd5af31d1a96484c59df2',TOPOLOGY='separated',STOCKS_NICE=10;
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){

@@ -60,10 +60,10 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
-#613 candidate pins (repinned 2026-10-29, Claude: R6)
-Both policies pin the same runtime, d6da2c84 (#613 R6: 8f73e373 plus the review 6490492921
-re-check of a failed observation after its live identity check; the after pin also runs
-the gateway in the idle scheduling class). 8f73e373 was (#613 R5: c67b3fc9 with auth.ts back to
+#613 candidate pins (repinned 2026-10-29, Claude: R7)
+Both policies pin 47f5d04d (#613 R7): the runtime of d6da2c84 (8f73e373 plus the review 6490492921
+re-check of a failed observation after its live identity check) with the gateway's idle
+scheduling class removed again from the after pin and the compose example. 8f73e373 was (#613 R5: c67b3fc9 with auth.ts back to
 its 4daa14d0 form and, per review 6489779311, no change to the demand a principal's
 sessions share before a trader request is confirmed; c67b3fc9 is ed31f4e8 plus a trader's
 command as its own live identity judgement instead of a separate identity check,
