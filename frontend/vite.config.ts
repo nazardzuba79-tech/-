@@ -2,6 +2,16 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolveCatalogueEdge } from './src/lib/depositCatalogueEdge';
 import { voltexContent } from './contentPlugin';
+import releaseProfiles from './wallet591-profiles.json';
+
+const releaseProfile = process.env.VOLTEX_RELEASE_PROFILE;
+const releaseConfig = releaseProfile ? releaseProfiles[releaseProfile as keyof typeof releaseProfiles] : undefined;
+if (releaseProfile) {
+  if (!releaseConfig || !/^[a-f0-9]{40}$/.test(process.env.VOLTEX_RELEASE_SOURCE ?? '')) throw new Error('Invalid release profile/source');
+  for (const [key, value] of Object.entries(releaseConfig.env)) {
+    if (process.env[key] !== value) throw new Error(`Release environment mismatch: ${key}`);
+  }
+}
 
 // Deposit catalogue activation is chosen at build time and never falls back
 // at runtime, so a malformed origin must stop the build rather than ship a
@@ -24,7 +34,14 @@ if (process.env.VITE_MANUAL_DEPOSIT_CATALOGUE === 'true' && !depositEdge?.trim()
 
 export default defineConfig({
   // Academy and Help pages are compiled from frontend/content/ at build time.
-  plugins: [react(), ...voltexContent()],
+  plugins: [react(), ...voltexContent(), ...(releaseConfig ? [{
+    name: 'reviewed-release-profile',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'release-build.json', source: JSON.stringify({
+        profile: releaseProfile, source: process.env.VOLTEX_RELEASE_SOURCE, env: releaseConfig.env,
+      }) });
+    },
+  }] : [])],
   // The market edge origin (lib/marketEdge.ts). Empty = production default.
   // A compile-time constant rather than import.meta, so modules that read it
   // stay importable from the CommonJS Jest suites.

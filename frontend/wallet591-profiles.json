@@ -1,0 +1,24 @@
+{
+  "production": {
+    "origin": "https://voltextech.net",
+    "env": {
+      "VITE_API_URL": "https://api.voltextech.net/api/v1",
+      "VITE_MARKET_EDGE_URL": "https://market.voltextech.net",
+      "VITE_KYC_EDGE_URL": "https://kyc.voltextech.net",
+      "VITE_DEPOSIT_CATALOGUE_URL": "https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev",
+      "VITE_MANUAL_DEPOSIT_CATALOGUE": "true",
+      "VITE_WALLET_CONVERSION_ENABLED": "false"
+    }
+  },
+  "ru": {
+    "origin": "https://ru.voltextech.net",
+    "env": {
+      "VITE_API_URL": "https://ru.voltextech.net/api/v1",
+      "VITE_MARKET_EDGE_URL": "https://ru.voltextech.net/_voltex/market",
+      "VITE_KYC_EDGE_URL": "https://ru.voltextech.net/_voltex/kyc",
+      "VITE_DEPOSIT_CATALOGUE_URL": "https://ru.voltextech.net/_voltex/catalogue",
+      "VITE_MANUAL_DEPOSIT_CATALOGUE": "true",
+      "VITE_WALLET_CONVERSION_ENABLED": "false"
+    }
+  }
+}

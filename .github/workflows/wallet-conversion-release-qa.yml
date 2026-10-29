@@ -1,0 +1,70 @@
+name: Wallet591 compiled frontend release gate
+on:
+  push:
+    branches: [fix/wallet591-frontend-origin-20261029]
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'scripts/*wallet591*'
+      - '.github/workflows/wallet-conversion-release-qa.yml'
+permissions:
+  contents: read
+concurrency:
+  group: wallet591-artifact-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  compiled-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [production, ru]
+    env:
+      QA_PLAYWRIGHT_MODULE: /tmp/wallet591-qa/node_modules/playwright
+      RELEASE_TEST_PROFILE: ${{ matrix.profile }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Refuse changes outside the narrow approved frontend candidate
+        run: node scripts/wallet591-frontend-artifact.cjs scope ${{ matrix.profile }}
+      - name: Locked frontend dependencies and TypeScript
+        run: |
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          cd frontend && node node_modules/typescript/bin/tsc -b
+      - name: Build exact candidate with explicit regional build-time environment
+        run: node scripts/wallet591-frontend-artifact.cjs build ${{ matrix.profile }}
+      - name: Reject wrong origins, missing assets, flag changes and regional mixing
+        run: node --test scripts/test-wallet591-artifact.cjs
+      - name: Isolated browser runtime
+        run: |
+          npm install --prefix /tmp/wallet591-qa --no-save --no-audit --no-fund playwright@1.63.0
+          node /tmp/wallet591-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual compiled JS at desktop and mobile; failures, locales, OFF and negative control
+        run: node scripts/qa-wallet591-release.cjs ${{ matrix.profile }}
+      - name: Seal and verify exactly the tested bytes; no deploy capability
+        run: |
+          node scripts/wallet591-frontend-artifact.cjs seal ${{ matrix.profile }}
+          node scripts/wallet591-frontend-artifact.cjs verify ${{ matrix.profile }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wallet591-${{ matrix.profile }}-tested-${{ github.sha }}
+          path: |
+            output/wallet591-${{ matrix.profile }}-dist
+            output/wallet591-${{ matrix.profile }}-qa
+            output/wallet591-${{ matrix.profile }}-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: wallet591-${{ matrix.profile }}-FAILURE-${{ github.sha }}
+          path: output/wallet591-${{ matrix.profile }}-qa
+          if-no-files-found: warn
