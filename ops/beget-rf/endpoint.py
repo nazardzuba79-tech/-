@@ -28,6 +28,11 @@ ROUTES = [["DELETE","/api-keys/:id"],["DELETE","/demo/orders/:orderId"],["DELETE
 ROUTES.append(['GET', '/kyc/me'])
 ROUTES.extend([['GET', '/market/display'], ['GET', '/market/display/futures-book/:symbol'],
                ['GET', '/market/display/futures-trades/:symbol'], ['GET', '/market/display/spot-book/:pair']])
+# Issue636: these existing customer reads returned API401 but gateway403.
+# No new write method, financial command, admin endpoint or prefix wildcard.
+ROUTES.extend([['GET', '/banking/config'], ['GET', '/banking/state'],
+               ['GET', '/banking/referral'], ['GET', '/copy-trading/nazar'],
+               ['GET', '/copy-trading/ksenia']])
 REWRITES = {
     'https://api.voltextech.net': 'https://' + HOST,
     'https://market.voltextech.net': 'https://' + HOST + '/_voltex/market',

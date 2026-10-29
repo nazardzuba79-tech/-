@@ -1,0 +1,33 @@
+name: Beget636 customer read routes only
+on:
+  push:
+    branches: ['work/beget-rf-gateway-preflight-20261026']
+    paths:
+      - 'ops/beget-rf/endpoint.py'
+      - 'ops/beget-rf/*customer_read*.py'
+      - 'ops/beget-rf/nginx-ru-hetzner-final.conf'
+      - '.github/workflows/beget-customer-read-qa.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-nginx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install distribution Nginx in disposable runner only
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends nginx-core
+      - name: Real loopback TLS and strict read-only admission regressions
+        env:
+          NGINX_BIN: /usr/sbin/nginx
+        working-directory: ops/beget-rf
+        run: |
+          set -o pipefail
+          python3 -B -m unittest -v test_customer_reads test_customer_read_transport 2>&1 | tee customer-read-qa.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beget636-customer-read-qa
+          path: ops/beget-rf/customer-read-qa.log

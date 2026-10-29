@@ -614,5 +614,25 @@
   [
     "GET",
     "/market/display/spot-book/:pair"
+  ],
+  [
+    "GET",
+    "/banking/config"
+  ],
+  [
+    "GET",
+    "/banking/state"
+  ],
+  [
+    "GET",
+    "/banking/referral"
+  ],
+  [
+    "GET",
+    "/copy-trading/nazar"
+  ],
+  [
+    "GET",
+    "/copy-trading/ksenia"
   ]
 ]
