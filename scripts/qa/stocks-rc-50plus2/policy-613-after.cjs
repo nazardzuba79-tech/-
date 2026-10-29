@@ -9,7 +9,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 // waiting out the time slice a nice-10 task keeps; when the crypto side is idle it runs as before. The authority
 // stays in the normal class at nice 10: it holds trader rows locked inside its transactions, and an idle-class lock
 // holder can be starved while a crypto write waits for that row. It adds no CPU either.
-const RC='8f73e373cc7c535e9f935aeabc8d891b410428d9',TOPOLOGY='separated',STOCKS_NICE=10,STOCKS_SCHED='gateway-idle';
+const RC='d6da2c84f3dfff590fa9bc093749a5a54cc4183e',TOPOLOGY='separated',STOCKS_NICE=10,STOCKS_SCHED='gateway-idle';
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){
