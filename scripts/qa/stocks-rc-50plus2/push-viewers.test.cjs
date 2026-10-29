@@ -37,11 +37,11 @@ test('50 header-only public push connections, one stream per viewer, no polling,
 });
 test('incorrect public quote identity fails closed before a usable stream',async t=>{
  const server=await fake(t,{invalid:true});
- await assert.rejects(openPushViewers(info(server.origin),{timeoutMs:1500}),/PUSH_STARTUP_ERROR/);
+ await assert.rejects(openPushViewers(info(server.origin),{timeoutMs:1500}),/PUSH_QUOTE_IDENTITY_INVALID/);
 });
 test('rate-limited stream cannot be called a fully delivered push fixture',async t=>{
  const server=await fake(t,{refuse:true});
- await assert.rejects(openPushViewers(info(server.origin),{timeoutMs:1500}),/PUSH_STARTUP_ERROR/);
+ await assert.rejects(openPushViewers(info(server.origin),{timeoutMs:1500}),/PUSH_HTTP_503/);
 });
 test('wait-only stream without any real price cannot be credited as a viewer quote',async t=>{
  const server=await fake(t,{event:'wait'});
