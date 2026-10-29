@@ -40,8 +40,11 @@ export function createViewerStream({ authorize, readQuote, project, onDelivered 
       judged.forEach((result, i) => {
         const s = subscribers[i];
         if (!streams.has(s) || s.res.destroyed) return drop(s);
+        // Every response path can write: not only a public quote but also a
+        // temporary auth/rate-limit "wait" event. Apply the same bounded
+        // backpressure guard BEFORE either writes to a slow subscriber.
+        if (s.res.writableLength > maxBufferedBytes) { counters.slow++; s.res.destroy(); return drop(s); }
         if (result.status === 'fulfilled' && result.value === s.principalId) {
-          if (s.res.writableLength > maxBufferedBytes) { counters.slow++; s.res.destroy(); return drop(s); }
           s.res.write(payloads.get(s.instrumentId)); counters.delivered++; onDelivered(s); return;
         }
         const code = result.status === 'rejected' ? result.reason?.code : 'AUTH_REQUIRED';
