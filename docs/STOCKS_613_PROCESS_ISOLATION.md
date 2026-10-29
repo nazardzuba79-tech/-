@@ -660,3 +660,24 @@ exactly-once) and skips the cycles that fall into the wait; a trader order step 
 by the authority: no order, no receipt) is sent again after a fresh read. Everything is counted. Gates of this
 report-only scenario: the ingress never over 240 in a sliding minute and never answering 429 itself, no crypto error,
 no trader request refused, every 429 with `Retry-After`, the financial invariants of both arms.
+
+### R8 calibration result ([run 40880077260](https://github.com/nazardzuba79-tech/-/actions/runs/40880077260), head `36430ce0`, runtime `47f5d04d`)
+
+Runner: 4 vCPUs, AMD EPYC 9V45, `thread_siblings_list` 0-1 and 2-3 (admission passed; earlier runs had EPYC 7763, so
+the model is recorded per run). Harness self-tests passed on the runner. Six A/A runs, all complete (placement proven
+in every window, client headroom, cleanup); artifact SHA-256 `55db0fd4aafe5fff4503a7995b50925672dd7b2a3f53ea283e603d820493d31a`.
+
+| Run | First arm p95 (ms) | Second arm p95 (ms) | A/A Δp95 |
+|---|---|---|---|
+| aa-1 | 13.37 | 9.93 | −25.73 % |
+| aa-2 | 9.27 | 9.21 | −0.62 % |
+| aa-3 | 9.02 | 9.20 | +1.97 % |
+| aa-4 | 8.73 | 8.61 | −1.29 % |
+| aa-5 | 8.58 | 8.79 | +2.49 % |
+| aa-6 | 8.92 | 9.01 | +0.98 % |
+
+Pooled A/A 9.37 → 9.22 ms, **Δp95 −1.63 %** (bootstrap 95 % −6.2 … +1.7 %): **METHOD_CALIBRATED**. Server CPU set
+5.0 % busy (baseline load), client set at most 1.4 %, driver event-loop utilisation at most 0.018, steal 0 ms on both
+sets, server memory at most 509 MB (API, authority and gateway peak RSS plus the PostgreSQL cluster's PSS). The first
+run on the fresh runner had a slow first arm (aa-1); the acceptance job therefore runs one warm-up run of the after pin,
+outside the collection and never counted, before its pairs, so the first pair's Δp95 is not biased downwards.

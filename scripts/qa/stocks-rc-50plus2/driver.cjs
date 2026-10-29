@@ -22,7 +22,9 @@ const traderOrders=cycle=>cycle%PLAN.traderOrderEvery===PLAN.traderOrderEvery-1;
 // user would, for at most SUSTAINED.maxTraderWaitMs. A GET that fails before any answer (an idle keep-alive socket
 // the server closed during such a pause) is sent once more, as a browser does for an idempotent read (counted); a
 // viewer read that fails again (e.g. the gateway refusing connections over its maxConnections) is counted as a refused
-// connection and that viewer polls again next second. A trader's failed connection still fails the run. A job that starts late because the driver
+// connection and that viewer polls again next second. Any other refusal a viewer gets (e.g. 503 AUTH_UNAVAILABLE when
+// its identity check outlived its deadline) is counted by status and code, honouring a retryAfterMs if one is given.
+// A trader's failed connection or any other trader status still fails the run. A job that starts late because the driver
 // stalled is counted and still runs (the client headroom check of the window stays). Every 429 is counted; any other
 // status still fails the run, and so does a crypto 429. The request bound scales with the window.
 const SUSTAINED=Object.freeze({measureMs:180000,viewerTimeoutMs:5000,maxInflight:200,minRetryMs:1000,maxRetryMs:60000,maxTraderWaitMs:90000});
@@ -49,7 +51,7 @@ function invariants(before,after,expected){
 async function window(info,{mixed=false,warmup=false,arm,signal,sustained=false,sustainedMs=SUSTAINED.measureMs}={}){
  loopback(info.apiOrigin);loopback(info.stocksOrigin);
  const duration=warmup?PLAN.warmupMs:sustained?sustainedMs:PLAN.measureMs,maxRequests=2500*Math.ceil(duration/PLAN.measureMs),maxInflight=sustained?SUSTAINED.maxInflight:PLAN.maxInflight;
- const r={arm,warmup,startedAt:new Date().toISOString(),cryptoJobs:0,cryptoLatencies:[],traceSha,viewerCount:mixed?50:0,traderCount:mixed?2:0,timeouts:0,unexpectedErrors:0,missedJobs:0,orderLoss:0,doubleSpend:0,viewerMutations:0,viewerDenials:0,requests:0,maxInflight:0,maxStartJitterMs:0,errors:[],samples:[],expected:{crypto:[],stock:[[],[]]},...(sustained?{sustained:true,durationMs:duration,viewerRateLimited:0,viewerRateLimitedWithoutRetryAfter:0,viewerPollsDeferred:0,traderRateLimited:0,traderRateLimitedWithoutRetryAfter:0,traderCyclesSkipped:0,traderQuoteNotLive:{},viewerQuoteNotLive:{},traderQuoteRefusals:{},networkRetries:0,viewerConnectionsRefused:0,lateJobs:0}:{})};
+ const r={arm,warmup,startedAt:new Date().toISOString(),cryptoJobs:0,cryptoLatencies:[],traceSha,viewerCount:mixed?50:0,traderCount:mixed?2:0,timeouts:0,unexpectedErrors:0,missedJobs:0,orderLoss:0,doubleSpend:0,viewerMutations:0,viewerDenials:0,requests:0,maxInflight:0,maxStartJitterMs:0,errors:[],samples:[],expected:{crypto:[],stock:[[],[]]},...(sustained?{sustained:true,durationMs:duration,viewerRateLimited:0,viewerRateLimitedWithoutRetryAfter:0,viewerPollsDeferred:0,traderRateLimited:0,traderRateLimitedWithoutRetryAfter:0,traderCyclesSkipped:0,traderQuoteNotLive:{},viewerQuoteNotLive:{},traderQuoteRefusals:{},networkRetries:0,viewerConnectionsRefused:0,viewerOtherRefusals:{},lateJobs:0}:{})};
  const viewerPausedUntil=new Map(),traderBusy=new Set();
  let stopped=false,inflight=0;const start=performance.now(),jobs=[],pending=[];
  const problem=(label,error)=>{r.unexpectedErrors++;if(r.errors.length<15)r.errors.push({label,error:String(error.message??error).slice(0,240)});stopped=true;};
@@ -74,6 +76,11 @@ async function window(info,{mixed=false,warmup=false,arm,signal,sustained=false,
    if((retry.waitedMs??0)+waitMs>SUSTAINED.maxTraderWaitMs)throw Error('TRADER_RATE_LIMITED_BEYOND_'+SUSTAINED.maxTraderWaitMs+'MS_'+op);
    await new Promise(resolve=>setTimeout(resolve,waitMs));
    return request(origin,route,{method,body,token,csrf,view,expected,kind,op,index,retry:{waitedMs:(retry.waitedMs??0)+waitMs}});
+  }
+  if(sustained&&kind==='viewer'&&response.status!==expected){
+   const k=response.status+':'+(value?.error??'');r.viewerOtherRefusals[k]=(r.viewerOtherRefusals[k]??0)+1;
+   if(Number.isFinite(value?.retryAfterMs))viewerPausedUntil.set(index,performance.now()+Math.min(SUSTAINED.maxRetryMs,Math.max(SUSTAINED.minRetryMs,value.retryAfterMs)));
+   return null;
   }
   if(response.status!==expected){const e=Error('HTTP_'+response.status+'_'+op+'_'+JSON.stringify(value?.error??null));if(sustained&&kind==='trader'&&method==='POST'&&/^QUOTE_(STALE|UNAVAILABLE)$/.test(value?.error??''))e.quoteRefusal=value.error;throw e;}
   return value;

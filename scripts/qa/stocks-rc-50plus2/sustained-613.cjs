@@ -71,7 +71,7 @@ function summarize({baseline, mixed, privateRows, windowStartedAt = null}) {
     // included), i.e. how much of the agreed viewer load the service actually answered.
     ingress: q, viewer: {polls: viewerPolls.length, answered, refused429: refused, answeredShare: viewerPolls.length ? answered / viewerPolls.length : null,
       scheduledShare: viewerPolls.length + (mixed.viewerPollsDeferred ?? 0) ? answered / (viewerPolls.length + (mixed.viewerPollsDeferred ?? 0)) : null},
-    networkRetries: mixed.networkRetries ?? 0, viewerConnectionsRefused: mixed.viewerConnectionsRefused ?? 0, connectionErrors: mixed.connectionErrors ?? [],
+    networkRetries: mixed.networkRetries ?? 0, viewerConnectionsRefused: mixed.viewerConnectionsRefused ?? 0, connectionErrors: mixed.connectionErrors ?? [], viewerOtherRefusals: mixed.viewerOtherRefusals ?? {},
     viewerPollsDeferred: mixed.viewerPollsDeferred ?? 0, lateJobs: mixed.lateJobs ?? 0, traderQuoteNotLive: mixed.traderQuoteNotLive ?? {}, viewerQuoteNotLive: mixed.viewerQuoteNotLive ?? {}, traderQuoteRefusals: mixed.traderQuoteRefusals ?? {},
     trader: {requests: mixed.samples.filter(s => s.kind === 'trader').length, nonOk: mixed.samples.filter(s => s.kind === 'trader' && s.status !== 200).length,
       rateLimited: mixed.traderRateLimited ?? 0, cyclesSkipped: mixed.traderCyclesSkipped ?? 0,

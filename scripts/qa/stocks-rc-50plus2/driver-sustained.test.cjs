@@ -9,7 +9,7 @@ function server(handler) { return new Promise(resolve => { const s = http.create
 const json = (res, status, body, headers = {}) => { res.writeHead(status, {'content-type': 'application/json', ...headers}); res.end(body === undefined ? '' : JSON.stringify(body)); };
 const read = req => new Promise(resolve => { const parts = []; req.on('data', p => parts.push(p)); req.on('end', () => resolve(parts.length ? JSON.parse(Buffer.concat(parts)) : null)); });
 
-async function fixture(t, {viewer429From = Infinity, viewer429Until = -Infinity, traderRefuse = new Set(), traderStale = new Set(), quoteNotLive = () => false, dropViewers = () => false} = {}) {
+async function fixture(t, {viewer429From = Infinity, viewer429Until = -Infinity, traderRefuse = new Set(), traderStale = new Set(), quoteNotLive = () => false, dropViewers = () => false, unavailable = () => false} = {}) {
   let orders = 0; const open = new Map(), seen = {intents: new Map(), refused: []}, start = Date.now();
   const api = await server(async (req, res) => {
     const u = new URL(req.url, 'http://x'); await read(req);
@@ -22,6 +22,7 @@ async function fixture(t, {viewer429From = Infinity, viewer429Until = -Infinity,
     const u = new URL(req.url, 'http://x'), body = await read(req), trader = req.headers.authorization.startsWith('Bearer trader'), at = Date.now() - start;
     // As a server over its maxConnections: the connection is dropped without an answer.
     if (!trader && dropViewers(at)) return req.socket.destroy();
+    if (!trader && unavailable(at)) return json(res, 503, {error: 'AUTH_UNAVAILABLE'});
     if (u.pathname.endsWith('/state')) {
       if (!trader && at >= viewer429From && at < viewer429Until) return json(res, 429, {error: 'AUTH_RATE_LIMIT', retryAfterMs: 1000}, {'retry-after': '1'});
       const id = u.searchParams.get('id');
@@ -91,4 +92,14 @@ test('sustained: a viewer read whose connection is dropped is sent once more, th
   const strict = await fixture(t, {dropViewers: at => at >= 500 && at < 1500});
   const a = await window(strict.info, {arm: 'mixed', mixed: true});
   assert.ok(a.unexpectedErrors >= 1); assert.match(a.errors[0].error, /fetch failed/);
+});
+
+test('sustained: a viewer 503 is counted by status and code and the run goes on; the acceptance path stops on it', async t => {
+  const {info} = await fixture(t, {unavailable: at => at >= 1200 && at < 1600});
+  const r = await window(info, {arm: 'mixed', mixed: true, sustained: true, sustainedMs: 3000});
+  assert.equal(r.unexpectedErrors, 0, JSON.stringify(r.errors));
+  assert.ok(r.viewerOtherRefusals['503:AUTH_UNAVAILABLE'] > 0);
+  const strict = await fixture(t, {unavailable: at => at >= 200});
+  const a = await window(strict.info, {arm: 'mixed', mixed: true});
+  assert.match(a.errors[0].error, /HTTP_503_state_"AUTH_UNAVAILABLE"/);
 });
