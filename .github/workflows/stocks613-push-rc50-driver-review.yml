@@ -1,0 +1,59 @@
+name: Stocks #613 PUSH 50+2 driver admission (code only)
+on:
+  push:
+    branches:
+      - review/stocks613-push-rc50-driver-20261029
+permissions:
+  contents: read
+jobs:
+  push-driver-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Guard source scope and reviewed R10 ancestry
+        run: |
+          node <<'NODE'
+          const cp=require('node:child_process'),assert=require('node:assert/strict');
+          const base='7942c59ddfbf902a6183c397f766bcc8aca8c039';
+          cp.execFileSync('git',['merge-base','--is-ancestor',base,'HEAD']);
+          const changed=cp.execFileSync('git',['diff','--name-only',base,'HEAD'],{encoding:'utf8'}).trim().split('\n');
+          assert(changed.length>0&&changed.every(f=>f.startsWith('scripts/qa/stocks-rc-50plus2/')||f==='.github/workflows/stocks613-push-rc50-driver-review.yml'));
+          assert.equal(cp.execFileSync('git',['rev-parse',base+':services/stocks-global/viewer-stream.mjs'],{encoding:'utf8'}).trim(),
+            cp.execFileSync('git',['rev-parse','HEAD:services/stocks-global/viewer-stream.mjs'],{encoding:'utf8'}).trim());
+          assert.equal(cp.execFileSync('git',['rev-parse',base+':prisma/migrations'],{encoding:'utf8'}).trim(),
+            cp.execFileSync('git',['rev-parse','HEAD:prisma/migrations'],{encoding:'utf8'}).trim());
+          console.log('REVIEW_ONLY_NO_APP_SQL_CHANGE_PASS');
+          NODE
+      - name: Node22 syntax for all changed harness modules
+        run: |
+          node --check scripts/qa/stocks-rc-50plus2/driver.cjs
+          node --check scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs
+          node --check scripts/qa/stocks-rc-50plus2/api-worker.cjs
+          node --check scripts/qa/stocks-rc-50plus2/stocks-worker.cjs
+          node --check scripts/qa/stocks-rc-50plus2/policy-613-after.cjs
+          node --check scripts/qa/stocks-rc-50plus2/push-viewers.cjs
+      - name: Test public-only 50 SSE clients on isolated fake loopback HTTP
+        run: node --test scripts/qa/stocks-rc-50plus2/push-viewers.test.cjs
+      - name: Legacy 4-second trading workload and push-source pin both preserved
+        run: |
+          node <<'NODE'
+          const cp=require('node:child_process'),assert=require('node:assert/strict');
+          const f='./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs';
+          const p='./scripts/qa/stocks-rc-50plus2/driver.cjs';
+          const legacy=cp.execFileSync(process.execPath,['-e',"process.stdout.write(require('"+f+"').RC)"],{encoding:'utf8',env:{...process.env,RC50_PUSH_VIEWERS:''}});
+          const push=cp.execFileSync(process.execPath,['-e',"process.stdout.write(require('"+f+"').RC)"],{encoding:'utf8',env:{...process.env,RC50_PUSH_VIEWERS:'1'}});
+          assert.equal(legacy,'47f5d04d70dc0f9d978bd5af31d1a96484c59df2');
+          assert.equal(push,'7942c59ddfbf902a6183c397f766bcc8aca8c039');
+          const workload=require(p);
+          assert.equal(workload.PLAN.traderPeriodMs,4000);
+          assert.equal(workload.PLAN.viewerPeriodMs,1000);
+          assert.equal(workload.WORKLOAD,'original-4s');
+          console.log('LEGACY_4S_UNCHANGED_AND_PUSH_PIN_PASS');
+          NODE
