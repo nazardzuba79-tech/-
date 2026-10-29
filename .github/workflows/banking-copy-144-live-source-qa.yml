@@ -1,4 +1,4 @@
-name: Banking #144 live-source copy QA (review only)
+name: "Banking #144 live-source copy QA (review only)"
 on:
   push:
     branches:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
