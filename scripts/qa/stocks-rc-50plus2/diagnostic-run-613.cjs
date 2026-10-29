@@ -4,6 +4,9 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 // authority, gateway and synthetic market together), --after selects policy-613-after.cjs, the separated
 // release layout (crypto API alone; Stocks authority and gateway in their own processes, same taskset).
 const AFTER=process.argv.includes('--after');
+// Separate experimental mode; original R8 50x1s polling remains unchanged.
+const PUSH=process.argv.includes('--push-viewers');
+if(PUSH)process.env.RC50_PUSH_VIEWERS='1';
 // --revised-8s: the order cycle every 8 s instead of the original 4 s (driver.cjs WORKLOAD), labelled as a diagnostic.
 if(process.argv.includes('--revised-8s'))process.env.RC50_REVISED_8S='1';
 // --terminal-3s (#613 R9): the viewers every 3 s, as the real terminal polls (driver.cjs WORKLOAD), labelled as a diagnostic.
@@ -54,9 +57,11 @@ const NULL_ARM=process.argv.includes('--null-arm');
 // minute, the ingress's own 429s, how many viewer polls the gateway answered and how many it refused with 429, trader
 // and crypto errors (none tolerated), the financial invariants, and crypto p95 per minute in both arms.
 const SUSTAIN=process.argv.includes('--sustained');
-const a=args(process.argv.slice(2).filter(x=>!['--cpu-prof','--after','--spans','--pg-profile','--driver-apart','--revised-8s','--terminal-3s','--stocks-apart','--isolated-clients','--null-arm','--sustained'].includes(x)));
-let cfg,started=false,data,active,market,controller=new AbortController(),timer;
-const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[],methodology:ISOLATED?'isolated-clients':'shared-cpus',nullArm:NULL_ARM,sustained:SUSTAIN};
+const a=args(process.argv.slice(2).filter(x=>!['--cpu-prof','--after','--spans','--pg-profile','--driver-apart','--revised-8s','--terminal-3s','--stocks-apart','--isolated-clients','--null-arm','--sustained','--push-viewers'].includes(x)));
+if(PUSH&&(!AFTER||!ISOLATED||NULL_ARM||SUSTAIN||PROFILE||SPANS||PG_PROFILE||DRIVER_APART||STOCKS_APART||process.argv.includes('--terminal-3s')||process.argv.includes('--revised-8s')))throw Error('PUSH_DIAGNOSTIC_ISOLATED_SEPARATED_ONLY');
+let cfg,started=false,data,active,market,activePush,controller=new AbortController(),timer;
+const {openPushViewers}=require('./push-viewers.cjs');
+const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[],methodology:ISOLATED?'isolated-clients':'shared-cpus',nullArm:NULL_ARM,sustained:SUSTAIN,pushDiagnostic:PUSH};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));
 function pg(name,argv,label){
  // --driver-apart / --isolated-clients: the server (postmaster, and so every backend it forks) is pinned to the server CPUs.
@@ -89,7 +94,7 @@ function startWorker(arm,viewerCount,generatedClient,market){
   }
  };
  const init=async()=>{
-  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,...(STOCKS_APART?{stocksCpus:STOCKS_CPUS}:{}),...(market?{market:{origin:market.origin,wsUrl:market.wsUrl}}:{}),arm});
+  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,...(STOCKS_APART?{stocksCpus:STOCKS_CPUS}:{}),...(market?{market:{origin:market.origin,wsUrl:market.wsUrl}}:{}),...(PUSH?{viewerStream:true}:{}),arm});
   // Every process of the topology is recorded (cleanup must confirm each) and must be the one the pin names.
   const p=info.processes??{},pids=Object.values(p);
   for(const [role,pid] of Object.entries(p))if(role!=='api')report.ownPids.push({role:arm+'-'+role,pid});
@@ -226,6 +231,7 @@ function provenance(){
    active=startWorker(name,50,gen,market);const info=await active.init();
    const warmup=await window(info,{arm:name,warmup:true,signal:controller.signal});json(name+'-warmup.json',warmup);
    if(warmup.timeouts||warmup.unexpectedErrors||warmup.missedJobs)throw Error('WARMUP_FAILED_'+name);
+   if(PUSH&&name==='mixed')activePush=await openPushViewers(info,{signal:controller.signal});
    await active.rpc('timings');
    const before=await active.rpc('snapshot'),metricsBefore=await active.rpc('metrics'),hostBefore=hostMetrics();
    if(market)metricsBefore.market=await market.rpc('snapshot');
@@ -233,6 +239,8 @@ function provenance(){
    if(SPANS)await active.rpc('spans-start');
    const pgBefore=PG_PROFILE?pgStats(name):null;
    const result=await window(info,{arm:name,mixed:name==='mixed'&&!NULL_ARM,sustained:SUSTAIN,signal:controller.signal});
+   if(activePush){result.push=activePush.snapshot();await activePush.close();activePush=null;
+     if(result.push.opened!==50||result.push.staleViewers>0||result.push.errors.length||result.push.revoked>0)result.unexpectedErrors++;}
    const cpuAfter=ISOLATED?placement.cpuTimes(fs.readFileSync('/proc/stat','utf8'),ticks()):null;
    if(NULL_ARM)result.nullArm=true;
    if(SPANS)json(name+'-spans.json',await active.rpc('spans-stop'));
@@ -279,13 +287,16 @@ function provenance(){
   if(PROFILE){report.comparison.profiled=true;report.status='PROFILE_ONLY_NOT_A_P95_VERDICT';}
   if(SPANS){report.comparison.spans=true;report.status='SPANS_ONLY_NOT_A_P95_VERDICT';}
   if(PG_PROFILE){report.comparison.pgProfile=true;report.status='PG_PROFILE_ONLY_NOT_A_P95_VERDICT';}
+  if(PUSH){report.comparison.pushDiagnostic=true;report.status='PUSH_DIAGNOSTIC_REPORT_ONLY';
+    if(report.comparison.failures?.length||report.comparison.status!=='PASS_LOCAL_DIAGNOSTIC')report.failures.push('PUSH_P95_OR_INVARIANT_NOT_PASSED');}
   json('comparison.json',report.comparison);
-  if(report.status!=='PASS_LOCAL_DIAGNOSTIC'&&!PROFILE&&!SPANS&&!PG_PROFILE&&!NULL_ARM&&!SUSTAIN)process.exitCode=1;
+  if(report.status!=='PASS_LOCAL_DIAGNOSTIC'&&!PUSH&&!PROFILE&&!SPANS&&!PG_PROFILE&&!NULL_ARM&&!SUSTAIN)process.exitCode=1;
  }catch(e){
   report.status=report.fullWorkloadRuns?'FAIL_OR_INCOMPLETE_LOCAL_DIAGNOSTIC':'QUALIFICATION_OR_ADMISSION_FAILED_NOT_RUN';
   report.failures.push(String(e.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[synthetic-database]'));process.exitCode=1;
  }finally{
   if(timer)clearTimeout(timer);
+  if(activePush){await activePush.close();activePush=null;}
   if(active)await active.close();
   if(market)await market.close();
   if(cfg&&data&&fs.existsSync(path.join(data,'postmaster.pid'))){
