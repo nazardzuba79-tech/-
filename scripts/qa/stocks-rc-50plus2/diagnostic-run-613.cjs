@@ -6,6 +6,8 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const AFTER=process.argv.includes('--after');
 // --revised-8s: the order cycle every 8 s instead of the original 4 s (driver.cjs WORKLOAD), labelled as a diagnostic.
 if(process.argv.includes('--revised-8s'))process.env.RC50_REVISED_8S='1';
+// --terminal-3s (#613 R9): the viewers every 3 s, as the real terminal polls (driver.cjs WORKLOAD), labelled as a diagnostic.
+if(process.argv.includes('--terminal-3s'))process.env.RC50_TERMINAL_3S='1';
 const {RC,TOPOLOGY,STOCKS_NICE=0,STOCKS_SCHED='',sha,args,environment,cleanEnv,comparison,database,percentile}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,SUSTAINED,WORKLOAD,traceSha,window,invariants}=require('./driver.cjs');
 const placement=require('./placement.cjs');
 // --cpu-prof: V8 CPU profile of each measured API worker. Profiler overhead
@@ -52,7 +54,7 @@ const NULL_ARM=process.argv.includes('--null-arm');
 // minute, the ingress's own 429s, how many viewer polls the gateway answered and how many it refused with 429, trader
 // and crypto errors (none tolerated), the financial invariants, and crypto p95 per minute in both arms.
 const SUSTAIN=process.argv.includes('--sustained');
-const a=args(process.argv.slice(2).filter(x=>!['--cpu-prof','--after','--spans','--pg-profile','--driver-apart','--revised-8s','--stocks-apart','--isolated-clients','--null-arm','--sustained'].includes(x)));
+const a=args(process.argv.slice(2).filter(x=>!['--cpu-prof','--after','--spans','--pg-profile','--driver-apart','--revised-8s','--terminal-3s','--stocks-apart','--isolated-clients','--null-arm','--sustained'].includes(x)));
 let cfg,started=false,data,active,market,controller=new AbortController(),timer;
 const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[],methodology:ISOLATED?'isolated-clients':'shared-cpus',nullArm:NULL_ARM,sustained:SUSTAIN};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));

@@ -14,8 +14,12 @@ try {
   const hub = process.argv.includes('--stream-market') ? await (async () => {
     const { syntheticPublicMarket, loopbackFetch } = await import('./synthetic-public-market.mjs');
     const { BinanceStreamMarketHub } = await import('../binance-stream-market.mjs');
-    market = await syntheticPublicMarket();
-    return new BinanceStreamMarketHub({ enabled: true, fetchImpl: loopbackFetch(market.origin), feedOptions: { url: market.wsUrl, synthetic: true }, now: Date.now });
+    // STOCKS_SYNTHETIC_MARKET_ORIGIN / _WS (tests only): the synthetic market already runs in another loopback process,
+    // as the 50+2 harness's market-worker.cjs; this process then keeps only the gateway's own market client.
+    const origin = process.env.STOCKS_SYNTHETIC_MARKET_ORIGIN, wsUrl = process.env.STOCKS_SYNTHETIC_MARKET_WS;
+    if (origin !== undefined && (!/^http:\/\/127\.0\.0\.1:\d{2,5}$/.test(origin) || wsUrl !== origin.replace('http:', 'ws:') + '/stream')) throw Object.assign(Error('external market'), { code: 'STOCKS_RELEASE_MARKET_INVALID' });
+    const source = origin === undefined ? (market = await syntheticPublicMarket()) : { origin, wsUrl };
+    return new BinanceStreamMarketHub({ enabled: true, fetchImpl: loopbackFetch(source.origin), feedOptions: { url: source.wsUrl, synthetic: true }, now: Date.now });
   })() : {
     metrics: { syntheticSourceStarts: 0 },
     catalogue: async () => CATALOG.map(row => ({ ...row, online: row.provider !== 'moex', exists: true })),

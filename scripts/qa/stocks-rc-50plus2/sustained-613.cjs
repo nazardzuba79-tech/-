@@ -65,11 +65,14 @@ function summarize({baseline, mixed, privateRows, windowStartedAt = null}) {
   if (mixed.viewerConnectionsRefused) failures.push('VIEWER_CONNECTIONS_REFUSED');
   if (mixed.viewerRateLimitedWithoutRetryAfter) failures.push('VIEWER_429_WITHOUT_RETRY_AFTER');
   if (mixed.traderRateLimitedWithoutRetryAfter) failures.push('TRADER_429_WITHOUT_RETRY_AFTER');
-  if (viewerPolls.some(s => s.status !== 200 && s.status !== 429)) failures.push('VIEWER_OTHER_STATUS');
+  // The gateway's explicit answer near its connection bound (#613 R9: 503 SOURCE_BUSY with Retry-After) is a refusal
+  // the viewer is told about, as a 429 is; anything else (503 AUTH_UNAVAILABLE included) stays a finding.
+  const busy = s => s.status === 503 && s.error === 'SOURCE_BUSY' && /^\d+$/.test(s.retryAfter ?? '');
+  if (viewerPolls.some(s => s.status !== 200 && s.status !== 429 && !busy(s))) failures.push('VIEWER_OTHER_STATUS');
   return {scope: 'SUSTAINED_REPORT_ONLY_NOT_A_P95_VERDICT', durationMs: mixed.durationMs, failures,
     // answeredShare: of the polls sent; scheduledShare: of every poll the viewers were scheduled to make (deferred ones
     // included), i.e. how much of the agreed viewer load the service actually answered.
-    ingress: q, viewer: {polls: viewerPolls.length, answered, refused429: refused, answeredShare: viewerPolls.length ? answered / viewerPolls.length : null,
+    ingress: q, viewer: {polls: viewerPolls.length, answered, refused429: refused, refusedBusy: viewerPolls.filter(busy).length, answeredShare: viewerPolls.length ? answered / viewerPolls.length : null,
       scheduledShare: viewerPolls.length + (mixed.viewerPollsDeferred ?? 0) ? answered / (viewerPolls.length + (mixed.viewerPollsDeferred ?? 0)) : null},
     networkRetries: mixed.networkRetries ?? 0, viewerConnectionsRefused: mixed.viewerConnectionsRefused ?? 0, connectionErrors: mixed.connectionErrors ?? [], viewerOtherRefusals: mixed.viewerOtherRefusals ?? {},
     viewerPollsDeferred: mixed.viewerPollsDeferred ?? 0, lateJobs: mixed.lateJobs ?? 0, traderQuoteNotLive: mixed.traderQuoteNotLive ?? {}, viewerQuoteNotLive: mixed.viewerQuoteNotLive ?? {}, traderQuoteRefusals: mixed.traderQuoteRefusals ?? {},

@@ -67,7 +67,7 @@ async function releaseChain(t, f, gatewayArgs = []) {
     STOCKS_TEST_CASH_AUTHORITY_URL: `http://127.0.0.1:${authorityPort}/api/v1/stocks-test-cash`,
     STOCKS_IDENTITY_ISSUER: f.issuer, STOCKS_TEST_CASH_GATEWAY_KEY: f.gatewayKey, STOCKS_TRADE_PRINCIPALS: JSON.stringify(f.principals),
     STOCKS_GLOBAL_PORT: String(gatewayPort) }, 'STOCKS_RELEASE_LISTENING ' + gatewayPort);
-  return { authority, gateway: `http://127.0.0.1:${gatewayPort}/__stocks_global/` };
+  return { authority, gateway: `http://127.0.0.1:${gatewayPort}/__stocks_global/`, authorityUrl: `http://127.0.0.1:${authorityPort}/api/v1/stocks-test-cash` };
 }
 const quantile = (values, q) => { const sorted = [...values].sort((a, b) => a - b); return sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : null; };
 const busiestMinute = log => { let best = 0; for (let i = 0, j = 0; j < log.length; j++) { while (log[j][0] - log[i][0] >= 60000) i++; best = Math.max(best, j - i + 1); } return best; };
@@ -299,7 +299,7 @@ test('over the private quota: the excess is refused with 429, nothing refused is
   const viewers = await syntheticViewers(f, jwt), viewerIds = viewers.map(v => v.id);
   // The stream market of the harness gateway (as the schedule test above): the traders' order cycles work on it.
   const { CATALOG } = await import(path.join(__dirname, 'catalog.mjs')), stockId = CATALOG.find(i => i.provider === 'binance').id;
-  const { authority, gateway } = await releaseChain(t, f, ['--stream-market']);
+  const { authority, gateway, authorityUrl } = await releaseChain(t, f, ['--stream-market']);
   const call = async (route, token, body, csrf) => {
     const begun = performance.now();
     const response = await fetch(gateway + route, { method: body ? 'POST' : 'GET', signal: AbortSignal.timeout(10000),
@@ -335,7 +335,11 @@ test('over the private quota: the excess is refused with 429, nothing refused is
   const commands = log.filter(([, method, url]) => method === 'POST' && url.endsWith('/command'));
   t.diagnostic('OVER_LIMIT ' + JSON.stringify({ stormMs: until - startedAt, traderRequests: outcomes.length, traderStateReads: outcomes.filter(o => o.route === 'state').length, statuses, viewerStatus, privateRequests: log.length, private429: log.filter(([, , , s]) => s === 429).length, privateCommands: commands.length, privateCommand429: commands.filter(([, , , s]) => s === 429).length }));
   // Refused with 429 by the transport quota, and nothing but 200 or 429 anywhere.
-  assert.ok(refused.length > 0 && log.some(([, , , s]) => s === 429), 'the quota was actually exceeded');
+  // Since #613 R9 the gateway counts every private request against the window the ingress announces and refuses the
+  // excess itself, before sending it, with the same 429 and Retry-After: the ingress receives nothing beyond its quota.
+  // Its own refusal is checked directly below.
+  assert.ok(refused.length > 0, 'the quota was actually reached');
+  assert.equal(log.filter(([, , , s]) => s === 429).length, 0, 'the gateway sent nothing the ingress window could not take');
   assert.deepEqual(Object.keys(statuses).filter(k => !['200 ', '429 AUTH_RATE_LIMIT', '422 QUOTE_STALE'].includes(k)), [], 'traders: only 200, 429 AUTH_RATE_LIMIT or the market-data refusal');
   assert.ok(outcomes.filter(o => o.status === 429 && o.route !== 'state').length > 0, 'commands themselves were refused by the quota');
   for (const o of refused) assert.ok(Number.isInteger(o.retryAfterMs) && o.retryAfterMs >= 1000 && o.retryAfterMs <= 60000);
@@ -346,6 +350,16 @@ test('over the private quota: the excess is refused with 429, nothing refused is
   // identity check, so before #613 R5 the identity batches' 429s used to hide those last ones in this count.
   assert.ok(commands.filter(([, , , s]) => s === 429).length <= refused.length, 'no refused command was sent again');
   assert.ok(commands.length <= outcomes.length + outcomes.filter(o => o.route === 'state').length + 2, `${commands.length} commands for ${outcomes.length} trader requests`);
+
+  // The ingress itself still refuses beyond its quota: private requests sent directly with the gateway's capability,
+  // in the same window, until it answers 429 with Retry-After.
+  let direct;
+  for (let i = 0; i < 260 && direct?.status !== 429; i++) {
+    direct = await fetch(authorityUrl + '/identities', { method: 'POST', headers: { 'content-type': 'application/json', 'x-stocks-authority-key': f.gatewayKey }, body: JSON.stringify({ tokens: [] }) });
+    await direct.arrayBuffer();
+  }
+  assert.equal(direct.status, 429, 'the ingress refuses beyond its quota');
+  assert.ok(Number(direct.headers.get('retry-after')) >= 1, 'with Retry-After');
 
   // Service returns after the quota window, on the same processes.
   let back;

@@ -779,3 +779,161 @@ viewers' state at the terminal's real 3 s or push it. The quota stays 240/min an
 2. **Sustained load at the original 4 s scenario does not fit the 240/min quota:** trader commands refused by the
    ingress, half the viewer polls unanswered, connections closed at 128.
 3. The GitHub runner is not the production host (CX23); results are CI_DIAGNOSTIC, not capacity acceptance.
+
+## R9 (29.10): code-only changes for viewers, private requests and overload (owner task 6499374472)
+
+Owner task of 29.10 after R8: no server, cores or paid services bought; no production, merge, deploy or flag change; no
+weaker authorization, no change to revocation, the 240/min quota or the +5 % gate; Stocks BUY/SELL stays off for every
+account; the acceptance scenario (50+2, 1 s viewer polls, 4 s trader cycle, 2 vCPUs) and the R8 FAIL stay as recorded.
+Asked for: (1) the CPU and private-quota split between viewers and traders and a minimal change with a measurable
+hypothesis and a stop condition (no R7 serializer, no SCHED_IDLE); (2) a code-only shared quote fan-out or opt-in push
+for viewers; (3) graceful overload at 240/min and past 128 connections; (4) the real 3 s terminal polling as a second
+diagnostic scenario; (5) unit, isolated HTTP/PG, simulated 3-minute quota tests and micro-profiling — no new full 50+2
+run without evidence of effect and separate permission; without evidence, a design/cost tradeoff and NO-GO.
+
+Everything below was measured locally (4-CPU dev container, Intel Xeon 2.80 GHz, no SMT): relative numbers for a
+decision, not a verdict. No CI 50+2 run was requested (the commit carries no `RC50-RUN:` line).
+
+### 1. Where the Stocks CPU and the private quota go (`testing/r9-cpu-split.bench.cjs`, report only)
+
+The release chain (PostgreSQL authority + gateway on real PostgreSQL) on CPUs 0,1; the 50+2 clients and the synthetic
+market (out of process, `STOCKS_SYNTHETIC_MARKET_ORIGIN`) on CPUs 2,3. Phases of 20 s with the acceptance plan's
+cadence: viewers only (50 × 1 s), traders only (2 × 4 s cycle, 7 commands each), both; 2 rounds in alternating order.
+Mean CPU per 20 s on base `ba396998` (`base-2`):
+
+| Phase | Gateway | Authority (Prisma threads) | PostgreSQL | Private requests | Viewer p95 | Errors |
+|---|---|---|---|---|---|---|
+| viewers | 1 675 ms | 170 ms (≈ 30) | 65 ms | 42–43 identity batches | 679–687 ms | 0 |
+| traders | 330 ms | 915 ms (≈ 300) | 210 ms | 70 commands | — | 0 |
+| both | 2 185 ms | 1 040 ms (≈ 330) | 265 ms | 41 batches + 70 commands | 689–693 ms | 0 |
+
+- **Viewers ≈ 55 %** of the Stocks server CPU (1 910 of 3 490 ms), almost all of it in the gateway: ≈ 1.7 ms per poll.
+- **Traders ≈ 42 %** (1 455 ms): ≈ 13 ms of authority (Express + Prisma interactive transaction) and ≈ 3 ms of
+  PostgreSQL per command.
+- **Floor of a poll** (`node:http`, keep-alive, the same answer size, no application logic; 50 clients at 1 s):
+  688 ms per 1 000 polls bare, 800 ms with the gateway's per-request plumbing (abort wiring, URL parse, one deferred
+  turn), 819 ms with `AsyncLocalStorage`. Roughly half of the gateway's viewer cost is the HTTP request itself; no
+  change to the poll handler can take the viewers below that floor. **Floor of a pushed event** (same ~1 KB, server-sent
+  events to 50 open streams): 118 ms per 1 000 deliveries.
+- **Private quota:** at the 4 s cycle the traders send 7 commands per cycle each = 210 per minute = 87.5 % of 240.
+  50 viewers at 1 s need at least one identity batch per 2 s to be answered at all (30/min): 210 + 30 = 240, no margin.
+
+**Hypothesis.** R8 showed the regression scales with the Stocks CPU on the crypto API's physical core (run-queue wait,
+p50 unchanged). Under a linear model, +22.73 % → ≤ +5 % needs ≈ 78 % less Stocks CPU.
+**Stop condition.** Ask for a CI acceptance run only if a bounded change shows **≥ 50 %** less server-side Stocks CPU in
+the local *both* phase (lower than 78 % because the relation is not proven linear; below 50 % even a favourable
+non-linearity leaves the run uninformative). Not met (sections 2 and 6), so no run was requested.
+
+### 2. Viewer fan-out: opt-in event stream prototype (`viewer-stream.mjs`, off by default)
+
+`createServer({ viewerStream: true })` adds `GET /__stocks_global/stream?id=…`; the release entrypoint never sets it
+and the terminal does not use it. Per period (1 s) the instrument's public quote is read once (the shared quote
+reader) and serialized once per instrument, then written to every subscriber of it.
+- **Public only:** an event carries `instrumentId`, `serverTime` and the quote as the state answer projects it — no
+  account, wallet, position, order, fill or CSRF token (asserted on the raw wire).
+- **Live authorization per delivery:** before every event each subscriber's bearer is judged live again (multiplexed
+  into the gateway's usual identity batches); a signed-out, blocked or account-switched stream gets `event: revoked`
+  and is closed; nothing is remembered between two deliveries.
+- **Freshness / backpressure:** no live quote → `event: unavailable` without a price; quota refusal → `event: wait`
+  with `retryAfterMs` and no price that period; a subscriber with > 64 KB unread is closed; at most 64 streams
+  (beyond that 503 `SOURCE_BUSY` + `Retry-After`).
+- **Tests:** `viewer-stream.test.mjs` 5/5 (public fields only, one batch per period, revocation and account switch
+  close only that stream, unavailable, off by default, bounds).
+- **Measured** (`testing/r9-stream.bench.mjs`, gateway in its own process, 50 viewers, 20 s, 2 rounds): polling
+  1 560 / 1 283 ms vs streaming 106 / 154 ms of gateway CPU — **≈ 11× less** for the viewers' gateway work.
+- **Effect on the criterion (estimate, not measured in a 50+2 run):** the identity checks stay (authority ≈ 170 ms,
+  PostgreSQL ≈ 65 ms per 20 s), so viewers go from ≈ 1 910 to ≈ 385 ms: **≈ −40–45 %** of the Stocks server CPU in
+  the *both* phase, below the 50 % stop condition; the linear model projects Δp95 ≈ +12–13 %, still above +5 %.
+  Using it would also change the frontend and the agreed scenario (viewers no longer poll the state every second) —
+  an owner decision, not made here.
+
+### 3. Private quota: the gateway follows the ingress window (`authority-adapter.mjs`)
+
+R8 found the adapter's sliding ceiling (Q − Q/16 = 225) could not keep the traders' room: commands sent after a batch
+went over the ingress's fixed 60 s window. Now:
+- The adapter reads `RateLimit-Remaining` / `RateLimit-Reset` from every ingress answer (tied to the request's send
+  sequence) and tracks the window's remaining room; before any header it falls back to the old ceiling.
+- **A request the window cannot take is not sent:** a trader command is answered 429 `AUTH_RATE_LIMIT` with
+  `Retry-After` until the window ends (or waits up to 1 s when the window ends sooner). The client sends again with
+  the same intent (idempotent at the authority).
+- **Identity batches leave the traders' expected commands their room:** in a burst (a page load, the 20 s acceptance
+  window) the next 5 s of commands at the last 15 s' pace; once trading is sustained (a streak of ≥ 60 s without a
+  30 s pause) the rest of the window at the last minute's rate, batches spread evenly when the spare room is under
+  half. Margin Q/80; a viewer whose deadline falls inside the wait is refused at once with `Retry-After` (rounded
+  down, ≥ 1 s) instead of timing out. **Floor for fairness:** while the window has room, one batch at least every 4 s.
+- Clock and timers are injectable (`clock`, `timers`) for the simulated tests; defaults unchanged.
+
+**Simulated 3 minutes** (`testing/quota-sim.mjs`: the real adapter in virtual time against a model of the ingress,
+240 per fixed 60 s window; 50 viewers at 1 s, 2 traders × 7 commands per 4 s; clients back off on `Retry-After` as the
+sustained mode does). The same model with the R8 adapter reproduces the CI sustained run's pattern.
+
+| Case | Adapter | Ingress 429 | Trader commands ok / 429 / cycles skipped | Viewer polls answered | `AUTH_UNAVAILABLE` | Max Retry-After | Longest viewer gap | Concurrent viewer reads |
+|---|---|---|---|---|---|---|---|---|
+| original load | R8 | 6 | 469 / 6 (all from the ingress) / 23 | 55.6 % | 1 | 26 s | 28 s | 128 |
+| original load | **R9** | **0** | 546 / 4 (gateway, before sending) / 12 | **66.5 %** | 0 | 21 s | 29 s | 125 |
+| one viewer + one trader signed out at 60 s | R8 | 2 | 350 / 3 / 24 (+112 `AUTH_REQUIRED`) | 80.9 % | 0 | 26 s | 27 s | 69 |
+| one viewer + one trader signed out at 60 s | **R9** | **0** | 350 / 2 / 18 (+154 `AUTH_REQUIRED`) | 82.9 % | 0 | 21 s | 29 s | 109 |
+| over quota (traders every 2 s) | R8 | 6 | 539 / 6 (all from the ingress) / 102 | 26.7 % | 39 | 40 s | 42 s | 128 |
+| over quota (traders every 2 s) | **R9** | **0** | 539 / 6 (gateway) / 102 | 27.2 % | **0** | 35 s | 43 s | 126 |
+
+With R9, minutes 2 and 3 of the original load run 196 and 210 trader commands (every cycle in minute 3). The price:
+answered viewers wait longer once the traders take 210 of 240 — answered p95 0.68 s in minute 1, ≈ 2.4–2.5 s in
+minutes 2–3 (batches are spread to keep the traders' room); in the model the R8 adapter answered at 0.67 s but
+refused more (the R8 CI sustained run measured 2.5–3.0 s; the model does not reproduce that metric). Only the
+signed-out principals get `AUTH_REQUIRED`. `quota-sim.test.mjs` pins these outcomes (3/3; 0/3 against the R8 adapter). **Capacity is still
+short**: at 210 commands a minute the viewers get ≈ 25 batches, so about a third of 1 s polls are refused or deferred.
+
+**Isolated HTTP/PG** (`identity-load.pg.test.cjs`, real authority on PostgreSQL): harness schedule at the original
+4 s cycle — 1 010 jobs, 0 errors, 0 missed, viewer p50/p95 671 / 687 ms, busiest minute 210 (49 batches + 70
+commands + warm-up). Over-quota storm: the ingress answered **0** × 429 (239 private requests, 173 commands); the
+gateway refused 59 trader and 196 viewer requests itself, each 429 with `Retry-After` 1–60 s; no refused command sent
+again. The test's assertion changed accordingly (the ingress no longer receives the excess), and a new direct check
+proves the ingress still refuses beyond its quota with 429 + `Retry-After` when sent to directly.
+
+### 4. Past 128 connections: an answer instead of a silent close (`server.mjs`)
+
+`maxConnections` stays 128. From 112 open connections a new API request is answered **503 `SOURCE_BUSY`,
+`retryAfterMs: 1000`, `Retry-After: 1`, `Connection: close`** (the client learns when to come back and frees its
+slot); a request whose bearer the authority has already confirmed for trading is still served (it still passes the
+usual live check). The health route is exempt. Counters: open, peak, shed, dropped (Node's `drop` event).
+`connection-admission.test.mjs`: at 112 idle connections a viewer gets the 503 with both headers and a closed
+connection, the trader is served with `canTrade`, 0 dropped connections, the viewer is served again once the idle
+connections go. The 50+2 sustained report counts the 503 separately (`viewer.refusedBusy`, not `VIEWER_OTHER_STATUS`).
+
+### 5. The real terminal cadence as a second diagnostic (`driver.cjs`, `diagnostic-run-613.cjs --terminal-3s`)
+
+`RC50_TERMINAL_3S=1` (or `--terminal-3s`) runs the same plan with viewers polling every 3 s, as `GlobalStocks.tsx`
+does; workload `terminal-3s-diagnostic`, refused together with the 8 s diagnostic, never an acceptance (the
+summarizer labels it, and a collection mixing workloads now fails closed — that check previously ran after the
+status was set; fixed, with a test). Not run here: the acceptance stays 1 s.
+
+### 6. The final R9 code in the acceptance phases (`r9c-2` vs `base-2`, same bench)
+
+| Phase | Gateway | Authority | PostgreSQL | Private requests | Viewer p95 | Errors |
+|---|---|---|---|---|---|---|
+| both, base | 2 040 / 2 330 ms | 950 / 1 130 ms | 210 / 320 ms | 41 + 70 | 689–693 ms | 0 |
+| both, R9 | 2 120 / 2 560 ms | 990 / 1 160 ms | 320 / 330 ms | 41 + 70 | 682–685 ms | 0 |
+
+Within run-to-run noise: the acceptance window never reaches the quota or 112 connections and the stream is off, so
+R9 neither saves nor costs CPU there. **R9 does not change the acceptance verdict** (FAIL +22.73 % stands).
+
+### 7. Design/cost tradeoff (for the owner's decision; nothing applied)
+
+| Option | Expected effect | Cost / risk |
+|---|---|---|
+| Viewer push (the prototype, made the terminal's path) | gateway viewer CPU ≈ −90 %, Stocks CPU ≈ −40–45 %, Δp95 ≈ +12–13 % (model) — not enough alone | frontend change; the acceptance scenario's 1 s state poll changes (owner decision); identity checks per delivery stay |
+| Viewers at the terminal's real 3 s | gateway viewer CPU ≈ ÷ 3, identity batches about as many but smaller (≈ −30–35 % Stocks CPU, model) | changes the agreed scenario |
+| Authority command path without Express + Prisma interactive transactions | trader CPU (≈ 42 %) could fall a lot | rewrite of the financial command path: large, needs a full financial review |
+| Stocks on its own core/host | R6 "apart": the crypto p95 did not grow | paid resource — not bought |
+| More quota for viewers | — | forbidden (240/min stays) |
+
+With the trader path unchanged even zero viewer CPU leaves the traders' ≈ 42 %, which the linear model projects at
+≈ +10 %; reaching +5 % on one shared physical core needs both a viewer change and a trader-path change, or more CPU.
+
+### R9 remaining blockers
+
+1. **Criterion not met** (unchanged): crypto p95 +22.73 % on 2 vCPUs with isolated clients; no code-only change
+   measured here reaches the 50 % stop condition. **NO-GO.**
+2. **Sustained load at the original scenario:** with R9 the ingress no longer refuses and trader commands keep their
+   room, but 50 viewers at 1 s still exceed what 240 − 210 leaves; about a third of polls get 429 + `Retry-After`.
+3. Not run: CI acceptance/sustained on R9 (needs separate permission and the stop condition), the 3 s diagnostic in CI.

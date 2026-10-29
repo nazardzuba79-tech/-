@@ -16,6 +16,7 @@ import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError, snapshot } from './engine.mjs';
 import { projectViewerQuote } from './viewer-projection.mjs';
+import { createViewerStream } from './viewer-stream.mjs';
 import { preDemandReadiness } from './quote-readiness.mjs';
 import { twoTraderPolicy, configuredTraders, marketOnlyState } from './trader-policy.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
@@ -134,7 +135,7 @@ export function createQuoteReader({hub,now=Date.now,sourceAllowed=()=>{},monoton
   };
   return quote;
 }
-export async function createServer({financialEnabled=false,port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+export async function createServer({financialEnabled=false,port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined,viewerStream=false}={}){
   // Separate from visibility/principal admission; no environment truthiness or
   // legacy canTrade metadata can activate matching. Explicit isolated tests opt in.
   check(typeof financialEnabled==='boolean','AUTH_CONFIG_INVALID');
@@ -154,6 +155,11 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
   const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),backgroundFlights=new WeakMap(),historyWire=new WeakMap();
   Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteObservations:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
+  // Past maxConnections Node closes a new connection without any answer. Before that bound a new API request is
+  // answered 503 SOURCE_BUSY with Retry-After and its connection closed after the answer, so the client learns when to
+  // come back and frees its slot; a request of a bearer the authority confirmed for trading keeps the remaining
+  // connections (#613 R9). maxConnections itself is unchanged.
+  const MAX_CONNECTIONS=128,BUSY_CONNECTIONS=MAX_CONNECTIONS-16;let openConnections=0;const connectionCounters={shed:0,dropped:0,peak:0};
   const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},readiness:{},observed:new Set(),observedQuotes:new Map(),ownerMayTrade:financialEnabled&&!ownerOnlyMode,token:randomBytes(32).toString('hex')});
   if(legacy)contexts.set('legacy',context({read:()=>legacy.read(),execute:(command,input)=>command==='interests'?Promise.resolve(executeAccountCommand(legacy.read(),command,input,now())):legacy.transact((s,t)=>executeAccountCommand(s,command,input,t))},'legacy'));
   else if(!accounts)contexts.set('legacy',context(null,'legacy'));
@@ -220,6 +226,13 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     await contextFlights.get(ctx.id);
   };
   const quote=createQuoteReader({hub,now,sourceAllowed});
+  // #613 R9 prototype (viewer-stream.mjs), off unless viewerStream is true; the release never sets it: public quote
+  // events for viewers instead of a state poll each. Every delivery follows its own live identity judgement.
+  const stream=viewerStream===true&&accountAuthority?createViewerStream({
+    authorize:authorization=>accountAuthority.runWithRequest({headers:{authorization}},async()=>accountId(await authenticate(null,{}))),
+    readQuote:id=>quote(id,{}),
+    project:(id,q)=>projectViewerQuote(marketOnlyState(now()),id,q,now()).quotes[id],
+    onDelivered:s=>hub.setStockDemand?.(s.principalId,s.instrumentId)}):null;
   // The local SQLite worker cannot see a revocation in its own transaction, so
   // it re-runs the request's authorization at its pre-COMMIT fence. The
   // PostgreSQL authority already re-reads the session row inside its transaction.
@@ -276,6 +289,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     const u=new URL(req.url,'http://127.0.0.1:'+address.port);
     if(u.pathname.startsWith(API)){
       if(req.method==='GET'&&u.pathname===API+'health'){const ok=!accounts||accounts.metrics().workerAlive===1;send(res,ok?200:503,{ok,isolated:true,version:2,accounts:!!accounts});return;}
+      if(openConnections>=BUSY_CONNECTIONS&&!accountAuthority?.isTraderBearer?.(req.headers.authorization)){connectionCounters.shed++;send(res,503,{error:'SOURCE_BUSY',retryAfterMs:1000},{'Retry-After':'1',Connection:'close'});return;}
       // Authentication must observe disconnects before any route-specific work.
       // Do not use req.close: a fully received live request can emit it normally.
       const requestAbort=new AbortController(),onAborted=()=>requestAbort.abort(),onRequestClose=()=>{if(!res.writableFinished)onAborted();};
@@ -356,6 +370,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         }finally{res.off('close',onClose);}return;
       }
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();await confirmed();send(res,200,{catalogue});return;}
+      if(stream&&req.method==='GET'&&u.pathname===API+'stream'){const id=u.searchParams.get('id');sourceAllowed(id);await confirmed();if(res.destroyed)return;hub.setStockDemand?.(ctx.id,id);stream.open(res,{authorization:req.headers.authorization,principalId:ctx.id,instrumentId:id});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');
       // Refuse every financial/observation command before body, CSRF token,
       // account binding or authority work; enforced even for both trusted traders.
@@ -396,7 +411,9 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
   // Node 22 native fetch subtracts a 2000 ms keep-alive safety margin. Advertising
   // exactly 2 s makes every response non-reusable. Keep the normal 5 s HTTP idle
   // window; request deadlines, admission bounds and per-request auth stay intact.
-  server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=5000;server.maxConnections=128;
+  server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=5000;server.maxConnections=MAX_CONNECTIONS;
+  server.on('connection',socket=>{openConnections++;connectionCounters.peak=Math.max(connectionCounters.peak,openConnections);socket.once('close',()=>{openConnections--;});});
+  server.on('drop',()=>{connectionCounters.dropped++;});
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{await accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;
   const timer=financialEnabled&&autoPoll&&!ownerOnlyMode?setInterval(()=>{
@@ -409,7 +426,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     })().catch(e=>{for(const ctx of interested)ctx.errors[ctx.selected]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{tick=null;});
     return tick;
   },3000):null;
-  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
+  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),connectionMetrics:()=>({open:openConnections,busyAt:BUSY_CONNECTIONS,max:MAX_CONNECTIONS,...connectionCounters}),streamMetrics:()=>stream?.metrics()??null,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;stream?.close();hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   check(process.env.NODE_ENV!=='production','STOCKS_RELEASE_ENTRYPOINT_REQUIRED');

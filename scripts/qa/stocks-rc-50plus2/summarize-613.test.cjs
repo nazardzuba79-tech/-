@@ -217,3 +217,21 @@ test('--methodology isolated-clients: runs must say so and carry every placement
   assert.equal(cli(dir, ['--pairs', '1', '--methodology', 'isolated-clients']).status, 0);
   assert.equal(cli(FIXTURE, ['--pairs', '1', '--methodology', 'isolated-clients']).status, 1);
 });
+
+test('#613 R9: the 3 s terminal cadence is labelled a diagnostic, never mixed with the acceptance load', t => {
+  const env = extra => cp.spawnSync(process.execPath, ['-e', "const d=require('./driver.cjs');console.log(JSON.stringify([d.WORKLOAD,d.PLAN.viewerPeriodMs,d.PLAN.traderPeriodMs]))"], {cwd: __dirname, encoding: 'utf8', env: {PATH: process.env.PATH, ...extra}});
+  assert.deepEqual(JSON.parse(env({}).stdout), ['original-4s', 1000, 4000]);
+  assert.deepEqual(JSON.parse(env({RC50_TERMINAL_3S: '1'}).stdout), ['terminal-3s-diagnostic', 3000, 4000]);
+  assert.notEqual(env({RC50_TERMINAL_3S: '1', RC50_REVISED_8S: '1'}).status, 0, 'one diagnostic workload at a time');
+  const dir = copy(t);
+  for (const run of ['before-1', 'after-1']) edit(dir, run, 'result.json', j => { j.workload = 'terminal-3s-diagnostic'; });
+  const r = summarize(dir, {pairs: 1});
+  assert.equal(r.capacity.workload, 'terminal-3s-diagnostic');
+  assert.match(markdown(r), /viewers every 3 s as the real terminal polls — diagnostic only, not the acceptance load/);
+  // Runs of different loads are never pooled: before R9 the mixed-workload failure was recorded after the collection
+  // status was set, so a mixed collection still read COMPLETE and got a verdict.
+  edit(dir, 'before-1', 'result.json', j => { j.workload = 'original-4s'; });
+  const mixed = summarize(dir, {pairs: 1});
+  incomplete(mixed, 'MIXED_WORKLOADS:original-4s,terminal-3s-diagnostic');
+  assert.deepEqual(mixed.capacity.kinds, {before: 'NOT_EVALUATED_INCOMPLETE_COLLECTION', after: 'NOT_EVALUATED_INCOMPLETE_COLLECTION'});
+});

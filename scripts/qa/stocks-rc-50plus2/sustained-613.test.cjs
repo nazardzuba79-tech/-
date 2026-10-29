@@ -43,4 +43,10 @@ test('findings: an ingress over quota or answering 429, a viewer 5xx, missing Re
   assert.deepEqual([t.trader.rateLimited, t.trader.cyclesSkipped, t.trader.firstRateLimitedAtMs, t.trader.rateLimitedOps], [1, 7, 26500, {'retry-sell': 1}]);
   assert.ok(s.summarize({baseline: arm(crypto(10)), mixed: arm(crypto(10), {traderRateLimited: 1, traderRateLimitedWithoutRetryAfter: 1}), privateRows: []}).failures.includes('TRADER_429_WITHOUT_RETRY_AFTER'));
   assert.deepEqual(s.summarize({baseline: arm(crypto(10), {timeouts: 1}), mixed: arm(crypto(10)), privateRows: []}).failures, ['BASELINE_ERRORS_OR_TIMEOUTS']);
+  // #613 R9: the gateway's explicit 503 SOURCE_BUSY with Retry-After is a told refusal, not a finding; without
+  // Retry-After, or any other 503, it still is.
+  const busy = extra => s.summarize({baseline: arm(crypto(10)), mixed: arm([...crypto(10), {kind: 'viewer', op: 'state', status: 503, ms: 1, at: 1, ...extra}]), privateRows: []});
+  assert.deepEqual([busy({error: 'SOURCE_BUSY', retryAfter: '1'}).failures, busy({error: 'SOURCE_BUSY', retryAfter: '1'}).viewer.refusedBusy], [[], 1]);
+  assert.deepEqual(busy({error: 'SOURCE_BUSY', retryAfter: null}).failures, ['VIEWER_OTHER_STATUS']);
+  assert.deepEqual(busy({error: 'AUTH_UNAVAILABLE', retryAfter: '1'}).failures, ['VIEWER_OTHER_STATUS']);
 });

@@ -139,6 +139,10 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = nul
     if (run.complete) collection.completeRuns++;
     runs.push(run);
   }
+  // The load every run measured: the original 4 s order cycle is the acceptance load; a revised 8 s run or the 3 s
+  // terminal cadence is a labelled diagnostic. Runs of different loads are never pooled (fail-closed, before any verdict).
+  const workloads = [...new Set(runs.map(r => r.workload).filter(Boolean))];
+  if (workloads.length > 1) fail('MIXED_WORKLOADS:' + workloads.join(','));
   if (collection.failures.length) collection.status = 'INCOMPLETE';
 
   const kinds = {};
@@ -156,15 +160,12 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = nul
       statistics: statistics(done)};
   }
   const capacity = {acceptance: false, scope: 'CI_DIAGNOSTIC_NOT_CAPACITY_ACCEPTANCE', thresholdPercent: THRESHOLD_PERCENT, kinds: Object.fromEntries(KINDS.map(k => [k, kinds[k].diagnosticP95]))};
-  // The load every run measured: the original 4 s order cycle is the acceptance load; a revised 8 s run is a labelled diagnostic.
-  const workloads = [...new Set(runs.map(r => r.workload).filter(Boolean))];
-  if (workloads.length > 1) fail('MIXED_WORKLOADS:' + workloads.join(','));
   return {collection, capacity: {...capacity, workload: workloads[0] ?? null, methodology: methodology ?? 'shared-cpus'}, kinds, runs};
 }
 
 function markdown({collection, capacity, kinds, runs}) {
   const f = (x, d = 2) => typeof x === 'number' && Number.isFinite(x) ? x.toFixed(d) : '—';
-  const lines = [`Workload: **${capacity.workload === 'revised-8s-diagnostic' ? 'revised 8 s order cycle — diagnostic only, not the acceptance load' : 'original 4 s order cycle (acceptance load)'}**`, '', `Collection: **${collection.status}** (${collection.completeRuns}/${collection.expectedRuns} complete runs)`];
+  const lines = [`Workload: **${capacity.workload === 'revised-8s-diagnostic' ? 'revised 8 s order cycle — diagnostic only, not the acceptance load' : capacity.workload === 'terminal-3s-diagnostic' ? 'viewers every 3 s as the real terminal polls — diagnostic only, not the acceptance load' : 'original 4 s order cycle (acceptance load)'}**`, '', `Collection: **${collection.status}** (${collection.completeRuns}/${collection.expectedRuns} complete runs)`];
   if (collection.failures.length) lines.push('', 'Collection failures: ' + collection.failures.map(x => '`' + x + '`').join(', '));
   lines.push('', '| run | runtime | status | complete | Δp95 % | baseline p95 ms | mixed p95 ms | baseline API CPU ms | mixed API CPU ms | mixed timeouts | order loss / double spend / viewer mutations |', '|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of runs) lines.push(`| ${r.name} | ${(r.runtime || '').slice(0, 8)} | ${r.status} | ${r.complete ? 'yes' : 'no'} | ${f(r.comparison?.cryptoP95ChangePercent)} | ${f(r.baseline?.p95)} | ${f(r.mixed?.p95)} | ${f(r.baseline?.apiCpuMs, 0)} | ${f(r.mixed?.apiCpuMs, 0)} | ${r.mixed?.timeouts ?? '—'} | ${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join(' / ') : '—'} |`);
