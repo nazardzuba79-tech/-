@@ -7,6 +7,7 @@ const AFTER=process.argv.includes('--after');
 // Separate experimental mode; original R8 50x1s polling remains unchanged.
 const PUSH=process.argv.includes('--push-viewers');
 if(PUSH)process.env.RC50_PUSH_VIEWERS='1';
+else if(process.env.RC50_PUSH_VIEWERS)throw Error('PUSH_DIAGNOSTIC_CLI_FLAG_REQUIRED');
 // --revised-8s: the order cycle every 8 s instead of the original 4 s (driver.cjs WORKLOAD), labelled as a diagnostic.
 if(process.argv.includes('--revised-8s'))process.env.RC50_REVISED_8S='1';
 // --terminal-3s (#613 R9): the viewers every 3 s, as the real terminal polls (driver.cjs WORKLOAD), labelled as a diagnostic.
