@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   exact-rc2:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       postgres:
@@ -93,3 +93,4 @@ jobs:
             inputs/source-scope.json
             inputs/SHA256.json
           if-no-files-found: error
+
