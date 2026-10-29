@@ -356,9 +356,15 @@ command to that bearer's own account. That separate check was the unnecessary ca
    Nothing is granted from memory: the remembered bearer only says which principal to expect. A bearer
    refused anywhere is forgotten at once, so the next request goes through the live check. Viewers'
    bearers are never remembered (their requests run no command), so every viewer request is checked
-   exactly as before. Cost of the design: a signed-out trader's very next request may reach the
-   gateway's route work (quote read, demand lease) before its command is refused with 401; it never
-   reaches an account, a financial write or an answer.
+   exactly as before. An unconfirmed request changes nothing the principal's other sessions share
+   (review 6489779311: two sessions of one trader share the demand): a read of the instrument and view
+   already demanded runs its observation first and renews the lease only after that command confirmed
+   it; any other read (another instrument or view, a lapsed lease), a refresh, a lease release and the
+   first account binding are checked live first; a failed observation is confirmed live before it is
+   recorded in the shared demand. What a signed-out trader's very next request can still do before its
+   401 is one market quote read (shared, cached) for the instrument already demanded; it never reaches
+   an account, a financial write, the shared demand or an answer. `trader-bearer.test.mjs` reproduces the
+   review's two-session case (RED on the previous gateway, GREEN now).
 2. *Identity budget sized for the commands too.* The token bucket keeps Q/160 batches per second; its
    burst is Q/4 (was 3Q/8, sized for the 86 warm-up checks that traders no longer need), and a batch
    never takes the last minute's private requests (commands counted; the gateway is the ingress's only

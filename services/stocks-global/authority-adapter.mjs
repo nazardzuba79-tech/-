@@ -252,6 +252,9 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
       if (bearers.size >= TRADER_BEARERS_MAX) bearers.delete(bearers.keys().next().value);
       bearers.set(ctx.authorization, { id: ctx.principalId, subject: ctx.subject, at: performance.now() });
     },
+    // True while this request started without a separate check and no live answer confirmed it yet: the gateway
+    // then changes nothing the principal's other sessions share (server.mjs).
+    unconfirmed() { return requests.getStore()?.unconfirmed === true; },
     // Before the gateway answers: a request that started without a separate check and saw no live answer yet.
     async confirm({ signal } = {}) {
       const ctx = requests.getStore(); if (!ctx?.unconfirmed) return;

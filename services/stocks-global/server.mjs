@@ -201,9 +201,18 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     if(ctx.ownerMayTrade)accountAuthority?.remember?.();
     return ctx;
   };
+  // A trader request that started without a separate identity check (authority-adapter.mjs, "Trader requests") is
+  // unconfirmed until its own command or a live check answers for its bearer. Until then it changes nothing the
+  // principal's other sessions share (the demand: instrument, view, lease, readiness, observed quotes and the
+  // active request; the market demand; the account-binding flight); where it would, it is checked live first.
+  const unconfirmed=()=>accountAuthority?.unconfirmed?.()===true;
+  const confirmIdentity=signal=>accountAuthority.confirm({signal});
+  const sameDemand=(ctx,id,view)=>ctx.selected===id&&ctx.demandView===(view??'legacy-http')&&ctx.lease!==0&&now()-ctx.lease<12000;
   const requireAccount=async ctx=>{
     if(!accounts||ctx.store)return;
     check(ctx.ownerMayTrade,'AUTH_REQUIRED');
+    // The binding flight is shared by the principal's sessions: an unconfirmed request never starts one.
+    if(!contextFlights.has(ctx.id)&&unconfirmed()){await confirmIdentity();if(ctx.store)return;}
     if(!contextFlights.has(ctx.id)){
       const pending=accounts.forPrincipal(ctx.principal,{existingOnly:twoTraderMode}).then(store=>{ctx.store=store;}).finally(()=>contextFlights.delete(ctx.id));
       contextFlights.set(ctx.id,pending);
@@ -247,8 +256,8 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     const epoch=ctx.demandEpoch;
     let observedQuote,generationSignal;
     if(ownerOnlyMode)signal=AbortSignal.any([ctx.demandAbort.signal,...(signal?[signal]:[])]);
-    try{const q=await quote(id,{signal,...(accountAuthority&&ownerOnlyMode?{minimumTimestamp:ctx.demandSince}:{})});observedQuote=q;if(authorize)await authorize();check(hub.quoteValid?.(q,id)!==false,'QUOTE_UNAVAILABLE');if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}generationSignal=background?undefined:hub.observationSignal?.(q,id);const observationSignal=generationSignal?AbortSignal.any([generationSignal,...(signal?[signal]:[])]):signal;const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,{...(ownerOnlyMode||generationSignal?{signal:observationSignal}:{}),...commitFence(authorize)});if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;check(hub.quoteValid?.(q,id)!==false,'QUOTE_UNAVAILABLE');ctx.observed.add(id);ctx.observedQuotes.set(id,q);delete ctx.errors[id];delete ctx.readiness[id];return committed.snapshot;}
-    catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;if(e.code?.startsWith('AUTH_'))throw e;if(generationSignal?.aborted){ctx.observed.delete(id);ctx.observedQuotes.delete(id);ctx.errors[id]='QUOTE_UNAVAILABLE';delete ctx.readiness[id];return;}ctx.observed.delete(id);ctx.observedQuotes.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';delete ctx.readiness[id];if(ownerOnlyMode&&e.code==='QUOTE_STALE'&&preDemandReadiness(observedQuote,now(),ctx.demandSince))ctx.readiness[id]={quote:observedQuote,epoch};if(e.code?.startsWith('ACCOUNT_'))throw e;if(authorize)await authorize();await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id},commitFence(authorize));}
+    try{const q=await quote(id,{signal,...(accountAuthority&&ownerOnlyMode?{minimumTimestamp:ctx.demandSince}:{})});observedQuote=q;if(authorize)await authorize();check(hub.quoteValid?.(q,id)!==false,'QUOTE_UNAVAILABLE');if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}generationSignal=background?undefined:hub.observationSignal?.(q,id);const observationSignal=generationSignal?AbortSignal.any([generationSignal,...(signal?[signal]:[])]):signal;const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,{...(ownerOnlyMode||generationSignal?{signal:observationSignal}:{}),...commitFence(authorize)});if(unconfirmed())await confirmIdentity(signal);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;check(hub.quoteValid?.(q,id)!==false,'QUOTE_UNAVAILABLE');ctx.observed.add(id);ctx.observedQuotes.set(id,q);delete ctx.errors[id];delete ctx.readiness[id];return committed.snapshot;}
+    catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;if(e.code?.startsWith('AUTH_'))throw e;if(unconfirmed())await confirmIdentity(signal);if(generationSignal?.aborted){ctx.observed.delete(id);ctx.observedQuotes.delete(id);ctx.errors[id]='QUOTE_UNAVAILABLE';delete ctx.readiness[id];return;}ctx.observed.delete(id);ctx.observedQuotes.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';delete ctx.readiness[id];if(ownerOnlyMode&&e.code==='QUOTE_STALE'&&preDemandReadiness(observedQuote,now(),ctx.demandSince))ctx.readiness[id]={quote:observedQuote,epoch};if(e.code?.startsWith('ACCOUNT_'))throw e;if(authorize)await authorize();await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id},commitFence(authorize));}
   }
   const refreshInBackground=(ctx,id=ctx.selected)=>{
     let work=backgroundFlights.get(ctx);if(!work){work=new Map();backgroundFlights.set(ctx,work);}
@@ -298,7 +307,20 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         const readAbort=new AbortController();let demandEpoch;const onClose=()=>{if(!res.writableFinished){readAbort.abort();if(ownerOnlyMode&&demandEpoch===ctx.demandEpoch)release(ctx);}};
         res.once('close',onClose);
         try{
-          let observedView;const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);else if(changed)refreshInBackground(ctx);}}
+          let observedView;const id=u.searchParams.get('id');
+          // An unconfirmed trader read of the instrument and view its principal already demands (the 4 s poll) does not
+          // move the shared demand before its observation command confirms it; it renews the lease only afterwards.
+          // Any other unconfirmed read (another instrument or view, a lapsed lease) is checked live first.
+          const staged=id&&ownerOnlyMode&&autoPoll&&ctx.ownerMayTrade&&unconfirmed()&&instrument(id)&&sameDemand(ctx,id,req.headers['x-stocks-view']);
+          if(id&&!staged&&unconfirmed())await confirmed();
+          if(staged){
+            if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();
+            observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);
+            await confirmed();if(res.destroyed)return;
+            if(sameDemand(ctx,id,req.headers['x-stocks-view'])){hub.setStockDemand?.(ctx.id,id);demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}
+            if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';
+          }
+          else if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);else if(changed)refreshInBackground(ctx);}}
           let view=await status(ctx,observedView,readAbort.signal);
           // Read-only users share market data, never the owner matcher or ledger.
           if(!ctx.ownerMayTrade&&id){
@@ -348,7 +370,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
       else if(u.pathname===API+'cancel'){committed=await ctx.store.execute('cancel',{id:input.id},commitFence(authorize));result=committed.result;}
       else if(u.pathname===API+'balances')committed=await ctx.store.execute('balances',input);
       else if(u.pathname===API+'refresh'){
-        sourceAllowed(input.id);if(ownerOnlyMode)demand(ctx,input.id,req.headers['x-stocks-view']);else{ctx.selected=input.id;ctx.lease=now();}
+        sourceAllowed(input.id);if(unconfirmed())await confirmed();if(ownerOnlyMode)demand(ctx,input.id,req.headers['x-stocks-view']);else{ctx.selected=input.id;ctx.lease=now();}
         const epoch=ctx.demandEpoch,abort=new AbortController(),onClose=()=>{if(!res.writableFinished){abort.abort();if(ownerOnlyMode&&epoch===ctx.demandEpoch)release(ctx);}};
         res.once('close',onClose);
         try{committed={snapshot:await refreshContext(ctx,ctx.selected,false,abort.signal,beforeCommand)};if(res.destroyed)return;}
