@@ -1,0 +1,68 @@
+name: Banking #144 live-source copy QA (review only)
+on:
+  push:
+    branches:
+      - review/banking-copy-144-live-20261029
+permissions:
+  contents: read
+concurrency:
+  group: banking144-live-source-review
+  cancel-in-progress: true
+jobs:
+  only-customer-copy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      VITE_API_URL: https://api.voltextech.net/api/v1
+      VITE_MARKET_EDGE_URL: https://market.voltextech.net
+      VITE_KYC_EDGE_URL: https://kyc.voltextech.net
+      VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
+      VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+      VITE_WALLET_CONVERSION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - name: Pin exact deployed ancestor and review scope
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),cp=require('child_process'),assert=require('assert/strict');
+          const original='21b105602e5c79d32d2f9fe82b3c110171e22a33';
+          const actual=cp.execFileSync('git',['rev-parse','HEAD^'],{encoding:'utf8'}).trim();
+          const reviewed=cp.execFileSync('git',['diff','--name-only',original,'HEAD'],{encoding:'utf8'}).trim().split('\n').sort();
+          assert.equal(actual.length,40);
+          assert.deepEqual(reviewed,['.github/workflows/banking-copy-144-live-source-qa.yml','frontend/src/pages/BankingPage.tsx']);
+          const path='frontend/src/pages/BankingPage.tsx';
+          const blob=cp.execFileSync('git',['hash-object',path],{encoding:'utf8'}).trim();
+          assert.equal(blob,'64e58f63986f4c02dd417d49dd2d775ba085c158');
+          const source=fs.readFileSync(path,'utf8');
+          for(const line of ['Размещение создано. Оно появилось в разделе «Мои размещения».','По данным вашего счёта Banking','Расчёт выполняется на сервере и учитывает только завершённые календарные месяцы.'])assert(source.includes(line));
+          assert(!source.includes('Banking ledger')&&!source.includes('BigNumber'));
+          console.log('PASS: deployed base, exactly two review paths, three approved Banking texts, main identical');
+          NODE
+      - name: Install reproducible locked dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Customer-facing financial error messages
+        run: npx jest frontend/src/lib/__tests__/customerFacingErrors.test.ts --runInBand
+      - name: Build matching production-origin frontend
+        run: npm run build --prefix frontend
+      - name: Confirm output cannot activate Wallet Conversion
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),assert=require('assert/strict');
+          const p='frontend/dist';
+          assert(fs.existsSync(p+'/index.html'));
+          const m=JSON.parse(fs.readFileSync('frontend/wallet591-profiles.json','utf8'));
+          console.log('PASS: frontend-dist exists; VITE_WALLET_CONVERSION_ENABLED=false');
+          NODE
