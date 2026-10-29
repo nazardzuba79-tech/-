@@ -11,9 +11,9 @@ const assert=require('node:assert/strict'),{performance}=require('node:perf_hook
 // RC50_TERMINAL_3S=1 (diagnostic-run-613.cjs --terminal-3s, #613 R9): the viewers read their state every 3 s, as the real
 // terminal polls (GlobalStocks.tsx startVisibleStockPolling(..., 3000)); the traders keep the original 4 s cycle. Also
 // a separately labelled diagnostic: the acceptance load keeps the viewers at 1 s.
-const REVISED_8S=process.env.RC50_REVISED_8S==='1',TERMINAL_3S=process.env.RC50_TERMINAL_3S==='1';
-assert.ok(!(REVISED_8S&&TERMINAL_3S),'RC50_ONE_DIAGNOSTIC_WORKLOAD');
-const WORKLOAD=REVISED_8S?'revised-8s-diagnostic':TERMINAL_3S?'terminal-3s-diagnostic':'original-4s';
+const REVISED_8S=process.env.RC50_REVISED_8S==='1',TERMINAL_3S=process.env.RC50_TERMINAL_3S==='1',PUSH_VIEWERS=process.env.RC50_PUSH_VIEWERS==='1';
+assert.ok(!(REVISED_8S&&TERMINAL_3S||PUSH_VIEWERS&&(REVISED_8S||TERMINAL_3S)),'RC50_ONE_DIAGNOSTIC_WORKLOAD');
+const WORKLOAD=PUSH_VIEWERS?'push-viewers-diagnostic':REVISED_8S?'revised-8s-diagnostic':TERMINAL_3S?'terminal-3s-diagnostic':'original-4s';
 const PLAN=Object.freeze({warmupMs:5000,measureMs:20000,cryptoPeriodMs:250,viewerPeriodMs:TERMINAL_3S?3000:1000,traderPeriodMs:4000,traderOrderEvery:REVISED_8S?2:1,timeoutMs:3000,maxJitterMs:250,maxInflight:80,viewers:50,traders:2});
 const traderOrders=cycle=>cycle%PLAN.traderOrderEvery===PLAN.traderOrderEvery-1;
 // #613 R8 sustained load (diagnostic-run-613.cjs --sustained, report only, never the p95 verdict): the same arrivals
@@ -108,6 +108,13 @@ async function window(info,{mixed=false,warmup=false,arm,signal,sustained=false,
  const viewerJob=async(index,cycle)=>{
   if(sustained&&(viewerPausedUntil.get(index)??0)>performance.now()){r.viewerPollsDeferred++;return;}
   const token=info.viewerTokens[index],view='diag-viewer-'+index,id=info.instruments[index%info.instruments.length];
+  if(PUSH_VIEWERS){
+   // The pre-run account state has already been checked when initializing the
+   // 50 viewers; a live SSE viewer does not poll /state while prices flow.
+   // Retain one denied BUY per viewer without adding a hidden state read.
+   const result=await request(info.stocksOrigin,'/__stocks_global/orders',{method:'POST',token,view,body:{id:'rc50-viewer-deny-'+index,instrumentId:id,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.01'},expected:401,kind:'viewer',op:'deny-order',index});
+   assert.equal(result.error,'AUTH_REQUIRED');r.viewerDenials++;return;
+  }
   const state=await request(info.stocksOrigin,stateRoute('viewer',index,id),{token,view,kind:'viewer',op:'state',index});if(state===null)return;keep('viewer',index,state);
   assert.equal(state.account.canTrade,false);
   if(state.errors?.[id]){if(!sustained)throw Error('VIEWER_QUOTE_'+state.errors[id]);r.viewerQuoteNotLive[state.errors[id]]=(r.viewerQuoteNotLive[state.errors[id]]??0)+1;}
@@ -156,7 +163,12 @@ async function window(info,{mixed=false,warmup=false,arm,signal,sustained=false,
  };
  for(let at=0,cycle=0;at<duration;at+=PLAN.cryptoPeriodMs,cycle++)jobs.push({at,label:'crypto-'+cycle,fn:()=>cryptoJob(cycle)});
  if(mixed&&!warmup){
-  for(let i=0;i<50;i++)for(let at=i*20,cycle=0;at<duration;at+=PLAN.viewerPeriodMs,cycle++)jobs.push({at,label:'viewer-'+i+'-'+cycle,fn:()=>viewerJob(i,cycle)});
+  // Push viewers hold one SSE connection. Their initial state + denied trade are
+  // checked once; subsequent repeated GET /state polling is intentionally absent.
+  for(let i=0;i<50;i++)for(let at=i*20,cycle=0;at<duration;at+=PLAN.viewerPeriodMs,cycle++){
+   if(PUSH_VIEWERS&&cycle>0)break;
+   jobs.push({at,label:'viewer-'+i+'-'+cycle,fn:()=>viewerJob(i,cycle)});
+  }
   for(let i=0;i<2;i++)for(let at=500+i*2000,cycle=0;at<duration;at+=4000,cycle++)jobs.push({at,label:'trader-'+i+'-'+cycle,fn:()=>traderJob(i,cycle)});
  }
  await Promise.all(jobs.map(job=>new Promise(resolve=>{

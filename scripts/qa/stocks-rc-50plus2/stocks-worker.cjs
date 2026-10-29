@@ -69,7 +69,7 @@ async function gateway(c){
  const ready=await verifyReleaseAuthority({endpoint,issuer:s.issuer,gatewayKey:s.gatewayKey,tradePrincipals:releasePrincipals(s.issuer,s.principals)});
  if(ready.tradingEnabled!==true)throw Error('STOCKS_PROCESS_AUTHORITY_NOT_TRADING');
  const accountAuthority=createAuthorityAdapter({endpoint,issuer:s.issuer,gatewayKey:s.gatewayKey});
- state.gateway=await createServer({financialEnabled:true,port:0,accountAuthority,tradePrincipals:s.principals,hub,now:Date.now});
+ state.gateway=await createServer({financialEnabled:true,port:0,accountAuthority,tradePrincipals:s.principals,hub,now:Date.now,viewerStream:c.viewerStream===true});
  return{role,pid:process.pid,port:state.gateway.port};
 }
 function metrics(){
