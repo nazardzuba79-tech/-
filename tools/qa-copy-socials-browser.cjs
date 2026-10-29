@@ -36,7 +36,7 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
  const report=[];
  try{
   for(const width of [1440,390]) for(const id of ['VX-001','VX-KSENIA']){
-   let injected=0;const conversionRequests=[];
+   let validatedIdentityResponses=0;const conversionRequests=[];
    const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
    await context.route('**/*',async route=>{
      const u=new URL(route.request().url());
@@ -48,7 +48,11 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
       const response=await route.fetch({url:origin+u.pathname+u.search});
       if(response.ok() && ['/api/v1/copy-trading/identities','/api/v1/copy-trading/marketplace'].includes(u.pathname)){
        const body=await response.json();assert(Array.isArray(body.identities));
-       for(const traderId of ['VX-002','VX-003','VX-L001']){body.identities.push({traderId,displayName:'Injected fixture',avatarUrl:null,avatarVersion:null,verified:false,premium:false,xUrl:'https://x.com/fixture_injected',telegramUrl:'https://t.me/fixture_injected'});injected++;}
+       // This endpoint guarantees exactly two strategy identities. Extra identities
+       // intentionally fail the client validator; do not invalidate this positive flow.
+       // Hostile social URLs on non-owner cards are tested in focused UI/unit cases.
+       assert.deepEqual(body.identities.map(i=>i?.traderId),['VX-001','VX-KSENIA']);
+       validatedIdentityResponses++;
        return route.fulfill({response,headers:{...response.headers(),...headers},json:body});
       }
       return route.fulfill({response,headers:{...response.headers(),...headers}});
@@ -89,7 +93,7 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
    const other=id==='VX-001'?'VX-KSENIA':'VX-001';await page.locator(`.trader-card[data-trader-id="${other}"]`).click();await page.waitForTimeout(350);
    assert.equal(await page.locator('.strategy-social-editor').count(),0);
    assert(await page.locator('.trader-copy-cta button').count()>0,'existing Copy controls retained');
-   assert(injected>0,'malicious catalogue fields delivered');assert.deepEqual(conversionRequests,[]);assert.deepEqual(errors,[]);report.push({width,id,passed:true,injectedCatalogueFields:injected,conversionRequests:0});await context.close();
+   assert(validatedIdentityResponses>0,'exact two strategy identities delivered');assert.deepEqual(conversionRequests,[]);assert.deepEqual(errors,[]);report.push({width,id,passed:true,validatedIdentityResponses,conversionRequests:0});await context.close();
    await db.copyStrategyOwner.update({where:{traderId:id},data:{xUrl:null,telegramUrl:null}});
   }
   fs.writeFileSync(path.join(out,'browser.json'),JSON.stringify({passed:true,cases:report},null,2));console.log('PASS: 1440/390; both owners; update, clear, reload, card/profile consistency, disabled catalogue, cross-owner editor denial; no page errors');
