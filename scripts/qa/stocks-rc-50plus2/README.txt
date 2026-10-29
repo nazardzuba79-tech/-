@@ -98,11 +98,11 @@ differs between the policies (TOPOLOGY export):
   STOCKS_NICE=10 (round 2): both Stocks processes run at nice 10, the release's
   cpu_shares scheduling control; the qualification proves it (api 0, Stocks 10).
   Round 1 (no weight) is recorded in docs/STOCKS_613_PROCESS_ISOLATION.md.
-  STOCKS_SCHED='gateway-idle' (R6): the gateway process starts under chrt in
-  Linux's idle scheduling class (every thread inherits it); the authority, which
-  holds trader rows locked inside its transactions, stays in the normal class.
-  The qualification proves it per thread (/proc/<pid>/task/*/stat: gateway all
-  policy 5, authority and crypto API all policy 0) and the result records it.
+  STOCKS_SCHED='gateway-idle' (R6 only): the gateway ran under chrt in Linux's
+  idle scheduling class; run 40838996816 showed no measurable p95 effect and R7
+  removed it from the pin and the compose example. api-worker.cjs keeps the
+  option (stocksSched) for experiments; the qualification still records every
+  Stocks thread's class (/proc/<pid>/task/*/stat) and proves the normal class.
 report.cpu (report only) lists the allowed CPUs, their SMT siblings and the model.
 The runner records every process's pid (cleanup must confirm each), refuses a
 topology other than the pin's, and the qualification proves the separation (the

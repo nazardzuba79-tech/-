@@ -9,8 +9,6 @@ services:
     profiles: [stocks-review-only]
     image: ${VOLTEX_API_REVIEWED_IMAGE:?reviewed immutable API image digest required}
     # The API image's own Node entry, another compiled module: no shell, migration or seed.
-    # Normal scheduling class (not idle like the gateway below): it holds trader rows locked
-    # inside its transactions (docs/STOCKS_613_PROCESS_ISOLATION.md, R6).
     entrypoint: []
     command: [node, dist/stocksAuthority.js]
     network_mode: host
@@ -42,10 +40,7 @@ services:
   stocks-catalogue-review:
     profiles: [stocks-review-only]
     image: ${STOCKS_REVIEWED_IMAGE:?reviewed immutable Node22 image digest required}
-    # chrt (util-linux, in the Debian base image) starts it in the idle scheduling class: a waking
-    # crypto API or PostgreSQL task preempts it at once (docs/STOCKS_613_PROCESS_ISOLATION.md, R6).
-    # It holds no database lock or credential; lowering the class needs no capability; image bytes unchanged.
-    entrypoint: [chrt, --idle, '0', node, services/stocks-global/release-entrypoint.mjs]
+    entrypoint: [node, services/stocks-global/release-entrypoint.mjs]
     network_mode: host
     restart: 'no'
     read_only: true

@@ -220,95 +220,9 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
-  # Experiment (report only): the Stocks processes' scheduling and placement (R6). The driver-placement experiment it
-  # replaces answered its question on 89ff321a (driver apart +24.2 %, together +27.2 %: the clients' CPU is not the
-  # cause). Same runner, same after pin and plan, three kinds interleaved in rotating order, three rounds:
-  #   nice  - gateway in the normal scheduling class at nice 10, the release control before R6 (--stocks-normal);
-  #   idle  - the after pin as released: gateway in the idle scheduling class, authority normal at nice 10;
-  #   apart - the after pin with both Stocks processes on CPUs 2,3, the crypto API, PostgreSQL and the driver on
-  #           0,1 (--stocks-apart): how much of the mixed arm's p95 is the Stocks CPU on the crypto API's core;
-  #   alone - as apart, with the driver on 2,3 too (--stocks-apart --driver-apart): only the crypto API and
-  #           PostgreSQL on 0,1, so what remains is the shared PostgreSQL (rows, WAL, its own CPU).
-  # The extended report compares their Δp95, per-process CPU and time waiting for a CPU. Never a verdict ('apart'
-  # uses CPUs outside the 2-vCPU budget); needs a runner with 4 CPUs.
-  stocks-placement:
-    name: 50+2 Stocks scheduling and placement experiment, separated (report only)
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.23.3'
-          cache: npm
-      - name: Locked dependencies and Prisma engines, before any harness admission
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npx prisma generate
-      - name: Fixture base schema and PostgreSQL socket directory
-        run: |
-          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
-            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
-          sudo install -d -m 1777 /var/run/postgresql
-      - name: Worktree with runtime exactly at the after pin; harness from this head
-        run: |
-          set -euo pipefail
-          W="$(dirname "$GITHUB_WORKSPACE")/rc50-placement"; mkdir -p "$W/runs"
-          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
-          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
-          git worktree add --detach "$W/after" "$sha"
-          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
-          echo "PLACEMENT_DIR=$W" >> "$GITHUB_ENV"
-          echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
-      - name: Interleaved runs, rotating order (nice, idle, apart, alone), three rounds
-        run: |
-          set -uo pipefail
-          if [ "$(nproc --all)" -lt 4 ]; then echo "::notice title=Stocks placement::NOT_RUN: this runner has $(nproc --all) CPUs"; exit 0; fi
-          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
-          run() {
-            local kind=$1 i=$2 cpus=0,1 flag="" rc=0
-            case "$kind" in nice) flag="--stocks-normal";; apart) flag="--stocks-apart";; alone) cpus=2,3; flag="--stocks-apart --driver-apart";; esac
-            mkdir -p "$PLACEMENT_DIR/runs/$kind-$i"
-            (cd "$PLACEMENT_DIR/after" && taskset -c "$cpus" node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after $flag \
-              --root . --pg-bin "$PG_BIN" --out "$PLACEMENT_DIR/runs/$kind-$i/out" \
-              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
-            echo "$rc" > "$PLACEMENT_DIR/runs/$kind-$i/exit-code"
-          }
-          run nice 1; run idle 1; run apart 1; run alone 1
-          run idle 2; run apart 2; run alone 2; run nice 2
-          run apart 3; run alone 3; run nice 3; run idle 3
-      - name: Nice vs idle vs apart vs alone (report only)
-        if: always()
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$PLACEMENT_DIR/runs" "$PLACEMENT_DIR/placement.json" | tee -a "$GITHUB_STEP_SUMMARY"
-          node -e '
-          const r = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
-          for (const [k, v] of Object.entries(r.kinds)) console.log(`::notice title=50+2 placement ${k}::runs ${v.runs}; crypto p95 ${f(v.baselineCrypto.p95)} -> ${f(v.mixedCrypto.p95)} ms (pooled ${f(v.pooledCryptoP95ChangePercent)} %); server-side crypto p95 ${f(v.serverCryptoP95Ms.baseline)} -> ${f(v.serverCryptoP95Ms.mixed)} ms`);
-          ' "$PLACEMENT_DIR/placement.json"
-      - name: Collect run reports (no database files)
-        if: always()
-        run: |
-          mkdir -p output/rc50-613-placement
-          cp "$PLACEMENT_DIR/placement.json" output/rc50-613-placement/ 2>/dev/null || true
-          for r in "$PLACEMENT_DIR"/runs/*/; do
-            n=$(basename "$r"); mkdir -p "output/rc50-613-placement/$n"
-            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-placement/$n/" 2>/dev/null || true
-          done
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: stocks-613-stocks-placement-${{ github.event.pull_request.head.sha || github.sha }}
-          path: output/rc50-613-placement
-          retention-days: 14
-          if-no-files-found: warn
+  # The R6 stocks-placement experiment (nice / idle / apart / alone, run 40838996816) and the driver-placement
+  # experiment before it (run 40831978973) are answered and recorded in docs/STOCKS_613_PROCESS_ISOLATION.md; they
+  # are not repeated on every push. diagnostic-run-613.cjs keeps --driver-apart and --stocks-apart for a new question.
 
   # One server-side spans run (spans.cjs in BOTH measured arms) of the current
   # runtime pin (policy-613-after.cjs) with the unchanged plan, to separate auth,

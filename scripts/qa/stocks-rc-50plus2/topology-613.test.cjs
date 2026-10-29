@@ -12,7 +12,7 @@ test('both pins name the same runtime commit; only the process topology differs'
   assert.equal(before.STOCKS_NICE, undefined, 'one process: nothing to weight');
   assert.equal(after.STOCKS_NICE, 10, 'separated: the Stocks processes run with a lower CPU weight than the crypto API');
   assert.equal(before.STOCKS_SCHED, undefined, 'one process: no scheduling class of its own');
-  assert.equal(after.STOCKS_SCHED, 'gateway-idle', 'separated: the gateway runs in the idle scheduling class, the authority does not');
+  assert.equal(after.STOCKS_SCHED, undefined, 'separated: no idle scheduling class since R7 (no measurable effect in R6)');
   const runner = fs.readFileSync(path.join(__dirname, 'diagnostic-run-613.cjs'), 'utf8');
   assert.match(runner, /require\(AFTER\?'\.\/policy-613-after\.cjs':'\.\/policy-613\.cjs'\)/);
   assert.match(runner, /TOPOLOGY_MISMATCH_/);

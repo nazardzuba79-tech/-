@@ -26,14 +26,12 @@ const PG_PROFILE_OPTIONS=" -c log_lock_waits=on -c deadlock_timeout=1ms -c log_m
 // other CPUs (the workflow starts it under taskset -c 2,3). Same plan otherwise; it measures how much of the mixed
 // arm's p95 comes from the clients sharing the server's two vCPUs, which production clients do not.
 const DRIVER_APART=process.argv.includes('--driver-apart'),SERVER_CPUS='0,1';
-// --stocks-normal, --stocks-apart (separated pin only; experiment, report only, never a verdict): --stocks-normal runs
-// the gateway in the normal scheduling class at nice 10 (the release control before R6); --stocks-apart runs both
-// Stocks processes on CPUs 2,3, apart from the crypto API, PostgreSQL and the driver on 0,1, to show how much of the
-// mixed arm's p95 is the Stocks processes' CPU on the crypto API's core. With --driver-apart as well, only the crypto
-// API and PostgreSQL stay on 0,1 (the driver and both Stocks processes share 2,3).
-const STOCKS_NORMAL=process.argv.includes('--stocks-normal'),STOCKS_APART=process.argv.includes('--stocks-apart'),STOCKS_CPUS='2,3';
-const SCHED=STOCKS_NORMAL?'':STOCKS_SCHED;
-const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'&&x!=='--pg-profile'&&x!=='--driver-apart'&&x!=='--revised-8s'&&x!=='--stocks-normal'&&x!=='--stocks-apart'));
+// --stocks-apart (separated pin only; experiment, report only, never a verdict): both Stocks processes on CPUs 2,3,
+// apart from the crypto API, PostgreSQL and the driver on 0,1, to show how much of the mixed arm's p95 is the Stocks
+// processes' CPU on the crypto API's core. With --driver-apart as well, only the crypto API and PostgreSQL stay on 0,1
+// (the driver and both Stocks processes share 2,3). Not run by the workflow since R7; R6's results are in the docs.
+const STOCKS_APART=process.argv.includes('--stocks-apart'),STOCKS_CPUS='2,3',SCHED=STOCKS_SCHED;
+const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'&&x!=='--pg-profile'&&x!=='--driver-apart'&&x!=='--revised-8s'&&x!=='--stocks-apart'));
 let cfg,started=false,data,active,controller=new AbortController(),timer;
 const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));
@@ -111,7 +109,7 @@ function provenance(){
 (async()=>{
  try{
   if([SPANS,PROFILE,PG_PROFILE,DRIVER_APART||STOCKS_APART].filter(Boolean).length>1)throw Error('ONE_INSTRUMENTATION_PER_RUN');
-  if((STOCKS_NORMAL||STOCKS_APART)&&TOPOLOGY!=='separated')throw Error('STOCKS_EXPERIMENT_NEEDS_SEPARATED_PROCESSES');
+  if(STOCKS_APART&&TOPOLOGY!=='separated')throw Error('STOCKS_EXPERIMENT_NEEDS_SEPARATED_PROCESSES');
   if(STOCKS_APART&&require('node:os').cpus().length<4)throw Error('STOCKS_APART_NEEDS_4_CPUS');
   if(DRIVER_APART){
    const own=(fs.readFileSync('/proc/self/status','utf8').match(/^Cpus_allowed_list:\s*(\S+)/m)||[])[1]??'';

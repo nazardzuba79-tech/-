@@ -67,15 +67,12 @@ service units. It reserves nothing, takes no CPU away when the host is idle and
 adds nothing to the budget. The 50+2 `after` pin applies it as nice 10 on both
 Stocks processes.
 
-Since R6 the gateway also runs in Linux's idle scheduling class
-(`chrt --idle 0` in the compose example; `CPUSchedulingPolicy=idle` in a
-systemd unit): a waking crypto API or PostgreSQL task takes the CPU from it at
-once, instead of waiting until a nice-10 task has used its time slice. The
-gateway holds no database credential or lock. The authority stays in the normal
-class at nice 10: it holds trader rows locked inside its transactions, and an
-idle-class lock holder can be starved while a crypto write waits for that row
-(seen locally, section R6). The 50+2 `after` pin applies the same split
-(`STOCKS_SCHED='gateway-idle'`, proven per thread in the qualification).
+R6 tried the gateway in Linux's idle scheduling class (`chrt --idle 0`). The
+acceptance run showed no measurable effect on the crypto p95 (section R6), so
+R7 removed it from the compose example and from the 50+2 `after` pin. The idle
+class must not be used for the authority in any case: it holds trader rows
+locked inside its transactions, and an idle-class lock holder can be starved
+while a crypto write waits for that row (seen locally, section R6).
 
 ## Resources
 
@@ -467,9 +464,9 @@ at 8 s). The crypto request path wakes the API, a PostgreSQL backend and the API
 each wakeup that finds both vCPUs busy with a Stocks process waits, and a nice-10 task that has just been picked
 keeps its time slice before the waking crypto task gets the CPU.
 
-**Runtime change R6.** The gateway runs in the idle scheduling class (see *Scheduling control*): a waking crypto
-API or PostgreSQL task preempts it at once, and it runs whenever the crypto side does not need the CPU. The
-authority stays in the normal class at nice 10. Locally (4-vCPU container, `taskset -c 0,1`, single runs) the idle
+**Runtime change R6 (removed in R7).** The gateway ran in the idle scheduling class: a waking crypto API or
+PostgreSQL task preempts it at once, and it runs whenever the crypto side does not need the CPU. The authority
+stayed in the normal class at nice 10. Locally (4-vCPU container, `taskset -c 0,1`, single runs) the idle
 class on the authority too produced a run whose crypto writes waited up to 886 ms (`place-limit` p95 756 ms,
 `cancel` p95 523 ms, reads unaffected) while trader commands slowed alike: the idle-class authority held trader 0's
 rows and was starved. That variant is rejected.
@@ -492,3 +489,94 @@ request itself (not with a sibling's demand change, which made the valid request
 epoch are judged again after it, before anything shared is recorded. `trader-bearer.test.mjs` holds the first
 session's identity batch, lets the sibling move the demand, then releases it: RED before (the stale failure was
 recorded), GREEN now.
+
+### R6 result ([run 40838996816](https://github.com/nazardzuba79-tech/-/actions/runs/40838996816), head `182cfc37`, runtime `d6da2c84`)
+
+All 49 exact-head checks green or skipped. Acceptance, original 4 s cycle, PAIRS 8, `taskset -c 0,1`
+(artifact SHA-256 `8b356fe37879268e12fade42f03f2ff7cf839003cea2bd79dfc403e7dc441467`, collection COMPLETE 16/16):
+
+| Pin | Crypto p50/p95/p99 baseline → mixed (ms) | Pooled Δp95 | Median run Δp95 | Verdict |
+|---|---|---|---|---|
+| one process | 5.41/10.15/23.17 → 5.56/13.33/24.08 | +31.35 % | +32.60 % | FAIL |
+| separated, gateway idle class | 5.24/9.56/17.58 → 5.54/12.51/19.40 | +30.84 % | +32.84 % | FAIL |
+
+Separated per run: +9.7, +33.7, +52.0, +34.9, +21.1, +32.0, +34.8, +31.2 % (coordinator's bootstrap 95 %:
+24.3–39.1 %). Every run: 1,440 requests, no error, timeout, missed job, order loss, double spend or viewer change;
+118 private requests per measured window (70 commands, 48 identity batches), busiest minute 210/240. CPU per window:
+API 1,582 → 1,707 ms, authority 44 → 587, gateway 127 → 1,291, driver 369 → 1,551, PostgreSQL 226 → 380. Revised 8 s
+(diagnostic only): separated +33.95 %, one process +17.75 %.
+
+`stocks-placement` (same runner, 3 runs per kind, report only):
+
+| Kind | Besides the crypto API and PostgreSQL on its 2 vCPUs | Mixed crypto p95 per run (ms) | API CPU wait growth (ms) |
+|---|---|---|---|
+| nice | Stocks (normal class) + driver | 12.57, 26.69, 20.41 | +417 |
+| idle | Stocks (gateway idle) + driver | 16.47, 12.84, 13.15 | +251 |
+| apart | driver only | 33.60, 13.09, 11.81 | +139 |
+| alone | nothing | 12.06, 10.78, 10.94 | +26 |
+
+The baselines of this job include outlier arms (27.7, 32.5 and 25.1 ms pooled for `alone`), so its pooled
+percentages are not meaningful, and three runs per kind neither validate the idle class nor rule out other causes
+(coordinator review 6492054481). What it shows: with nothing else on the crypto API's core the crypto p95 and the
+API's CPU wait stay at the baseline. It does not establish a floor for the regression.
+
+### R7 (29.10): viewer serializer prototype — equivalence holds, saving unsupported
+
+Coordinator review 6494242460 asked for a bounded, viewer-only serializer prototype instead of another benchmark:
+cache only immutable public fragments, recompute every dynamic or private field, keep the live identity check and
+`no-store`, leave traders unchanged, prove response equivalence, and measure absolute CPU and cache memory.
+
+- *Prototype* (local commit `4e89ddd6`, not published): the viewer answer's only immutable public fragment is the
+  catalogue (replaced as a whole on a reload, never changed in place). Its JSON is kept for the current catalogue
+  array (one entry, 12,542 bytes) and spliced in at its own key position. Every other field (time, quote status and
+  age, FX, errors, readiness, metrics, account, token) is serialized per answer.
+- *Equivalence*: every viewer answer in `viewer-serializer.test.mjs` is compared with `JSON.stringify` of the same
+  body when it is sent — two viewers, two instruments, a revoked session (401, nothing serialized), a quote
+  expiring without a tick (`QUOTE_STALE`), an FX rate expiring (`USDC: FX_STALE`, `USDT: READY`), and the catalogue
+  included, left out and replaced by a reload. 5/5; a stale-cache mutation turns the reload case RED. Stocks node
+  unit 403/403.
+- *CPU* (`scripts/qa/stocks-viewer-serializer-bench.mjs 10`, the distribution of `driver.cjs`'s measured mixed
+  window: viewers run only there, and every window starts with fresh held catalogue versions, so each of the 50
+  viewers (two instruments) gets the catalogue on its first of 20 polls at 1 s — 50 answers with the catalogue and
+  950 without per window. The gateway runs in its own child process per round and the parent drives the requests;
+  10 rounds per serializer, order alternating; local CPUs 2–3, Node 22.23.3, synthetic data, loopback, no database):
+
+  | Per window, mean of 10 rounds (range) | Unchanged (`JSON.stringify`) | Prototype |
+  |---|---|---|
+  | Gateway process CPU (user + system) | 389.4 ms (335.5–448.2) | 398.1 ms (340.2–458.4) |
+  | Gateway wall time | 383.9 ms | 377.6 ms |
+  | Serializer, 50 answers with the catalogue | 5.08 ms | 0.90 ms |
+  | Serializer, 950 answers without it | 14.41 ms | 14.17 ms |
+  | Serializer total | 19.49 ms | 15.08 ms |
+  | Retained cache | 0 | 12,542 bytes (one entry) |
+
+  Raw per-round totals (ms; serializer = with catalogue + without):
+
+  | Round | Order | Unchanged CPU / wall | Unchanged serializer | Prototype CPU / wall | Prototype serializer |
+  |---|---|---|---|---|---|
+  | 1 | U, P | 404.8 / 469.9 | 24.63 (9.92 + 14.71) | 384.1 / 402.4 | 16.29 (0.98 + 15.30) |
+  | 2 | P, U | 353.8 / 392.2 | 16.17 (3.87 + 12.30) | 447.2 / 471.0 | 17.31 (0.90 + 16.41) |
+  | 3 | U, P | 430.7 / 428.7 | 24.65 (4.91 + 19.74) | 350.4 / 335.2 | 11.69 (0.86 + 10.83) |
+  | 4 | P, U | 335.5 / 322.3 | 15.29 (3.14 + 12.15) | 340.2 / 328.3 | 12.68 (0.80 + 11.88) |
+  | 5 | U, P | 448.2 / 418.6 | 19.79 (3.98 + 15.81) | 438.6 / 388.0 | 16.55 (0.95 + 15.60) |
+  | 6 | P, U | 383.9 / 358.7 | 18.61 (4.23 + 14.38) | 370.0 / 342.7 | 16.20 (0.84 + 15.36) |
+  | 7 | U, P | 412.0 / 382.0 | 20.01 (5.85 + 14.16) | 414.3 / 377.7 | 16.15 (0.93 + 15.22) |
+  | 8 | P, U | 372.6 / 360.1 | 19.90 (7.29 + 12.61) | 382.5 / 359.8 | 14.22 (1.01 + 13.21) |
+  | 9 | U, P | 379.1 / 360.0 | 16.81 (3.27 + 13.54) | 458.4 / 408.8 | 15.27 (0.99 + 14.28) |
+  | 10 | P, U | 373.3 / 346.7 | 19.04 (4.39 + 14.65) | 395.0 / 362.1 | 14.39 (0.80 + 13.59) |
+
+  Paired by round (prototype minus unchanged): serializer −4.42 ms on average, lower in 9 of 10 rounds; gateway
+  process CPU +8.7 ms on average (−80.3 to +93.5), lower in 4 of 10; wall time −6.3 ms, lower in 6 of 10. Response
+  bytes per window (2,078,750–2,080,750) vary by round in both arms through time-dependent fields.
+
+  The serializer saving, about 4.4 ms per window and almost all of it on the 50 catalogue answers, is an order of
+  magnitude smaller than the round-to-round spread of the gateway's process CPU and does not show in it; against the
+  gateway CPU of the CI windows (1.29–1.47 s) it would be about 0.3 %. Saving unsupported: the prototype is not
+  proposed for publication, and the stop condition of review 6494242460 stands. This local microbenchmark establishes
+  neither effectiveness nor a release improvement.
+
+  Correction (review 6495231915): an earlier version of these figures, posted on the PR, assumed no measured-window
+  viewer answer carries the catalogue. That was wrong for `driver.cjs`, whose held catalogue versions are fresh in
+  every window; the figures above use its 50 / 950 distribution. The earlier estimate of about 17 % (review reply
+  6492099577) came from a profile taken before R5 removed `structuredClone` and the per-answer process figures; it
+  does not hold for the current runtime and stays withdrawn, as does the +20 % floor.
