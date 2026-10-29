@@ -1,0 +1,35 @@
+name: Stocks R10 immutable fixture pin QA (review only)
+on:
+  push:
+    branches:
+      - review/stocks613-r10-infra-source-pin-20261029
+permissions:
+  contents: read
+concurrency:
+  group: stocks613-r10-source-review
+  cancel-in-progress: true
+jobs:
+  source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Install locked dependencies without scripts or external application access
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Exact protected file checks and malicious descendant rejection
+        run: node --test scripts/qa/stocks613-infra-source.test.cjs
+      - name: All SQL migration bytes remain identical to infra review
+        run: |
+          node <<'NODE'
+          const cp=require('node:child_process'), assert=require('node:assert/strict');
+          const old='4b92e69a0e3c1bf1f6f8376b846bdb6be7d968eb';
+          assert.equal(cp.execFileSync('git',['rev-parse',old+':prisma/migrations'],{encoding:'utf8'}).trim(),
+            cp.execFileSync('git',['rev-parse','HEAD:prisma/migrations'],{encoding:'utf8'}).trim());
+          console.log('PROTECTED_MIGRATION_TREE_UNCHANGED');
+          NODE
