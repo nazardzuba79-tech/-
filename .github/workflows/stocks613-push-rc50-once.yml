@@ -43,6 +43,9 @@ jobs:
           set -euo pipefail
           W="$(dirname "$GITHUB_WORKSPACE")/rc50-push-one"
           mkdir -p "$W"
+          # The generated Prisma client is shared read-only by symlink: do not
+          # mistake its node_modules path for an unreviewed runtime source.
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
           git worktree add --detach "$W/after" 7942c59ddfbf902a6183c397f766bcc8aca8c039
           cp scripts/qa/stocks-rc-50plus2/*.cjs "$W/after/scripts/qa/stocks-rc-50plus2/"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
