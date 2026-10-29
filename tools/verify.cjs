@@ -1,0 +1,28 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert/strict'),crypto=require('crypto'),{execFileSync}=require('child_process');
+const R=path.resolve(__dirname,'..'),I=path.join(R,'inputs');
+const read=f=>JSON.parse(fs.readFileSync(f));const hash=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+const git=(dir,...args)=>execFileSync('git',args,{cwd:path.join(R,dir),encoding:'utf8'}).trim();
+const api=read(path.join(I,'api-manifest.json')),fe=read(path.join(I,'frontend-manifest.json'));
+assert.equal(git('api-source','rev-parse','HEAD'),api.baseRelease);
+assert.equal(git('pr-source','rev-parse','HEAD'),api.source);
+assert.equal(git('frontend-git','rev-parse','HEAD'),fe.source);
+const scope=read(path.join(I,'source-scope.json')).frontendPaths.sort();
+assert.deepEqual(git('frontend-git','diff','--name-only',fe.baseSource,fe.source).split('\n').sort(),scope);
+for(const f of scope)assert.equal(hash(path.join(R,'frontend-git',f)),hash(path.join(R,'pr-source',f)),f);
+for(const module of api.runtimeModules){const f='src/'+module+'.ts';assert.equal(hash(path.join(R,'artifacts/api-overlay',f)),hash(path.join(R,'pr-source',f)),f);}
+const protectedFiles=read(path.join(I,'protected-api-hashes.json'));assert.equal(Object.keys(protectedFiles).length,570);
+for(const [f,h] of Object.entries(protectedFiles))assert.equal(hash(path.join(R,'runtime-candidate',f)),h,f);
+const {audit,profiles,files}=require(path.join(R,'frontend-git/scripts/wallet591-frontend-artifact.cjs'));
+const result=audit(path.join(R,'frontend-git/frontend/dist'),'production');assert.deepEqual(result.files,fe.files);assert.equal(Object.keys(result.files).length,341);
+assert.equal(result.env.VITE_WALLET_CONVERSION_ENABLED,'false');
+assert.equal(profiles.ru.env.VITE_API_URL,'https://ru.voltextech.net/api/v1');
+for(const f of ['frontend/wallet591-profiles.json','frontend/vite.config.ts'])assert.equal(git('frontend-git','diff',fe.baseSource,fe.source,'--',f),'');
+const runtime=files(path.join(R,'runtime-candidate/dist')),base=files(path.join(R,'baseline/api-installed/dist'));
+const changed=Object.keys(runtime).filter(f=>runtime[f]!==base[f]);
+assert.deepEqual(changed.sort(),api.runtimeModules.flatMap(f=>[f+'.js',f+'.js.map']).sort());assert(Object.keys(base).every(f=>runtime[f]));
+const engine='node_modules/.prisma/client/libquery_engine-debian-openssl-3.0.x.so.node';assert.equal(hash(path.join(R,'api-source',engine)),hash(path.join(R,'baseline/api-installed',engine)));
+const migration='prisma/migrations/20261029150000_copy_strategy_socials/migration.sql';assert.equal(hash(path.join(R,'artifacts/api-overlay',migration)),api.payload[migration]);
+fs.mkdirSync(path.join(R,'evidence'),{recursive:true});
+fs.writeFileSync(path.join(R,'evidence/exact-rc2.json'),JSON.stringify({passed:true,evidenceCommit:process.env.GITHUB_SHA,frontendSource:fe.source,apiFeature:api.source,apiBase:api.baseRelease,baseImage:api.baseImage,frontendFiles:341,protectedApiFiles:570,changedRuntimeModules:api.runtimeModules,sourcePaths:scope,conversion:false,ruUnchanged:true,inputHashes:read(path.join(I,'SHA256.json')),scope:'ISOLATED_EXACT_PACKAGED_BYTES_NO_PRODUCTION'},null,2));
+console.log('PASS: exact RC2 sources, 341 frontend hashes, four-module delta, 570 protected runtime files, Linux engine, production/RU URLs and Conversion OFF');

@@ -1,0 +1,95 @@
+name: Copy641 exact packaged RC2
+on:
+  push:
+    branches: [release-prep/copy641-exact-rc2]
+permissions:
+  contents: read
+jobs:
+  exact-rc2:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: voltex_copy_social_test
+        ports: [5432:5432]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      COPY_SOCIAL_TEST_URL: postgresql://postgres@127.0.0.1:5432/voltex_copy_social_test
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/voltex_copy_social_test
+      WALLET_CONVERSION_ENABLED: 'false'
+      VITE_WALLET_CONVERSION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 54a138f502003cd1fdea752f0440c970cd551af4
+          path: api-source
+      - uses: actions/checkout@v4
+        with:
+          ref: 97bbfa04d87bf912a76c14724891c86c4d6181cf
+          fetch-depth: 2
+          path: frontend-git
+      - uses: actions/checkout@v4
+        with:
+          ref: 3ab2e32bf783c8d511469dbd38bbe71f85e79630
+          path: pr-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.3
+      - name: Locked dependencies only, no build or Prisma generation
+        working-directory: api-source
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm install --prefix node_modules/.cache/issue640-qa --ignore-scripts --no-audit --no-fund pg@8.23.1 playwright@1.64.1
+          node node_modules/.cache/issue640-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Assemble and verify exact sealed RC2
+        run: |
+          python3 tools/prepare.py
+          node tools/verify.cjs
+          node --version
+      - name: Restore schema only into disposable PostgreSQL 18.6
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          test "$(docker exec "$PG_CONTAINER" psql -U postgres -d voltex_copy_social_test -Atc 'SHOW server_version_num')" = 180006
+          docker exec -i "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d voltex_copy_social_test < inputs/schema-only.sql
+      - name: Exact migration, lock failure rollback, retry, 63-table preservation
+        run: node tools/qa-migration.cjs
+      - name: Packaged compiled policy and owner/session authorization
+        working-directory: api-source
+        run: |
+          node node_modules/jest/bin/jest.js --config jest.policy.cjs --runInBand src/shared/__tests__/copyStrategySocials.test.ts --json --outputFile=../evidence/policy.json
+          node node_modules/jest/bin/jest.js --config jest.rc2.cjs --runInBand src/api/routes/__tests__/copyStrategySocials.pg.test.ts --json --outputFile=../evidence/ownership.json
+      - name: Sealed frontend and compiled API on desktop/mobile
+        working-directory: runtime-candidate
+        run: node scripts/qa-copy-socials-browser.cjs
+      - name: Installed frontend with candidate API
+        run: node tools/qa-mixed.cjs
+      - name: Installed API and client rollback on migrated schema
+        run: node tools/qa-rollback.cjs
+      - name: Final artifact integrity after tests
+        run: node tools/verify.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: copy641-exact-rc2-evidence
+          path: |
+            evidence/
+            runtime-candidate/output/copy-socials/
+            inputs/SHA256.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: copy641-exact-rc2-release
+          path: |
+            inputs/VOLTEX-641-api-overlay.tar.gz
+            inputs/VOLTEX-641-frontend.zip
+            inputs/api-manifest.json
+            inputs/frontend-manifest.json
+            inputs/apply-only-socials.sql
+            inputs/source-scope.json
+            inputs/SHA256.json
+          if-no-files-found: error

@@ -1,0 +1,14 @@
+{
+  "frontendPaths": [
+    "frontend/src/lib/kseniaCopyTrading.ts",
+    "frontend/src/pages/CopyTradingPage.tsx",
+    "frontend/src/pages/copy-trading-bolt/StrategySocials.css",
+    "frontend/src/pages/copy-trading-bolt/StrategySocials.tsx",
+    "frontend/src/pages/copy-trading-bolt/components.tsx",
+    "src/shared/copyStrategySocials.ts"
+  ],
+  "PR": 641,
+  "PRHeadUnchanged": "3ab2e32bf783c8d511469dbd38bbe71f85e79630",
+  "sourceCommitObjectOnly": true,
+  "mainOrBranchRefUpdated": false
+}

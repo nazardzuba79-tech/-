@@ -1,0 +1,12 @@
+{
+  "api-manifest.json": "2024ff74919226e6447d5e8943a7bb197ca8ac5253ba136e09a794a43beed2db",
+  "apply-only-socials.sql": "b83f2804a7d022d79497497c8b07ef28ac28be694074026f36566af4dadce52c",
+  "frontend-manifest.json": "bdce75d248eb76ae220042a6f08eb508a5a726f62d1cc70ffc17b4928817e94e",
+  "installed-frontend.zip": "42960720fdddb347c20bdf3ba7d1ac40f24de0278c0484cb3c8c0fcca3d0256d",
+  "installed-runtime.tar.gz": "65b62ba3e2368b27580ab76b5ce019ec2d9f19dbef3b363efe5a8fabc749a78b",
+  "protected-api-hashes.json": "161e6b22cecda21131bf07923f37e706e5e5a83df1372a1d67d07216edb35e15",
+  "schema-only.sql": "b2e4551656e415c191ec7a05d543f505a38849040ac81586269ea5b80ba41709",
+  "source-scope.json": "f9d6f68249a552eac9930acdefa6c703a6cc668d6a561b5aaa5708de8a5e7cf8",
+  "VOLTEX-641-api-overlay.tar.gz": "b9209cac94ba0701df40941399599005075a30bcbb6f45cf0b7bc288ea83d7e7",
+  "VOLTEX-641-frontend.zip": "7a3d8e3e32b0a770e5d0bc1657c16a8df2d722c872bdc7bce8eb8019e06a86f7"
+}
