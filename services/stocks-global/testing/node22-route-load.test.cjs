@@ -89,11 +89,15 @@ test('compiled catalogue-only API permits authenticated identity/readiness but n
     },
     $executeRawUnsafe: async () => { counts.writes++; throw Error('FINANCIAL_WRITE_FORBIDDEN'); },
     $transaction: async () => { counts.transactions++; throw Error('FINANCIAL_TRANSACTION_FORBIDDEN'); },
-    // requireAuth singleSessionRead: the one-query session read, from the rows above.
+    // requireAuth singleSessionRead: the one-query session read (one id, or all of an identity batch), from the rows above.
     $queryRaw: async (_sql, ...values) => {
-      const s = await fakeDb.session.findUnique({where: {id: values[values.length - 1]}}); if (!s) return [];
-      const {contactEmailHash} = require('../../../dist/services/ContactEmailPolicy.js'), event = await fakeDb.auditLog.findFirst({});
-      return [{...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null}];
+      const {contactEmailHash} = require('../../../dist/services/ContactEmailPolicy.js'), rows = [];
+      for (const id of [values[values.length - 1]].flat()) {
+        const s = await fakeDb.session.findUnique({where: {id}}); if (!s) continue;
+        const event = await fakeDb.auditLog.findFirst({});
+        rows.push({...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null});
+      }
+      return rows;
     },
   };
   const cfg = {...config, enabled: false, catalogueEnabled: true, secret: process.env.JWT_SECRET};

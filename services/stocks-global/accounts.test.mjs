@@ -10,6 +10,7 @@ import { identityResolver } from './identity.mjs';
 import { createServer } from './server.mjs';
 import { applyQuote, submit, cancel, setBalances } from './engine.mjs';
 import { CATALOG } from './catalog.mjs';
+import { createHash } from 'node:crypto';
 
 const now=1791569400000,id='BYBIT:AAPLXUSDT';
 const alice={issuer:'fixture-only',subject:'alice'},bob={issuer:'fixture-only',subject:'bob'};
@@ -99,4 +100,17 @@ test('authenticated HTTP separates all account routes, rejects account selectors
     for(const path of ['/api/orders','/api/wallet/balance','/v1/orders','/admin/users'])assert.equal((await fetch(base.replace('/__stocks_global/','')+path,{method:'POST'})).status,404);
     assert.ok(authReads>=12);revoked=true;assert.equal((await get('alice')).status,401);assert.equal((await post('alice',a.token,'cancel',{id:order(2).id})).status,401);
   }finally{await app.close();await new Promise(r=>authority.close(r));await rm(d,{recursive:true,force:true});}
+});
+
+test('account ids stay the plain hash of (issuer, subject); remembering them never skips validation', () => {
+  const plain = (issuer, subject) => createHash('sha256').update(JSON.stringify([issuer, subject])).digest('hex');
+  for (let round = 0; round < 2; round++) for (let n = 0; n < 1100; n++) {
+    const principal = { issuer: 'issuer-' + (n % 3), subject: 'subject-' + n };
+    assert.equal(accountId(principal), plain(principal.issuer, principal.subject));
+  }
+  const known = { issuer: 'issuer-0', subject: 'subject-0' }; accountId(known);
+  for (const bad of [null, {}, { ...known, subject: 'sub ject' }, { ...known, issuer: '' }, { ...known, subject: 'x'.repeat(129) }, { issuer: 'issuer-0', subject: ['subject-0'] }])
+    assert.throws(() => accountId(bad), /AUTH_REQUIRED/);
+  // The two parts never run together: ("a:b", "c") and ("a", "b:c") are different accounts.
+  assert.notEqual(accountId({ issuer: 'a:b', subject: 'c' }), accountId({ issuer: 'a', subject: 'b:c' }));
 });

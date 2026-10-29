@@ -22,11 +22,15 @@ async function fixture(t, { enabled = false, schemaPresent = false, boundUsers =
     auditLog: { findFirst: async () => null },
     $queryRawUnsafe: async sql => { calls.schema.push(sql); if (!schemaPresent) throw Error('MISSING_FINANCIAL_TABLE'); return []; },
     $transaction: async () => { calls.financial++; throw Error('FINANCIAL_ACCESS_FORBIDDEN'); },
-    // requireAuth singleSessionRead: the one-query session read, from the rows above.
+    // requireAuth singleSessionRead: the one-query session read (one id, or all of an identity batch), from the rows above.
     $queryRaw: async (_sql, ...values) => {
-      const s = await prisma.session.findUnique({ where: { id: values[values.length - 1] } }); if (!s) return [];
-      const { contactEmailHash } = require('../../dist/services/ContactEmailPolicy.js'), event = await prisma.auditLog.findFirst({});
-      return [{ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null }];
+      const { contactEmailHash } = require('../../dist/services/ContactEmailPolicy.js'), rows = [];
+      for (const id of [values[values.length - 1]].flat()) {
+        const s = await prisma.session.findUnique({ where: { id } }); if (!s) continue;
+        const event = await prisma.auditLog.findFirst({});
+        rows.push({ ...s, createdAt: null, email: s.user.email, role: null, emailHash: contactEmailHash(s.user.email), contactAction: event?.action ?? null });
+      }
+      return rows;
     },
   };
   for (const name of ['demoBalance', 'stocksTestAccount', 'stocksTestReceipt', 'stocksTestAudit']) Object.defineProperty(prisma, name, { get() { calls.financial++; throw Error('FINANCIAL_ACCESS_FORBIDDEN'); } });

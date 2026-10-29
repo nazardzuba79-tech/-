@@ -130,10 +130,11 @@ jobs:
           services/stocks-global/cash-authority-contract.test.mjs
           services/stocks-global/two-trader-http.test.mjs
           services/stocks-global/account-existing-only.test.mjs
-      - name: Gateway to authority transport and identity multiplexing (no cache, bounded batches)
+      - name: Gateway to authority transport and identity multiplexing (no cache, bounded batches, trader commands judged live)
         run: >-
           node --test
           services/stocks-global/identity-batch.test.mjs
+          services/stocks-global/trader-bearer.test.mjs
           services/stocks-global/authority-adapter.test.mjs
           services/stocks-global/authority-rate-limit.test.mjs
           services/stocks-global/catalogue-version.test.mjs
@@ -179,7 +180,7 @@ jobs:
     # Compiled API + disposable PostgreSQL on the exact runtime.
     # No production-image, ingress, provider or deployment attestation.
     # identity-load.pg.test.cjs holds the 50+2 cadence for a full minute (about 75 s), runs the 50+2
-    # harness schedule through the private ingress with the synthetic stream market (about 35 s), then
+    # harness schedule (order cycle every 4 s) through the private ingress with the synthetic stream market (about 35 s), then
     # goes over the private quota on purpose and waits for the next quota window (about 70 s).
     runs-on: ubuntu-latest
     timeout-minutes: 20

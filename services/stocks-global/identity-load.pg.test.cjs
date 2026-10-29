@@ -177,13 +177,14 @@ test('50 viewers and 2 traders for a full minute stay inside the private authori
 // first measured polls with QUOTE_UNAVAILABLE (viewers) and QUOTE_STALE (trader 0): the warm-up's identity checks
 // outran the gateway's identity budget, the warm-up outlasted the market's demand leases, and the first polls found
 // their symbols cold again. Every job here must finish without an unexpected error, a timeout or a late start.
-// One deviation, the private quota's envelope: the harness's own authority has no ingress, and its trader cadence
-// (state plus limit, cancel, buy, replay, sell, replay every 4 s: 7 private requests) is 210 commands a minute for
-// the two traders before any identity check, more than the reviewed 240/min ceiling leaves (identity takes 60-90 a
-// minute for 50 viewers). Run at that cadence here, both traders got 429 AUTH_RATE_LIMIT at their fifth cycle. The
-// ceiling is not raised for a test (docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md); here the traders poll at the
-// harness cadence and run the harness's order cycle every second poll (every 8 s, 120 commands a minute).
-test('the 50+2 harness schedule on the release chain: warm-up and every measured job finish without an unexpected error', {
+// The trader cadence is the harness's original one: a state read and the whole order cycle (limit, cancel, buy,
+// replay, sell, replay) every 4 s, seven private commands per trader; the private quota stays at 240/min. Before
+// #613 R5 this failed: both traders got 429 AUTH_RATE_LIMIT at their fifth cycle (warm-up 123 + measured 119
+// private requests in one 60 s window), because every trader request also took its own identity check, so the
+// warm-up's sequential trader reads alone spent about 36 identity batches. Now a trader's command is its live
+// identity judgement (authority-adapter.mjs "Trader requests"), and identity batches never take the last minute
+// past Q - Q/16. The order cycle every 8 s is a separately labelled diagnostic in the 50+2 harness, not this test.
+test('the original 50+2 harness schedule (order cycle every 4 s) on the release chain: warm-up and every measured job finish inside the private quota', {
   timeout: 180000, skip: disposableUrl() ? false : 'NOT_RUN: disposable PostgreSQL required',
 }, async t => {
   assert.equal(process.versions.node, '22.23.3');
@@ -236,7 +237,6 @@ test('the 50+2 harness schedule on the release chain: warm-up and every measured
     const token = f.tokens[i], view = 'diag-trader-' + i, answer = await state(stockId, token, view);
     assert.equal(answer.account.canTrade, true);
     if (answer.errors?.[stockId]) throw Error('TRADER_QUOTE_' + answer.errors[stockId]);
-    if (cycle % 2 === 0) return; // the order cycle every 8 s (see above)
     const command = (route, body) => request(route, { token, view, csrf: answer.token, body });
     const submit = async (suffix, side, type, extra = {}) => {
       const order = { id: `rc50-mixed-${i}-${cycle}-${suffix}`, // the harness's ids (at least 16 characters)
@@ -264,16 +264,20 @@ test('the 50+2 harness schedule on the release chain: warm-up and every measured
   const kinds = rows => rows.reduce((count, [, method, url, status]) => { const key = `${method} ${url.replace('/api/v1/stocks-test-cash/', '')} ${status}`; return { ...count, [key]: (count[key] ?? 0) + 1 }; }, {});
   t.diagnostic('PRIVATE_REQUESTS ' + JSON.stringify({ warmUp: kinds(log.filter(([at]) => at < startedAt)), measured: kinds(load) }));
   const summary = { warmMs, jobs: jobs.length, errors: errors.length, firstErrors: errors.slice(0, 8), missed, maxJitterMs: Math.round(maxJitter),
-    p50: Math.round(quantile(latencies, 0.5)), p95: Math.round(quantile(latencies, 0.95)), authorityRequests: load.length, busiestMinute: busiestMinute(load) };
+    p50: Math.round(quantile(latencies, 0.5)), p95: Math.round(quantile(latencies, 0.95)), warmUpRequests: log.length - load.length, authorityRequests: load.length, busiestMinute: busiestMinute(log),
+    busiestIdentityMinute: busiestMinute(load.filter(([, method, url]) => method === 'POST' && url.endsWith('/identities'))),
+    busiestCommandMinute: busiestMinute(load.filter(([, method, url]) => method === 'POST' && url.endsWith('/command'))) };
   t.diagnostic('HARNESS_SCHEDULE ' + JSON.stringify(summary));
   assert.deepEqual(errors, [], 'no unexpected error (QUOTE_UNAVAILABLE, QUOTE_STALE, AUTH_RATE_LIMIT, timeouts included)');
   assert.equal(missed, 0, 'every job started on time and under the in-flight bound');
   assert.equal(denials, VIEWERS);
-  assert.equal(load.filter(([, , , status]) => status === 429).length, 0, 'the private quota never refused the gateway');
+  assert.equal(log.filter(([, , , status]) => status === 429).length, 0, 'the private quota never refused the gateway');
+  assert.ok(summary.busiestMinute <= QUOTA, `busiest minute (warm-up included) ${summary.busiestMinute} of ${QUOTA}`);
   // Exactly the intended orders: each LIMIT cancelled, each MARKET filled once despite its replay; nothing for viewers.
-  const accounts = await f.rows();
+  const accounts = await f.rows(), cycles = i => jobs.filter(job => job.label.startsWith(`trader-${i}-`)).length;
+  assert.deepEqual([cycles(0), cycles(1)], [5, 5]);
   for (const [i, expected] of placed.entries()) {
-    assert.equal(expected.length, 6);
+    assert.equal(expected.length, 3 * cycles(i));
     const orders = Object.fromEntries(accounts.accounts.find(a => a.userId === f.users[i]).ledger.orders.filter(o => o.id.startsWith('rc50-mixed-')).map(o => [o.id, o.status]));
     assert.deepEqual(orders, Object.fromEntries(expected.map(o => [o.id, o.status])));
   }
@@ -328,15 +332,20 @@ test('over the private quota: the excess is refused with 429, nothing refused is
   await Promise.all([storm(0), storm(1), ...viewers.map((viewer, i) => sleep(i * 20).then(() => watch(viewer)))]);
   const log = (await authority.requestLog()).filter(([at]) => at >= startedAt);
   const refused = outcomes.filter(o => o.status === 429), statuses = outcomes.reduce((m, o) => ({ ...m, [o.status + ' ' + (o.error ?? '')]: (m[o.status + ' ' + (o.error ?? '')] ?? 0) + 1 }), {});
-  t.diagnostic('OVER_LIMIT ' + JSON.stringify({ stormMs: until - startedAt, traderRequests: outcomes.length, statuses, viewerStatus, privateRequests: log.length, private429: log.filter(([, , , s]) => s === 429).length }));
+  const commands = log.filter(([, method, url]) => method === 'POST' && url.endsWith('/command'));
+  t.diagnostic('OVER_LIMIT ' + JSON.stringify({ stormMs: until - startedAt, traderRequests: outcomes.length, traderStateReads: outcomes.filter(o => o.route === 'state').length, statuses, viewerStatus, privateRequests: log.length, private429: log.filter(([, , , s]) => s === 429).length, privateCommands: commands.length, privateCommand429: commands.filter(([, , , s]) => s === 429).length }));
   // Refused with 429 by the transport quota, and nothing but 200 or 429 anywhere.
   assert.ok(refused.length > 0 && log.some(([, , , s]) => s === 429), 'the quota was actually exceeded');
   assert.deepEqual(Object.keys(statuses).filter(k => !['200 ', '429 AUTH_RATE_LIMIT', '422 QUOTE_STALE'].includes(k)), [], 'traders: only 200, 429 AUTH_RATE_LIMIT or the market-data refusal');
   assert.ok(outcomes.filter(o => o.status === 429 && o.route !== 'state').length > 0, 'commands themselves were refused by the quota');
   for (const o of refused) assert.ok(Number.isInteger(o.retryAfterMs) && o.retryAfterMs >= 1000 && o.retryAfterMs <= 60000);
   assert.deepEqual(Object.keys(viewerStatus).filter(k => !['200', '429'].includes(k)), [], 'viewers: only 200 or 429');
-  // The gateway never retries a refused command on its own: no more private commands than trader requests.
-  assert.ok(log.filter(([, method, url]) => method === 'POST' && url.endsWith('/command')).length <= outcomes.length);
+  // The gateway never retries a refused command on its own: each command the quota refused is one trader request
+  // answered 429, and no request sends more than its own commands (a state read: its observation and, when that
+  // fails, the failure record; each trader's account binding once). A trader's request carries no separate
+  // identity check, so before #613 R5 the identity batches' 429s used to hide those last ones in this count.
+  assert.ok(commands.filter(([, , , s]) => s === 429).length <= refused.length, 'no refused command was sent again');
+  assert.ok(commands.length <= outcomes.length + outcomes.filter(o => o.route === 'state').length + 2, `${commands.length} commands for ${outcomes.length} trader requests`);
 
   // Service returns after the quota window, on the same processes.
   let back;

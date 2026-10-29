@@ -6,10 +6,20 @@ import { performance } from 'node:perf_hooks';
 import { createState, snapshot, validate, check, SimError } from './engine.mjs';
 
 // The principal comes ONLY from the server's authentication adapter, never a URL/body.
+// The id is a pure function of (issuer, subject); the last ids derived are kept so that a gateway request
+// (which needs it three or four times) hashes once. Validation still runs on every call.
+const derived = new Map();
 export function accountId(principal) {
   check(typeof principal?.issuer === 'string' && principal.issuer.length > 0 && principal.issuer.length <= 512, 'AUTH_REQUIRED');
   check(typeof principal?.subject === 'string' && /^[A-Za-z0-9_.:@-]{1,128}$/.test(principal.subject), 'AUTH_REQUIRED');
-  return createHash('sha256').update(JSON.stringify([principal.issuer, principal.subject])).digest('hex');
+  const key = JSON.stringify([principal.issuer, principal.subject]);
+  let id = derived.get(key);
+  if (id === undefined) {
+    id = createHash('sha256').update(key).digest('hex');
+    if (derived.size >= 1024) derived.delete(derived.keys().next().value);
+    derived.set(key, id);
+  }
+  return id;
 }
 
 export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, beforeRegistrationCommit = () => {}, diagnostics = false } = {}) {

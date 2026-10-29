@@ -23,15 +23,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The original load (each trader's order cycle every 4 s) is the acceptance load. The revised 8 s cycle is
+  # kept as a separately labelled diagnostic and is never the acceptance verdict.
   paired-runs:
-    name: 50+2 paired before/after (2 vCPU, report only)
+    name: 50+2 paired before/after, ${{ matrix.label }} (2 vCPU, report only)
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workload: original-4s
+            label: original 4 s order cycle (acceptance load)
+            pairs: '8'
+          - workload: revised-8s
+            label: revised 8 s order cycle (diagnostic only)
+            pairs: '4'
     env:
       # 8 pairs since 28.10 (was 4): one run's p95 varies by about ±25 %, so the pooled verdict needs more runs;
       # the summary adds the per-run spread, a bootstrap interval and an A/A baseline reference (report only).
-      PAIRS: '8'
+      PAIRS: ${{ matrix.pairs }}
+      WORKLOAD_FLAG: ${{ matrix.workload == 'revised-8s' && '--revised-8s' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -77,7 +90,7 @@ jobs:
           run() {
             local kind=$1 i=$2 flag="" rc=0; [ "$kind" = after ] && flag="--after"
             mkdir -p "$RC50_DIR/runs/$kind-$i"
-            (cd "$RC50_DIR/$kind" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs $flag \
+            (cd "$RC50_DIR/$kind" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs $flag $WORKLOAD_FLAG \
               --root . --pg-bin "$PG_BIN" --out "$RC50_DIR/runs/$kind-$i/out" \
               --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
             echo "$rc" > "$RC50_DIR/runs/$kind-$i/exit-code"
@@ -128,7 +141,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-613-50plus2-${{ github.event.pull_request.head.sha || github.sha }}
+          name: stocks-613-50plus2-${{ matrix.workload }}-${{ github.event.pull_request.head.sha || github.sha }}
           path: output/rc50-613
           retention-days: 14
           if-no-files-found: error

@@ -60,6 +60,26 @@ test('empty-view response metadata retains optional property presence without en
   }
 });
 
+test('an empty viewer is projected without structuredClone: the same values and order, and its inputs untouched', () => {
+  // The market-only view of a viewer, the hub's (frozen, shared) quote, response metadata and the per-request errors.
+  const view = freeze({ ...snapshot(createState(NOW), NOW), account: { id: 'offline-viewer', canTrade: false }, catalogue: [], errors: { [ID]: 'QUOTE_STALE' }, readiness: {}, catalogueVersion: '0123456789abcdef', metrics: { requests: 1 } });
+  const viewBefore = JSON.stringify(view);
+  for (const patch of [{}, { failed: true }, { verified: false }, { marketOpen: false }, { nested: { deep: [1, { two: 2 }], none: undefined } }]) for (const age of [0, 30001, 61001, 200000]) {
+    const q = freeze(quote(patch)), quoteBefore = JSON.stringify(q);
+    const actual = projectViewerQuote(view, ID, q, NOW + age), expected = snapshot({ ...view, quotes: { ...view.quotes, [ID]: q } }, NOW + age);
+    assert.deepEqual(actual, expected);
+    assert.equal(JSON.stringify(actual), JSON.stringify(expected));
+    assert.notEqual(actual.quotes[ID], q); assert.notEqual(actual.wallets, view.wallets); assert.notEqual(actual.errors, view.errors);
+    delete actual.errors[ID]; actual.quotes[ID].prices.USDT.buy = 'changed'; actual.wallets.USDT.cash = 'changed';
+    assert.equal(JSON.stringify(q), quoteBefore); assert.equal(JSON.stringify(view), viewBefore);
+  }
+  // A value that is not plain data goes through structuredClone as before: a Date is copied, a function is refused.
+  const dated = quote({ observedAt: new Date(NOW) }), projected = projectViewerQuote(view, ID, dated, NOW);
+  assert.ok(projected.quotes[ID].observedAt instanceof Date); assert.notEqual(projected.quotes[ID].observedAt, dated.observedAt);
+  assert.equal(JSON.stringify(projected), JSON.stringify(snapshot({ ...view, quotes: { ...view.quotes, [ID]: dated } }, NOW)));
+  assert.throws(() => projectViewerQuote(view, ID, quote({ hook: () => {} }), NOW), error => error.name === 'DataCloneError');
+});
+
 test('every nonempty ledger category retains the original metadata-cloning projection path', () => {
   const full = viewFixture();
   for (const key of ['orders', 'fills', 'positions', 'adjustments']) {

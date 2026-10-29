@@ -124,16 +124,18 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
       const cancellable=['readView','portfolioView','observe'].includes(body.type),controller=new AbortController();
       const disconnected=()=>{if(!res.writableFinished)controller.abort();};
       if(cancellable){req.once('aborted',disconnected);res.once('close',disconnected);if(req.aborted||res.destroyed)controller.abort();}
-      let result;
+      let result,bound:Actor;
       try{
-        const value=actor(req);
+        const value=bound=actor(req);
         result=cancellable||observation
           ? await authority.execute(value,body.type,body.input,{...(cancellable?{signal:controller.signal}:{}),...(body.occurrenceId?{occurrenceId:body.occurrenceId}:{})})
           : await authority.execute(value,body.type,body.input);
       }
       finally{req.off('aborted',disconnected);res.off('close',disconnected);}
       if(res.destroyed)return;
-      res.set('Cache-Control','no-store').json({ value:result,metrics:authority.metrics() });
+      // The actor this command was bound to (the same issuer/subject as GET identity): the gateway
+      // confirms with it that the request it served belongs to that principal (authority-adapter.mjs).
+      res.set('Cache-Control','no-store').json({ value:result,metrics:authority.metrics(),actor:{ issuer:bound.issuer,subject:bound.subject } });
     } catch(error) { if(!res.destroyed)failure(res,error); }
   });
   return router;

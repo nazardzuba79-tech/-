@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAuthorityAdapter } from './authority-adapter.mjs';
+import { accountId } from './accounts.mjs';
 
 // The gateway multiplexes the live identity checks of concurrent requests into one private
 // request. These cases pin what that may never become: a cache, a mix-up between bearers,
@@ -64,25 +65,25 @@ test('the same bearer twice in one unsent batch is checked once and answers both
   assert.equal(b.subject, subjectOf(bearer(8).slice(7)));
 });
 
-test('the identity budget follows the private quota: a burst of 3Q/8, then Q/160 per second', async t => {
+test('the identity budget follows the private quota: a burst of Q/4, then Q/160 per second', async t => {
   const sent = [];
   const adapter = fixture(async (_url, options) => { sent.push(performance.now()); return answer(JSON.parse(options.body).tokens); });
   t.after(() => adapter.close());
-  // Default quota 240: bursts of 90, 1.5 batches per second; at most 3/4 of the quota in any minute.
-  assert.deepEqual(adapter.metrics().identityBudget, { quota: 240, burst: 90, perSecond: 1.5 });
+  // Default quota 240: bursts of 60, 1.5 batches per second; at most 5/8 of the quota in any minute.
+  assert.deepEqual(adapter.metrics().identityBudget, { quota: 240, burst: 60, perSecond: 1.5, ceiling: 225, privateLastMinute: 0, traderBearers: 0, deferred: 0 });
   // 100 concurrent requests travel in 2 batches (64 + 36) at once.
   const burst = await Promise.all(Array.from({ length: 100 }, (_, n) => identify(adapter, bearer(1000 + n))));
   assert.equal(burst.length, 100); assert.equal(sent.length, 2);
-  // Sequential single requests: the rest of the burst (88) at once, then 1.5 per second.
-  for (let n = 0; n < 88; n++) await identify(adapter, bearer(n));
+  // Sequential single requests: the rest of the burst (58) at once, then 1.5 per second.
+  for (let n = 0; n < 58; n++) await identify(adapter, bearer(n));
   const started = performance.now();
   for (let n = 0; n < 3; n++) await identify(adapter, bearer(500 + n));
-  assert.equal(sent.length, 93);
+  assert.equal(sent.length, 63);
   const elapsed = performance.now() - started;
   assert.ok(elapsed >= 1300 && elapsed < 2400, `3 paced batches after the burst took ${elapsed.toFixed(0)} ms`);
-  // Token bucket: within any span of T ms at most 90 + 1.5·T/1000 batches (5 ms timer slack).
+  // Token bucket: within any span of T ms at most 60 + 1.5·T/1000 batches (5 ms timer slack).
   for (let i = 0; i < sent.length; i++) for (let j = i + 1; j < sent.length; j++)
-    assert.ok(j - i + 1 <= 90 + 1.5 * (sent[j] - sent[i] + 5) / 1000, `batches ${i}..${j} within ${(sent[j] - sent[i]).toFixed(1)} ms`);
+    assert.ok(j - i + 1 <= 60 + 1.5 * (sent[j] - sent[i] + 5) / 1000, `batches ${i}..${j} within ${(sent[j] - sent[i]).toFixed(1)} ms`);
 });
 
 test('a lower announced quota (RateLimit-Limit 120) halves the identity budget; nonsense values are ignored', async t => {
@@ -93,16 +94,43 @@ test('a lower announced quota (RateLimit-Limit 120) halves the identity budget; 
   });
   t.after(() => adapter.close());
   await identify(adapter, bearer(1));
-  assert.deepEqual(adapter.metrics().identityBudget, { quota: 120, burst: 45, perSecond: 0.75 });
+  assert.deepEqual(adapter.metrics().identityBudget, { quota: 120, burst: 30, perSecond: 0.75, ceiling: 112, privateLastMinute: 1, traderBearers: 0, deferred: 0 });
   for (const value of ['999', '60', 'unlimited', '']) { limit = value; await identify(adapter, bearer(2)); assert.equal(adapter.metrics().identityBudget.quota, 120, value); }
   limit = '120';
-  // Four batches so far against the burst of 45 (the cap applies from the second one); 41 more spend it,
+  // Four batches so far against the burst of 30 (the cap applies from the second one); 26 more spend it,
   // after that 0.75 per second.
-  for (let n = 0; n < 41; n++) await identify(adapter, bearer(100 + n));
+  for (let n = 0; n < 26; n++) await identify(adapter, bearer(100 + n));
   const started = performance.now();
   for (let n = 0; n < 2; n++) await identify(adapter, bearer(200 + n));
   const elapsed = performance.now() - started;
   assert.ok(elapsed >= 1900 && elapsed < 3000, `two paced batches at 0.75 per second took ${elapsed.toFixed(0)} ms`);
+});
+
+test('commands count in the last minute: a batch never takes it past Q - Q/16; a check that cannot wait for room gets 429', async t => {
+  const sent = [];
+  const adapter = fixture(async (url, options) => {
+    sent.push(url.endsWith('/identities') ? 'batch' : 'command');
+    if (url.endsWith('/identities')) return answer(JSON.parse(options.body).tokens);
+    const { type } = JSON.parse(options.body);
+    return new Response(JSON.stringify({ value: type === 'ensure' ? { id: accountId({ issuer: ISSUER, subject: subjectOf(bearer(1).slice(7)) }) } : { read: true }, metrics: {} }));
+  });
+  t.after(() => adapter.close());
+  // One batch, an account handle and 222 reads: 224 private requests in the last minute.
+  const { waiting } = await adapter.runWithRequest({ headers: { authorization: bearer(1) } }, async () => {
+    const handle = await adapter.forPrincipal(await adapter.authenticate(), { existingOnly: true });
+    for (let n = 0; n < 222; n++) await handle.execute('read');
+    assert.equal(adapter.metrics().identityBudget.privateLastMinute, 224);
+    // The 225th may be a batch (225 of 240 is the ceiling); the bucket still holds tokens.
+    await identify(adapter, bearer(2));
+    assert.deepEqual([sent.filter(kind => kind === 'batch').length, adapter.metrics().identityBudget.privateLastMinute], [2, 225]);
+    // A command is never held back (226). The next check cannot go before the oldest request leaves the minute,
+    // about 60 s away, far past its 3 s deadline: it is refused at once as the ingress would (429, retry after).
+    await handle.execute('read');
+    return { waiting: identify(adapter, bearer(3)).then(() => 'answered', error => [error.code, error.retryAfterMs]) };
+  });
+  const [code, retryAfterMs] = await waiting;
+  assert.equal(code, 'AUTH_RATE_LIMIT'); assert.ok(retryAfterMs >= 59000 && retryAfterMs <= 60000, `retry after ${retryAfterMs} ms`);
+  assert.deepEqual([sent.filter(kind => kind === 'batch').length, adapter.metrics().identityBudget.privateLastMinute], [2, 226]);
 });
 
 test('answers leave with the spacing in which their requests arrived, never before their own check', async t => {
@@ -110,8 +138,8 @@ test('answers leave with the spacing in which their requests arrived, never befo
   const adapter = fixture(async (_url, options) => { sent.push({ at: performance.now(), tokens: JSON.parse(options.body).tokens }); return answer(JSON.parse(options.body).tokens); });
   t.after(() => adapter.close());
   // Spend the burst so the next requests wait for one send slot together.
-  for (let n = 0; n < 90; n++) await identify(adapter, bearer(2000 + n));
-  assert.equal(sent.length, 90);
+  for (let n = 0; n < 60; n++) await identify(adapter, bearer(2000 + n));
+  assert.equal(sent.length, 60);
   const before = sent.length, arrivals = [], answers = [];
   const waiting = [0, 1, 2, 3].map(n => new Promise(resolve => setTimeout(resolve, n * 100)).then(() => {
     arrivals[n] = performance.now(); return identify(adapter, bearer(3000 + n)).then(() => { answers[n] = performance.now(); });
@@ -134,12 +162,12 @@ test('a waiting request that is aborted fails closed at once and is never sent',
     await new Promise(resolve => releases.push(resolve)); return answer(tokens);
   });
   t.after(() => adapter.close());
-  // Ninety batches in flight spend the burst; the next request waits for a send slot.
+  // Sixty batches in flight spend the burst; the next request waits for a send slot.
   const held = [];
-  for (let n = 0; n < 90; n++) { held.push(identify(adapter, bearer(100 + n))); await new Promise(resolve => setImmediate(resolve)); }
+  for (let n = 0; n < 60; n++) { held.push(identify(adapter, bearer(100 + n))); await new Promise(resolve => setImmediate(resolve)); }
   const held2 = identify(adapter, bearer(101));
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(calls.length, 90);
+  assert.equal(calls.length, 60);
   const controller = new AbortController(), started = performance.now();
   const waiting = identify(adapter, bearer(3), { signal: controller.signal });
   controller.abort();
@@ -182,16 +210,16 @@ test('a batch that never answers ends at the request deadline; close() refuses w
   assert.ok(elapsed >= 2900 && elapsed < 3500, `deadline after ${elapsed.toFixed(0)} ms`);
   // Spend every send slot, then close with one request still waiting for a slot.
   const pending = [];
-  // The first batch timed out 3 s ago; 89 tokens were left and 4.5 came back (capped at 90): 90 more leave.
-  for (let n = 0; n < 90; n++) { pending.push(identify(adapter, bearer(200 + n))); await new Promise(resolve => setImmediate(resolve)); }
+  // The first batch timed out 3 s ago; 59 tokens were left and 4.5 came back (capped at 60): 60 more leave.
+  for (let n = 0; n < 60; n++) { pending.push(identify(adapter, bearer(200 + n))); await new Promise(resolve => setImmediate(resolve)); }
   const waiting = identify(adapter, bearer(4));
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(calls, 91);
+  assert.equal(calls, 61);
   const closing = performance.now();
   await adapter.close();
   assert.ok(performance.now() - closing < 500, 'close does not wait for unanswered identity batches');
   await assert.rejects(waiting, error => error.code === 'ACCOUNT_UNAVAILABLE');
   for (const request of pending) await assert.rejects(request, error => error.code === 'AUTH_UNAVAILABLE');
-  assert.equal(calls, 91);
+  assert.equal(calls, 61);
   await assert.rejects(identify(adapter, bearer(5)), error => error.code === 'ACCOUNT_UNAVAILABLE');
 });

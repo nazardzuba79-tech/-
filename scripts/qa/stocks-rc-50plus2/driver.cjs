@@ -5,7 +5,11 @@ const assert=require('node:assert/strict'),{performance}=require('node:perf_hook
 // traders alone made 210 private authority requests a minute, plus 60-90 identity batches for the viewers: about
 // 300 against the release ingress's reviewed 240/min ceiling (docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md).
 // Going over that ceiling on purpose is a separate scenario (services/stocks-global/identity-load.pg.test.cjs).
-const PLAN=Object.freeze({warmupMs:5000,measureMs:20000,cryptoPeriodMs:250,viewerPeriodMs:1000,traderPeriodMs:4000,traderOrderEvery:2,timeoutMs:3000,maxJitterMs:250,maxInflight:80,viewers:50,traders:2});
+// The acceptance load is the original one: each trader reads its state and runs the order cycle every 4 s.
+// RC50_REVISED_8S=1 (diagnostic-run-613.cjs --revised-8s) runs the cycle on every second read, every 8 s:
+// a separately labelled diagnostic, never the acceptance verdict.
+const REVISED_8S=process.env.RC50_REVISED_8S==='1',WORKLOAD=REVISED_8S?'revised-8s-diagnostic':'original-4s';
+const PLAN=Object.freeze({warmupMs:5000,measureMs:20000,cryptoPeriodMs:250,viewerPeriodMs:1000,traderPeriodMs:4000,traderOrderEvery:REVISED_8S?2:1,timeoutMs:3000,maxJitterMs:250,maxInflight:80,viewers:50,traders:2});
 const traderOrders=cycle=>cycle%PLAN.traderOrderEvery===PLAN.traderOrderEvery-1;
 const trace=Array.from({length:PLAN.measureMs/PLAN.cryptoPeriodMs},(_,i)=>({at:i*PLAN.cryptoPeriodMs,cycle:i,operations:['POST demo/orders LIMIT BTC/USDT BUY 0.01 @100','GET demo/orders/open','DELETE exact created order','GET demo/balances']}));
 const traceSha=sha(JSON.stringify(trace));
@@ -103,4 +107,4 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
  if(mixed&&!warmup&&r.viewerDenials!==50)r.viewerMutations++;
  return r;
 }
-module.exports={PLAN,trace,traceSha,window,invariants,decimal,traderOrders};
+module.exports={PLAN,WORKLOAD,trace,traceSha,window,invariants,decimal,traderOrders};

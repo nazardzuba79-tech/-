@@ -176,11 +176,16 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     }
     return Object.keys(readiness).length?{readiness}:{};
   };
-  const status=async(ctx,committed,signal)=>{const snapshot=committed??(!financialEnabled||accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()));hub.setStockOrders?.(ctx.id,snapshot.orders??[]);const invalid={};if(hub.quoteValid){snapshot.quotes={...snapshot.quotes};for(const[id,q]of Object.entries(snapshot.quotes))if(!hub.quoteValid(q,id)){delete snapshot.quotes[id];invalid[id]='QUOTE_UNAVAILABLE';}}return{...snapshot,...(accounts?{account:accountView(ctx)}:{}),catalogue,catalogueVersion,errors:{...ctx.errors,...invalid},...readinessView(ctx),metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}};};
+  // The process figures in every state answer are read at most once a second (they were two system calls per answer).
+  let processFigures=null,processFiguresAt=0;
+  const processStats=()=>{const at=performance.now();if(!processFigures||at-processFiguresAt>=1000){processFigures={rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage()};processFiguresAt=at;}return processFigures;};
+  const status=async(ctx,committed,signal)=>{const snapshot=committed??(!financialEnabled||accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()));hub.setStockOrders?.(ctx.id,snapshot.orders??[]);const invalid={};if(hub.quoteValid){snapshot.quotes={...snapshot.quotes};for(const[id,q]of Object.entries(snapshot.quotes))if(!hub.quoteValid(q,id)){delete snapshot.quotes[id];invalid[id]='QUOTE_UNAVAILABLE';}}return{...snapshot,...(accounts?{account:accountView(ctx)}:{}),catalogue,catalogueVersion,errors:{...ctx.errors,...invalid},...readinessView(ctx),metrics:{...hub.metrics,...processStats(),polling:now()-ctx.lease<12000}};};
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);catalogueVersion=catalogueVersionOf(catalogue);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async(req,signal)=>{
     if(!accounts)return contexts.get('legacy');
-    const principal=await authenticate(req,{signal});
+    // A trader's bearer that the authority already confirmed may start without a separate identity
+    // check; its command (or confirm() before the answer) is the live judgement (authority-adapter.mjs).
+    const principal=await authenticate(req,{signal,...(accountAuthority?{deferred:true}:{})});
     check(!signal.aborted,'AUTH_UNAVAILABLE');
     const id=accountId(principal);
     if(!contexts.has(id)){
@@ -193,6 +198,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     const ctx=contexts.get(id);ctx.accessed=now();ctx.principal=principal;
     // Every request rechecks the trusted identity. Client-provided roles never authorize trade.
     ctx.ownerMayTrade = financialEnabled && (twoTraderMode?mayTrade(principal):!ownerOnlyMode || principal.subject === tradeOwnerSubject);
+    if(ctx.ownerMayTrade)accountAuthority?.remember?.();
     return ctx;
   };
   const requireAccount=async ctx=>{
@@ -265,6 +271,8 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
       cleanupRequest=()=>{req.off('aborted',onAborted);res.off('close',onRequestClose);};
       if(req.aborted||res.destroyed)onAborted();
       const ctx=await getContext(req,requestAbort.signal);if(res.destroyed)return;
+      // Every answer below follows a live identity judgement made after this request arrived.
+      const confirmed=()=>accountAuthority?.confirm?.({signal:requestAbort.signal});
       // Bind revalidation to this request's initial trusted identity, never a
       // mutable context or a second allowed identity returned for the same
       // credential. The request-start auth wait stays outside the serialized
@@ -299,7 +307,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
             }catch(e){if(readAbort.signal.aborted)return;delete view.quotes[id];view.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}
           }
           const body={...view,token:ctx.token};if(u.searchParams.get('catalogue')===body.catalogueVersion)delete body.catalogue;
-          if(!res.destroyed)send(res,200,body);return;
+          await confirmed();if(!res.destroyed)send(res,200,body);return;
         }finally{res.off('close',onClose);}
       }
       if(req.method==='GET'&&u.pathname===API+'portfolio'){
@@ -307,22 +315,22 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         if(res.destroyed)return;
         const abort=new AbortController(),onClose=()=>{if(!res.writableFinished)abort.abort();};
         res.once('close',onClose);const timer=setTimeout(()=>abort.abort(),2500);
-        try{const view=await portfolio(ctx,abort.signal);if(authorize&&ctx.ownerMayTrade)await authorize();if(!res.destroyed)send(res,200,view);}
+        try{const view=await portfolio(ctx,abort.signal);if(authorize&&ctx.ownerMayTrade)await authorize();await confirmed();if(!res.destroyed)send(res,200,view);}
         finally{clearTimeout(timer);res.off('close',onClose);}return;
       }
-      if(req.method==='DELETE'&&u.pathname===API+'lease'){check(req.headers['x-stocks-token']===ctx.token,'TOKEN_REQUIRED');if(u.searchParams.get('id')===ctx.selected&&(req.headers['x-stocks-view']??'legacy-http')===ctx.demandView)release(ctx);send(res,200,{released:true});return;}
+      if(req.method==='DELETE'&&u.pathname===API+'lease'){check(req.headers['x-stocks-token']===ctx.token,'TOKEN_REQUIRED');await confirmed();if(u.searchParams.get('id')===ctx.selected&&(req.headers['x-stocks-view']??'legacy-http')===ctx.demandView)release(ctx);send(res,200,{released:true});return;}
       if(req.method==='GET'&&u.pathname===API+'history'){
         sourceAllowed(u.searchParams.get('id'));
         const abort=new AbortController(),onClose=()=>{if(!res.writableFinished)abort.abort();};
         res.once('close',onClose);if(res.destroyed)abort.abort();
         try{
           const page=await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'),{signal:abort.signal});
-          if(abort.signal.aborted||res.destroyed)return;
+          await confirmed();if(abort.signal.aborted||res.destroyed)return;
           let body=historyWire.get(page);if(!body){const started=performance.now();body=Buffer.from(JSON.stringify(page));historyWire.set(page,body);hub.metrics.historySerializations++;hub.metrics.historySerializeMs+=performance.now()-started;}
           res.writeHead(200,{'Content-Type':'application/json','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);
         }finally{res.off('close',onClose);}return;
       }
-      if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
+      if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();await confirmed();send(res,200,{catalogue});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');
       // Refuse every financial/observation command before body, CSRF token,
       // account binding or authority work; enforced even for both trusted traders.
@@ -346,11 +354,14 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
         try{committed={snapshot:await refreshContext(ctx,ctx.selected,false,abort.signal,beforeCommand)};if(res.destroyed)return;}
         finally{res.off('close',onClose);}
       }
-      else throw new SimError('ROUTE_NOT_FOUND');send(res,200,{...await status(ctx,committed?.snapshot),result});return;
+      else throw new SimError('ROUTE_NOT_FOUND');const body={...await status(ctx,committed?.snapshot),result};await confirmed();send(res,200,body);return;
     }
     check(req.method==='GET'&&!/^\/(api|v1|v2|admin|__stocks_simulator)(\/|$)/.test(u.pathname),'ROUTE_NOT_FOUND');
     let relative;try{relative=decodeURIComponent(u.pathname);}catch{throw new SimError('ROUTE_NOT_FOUND');}let path=resolve(dist,'.'+relative);check(path.startsWith(dist+sep)||path===dist,'ROUTE_NOT_FOUND');if(!extname(path))path=resolve(dist,'index.html');check((await stat(path)).isFile(),'ROUTE_NOT_FOUND');res.writeHead(200,{'Content-Type':MIME[extname(path)]||'application/octet-stream','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(await readFile(path));
   }catch(e){if(res.destroyed)return;if(!res.headersSent){
+    // An error answer too follows a live judgement of a trader request that started without a separate check.
+    if(!(e instanceof SimError&&e.code.startsWith('AUTH_')))try{await accountAuthority?.confirm?.();}catch(error){e=error;}
+    if(res.destroyed||res.headersSent)return;
     // Advisory minimum wait for a manual read probe, never permission to replay
     // a trade. Unknown mutation outcomes deliberately have no retry hint.
     const retryAfterMs=e instanceof SimError?(e.code==='AUTH_RATE_LIMIT'?(Number.isInteger(e.retryAfterMs)?Math.max(1000,Math.min(60000,e.retryAfterMs)):60000):e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;

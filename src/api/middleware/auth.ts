@@ -1,7 +1,8 @@
 import { isBlockedContactEmail, isRevokedContactToken, contactEmailHash, CONTACT_EMAIL_BLOCKED, CONTACT_EMAIL_UNBLOCKED } from '../../services/ContactEmailPolicy';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { createPublicKey, createSecretKey, type KeyObject } from 'crypto';
+import { createPublicKey, createSecretKey } from 'crypto';
+import type { KeyObject } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 export interface AuthedRequest extends Request {
@@ -102,6 +103,12 @@ function verifyBearer(header: string, key: string | KeyObject): BearerClaims | n
   return payload;
 }
 
+/** The normalized key of the Stocks-prepared paths, loaded only when one is built. */
+function stocksVerificationKey(): KeyObject {
+  const { createPublicKey, createSecretKey } = require('crypto') as typeof import('crypto');
+  try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); }
+}
+
 /** Real per-session auth: verifies the JWT, then (for any token carrying a
  * `sid` claim — every token issued since the Session model existed)
  * checks that session hasn't been revoked, so "sign out this device" in
@@ -111,9 +118,7 @@ function verifyBearer(header: string, key: string | KeyObject): BearerClaims | n
  * cannot keep access through legacy tokens. */
 export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = false, singleSessionRead = false }: { prepareVerificationKey?: boolean; singleSessionRead?: boolean } = {}) {
   // Stocks opt-in only; the default auth path keeps the original string key.
-  const verificationKey = prepareVerificationKey
-    ? (() => { const { createPublicKey, createSecretKey } = require('crypto') as typeof import('crypto'); try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); } })()
-    : JWT_SECRET!;
+  const verificationKey = prepareVerificationKey ? stocksVerificationKey() : JWT_SECRET!;
   return async function (req: AuthedRequest, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
@@ -190,7 +195,7 @@ export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = fal
  * verifiedBearerAtUse) or the status it would have answered. Nothing is kept between calls. */
 export function requireAuthBatch(prisma: PrismaClient) {
   const single = requireAuth(prisma, { prepareVerificationKey: true, singleSessionRead: true });
-  const verificationKey = (() => { try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); } })();
+  const verificationKey = stocksVerificationKey();
   return async function (tokens: string[]): Promise<Array<AuthedRequest | { status: number }>> {
     const requests = tokens.map(token => ({ headers: { authorization: 'Bearer ' + token } }) as unknown as AuthedRequest);
     const results: Array<AuthedRequest | { status: number } | undefined> = new Array(tokens.length);
