@@ -60,9 +60,10 @@ const STORE_TOKEN = 'synthetic-local-only-listings-secret-0602';
 const file = JSON.parse(fs.readFileSync(path.join(root, 'config/test-markets/qvtr-20261028.draft.json'), 'utf8'));
 const logoPath = path.join(root, 'config/test-markets/qvtr-20261028.logo.svg');
 const AT = Date.parse(file.listingAt), HOUR = 3_600_000, DAY = 24 * HOUR;
-// Clock fixture is TWO DAYS BEFORE QVTR opening, even when this test runs years later.
+// Use the interior of a day, not exactly 48 h: a ticking browser legitimately
+// renders 01 day immediately after the 48 h boundary. Test rollover separately.
 // All clocks below are confined to localhost Chromium, workerd and the local admin router.
-const QA_PRELISTING_NOW = AT - 2 * DAY;
+const QA_PRELISTING_NOW = AT - 2 * DAY - 6 * HOUR;
 const DATE_LINE = '28.10.2026 — 13:00 UTC / 16:00 МСК';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' };
 fs.mkdirSync(output, { recursive: true });
@@ -171,9 +172,11 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       if (offset) {
         const RealDate = Date;
         const realNow = RealDate.now.bind(RealDate);
+        const qaClock = { offset };
+        globalThis.__voltexQaClock = qaClock;
         class FixtureDate extends RealDate {
-          constructor(...args) { if (args.length === 0) super(realNow() + offset); else super(...args); }
-          static now() { return realNow() + offset; }
+          constructor(...args) { if (args.length === 0) super(realNow() + qaClock.offset); else super(...args); }
+          static now() { return realNow() + qaClock.offset; }
         }
         globalThis.Date = FixtureDate;
       }
@@ -481,6 +484,49 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         assert.equal(await row.locator('img').first().getAttribute('src'), file.logo);
         await row.scrollIntoViewIfNeeded();
         await shot(page, `markets-${width}.png`);
+        await page.context().close();
+      });
+    }
+
+    /* Rollover and opening in the SAME mounted page. Both the served Worker
+     * responses and the browser use this one adjustable, still-ticking clock.
+     * Never advance the local persistent Worker or mutate a listing to test time. */
+    for (const width of [1440, 390]) {
+      await step(`clock boundaries ${width}: 02 days → 01 day 23 hours, then countdown → chart without reload`, async () => {
+        const clock = { offset: AT - 2 * DAY - HOUR - Date.now(), now() { return Date.now() + this.offset; } };
+        const page = await newPage(A.origin, width, 'user', clock);
+        const candleResponses = [];
+        page.on('response', async (r) => {
+          if (/QVTR-USDT\/candles|spot-candles\/QVTR/i.test(r.url())) candleResponses.push(await r.json().catch(() => null));
+        });
+        const advanceTo = async (at) => {
+          clock.offset = at - Date.now();
+          await page.evaluate((offset) => { globalThis.__voltexQaClock.offset = offset; }, clock.offset);
+        };
+        await page.goto(`${A.origin}/trade?pair=QVTR%2FUSDT`);
+        if (width < 600) await page.locator('#mobile-trade-chart').click({ timeout: 20000 });
+        const card = page.locator('.vta-prelisting[data-countdown="running"]');
+        await card.locator('.vta-countdown').waitFor({ timeout: 20000 });
+        assert.equal(await card.locator('.vta-countdown-cell strong').first().innerText(), '02');
+        await advanceTo(AT - 2 * DAY + 2000);
+        await page.waitForFunction(() => {
+          const cells = [...document.querySelectorAll('.vta-countdown-cell strong')].map((el) => el.textContent);
+          return cells[0] === '01' && cells[1] === '23';
+        }, null, { timeout: 10000 });
+        await shot(page, `exchange-day-rollover-${width}.png`);
+        // Approach opening but let real elapsed time cross it; no reload or
+        // direct component/store calls may manufacture the transition.
+        await advanceTo(AT - 8000);
+        await page.waitForFunction(() => {
+          const cells = [...document.querySelectorAll('.vta-countdown-cell strong')].map((el) => el.textContent);
+          return cells.length === 4 && cells.slice(0, 3).every((value) => value === '00') && Number(cells[3]) > 0 && Number(cells[3]) <= 8;
+        }, null, { timeout: 5000 });
+        assert.ok(clock.now() < AT, 'countdown must still be visible before opening');
+        await page.locator('.managed-demo-chart canvas').first().waitFor({ timeout: 30000 });
+        assert.ok(clock.now() >= AT, 'chart must not appear early');
+        assert.equal(await page.locator('.vta-prelisting').count(), 0);
+        assert.ok(candleResponses.filter(Boolean).flatMap((b) => b.candles || []).some((c) => c.open === 0.014), 'opening candle must start at canonical 0.014');
+        await shot(page, `exchange-opening-transition-${width}.png`);
         await page.context().close();
       });
     }
