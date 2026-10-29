@@ -111,7 +111,7 @@ export function BankingPage() {
     try {
       await bankingApi.createPlacement({ programId, asset, amount, idempotencyKey: crypto.randomUUID() });
       setConfirmOpen(false);
-      setSuccess('Размещение создано. Данные сохранены в Banking ledger.');
+      setSuccess('Размещение создано. Оно появилось в разделе «Мои размещения».');
       setAmount('');
       setCalculation(null);
       setState(await bankingApi.state());
@@ -142,7 +142,7 @@ export function BankingPage() {
         <section className="banking-summary" aria-label="Обзор Banking & Earn">
           <article><span>Всего в Earn</span><strong>{state?.summary.totalUsd === null ? '—' : `$${bankingNumber(state?.summary.totalUsd)}`}</strong><small>Текущая справочная оценка в USD</small></article>
           <article><span>Начислено</span><strong>{state?.summary.accruedUsd === null ? '—' : `$${bankingNumber(state?.summary.accruedUsd)}`}</strong><small>За завершённые календарные месяцы</small></article>
-          <article><span>Активные размещения</span><strong>{state?.summary.activeCount ?? (loading ? '—' : '0')}</strong><small>Данные из Banking ledger</small></article>
+          <article><span>Активные размещения</span><strong>{state?.summary.activeCount ?? (loading ? '—' : '0')}</strong><small>По данным вашего счёта Banking</small></article>
         </section>
 
         <section className="banking-section">
@@ -166,7 +166,7 @@ export function BankingPage() {
         </section>
 
         <section className="banking-section" id="banking-calculator">
-          <div className="banking-heading"><div><h2>Калькулятор дохода</h2><p>Расчёт выполняется на сервере через BigNumber и учитывает только завершённые календарные месяцы.</p></div></div>
+          <div className="banking-heading"><div><h2>Калькулятор дохода</h2><p>Расчёт выполняется на сервере и учитывает только завершённые календарные месяцы.</p></div></div>
           <div className="banking-calculator">
             <div className="banking-form">
               <label>Программа<select value={programId} onChange={(event) => setProgramId(event.target.value as BankingProgramId)}>{config?.programs.map((item) => <option key={item.id} value={item.id}>{programLabel(item.id)} · {percent(item.monthlyRate)} в месяц</option>)}</select></label>
