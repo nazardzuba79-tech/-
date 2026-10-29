@@ -232,7 +232,7 @@ function provenance(){
    active=startWorker(name,50,gen,market);const info=await active.init();
    const warmup=await window(info,{arm:name,warmup:true,signal:controller.signal});json(name+'-warmup.json',warmup);
    if(warmup.timeouts||warmup.unexpectedErrors||warmup.missedJobs)throw Error('WARMUP_FAILED_'+name);
-   if(PUSH&&name==='mixed')activePush=await openPushViewers(info,{signal:controller.signal});
+   if(PUSH&&name==='mixed'){activePush=await openPushViewers(info,{signal:controller.signal});activePush.startMeasurement();}
    await active.rpc('timings');
    const before=await active.rpc('snapshot'),metricsBefore=await active.rpc('metrics'),hostBefore=hostMetrics();
    if(market)metricsBefore.market=await market.rpc('snapshot');
