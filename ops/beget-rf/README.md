@@ -1,3 +1,7 @@
+## Current verification — 29 October 2026
+
+See [Issue636 evidence and two nonfinancial GET proposal](../../docs/qa/beget-rf/verification-20261029.md). Named RF ISP probes:66 bounded HTTPS GETs. The prior five-rule/19-test proposal is superseded: Banking state GET accrues ledger entries and strategy GETs may append modeled history. The final candidate admits only config/referral GET|HEAD; production unchanged. Ordinary non-ADMIN full-session QA and separate approval for other side effects remain necessary. No API/DB/Worker/financial-code release.
+
 # VOLTEX Beget — active opaque RU gateway
 
 Recorded 27 October2026 on owner branch `work/beget-rf-gateway-preflight-20261026`.

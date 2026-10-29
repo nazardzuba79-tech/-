@@ -1,0 +1,18 @@
+{
+  "vantage": "Work cloud Chrome, not Russian ISP",
+  "secureLogin": "submitted",
+  "accountClass": "ADMIN-only navigation observed; not ordinary-user qualification",
+  "serverRoleEvidence": "Deployed Nav6118e18e renders /admin only after api.getMe().isAdmin=true",
+  "futuresReadonlyRender": {
+    "chartCanvases": 11,
+    "orderbookAndMarketReferenceVisible": true,
+    "existingPositionsVisible": true
+  },
+  "financialCommandsExecuted": false,
+  "adminPageOpened": false,
+  "logoutExecuted": true,
+  "postLogoutWallet": "ordinary login required",
+  "ordinaryUserProtectedDesktop": "NOT_VERIFIED",
+  "protectedMobile": "NOT_VERIFIED; no supported viewport control of this authenticated browser",
+  "personalDataPublished": false
+}

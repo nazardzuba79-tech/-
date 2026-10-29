@@ -621,18 +621,6 @@
   ],
   [
     "GET",
-    "/banking/state"
-  ],
-  [
-    "GET",
     "/banking/referral"
-  ],
-  [
-    "GET",
-    "/copy-trading/nazar"
-  ],
-  [
-    "GET",
-    "/copy-trading/ksenia"
   ]
 ]

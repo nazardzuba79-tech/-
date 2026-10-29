@@ -7,8 +7,7 @@ from pathlib import Path
 from endpoint import route_pattern
 
 BASE_SHA256 = '12ff7c12a2039d6086affed9ab65adf71c69339936494f309d2dfaa2b02161f6'
-READS = ('/banking/config', '/banking/state', '/banking/referral',
-         '/copy-trading/nazar', '/copy-trading/ksenia')
+READS = ('/banking/config', '/banking/referral')
 LINES = ''.join('  ~^(GET|HEAD):/api/v1' + route_pattern(path) + '$ 1;\n' for path in READS)
 MARKER = 'map "$request_method:$uri" $voltex_ru_api_allowed {\n  default 0;\n'
 

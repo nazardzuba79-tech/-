@@ -1,0 +1,28 @@
+Previous, superseded scope: run40839379410 / job123331777268.
+Test-step transcript; trailing whitespace normalized. Original raw log/artifact remains on GitHub.
+
+test_config_drift_or_duplicate_rules_refused (test_customer_reads.CustomerReadPolicy.test_config_drift_or_duplicate_rules_refused) ... ok
+2026-10-29T08:03:40.6024742Z test_exact_diff_guard_and_repeat_are_deterministic (test_customer_reads.CustomerReadPolicy.test_exact_diff_guard_and_repeat_are_deterministic) ... ok
+2026-10-29T08:03:40.6191231Z test_five_exact_reads_reach_existing_authorizing_api (test_customer_reads.CustomerReadPolicy.test_five_exact_reads_reach_existing_authorizing_api) ... ok
+2026-10-29T08:03:40.6195731Z test_generated_checkpoint_matches_policy (test_customer_reads.CustomerReadPolicy.test_generated_checkpoint_matches_policy) ... ok
+2026-10-29T08:03:40.6304914Z test_no_new_commands_or_prefix_wildcards (test_customer_reads.CustomerReadPolicy.test_no_new_commands_or_prefix_wildcards) ... ok
+2026-10-29T08:03:40.6333008Z test_unrelated_existing_reads_preserved (test_customer_reads.CustomerReadPolicy.test_unrelated_existing_reads_preserved) ... ok
+2026-10-29T08:03:40.8582470Z test_admin_internal_and_unreviewed_kyc_never_forward (test_customer_read_transport.CustomerReadTransport.test_admin_internal_and_unreviewed_kyc_never_forward) ... ok
+2026-10-29T08:03:40.8638279Z test_banking_writes_still_do_not_reach_upstream (test_customer_read_transport.CustomerReadTransport.test_banking_writes_still_do_not_reach_upstream) ... ok
+2026-10-29T08:03:40.8759313Z test_customer_gets_preserve_bearer_origin_and_no_store (test_customer_read_transport.CustomerReadTransport.test_customer_gets_preserve_bearer_origin_and_no_store) ... ok
+2026-10-29T08:03:40.8856475Z test_customer_kyc_status_and_three_exact_worker_routes (test_customer_read_transport.CustomerReadTransport.test_customer_kyc_status_and_three_exact_worker_routes) ... ok
+2026-10-29T08:03:40.8947074Z test_encoded_sensitive_paths_and_unknown_api_do_not_forward (test_customer_read_transport.CustomerReadTransport.test_encoded_sensitive_paths_and_unknown_api_do_not_forward) ... ok
+2026-10-29T08:03:40.9001821Z test_foreign_or_missing_unsafe_origin_stops_before_upstream (test_customer_read_transport.CustomerReadTransport.test_foreign_or_missing_unsafe_origin_stops_before_upstream) ... ok
+2026-10-29T08:03:40.9031867Z test_frontend_urls_rewritten_only_on_trusted_endpoint (test_customer_read_transport.CustomerReadTransport.test_frontend_urls_rewritten_only_on_trusted_endpoint) ... ok
+2026-10-29T08:03:40.9055929Z test_json_financial_response_is_not_url_rewritten (test_customer_read_transport.CustomerReadTransport.test_json_financial_response_is_not_url_rewritten) ... ok
+2026-10-29T08:03:40.9121119Z test_kyc_wrong_origin_method_and_body_cap (test_customer_read_transport.CustomerReadTransport.test_kyc_wrong_origin_method_and_body_cap) ... ok
+2026-10-29T08:03:40.9192168Z test_native_live_and_calculator_routes_are_in_allowlist (test_customer_read_transport.CustomerReadTransport.test_native_live_and_calculator_routes_are_in_allowlist) ... ok
+2026-10-29T08:03:40.9214635Z test_public_websocket_upgrade_is_forwarded (test_customer_read_transport.CustomerReadTransport.test_public_websocket_upgrade_is_forwarded) ... ok
+2026-10-29T08:03:40.9306212Z test_similar_or_nested_unreviewed_paths_do_not_reach_upstream (test_customer_read_transport.CustomerReadTransport.test_similar_or_nested_unreviewed_paths_do_not_reach_upstream) ... ok
+2026-10-29T08:03:40.9353911Z test_two_synthetic_bearers_and_order_body_preserved_without_retry (test_customer_read_transport.CustomerReadTransport.test_two_synthetic_bearers_and_order_body_preserved_without_retry) ... ok
+2026-10-29T08:03:41.4364622Z
+2026-10-29T08:03:41.4365402Z ----------------------------------------------------------------------
+2026-10-29T08:03:41.4366204Z Ran 19 tests in 0.835s
+2026-10-29T08:03:41.4366433Z
+2026-10-29T08:03:41.4366558Z OK
+2026-10-29T08:03:41.4546497Z

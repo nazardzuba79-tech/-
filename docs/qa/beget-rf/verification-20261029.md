@@ -1,7 +1,8 @@
 # Issue636 — actual RU verification, 29 October 2026
 
-No production configuration, TLS/DNS, Worker, API/DB, financial flag, balance,
-listing or timer change. Hetzner cleanup and Wallet Conversion were not repeated.
+No production configuration, TLS/DNS, Worker, API/DB code, financial flag, balance,
+listing or timer change. One normal browser sign-in and logout occurred; their
+ordinary session/last-seen metadata is not described as zero database writes. Hetzner cleanup and Wallet Conversion were not repeated.
 
 ## Sources and actual transport
 
@@ -9,7 +10,8 @@ listing or timer change. Hetzner cleanup and Wallet Conversion were not repeated
   existing RU branch starts `e7b16eb8f0f358345946d32ef67ef68ad70ab2a2`.
 - Pages canonical `95010b1c-b13f-4c52-b08c-a90ffa7d5d60`, source
   `6118e18e49edd226a6b250154d3893773b4522e2`; automatic production OFF,
-  previews none. API remains210aefac; no release was performed.
+  previews none. [Fresh browser API health](verification-20261029/api-health-after.json)
+  isok at210aefac, started28Oct09:15:48UTC unchanged; no release was performed.
 - Cloudflare authoritative NS: lana/thomas.ns.cloudflare.com. RU A185.23.35.226,
   unproxied. No DNS record was changed.
 - Beget RUNNING Ubuntu24.04, 2vCPU/1GiB/20GiB. Active Nginx hash
@@ -32,6 +34,9 @@ listing or timer change. Hetzner cleanup and Wallet Conversion were not repeated
   key remains; its account DOES NOT match the pinned trusted RU production
   account. Its contents were not printed. This is a residual secret, not the
   active RU TLS key, and was not deleted under this read-only task.
+- The historical [old-certificate revocation receipt](live-old-cert-revoke.json)
+  records successful Certbot revocation/deletion on26Oct20:20UTC. No new
+  revocation was attempted and no fresh OCSP/CRL check is claimed.
 - Current CAA restricts production issuance to the Hetzner ACME account;
   validationmethods=dns-01,http-01. An additional staging-account CAA exists.
   The old Beget account is not the allowed production account. This is a
@@ -55,7 +60,15 @@ Globalping supplied countryRU + system `eyeball-network` + exact ASN filters:
 | Rostelecom / Kostroma |12389|200|200|200|200|trusted TLS1.3|
 | ER-Telecom / Saint Petersburg |51570|200|200|200|200|trusted TLS1.3|
 
-12 bounded HTTPS GETs, all resolved185.23.35.226; same certificate as Hetzner.
+Initial12 bounded HTTPS GETs all resolved185.23.35.226; same certificate as
+Hetzner. Extended verification checked15 core lazy JS/CSS files for Register,
+Spot, Futures, Markets, Settings, Wallet, Banking and Copy Trading:45 more
+HTTP200 responses, correct JS/CSS MIME, not SPA HTML fallback. The HTTP probes
+return only the first10KiB of bodies; they do not execute the modules.
+KYC/me and Wallet/overview correctly returned401 without a session on all three
+ISPs (6 responses). Banking/config reproduced the gateway403 on all three
+(3 responses). Total22 measurements/66 GETs:57 HTTP200,6 expected401,
+3 Banking403 defects, all with trusted TLS and the correct Beget address.
 Exact UTC times, durations, response types, probe metadata and public API IDs:
 [sanitized raw measurements](verification-20261029/rf-isp-public-https.json).
 Each result can be independently read at
@@ -77,9 +90,10 @@ does not prove all Russian providers work.
   availability dependencies. Cross-origin ResourceTiming status0 is not treated
   as an HTTP failure. Complete authenticated/lazy-component coverage is NOT
   claimed from the public homepage.
-- Register390 rendered its lazy RegisterPage, ReferralRedirectPage and utility
+- Register1440/390 rendered its lazy RegisterPage, ReferralRedirectPage and utility
   chunks with HTTP200. No registration submitted or account created.
-- Guest Wallet390 and Markets390 redirect to ordinary login preserving next.
+- Guest Spot, Futures, Banking and Settings in cloud Chrome, plus Wallet390
+  and Markets390 in the exact-viewport renderer, redirect to ordinary login preserving next.
   Guest redirect is an auth guard PASS, not a signed-in feature PASS.
 - Both `wss://ru.voltextech.net/_voltex/ws/kraken` and `/bybit`: real101
   upgrades and public BTC ticker snapshots received; Bybit also delivered delta
@@ -92,18 +106,18 @@ does not prove all Russian providers work.
   RU origin is validated at Hetzner then mapped to the existing allowed primary
   origin. Worker peer pin138.199.227.130. No wildcard CORS or secret read/write.
 - Admin `/api/v1/admin/users` and internal KYC authorization ->403 through RU.
-  No administrator login attempted. Current KYC account/session authorization,
+  No administrative page or command was opened. Current KYC account/session authorization,
   exact worker submit/materials/confirm paths, no-store, size4259840 and
   upstream certificate validation are retained.
 - Executor Python asset GET got Cloudflare1010; no fingerprint spoofing or WAF
   change attempted. Chrome and all three RF probes got the entry JS200. That
   one client refusal is not represented as a general RU outage.
-- Cloudflare rendering concurrency limit caused two429 diagnostic calls; those
+- Cloudflare rendering API rate limits caused diagnostic429 calls; those
   are provider test-tool limits, not VOLTEX responses. Subsequent sequential
   home1440 inspection succeeded. Truncated image outputs are not usable
   screenshots and are not supplied as evidence.
 
-## Proven defects and narrow proposed correction
+## Proven defects and narrowed, nonfinancial proposal
 
 Direct loopback API gives401 Missing bearer token, while RU gives its own403
 HTML BEFORE API for these five customer GETs:
@@ -111,43 +125,89 @@ HTML BEFORE API for these five customer GETs:
 - `/banking/config`, `/banking/state`, `/banking/referral`;
 - `/copy-trading/nazar`, `/copy-trading/ksenia`.
 
-Candidate changes exactly five GET|HEAD map rules in the existing RU vhost;
-keeps the source renderer and route inventory consistent. No prefix wildcard,
-financial write, crypto-address/JSON rewrite, TLS/peer/Origin/auth/quotas change.
-POST Banking calculate/placements/settle remain blocked. Therefore this
-read-only correction alone is NOT a claim of fully functional Banking.
-No production correction has been applied.
+Source review of the exact deployed API found that HTTP GET is not sufficient
+to classify these as read-only:
 
-Local6 policy/negative/guard tests PASS. Initial RED: two checks failed on the
-old config, before adding the missing five rules. The exact-head Ubuntu24.04
-workflow runs real isolated Nginx/TLS fixture regressions, no production URLs,
-secrets, database, Worker deployment or financial operations. Its actual final
-result must be read before calling the transport checks PASS.
+- `src/banking/service.ts` state() calls syncAccruals(), which records accrued
+  Banking ledger entries. It is not a payout, but it IS a financial-record write.
+- `src/services/copyTrading/CopyPerformanceService.ts` get() can create/update
+  CopyPerformanceScenario and append modeled history for a new UTC day.
+- Banking config() only obtains market prices/config; referralSummary() only
+  reads owner-filtered user/count/reward queries.
+
+**Current candidate admits ONLY `/banking/config` and `/banking/referral` as
+GET|HEAD.** Banking state and both strategy GETs intentionally remain blocked
+until separately reviewed/approved. This cannot make Banking fully functional
+by itself; it meets the current nonfinancial correction boundary. All financial
+POSTs, admin/internal routes, JSON bodies, origin/TLS/peer/auth controls and
+existing regular routes are unchanged. No production correction was applied.
+
+Superseded five-rule proposal checkpoint ba676f53 passed19 isolated tests at
+[run40839379410](https://github.com/nazardzuba79-tech/-/actions/runs/40839379410),
+but that does NOT qualify the final narrower scope: the tests initially missed
+the GET side effects. That five-rule proposal must NOT be applied under this
+read-only permission. A new negative check was RED on it, then GREEN after the
+three side-effecting GETs were removed. Local7 final policy/guard tests PASS.
+The dedicated Ubuntu24 workflow now also asserts that those GETs never reach
+the synthetic upstream, retaining all real Nginx/TLS/header/KYC/body-cap/admin/
+JSON/WebSocket regressions. Final exact-head CI is the source of truth; do not
+substitute the previous19-test PASS. No backend behavior/math was edited to
+make a GET appear read-only.
 
 `propose_customer_reads.py --input /private/current-ru.conf` is READ ONLY and
 prints a diff; it rejects drift from the exact observed hash. Proposed config
-hash `c957542b3304f647dcac99ab602bb126aa93bf91bb9b2652ebc9366af98c863e`.
+hash `9cee50fb292066f8dab1356c34d222413ae82a9a8c74f990effa4ea74cb097a8`.
 No automatic apply/reload command exists in this helper.
 
 Future separately authorized rollout: save exact current RU file/root-only
-backup, compare hash, inspect the five-line diff, validate `nginx -t`, reload
+backup, compare hash, inspect the two-line diff, validate `nginx -t`, reload
 only Nginx after approval, verify API401 instead of gateway403 without a session
 and owner-filtered reads with an ordinary session. If it fails, restore only
 that saved RU file and validate/reload; leave main vhost/API/DB/Beget untouched.
 This is a proposed procedure, not an executed rollback or production permission.
 
+Public browser raw results: [exact viewport/resource matrix](verification-20261029/browser-public-matrix.json).
+
 ## Remaining blockers
 
-Local extension still returns originating-browser-context error. Available
-cloud browser has no ordinary VOLTEX session. Actual authenticated login/logout,
-KYC upload/status, Spot/Futures account UI, Wallet/history, Banking and their
-protected lazy components remain NOT VERIFIED in this attempt. Do not mint a
-token/session from server secrets or copy administrator credentials into RU.
-Secure normal-account login is the next user-dependent step. KYC submission
-would also create production personal-data/email state; no fake production
-documents were submitted under this read-only verification.
+Local extension still returns originating-browser-context error. A secure login
+was completed in cloud Chrome. The resulting session rendered Futures with its
+chart, book, real reference prices and existing positions (no order action).
+The profile then exposed the ADMIN link. Deployed Nav shows that link only when
+`api.getMe().isAdmin` is true, so this is NOT ordinary-user evidence. No personal
+values or account identifiers were copied to this report. The session was
+immediately logged out; direct Wallet returned to login. No admin page opened.
+The sanitized [session QA receipt](verification-20261029/session-qa.json)
+records this sign-in/logout and privileged Futures render only. It also
+shows ADMIN login itself is not role-blocked at the RU login endpoint, although
+admin/internal paths are denied. Enforcing an ADMIN-login ban would require a
+separately reviewed authentication-policy change, not a cosmetic hidden link.
+
+Ordinary-user authenticated KYC/Spot/Futures/Wallet/history/Banking and protected
+mobile execution remain NOT VERIFIED. No supported cloud-browser viewport setter
+was available for this authenticated session; real390 public/register rendering
+is separately recorded. Do not transfer tokens to another renderer or mint
+sessions from server secrets. An existing non-ADMIN account is required.
+Registration form/lazy chunks passed, but successful account creation was not
+attempted (it creates production account/session and accepts terms). KYC submit
+was not attempted (it creates document/email/review state); no fake production
+documents or real passports were sent. Current KYC account/session quota
+separation is not certified by a401 unauthenticated probe.
+
+[Actual negative controls](verification-20261029/public-negative-controls.json):
+spoofed browser XFF/CF-IP still gets KYC401; spoofed Real-IP still gets admin403;
+foreign Origin gets403. These do not prove that the relay cannot forge its
+PROXY preamble: transport IP metadata is explicitly non-cryptographic, never
+account ownership. API login throttling remains IP based; resistance to a
+malicious relay rotating preamble IPs is not claimed or stress-tested.
+
+The Hetzner VNC connection later disconnected before an optional repeated
+console probe; reconnect was attempted once. The same no-write negative
+controls then ran through public HTTPS instead. No session/credential reset
+or server restart was performed.
 
 Real RF HTTP availability now has evidence; authenticated browser behavior from
-RF is still a separate test. Production application of the proposed five read
-rules and any Banking write-route admission require separate owner approval.
+RF is still a separate test. Production application of the proposed two read
+rules requires separate owner approval. Banking state accrual, strategy-history
+append and Banking command admission require their own explicit review/decision.
 No full-launch, legal authorization, all-ISP or financial-execution PASS.

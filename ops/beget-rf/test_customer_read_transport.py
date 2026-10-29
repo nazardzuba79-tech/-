@@ -1,6 +1,6 @@
 """Real isolated Nginx/TLS; upstream is the existing synthetic loopback fixture."""
 import test_endpoint as base
-from test_customer_reads import READS
+from test_customer_reads import READS, SIDE_EFFECT_READS
 from test_gateway import Fixture
 
 class CustomerReadTransport(base.EndpointTest):
@@ -21,6 +21,13 @@ class CustomerReadTransport(base.EndpointTest):
         for path in ('/banking/calculate', '/banking/placements', '/banking/placements/x/settle'):
             before = len(Fixture.requests)
             self.assertEqual(self.request('/api/v1' + path, 'POST', '{}')[0], 403)
+            self.assertEqual(len(Fixture.requests), before)
+
+    def test_gets_with_ledger_or_scenario_side_effects_do_not_reach_upstream(self):
+        for path in SIDE_EFFECT_READS:
+            before = len(Fixture.requests)
+            self.assertEqual(self.request('/api/v1' + path,
+                headers={'Authorization': 'Bearer synthetic-customer-only'})[0], 403)
             self.assertEqual(len(Fixture.requests), before)
 
     def test_similar_or_nested_unreviewed_paths_do_not_reach_upstream(self):

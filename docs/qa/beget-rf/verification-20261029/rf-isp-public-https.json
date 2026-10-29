@@ -1,6 +1,16 @@
 {
   "method": "Globalping public HTTPS GET, no authentication or private data",
   "probePolicySource": "https://github.com/jsdelivr/globalping#probe-availability-rules",
+  "summary": {
+    "measurements": 22,
+    "requests": 66,
+    "httpCounts": {
+      "200": 57,
+      "403": 3,
+      "401": 6
+    },
+    "lazyFiles": 15
+  },
   "measurements": [
     {
       "case": "globalping-entry-js-result.json",
@@ -134,6 +144,996 @@
       ]
     },
     {
+      "case": "globalping-lazy-BankingPage-CZlCW9l1-result.json",
+      "measurementId": "2P1hK1fm8Cibwe6go00021P9e",
+      "createdAt": "2026-10-29T08:18:17.327Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/BankingPage-CZlCW9l1.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 807,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 361,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 426,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-BankingPage-DPd-vlyW-result.json",
+      "measurementId": "2APFpqVB4eI3vrD4W00021P9e",
+      "createdAt": "2026-10-29T08:18:12.727Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/BankingPage-DPd-vlyW.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 686,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 441,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 358,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-CopyTradingPage--A4fVNOd-result.json",
+      "measurementId": "2Kd46mtOzKpsSMYpL00021P9e",
+      "createdAt": "2026-10-29T08:18:28.090Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/CopyTradingPage--A4fVNOd.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 538,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 458,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 442,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-CopyTradingPage-DNsD2sxS-result.json",
+      "measurementId": "2rNkSWuGMhxKMJ9lC00021P9e",
+      "createdAt": "2026-10-29T08:18:22.022Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/CopyTradingPage-DNsD2sxS.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 661,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 351,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 407,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-FuturesPage-DLJPBUt4-result.json",
+      "measurementId": "2oQZFcTMOSs1xkxsD00021P9d",
+      "createdAt": "2026-10-29T08:17:33.254Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/FuturesPage-DLJPBUt4.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 713,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 491,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 390,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-FuturesPage-DgaxKEyE-result.json",
+      "measurementId": "2MLlafDt07kVTe38q00021P9d",
+      "createdAt": "2026-10-29T08:17:38.193Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/FuturesPage-DgaxKEyE.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 521,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 447,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 448,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-MarketsPage-DflZcDsp-result.json",
+      "measurementId": "27IeaOCPdP4haugD500021P9d",
+      "createdAt": "2026-10-29T08:17:46.781Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/MarketsPage-DflZcDsp.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 474,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 440,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 486,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-MarketsPage-DzxqEARU-result.json",
+      "measurementId": "2llrtEvas1IAP5IPe00021P9d",
+      "createdAt": "2026-10-29T08:17:42.663Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/MarketsPage-DzxqEARU.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 480,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 438,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 334,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-RegisterPage-Df3lhXKr-result.json",
+      "measurementId": "2Lkla09FIvNP5TmGv00021P9d",
+      "createdAt": "2026-10-29T08:17:17.113Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/RegisterPage-Df3lhXKr.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 581,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 476,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 1999,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-SettingsPage-BnG4JW_0-result.json",
+      "measurementId": "2BLryJ3BIFMgAAl8K00021P9d",
+      "createdAt": "2026-10-29T08:17:55.568Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/SettingsPage-BnG4JW_0.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 554,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 471,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 548,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-SettingsPage-C0SUuBGK-result.json",
+      "measurementId": "2s2bKVwrfZ2og2iXQ00021P9d",
+      "createdAt": "2026-10-29T08:17:51.296Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/SettingsPage-C0SUuBGK.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 487,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 473,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 420,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-TradePage-BGh22av_-result.json",
+      "measurementId": "2dEFTfQv1UPYNjBbV00021P9d",
+      "createdAt": "2026-10-29T08:17:27.784Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/TradePage-BGh22av_.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 562,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 447,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 369,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-TradePage-UgcLZzl3-result.json",
+      "measurementId": "2W6beFxTsj0knzIXs00021P9d",
+      "createdAt": "2026-10-29T08:17:22.101Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/TradePage-UgcLZzl3.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 674,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 477,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 443,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-WalletPage-DQoV4bbj-result.json",
+      "measurementId": "2lV0SLPjD42ehyLSv00021P9e",
+      "createdAt": "2026-10-29T08:18:07.858Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 612,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 404,
+          "contentType": "text/css; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 382,
+          "contentType": "text/css; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-lazy-WalletPage-NdSd-xzA-result.json",
+      "measurementId": "2VfjiO5LDREHked8w00021P9e",
+      "createdAt": "2026-10-29T08:18:03.063Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/assets/WalletPage-NdSd-xzA.js"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 634,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 468,
+          "contentType": "application/javascript"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 200,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 336,
+          "contentType": "application/javascript"
+        }
+      ]
+    },
+    {
       "case": "globalping-market-listings-result.json",
       "measurementId": "2vjmzZN1zGIgbYKwL00021P93",
       "createdAt": "2026-10-29T07:41:31.892Z",
@@ -262,6 +1262,204 @@
           "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
           "totalMs": 864,
           "contentType": "text/plain"
+        }
+      ]
+    },
+    {
+      "case": "globalping-rf-banking-defect-result.json",
+      "measurementId": "2JE6poIOqX11tIYcS00021P9e",
+      "createdAt": "2026-10-29T08:18:43.308Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/api/v1/banking/config"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 403,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 418,
+          "contentType": "text/html"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 403,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 241,
+          "contentType": "text/html"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 403,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 228,
+          "contentType": "text/html"
+        }
+      ]
+    },
+    {
+      "case": "globalping-rf-kyc-private-result.json",
+      "measurementId": "2eEkDe2P5N8tnWWZS00021P9e",
+      "createdAt": "2026-10-29T08:18:33.984Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/api/v1/kyc/me"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 401,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 358,
+          "contentType": "application/json; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 401,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 265,
+          "contentType": "application/json; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 401,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 245,
+          "contentType": "application/json; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "case": "globalping-rf-wallet-private-result.json",
+      "measurementId": "26RzamSk8w580630m00021P9e",
+      "createdAt": "2026-10-29T08:18:38.598Z",
+      "status": "finished",
+      "target": "ru.voltextech.net",
+      "options": {
+        "request": {
+          "method": "GET",
+          "path": "/api/v1/wallet/overview"
+        }
+      },
+      "results": [
+        {
+          "country": "RU",
+          "city": "Novosibirsk",
+          "asn": 8359,
+          "network": "MTS",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 401,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 424,
+          "contentType": "application/json; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Kostroma",
+          "asn": 12389,
+          "network": "Rostelecom",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 401,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 255,
+          "contentType": "application/json; charset=utf-8"
+        },
+        {
+          "country": "RU",
+          "city": "Saint Petersburg",
+          "asn": 51570,
+          "network": "ER-Telecom Holding",
+          "tags": [
+            "eyeball-network"
+          ],
+          "status": "finished",
+          "http": 401,
+          "resolvedAddress": "185.23.35.226",
+          "tlsAuthorized": true,
+          "tlsProtocol": "TLSv1.3",
+          "certificateSHA256": "C6:13:6F:C3:F9:7D:35:67:7A:C1:95:D0:EA:AB:7C:BC:83:18:92:F9:37:43:78:DD:C4:06:82:09:1F:61:29:E8",
+          "totalMs": 242,
+          "contentType": "application/json; charset=utf-8"
         }
       ]
     }

@@ -1,0 +1,30 @@
+[
+  {
+    "path": "/api/v1/kyc/me",
+    "headers": {
+      "X-Forwarded-For": "127.0.0.1",
+      "CF-Connecting-IP": "127.0.0.1"
+    },
+    "status": 401,
+    "expected": 401,
+    "pass": true
+  },
+  {
+    "path": "/api/v1/admin/users",
+    "headers": {
+      "X-Real-IP": "127.0.0.1"
+    },
+    "status": 403,
+    "expected": 403,
+    "pass": true
+  },
+  {
+    "path": "/_voltex/health",
+    "headers": {
+      "Origin": "https://untrusted.invalid"
+    },
+    "status": 403,
+    "expected": 403,
+    "pass": true
+  }
+]

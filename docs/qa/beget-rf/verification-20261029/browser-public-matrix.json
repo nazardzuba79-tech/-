@@ -1,0 +1,1215 @@
+{
+  "vantage": "Cloudflare Browser Rendering; not a Russian ISP browser",
+  "cases": [
+    {
+      "case": "home1440",
+      "url": "https://ru.voltextech.net/",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "scrollWidth": 1440
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "VOLTEX\nРынки\nТорговля\nФьючерсы\nКопитрейдинг\nCard\nOTC\nАкадемия\nТорговые боты\nВход\nНачать торговлю\nVOLTEX\nSpot\nMarkets\nFutures\nMarket data\nBTC/USDT\n79,909.80\n24h Change\n-1.27%\n24h High\n81,822.40\n24h Low\n79,706.20\n24h Volume (USDT)\n$665.80M\n⌕ Search pairs\nUSDT\n24h %\nBTC\n79,909.80\n-1.27%\nUSDC\n1.00\n-0.01%\nETH\n2,309.59\n-1.86%\nSOL\n99.88\n-2.08%\nXRP\n1.29\n-2.47%\nHYPE\n78.76\n-2.89%\nENA\n0.1963\n-4.42%\nPEPE\n0.0000\n+4.62%\nNEAR\n4.32\n-7.81%\nZIG\n0.0424\n+0.57%\nLINK\n11.39\n-2.77%\nCAP\n0.0737\n-20.91%\n1m　5m　15m　1h　4h　Indicators\nO 79,868.60\nH 79,909.00\nL 79,866.50\nC 79,909.00\n79,968.20\n80,479.90\n80,991.60\n81,503.30\n79,909.00\n19:45\n01:30\n07:30\n15-minute candles\nOrder Book\nUSDT\nPrice\nAmount (BTC)\n79,917.20\n0.117\n79,916.10\n0.01\n79,916.00\n0.06\n79,915.80\n0.01\n79,913.70\n0.01\n79,909.40\n0.038\n79,909.80\nSpread\n0.1000\n79,909.30\n0.026\n79,909.20\n0.022\n79,907.50\n0.031\n79,907.40\n0.126\n79,904.20\n0.126\n79,903.20\n0.025\nBuy\nSell\nLimit　 Market\nPrice (USDT)\n79,909.80\nAmount (BTC)\n—\nTotal (USDT)\n—\nOpen terminal ↗\nVisible depth (BTC)\nBuy 59.2%\nSell 40.8%\nRecent market trades\nBTC/USDT\nTime\nPair\nSide\nPrice (USDT)\nAmount (BTC)\n07:41:50\nBTC/USDT\nBuy\n79,909.80\n0.01435\n07:41:50\nBTC/USDT\nBuy\n79,909.80\n0.00128\n07:41:50\nBTC/USDT\nBuy\n79,909.80\n0.00149\n07:41:50\nBTC/USDT\nBuy\n79,909.80\n0.00128\n07:41:50\nBTC/USDT\nBuy\n79,909.80\n0.00306\n07:41:50\nBTC/USDT\nBuy\n79,909.80\n0.00149\nMarket data\n79 909,8\nETH\nSOL\nXRP\nBNB\nNFLX\nAMD\nTRX\nAAPL\nNVDA\nTSLA\nMETA\nAMZN\nMSFT\nUS500\nNAS100\nEUR/USD\nXAU\nWTI\nUSD/JPY\n\nGLOBAL MARKETS. REAL OPPORTUNITIES.\n\nOWN YOUR\nFUTURE.\n\nВаш доступ к мировым рынкам и свободе.\n\nТорговля, инвестиции, VOLTEX Crypto Card и возможность копировать лучших трейдеров мира — в одной системе.\n\nОткрыть терминал\nСмотреть рынки\nSpot\nFutures\nCopy Trading\nCrypto Card\n\nКрипто · CFD · Акции — скоро\n\nBTC/USDT\n79,909.80\n-1.27%\nUSDC/USDT\n1.00\n-0.01%\nETH/USDT\n2,309.59\n-1.86%\nSOL/USDT\n99.88\n-2.08%\nXRP/USDT\n1.29\n-2.47%\nHYPE/USDT\n78.76\n-2.89%\nENA/USDT\n0.1963\n-4.42%\nPEPE/USDT\n0.0000\n+4.62%\nNEAR/USDT\n4.32\n-7.81%\nZIG/USDT\n0.0424\n+0.57%\nLINK/USDT\n11.39\n-2.77%\nCAP/USDT\n0.0737\n-20.91%\nBTC/USDT\n79,909.80\n-1.27%\nUSDC/USDT\n1.00\n-0.01%\nETH/USDT\n2,309.59\n-1.86%\nSOL/USDT\n99.88\n-2.08%\nXRP/USDT\n1.29\n-2.47%\nHYPE/USDT\n78.76\n-2.89%\nENA/USDT\n0.1963\n-4.42%\nPEPE/USDT\n0.0000\n+4.62%\nNEAR/USDT\n4.32\n-7.81%\nZIG/USDT\n0.0424\n+0.57%\nLINK/USDT\n11.39\n-2.77%\nCAP/USDT\n0.0737\n-20.91%\nИндекс страха и жадности\n51\nNeutral\nРыночные данные\nКапитализация\n$2.69T\n-3.87%\nОбъём (24ч)\n$73.00B\nBTC Dominance\n59.5%\nETH Dominance\n10.4%\nПопулярные сектора\nD\nDeFi\n-2.42%\nA\nAI\n-2.88%\nM\nMeme\n-1.49%\nG\nGaming\n-2.14%\nТрендовые пары\nMPLX\n0.0613\n+23.83%\nGROVE\n0.0100\n-23.45%\nXAN\n0.0101\n-21.86",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 162
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 717
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 683
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 105
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 100
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 102
+        },
+        {
+          "url": "https://ru.voltextech.net/hero/v0-reference-clean.png",
+          "type": "img",
+          "status": 200,
+          "durationMs": 367
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 79
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/btc.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 266
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/eth.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 265
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/sol.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 509
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/xrp.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 525
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/bnb.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 532
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/netflix.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 747
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/amd.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 778
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/trx.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 906
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/apple.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 954
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/nvidia.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 969
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/tesla.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1035
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/meta.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1113
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/microsoft.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1157
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/amazon.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1161
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/us500.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1219
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/nas100.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1250
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/eurusd.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1303
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/gold.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1305
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/oil.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1360
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/usdjpy.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1338
+        },
+        {
+          "url": "https://ru.voltextech.net/cards/crypto-card-final/apple-pay-mark.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1424
+        },
+        {
+          "url": "https://ru.voltextech.net/cards/travel/voltex-titanium-soft.png",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1677
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-tickers",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 1024
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-book/BTC-USDT",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 850
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/cfd/display/tickers",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 275
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-trades/BTC-USDT",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 761
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-candles/BTC-USDT?interval=15m&limit=48",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 828
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/external/rankings",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 935
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/futures/config",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 304
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/global",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 832
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 501
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/assets/icons?symbols=BTC",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 479
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xag.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 264
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xau.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 269
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xpt.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 307
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/wti.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 462
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xpd.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 479
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/gbp.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 303
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eur.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 308
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xbr.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 1663
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/assets/icons?symbols=XAU%2CXAG%2CXPT%2CXPD%2CWTI%2CXBR%2CEUR%2CGBP",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 288
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png?1696501400",
+          "type": "img",
+          "status": 0,
+          "durationMs": 82
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/6319/large/USDC.png?1769615602",
+          "type": "img",
+          "status": 0,
+          "durationMs": 36
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png?1696501442",
+          "type": "img",
+          "status": 0,
+          "durationMs": 46
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/4128/large/solana.png?1718769756",
+          "type": "img",
+          "status": 0,
+          "durationMs": 65
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/279/large/ethereum.png?1696501628",
+          "type": "img",
+          "status": 0,
+          "durationMs": 64
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/50882/large/hyperliquid.jpg?1729431300",
+          "type": "img",
+          "status": 0,
+          "durationMs": 63
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/36530/large/ethena.png?1711701436",
+          "type": "img",
+          "status": 0,
+          "durationMs": 64
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/29850/large/pepe-token.jpeg?1696528776",
+          "type": "img",
+          "status": 0,
+          "durationMs": 65
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/10365/large/near.jpg?1696510367",
+          "type": "img",
+          "status": 0,
+          "durationMs": 87
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/877/large/Chainlink_Logo_500.png?1760023405",
+          "type": "img",
+          "status": 0,
+          "durationMs": 88
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/14796/large/CoinMarketCap.png?1790219143",
+          "type": "img",
+          "status": 0,
+          "durationMs": 94
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/102174107/large/cap.jpg?1782391237",
+          "type": "img",
+          "status": 0,
+          "durationMs": 88
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/27344/large/mplx.png?1696526391",
+          "type": "img",
+          "status": 0,
+          "durationMs": 95
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/69380/large/Anoma_CG2_-_200x200.png?1783756238",
+          "type": "img",
+          "status": 0,
+          "durationMs": 96
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/40138/large/initia_symbol_white.png?1745511525",
+          "type": "img",
+          "status": 0,
+          "durationMs": 102
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/assets/icons?symbols=GROVE",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 123
+        }
+      ],
+      "forms": []
+    },
+    {
+      "case": "home390",
+      "url": "https://ru.voltextech.net/",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "Вход\nНачать торговлю\nVOLTEX\nSpot\nMarkets\nFutures\nMarket data\nBTC/USDT\n79,886.10\n24h Change\n-1.31%\n24h High\n81,822.40\n24h Low\n79,706.20\n24h Volume (USDT)\n$665.23M\n⌕ Search pairs\nUSDT\n24h %\nBTC\n79,886.10\n-1.31%\nUSDC\n1.00\n-0.01%\nETH\n2,307.44\n-1.98%\nSOL\n99.82\n-2.18%\nXRP\n1.29\n-2.60%\nHYPE\n78.69\n-3.02%\nENA\n0.1959\n-4.90%\nPEPE\n0.0000\n+4.19%\nNEAR\n4.32\n-7.99%\nZIG\n0.0424\n+0.59%\nLINK\n11.39\n-2.87%\nCAP\n0.0735\n-21.18%\n1m　5m　15m　1h　4h　Indicators\nO 79,868.60\nH 79,909.00\nL 79,866.50\nC 79,909.00\n79,968.20\n80,479.90\n80,991.60\n81,503.30\n79,909.00\n19:45\n01:30\n07:30\n15-minute candles\nOrder Book\nUSDT\nPrice\nAmount (BTC)\n79,894.70\n0.01\n79,893.30\n0.695\n79,893.20\n0.123\n79,892.30\n0.01\n79,891.80\n0.126\n79,888.90\n0.226\n79,886.10\nSpread\n0.1000\n79,888.80\n0.001\n79,882.70\n0.013\n79,880.30\n0.022\n79,880.00\n0.029\n79,879.90\n0.126\n79,878.50\n0.01\nBuy\nSell\nLimit　 Market\nPrice (USDT)\n79,886.10\nAmount (BTC)\n—\nTotal (USDT)\n—\nOpen terminal ↗\nVisible depth (BTC)\nBuy 14.5%\nSell 85.5%\nRecent market trades\nBTC/USDT\nTime\nPair\nSide\nPrice (USDT)\nAmount (BTC)\n07:37:28\nBTC/USDT\nBuy\n79,886.10\n0.05423\n07:37:26\nBTC/USDT\nBuy\n79,886.10\n0.00269\n07:37:25\nBTC/USDT\nSell\n79,886.20\n0.00136\n07:37:25\nBTC/USDT\nSell\n79,887.50\n0.00081\n07:37:25\nBTC/USDT\nSell\n79,888.90\n0.00125\n07:37:25\nBTC/USDT\nSell\n79,889.80\n0.00057\nMarket data\n79 886,1\nETH\nSOL\nXRP\nAAPL\nNVDA\nTSLA\nMETA\nMSFT\nUS500\nEUR/USD\nXAU\n\nGLOBAL MARKETS. REAL OPPORTUNITIES.\n\nOWN YOUR\nFUTURE.\n\nВаш доступ к мировым рынкам и свободе.\n\nТорговля, инвестиции, VOLTEX Crypto Card и возможность копировать лучших трейдеров мира — в одной системе.\n\nОткрыть терминал\nСмотреть рынки\nSpot\nFutures\nCopy Trading\nCrypto Card\n\nКрипто · CFD · Акции — скоро\n\nBTC/USDT\n79,886.10\n-1.31%\nUSDC/USDT\n1.00\n-0.01%\nETH/USDT\n2,307.44\n-1.98%\nSOL/USDT\n99.82\n-2.18%\nXRP/USDT\n1.29\n-2.60%\nHYPE/USDT\n78.69\n-3.02%\nENA/USDT\n0.1959\n-4.90%\nPEPE/USDT\n0.0000\n+4.19%\nNEAR/USDT\n4.32\n-7.99%\nZIG/USDT\n0.0424\n+0.59%\nLINK/USDT\n11.39\n-2.87%\nCAP/USDT\n0.0735\n-21.18%\nBTC/USDT\n79,886.10\n-1.31%\nUSDC/USDT\n1.00\n-0.01%\nETH/USDT\n2,307.44\n-1.98%\nSOL/USDT\n99.82\n-2.18%\nXRP/USDT\n1.29\n-2.60%\nHYPE/USDT\n78.69\n-3.02%\nENA/USDT\n0.1959\n-4.90%\nPEPE/USDT\n0.0000\n+4.19%\nNEAR/USDT\n4.32\n-7.99%\nZIG/USDT\n0.0424\n+0.59%\nLINK/USDT\n11.39\n-2.87%\nCAP/USDT\n0.0735\n-21.18%\nИндекс страха и жадности\n51\nNeutral\nРыночные данные\nКапитализация\n$2.69T\n-3.87%\nОбъём (24ч)\n$73.00B\nBTC Dominance\n59.5%\nETH Dominance\n10.4%\nПопулярные сектора\nD\nDeFi\n-2.42%\nA\nAI\n-2.88%\nM\nMeme\n-1.49%\nG\nGaming\n-2.14%\nТрендовые пары\nG\nGROVE\n0.0100\n-25.35%\nMPLX\n0.0614\n+24.11%\nCAP\n0.0735\n-21.18%\nXAN\n0.0101\n-19.90%\nINIT\n0.2072\n+17.69%\nCFD на активы\nG\nGold Spot\n4041.592\n-0.52%\nS\nSilver Spot\n53.199\n-2.33%",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 160
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 794
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 712
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 87
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 119
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 82
+        },
+        {
+          "url": "https://ru.voltextech.net/hero/v0-reference-clean.png",
+          "type": "img",
+          "status": 200,
+          "durationMs": 393
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 107
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/btc.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 259
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/eth.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 348
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/sol.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 553
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/xrp.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 581
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/apple.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 577
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/nvidia.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 804
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/tesla.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 793
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/meta.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 912
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/microsoft.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 934
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/us500.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1013
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/eurusd.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1025
+        },
+        {
+          "url": "https://ru.voltextech.net/images/home-v0/asset-icons/gold.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1043
+        },
+        {
+          "url": "https://ru.voltextech.net/cards/crypto-card-final/apple-pay-mark.svg",
+          "type": "img",
+          "status": 200,
+          "durationMs": 1119
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-tickers",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 1092
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-book/BTC-USDT",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 790
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-candles/BTC-USDT?interval=15m&limit=48",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 859
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/market/display/spot-trades/BTC-USDT",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 903
+        },
+        {
+          "url": "https://ru.voltextech.net/_voltex/market/cfd/display/tickers",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 611
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/external/rankings",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 449
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/global",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 695
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/futures/config",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 281
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 449
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/assets/icons?symbols=BTC",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 519
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png?1696501400",
+          "type": "img",
+          "status": 0,
+          "durationMs": 123
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xau.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 240
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xag.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 271
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/wti.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 321
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xpd.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 336
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xpt.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 361
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eur.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 261
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xbr.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 342
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/gbp.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 301
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/assets/icons?symbols=XAU%2CXAG%2CXPT%2CXPD%2CWTI%2CXBR%2CEUR%2CGBP",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 129
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/6319/large/USDC.png?1769615602",
+          "type": "img",
+          "status": 0,
+          "durationMs": 76
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/279/large/ethereum.png?1696501628",
+          "type": "img",
+          "status": 0,
+          "durationMs": 111
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/4128/large/solana.png?1718769756",
+          "type": "img",
+          "status": 0,
+          "durationMs": 147
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png?1696501442",
+          "type": "img",
+          "status": 0,
+          "durationMs": 145
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/50882/large/hyperliquid.jpg?1729431300",
+          "type": "img",
+          "status": 0,
+          "durationMs": 145
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/36530/large/ethena.png?1711701436",
+          "type": "img",
+          "status": 0,
+          "durationMs": 108
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/29850/large/pepe-token.jpeg?1696528776",
+          "type": "img",
+          "status": 0,
+          "durationMs": 146
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/10365/large/near.jpg?1696510367",
+          "type": "img",
+          "status": 0,
+          "durationMs": 147
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/14796/large/CoinMarketCap.png?1790219143",
+          "type": "img",
+          "status": 0,
+          "durationMs": 599
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/877/large/Chainlink_Logo_500.png?1760023405",
+          "type": "img",
+          "status": 0,
+          "durationMs": 167
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/102174107/large/cap.jpg?1782391237",
+          "type": "img",
+          "status": 0,
+          "durationMs": 180
+        },
+        {
+          "url": "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/grove.png",
+          "type": "img",
+          "status": 0,
+          "durationMs": 243
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/40138/large/initia_symbol_white.png?1745511525",
+          "type": "img",
+          "status": 0,
+          "durationMs": 180
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/27344/large/mplx.png?1696526391",
+          "type": "img",
+          "status": 0,
+          "durationMs": 180
+        },
+        {
+          "url": "https://coin-images.coingecko.com/coins/images/69380/large/Anoma_CG2_-_200x200.png?1783756238",
+          "type": "img",
+          "status": 0,
+          "durationMs": 658
+        },
+        {
+          "url": "https://ru.voltextech.net/api/v1/market/assets/icons?symbols=GROVE",
+          "type": "fetch",
+          "status": 200,
+          "durationMs": 159
+        }
+      ],
+      "forms": []
+    },
+    {
+      "case": "register1440",
+      "url": "https://ru.voltextech.net/register",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "scrollWidth": 1440
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "и другие валюты\n0% комиссии за покупки\nи снятие наличных\n22+ фиатных валют · 70+ криптовалют\n01\nКАРТА, КОТОРАЯ ВСЕГДА С ВАМИ\nЛИЧНЫЙ АККАУНТ\nДОБРО ПОЖАЛОВАТЬ В VOLTEX\nНачните с VOLTEX.\n\nСоздайте аккаунт, чтобы следить за рынком и копировать стратегии трейдеров.\n\nВход\nРегистрация\nЭлектронная почта\nПароль\nНе менее 10 символов\nМинимум 1 заглавная буква\nСоздать аккаунт\n\nСоздавая аккаунт, вы соглашаетесь с Пользовательским соглашением и Политикой конфиденциальности.\n\nНужна помощь со входом?\nСлужба поддержки\n\nVOLTEX никогда не запрашивает пароль или код подтверждения вне официальной платформы.\n\nНа главную\nКонфиденциальность\nУсловия использования",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 183
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 963
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 851
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 105
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 124
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 114
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/RegisterPage-Df3lhXKr.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 239
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/ReferralRedirectPage-BNt-G_8J.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 209
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/arrow-left-D3wPYtDn.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 267
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/check-w9tVKwO5.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 503
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 505
+        },
+        {
+          "url": "https://ru.voltextech.net/auth/selected-cabin-banner.webp",
+          "type": "img",
+          "status": 200,
+          "durationMs": 600
+        }
+      ],
+      "forms": [
+        {
+          "method": "get",
+          "inputs": [
+            {
+              "type": "email",
+              "name": "",
+              "autocomplete": "email"
+            },
+            {
+              "type": "password",
+              "name": "",
+              "autocomplete": "new-password"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "walletGuest390",
+      "url": "https://ru.voltextech.net/login?next=%2Fwallet",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "VOLTEX\nДОБРО ПОЖАЛОВАТЬ В VOLTEX\nС возвращением.\n\nВойдите, чтобы управлять капиталом и следить за рынком.\n\nВход\nРегистрация\nЭлектронная почта\nПароль\nЗабыли пароль?\nВойти в аккаунт\nНужна помощь со входом?\nСлужба поддержки\n\nVOLTEX никогда не запрашивает пароль или код подтверждения вне официальной платформы.\n\nи другие валюты\n0% комиссии за покупки\nи снятие наличных\n22+ фиатных валют · 70+ криптовалют\n01\nКАРТА, КОТОРАЯ ВСЕГДА С ВАМИ\nКонфиденциальность\nУсловия использования",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 167
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 838
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 755
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 48
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 48
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 48
+        },
+        {
+          "url": "https://ru.voltextech.net/auth/selected-cabin-banner.webp",
+          "type": "img",
+          "status": 200,
+          "durationMs": 304
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 195
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 381
+        }
+      ],
+      "forms": [
+        {
+          "method": "get",
+          "inputs": [
+            {
+              "type": "email",
+              "name": "",
+              "autocomplete": "email"
+            },
+            {
+              "type": "password",
+              "name": "",
+              "autocomplete": "current-password"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "register390",
+      "url": "https://ru.voltextech.net/register",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "VOLTEX\nДОБРО ПОЖАЛОВАТЬ В VOLTEX\nНачните с VOLTEX.\n\nСоздайте аккаунт, чтобы следить за рынком и копировать стратегии трейдеров.\n\nВход\nРегистрация\nЭлектронная почта\nПароль\nНе менее 10 символов\nМинимум 1 заглавная буква\nСоздать аккаунт\n\nСоздавая аккаунт, вы соглашаетесь с Пользовательским соглашением и Политикой конфиденциальности.\n\nНужна помощь со входом?\nСлужба поддержки\n\nVOLTEX никогда не запрашивает пароль или код подтверждения вне официальной платформы.\n\nНа главную\nи другие валюты\n0% комиссии за покупки\nи снятие наличных\n22+ фиатных валют · 70+ криптовалют\n01\nКАРТА, КОТОРАЯ ВСЕГДА С ВАМИ\nКонфиденциальность\nУсловия использования",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 166
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 838
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 749
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 41
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 41
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 41
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/RegisterPage-Df3lhXKr.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 210
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/ReferralRedirectPage-BNt-G_8J.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 203
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/arrow-left-D3wPYtDn.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 231
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/check-w9tVKwO5.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 495
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 437
+        },
+        {
+          "url": "https://ru.voltextech.net/auth/selected-cabin-banner.webp",
+          "type": "img",
+          "status": 200,
+          "durationMs": 607
+        }
+      ],
+      "forms": [
+        {
+          "method": "get",
+          "inputs": [
+            {
+              "type": "email",
+              "name": "",
+              "autocomplete": "email"
+            },
+            {
+              "type": "password",
+              "name": "",
+              "autocomplete": "new-password"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "marketsGuest390",
+      "url": "https://ru.voltextech.net/login?next=%2Fmarkets",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "VOLTEX\nДОБРО ПОЖАЛОВАТЬ В VOLTEX\nС возвращением.\n\nВойдите, чтобы управлять капиталом и следить за рынком.\n\nВход\nРегистрация\nЭлектронная почта\nПароль\nЗабыли пароль?\nВойти в аккаунт\nНужна помощь со входом?\nСлужба поддержки\n\nVOLTEX никогда не запрашивает пароль или код подтверждения вне официальной платформы.\n\nи другие валюты\n0% комиссии за покупки\nи снятие наличных\n22+ фиатных валют · 70+ криптовалют\n01\nКАРТА, КОТОРАЯ ВСЕГДА С ВАМИ\nКонфиденциальность\nУсловия использования",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 165
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 866
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 719
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 43
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 62
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 72
+        },
+        {
+          "url": "https://ru.voltextech.net/auth/selected-cabin-banner.webp",
+          "type": "img",
+          "status": 200,
+          "durationMs": 315
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 207
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 385
+        }
+      ],
+      "forms": [
+        {
+          "method": "get",
+          "inputs": [
+            {
+              "type": "email",
+              "name": "",
+              "autocomplete": "email"
+            },
+            {
+              "type": "password",
+              "name": "",
+              "autocomplete": "current-password"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "login390",
+      "url": "https://ru.voltextech.net/login",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390
+      },
+      "title": "VOLTEX — криптобиржа",
+      "text": "VOLTEX\nДОБРО ПОЖАЛОВАТЬ В VOLTEX\nС возвращением.\n\nВойдите, чтобы управлять капиталом и следить за рынком.\n\nВход\nРегистрация\nЭлектронная почта\nПароль\nЗабыли пароль?\nВойти в аккаунт\nНужна помощь со входом?\nСлужба поддержки\n\nVOLTEX никогда не запрашивает пароль или код подтверждения вне официальной платформы.\n\nи другие валюты\n0% комиссии за покупки\nи снятие наличных\n22+ фиатных валют · 70+ криптовалют\n01\nКАРТА, КОТОРАЯ ВСЕГДА С ВАМИ\nКонфиденциальность\nУсловия использования",
+      "resources": [
+        {
+          "url": "https://ru.voltextech.net/cdn-cgi/speculation",
+          "type": "other",
+          "status": 200,
+          "durationMs": 165
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-DGXlUZ5S.js",
+          "type": "script",
+          "status": 200,
+          "durationMs": 823
+        },
+        {
+          "url": "https://ru.voltextech.net/assets/index-buQ71BH_.css",
+          "type": "link",
+          "status": 200,
+          "durationMs": 765
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 107
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 148
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+          "type": "link",
+          "status": 0,
+          "durationMs": 111
+        },
+        {
+          "url": "https://ru.voltextech.net/auth/selected-cabin-banner.webp",
+          "type": "img",
+          "status": 200,
+          "durationMs": 278
+        },
+        {
+          "url": "https://ru.voltextech.net/favicon.svg",
+          "type": "other",
+          "status": 200,
+          "durationMs": 206
+        }
+      ],
+      "forms": [
+        {
+          "method": "get",
+          "inputs": [
+            {
+              "type": "email",
+              "name": "",
+              "autocomplete": "email"
+            },
+            {
+              "type": "password",
+              "name": "",
+              "autocomplete": "current-password"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
