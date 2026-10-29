@@ -681,3 +681,101 @@ Pooled A/A 9.37 → 9.22 ms, **Δp95 −1.63 %** (bootstrap 95 % −6.2 … +1.7
 sets, server memory at most 509 MB (API, authority and gateway peak RSS plus the PostgreSQL cluster's PSS). The first
 run on the fresh runner had a slow first arm (aa-1); the acceptance job therefore runs one warm-up run of the after pin,
 outside the collection and never counted, before its pairs, so the first pair's Δp95 is not biased downwards.
+
+### R8 acceptance result ([run 40883105775](https://github.com/nazardzuba79-tech/-/actions/runs/40883105775), head `f030e953`, runtime `47f5d04d`)
+
+One workflow run, three jobs on three separate VMs (GitHub does not let jobs share a VM): calibration on an Intel
+Xeon 6973P-C, acceptance and sustained on AMD EPYC 9V74; every VM 4 vCPUs with `thread_siblings_list` 0-1 / 2-3.
+Calibration again **METHOD_CALIBRATED**: six A/A runs complete, pooled 10.60 → 10.42 ms, **Δp95 −1.63 %** (bootstrap
+95 % −8.7 … +2.5 %; per run −48.4, −0.6, −0.6, +6.8, +4.4, −1.8 %, the first one cold), recomputed independently from the
+artifact (SHA-256 `16a73978…940c`); harness self-tests 35/35. Both pins carry the same runtime `47f5d04d`: *before* =
+Stocks inside the crypto API process (single-process), *after* = the separated release layout. One uncounted warm-up
+run, then 8 ABBA pairs; collection **COMPLETE 8/8 per pin**, placement proven for every thread in every window
+(59–62 threads after, 37–38 before), client headroom held. Artifact SHA-256 `2b6cd294…c5af`.
+
+| Pin | Pooled crypto p95 baseline → mixed | Pooled Δp95 | Median run Δp95 | Bootstrap 95 % of pooled Δp95 | Per-run Δp95 % | Verdict |
+|---|---|---|---|---|---|---|
+| after (separated) | 9.76 → 11.98 ms | **+22.73 %** | +22.08 % | **+16.4 … +32.9 %** | +14.1, +29.8, +42.9, +22.4, +5.9, +21.8, +6.3, +36.5 | **FAIL** |
+| before (single-process) | 10.80 → 11.94 ms | +10.58 % | +12.01 % | −6.0 … +21.0 % | +8.2, +28.8, +10.2, −17.2, +13.9, +17.0, +22.1, −0.8 | FAIL |
+
+The *after* interval lies entirely above +5 % and far outside the A/A error (−1.6 %): with the clients off the server's
+CPUs the separated layout still misses the criterion by about four times. Other measured numbers (mixed arm unless
+stated; every value from the stored per-run results):
+
+- **Latency:** crypto p50 unchanged (5.71 → 5.72 ms), p99 lower (47.5 → 37.4 ms; the baseline p99 varies 22–117 ms
+  between runs); the regression is in the p95 tail. Measured inside the API process
+  (server side, no client or loopback time) crypto p95 is 8.96 → 11.02 ms (+23 %): the regression is the server's,
+  not the clients'. Viewer state p50/p95/p99 663.6 / 672.2 / 675.4 ms (≈ the gateway's identity-batch interval of 1/1.5 s);
+  trader p95 14.7 … 31.7 ms per run.
+- **Errors:** 0 errors, 0 timeouts, 0 missed jobs, 0 order loss, 0 double spend, 0 viewer mutations in all 32 arms;
+  1 440 requests per mixed arm, 320 per baseline arm.
+- **CPU (server set = CPUs 0,1):** busy 5.0 % → 8.9 … 10.9 % in the separated layout (4.7 … 5.3 % → 7.5 … 8.9 % single
+  process), steal 0 ms everywhere; client set at most 5.8 %, driver event-loop utilisation at most 0.058. Mean CPU per
+  20 s window, baseline → mixed: API 1 679 → 1 731 ms, authority 37 → 615 ms, gateway 111 → 1 177 ms, PostgreSQL
+  238 → 383 ms (driver 350 → 1 297 ms on the client set). Single-process API 1 726 → 3 071 ms.
+- **Run-queue wait** (schedstat, runnable but not running, mean ms per window, baseline → mixed): API 687 → 881,
+  authority 61 → 473, gateway 108 → 313, PostgreSQL 42 → 124.
+- **Memory (peak, separated layout):** API 204–205 MB, authority 152–157 MB, gateway 86–119 MB (VmHWM); PostgreSQL
+  cluster PSS 52–58 MB; at most ≈ 0.53 GB for the whole server side (sum of the peaks). Single process: API 205–208 MB.
+
+**Cause.** The server set is about 90 % idle, so this is not a throughput limit. The Stocks work added by 50 viewers and
+2 traders (≈ 1.8 s of CPU per 20 s: gateway ≈ 1.07 s, authority ≈ 0.58 s, PostgreSQL ≈ 0.15 s) runs on the same
+physical core as the crypto API. Whenever a crypto request arrives while a Stocks process holds a hardware thread, it
+either waits for a CPU (measured: the API's run-queue wait grows by ≈ 0.2 s per window, the Stocks processes' by
+≈ 0.6 s) or runs beside it on the sibling hardware thread and shares the core's execution units (not measured
+separately); both lengthen only the requests that collide, which moves p95 and leaves p50. The single-process layout has the same mixed p95
+(11.94 vs 11.98 ms); its smaller Δ comes from its slower baseline. The CPU profiles of R6/R7 show no single hot spot
+(gateway: HTTP/streams 21 %, Stocks code 19 %, Node internals 15 %, native 10 %, undici 9 %, timers 8 %, GC 4 %, JSON
+2 %; authority ≈ 48 % Prisma; profiles of R6/R7, not of this run), and the R7 serializer prototype saved nothing measurable. **No defect with a minimal
+fix was found:** the regression is the cost of running the Stocks processes on the crypto API's only physical core.
+
+### R8 sustained result (same run, job `123487564684`, after pin, 3 measured minutes per arm, report only)
+
+Two runs on AMD EPYC 9V74, artifact SHA-256 `740e0cf4…291e`. Every refusal counted (section "Sustained load").
+
+| | sustained-1 | sustained-2 |
+|---|---|---|
+| Completed | yes (3 min) | **aborted at ≈ 118 s**: one trader request failed twice at the socket (`UND_ERR_SOCKET`) |
+| Private requests per window minute (before / m1 / m2 / m3) | 93 / 232 / 228 / 226 | 93 / 232 / 221 / — |
+| Busiest sliding minute, all / answered | 243 / 241 of 240 | 243 / 241 of 240 |
+| Ingress 429 (all on trader commands) | 6 | 4 |
+| Trader requests refused with 429 (each sent again after `Retry-After`) | 8 of 422 | 4 of 266 |
+| Viewer polls answered of those scheduled | **49.5 %** (4 438 of 8 967) | **54.0 %** (3 187 of 5 901) |
+| Viewer polls refused 429 / deferred for `Retry-After` | 470 / 4 058 | 169 / 2 545 |
+| Viewer answered p95 per minute | 2.5–3.0 s | 2.6–3.0 s |
+| Connections closed without an answer (viewer poll failing twice) | 33 (first at 60.0 s) | 25 (first at 60.0 s) |
+| `503 AUTH_UNAVAILABLE` | 1 | 0 |
+| Crypto p95 over the window, baseline → mixed | 8.72 → 10.93 ms (+25.4 %) | 8.39 → 10.73 ms (+27.9 %) |
+| Order loss / double spend / viewer mutations | 0 / 0 / 0 | 0 / 0 / 0 |
+| 429 without `Retry-After` | 0 | 0 |
+
+**Rate-limit behaviour is correct:** every refusal is a 429 with `Retry-After` (or one `503 AUTH_UNAVAILABLE`), a
+trader's refused or quote-stale step sent again with the same intent is executed exactly once, and the financial
+invariants hold in both runs. A busiest sliding minute of 241 answered requests is consistent with the ingress's fixed
+60 s window (a sliding minute may straddle two windows); the ingress answered 429 twice in each of its own windows.
+
+**Capacity is not sufficient.** In sustained-1, in the 60 s before each ingress 429 the gateway had sent 78–103
+identity batches and 137–164 trader commands (241–242 in total). The 2 traders' commands alone take 57–68 % of the
+240/min quota; while viewers wait, the identity bucket sends up to 90 batches a minute (Q/160 per second). The gateway's ceiling (225) stops identity batches
+but cannot stop commands sent after them, so the commands themselves exceed the 15-request margin: the comment in
+`services/stocks-global/authority-adapter.mjs` ("so it never spends the room the traders' commands need") does not
+hold under this load. When the ceiling is reached the gateway refuses every waiting viewer that cannot be checked
+before its deadline with 429 and a `Retry-After` (1–60 s, until the minute has room), which is why only about half of the scheduled viewer polls are answered and
+the answered ones wait 2.5–3 s. The scenario's viewers keep polling every 1 s during that wait, so up to 131 requests
+are in flight against the gateway's `maxConnections = 128`; the connections over the limit are closed without an
+HTTP answer, and in sustained-2 one trader request hit that twice and the driver stopped the run (counted, not hidden).
+
+Possible remedies (none applied; each changes behaviour that needs the owner's decision): (a) the gateway paces
+identity batches by the room the commands actually leave (≈ (225 − commands of the last minute) per minute, larger
+batches instead of refusals; batches carry up to 64 viewers) so trader commands are never refused; (b) answer an
+over-limit connection with `503` + `Retry-After` instead of closing it, or raise `maxConnections`; (c) poll the
+viewers' state at the terminal's real 3 s or push it. The quota stays 240/min and Stocks BUY/SELL stay off.
+
+### R8 remaining blockers
+
+1. **Criterion not met:** crypto p95 +22.73 % (bootstrap +16.4 … +32.9 %) with the server on exactly 2 vCPUs and the
+   clients isolated; required ≤ +5 %. Cause above; it does not shrink with isolated clients. Needs an owner decision:
+   more server CPU for Stocks (its own core/host — a paid resource) or less Stocks CPU per viewer (cadence or push).
+2. **Sustained load at the original 4 s scenario does not fit the 240/min quota:** trader commands refused by the
+   ingress, half the viewer polls unanswered, connections closed at 128.
+3. The GitHub runner is not the production host (CX23); results are CI_DIAGNOSTIC, not capacity acceptance.
