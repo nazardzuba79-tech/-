@@ -64,6 +64,23 @@ function main() {
     rollback: { image: BASE_IMAGE, service: 'api-production', composeProject: 'voltex-cutover', databaseRestore: false },
   };
   fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  // Ship the tested default-OFF frontend itself, not just screenshots of the ON fixture.
+  const frontendDist = path.join(root, 'output/wallet591-off-dist');
+  assert(fs.existsSync(path.join(frontendDist, 'index.html')), 'Build the default-OFF Pages artifact first');
+  const frontendFiles = {};
+  const collect = dir => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      assert(!entry.isSymbolicLink(), 'No symlinks in the frontend release');
+      if (entry.isDirectory()) collect(file);
+      else frontendFiles[path.relative(frontendDist, file).split(path.sep).join('/')] = hash(fs.readFileSync(file));
+    }
+  };
+  collect(frontendDist);
+  fs.writeFileSync(path.join(out, 'frontend-manifest.json'), JSON.stringify({
+    status: 'PREPARED_NOT_DEPLOYED', source: PAGES_SOURCE, base: PAGES_BASE,
+    flag: 'VITE_WALLET_CONVERSION_ENABLED=false', files: frontendFiles,
+  }, null, 2) + '\n');
   console.log(JSON.stringify({ status: manifest.status, apiSource: manifest.apiSource, pagesSource: PAGES_SOURCE, payloadFiles: Object.keys(files).length, protectedRuntimeFingerprints: Object.keys(oldHashes).length }));
 }
 main();

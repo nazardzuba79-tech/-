@@ -48,6 +48,8 @@ async function main() {
   globalThis.fetch = (url, init) => { if (!String(url).startsWith(loopback)) { outbound.push(String(url)); return Promise.reject(new Error('outbound network denied in QA')); } return realFetch(url, init); };
   try {
     sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' }); await sql.connect();
+    const postgresVersion = (await sql.query('SHOW server_version_num')).rows[0].server_version_num;
+    if (process.env.WALLET_QA_PG_VERSION_NUM) assert.equal(postgresVersion, process.env.WALLET_QA_PG_VERSION_NUM, 'Wrong isolated PostgreSQL runtime');
     await sql.query('CREATE DATABASE voltex_wallet_demo_conversion_fixture'); await sql.end();
     sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_wallet_demo_conversion_fixture' }); await sql.connect();
     for (const name of fs.readdirSync(path.join(root, 'prisma/migrations')).sort()) {
@@ -67,7 +69,7 @@ async function main() {
 
     // USD per unit, [bid, ask]: the conversion feed. VTA and NRX are priced on purpose: a price alone admits nothing.
     let now = Date.now(), failFeed = false;
-    const feedBook = { USD: ['1', '1'], EUR: ['1.08', '1.081'], BTC: ['60000', '60010'], ETH: ['3000', '3001'], USDT: ['0.997', '0.998'], VTA: ['2', '2'], NRX: ['5', '5'] };
+    const feedBook = { USD: ['1', '1'], EUR: ['1.08', '1.081'], USDC: ['0.999', '1.001'], BTC: ['60000', '60010'], ETH: ['3000', '3001'], USDT: ['0.997', '0.998'], VTA: ['2', '2'], NRX: ['5', '5'] };
     const prices = { read: async () => {
       if (failFeed) throw new Error('fixture outage');
       const entries = Object.entries(feedBook);
@@ -468,6 +470,33 @@ async function main() {
         await holder.end();
       }
     });
+    await check('USD/EUR/USDC demo destinations require available inventory; bid/ask round trips preserve spread and never touch Balance', async () => {
+      const actor = 'qa-currency-matrix';
+      await prisma.user.create({ data: { id: actor, email: `${actor}@example.invalid`, passwordHash: 'fixture', referralCode: actor, role: 'USER', kycStatus: 'APPROVED' } });
+      await topUp(actor, 'USDT', '100');
+      const ordinaryBefore = JSON.stringify(await prisma.balance.findMany({ orderBy: [{ userId: 'asc' }, { asset: 'asc' }] }));
+      for (const destination of ['USD', 'EUR', 'USDC']) {
+        const key = { userId_asset: { userId: LIQ, asset: destination } };
+        const inventory = await prisma.demoBalance.findUnique({ where: key });
+        if (inventory) await prisma.demoBalance.update({ where: key, data: { available: '0', locked: inventory.available.plus(inventory.locked) } });
+        const before = await rowsOf(actor);
+        await assert.rejects(conversion.quote(actor, 'USDT', destination, '10'), { code: 'INSUFFICIENT_LIQUIDITY' });
+        assert.equal(await rowsOf(actor), before);
+        if (inventory) await prisma.demoBalance.update({ where: key, data: { available: inventory.available, locked: inventory.locked } });
+        else await topUp(LIQ, destination, '100'); // synthetic fixture inventory only
+        const start = new BigNumber(await demoOf(actor, 'USDT'));
+        const forward = await conversion.quote(actor, 'USDT', destination, '10');
+        assert.equal(forward.fee, '0'); assert.equal(forward.pricing, 'bid-ask');
+        await conversion.confirm(actor, forward.quoteId);
+        const reverse = await conversion.quote(actor, destination, 'USDT', forward.toAmount);
+        assert.equal(reverse.fee, '0');
+        await conversion.confirm(actor, reverse.quoteId);
+        assert(new BigNumber(await demoOf(actor, 'USDT')).lt(start), 'Market spread must survive a zero platform fee');
+        assert.equal(await balanceRows(actor), 0);
+        await conserved();
+      }
+      assert.equal(JSON.stringify(await prisma.balance.findMany({ orderBy: [{ userId: 'asc' }, { asset: 'asc' }] })), ordinaryBefore);
+    });
     await check('third-party balances unchanged; no demo account holds ordinary Balance; every demo unit accounted for', async () => {
       assert.equal(await rowsOf('qa-third'), thirdBefore);
       for (const who of ['qa-tester', 'qa-racer', 'qa-double', 'qa-revoked', 'qa-blocked', 'qa-daily', 'qa-off', NATIVE, 'qa-admin', ...drains]) assert.equal(await balanceRows(who), 0, who);
@@ -477,7 +506,7 @@ async function main() {
       await conserved();
     });
     await check('no outbound network request', async () => { assert.deepEqual(outbound, []); });
-    const summary = { database: 'disposable loopback PostgreSQL', passed: checks, checks: checks.length, fee: '0',
+    const summary = { database: 'disposable loopback PostgreSQL', postgresVersion, passed: checks, checks: checks.length, fee: '0',
       demoReceipts: await prisma.auditLog.count({ where: { action: 'WALLET_DEMO_CONVERTED' } }), balanceReceipts: await prisma.auditLog.count({ where: { action: 'WALLET_CONVERTED' } }),
       withdrawals: await prisma.withdrawal.count(), productionTouched: false };
     fs.writeFileSync(path.join(out, 'postgres-results.json'), JSON.stringify(summary, null, 2)); console.log(JSON.stringify(summary, null, 2));

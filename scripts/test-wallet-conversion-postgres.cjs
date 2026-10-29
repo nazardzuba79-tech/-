@@ -40,6 +40,8 @@ async function main() {
   const checks = []; const check = async (name, fn) => { await fn(); checks.push(name); console.log('PASS ' + name); };
   try {
     sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' }); await sql.connect();
+    const postgresVersion = (await sql.query('SHOW server_version_num')).rows[0].server_version_num;
+    if (process.env.WALLET_QA_PG_VERSION_NUM) assert.equal(postgresVersion, process.env.WALLET_QA_PG_VERSION_NUM, 'Wrong isolated PostgreSQL runtime');
     await sql.query('CREATE DATABASE voltex_wallet_conversion_fixture'); await sql.end();
     sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_wallet_conversion_fixture' }); await sql.connect();
     for (const name of fs.readdirSync(path.join(root, 'prisma/migrations')).sort()) {
@@ -452,7 +454,7 @@ async function main() {
     });
     if (process.env.WALLET_QA_BROWSER === '1') liveApi = walletActivityRouter(prisma, conversion, true);
     if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: activeToken, prisma, user, out, thinBook, fund });
-    const report = { database: 'disposable loopback PostgreSQL', passed: checks, checks: checks.length, fee: '0', finalBalances: await snapshot(), productionTouched: false };
+    const report = { database: 'disposable loopback PostgreSQL', postgresVersion, passed: checks, checks: checks.length, fee: '0', finalBalances: await snapshot(), productionTouched: false };
     fs.writeFileSync(path.join(out, 'postgres-results.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));
   } finally {
     if (server) await new Promise(resolve => server.close(resolve)); await prisma?.$disconnect(); await sql?.end().catch(() => {});
