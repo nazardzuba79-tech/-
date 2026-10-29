@@ -152,4 +152,14 @@ test('bounded: at most maxStreams streams, a subscriber that does not read is cl
   await limited.tick();
   assert.equal(c.written.at(-1), 'event: wait\ndata: {"seq":1,"retryAfterMs":2000}\n\n'); assert.equal(c.ended, undefined, 'the stream stays');
   assert.equal(c.written.some(chunk => chunk.startsWith('event: quote')), false, 'no price without a live judgement');
+  // Regression: repeated AUTH_RATE_LIMIT/UNAVAILABLE wait events must obey the
+  // SAME 64 KiB (or smaller test) backpressure rule as public quote events.
+  // A blocked client must not accumulate an unbounded stream of "wait" bytes.
+  const before = c.written.length;
+  c.writableLength = 65537; // this stream's default maxBufferedBytes is 64 KiB
+  await limited.tick();
+  assert.equal(c.destroyed, true, 'slow wait subscriber is disconnected');
+  assert.equal(limited.metrics().slow, 1);
+  assert.equal(limited.metrics().streams, 0);
+  assert.equal(c.written.length, before, 'no more wait events buffered');
 });
