@@ -14,6 +14,12 @@ const TOKEN_KEY = 'exchange_token';
 // the single-domain deployment.
 export const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
+export interface WalletConversionQuote {
+  quoteId: string; fromAsset: string; toAsset: string; fromAmount: string; toAmount: string;
+  fromPriceUsd: string; toPriceUsd: string; fee: '0'; source: 'kraken'; pricing: 'bid-ask'; fetchedAt: number; expiresAt: number;
+}
+export interface WalletConversionReceipt extends WalletConversionQuote { status: 'APPLIED'; operationId: string; createdAt: string }
+
 export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }
 export interface VtaDemoSnapshot {
   account: { id: string; scope: 'SIMULATION_SPOT'; cashPolicy: 'SHARED_DEMO_BALANCE'; active: boolean };
@@ -899,6 +905,13 @@ export const api = {
     request<{ chain: string; address: string; supportedAssets: string[]; note: string }>(
       `/deposit-address/${chain}`
     ),
+
+  getWalletActivity: () => request<{ id: string; kind: 'adjustment' | 'conversion'; asset: string; amount: string; toAsset?: string; toAmount?: string; ledger?: 'spot' | 'demo'; createdAt: string }[]>('/wallet/activity'),
+  getConversionAvailability: () => request<{ convertible: boolean; ledger: 'spot' | 'demo' }>('/wallet/conversion/availability'),
+  getConversionAssets: () => request<{ asset: string; kind: 'fiat' | 'crypto'; scale: number; available: string }[]>('/wallet/conversion/assets'),
+  quoteConversion: (params: { fromAsset: string; toAsset: string; amount: string }) => request<WalletConversionQuote>('/wallet/conversion/quote', { method: 'POST', body: JSON.stringify(params) }),
+  confirmConversion: (quoteId: string) => request<WalletConversionReceipt>('/wallet/conversion/confirm', { method: 'POST', body: JSON.stringify({ quoteId }) }),
+  getConversionReceipt: (quoteId: string) => request<WalletConversionReceipt | null>(`/wallet/conversion/receipt/${encodeURIComponent(quoteId)}`),
 
   getMyDeposits: () =>
     request<
