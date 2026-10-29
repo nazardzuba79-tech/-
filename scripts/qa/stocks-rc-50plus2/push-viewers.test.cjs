@@ -33,6 +33,9 @@ test('50 header-only public push connections, one stream per viewer, no polling,
  assert.equal(server.seen.length,50);assert.ok(server.seen.every((x,i)=>x.path==='/__stocks_global/stream'&&x.search==='?id='+encodeURIComponent(instrument)&&x.token.startsWith('Bearer test-only-')));
  assert.ok(server.seen.every(x=>!x.search.includes('test-only')&&!x.search.includes('Bearer')));
  await viewers.close();
+ // The client AbortSignal closes its reader first; the HTTP server's own
+ // socket-close event follows on the next event-loop turn.
+ for(let i=0;i<40&&server.live.size;i++)await new Promise(resolve=>setTimeout(resolve,10));
  assert.equal(server.live.size,0);
 });
 test('incorrect public quote identity fails closed before a usable stream',async t=>{
