@@ -188,3 +188,32 @@ test('statistics are report only: spread, run bootstrap and the A/A baseline ref
   assert.deepEqual(s.bootstrapPooledDeltaPercent95.map(x => x.toFixed(9)), [r.kinds.after.pooledDeltaPercent, r.kinds.after.pooledDeltaPercent].map(x => x.toFixed(9)));
   assert.match(markdown(r), /\| after \| 2 \| /);
 });
+
+test('--methodology isolated-clients: runs must say so and carry every placement proof and the client headroom', t => {
+  // The stored fixture predates R8 (shared CPUs): under the isolated-client gate it is incomplete.
+  incomplete(summarize(FIXTURE, {pairs: 1, methodology: 'isolated-clients'}), 'before-1:METHODOLOGY_MISMATCH', 'before-1:QUALIFICATION_PLACEMENT_UNPROVEN', 'before-1:BASELINE_PLACEMENT_UNPROVEN', 'after-1:MIXED_CLIENT_HEADROOM_UNPROVEN');
+  incomplete(summarize(FIXTURE, {pairs: 1, methodology: 'elsewhere'}), 'METHODOLOGY_UNKNOWN');
+  const dir = copy(t), proven = {proof: {ok: true, checkedThreads: 62, violations: []}, headroom: {ok: true, clientUtilization: 0.07, driverElu: 0.11}};
+  for (const run of ['before-1', 'after-1']) {
+    edit(dir, run, 'result.json', j => { j.methodology = 'isolated-clients'; j.nullArm = false; j.sustained = false; j.qualification = {...j.qualification, placement: {ok: true}}; j.isolation = {admission: []}; });
+    for (const arm of ['baseline', 'mixed']) edit(dir, run, arm + '-result.json', j => { j.isolation = proven; });
+  }
+  const r = summarize(dir, {pairs: 1, methodology: 'isolated-clients'});
+  assert.equal(r.collection.status, 'COMPLETE', failures(r).join(', '));
+  assert.equal(r.capacity.methodology, 'isolated-clients');
+  assert.match(markdown(r), /Methodology: isolated clients/);
+  assert.equal(summarize(dir, {pairs: 1}).capacity.methodology, 'shared-cpus', 'without the option nothing changes');
+  // A thread found on the wrong side, a saturated client, a calibration or a sustained run: never acceptance evidence.
+  const damage = [
+    ['after-1', 'mixed-result.json', j => { j.isolation = {...j.isolation, proof: {ok: false, checkedThreads: 62}}; }, 'after-1:MIXED_PLACEMENT_UNPROVEN'],
+    ['after-1', 'baseline-result.json', j => { j.isolation = {...j.isolation, headroom: {ok: false}}; }, 'after-1:BASELINE_CLIENT_HEADROOM_UNPROVEN'],
+    ['before-1', 'result.json', j => { j.nullArm = true; }, 'before-1:METHODOLOGY_MISMATCH'],
+    ['before-1', 'result.json', j => { j.isolation = {admission: ['SETS_OVERLAP']}; }, 'before-1:QUALIFICATION_PLACEMENT_UNPROVEN'],
+  ];
+  for (const [run, file, fn, code] of damage) {
+    const d = copy(t); fs.cpSync(dir, d, {recursive: true}); edit(d, run, file, fn);
+    incomplete(summarize(d, {pairs: 1, methodology: 'isolated-clients'}), code);
+  }
+  assert.equal(cli(dir, ['--pairs', '1', '--methodology', 'isolated-clients']).status, 0);
+  assert.equal(cli(FIXTURE, ['--pairs', '1', '--methodology', 'isolated-clients']).status, 1);
+});

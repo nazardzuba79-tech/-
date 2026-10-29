@@ -77,9 +77,10 @@ while a crypto write waits for that row (seen locally, section R6).
 ## Resources
 
 Same host and no new server. One more Node process for the authority; its own
-Prisma pool counts against PostgreSQL `max_connections`. In the 50+2 harness every
-process (driver, crypto API, authority, gateway, PostgreSQL) stays inside the same
-2-vCPU `taskset`; nothing is added to that budget.
+Prisma pool counts against PostgreSQL `max_connections`. Until R7 every process of the
+50+2 harness (driver, crypto API, authority, gateway, PostgreSQL) stayed inside the same
+2-vCPU `taskset`; since R8 the server side has exactly those 2 vCPUs and the clients and
+the synthetic market run on the runner's other core (section R8).
 
 ## Evidence
 
@@ -580,3 +581,82 @@ cache only immutable public fragments, recompute every dynamic or private field,
   every window; the figures above use its 50 / 950 distribution. The earlier estimate of about 17 % (review reply
   6492099577) came from a profile taken before R5 removed `structuredClone` and the per-answer process figures; it
   does not hold for the current runtime and stays withdrawn, as does the +20 % floor.
+
+## R8 (29.10): isolated-client methodology, sustained load and the private quota
+
+Owner request of 29.10: until R7 every 50+2 run put the server and the load generator on the same two vCPUs
+(`taskset -c 0,1` for every process, the driver included; section "Resources"). Prepare a realistic method in which
+the server side gets exactly 2 vCPUs and the 50 viewers' and 2 traders' clients load it without using that budget;
+keep the original scenario (4 s order cycle, the same operations, 240/min private quota, crypto p95 ≤ +5 %); check
+whether such isolation is available without paid resources and do not claim independence that is not there; verify
+the tooling, including sustained load and rate limiting; leave the serializer prototype out; remove the unvalidated
+SCHED_IDLE setting only after checking its diff; no full benchmark before the method is shown to be correct.
+
+### What isolation is available without paid resources
+
+| Option | Available? | Why |
+|---|---|---|
+| GitHub-hosted standard runner `ubuntu-24.04` | **yes** | 4 vCPUs = 2 physical cores × 2 SMT threads (AMD EPYC 7763; `thread_siblings_list` 0-1 and 2-3 in every recorded run). The server gets one whole core (CPUs 0,1 = exactly 2 vCPUs), the clients the other (2,3). |
+| A separate client machine | no | GitHub-hosted jobs cannot reach one another (no inbound connections); a tunnel or relay would be an external service. |
+| An isolated CX23 clone (the original target host) | no | A Hetzner server is a paid resource; not bought. |
+| Larger GitHub runners, self-hosted runners | no | Paid, or need hardware that does not exist here. |
+
+So the clients run on **another physical core of the same VM**, not on another machine. Not shared with the server:
+the core's execution units and its two hardware threads (no client thread may run there; proven per thread). Still
+shared: the L3 cache and memory bandwidth, the kernel, the hypervisor (steal time is recorded for both CPU sets), and
+the loopback network stack — on loopback the sender's CPU also does the receiver's TCP work, so the server's CPUs pay
+the receive side of their own answers and the clients' CPUs the receive side of the requests. This is reported as
+what it is; it is not presented as independent client machines.
+
+### Method (`diagnostic-run-613.cjs --isolated-clients`, `placement.cjs`, `market-worker.cjs`)
+
+- **Server side, exactly CPUs 0,1:** PostgreSQL (`taskset` on `pg_ctl start`, so the postmaster and every backend),
+  the crypto API worker (exec'd by `taskset`, so no thread of it ever runs elsewhere) and both Stocks processes
+  (forked by the API worker, inheriting its CPUs).
+- **Client side, CPUs 2,3:** the load driver (the workflow starts it under `taskset -c 2,3`) and the synthetic
+  market. Until R7 the synthetic market (the stand-in for the exchanges' REST and WebSocket endpoints) ran inside the
+  gateway process and its CPU was charged to the server; in production the exchanges are not on VOLTEX's host. It now
+  runs in `market-worker.cjs` on the client CPUs; the gateway keeps its own market client (hub, stream feed, REST
+  fetches), as in production.
+- **Admission:** refuses a host without 4 CPUs or `taskset`, a driver that is not on exactly CPUs 2,3, and CPU sets
+  that share a physical core (sysfs `thread_siblings_list`) — e.g. a host that numbers SMT siblings 0,2 / 1,3.
+- **Placement proof** after the qualification and after every measured window: every thread of every process on both
+  sides (PostgreSQL backends and the Stocks processes as descendants) must be allowed exactly its side's CPUs;
+  any violation fails the run (`PLACEMENT_PROOF_FAILED_*`).
+- **Per-CPU accounting** from `/proc/stat` over each measured window for both sets: user, nice, system, softirq,
+  steal, busy and utilisation; memory per server process (VmHWM) and of the PostgreSQL cluster (summed PSS).
+- **Client headroom gate:** client set busy ≤ 50 % and driver event-loop utilisation ≤ 0.5 in every window, so a
+  saturated client cannot pass for server latency (`CLIENT_HEADROOM_EXCEEDED_*`).
+- **Unchanged:** plan (50 viewers at 1 s, 2 traders with the 4 s order cycle and exact replays, 80 crypto cycles,
+  5 s warm-up + 20 s measured window), PAIRS 8 in ABBA order, both pins, the +5 % pooled crypto Δp95 verdict,
+  the 240/min private ingress, Stocks BUY/SELL off in production. `summarize-613.cjs --methodology isolated-clients`
+  additionally requires every proof.
+- **A/A calibration before any acceptance run** (`--null-arm`, `calibration-613.cjs`): six runs of the after pin in
+  which the second arm carries the baseline load again under the identical procedure. Their pooled Δp95 is the
+  method's own error (arm order, fresh processes, warm-up, runner noise). The method counts as calibrated on a runner
+  only if all six runs are complete (placement, headroom, cleanup) and |pooled A/A Δp95| ≤ 5 %.
+- **Workflow gating:** a push alone runs nothing expensive. The head commit message names what to run
+  (`RC50-RUN: methodology | acceptance | sustained | pg-profile`); acceptance and sustained jobs need the calibration
+  job of the same workflow run to pass first. The R6 placement job and the 8 s diagnostic matrix entry no longer run
+  on every push.
+- **Not included:** the R7 viewer serializer prototype (not published, saving unsupported). The gateway's idle
+  scheduling class: removed in R7 (`47f5d04d`) after checking its diff — the compose example is byte-identical to the
+  pre-R6 `89ff321a`, the after pin no longer sets it, and the runtime source is unchanged.
+
+### Realism notes (reported, not changed)
+
+- The real terminal (`GlobalStocks.tsx`) polls the state every **3 s** (`startVisibleStockPolling(..., 3000)`); the
+  agreed 50+2 scenario polls every **1 s**, three times the real viewer load. The scenario is kept as agreed.
+- On an overload code with `retryAfterMs` the terminal pauses its reads until then. The acceptance window never sees a
+  429; the sustained mode below models that pause.
+
+### Sustained load and the private quota (`--sustained`, `sustained-613.cjs`)
+
+Both arms measure 3 minutes instead of 20 s, otherwise the same plan, after pin, isolated clients. The authority logs
+every private request (arrival, route, status) from its start, so the busiest sliding minute includes setup and
+warm-up as the ingress's own minute does. Clients answer a 429 as the terminal does: a viewer skips its polls until
+`Retry-After`; a trader waits and sends the same request again (same intent id: the authority's idempotency keeps it
+exactly-once) and skips the cycles that fall into the wait; a trader order step refused for a stale quote (rolled back
+by the authority: no order, no receipt) is sent again after a fresh read. Everything is counted. Gates of this
+report-only scenario: the ingress never over 240 in a sliding minute and never answering 429 itself, no crypto error,
+no trader request refused, every 429 with `Retry-After`, the financial invariants of both arms.

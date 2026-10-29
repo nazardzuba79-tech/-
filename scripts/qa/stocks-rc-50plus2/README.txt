@@ -60,6 +60,42 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
+#613 R8 methodology (2026-10-29, Claude, owner request): isolated clients
+diagnostic-run-613.cjs --isolated-clients gives the server side (PostgreSQL, the
+crypto API, the Stocks authority and gateway) exactly CPUs 0,1 (placement.SERVER)
+and nothing else; the load driver (this process: the 50 viewers', 2 traders' and
+crypto clients) runs on CPUs 2,3 (placement.CLIENT; the workflow starts it under
+taskset -c 2,3) together with the synthetic market (market-worker.cjs, the stand-in
+for the exchanges, which in production are not on VOLTEX's host; the gateway keeps
+its own market client). PostgreSQL and the API worker are exec'd by taskset, the
+Stocks processes inherit the API worker's CPUs. Admission refuses a host where the
+two sets share a physical core (sysfs thread_siblings_list), where the driver is not
+on exactly the client CPUs, or without 4 CPUs/taskset. After the qualification and
+after every measured window, placement.cjs proves every thread of every process on
+both sides (PostgreSQL backends and the Stocks processes as descendants), records
+per-CPU time of both sets from /proc/stat (user, system, softirq, steal), memory
+(VmHWM per Node process, PostgreSQL PSS) and checks client headroom (client set
+busy <= 50 %, driver event-loop utilisation <= 0.5); a violation fails the run.
+Same plan, thresholds and verdict (pooled crypto dp95 <= +5 %);
+summarize-613.cjs --methodology isolated-clients additionally requires every proof.
+--null-arm (calibration, never a verdict): the second arm carries the baseline load
+again; calibration-613.cjs judges six such runs (aa-1..aa-6): complete collection
+and |pooled A/A dp95| <= 5 %, else the method is not calibrated on that runner and
+no acceptance run follows. --sustained (separated pin, report only): both arms
+measure 3 minutes; viewer 429s from the gateway are counted with their Retry-After
+instead of failing the run; the authority logs every private request; sustained-613.cjs
+reports the busiest sliding minute against 240, ingress 429s, viewer polls answered
+or refused, trader and crypto errors and crypto p95 per minute. Known limits of the
+isolation: both CPU sets are one VM (shared L3 cache, memory bandwidth, kernel,
+hypervisor steal); loopback TCP is processed in the sender's context, so the server
+pays the receive side of its own answers and the clients the receive side of their
+requests. Placement experiments --driver-apart / --stocks-apart stay as they were.
+Self-tests (no workload): placement.test.cjs (synthetic /sys and /proc trees, live
+check), sustained-613.test.cjs, driver-sustained.test.cjs (the driver against fake
+loopback servers: 429 + Retry-After, the same intent sent again once, stale-quote
+retries, the acceptance path still failing on any of them), calibration-613.test.cjs,
+summarize-613.test.cjs (--methodology isolated-clients).
+
 #613 candidate pins (repinned 2026-10-29, Claude: R7)
 Both policies pin 47f5d04d (#613 R7): the runtime of d6da2c84 (8f73e373 plus the review 6490492921
 re-check of a failed observation after its live identity check) with the gateway's idle
