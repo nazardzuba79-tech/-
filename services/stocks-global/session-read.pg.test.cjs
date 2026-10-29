@@ -99,3 +99,49 @@ pg('an identity batch reads its sessions together and answers every bearer exact
   const again=await fetch(s.f.apiOrigin+'/api/v1/stocks-test-cash/identities',{method:'POST',headers:{'content-type':'application/json','x-stocks-authority-key':s.f.gatewayKey},body:JSON.stringify({tokens:tokens.slice(0,2)})});
   assert.deepEqual((await again.json()).results,[{error:'AUTH_REQUIRED'},{error:'AUTH_REQUIRED'}]);
 });
+
+// #613 (review 6488847153): the time at which a batched check judges a bearer. A batch reads all of its
+// sessions in one statement, so each bearer is judged at that statement's snapshot, which is never before
+// the request arrived (a request only joins a batch that has not been sent). Characterized against the
+// single check at the same instant: an uncommitted sign-out is not yet visible to either; a sign-out that
+// commits while the batch waits to be sent, or before its statement runs, refuses the bearer; one that
+// commits after the statement read the session leaves that answer standing, exactly as a single check
+// whose read came first, and the bearer's very next request is refused.
+pg('a delayed identity batch judges each bearer at its own session read, as a single check at that instant',async t=>{
+  const s=await setup(t),alice=await s.user('delay-alice'),bob=await s.user('delay-bob');
+  const a=await s.session(alice),b=await s.session(bob);
+  const batch=async tokens=>{const r=await fetch(s.f.apiOrigin+'/api/v1/stocks-test-cash/identities',{method:'POST',headers:{'content-type':'application/json','x-stocks-authority-key':s.f.gatewayKey},body:JSON.stringify({tokens})});assert.equal(r.status,200);return (await r.json()).results.map(x=>x.subject??x.error);};
+  const single=async token=>(await fetch(s.f.apiOrigin+'/api/v1/stocks-test-cash/identity',{headers:{authorization:'Bearer '+token}})).status;
+  // 1. A sign-out held in an open transaction: neither the batch nor a single check sees it (plain reads, no row wait).
+  let updated,commit;const isUpdated=new Promise(r=>updated=r),committed=new Promise(r=>commit=r);
+  const signOut=s.f.other.$transaction(async tx=>{await tx.session.update({where:{id:a.id},data:{revokedAt:new Date()}});updated();await committed;},{timeout:20000});
+  await isUpdated;
+  assert.deepEqual(await batch([a.token,b.token]),[alice.id,bob.id]);
+  assert.equal(await single(a.token),200);
+  // 2. Committed: the next batch and the next single check both refuse it; the other bearer is unaffected.
+  commit();await signOut;
+  assert.deepEqual(await batch([a.token,b.token]),['AUTH_REQUIRED',bob.id]);
+  assert.equal(await single(a.token),401);
+  // 3. Through the gateway's adapter, with the batch held on its way to the authority: a sign-out that commits
+  //    after the request arrived but before the batch is read refuses it.
+  const {createAuthorityAdapter}=await import('./authority-adapter.mjs');
+  let beforeRead=async()=>{},afterRead=async()=>{};
+  const adapter=createAuthorityAdapter({endpoint:s.f.apiOrigin+'/api/v1/stocks-test-cash',issuer:s.f.issuer,gatewayKey:s.f.gatewayKey,fetchImpl:async(url,options)=>{
+    if(url.endsWith('/identities'))await beforeRead();
+    const response=await fetch(url,options);
+    if(url.endsWith('/identities'))await afterRead();
+    return response;
+  }});
+  t.after(()=>adapter.close());
+  const check=token=>adapter.runWithRequest({headers:{authorization:'Bearer '+token}},()=>adapter.authenticate(undefined,{})).then(p=>p.subject,e=>e.code);
+  const c=await s.session(bob);
+  beforeRead=async()=>{beforeRead=async()=>{};await s.f.db.session.update({where:{id:c.id},data:{revokedAt:new Date()}});};
+  assert.equal(await check(c.token),'AUTH_REQUIRED','signed out while the batch waited: refused');
+  // 4. A sign-out that commits after the authority read the session (while the answer is on its way back): that
+  //    answer stands, as a single check whose read came first; the very next check is refused.
+  const d=await s.session(bob);
+  afterRead=async()=>{afterRead=async()=>{};await s.f.db.session.update({where:{id:d.id},data:{revokedAt:new Date()}});};
+  assert.equal(await check(d.token),bob.id,'read before the sign-out: admitted, as a single check read then would be');
+  assert.equal(await check(d.token),'AUTH_REQUIRED','the next check after the sign-out: refused');
+  assert.equal(await single(d.token),401);
+});

@@ -236,7 +236,10 @@ Now, with the quota, Host, path/method, capability, connection and timeout limit
    authority re-reads the session (`revokedAt`, binding, expiry), the user block (`blockedAt`) and
    the trade principals inside every command's own transaction, so `authorize()` right before a
    command only repeated that. `server.mjs` keeps it for the local SQLite worker, which cannot.
-   `/portfolio` keeps its post-read re-check; the request-start identity check stays for everyone.
+   `/portfolio` keeps its post-read re-check. Since R5 (29.10, below) a trader's request whose bearer
+   the authority has already confirmed takes no separate request-start check: its own command is the
+   live judgement, and a request without one is checked live before it is answered. Viewers keep the
+   request-start check on every request.
 2. **Identity checks travel together (multiplexing, not caching).** `authority-adapter.mjs` puts
    the bearers of concurrent gateway requests into one `POST identities` (at most 64 bearers,
    60 KiB). The authority (`stocksTestCash.ts`) runs the very same `requireAuth` live session read
@@ -288,15 +291,13 @@ it fails exactly as run 40726294118 (warm-up 12 s; viewers 10, 12, 13, 14, 16 `Q
 both traders `QUOTE_STALE`); on `e92cbd8a` it passes (3 of 3 local runs: warm-up 4.9 s, 1,010 jobs,
 0 errors, job p50/p95 0.70/0.72 s, 208 private requests in the first quota window).
 
-**Known limit: the harness's trader cadence does not fit the private quota.** The harness's own authority
-has no ingress. Its trader job (state, then limit, cancel, buy, replay, sell, replay every 4 s) is 7 private
-requests per trader every 4 s: 210 commands a minute for the two traders, before the 60–90 identity
-batches a minute that 50 viewers need. That is about 300 against the reviewed 240/min ceiling. Run at
-that cadence through the real ingress, both traders got 429 `AUTH_RATE_LIMIT` at their fifth cycle
-(warm-up 123 + measured 119 private requests in one 60 s window). The ceiling is not raised for a test
-(`docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md`); the regression keeps the harness's poll cadence and
-runs the order cycle every 8 s (120 commands a minute). Whether two pilot traders need more than about
-150 commands a minute, and so a higher reviewed ceiling, is an owner decision.
+**Was a known limit until R5: the harness's trader cadence did not fit the private quota.** The
+harness's trader job (state, then limit, cancel, buy, replay, sell, replay every 4 s) is 7 private
+commands per trader every 4 s. Run at that cadence through the real ingress on `e92cbd8a`…`ed31f4e8`,
+both traders got 429 `AUTH_RATE_LIMIT` at their fifth cycle (warm-up 123 + measured 119 private requests
+in one 60 s window), because every trader request also took its own identity check: the warm-up's
+sequential trader reads alone spent about 36 identity batches. The 8 s cycle was a workaround for that;
+since R5 it is only a separately labelled diagnostic. See "R5" below for what changed and what remains.
 
 That a just-demanded Binance stream instrument answers its very first read with `QUOTE_UNAVAILABLE`
 (and the next poll succeeds) is existing market-data behaviour, also on the old code; it is left
@@ -330,3 +331,76 @@ shape before any session read, per-bearer live decisions, same admit/refuse as `
 An admin block (`User.blockedAt`) still does not end a viewer's market-only access: `requireAuth`
 does not read it anywhere in the platform (existing sessions expire naturally, see
 `src/api/routes/adminUsers.ts`). The contact-address block revokes and refuses at once.
+
+## R5 (29.10): the original 4 s load inside the 240/min quota, and the per-poll gateway overhead
+
+Owner instruction of 29.10: keep the original 50 viewers + 2 traders with the 4 s order cycle as the
+acceptance test (the 8 s cycle only as a separately labelled diagnostic), do not raise the 240/min
+private limit, remove unnecessary calls and overhead, and fix the runtime cause rather than the test.
+
+**Where the private requests went.** At the 4 s cycle the two traders' commands are 210 a minute
+(70 in the 20 s measured window). Every trader request additionally waited for, and was counted in,
+an identity batch, although the PostgreSQL authority judges the very same bearer again inside the
+command's own transaction (session row, user block, binding, expiry, trade policy) and binds the
+command to that bearer's own account. That separate check was the unnecessary call.
+
+**Runtime change (`c67b3fc9`).**
+
+1. *A trader's command is its identity judgement.* After the authority has confirmed a bearer live
+   for a principal the gateway lets trade, the adapter remembers which principal that bearer belongs
+   to (at most 16 bearers, 60 s, refreshed only by live answers). The bearer's next request starts
+   without a separate check and is *unconfirmed*: the command answer now names the actor the authority
+   bound (`stocksTestCash.ts`), and the adapter accepts the request only when that actor is the
+   expected principal. A request that runs no command, or whose command failed, is checked live before
+   the gateway answers it (`server.mjs` `confirm()` before every answer, error answers included).
+   Nothing is granted from memory: the remembered bearer only says which principal to expect. A bearer
+   refused anywhere is forgotten at once, so the next request goes through the live check. Viewers'
+   bearers are never remembered (their requests run no command), so every viewer request is checked
+   exactly as before. Cost of the design: a signed-out trader's very next request may reach the
+   gateway's route work (quote read, demand lease) before its command is refused with 401; it never
+   reaches an account, a financial write or an answer.
+2. *Identity budget sized for the commands too.* The token bucket keeps Q/160 batches per second; its
+   burst is Q/4 (was 3Q/8, sized for the 86 warm-up checks that traders no longer need), and a batch
+   never takes the last minute's private requests (commands counted; the gateway is the ingress's only
+   client) past Q − Q/16 (225 of 240). A check that cannot be sent before its 3 s deadline gets 429
+   with `Retry-After` at once, as the ingress would answer, instead of 503 at its deadline. One
+   deadline timer for all waiting checks and one release timer per batch replace one of each per
+   request.
+3. *Per-poll overhead.* Profiled locally under the 4 s load, the gateway's own work for a viewer poll
+   included a `structuredClone` of the market-only view (~0.1 ms), a `process.memoryUsage.rss()` and
+   `process.cpuUsage()` system call pair, and three or four SHA-256 derivations of the same account
+   id. The empty-viewer projection now copies plain data without the serializer (identical output and
+   key order, tested against `snapshot()`), the process figures in state answers are read at most
+   once a second, and account ids are derived once per (issuer, subject).
+
+**Release-chain regression, original 4 s cycle** (`identity-load.pg.test.cjs`, compiled authority
+behind the real private ingress at 240/min, release gateway with the synthetic stream market, the
+harness's warm-up, 5 s pause and 20 s measured window; local disposable PostgreSQL 16, Node 22.23.3):
+
+| Run | Jobs | Errors | Missed | 429 | Commands (measured) | Identity batches (warm-up + measured) | Busiest minute incl. warm-up | Job p50 / p95 |
+|---|---|---|---|---|---|---|---|---|
+| `ed31f4e8` (before) | 1,010 | 2 traders 429 at cycle 5 | — | yes | — | 86 + … | 242 | — |
+| R5, run 1 | 1,010 | 0 | 0 | 0 | 70 (2 × 5 × 7) | 52 + 49 | 210 of 240 | 672 / 689 ms |
+| R5, run 2 | 1,010 | 0 | 0 | 0 | 70 | 52 + 49 | 210 | 674 / 689 ms |
+| R5, run 3 | 1,010 | 0 | 0 | 0 | 70 | 52 + 49 | 210 | 671 / 687 ms |
+
+Exactly the intended orders (each LIMIT cancelled, each MARKET filled once despite its replay), no
+viewer balance. The full-minute load test (traders reading state every 4 s) and the over-quota test
+pass on the same code; in the over-quota test viewers now get 200 or an immediate 429 (no 503), and
+each command the quota refused was one trader request answered 429 (no command sent again).
+
+**What R5 does not change: a sustained full minute of the 4 s cycle.** Two traders cycling every 4 s
+for a whole minute make 210 commands a minute; under the 225 ceiling that leaves about 15 identity
+batches a minute for 50 viewers polling every second, so after the first minute of continuous trading
+most viewer polls would wait for a batch or be refused with 429. The 50+2 acceptance runs (20 s measured windows, fresh
+processes per arm) fit with room to spare (busiest minute 210); a pilot that trades at that cadence
+continuously needs an owner decision (a higher reviewed ceiling, slower viewer polling, or fewer
+commands per cycle). Not changed here.
+
+**Local CPU smoke (4-vCPU dev container under `taskset -c 0,1`; one run each, not a p95 verdict).**
+Per 20 s mixed window: on `ed31f4e8` the 4 s cycle failed (trader 1 got 429 on a replay; the
+invariant check flagged it); on R5 it completed with 0 errors and all 30 orders. Gateway CPU about
+2.5–2.9 s and authority 1.2–1.4 s per window on R5 at the 4 s cycle (2.7 s and 0.7–0.8 s at the 8 s
+cycle); run-to-run spread on this container is about ±10 %, so the overhead cuts are not separable
+from noise locally. The p95 verdict comes only from the CI 50+2 jobs on the 2-vCPU runner.
+

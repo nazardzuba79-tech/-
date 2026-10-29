@@ -37,6 +37,14 @@ a minute, so the harness's full trader load needs about 300/min and two traders 
 cycle through this ingress. The ceiling stays 240; the release-chain regression runs the order cycle every
 8 s. Details: `docs/STOCKS_613_PROCESS_ISOLATION.md`.
 
+**#613 R5, 29.10 (quota still 240, not raised).** A trader's request no longer takes a separate identity
+check once its bearer was confirmed live: the authority's judgement inside the command (now naming the
+bound actor) is that check, and a request without a command is checked live before it is answered.
+Identity batches never take the last minute past Q - Q/16 (225 of 240). The harness's original 4 s
+cycle now fits: busiest minute 210 of 240 including the warm-up, 0 x 429, on the release chain (local).
+A full minute of continuous 4 s trading (210 commands a minute) would still leave too little for 50
+viewers polling every second; that remains an owner decision.
+
 ## Provenance and activation contract
 
 Disabled by default. No production config, listener or trading flag is changed.

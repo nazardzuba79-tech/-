@@ -139,7 +139,8 @@ function authFixture() {
   const reads=[],writes=[];
   const db={session:{async findUnique(args){reads.push(args);return session},async update(args){writes.push(args);return {id:'session-fixture'}}}};
   const {requireAuth}=compile('src/api/middleware/auth.ts',{
-    require(name){if(name==='../../services/ContactEmailPolicy')return {isBlockedContactEmail:async()=>false,isRevokedContactToken:async()=>false};if(name==='jsonwebtoken')return {verify(){return {sub:'user-fixture',sid:'session-fixture'}}};throw Error(name)},
+    // The native crypto module is allowed: auth.ts imports it for the Stocks key normalization (#613).
+    require(name){if(name==='../../services/ContactEmailPolicy')return {isBlockedContactEmail:async()=>false,isRevokedContactToken:async()=>false};if(name==='jsonwebtoken')return {verify(){return {sub:'user-fixture',sid:'session-fixture'}}};if(name==='crypto')return require('node:crypto');throw Error(name)},
     process:{env:{JWT_SECRET:'local-test-placeholder-not-a-production-secret'}},
   });
   return { reads,writes,db, setSession(next){session=next}, async call(){
