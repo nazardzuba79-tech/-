@@ -56,6 +56,7 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
    await page.waitForFunction(()=>document.querySelectorAll('.trader-profile-identity .strategy-socials a').length===1);
    assert.equal(await links.locator('a').getAttribute('href'),'https://t.me/qa_telegram');
    assert.equal(await links.locator('button[disabled]').count(),1);
+   assert.equal(await editor.getByLabel('Telegram',{exact:true}).evaluate(el=>getComputedStyle(el).webkitTextFillColor),'rgb(23, 32, 51)','saved input stays legible on the light profile');
    await page.screenshot({path:path.join(out,`${id}-${width}-profile.png`),fullPage:false});
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal overflow');
    await page.getByRole('button',{name:'Назад к копитрейдингу',exact:true}).click();
@@ -65,6 +66,7 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
    const disabledGroups=page.locator('[data-social-trader]:not([data-social-trader="VX-001"]):not([data-social-trader="VX-KSENIA"])');
    assert(await disabledGroups.count()>0);
    for(const group of await disabledGroups.all()){assert.equal(await group.locator('a').count(),0);assert.equal(await group.locator('button[disabled]').count(),2);}
+   await card.scrollIntoViewIfNeeded();
    await page.screenshot({path:path.join(out,`${id}-${width}-cards.png`),fullPage:false});
    // The other strategy has no self-service editor for this authenticated owner.
    const other=id==='VX-001'?'VX-KSENIA':'VX-001';await page.locator(`.trader-card[data-trader-id="${other}"]`).click();await page.waitForTimeout(350);

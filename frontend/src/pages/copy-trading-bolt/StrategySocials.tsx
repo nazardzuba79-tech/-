@@ -8,6 +8,8 @@ const SocialContext = createContext<{ identities: Identity[]; saved: (id: string
 export function StrategySocialProvider({ identities, children }: { identities: Identity[]; children: ReactNode }) {
   const [overrides, setOverrides] = useState<Record<string, StrategySocials>>({});
   useEffect(() => onSessionChange(() => setOverrides({})), []);
+  // The next authoritative identity snapshot also clears local edits after rebinding.
+  useEffect(() => setOverrides({}), [identities]);
   return <SocialContext.Provider value={{ identities: [...identities.filter(i => !overrides[i.traderId]), ...Object.entries(overrides).map(([traderId, links]) => ({ traderId, ...links }))], saved: (id, links) => setOverrides(old => ({ ...old, [id]: links })) }}>{children}</SocialContext.Provider>;
 }
 
