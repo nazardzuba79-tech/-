@@ -5,7 +5,7 @@ let f,market,cleanup=[],configuration,diagnostics,cpuHttpProfile,gatewayPort;
 // Topology: 'single-process' hosts the crypto API, the Stocks authority, the gateway and the synthetic market in
 // this process; 'separated' keeps only the crypto API here and forks the Stocks authority and gateway processes
 // (stocks-worker.cjs) of the separated release layout. Both arms of a run use the same topology.
-const TOPOLOGIES=['single-process','separated'],stocks={};
+const TOPOLOGIES=['single-process','separated'],stocks={},CHRT='/usr/bin/chrt',TASKSET='/usr/bin/taskset';
 // Event-loop utilization and delay of this API process, read by 'metrics' before and after each measured
 // window (the delay histogram restarts at every read). Same in every arm and pin; a 10 ms sampling timer.
 const {performance:perf,monitorEventLoopDelay}=require('node:perf_hooks'),loopDelay=monitorEventLoopDelay({resolution:10});loopDelay.enable();
@@ -22,7 +22,12 @@ const timings=()=>{const value=Object.fromEntries(serverTimings);serverTimings.c
 function fork(role,arm){
  const cp=require('node:child_process'),out=n=>fs.openSync(path.join(configuration.runRoot,arm+'-stocks-'+role+'.'+n+'.log'),'w'),stdout=out('stdout'),stderr=out('stderr');
  const env={};for(const k of ['PATH','SystemRoot','WINDIR','TEMP','TMP','HOME','LANG','PRISMA_HIDE_UPDATE_MESSAGE','CHECKPOINT_DISABLE','TS_NODE_CACHE','RC50_RUN_ROOT','NODE_PATH'])if(process.env[k])env[k]=process.env[k];
- const child=cp.fork(path.join(__dirname,'stocks-worker.cjs'),[],{cwd:configuration.root,env,execArgv:['--max-old-space-size=384','--require',path.join(__dirname,'network-guard.cjs')],windowsHide:true,stdio:['ignore',stdout,stderr,'ipc']});
+ // STOCKS_SCHED 'gateway-idle': the gateway starts under chrt in the idle scheduling class, so every thread it
+ // creates is in it; the authority (a database lock holder) stays in the normal class. --stocks-apart (experiment):
+ // the Stocks process starts under taskset on its own CPUs.
+ const idle=configuration.stocksSched==='gateway-idle'&&role==='gateway';
+ const prefix=[...(configuration.stocksCpus?[TASKSET,'-c',configuration.stocksCpus]:[]),...(idle?[CHRT,'--idle','0']:[])];
+ const child=cp.fork(path.join(__dirname,'stocks-worker.cjs'),[],{cwd:configuration.root,env,...(prefix.length?{execPath:prefix[0]}:{}),execArgv:[...prefix.slice(1),...(prefix.length?[process.execPath]:[]),'--max-old-space-size=384','--require',path.join(__dirname,'network-guard.cjs')],windowsHide:true,stdio:['ignore',stdout,stderr,'ipc']});
  fs.closeSync(stdout);fs.closeSync(stderr);
  // The pin's deployable scheduling control: a lower CPU weight for the Stocks processes than for the crypto API
  // (the release sets the same relation with cpu_shares). It takes no CPU from or adds none to the shared taskset.
@@ -43,6 +48,8 @@ async function initialize(c){
  configuration=c;database(c.dbUrl,c.dbName);
  if(!TOPOLOGIES.includes(c.topology)||!/^(qualification|baseline|mixed)$/.test(c.arm))throw Error('TOPOLOGY_OR_ARM_UNKNOWN');
  if(c.stocksNice!==0&&!(c.topology==='separated'&&Number.isInteger(c.stocksNice)&&c.stocksNice>=1&&c.stocksNice<=19))throw Error('STOCKS_NICE_INVALID');
+ if(c.stocksCpus!==undefined&&!(c.topology==='separated'&&c.stocksCpus==='2,3'&&process.platform==='linux'&&fs.existsSync(TASKSET)))throw Error('STOCKS_CPUS_INVALID');
+ if((c.stocksSched??'')!==''&&!(c.topology==='separated'&&c.stocksSched==='gateway-idle'&&process.platform==='linux'&&fs.existsSync(CHRT)))throw Error('STOCKS_SCHED_INVALID');
  const cp=require('node:child_process'),exec=cp.execFileSync;cp.execFileSync=(file,argv,options={})=>exec(file,argv,{...options,windowsHide:true});
  const root=fs.realpathSync(c.root),generated=fs.realpathSync(c.generatedClient);
  if(!generated.startsWith(fs.realpathSync(c.runRoot)+path.sep))throw Error('OWN_GENERATED_CLIENT_REQUIRED');
@@ -124,9 +131,14 @@ async function qualification(){
   const [a,g]=await Promise.all([stocks.authority.rpc('metrics'),stocks.gateway.rpc('metrics')]);
   assert.ok(new Set([process.pid,a.pid,g.pid]).size===3&&a.role==='authority'&&g.role==='gateway');
   assert.ok(a.nice===configuration.stocksNice&&g.nice===configuration.stocksNice&&require('node:os').getPriority()===0,'STOCKS_NICE_NOT_APPLIED');
+  // Idle class: every gateway thread in it (Linux policy 5); every authority and crypto API thread in the normal class (0).
+  const only=(p,policy)=>!!p&&Object.keys(p).every(k=>k.startsWith(policy+'/'));
+  if(configuration.stocksSched==='gateway-idle')assert.ok(only(g.policies,5)&&only(a.policies,0)&&only(require('./sched.cjs').policies(),0),'STOCKS_SCHED_NOT_APPLIED');
+  else assert.ok(only(g.policies,0)&&only(a.policies,0),'STOCKS_SCHED_NOT_APPLIED');
+  if(configuration.stocksCpus)assert.ok(a.cpus==='2-3'&&g.cpus==='2-3'&&require('./sched.cjs').allowed()!=='2-3','STOCKS_CPUS_NOT_APPLIED');
   // The authority sits behind the release's private ingress: no capability, no service.
   const bare=await fetch(stocks.endpoint+'/readiness');assert.equal(bare.status,403);await bare.text();
-  separated={apiServesStocksAuthority:false,processes:3,stocksNice:configuration.stocksNice,privateIngress:true};
+  separated={apiServesStocksAuthority:false,processes:3,stocksNice:configuration.stocksNice,stocksSched:configuration.stocksSched||'normal',stocksThreads:{authority:a.policies,gateway:g.policies},stocksCpus:{authority:a.cpus,gateway:g.cpus,api:require('./sched.cjs').allowed()},privateIngress:true};
  }
  return{status:'PASS_WIRING_QUALIFICATION_ONLY',topology:configuration.topology,separated,realCryptoHttp:true,realStocksHttp:true,viewerDeny:true,cashRoundTrip:true,full50Plus2Runs:0};
 }

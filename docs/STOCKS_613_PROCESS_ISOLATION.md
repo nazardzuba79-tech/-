@@ -67,6 +67,16 @@ service units. It reserves nothing, takes no CPU away when the host is idle and
 adds nothing to the budget. The 50+2 `after` pin applies it as nice 10 on both
 Stocks processes.
 
+Since R6 the gateway also runs in Linux's idle scheduling class
+(`chrt --idle 0` in the compose example; `CPUSchedulingPolicy=idle` in a
+systemd unit): a waking crypto API or PostgreSQL task takes the CPU from it at
+once, instead of waiting until a nice-10 task has used its time slice. The
+gateway holds no database credential or lock. The authority stays in the normal
+class at nice 10: it holds trader rows locked inside its transactions, and an
+idle-class lock holder can be starved while a crypto write waits for that row
+(seen locally, section R6). The 50+2 `after` pin applies the same split
+(`STOCKS_SCHED='gateway-idle'`, proven per thread in the qualification).
+
 ## Resources
 
 Same host and no new server. One more Node process for the authority; its own
@@ -410,3 +420,75 @@ invariant check flagged it); on R5 it completed with 0 errors and all 30 orders.
 cycle); run-to-run spread on this container is about ±10 %, so the overhead cuts are not separable
 from noise locally. The p95 verdict comes only from the CI 50+2 jobs on the 2-vCPU runner.
 
+
+## R6 (29.10): the 4 s acceptance result, its cause, and the gateway's scheduling class
+
+**Acceptance run, original 4 s cycle** ([run 40831978973](https://github.com/nazardzuba79-tech/-/actions/runs/40831978973),
+job "original 4 s order cycle", head `89ff321a`, runtime `8f73e373` = R5 with review 6489779311). GitHub-hosted runner,
+every process inside `taskset -c 0,1` (the two SMT threads of one AMD EPYC 7763 core), PAIRS 8, ABBA order.
+Collection COMPLETE 16/16; artifact SHA-256 `7168b29aa0282fa41e87effc885aae29e655937bce43b2c1dafe5b517bcd7512`.
+
+| Pin | Crypto p50/p95/p99 baseline → mixed (ms) | Pooled Δp95 | Median run Δp95 | Per-run Δp95 | Verdict |
+|---|---|---|---|---|---|
+| one process | 7.48/11.45/17.87 → 7.44/15.73/26.83 | +37.43 % | +37.03 % | +18.8 … +42.5 % | FAIL |
+| separated, nice 10 | 7.36/11.45/16.01 → 7.50/14.45/22.66 | +26.26 % | +26.76 % | +13.7 … +39.7 % | FAIL |
+
+Bootstrap 95 % interval of the pooled separated Δp95: 20.0 … 30.4 %. A/A reference (baseline arms, odd vs even
+runs): −1.9 %. The +5 % line is not met.
+
+Completeness, every separated run: 1,440 driver requests in the mixed window (320 in the baseline), 0 errors,
+0 timeouts, 0 missed jobs, 0 order loss / double spend / viewer balance changes. Private requests to the
+authority in the 20 s measured window: 118 (70 commands + 48 identity batches covering about 1,026 bearer checks),
+0 failures; the busiest minute including the warm-up was 210 of 240 (gateway ceiling 225); no 429.
+
+Mixed arm, separated, mean per 20 s window:
+
+| | Crypto API | Authority | Gateway | Driver | PostgreSQL |
+|---|---|---|---|---|---|
+| CPU, baseline → mixed (ms) | 2,063 → 2,121 | 51 → 791 | 184 → 1,466 | 430 → 1,731 | 298 → 493 |
+| Runnable but waiting for a CPU (ms) | 842 → 1,287 | 84 → 755 | 150 → 553 | 119 → 630 | 60 → 209 |
+| Max RSS (MB) | 205 | 146 | 118 | — | — |
+
+Crypto API event-loop utilization 0.045 → 0.050; server-side crypto p95 9.99 → 12.93 ms; client−server gap
+1.52 → 1.77 ms.
+
+Same run, other jobs (report only):
+- revised 8 s cycle (labelled diagnostic, **not** the acceptance load): separated +21.35 %, one process
+  +19.46 %; authority CPU 441 ms, gateway 1,438 ms per window;
+- driver placement: driver on two other CPUs +24.18 %, together +27.15 % — the clients' CPU is not the cause;
+- PostgreSQL profile: 2 crypto lock waits on Stocks per run (4.2 and 6.6 ms in total); PostgreSQL accounts for
+  3.8 % and 5.2 % of the slowest crypto requests' time.
+
+**Cause.** The crypto API does no Stocks work any more (its CPU and event loop stay at the baseline), the clients
+and the PostgreSQL locks are ruled out, and every process on the two vCPUs waits longer for a CPU. What remains is
+the Stocks processes' own CPU on the crypto API's core: the gateway's 50 viewer polls a second (1.47 s per 20 s,
+unchanged between the 4 s and 8 s cycles) and the authority's commands and identity batches (0.79 s at 4 s, 0.44 s
+at 8 s). The crypto request path wakes the API, a PostgreSQL backend and the API again several times per request;
+each wakeup that finds both vCPUs busy with a Stocks process waits, and a nice-10 task that has just been picked
+keeps its time slice before the waking crypto task gets the CPU.
+
+**Runtime change R6.** The gateway runs in the idle scheduling class (see *Scheduling control*): a waking crypto
+API or PostgreSQL task preempts it at once, and it runs whenever the crypto side does not need the CPU. The
+authority stays in the normal class at nice 10. Locally (4-vCPU container, `taskset -c 0,1`, single runs) the idle
+class on the authority too produced a run whose crypto writes waited up to 886 ms (`place-limit` p95 756 ms,
+`cancel` p95 523 ms, reads unaffected) while trader commands slowed alike: the idle-class authority held trader 0's
+rows and was starved. That variant is rejected.
+
+Local A/B on this container (single runs, not a verdict; its baseline p95 is about 22 ms and runs vary by ±15 %):
+nice 10 +14.9, +16.4, +3.1 %; gateway idle +18.6, +1.2, +15.6, +19.8 %. The container has no SMT pair and a newer
+kernel than the runner, so the verdict comes only from the CI runner. The diagnostic workflow's
+`stocks-placement` job (replacing the answered driver-placement job) runs on one runner, interleaved: `nice` (the
+release control before R6), `idle` (the R6 pin), `apart` (both Stocks processes on CPUs 2,3) and `alone` (Stocks
+and the driver on 2,3, only the crypto API and PostgreSQL on 0,1). `apart` and `alone` use CPUs outside the budget:
+they attribute the regression (Stocks CPU on the crypto core, the driver, or the shared PostgreSQL) and are never a
+verdict. One local `apart` run still showed +24.5 %, which this container's noise cannot separate. The acceptance
+job measures the R6 pin against the unchanged +5 % line.
+
+**Review 6490492921 (residual race).** `refreshContext` checked the request's abort and the demand epoch before an
+unconfirmed request's live identity check, then recorded the failed observation (errors, readiness,
+`observeFailed`) after it without checking again. A sibling session that moved the shared demand while the check
+waited would have had a stale failure recorded against its new demand. The live check now ends only with the
+request itself (not with a sibling's demand change, which made the valid request fail with 503), and the abort and
+epoch are judged again after it, before anything shared is recorded. `trader-bearer.test.mjs` holds the first
+session's identity batch, lets the sibling move the demand, then releases it: RED before (the stale failure was
+recorded), GREEN now.

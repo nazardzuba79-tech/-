@@ -4,7 +4,12 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 // Stocks authority (src/stocksAuthority.ts) and the gateway in their own processes, under the same taskset.
 // STOCKS_NICE: the release's scheduling control, a lower CPU weight for both Stocks processes than for the
 // crypto API (cpu_shares in deploy/stocks-pages-gateway.compose.yaml.example); it adds no CPU to the budget.
-const RC='8f73e373cc7c535e9f935aeabc8d891b410428d9',TOPOLOGY='separated',STOCKS_NICE=10;
+// STOCKS_SCHED 'gateway-idle' (R6): the gateway, which holds no database lock, also runs in Linux's idle scheduling
+// class (chrt --idle 0 in the compose example), so a crypto request's wakeup takes the CPU from it at once instead of
+// waiting out the time slice a nice-10 task keeps; when the crypto side is idle it runs as before. The authority
+// stays in the normal class at nice 10: it holds trader rows locked inside its transactions, and an idle-class lock
+// holder can be starved while a crypto write waits for that row. It adds no CPU either.
+const RC='8f73e373cc7c535e9f935aeabc8d891b410428d9',TOPOLOGY='separated',STOCKS_NICE=10,STOCKS_SCHED='gateway-idle';
 const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
 const fail=message=>{throw Error(message);};
 function loopback(address,protocols=['http:']){
@@ -74,4 +79,4 @@ function comparison(base,mixed){
  if(delta===null||delta>5)failed.push('CRYPTO_P95_OVER_5_PERCENT');
  return{status:failed.length?'FAIL_LOCAL_DIAGNOSTIC':'PASS_LOCAL_DIAGNOSTIC',baselineCryptoP95Ms:p95a,mixedCryptoP95Ms:p95b,cryptoP95ChangePercent:delta,thresholdPercent:5,failures:failed,targetAcceptance:false};
 }
-module.exports={RC,TOPOLOGY,STOCKS_NICE,sha,loopback,database,args,git,environment,cleanEnv,percentile,comparison,fail};
+module.exports={RC,TOPOLOGY,STOCKS_NICE,STOCKS_SCHED,sha,loopback,database,args,git,environment,cleanEnv,percentile,comparison,fail};

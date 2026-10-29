@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const AFTER=process.argv.includes('--after');
 // --revised-8s: the order cycle every 8 s instead of the original 4 s (driver.cjs WORKLOAD), labelled as a diagnostic.
 if(process.argv.includes('--revised-8s'))process.env.RC50_REVISED_8S='1';
-const {RC,TOPOLOGY,STOCKS_NICE=0,sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,WORKLOAD,traceSha,window,invariants}=require('./driver.cjs');
+const {RC,TOPOLOGY,STOCKS_NICE=0,STOCKS_SCHED='',sha,args,environment,cleanEnv,comparison,database}=require(AFTER?'./policy-613-after.cjs':'./policy-613.cjs'),{PLAN,WORKLOAD,traceSha,window,invariants}=require('./driver.cjs');
 // --cpu-prof: V8 CPU profile of each measured API worker. Profiler overhead
 // applies to both arms; such a run locates hotspots and is never a p95 verdict.
 const PROFILE=process.argv.includes('--cpu-prof');
@@ -26,9 +26,16 @@ const PG_PROFILE_OPTIONS=" -c log_lock_waits=on -c deadlock_timeout=1ms -c log_m
 // other CPUs (the workflow starts it under taskset -c 2,3). Same plan otherwise; it measures how much of the mixed
 // arm's p95 comes from the clients sharing the server's two vCPUs, which production clients do not.
 const DRIVER_APART=process.argv.includes('--driver-apart'),SERVER_CPUS='0,1';
-const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'&&x!=='--pg-profile'&&x!=='--driver-apart'&&x!=='--revised-8s'));
+// --stocks-normal, --stocks-apart (separated pin only; experiment, report only, never a verdict): --stocks-normal runs
+// the gateway in the normal scheduling class at nice 10 (the release control before R6); --stocks-apart runs both
+// Stocks processes on CPUs 2,3, apart from the crypto API, PostgreSQL and the driver on 0,1, to show how much of the
+// mixed arm's p95 is the Stocks processes' CPU on the crypto API's core. With --driver-apart as well, only the crypto
+// API and PostgreSQL stay on 0,1 (the driver and both Stocks processes share 2,3).
+const STOCKS_NORMAL=process.argv.includes('--stocks-normal'),STOCKS_APART=process.argv.includes('--stocks-apart'),STOCKS_CPUS='2,3';
+const SCHED=STOCKS_NORMAL?'':STOCKS_SCHED;
+const a=args(process.argv.slice(2).filter(x=>x!=='--cpu-prof'&&x!=='--after'&&x!=='--spans'&&x!=='--pg-profile'&&x!=='--driver-apart'&&x!=='--revised-8s'&&x!=='--stocks-normal'&&x!=='--stocks-apart'));
 let cfg,started=false,data,active,controller=new AbortController(),timer;
-const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
+const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[]};
 const json=(name,value)=>fs.writeFileSync(path.join(cfg.out,name),JSON.stringify(value,null,2));
 function pg(name,argv,label){
  // --driver-apart: the server (postmaster, and so every backend it forks) is pinned to the server CPUs.
@@ -58,7 +65,7 @@ function startWorker(arm,viewerCount,generatedClient){
   }
  };
  const init=async()=>{
-  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,stocksNice:STOCKS_NICE,arm});
+  const info=await rpc('init',{root:cfg.root,runRoot:cfg.out,generatedClient,dbName,dbUrl,viewerCount,diagnostics:SPANS&&arm!=='qualification',topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,...(STOCKS_APART?{stocksCpus:STOCKS_CPUS}:{}),arm});
   // Every process of the topology is recorded (cleanup must confirm each) and must be the one the pin names.
   const p=info.processes??{},pids=Object.values(p);
   for(const [role,pid] of Object.entries(p))if(role!=='api')report.ownPids.push({role:arm+'-'+role,pid});
@@ -103,7 +110,9 @@ function provenance(){
 }
 (async()=>{
  try{
-  if([SPANS,PROFILE,PG_PROFILE,DRIVER_APART].filter(Boolean).length>1)throw Error('ONE_INSTRUMENTATION_PER_RUN');
+  if([SPANS,PROFILE,PG_PROFILE,DRIVER_APART||STOCKS_APART].filter(Boolean).length>1)throw Error('ONE_INSTRUMENTATION_PER_RUN');
+  if((STOCKS_NORMAL||STOCKS_APART)&&TOPOLOGY!=='separated')throw Error('STOCKS_EXPERIMENT_NEEDS_SEPARATED_PROCESSES');
+  if(STOCKS_APART&&require('node:os').cpus().length<4)throw Error('STOCKS_APART_NEEDS_4_CPUS');
   if(DRIVER_APART){
    const own=(fs.readFileSync('/proc/self/status','utf8').match(/^Cpus_allowed_list:\s*(\S+)/m)||[])[1]??'';
    if(own.split(',').flatMap(r=>{const [x,y=x]=r.split('-').map(Number);return Array.from({length:y-x+1},(_,i)=>x+i);}).some(n=>SERVER_CPUS.split(',').map(Number).includes(n)))throw Error('DRIVER_MUST_RUN_APART_FROM_SERVER_CPUS');
@@ -117,7 +126,7 @@ function provenance(){
    const cpus=allowed.split(',').filter(Boolean).flatMap(range=>{const [a,b=a]=range.split('-').map(Number);return Array.from({length:b-a+1},(_,i)=>a+i);});
    report.cpu={allowed,siblings:Object.fromEntries(cpus.map(n=>[n,fs.readFileSync('/sys/devices/system/cpu/cpu'+n+'/topology/thread_siblings_list','utf8').trim()])),model:(fs.readFileSync('/proc/cpuinfo','utf8').match(/^model name\s*:\s*(.+)$/m)||[])[1]??null};
   }catch{report.cpu=null;}
-  report.workload=WORKLOAD;report.profiled=PROFILE;report.spans=SPANS;report.pgProfile=PG_PROFILE;report.driverApart=DRIVER_APART?{serverCpus:SERVER_CPUS,driverCpus:report.cpu?.allowed??null,hostCpus:require('node:os').cpus().length}:false;report.plan=PLAN;report.cryptoTraceSha=traceSha;provenance();json('admission.json',report);
+  report.workload=WORKLOAD;report.profiled=PROFILE;report.spans=SPANS;report.pgProfile=PG_PROFILE;report.driverApart=DRIVER_APART?{serverCpus:SERVER_CPUS,driverCpus:report.cpu?.allowed??null,hostCpus:require('node:os').cpus().length}:false;report.stocksApart=STOCKS_APART?{stocksCpus:STOCKS_CPUS,driverCpus:report.cpu?.allowed??null,hostCpus:require('node:os').cpus().length}:false;report.plan=PLAN;report.cryptoTraceSha=traceSha;provenance();json('admission.json',report);
   if(a['prepare-only']){report.status='PREPARED_NOT_RUN';return;}
   if(!a['run-local'])throw Error('EXPLICIT_RUN_LOCAL_FLAG_REQUIRED');
   timer=setTimeout(()=>controller.abort(Error('HARD_DEADLINE_180S')),180000);

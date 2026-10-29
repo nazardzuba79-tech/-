@@ -196,3 +196,50 @@ test('a signed-out remembered session cannot move the demand its still-valid sib
   assert.equal(order.status, 200);
   assert.equal(commands.filter(c => c.type === 'submitObserved').at(-1).input.sourceBlocked, false);
 });
+
+// Review 6490492921: a failed observation of an unconfirmed request waits for its live check; if a sibling session
+// moved the shared demand meanwhile, the stale failure must not be recorded (errors, observed quote, observeFailed).
+test('a failed observation that waited for its live check is dropped when a sibling moved the demand meanwhile', async t => {
+  const X = 'BYBIT:AAPLXUSDT', Y = 'BYBIT:NVDAXUSDT', commands = [];
+  let holdA = null, failX = false;
+  const snapshotOf = () => ({ schema: 2, revision: 1, serverTime: Date.now(), wallets: { USDT: { cash: '100.00000000', reserved: '0.00000000' }, USDC: { cash: '0.00000000', reserved: '0.00000000' } }, positions: {}, orders: [], fills: [], quotes: {} });
+  const adapter = createAuthorityAdapter({ endpoint: 'http://127.0.0.1:1/api/v1/stocks-test-cash', issuer: ISSUER, gatewayKey: KEY, fetchImpl: async (url, options) => {
+    if (url.endsWith('/identities')) {
+      const tokens = JSON.parse(options.body).tokens;
+      if (holdA && tokens.some(token => token[0] === 'A')) { const gate = holdA; gate.entered(); await gate.released; }
+      return new Response(JSON.stringify({ results: tokens.map(() => ({ issuer: ISSUER, subject: 'trader-a' })) }));
+    }
+    const token = options.headers.Authorization.slice(7), body = JSON.parse(options.body);
+    commands.push({ bearer: token[0], type: body.type });
+    const value = body.type === 'ensure' ? { id: accountId({ issuer: ISSUER, subject: 'trader-a' }) }
+      : body.type === 'observe' ? { snapshot: { ...snapshotOf(), quotes: { [body.input.instrumentId]: body.input } }, observation: { durable: true } }
+      : body.type === 'observeFailed' ? { snapshot: snapshotOf(), observation: { durable: true } } : snapshotOf();
+    return new Response(JSON.stringify({ value, metrics: {}, actor: { issuer: ISSUER, subject: 'trader-a' } }));
+  } });
+  const quoteOf = id => ({ instrumentId: id, provider: 'bybit', nativeCurrency: 'USDT', bid: '100', ask: '100', timestamp: Date.now(), receivedAt: Date.now(), verified: true, marketOpen: true, eventId: 'stale-' + Date.now(), capacity: '1.00000000', prices: { USDT: { buy: '100', sell: '100' } }, fx: {} });
+  const hub = { metrics: {}, close() {}, catalogue: async () => CATALOG.map(asset => ({ ...asset, online: true, exists: true })),
+    quote: async id => quoteOf(id), quoteValid: (_q, id) => !(failX && id === X), setStockDemand() {}, releaseStockDemand() {} };
+  const gateway = await createServer({ port: 0, financialEnabled: true, accountAuthority: adapter, tradePrincipals: [{ issuer: ISSUER, subject: 'trader-a' }, { issuer: ISSUER, subject: 'trader-b' }], hub });
+  t.after(async () => { holdA?.release(); await gateway.close(); await adapter.close(); });
+  const call = (letter, id) => fetch(`http://127.0.0.1:${gateway.port}/__stocks_global/state?id=${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(5000), headers: { authorization: bearer(letter), 'x-stocks-view': 'terminal' } })
+    .then(async response => ({ status: response.status, body: await response.json() }));
+  // Sessions A and B of one trader, each confirmed live once on X and remembered.
+  for (const letter of ['A', 'B']) assert.equal((await call(letter, X)).status, 200);
+  // A polls X again (the staged poll); X's quote fails, so A's failure waits for A's live check, which is held.
+  let entered, release; const enteredP = new Promise(resolve => entered = resolve), releasedP = new Promise(resolve => release = resolve);
+  holdA = { entered, released: releasedP, release };
+  failX = true;
+  const staleA = call('A', X);
+  await enteredP;
+  // Meanwhile B moves the shared demand to Y (B's own live check is not held).
+  failX = false;
+  const moved = await call('B', Y);
+  assert.equal(moved.status, 200); assert.equal(moved.body.errors[X], undefined);
+  const before = commands.length;
+  holdA = null; release();
+  assert.equal((await staleA).status, 200);
+  assert.deepEqual(commands.slice(before).filter(c => c.type === 'observeFailed'), [], 'the stale failure is not recorded');
+  const after = await call('B', Y);
+  assert.equal(after.status, 200);
+  assert.equal(after.body.errors[X], undefined, 'no stale error in the shared demand');
+});

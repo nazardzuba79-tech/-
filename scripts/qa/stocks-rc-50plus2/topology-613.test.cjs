@@ -11,6 +11,8 @@ test('both pins name the same runtime commit; only the process topology differs'
   assert.equal(after.TOPOLOGY, 'separated');
   assert.equal(before.STOCKS_NICE, undefined, 'one process: nothing to weight');
   assert.equal(after.STOCKS_NICE, 10, 'separated: the Stocks processes run with a lower CPU weight than the crypto API');
+  assert.equal(before.STOCKS_SCHED, undefined, 'one process: no scheduling class of its own');
+  assert.equal(after.STOCKS_SCHED, 'gateway-idle', 'separated: the gateway runs in the idle scheduling class, the authority does not');
   const runner = fs.readFileSync(path.join(__dirname, 'diagnostic-run-613.cjs'), 'utf8');
   assert.match(runner, /require\(AFTER\?'\.\/policy-613-after\.cjs':'\.\/policy-613\.cjs'\)/);
   assert.match(runner, /TOPOLOGY_MISMATCH_/);
@@ -33,6 +35,10 @@ test('the API worker refuses an unknown topology or arm before loading any runti
   assert.deepEqual(await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology: 'separated', arm: 'warmup'}}]), ['TOPOLOGY_OR_ARM_UNKNOWN']);
   for (const [topology, stocksNice] of [['separated', 25], ['separated', -5], ['separated', undefined], ['single-process', 10]])
     assert.deepEqual(await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology, arm: 'mixed', stocksNice}}]), ['STOCKS_NICE_INVALID'], topology + ' ' + stocksNice);
+  for (const [topology, stocksSched] of [['separated', 'idle'], ['separated', 'fifo'], ['single-process', 'gateway-idle']])
+    assert.deepEqual(await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology, arm: 'mixed', stocksNice: topology === 'separated' ? 10 : 0, stocksSched}}]), ['STOCKS_SCHED_INVALID'], topology + ' ' + stocksSched);
+  for (const [topology, stocksCpus] of [['separated', '0,1'], ['separated', '2-3'], ['single-process', '2,3']])
+    assert.deepEqual(await ask('api-worker.cjs', [{command: 'init', value: {dbUrl, dbName: db, topology, arm: 'mixed', stocksNice: topology === 'separated' ? 10 : 0, stocksCpus}}]), ['STOCKS_CPUS_INVALID'], topology + ' ' + stocksCpus);
 });
 
 test('a Stocks worker takes one known role, loopback-only endpoints and complete shared material', async () => {
