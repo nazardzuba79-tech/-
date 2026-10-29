@@ -6,6 +6,11 @@ const path = require('node:path');
 const BASE = '4189ef756f1f0f769354a389bd2113572ab7f478';
 const REVIEW = '4b92e69a0e3c1bf1f6f8376b846bdb6be7d968eb';
 const BRANCH = 'codex/stocks613-infra-migrations-20261024';
+// Exactly one R10-approved change to the disposable CI fixture. Never accept arbitrary
+// future edits to the fixture, an older PR head, SQL, or any release checker.
+const R10_PUSH_HEAD = '8fec9515230833b5935e9c149c394bb951998d9f';
+const R10_FIXTURE_FILE = 'services/stocks-global/testing/disposable-postgres.cjs';
+const R10_FIXTURE_BLOB = 'c9dd8153f519519886cf99818ffc383517a0534d';
 const REPO = 'nazardzuba79-tech/-';
 const ALLOWED = new Set(['.github/workflows/stocks613-infra-review.yml',
   'scripts/qa/stocks613-migration-rehearsal.cjs','scripts/qa/stocks613-infra.test.cjs',
@@ -41,7 +46,20 @@ function verify(root, env, event) {
   // PRs may advance normal source files. SQL set/bytes and the existing checkers
   // remain immutable in BOTH modes; this also rejects additional arbitrary SQL.
   if (!git(['rev-parse',`${REVIEW}:prisma/migrations`]).equals(git(['rev-parse','HEAD:prisma/migrations']))) throw Error('MIGRATION_TREE_CHANGED');
-  for (const file of PROTECTED) if (!git(['show',`${REVIEW}:${file}`]).equals(git(['show',`HEAD:${file}`]))) throw Error('STRICT_SOURCE_CHANGED ' + file);
+  for (const file of PROTECTED) {
+    if (git(['show',`${REVIEW}:${file}`]).equals(git(['show',`HEAD:${file}`]))) continue;
+    // R10's only protected-file delta was its disposable local PostgreSQL
+    // fixture. Preserve the original deny-by-default invariant: allow this
+    // exact blob, from descendants of the reviewed R10 head, and nothing else.
+    if (file === R10_FIXTURE_FILE &&
+        git(['rev-parse', `HEAD:${file}`]).toString().trim() === R10_FIXTURE_BLOB) {
+      try {
+        git(['merge-base', '--is-ancestor', R10_PUSH_HEAD, 'HEAD']);
+        continue;
+      } catch { /* Untrusted older/unrelated source. */ }
+    }
+    throw Error('STRICT_SOURCE_CHANGED ' + file);
+  }
   return { source: source.expected, mode: source.mode, migrationTreeUnchanged: true, strictCheckersUnchanged: true };
 }
 module.exports = { BASE, REVIEW, BRANCH, sourceEvent, verify };
