@@ -69,7 +69,6 @@ async function openPushViewers(info,{fetchImpl=fetch,now=Date.now,timeoutMs=1000
     });
     return first;
   });
-  const timer=new AbortController();
   let timeoutHandle;
   let abortListener;
   const stop=()=>{
@@ -86,9 +85,12 @@ async function openPushViewers(info,{fetchImpl=fetch,now=Date.now,timeoutMs=1000
     ]);
     if(errors.length)throw Error('PUSH_STARTUP_ERROR');
   }catch(error){stop();await Promise.allSettled(clients.map(c=>c.done));throw error;}
-  finally{if(timeoutHandle)clearTimeout(timeoutHandle);timer.abort();}
+  finally{if(timeoutHandle)clearTimeout(timeoutHandle);}
   return {
     counts,
+    // A completed first quote is warm-up. Measure only the subsequent paired
+    // crypto baseline/mixed window, not initial connection handshake bursts.
+    startMeasurement:()=>{for(const k of ['quotes','waits','unavailable','revoked','discarded'])counts[k]=0;ages.length=0;delays.length=0;errors.length=0;},
     snapshot:()=>{
       const stale=clients.filter(c=>c.lastQuoteAt===null||now()-c.lastQuoteAt>5000).length;
       return {kind:'PUSH_DIAGNOSTIC',viewers:clients.length,opened:counts.opened,quotes:counts.quotes,waits:counts.waits,unavailable:counts.unavailable,
