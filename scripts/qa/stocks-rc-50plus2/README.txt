@@ -61,8 +61,9 @@ known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
 #613 candidate pins (repinned 2026-10-29, Claude: R5, the original 4 s load inside the quota)
-Both policies pin the same runtime, 40ddd905 (#613 R5: c67b3fc9 with auth.ts back to
-its 4daa14d0 form; c67b3fc9 is ed31f4e8 plus a trader's
+Both policies pin the same runtime, 8f73e373 (#613 R5: c67b3fc9 with auth.ts back to
+its 4daa14d0 form and, per review 6489779311, no change to the demand a principal's
+sessions share before a trader request is confirmed; c67b3fc9 is ed31f4e8 plus a trader's
 command as its own live identity judgement instead of a separate identity check,
 identity batches capped at Q - Q/16 of the last minute's private requests, and
 three per-poll gateway overheads removed). The acceptance workload is the original
