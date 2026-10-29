@@ -60,6 +60,10 @@ const STORE_TOKEN = 'synthetic-local-only-listings-secret-0602';
 const file = JSON.parse(fs.readFileSync(path.join(root, 'config/test-markets/qvtr-20261028.draft.json'), 'utf8'));
 const logoPath = path.join(root, 'config/test-markets/qvtr-20261028.logo.svg');
 const AT = Date.parse(file.listingAt), HOUR = 3_600_000, DAY = 24 * HOUR;
+// Use the interior of a day, not exactly 48 h: a ticking browser legitimately
+// renders 01 day immediately after the 48 h boundary. Test rollover separately.
+// All clocks below are confined to localhost Chromium, workerd and the local admin router.
+const QA_PRELISTING_NOW = AT - 2 * DAY - 6 * HOUR;
 const DATE_LINE = '28.10.2026 — 13:00 UTC / 16:00 МСК';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' };
 fs.mkdirSync(output, { recursive: true });
@@ -76,7 +80,15 @@ const step = async (name, fn) => {
 };
 
 async function startEdge(port, persist) {
-  const bundle = await build({ entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
+  // The esbuild substitutions exist ONLY in this disposable workerd bundle; the
+  // repository Worker source, canonical QVTR date and production bundle are untouched.
+  // Every Date.now() inside this local Worker sees the same historical clock.
+  const bundle = await build({ entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')],
+    bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022',
+    external: ['cloudflare:*'],
+    define: { 'Date.now': '__voltexQaNow' },
+    banner: { js: 'const __voltexQaNow = () => ' + QA_PRELISTING_NOW + ';' },
+  });
   const mf = new Miniflare({ ...convertV4MiniflareOptions({ durableObjectsPersist: persist, workers: [{ name: 'market-edge', modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
     bindings: { LISTINGS_STORE_TOKEN: STORE_TOKEN, LISTINGS_PUBLIC_CACHE_MS: '0' },
     durableObjects: { LISTINGS: { className: 'ManagedListingsDO', useSQLite: true } },
@@ -114,7 +126,7 @@ async function renderFor(edge, label) {
     const sub = String(req.headers.authorization || '').endsWith(tokens.user) ? 'qa-user' : 'qa-admin';
     res.json({ id: sub, email: `${sub}@example.invalid`, displayName: sub, role: accounts[sub], isAdmin: accounts[sub] === 'ADMIN', kycStatus: 'APPROVED', createdAt: '2026-09-01T00:00:00.000Z' });
   });
-  app.use('/api/v1', adminListingsRouter(prisma, store, { hasSpotPair: (pair) => pair === 'BTC/USDT' }, registry));
+  app.use('/api/v1', adminListingsRouter(prisma, store, { hasSpotPair: (pair) => pair === 'BTC/USDT' }, registry, () => QA_PRELISTING_NOW));
   app.get('/api/v1/market/live', (_req, res) => res.status(204).end());
   app.get('/api/v1/*', (req, res) => res.json(fixtures[req.path.slice('/api/v1'.length)]?.() ?? []));
   app.use('/api/v1', (_req, res) => res.status(405).json({ error: 'QA disallows writes' }));
@@ -157,8 +169,18 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
     });
     await context.addInitScript(([token, offset]) => {
       try { localStorage.setItem('exchange_token', token); localStorage.setItem('exchange_lang', 'ru'); } catch {}
-      if (offset) { const real = Date.now.bind(Date); Date.now = () => real() + offset; }
-    }, [tokens[who], clock ? clock.offset : 0]);
+      if (offset) {
+        const RealDate = Date;
+        const realNow = RealDate.now.bind(RealDate);
+        const qaClock = { offset };
+        globalThis.__voltexQaClock = qaClock;
+        class FixtureDate extends RealDate {
+          constructor(...args) { if (args.length === 0) super(realNow() + qaClock.offset); else super(...args); }
+          static now() { return realNow() + qaClock.offset; }
+        }
+        globalThis.Date = FixtureDate;
+      }
+    }, [tokens[who], clock ? clock.offset : QA_PRELISTING_NOW - Date.now()]);
     const page = await context.newPage();
     page.on('pageerror', (error) => report.pageErrors.push(`${who}@${width}: ${error.message}`));
     return page;
@@ -382,7 +404,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         await card.locator('.vta-countdown').waitFor({ timeout: 20000 });
         const text = await card.innerText();
         for (const part of ['QAVENTRA', 'QVTR/USDT', DATE_LINE, '0.014000 USDT']) assert.ok(text.includes(part), `${width}: ${part} in «${text}»`);
-        const days = Math.floor((AT - Date.now()) / DAY);
+        const days = Math.floor((AT - QA_PRELISTING_NOW) / DAY);
         assert.equal((await card.locator('.vta-countdown-cell strong').allInnerTexts())[0], String(days).padStart(2, '0'));
         const mark = card.locator('.vta-prelisting-mark img');
         assert.equal(await mark.getAttribute('src'), file.logo);
@@ -462,6 +484,49 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         assert.equal(await row.locator('img').first().getAttribute('src'), file.logo);
         await row.scrollIntoViewIfNeeded();
         await shot(page, `markets-${width}.png`);
+        await page.context().close();
+      });
+    }
+
+    /* Rollover and opening in the SAME mounted page. Both the served Worker
+     * responses and the browser use this one adjustable, still-ticking clock.
+     * Never advance the local persistent Worker or mutate a listing to test time. */
+    for (const width of [1440, 390]) {
+      await step(`clock boundaries ${width}: 02 days → 01 day 23 hours, then countdown → chart without reload`, async () => {
+        const clock = { offset: AT - 2 * DAY - HOUR - Date.now(), now() { return Date.now() + this.offset; } };
+        const page = await newPage(A.origin, width, 'user', clock);
+        const candleResponses = [];
+        page.on('response', async (r) => {
+          if (/QVTR-USDT\/candles|spot-candles\/QVTR/i.test(r.url())) candleResponses.push(await r.json().catch(() => null));
+        });
+        const advanceTo = async (at) => {
+          clock.offset = at - Date.now();
+          await page.evaluate((offset) => { globalThis.__voltexQaClock.offset = offset; }, clock.offset);
+        };
+        await page.goto(`${A.origin}/trade?pair=QVTR%2FUSDT`);
+        if (width < 600) await page.locator('#mobile-trade-chart').click({ timeout: 20000 });
+        const card = page.locator('.vta-prelisting[data-countdown="running"]');
+        await card.locator('.vta-countdown').waitFor({ timeout: 20000 });
+        assert.equal(await card.locator('.vta-countdown-cell strong').first().innerText(), '02');
+        await advanceTo(AT - 2 * DAY + 2000);
+        await page.waitForFunction(() => {
+          const cells = [...document.querySelectorAll('.vta-countdown-cell strong')].map((el) => el.textContent);
+          return cells[0] === '01' && cells[1] === '23';
+        }, null, { timeout: 10000 });
+        await shot(page, `exchange-day-rollover-${width}.png`);
+        // Approach opening but let real elapsed time cross it; no reload or
+        // direct component/store calls may manufacture the transition.
+        await advanceTo(AT - 8000);
+        await page.waitForFunction(() => {
+          const cells = [...document.querySelectorAll('.vta-countdown-cell strong')].map((el) => el.textContent);
+          return cells.length === 4 && cells.slice(0, 3).every((value) => value === '00') && Number(cells[3]) > 0 && Number(cells[3]) <= 8;
+        }, null, { timeout: 5000 });
+        assert.ok(clock.now() < AT, 'countdown must still be visible before opening');
+        await page.locator('.managed-demo-chart canvas').first().waitFor({ timeout: 30000 });
+        assert.ok(clock.now() >= AT, 'chart must not appear early');
+        assert.equal(await page.locator('.vta-prelisting').count(), 0);
+        assert.ok(candleResponses.filter(Boolean).flatMap((b) => b.candles || []).some((c) => c.open === 0.014), 'opening candle must start at canonical 0.014');
+        await shot(page, `exchange-opening-transition-${width}.png`);
         await page.context().close();
       });
     }
