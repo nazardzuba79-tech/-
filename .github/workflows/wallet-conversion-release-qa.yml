@@ -1,0 +1,106 @@
+name: Wallet591 narrow production-base candidate QA
+on:
+  push:
+    branches: ['work/wallet-conversion-api-20261029']
+permissions:
+  contents: read
+concurrency:
+  group: wallet591-production-base-qa
+  cancel-in-progress: false
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact reviewed Pages candidate (never deployed)
+        uses: actions/checkout@v4
+        with:
+          ref: 6f6b0189feedadcd331f6733111992ce3fe5c3b6
+          path: frontend-candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend-candidate/frontend/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: frontend-candidate/frontend
+      - run: npx prisma generate
+      - name: API TypeScript and production build
+        run: npm run build
+      - name: Release preflight negative controls (no production calls)
+        run: python3 ops/wallet-conversion/preflight.py --self-test
+      - name: Conversion and deployed finance guard regressions
+        run: >-
+          npm test -- --runInBand --json --outputFile=wallet591-api-tests.json
+          --runTestsByPath src/services/__tests__/WalletConversionService.test.ts
+          src/services/__tests__/WalletPortfolioService.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/DemoLiquidity.test.ts
+      - name: Frontend, seven-language and Futures preservation contracts
+        run: >-
+          node node_modules/jest/bin/jest.js --rootDir frontend-candidate --runInBand
+          --json --outputFile=wallet591-frontend-tests.json --runTestsByPath
+          frontend-candidate/frontend/src/lib/__tests__/walletConversion.test.ts
+          frontend-candidate/frontend/src/lib/__tests__/walletOverview.test.ts
+          frontend-candidate/frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
+          frontend-candidate/frontend/src/lib/__tests__/walletUxRefinement.test.ts
+          frontend-candidate/frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          frontend-candidate/frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+      - name: Flagged frontend for isolated fixtures only
+        env:
+          VITE_WALLET_CONVERSION_ENABLED: 'true'
+        run: npm run build
+        working-directory: frontend-candidate/frontend
+      - name: QA dependencies and Chromium, no application dependency change
+        run: |
+          npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1 playwright@1.63.0
+          output/wallet-qa-deps/node_modules/.bin/playwright install --with-deps chromium
+      - name: Discover local disposable PostgreSQL tools
+        run: |
+          pg_config --version
+          test -x "$(pg_config --bindir)/initdb"
+          test -x "$(pg_config --bindir)/pg_ctl"
+          echo "WALLET_QA_PG_BIN=$(pg_config --bindir)" >> "$GITHUB_ENV"
+      - name: Actual PostgreSQL, real HTTP and Chromium 1440/390, all seven languages
+        env:
+          WALLET_QA_BROWSER: '1'
+          WALLET_QA_DIST: frontend-candidate/frontend/dist
+          WALLET_QA_FRONTEND_ROOT: ${{ github.workspace }}/frontend-candidate/frontend
+        run: node scripts/test-wallet-conversion-postgres.cjs
+      - name: Separate disposable DemoBalance and Demo Liquidity PostgreSQL
+        run: node scripts/test-wallet-conversion-demo-postgres.cjs
+      - name: Default-OFF frontend build
+        run: npx vite build --outDir ../../output/wallet591-off-dist --emptyOutDir
+        working-directory: frontend-candidate/frontend
+      - name: Default-OFF browser, no conversion HTTP
+        env:
+          WALLET_QA_BROWSER: '1'
+          WALLET_QA_EXPECT_OFF: '1'
+          WALLET_QA_DIST: frontend-candidate/output/wallet591-off-dist
+        run: node scripts/test-wallet-conversion-postgres.cjs
+      - name: Prepare four-module artifact and exact-source preservation manifest ONLY
+        env:
+          WALLET_RELEASE_FRONTEND_ROOT: ${{ github.workspace }}/frontend-candidate
+        run: node ops/wallet-conversion/prepare-release.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wallet591-production-base-evidence
+          path: |
+            wallet591-*-tests.json
+            frontend-candidate/wallet591-frontend-tests.json
+            output/wallet-conversion/*.json
+            output/wallet-conversion/*.png
+            output/wallet-conversion/*.log
+            output/wallet-conversion-demo/*.json
+            output/wallet-conversion-demo/*.log
+            output/wallet-conversion-release/**
