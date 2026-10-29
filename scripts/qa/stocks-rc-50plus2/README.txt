@@ -60,10 +60,15 @@ Run parameters, commands, hashes, qualification, workload outcome, cleanup,
 known limits and the exact tested-file hash set are in the attached reports.
 No owner PowerShell commands, passwords or foreground keyboard access needed.
 
-#613 candidate pins (repinned 2026-10-28, Claude: one session query per identity batch)
-Both policies pin the same runtime, ed31f4e8 (#613: 8d560d01 plus the authority
-reading the sessions of an identity batch in one query instead of one per bearer).
-8d560d01 added state answers that leave the 16.6 KB catalogue out when the client
+#613 candidate pins (repinned 2026-10-29, Claude: R5, the original 4 s load inside the quota)
+Both policies pin the same runtime, c67b3fc9 (#613 R5: ed31f4e8 plus a trader's
+command as its own live identity judgement instead of a separate identity check,
+identity batches capped at Q - Q/16 of the last minute's private requests, and
+three per-poll gateway overheads removed). The acceptance workload is the original
+one (each trader's order cycle every 4 s); --revised-8s runs the 8 s cycle as a
+separately labelled diagnostic, never the verdict.
+ed31f4e8: 8d560d01 plus the authority reading the sessions of an identity batch in
+one query instead of one per bearer. 8d560d01 added state answers that leave the 16.6 KB catalogue out when the client
 names the version it holds; the driver does as the real terminal does, so a
 runtime from 8d560d01 on is required: an older gateway refuses ?catalogue= with 422.
 Earlier:
