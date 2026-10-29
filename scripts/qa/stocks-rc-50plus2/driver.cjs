@@ -108,6 +108,13 @@ async function window(info,{mixed=false,warmup=false,arm,signal,sustained=false,
  const viewerJob=async(index,cycle)=>{
   if(sustained&&(viewerPausedUntil.get(index)??0)>performance.now()){r.viewerPollsDeferred++;return;}
   const token=info.viewerTokens[index],view='diag-viewer-'+index,id=info.instruments[index%info.instruments.length];
+  if(PUSH_VIEWERS){
+   // The pre-run account state has already been checked when initializing the
+   // 50 viewers; a live SSE viewer does not poll /state while prices flow.
+   // Retain one denied BUY per viewer without adding a hidden state read.
+   const result=await request(info.stocksOrigin,'/__stocks_global/orders',{method:'POST',token,view,body:{id:'rc50-viewer-deny-'+index,instrumentId:id,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.01'},expected:401,kind:'viewer',op:'deny-order',index});
+   assert.equal(result.error,'AUTH_REQUIRED');r.viewerDenials++;return;
+  }
   const state=await request(info.stocksOrigin,stateRoute('viewer',index,id),{token,view,kind:'viewer',op:'state',index});if(state===null)return;keep('viewer',index,state);
   assert.equal(state.account.canTrade,false);
   if(state.errors?.[id]){if(!sustained)throw Error('VIEWER_QUOTE_'+state.errors[id]);r.viewerQuoteNotLive[state.errors[id]]=(r.viewerQuoteNotLive[state.errors[id]]??0)+1;}
