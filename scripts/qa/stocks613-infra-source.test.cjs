@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), cp = require('node:child_process');
 const yaml = require('js-yaml');
-const { REVIEW, BRANCH, sourceEvent, verify } = require('./stocks613-infra-source.cjs');
+const { REVIEW, BRANCH, R10_PUSH_HEAD, R10_FIXTURE_FILE, R10_FIXTURE_BLOB, sourceEvent, verify } = require('./stocks613-infra-source.cjs');
 const root = path.resolve(__dirname, '../..');
 const expression = '${{ github.event.pull_request.head.sha || github.sha }}';
 test('every new #613 PR head runs the complete migration/image job, with exact checkout and no deployment', () => {
@@ -44,11 +44,11 @@ test('real Git descendants: future PR source accepted, push allowlist retained, 
   cp.execFileSync('git', ['clone','--bare','--shared',root,dir], { stdio: 'pipe' });
   const git = (args, input) => cp.execFileSync('git', args, { cwd: dir, input, encoding: 'utf8', env: { ...process.env,
     GIT_AUTHOR_NAME:'Fixture',GIT_AUTHOR_EMAIL:'fixture@example.invalid',GIT_COMMITTER_NAME:'Fixture',GIT_COMMITTER_EMAIL:'fixture@example.invalid' } }).trim();
-  function descendant(file, body) {
-    git(['read-tree',REVIEW]);
+  function descendant(file, body, parent = REVIEW) {
+    git(['read-tree',parent]);
     const blob = git(['hash-object','-w','--stdin'],body);
     git(['update-index','--add','--cacheinfo',`100644,${blob},${file}`]);
-    const tree = git(['write-tree']), sha = git(['commit-tree',tree,'-p',REVIEW], 'fixture\n');
+    const tree = git(['write-tree']), sha = git(['commit-tree',tree,'-p',parent], 'fixture\n');
     git(['update-ref','HEAD',sha]); return sha;
   }
   const next = descendant('docs/later-legitimate-review.md', 'later unrelated PR change\n');
@@ -61,8 +61,23 @@ test('real Git descendants: future PR source accepted, push allowlist retained, 
   }
   const changedChecker = descendant('scripts/qa/stocks-release-package.cjs','// weakened checker\n');
   assert.throws(() => verify(dir,env(changedChecker),event(changedChecker)), /STRICT_SOURCE_CHANGED/);
+  // Even on a descendant of R10, a different fixture blob is rejected.
+  const maliciousR10Fixture = descendant(R10_FIXTURE_FILE,
+    '// intentionally changed disposable PG fixture after R10 review\\n', R10_PUSH_HEAD);
+  assert.throws(() => verify(dir,env(maliciousR10Fixture),event(maliciousR10Fixture)),
+    /STRICT_SOURCE_CHANGED/);
   for (const file of ['scripts/qa/stocks613-migration-rehearsal.cjs','services/stocks-global/testing/disposable-postgres.cjs']) {
     const sha = descendant(file,'// unsafe replacement of original SQL / DB isolation guard\n');
     assert.throws(() => verify(dir,env(sha),event(sha)), /STRICT_SOURCE_CHANGED/);
   }
+});
+
+test('R10 reviewed one-file PG fixture exception is exact and all other source leases stay strict', () => {
+  const sha=cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+  const pinned=cp.execFileSync('git',['rev-parse',`HEAD:${R10_FIXTURE_FILE}`],{cwd:root,encoding:'utf8'}).trim();
+  assert.equal(pinned,R10_FIXTURE_BLOB);
+  cp.execFileSync('git',['merge-base','--is-ancestor',R10_PUSH_HEAD,sha],{cwd:root});
+  const check=verify(root,env(sha),event(sha));
+  assert.equal(check.strictCheckersUnchanged,true);
+  assert.equal(check.migrationTreeUnchanged,true);
 });
