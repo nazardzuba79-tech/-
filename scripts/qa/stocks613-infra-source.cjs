@@ -62,7 +62,7 @@ function verify(root, env, event) {
   }
   return { source: source.expected, mode: source.mode, migrationTreeUnchanged: true, strictCheckersUnchanged: true };
 }
-module.exports = { BASE, REVIEW, BRANCH, sourceEvent, verify };
+module.exports = { BASE, REVIEW, BRANCH, R10_PUSH_HEAD, R10_FIXTURE_FILE, R10_FIXTURE_BLOB, sourceEvent, verify };
 if (require.main === module) {
   try {
     if (process.versions.node !== '22.23.3') throw Error('NODE_VERSION_MISMATCH');
