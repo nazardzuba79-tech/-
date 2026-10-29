@@ -1,3 +1,4 @@
+import { StrategySocialProvider } from './copy-trading-bolt/StrategySocials';
 import { useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 import { api } from '../lib/api';
@@ -76,11 +77,13 @@ export function CopyTradingPage() {
         <div className="content-wrap">
           <CopyEligibilityProvider depositUsd={depositUsd}>
             <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>
+            <StrategySocialProvider identities={identities}>
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
                 ? <Marketplace onOpen={openProfile} nazara={liveNazara} synthetic={synthetic} ksenia={liveKsenia} kseniaSynthetic={ksenia} availability={marketplace} />
                 : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
+            </StrategySocialProvider>
             </DemoRoiProvider>
           </CopyEligibilityProvider>
         </div>
