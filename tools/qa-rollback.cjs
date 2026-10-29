@@ -1,5 +1,8 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),crypto=require('crypto');
 const R=path.resolve(__dirname,'..'),A=path.join(R,'api-source');const req=require('module').createRequire(path.join(A,'package.json'));
+// Local disposable rollback QA only: the installed auth module demands a signing key.
+// Use a new ephemeral test-only key; never borrow a production credential.
+process.env.JWT_SECRET = require('crypto').randomUUID();
 const url=process.env.COPY_SOCIAL_TEST_URL;if(!/^postgresql:\/\/postgres@127\.0\.0\.1:\d+\/voltex_copy_social_test$/.test(url||''))throw Error('Fixture only');
 const previous=path.join(A,'node_modules/.prisma/client-previous');fs.cpSync(path.join(R,'baseline/api-installed/node_modules/.prisma/client'),previous,{recursive:true});
 assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(A,'node_modules/.prisma/client/libquery_engine-debian-openssl-3.0.x.so.node'))).digest('hex'),crypto.createHash('sha256').update(fs.readFileSync(path.join(previous,'libquery_engine-debian-openssl-3.0.x.so.node'))).digest('hex'),'Installed Linux Prisma engine unchanged');
