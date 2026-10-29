@@ -57,6 +57,8 @@ async function initialize(c){
  if(c.stocksCpus!==undefined&&!(c.topology==='separated'&&c.stocksCpus==='2,3'&&process.platform==='linux'&&fs.existsSync(TASKSET)))throw Error('STOCKS_CPUS_INVALID');
  if((c.stocksSched??'')!==''&&!(c.topology==='separated'&&c.stocksSched==='gateway-idle'&&process.platform==='linux'&&fs.existsSync(CHRT)))throw Error('STOCKS_SCHED_INVALID');
  if(c.market!==undefined)remoteMarket(c.market);
+  if(c.viewerStream!==undefined&&c.viewerStream!==true)throw Error('VIEWER_STREAM_CONFIG_INVALID');
+  if(c.viewerStream&&c.topology!=='separated')throw Error('VIEWER_STREAM_ONLY_SEPARATED');
  const cp=require('node:child_process'),exec=cp.execFileSync;cp.execFileSync=(file,argv,options={})=>exec(file,argv,{...options,windowsHide:true});
  const root=fs.realpathSync(c.root),generated=fs.realpathSync(c.generatedClient);
  if(!generated.startsWith(fs.realpathSync(c.runRoot)+path.sep))throw Error('OWN_GENERATED_CLIENT_REQUIRED');
@@ -76,7 +78,7 @@ async function initialize(c){
   const authority=await stocks.authority.rpc('init',{role:'authority',root,runRoot:c.runRoot,generatedClient:generated,dbUrl:c.dbUrl.replace('application_name=rc50_crypto_api','application_name=rc50_stocks_authority'),dbName:c.dbName,shared});
   stocks.endpoint=authority.endpoint;
   stocks.gateway=fork('gateway',c.arm);cleanup.push(()=>stocks.gateway.close());
-  const gateway=await stocks.gateway.rpc('init',{role:'gateway',root,endpoint:authority.endpoint,shared:{issuer:shared.issuer,principals:shared.principals,gatewayKey:shared.gatewayKey},...(c.market?{market:c.market}:{})});
+  const gateway=await stocks.gateway.rpc('init',{role:'gateway',root,endpoint:authority.endpoint,shared:{issuer:shared.issuer,principals:shared.principals,gatewayKey:shared.gatewayKey},...(c.market?{market:c.market}:{}),...(c.viewerStream?{viewerStream:true}:{})});
   f.attachGateway(gateway.port);gatewayPort=gateway.port;
  }else{
   const {syntheticPublicMarket,loopbackFetch}=await load('services/stocks-global/testing/synthetic-public-market.mjs');
