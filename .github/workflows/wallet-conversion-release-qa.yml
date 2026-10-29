@@ -85,7 +85,7 @@ jobs:
         env:
           WALLET_QA_BROWSER: '1'
           WALLET_QA_EXPECT_OFF: '1'
-          WALLET_QA_DIST: frontend-candidate/output/wallet591-off-dist
+          WALLET_QA_DIST: output/wallet591-off-dist
         run: node scripts/test-wallet-conversion-postgres.cjs
       - name: Prepare four-module artifact and exact-source preservation manifest ONLY
         env:
@@ -101,6 +101,7 @@ jobs:
             output/wallet-conversion/*.json
             output/wallet-conversion/*.png
             output/wallet-conversion/*.log
+            output/wallet-conversion-off/**
             output/wallet-conversion-demo/*.json
             output/wallet-conversion-demo/*.log
             output/wallet-conversion-release/**

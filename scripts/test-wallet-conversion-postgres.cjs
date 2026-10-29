@@ -4,7 +4,7 @@ const assert = require('node:assert/strict'), { spawnSync } = require('child_pro
 const { randomUUID } = require('crypto');
 const root = path.resolve(__dirname, '..');
 const qa = createRequire(path.resolve(root, process.env.WALLET_QA_DEPS || 'output/wallet-qa-deps/package.json'));
-const out = path.join(root, 'output/wallet-conversion'); fs.mkdirSync(out, { recursive: true });
+const out = path.join(root, process.env.WALLET_QA_EXPECT_OFF === '1' ? 'output/wallet-conversion-off' : 'output/wallet-conversion'); fs.mkdirSync(out, { recursive: true });
 process.env.JWT_SECRET = 'isolated-wallet-conversion-fixture-only';
 process.env.EMAIL_VERIFICATION_SECRET = 'isolated-wallet-conversion-fixture-only';
 require('ts-node/register/transpile-only');
@@ -90,6 +90,7 @@ async function main() {
       app.use('/api', (_, res) => res.status(404).json({ code: 'UNEXPECTED_FIXTURE_ROUTE' }));
       // WALLET_QA_DIST: another built bundle, e.g. the default-OFF production-style build.
       const dist = path.resolve(root, process.env.WALLET_QA_DIST || 'frontend/dist');
+      assert(fs.existsSync(path.join(dist, 'index.html')), `built frontend index.html missing: ${dist}`);
       app.use(express.static(dist));
       app.get('*', (_, res) => res.sendFile(path.join(dist, 'index.html')));
     }

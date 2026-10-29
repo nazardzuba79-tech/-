@@ -54,6 +54,19 @@ demo inventory conservation, default-OFF build, retry/replay, session revocation
 lock waiting, insufficient funds/reserves, and Spot contention. Until its final
 head result is read, new candidate PG/browser checks remain **PENDING**, not PASS.
 
+First isolated run40830261783 at13dee1b0: backend146, frontend201,
+PostgreSQL29, Demo PostgreSQL27 and enabled browser8 checks PASS, including
+all14 language/viewport cases. Runner PostgreSQL is16 (production18.6 is a
+separate environment compatibility gate). The OFF-browser step FAILed because
+the workflow referenced `frontend-candidate/output` instead of root `output`;
+the browser received the fixture's500 JSON rather than the built page. Artifact
+12878756273 retains the failure screenshot/logs and successful earlier checks,
+SHA256 `0b19a0e8ad3cbd9dc6291ec5ad5c15c667241201811eaeeb205f7ca67f15af72`.
+The QA-only correction fixes that path, checks index.html before serving and
+separates OFF evidence to avoid overwriting ON evidence. Application code,
+financial assertions and the companion frontend are unchanged. The corrected
+exact-head run must pass before calling this release candidate verified.
+
 ## Artifact preparation
 
 On Node22.23.3, after committing the candidate and building the API:
