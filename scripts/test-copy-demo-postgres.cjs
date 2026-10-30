@@ -13,6 +13,7 @@ const { MatchingEngine } = require('../src/matching-engine/MatchingEngine');
 const { DemoTradingService } = require('../src/services/DemoTradingService');
 const { CopyDemoService, copyDemoEnabled } = require('../src/services/copyTrading/CopyDemoService');
 const { copyDemoRouter } = require('../src/api/routes/copyDemo');
+const { startCopyDemoWorker } = require('../src/services/copyTrading/copyDemoWorker');
 const { demoTradingRouter } = require('../src/api/routes/demoTrading');
 const express = require('express'), request = require('supertest'), jwt = require('jsonwebtoken');
 let db = new PrismaClient({ datasources: { db: { url } } });
@@ -181,6 +182,32 @@ async function main() {
     assert.equal(response.status, 400); assert.equal(response.body.code, 'COPY_SELF_MATCH_REFUSED');
     assert.equal(await db.demoTrade.count(), fills);
     assert.equal(JSON.stringify(await db.demoBalance.findMany({ orderBy: { id: 'asc' } })), before);
+    await copy.stop('follower'); await demo.cancelOrder('leader', source.order.id);
+  });
+  await check('background worker picks up a later source event automatically; OFF creates no work', async () => {
+    let calls = 0, pending;
+    const errors = [];
+    const workerService = { drain: () => { calls++; return (pending = copy.drain()); } };
+    const off = startCopyDemoWorker(workerService, () => false, error => errors.push(error));
+    off(); assert.equal(calls, 0);
+    await copy.subscribe('follower', 'VX-001', risk);
+    const beforeOrders = await db.demoOrder.count({ where: { userId: 'follower' } });
+    const stopWorker = startCopyDemoWorker(workerService, () => true, error => errors.push(error));
+    let source;
+    try {
+      await pending; // First pass is empty; the event must be picked up by the scheduled pass.
+      source = await place('leader', 'BUY', '1', '90');
+      const deadline = Date.now() + 10000;
+      let execution;
+      do {
+        execution = await db.copyDemoExecution.findFirst({ where: { sourceOrderId: source.order.id } });
+        if (execution?.status === 'EXECUTED') break;
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } while (Date.now() < deadline);
+      assert.equal(execution?.status, 'EXECUTED'); assert.ok(calls >= 2);
+      assert.equal(await db.demoOrder.count({ where: { userId: 'follower' } }), beforeOrders + 1);
+      assert.deepEqual(errors, []);
+    } finally { stopWorker(); await pending; }
     await copy.stop('follower'); await demo.cancelOrder('leader', source.order.id);
   });
   const app = express(); app.use(express.json()); app.use('/api/v1', copyDemoRouter(db, copy, () => on));
