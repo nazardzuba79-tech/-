@@ -103,11 +103,13 @@ async function main() {
     }
     const switched = await open(1440);
     await switched.page.getByText(/BTCUSDT · OPEN · 0.125 @ 61000/).waitFor();
-    await switched.page.evaluate(() => {
-      localStorage.setItem('exchange_token', 'another-test-account');
-      window.dispatchEvent(new StorageEvent('storage', { key: 'exchange_token' }));
-    });
-    await switched.page.getByRole('alert').waitFor();
+    // Real cross-tab storage update, not a synthetic same-tab event: browsers
+    // emit storage to OTHER documents sharing the origin.
+    const secondTab = await switched.ctx.newPage();
+    await secondTab.goto(origin + '/copy-trading/futures-demo-observer');
+    await secondTab.evaluate(() => localStorage.setItem('exchange_token', 'other-account-session'));
+    await switched.page.waitForFunction(() =>
+      !document.body.textContent?.includes('0.125 @ 61000'), null, { timeout: 10000 });
     assert.equal(await switched.page.getByText(/BTCUSDT · OPEN · 0.125 @ 61000/).count(), 0);
     await switched.ctx.close(); cases.push('account switch clears prior observer state');
 
