@@ -29,4 +29,6 @@ Rollback the display change while retaining the alias column, its unique/default
 - Local browser fixture has no live external connections. It does not establish production deployment.
 - Local Windows junction initially broke Vite root resolution; build from the physical checkout path passed. First browser run used the accounting-test database and correctly rejected its existing financial rows; a separate fresh browser database passed. Tests were not weakened.
 - Expected warnings: notification transport deliberately NOT_CONFIGURED in fixtures; existing frontend chunks >500 kB.
+- CI exposed historical fixture queries returning every current User column against intentionally old schemas. OTC/Stocks fixture creates/updates now return only ID; their pinned schemas, financial scenarios and assertions are unchanged. Local reruns: OTC historical cutover 21 scenarios PASS; Stocks PostgreSQL authority 22 tests PASS, zero skipped.
+- Support-form CI now initializes its disposable database with migrations instead of db push, so the SQL default allocator is installed. No deployment step was changed.
 CI evidence belongs to the final PR SHA, not these local runs.
