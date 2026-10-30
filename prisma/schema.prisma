@@ -62,6 +62,7 @@ datasource db {
 }
 
 model User {
+  copyDemoSubscription CopyDemoSubscription?
   otcCashRequests OtcCashRequest[]
   copyStrategyOwnerships CopyStrategyOwner[]
   privateTradingAccount PrivateTradingAccount?
@@ -1430,12 +1431,65 @@ model SyntheticCopyTradingState {
 /// Public strategy identity only. The optional same-environment User relation
 /// supplies the profile photo/KYC state; it never links performance to money.
 model CopyStrategyOwner {
+  demoSubscriptions CopyDemoSubscription[]
   traderId String @id
   publicName String
   ownerUserId String?
   owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
   premium Boolean @default(false)
   updatedAt DateTime @updatedAt
+}
+
+/// Execution metadata only: all funds/orders/fills stay in existing demo tables.
+model CopyDemoSubscription {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  traderId String
+  strategy CopyStrategyOwner @relation(fields: [traderId], references: [traderId], onDelete: Restrict)
+  ownerUserId String
+  status String @default("ACTIVE")
+  ratio Decimal @db.Decimal(18, 8)
+  maxOrderUsdt Decimal @db.Decimal(36, 18)
+  maxExposureUsdt Decimal @db.Decimal(36, 18)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  executions CopyDemoExecution[]
+  @@index([traderId, status])
+}
+
+/// Durable transactional outbox and immutable source intent. Never a balance.
+model CopyDemoExecution {
+  id String @id @default(uuid())
+  sequence BigInt @unique @default(autoincrement())
+  subscriptionId String
+  subscription CopyDemoSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  sourceOrderId String
+  pair String
+  side String
+  sourceType String
+  sourcePrice Decimal? @db.Decimal(36, 18)
+  sourceQuantity Decimal @db.Decimal(36, 18)
+  ratio Decimal @db.Decimal(18, 8)
+  status String @default("PENDING")
+  reason String?
+  demoOrderId String? @unique
+  cancelRequested Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  fills CopyDemoFill[]
+  @@unique([subscriptionId, sourceOrderId])
+  @@index([status, createdAt])
+  @@index([sourceOrderId])
+}
+
+/// Ordering/provenance only; price and quantity remain solely in DemoTrade.
+model CopyDemoFill {
+  sequence BigInt @id @default(autoincrement())
+  executionId String
+  execution CopyDemoExecution @relation(fields: [executionId], references: [id], onDelete: Restrict)
+  tradeId String
+  @@unique([executionId, tradeId])
 }
 
 /// Approved pre-launch modeled histories, isolated from all account/financial
