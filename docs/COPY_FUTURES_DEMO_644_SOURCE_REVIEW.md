@@ -11,7 +11,7 @@ This is an incremental, **non-executing** review candidate stacked on #647 -> #6
 
 ## Implementation
 
-`src/services/copyTrading/FuturesDemoSource.ts` is a read-only candidate. It returns eligible executed fill receipts and explicit rejection reasons for other source events. An account without `LIVE_EXECUTION` is entirely excluded. It checks source instruction/action/position identity, quantity, price, leverage and basic pair format. Synthetic profit histories, opening order intentions, selected historical candles, model liquidations, automated protection and funding are excluded.
+`src/services/copyTrading/FuturesDemoSource.ts` is a read-only candidate. It returns eligible executed fill receipts and explicit rejection reasons for other source events. An account with explicit `HISTORICAL_DEMO` is entirely excluded. A newly initialized NativeDemoAccount has no executionMode property, which NativeDemoService explicitly interprets as LIVE_EXECUTION; that default must be included for the normal live demo path. It checks source instruction/action/position identity, quantity, price, leverage and basic pair format. Synthetic profit histories, opening order intentions, selected historical candles, model liquidations, automated protection and funding are excluded.
 
 The per-fill risk helper checks leverage and execution notional against explicit positive limits. It is **not sufficient** to authorize an order: leverage and margin exposure are distinct and the follower needs independent present-time portfolio checks, funding, margin, liquidation, slippage and available market depth.
 
