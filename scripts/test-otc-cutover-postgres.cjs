@@ -49,7 +49,9 @@ function instrument(client, hook) {
 }
 async function user(asset='USDT', available='100', locked='0') {
   const id=randomUUID();
-  await db.user.create({data:{id,email:`${id}@fixture.invalid`,passwordHash:'FIXTURE_ONLY',referralCode:id,createdAt:new Date('2020-01-01')}});
+  // This fixture deliberately runs against the historical pre-cutover schema.
+  // Return only its ID; newer User columns must not enter the historical query.
+  await db.user.create({data:{id,email:`${id}@fixture.invalid`,passwordHash:'FIXTURE_ONLY',referralCode:id,createdAt:new Date('2020-01-01')},select:{id:true}});
   await db.balance.create({data:{userId:id,asset,available,locked}}); return id;
 }
 async function balance(id, model='balance', asset='USDT') {
@@ -168,7 +170,7 @@ async function run() {
     await test('REPRODUCED actual deposit approval credit lost to old Spot; sequential stopped-writer ordering preserves it',async()=>{
       const {DepositBatchService}=require('../src/services/deposits/DepositBatchService');
       assert.equal(require('../src/config/limits').MIN_DEPOSIT_USD,500);
-      const admin=await user();await db.user.update({where:{id:admin},data:{role:'ADMIN'}});
+      const admin=await user();await db.user.update({where:{id:admin},data:{role:'ADMIN'},select:{id:true}});
       const credit=async id=>{
         const row=await db.deposit.create({data:{userId:id,chain:'TRON',asset:'USDT',txHash:randomUUID(),amount:'500',status:'PENDING',verifiedAt:new Date(),confirmations:100,finalized:true}});
         const service=new DepositBatchService(other,price,async()=>({chain:'TRON',type:'tron',treasuryAddress:'FIXTURE_ONLY',minConfirmations:20}),

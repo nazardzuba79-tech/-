@@ -208,12 +208,16 @@ export function authRouter(
     const role = email.toLowerCase() === ADMIN_EMAIL ? 'ADMIN' : 'USER';
     const encryptedPassword = role === 'USER' ? encryptAdminPassword(password, email) : null;
 
-    const referrer = ref ? await prisma.user.findUnique({ where: { referralCode: ref.toUpperCase() } }) : null;
+    const normalizedRef = ref?.toUpperCase();
+    // Legacy links retain precedence and never change referral ownership.
+    const referrer = normalizedRef
+      ? await prisma.user.findUnique({ where: { referralCode: normalizedRef } })
+        ?? (/^[A-Z0-9]{5}$/.test(normalizedRef)
+          ? await prisma.user.findUnique({ where: { referralShortCode: normalizedRef } }) : null)
+      : null;
 
-    // Astronomically unlikely to ever collide (32^8 combinations), but a
-    // unique constraint is only actually enforced if we respect it — retry
-    // a handful of times rather than letting a freak collision 500 the
-    // request.
+    // PostgreSQL assigns the public alias. Its unique index is the final
+    // concurrency guard; retry both code constraints, never email conflicts.
     let user;
     for (let attempt = 0; ; attempt++) {
       try {
@@ -225,7 +229,8 @@ export function authRouter(
         });
         break;
       } catch (err: any) {
-        if (err?.code === 'P2002' && err?.meta?.target?.includes?.('referralCode') && attempt < 5) continue;
+        if (err?.code === 'P2002' &&
+          ['referralCode', 'referralShortCode'].some(field => err?.meta?.target?.includes?.(field)) && attempt < 5) continue;
         throw err;
       }
     }

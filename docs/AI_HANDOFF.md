@@ -7513,3 +7513,11 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - On top of the session-authority commits and the main `fed5ee6a` merge pushed from the owner's account (2e1b71cd…a9c6fce9, kept as is; an independent local merge of the same main gave a byte-identical tree apart from this file). Main's overlapping changes (SIMUSDT valuation in WalletPortfolioService, History20 router in src/index.ts) need nothing here: conversion admission already refuses SIMUSDT-settled assets via `isTestAssetPairOrSymbol`.
 - `scripts/test-wallet-conversion-postgres.cjs` +2 checks: a bearer without `sid`, or without `exp`, is refused at confirm (401 SESSION_REVOKED, nothing moves); ordinary Spot limit bids (`OrderService`) and conversions racing on one Balance never overdraw, and the USDT hold equals the open orders.
 - Verified locally on the merged tree (disposable PostgreSQL, synthetic users): backend tsc/build, frontend tsc + flagged build; Jest 322/322 (conversion, portfolio, adjustments, deposits, OrderService, wallet UI, fingerprints, i18n); Balance fixture 29/29 + browser (flag ON) and default-OFF browser; DemoBalance fixture 27/27. No flag enabled, no deploy, no production data.
+
+
+## 2026-10-30 — Codex — five-character referral aliases
+- Implementation commit `32b6c1a1d27c996997abeb1b48d2f927201c2522`, branch `work/referral-five-chars-20261030`, fresh main `c1f13828`. The documented integration branch no longer exists remotely; isolated current-main checkout preserves unrelated dirty work.
+- Added nullable unique short-code metadata, additive migration/default allocator, auth alias resolution, Profile/Banking response selection, targeted auth and isolated PG/browser checks. No frontend runtime/design or financial behavior change.
+- Preserved legacy codes and referredById, both domains, seven languages, existing auth protections and every financial path. Production/main were not changed.
+- Local: 79 tests, 13 Banking integration tests, PostgreSQL 18.6 collision/reconnect preservation checks and 8 browser cases PASS; both builds PASS. See docs/REFERRAL_SHORT_CODES.md for release order and rollback that retains alias resolution.
+- CI pending on final PR SHA. Production requires separately authorized migration and an overlay against installed runtime; never publish all main.

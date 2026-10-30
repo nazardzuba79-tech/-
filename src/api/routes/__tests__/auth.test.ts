@@ -245,6 +245,39 @@ describe('auth routes', () => {
     );
   });
 
+  it('resolves a lowercase five-character alias to the original referrer', async () => {
+    const prisma = makePrismaMock({ user: {
+      findUnique: jest.fn().mockImplementation(({ where }: any) =>
+        Promise.resolve(where.referralShortCode === '9BB77' ? { id: 'ref-1' } : null)),
+    } });
+    const res = await request(buildApp(prisma)).post('/api/v1/auth/register')
+      .send({ email: 'short@team.com', password: 'Correcthorsebattery', ref: '9bb77' });
+    expect(res.status).toBe(201);
+    expect(prisma.user.create.mock.calls[0][0].data.referredById).toBe('ref-1');
+  });
+
+  it('preserves a historical short code before considering aliases', async () => {
+    const prisma = makePrismaMock({ user: {
+      findUnique: jest.fn().mockImplementation(({ where }: any) =>
+        Promise.resolve(where.referralCode === 'ABCDE' ? { id: 'legacy-owner' } : null)),
+    } });
+    const res = await request(buildApp(prisma)).post('/api/v1/auth/register')
+      .send({ email: 'legacy@team.com', password: 'Correcthorsebattery', ref: 'abcde' });
+    expect(res.status).toBe(201);
+    expect(prisma.user.findUnique).not.toHaveBeenCalledWith({ where: { referralShortCode: 'ABCDE' } });
+    expect(prisma.user.create.mock.calls[0][0].data.referredById).toBe('legacy-owner');
+  });
+
+  it('retries a concurrent public-alias collision without changing referrer', async () => {
+    const prisma = makePrismaMock();
+    prisma.user.create.mockRejectedValueOnce({ code: 'P2002', meta: { target: ['referralShortCode'] } });
+    const res = await request(buildApp(prisma)).post('/api/v1/auth/register')
+      .send({ email: 'collision@team.com', password: 'Correcthorsebattery' });
+    expect(res.status).toBe(201);
+    expect(prisma.user.create).toHaveBeenCalledTimes(2);
+    expect(prisma.session.create).toHaveBeenCalledTimes(1);
+  });
+
   it('asks for nothing but an email and a password', async () => {
     const prisma = makePrismaMock();
     const app = buildApp(prisma);
