@@ -39,7 +39,6 @@ import {
   sortTraders,
   searchTraders,
 } from './traders';
-import { useCopyEligibility } from './CopyEligibilityContext';
 import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
@@ -54,7 +53,6 @@ import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
 import { VerifiedBadge } from './VerifiedBadge';
-import { CopyDepositDialog } from './CopyDepositDialog';
 import { MonthlyPerformanceLauncher } from './CopyMonthlyPerformanceModal';
 import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
@@ -170,15 +168,11 @@ function useFiguresPending(traderId: string): boolean | undefined {
   return !marketplace.settled && !marketplace[traderId === nazarTrader.id ? 'nazar' : 'ksenia'];
 }
 
-/** Explain the unchanged deposit requirement only after an explicit Copy
- * click. Eligible accounts continue through the existing Following action. */
+/** Browser-only watchlist: no deposit, no finance request, no copy execution. */
 function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
-  const { eligible, status, requestId, retry, isCurrent } = useCopyEligibility();
   const { following, toggleFollowing } = useFollowing();
   const marketplace = useCopyMarketplace();
-  const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
-  useEffect(() => setShowDepositRequirement(false), [requestId, status]);
 
   if ((trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && !Number.isFinite(trader.performanceFee) && !isFollowing) {
     // «Данные недоступны» is a VERDICT, and it was being shown before there
@@ -195,25 +189,12 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
           title="Условия стратегии недоступны">Данные недоступны</button>;
   }
 
-  if (status !== 'ready') {
-    const loading = status === 'loading';
-    return <button className={`button button-copy ${compact ? 'button-small' : ''}`}
-      disabled={loading} aria-busy={loading ? 'true' : undefined}
-      title={loading ? 'Проверяем доступность копирования' : 'Не удалось проверить депозит. Нажмите, чтобы повторить.'}
-      onClick={event => { event.stopPropagation(); if (!loading) retry(); }}>
-      {loading ? 'Загрузка…' : 'Повторить проверку'}
-    </button>;
-  }
-
   return (
-    <>
     <button
       title="Локальный список наблюдения. Автокопирование сделок не запущено."
       className={`button button-copy ${isFollowing ? 'button-copy-active' : ''} ${compact ? 'button-small' : ''}`}
       onClick={(event) => {
         event.stopPropagation();
-        if (!isCurrent()) return;
-        if (!eligible) { setShowDepositRequirement(true); return; }
         toggleFollowing(trader.id);
         toast.success(
           isFollowing ? `Убрано из наблюдения: ${trader.name}` : `Добавлено в наблюдение: ${trader.name}`,
@@ -223,8 +204,6 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
     >
       {isFollowing ? <><Check size={14} /> В наблюдении</> : 'Наблюдать за трейдером'}
     </button>
-    {showDepositRequirement && <CopyDepositDialog onClose={() => setShowDepositRequirement(false)} />}
-    </>
   );
 }
 
