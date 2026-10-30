@@ -1,6 +1,5 @@
 import BigNumber from 'bignumber.js';
 import type { NativeAccount } from '../../private-trading/native/store';
-import type { DemoEvent } from '../../private-trading/native/engine';
 
 /**
  * Read-only admission of real committed NativeDemo fill receipts.
@@ -31,7 +30,7 @@ export type FuturesDemoSourceResult = {
 };
 
 const decimal = (value: string | null | undefined): value is string =>
-  typeof value === 'string' && /^(0|[1-9]\\d{0,17})(\\.\\d{1,18})?$/.test(value)
+  typeof value === 'string' && /^(0|[1-9][0-9]{0,17})([.][0-9]{1,18})?$/.test(value)
   && new BigNumber(value).isFinite() && new BigNumber(value).gt(0);
 const symbolOk = (value: string) => /^[A-Z0-9]{2,32}USDT$/.test(value);
 
