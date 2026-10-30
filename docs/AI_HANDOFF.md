@@ -1,5 +1,13 @@
 # AI Handoff Log
 
+## 2026-10-30 — Codex — #644 isolated server demo-copy vertical slice
+- Commit: this handoff commit; branch `feature/copy-demo644-20261030`, stacked on repaired #645 `f3755365` / #643 `74140acd`. No merge/deploy, production migration, live account creation or credit. #645 now has 8/8 exact-head workflow SUCCESS; #643 9/9.
+- Reused DemoTradingService/SpotBookTransaction and existing DemoBalance/Order/Trade. Additive metadata migration, transaction-coupled outbox and fill provenance, server subscriptions, limits, deterministic retry, cancel/stop recovery, actual-fill PnL, strict own-session API and separate seven-language flagged review page. Runtime only enables for explicit test flags and loopback `copy_demo_...` PostgreSQL, never production.
+- Preserved synthetic Copy performance, existing watchlist, real finance, Stocks, Wallet/Banking, listings/timers, existing deployed source. No new funds/external execution. Initial support is Spot LIMIT/USDT; Market/Futures remain unsupported. Purchased assets remain on stop; source/copy fills can differ.
+- Actually run: PostgreSQL 18.6 fresh migration and 16 scenario groups PASS (including independent workers, rollback faults, restart, partial fills, stop race, risk/funds, owner/session denial, timestamp ties, self-match refusal and protected financial tables); built-browser 8 cases PASS (1440,390,cross-device/reload/stop,seven languages); 51 targeted existing tests and backend/frontend typecheck/build PASS. Exact-head CI must be verified after push. Isolated fonts were blocked, no external financial calls.
+- Cloudflare current production identity rechecked read-only: 9ed179c6 / 8ac0fa93-4230-408c-a7a5-f8c29cb4ebee; main branch, automatic production=false, preview=none. Authenticated production browser eligibility QA remains outstanding. Stocks #613 22e82239 records +19.88% p95 (FAIL >5%); no duplicated benchmark or overlapping work.
+- Limits and reproduction: docs/COPY_DEMO_644_REVIEW.md. The full Issue #644 is not complete; this is its safe executable first slice, not a real-money product or production-ready engine.
+
 ## 2026-10-30 — Codex — #645 exact-head frontend regression repair
 - Follow-up to `7a2b9a22` on the existing #645 branch; stacked on #643, no merge/deploy. Commit: this handoff commit.
 - CI 41094884954 had exactly three assertion failures: an obsolete removed-provider mutation was a no-op; a changed watchlist target correctly threw before hashing; a historical comment matched a whole-file dependency regex.

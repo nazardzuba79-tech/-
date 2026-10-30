@@ -71,6 +71,9 @@ import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoLiquidityConfig, marketReference } from './services/DemoLiquidity';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { copyDemoRouter } from './api/routes/copyDemo';
+import { CopyDemoService, copyDemoEnabled } from './services/copyTrading/CopyDemoService';
+import { startCopyDemoWorker } from './services/copyTrading/copyDemoWorker';
 import { isTestAssetPairOrSymbol } from './services/testMarkets/testAssetConfig';
 import { stocksTestCashRouter } from './api/routes/stocksTestCash';
 import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
@@ -160,11 +163,15 @@ const demoEngine = new MatchingEngine();
 // Internal demo liquidity: off unless DEMO_LIQUIDITY_ENABLED=true and its configuration parses
 // (docs/DEMO_LIQUIDITY.md). Its reference is the market-data cache; nothing is sent to a venue.
 const demoLiquidity = demoLiquidityConfig();
+let copyDemoService: CopyDemoService | undefined;
 if (demoLiquidity.problem) console.warn(`[demo-liquidity] off: ${demoLiquidity.problem}`);
 const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine, {
   liquidity: demoLiquidity.config ? { config: demoLiquidity.config, reference: marketReference(marketDataService) } : null,
   liquidityProblem: demoLiquidity.problem,
+  orderLifecycle: (tx, id, event) => copyDemoService?.orderLifecycle(tx, id, event) ?? Promise.resolve(),
+  tradeLifecycle: (tx, ids) => copyDemoService?.captureFills(tx, ids) ?? Promise.resolve(),
 }), ['placeOrder', 'cancelOrder', 'topUp']);
+copyDemoService = new CopyDemoService(prisma, demoEngine, demoTradingService);
 const adminUserDeletion = new AdminUserDeletionService(prisma, accountDeletionGate, { spot: engine, futures: futuresEngine, demo: demoEngine });
 const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
@@ -328,6 +335,8 @@ app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, 
 // No Support timers or new tables are needed.
 // Demo Spot for admin-credited USER accounts: off unless DEMO_SPOT_ENABLED=true.
 // A pair is admitted only when the real market feed lists it (the terminal's pair set).
+app.use('/api/v1', copyDemoRouter(prisma, copyDemoService));
+startCopyDemoWorker(copyDemoService, copyDemoEnabled, () => console.error('[copy-demo] pass failed; pending work retained'));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
   isSpotPair: async pair => !isTestAssetPairOrSymbol(pair) && (await marketDataService.getTicker(pair)) !== null,
 }));
