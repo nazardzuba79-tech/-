@@ -1046,6 +1046,28 @@ Same release chain and method as R9 §1 (authority + gateway + PostgreSQL on CPU
   status stays `CALIBRATION_ONLY_NOT_A_VERDICT`); the authority's private-request log is written for push runs; gateway
   metrics carry connection and stream counters; `policy-613-after.cjs` exports `PUSH_RC` (the pins are unchanged).
 
+**Result of the calibrated set (run 41016972734, head 8928571d, runtime pin 7942c59d, report only):**
+
+| | value |
+|---|---|
+| A/A calibration at the push pin (6 runs) | METHOD_CALIBRATED; pooled A/A Δp95 **+0.67 %** (bootstrap −1.0 … +2.5); runs 2.9, 0.5, −0.1, 1.4, 0.4, −0.7 % |
+| Collection | COMPLETE 6/6 |
+| Crypto pooled p50 / p95 / p99, baseline → mixed | 6.86 / 9.80 / 16.09 → 6.83 / **11.75** / 18.21 ms |
+| Crypto pooled Δp95 | **+19.88 %** (+1.95 ms), bootstrap 95 % **+18.0 … +23.7 %**; per run 23.5, 28.7, 19.4, 16.8, 15.6, 25.3 % → DIAGNOSTIC_P95_FAIL (+5 %) |
+| Streams | 300/300 opened; 6 000 of 6 000 quotes (uptime 100 %); 0 waits / unavailable / revoked / stale viewers / stream errors; quote age p95 ≈ 2.1 s; delivery p95 24–28 ms |
+| Private ingress | busiest sliding minute 203/240, 0 × 429; per 20 s window 35 identity batches, 70 commands |
+| Gateway connections | peak 80 of 128, 0 shed, 0 dropped |
+| CPU per 20 s window, baseline → mixed | API 1 920 → 1 997, authority 69 → 705, gateway 132 → 681, PostgreSQL 265 → 448 ms; server CPU set busy 5.7 → 9.3 % |
+| Waiting for a CPU (schedstat, mixed vs baseline) | API 761 → 965, authority 95 → 523, gateway 122 → 265 ms |
+| Memory (max HWM / PSS) | API 205, authority 161, gateway 98, PostgreSQL 55 MB |
+| Traders | p95 16–19 ms; 300 viewer orders refused; order loss / double spend / viewer mutations 0 / 0 / 0 |
+
+Reading: push removes the viewers' polling cost (no state reads, 0 stream errors) but the crypto p95 still rises
+≈ +20 % (CI +18 … +24 %), close to the R8 polling result (+22.73 %) and well above +5 %. Codex's single run (+7.78 %)
+lies outside this interval: one pair without calibration. In absolute terms +1.95 ms on a ≈ 10 ms p95. The mixed arm
+adds ≈ 1.2 s of Stocks CPU per 20 s on the same two hardware threads (authority ≈ 0.64 s: the two traders' 4 s cycle;
+gateway ≈ 0.55 s: 50 streams), and the crypto API waits ≈ 0.2 s longer for a CPU.
+
 ### R10 remaining blockers
 
 1. Acceptance unchanged: +22.73 % FAIL (R8). Push alone projects ≈ +12 %; the traders' authority path (≈ 1.1–1.3 s per
