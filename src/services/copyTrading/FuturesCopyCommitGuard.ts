@@ -67,7 +67,8 @@ export function futuresCopyCommitGuard(limits: FuturesCopyCommitLimits): NativeC
       throw new FuturesCopyGuardError('COPY_TOTAL_EXPOSURE_EXCEEDED');
     if (limits.action === 'OPEN') {
       const beforeIds = new Set(before.snapshot.positions.filter(p=>p.status==='OPEN').map(p=>p.id));
-      if (beforeIds.size || added.some(e=>beforeIds.has(e.positionId!)))
+      const preexistingOrders = before.snapshot.orders.some(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED');
+      if (beforeIds.size || preexistingOrders || added.some(e=>beforeIds.has(e.positionId!)))
         throw new FuturesCopyGuardError('COPY_FOLLOWER_POSITION_NOT_ISOLATED');
       if (new Set(added.map(e=>e.positionId)).size !== 1)
         throw new FuturesCopyGuardError('COPY_MULTIPLE_POSITIONS_REFUSED');
