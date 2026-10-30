@@ -97,6 +97,34 @@ async function main(){
   assert.equal(stored.payload.snapshot.positions.filter(p=>p.status==='OPEN').length,0);
   assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),2);
  });
+ await check('more than 50 processed receipts never starve a later pending event',async()=>{
+  // Strict fixture metadata only. Every earlier receipt is already terminal,
+  // and the final tiny event must be reached, rejected and journaled once.
+  const sub=await db.copyFuturesDemoSubscription.findUniqueOrThrow({where:{userId:follower}});
+  const consent=await db.copyFuturesDemoConsent.findUniqueOrThrow({where:{userId:follower}});
+  const revision=consent.startedAfterRevision+100;
+  const old=Array.from({length:60},(_,i)=>({
+    subscriptionId:sub.id,sourceEventId:'old-test-only-'+i,sourceRevision:revision,
+    sourceEventIndex:i,sourceActionId:'fixture',sourcePositionId:'fake-position',
+    symbol:'BTCUSDT',kind:'OPEN',side:'LONG',quantity:'0.1',price:'50000',
+    leverage:'2',marginType:'ISOLATED',pricing:'OBSERVED_BOOK',status:'OBSERVED_ONLY'
+  }));
+  await db.copyFuturesDemoEvent.createMany({data:[...old,{
+    ...old[0],sourceEventId:'tail-test-only-small',sourceRevision:revision+1,
+    sourceEventIndex:0,quantity:'0.000000001',
+  }]});
+  await db.copyFuturesDemoMirror.createMany({data:old.map((e,i)=>({
+    consentId:consent.id,sourceEventId:e.sourceEventId,
+    sourcePositionId:e.sourcePositionId,sourceRevision:e.sourceRevision,
+    kind:'OPEN',requestKey:'already-terminal-'+i,status:'REJECTED',
+    reason:'fixture processed',followerPositionId:null,filledQuantity:null,
+  }))});
+  const delivered=await copy.drainOne(follower,sessions[follower]);
+  assert.equal(delivered.status,'REJECTED');
+  assert.equal(delivered.reason,'COPY_QUANTITY_TOO_SMALL');
+  assert.equal(delivered.sourceEventId,'tail-test-only-small');
+  assert.equal((await copy.drainOne(follower,sessions[follower])).status,'EMPTY');
+ });
  await check('stop prevents further execution and cannot liquidate an existing position',async()=>{
   assert.equal((await copy.stop(follower,sessions[follower])).status,'STOPPED');
   await refuse(()=>copy.drainOne(follower,sessions[follower]),'COPY_EXECUTION_STOPPED');
