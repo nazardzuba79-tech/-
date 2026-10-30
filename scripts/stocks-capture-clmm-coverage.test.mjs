@@ -6,25 +6,34 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { captureFinalizedCoverage } from './stocks-capture-clmm-coverage.mjs';
 import { b58, MAINNET_GENESIS, PILOTS } from './stocks-verify-clmm-proof.mjs';
-import { RPC_ENDPOINT } from './stocks-source-pipeline-coverage.mjs';
+import { RPC_ENDPOINT, ALPENGLOW_GENESIS_SLOT, ALPENGLOW_GENESIS_BLOCK_ID } from './stocks-source-pipeline-coverage.mjs';
 
 // All packets in this file are isolated synthetic fixtures, never market evidence.
-const start = Date.parse('2026-10-01T00:00:00Z') / 1000;
+const start = Date.parse('2026-10-22T00:00:00Z') / 1000;
 const from = new Date(start * 1000).toISOString(), to = new Date((start + 60) * 1000).toISOString();
-const publicKey = byte => b58(Buffer.alloc(32, byte));
+const slot = value => 460000000 + value;
+const publicKey = value => { const bytes = Buffer.alloc(32); bytes.writeUInt32LE(value); return b58(bytes); };
 const sig = byte => b58(Buffer.alloc(64, byte));
+const blockIdBytes = (() => {
+  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  let value = 0n;
+  for (const char of ALPENGLOW_GENESIS_BLOCK_ID) value = value * 58n + BigInt(alphabet.indexOf(char));
+  return [...Buffer.from(value.toString(16).padStart(64, '0'), 'hex')];
+})();
+const certificate = () => ({ block: { slot: ALPENGLOW_GENESIS_SLOT, blockId: [...blockIdBytes] },
+  signature: { signature: Array(192).fill(1), bitmap: [1] } });
 
 async function fixture(fn, { ticker = 'SPYx', mutate, failed = false } = {}) {
   const parent = await mkdtemp(join(tmpdir(), 'voltex-coverage-capture-test-')), out = join(parent, 'packet');
   let milliseconds = (start + 180) * 1000, slotReads = 0;
   const calls = [], sleeps = [], pool = PILOTS[ticker].pool;
   const row = (slot, blockTime, byte, err = null) => ({ slot, blockTime, signature: sig(byte), confirmationStatus: 'finalized', err });
-  const rows = [row(105, start + 60, 5), row(102, start + 20, 2, failed ? 'AccountInUse' : null), row(100, start - 1, 1)];
-  const blocks = Object.fromEntries([[100, 99, start - 1, 1], [102, 100, start + 20, 2], [105, 102, start + 60, 5]].map(([slot, previous, time, byte]) => [slot, {
-    blockTime: time, blockhash: publicKey(slot), previousBlockhash: publicKey(previous), parentSlot: previous,
+  const rows = [row(slot(105), start + 60, 5), row(slot(102), start + 20, 2, failed ? 'AccountInUse' : null), row(slot(100), start - 1, 1)];
+  const blocks = Object.fromEntries([[100, 99, start - 1, 1], [102, 100, start + 20, 2], [105, 102, start + 60, 5]].map(([index, previous, time, byte]) => [slot(index), {
+    blockTime: time, blockhash: publicKey(slot(index)), previousBlockhash: publicKey(slot(previous)), parentSlot: slot(previous),
     transactions: [{ version: 1, transaction: { signatures: [sig(byte)], message: {
       accountKeys: [pool], instructions: [], transactionConfig: {},
-    } }, meta: { err: slot === 102 && failed ? 'AccountInUse' : null } }],
+    } }, meta: { err: index === 102 && failed ? 'AccountInUse' : null } }],
   }]));
   const fetchImpl = async (url, options) => {
     const request = JSON.parse(options.body);
@@ -33,13 +42,15 @@ async function fixture(fn, { ticker = 'SPYx', mutate, failed = false } = {}) {
     calls.push({ ...request, at: milliseconds });
     let value;
     if (request.method === 'getGenesisHash') value = MAINNET_GENESIS;
-    else if (request.method === 'getSlot') value = 200 + slotReads++;
+    else if (request.method === 'getAgGenesisCert') value = certificate();
+    else if (request.method === 'getSlot') value = slot(200) + slotReads++;
     else if (request.method === 'getSignaturesForAddress') value = structuredClone(rows);
-    else if (request.method === 'getBlocks') value = [100, 102, 105];
+    else if (request.method === 'getBlocks') value = [100, 102, 105].map(slot);
     else if (request.method === 'getBlock') {
       assert.equal(request.params[1].maxSupportedTransactionVersion, 1);
-      assert.equal(request.params[1].transactionDetails, 'full');
+      assert(['none', 'full'].includes(request.params[1].transactionDetails));
       value = structuredClone(blocks[request.params[0]]);
+      if (request.params[1].transactionDetails === 'none') delete value.transactions;
     } else assert.fail('Unexpected method ' + request.method);
     const response = mutate ? await mutate({ request, value, index: calls.length, calls }) : undefined;
     return response ?? Response.json({ jsonrpc: '2.0', id: request.id, result: value });
@@ -53,9 +64,10 @@ async function fixture(fn, { ticker = 'SPYx', mutate, failed = false } = {}) {
 for (const ticker of ['SPYx', 'CRCLx']) test('captures a complete synthetic minute for ' + ticker + ' without admitting prices', () => fixture(async ({ options, hooks, calls, sleeps, out }) => {
   const result = await captureFinalizedCoverage(options, hooks);
   assert.equal(result.manifest.status, 'CAPTURED_UNVERIFIED');
-  assert.equal(calls.length, 8); assert.equal(result.manifest.metrics.rpcAttempts, 8);
-  assert.equal(result.manifest.metrics.rpcCompletions, 8);
-  assert.deepEqual(result.manifest.slotRange, { from: 100, to: 105 });
+  assert.equal(calls.length, 12); assert.equal(result.manifest.metrics.rpcAttempts, 12);
+  assert.equal(result.manifest.metrics.rpcCompletions, 12);
+  assert.deepEqual(result.manifest.slotRange, { from: slot(100), to: slot(105) });
+  assert.deepEqual(result.manifest.discoverySlotRange, { from: slot(100), to: slot(105) });
   assert(sleeps.every(ms => ms === 3000));
   assert(calls.every((call, i) => !i || call.at - calls[i - 1].at >= 3000));
   assert.equal(result.verification.receiptCoverageVerified, true);
@@ -76,6 +88,13 @@ test('failed pool transactions remain in coverage and never become trades', () =
   assert.equal(result.verification.coverage.successfulPoolTransactions, 0);
   assert.deepEqual(result.verification.candles, []);
 }, { failed: true }));
+
+test('a boundary finalized after the initial watermark remains valid when the closing watermark covers it', () => fixture(async ({ options, hooks }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(result.manifest.status, 'CAPTURED_UNVERIFIED');
+  assert.equal(result.verification.receiptCoverageVerified, true);
+}, { mutate: ({ request, index }) => request.method === 'getSlot' && index === 3
+  ? Response.json({ jsonrpc: '2.0', id: request.id, result: slot(104) }) : undefined }));
 
 for (const status of [403, 429, 503]) test('HTTP ' + status + ' is retained once and never retried or routed elsewhere', () => fixture(async ({ options, hooks, calls, out }) => {
   const result = await captureFinalizedCoverage(options, hooks);
@@ -114,7 +133,7 @@ test('invalid JSON and mismatched JSON-RPC identity cannot progress', async () =
 
 test('unsupported transaction RPC error stops without retrying an older version or omitting the block', () => fixture(async ({ options, hooks, calls }) => {
   const result = await captureFinalizedCoverage(options, hooks);
-  assert.equal(calls.length, 5); assert.deepEqual(result.manifest.blockers, ['RPC_-32015']);
+  assert.equal(calls.length, 6); assert.deepEqual(result.manifest.blockers, ['RPC_-32015']);
   assert.equal(calls.at(-1).params[1].maxSupportedTransactionVersion, 1);
   assert.equal(result.verification, null);
 }, { mutate: ({ request }) => request.method === 'getBlock'
@@ -122,15 +141,16 @@ test('unsupported transaction RPC error stops without retrying an older version 
 
 test('null full block is not treated as a no-trade interval', () => fixture(async ({ options, hooks, calls }) => {
   const result = await captureFinalizedCoverage(options, hooks);
-  assert.equal(calls.length, 5); assert.deepEqual(result.manifest.blockers, ['FULL_BLOCK_UNAVAILABLE']);
+  assert.equal(calls.length, 9); assert.deepEqual(result.manifest.blockers, ['FULL_BLOCK_UNAVAILABLE']);
   assert.equal(result.manifest.acceptedIntervals, 0);
-}, { mutate: ({ request }) => request.method === 'getBlock' ? Response.json({ jsonrpc: '2.0', id: request.id, result: null }) : undefined }));
+}, { mutate: ({ request }) => request.method === 'getBlock' && request.params[1].transactionDetails === 'full'
+  ? Response.json({ jsonrpc: '2.0', id: request.id, result: null }) : undefined }));
 
 test('signature gaps and duplicates stop before a full block request', async () => {
   for (const change of [rows => rows.slice(0, 2), rows => [rows[0], rows[0], rows[2]], rows => rows.map(row => ({ ...row, blockTime: null }))]) {
     await fixture(async ({ options, hooks, calls }) => {
       const result = await captureFinalizedCoverage(options, hooks);
-      assert.equal(calls.length, 3); assert.equal(result.manifest.status, 'BLOCKED');
+      assert.equal(calls.length, 4); assert.equal(result.manifest.status, 'BLOCKED');
       assert.equal(result.verification, null);
     }, { mutate: ({ request, value }) => request.method === 'getSignaturesForAddress'
       ? Response.json({ jsonrpc: '2.0', id: request.id, result: change(value) }) : undefined });
@@ -143,9 +163,10 @@ test('tight request budget refuses the complete block phase instead of taking a 
   assert.equal(result.verification, null);
 }));
 
-test('produced block cap is enforced before any block data request', () => fixture(async ({ options, hooks, calls }) => {
+test('full block cap is enforced after boundary probes and before any full block request', () => fixture(async ({ options, hooks, calls }) => {
   const result = await captureFinalizedCoverage({ ...options, maxProducedBlocks: 2 }, hooks);
-  assert.equal(calls.length, 4); assert.deepEqual(result.manifest.blockers, ['PRODUCED_SLOTS_INCOMPLETE_OR_BUDGET']);
+  assert.equal(calls.length, 8); assert.deepEqual(result.manifest.blockers, ['EXACT_MINUTE_FULL_BLOCK_BUDGET']);
+  assert.equal(calls.filter(call => call.method === 'getBlock' && call.params[1].transactionDetails === 'full').length, 0);
 }));
 
 test('oversized response is cancelled and never followed by another request', () => fixture(async ({ options, hooks, calls }) => {
@@ -169,18 +190,138 @@ test('unsupported pilots, active minutes and relaxed budgets fail before acquisi
   assert.equal(calls.length, 0);
 }));
 
-test('packet verifier rejects corrupted block ancestry even after successful HTTP collection', () => fixture(async ({ options, hooks, calls }) => {
+test('a full block cannot change the ancestry observed in its finalized header', () => fixture(async ({ options, hooks, calls }) => {
   const result = await captureFinalizedCoverage(options, hooks);
-  assert.equal(calls.length, 8); assert.equal(result.manifest.status, 'CAPTURED_UNVERIFIED');
-  assert.equal(result.verification.receiptCoverageVerified, false); assert.equal(result.verification.acceptedIntervals, 0);
-  assert.deepEqual(result.verification.candles, []);
-}, { mutate: ({ request, value }) => request.method === 'getBlock' && request.params[0] === 102
-  ? Response.json({ jsonrpc: '2.0', id: request.id, result: { ...value, parentSlot: 101 } }) : undefined }));
+  assert.equal(calls.length, 10); assert.equal(result.manifest.status, 'BLOCKED');
+  assert.deepEqual(result.manifest.blockers, ['COVERAGE_PROBE_FULL_MISMATCH']);
+  assert.equal(result.verification, null); assert.equal(result.manifest.acceptedIntervals, 0);
+}, { mutate: ({ request, value }) => request.method === 'getBlock' && request.params[0] === slot(102)
+  && request.params[1].transactionDetails === 'full'
+  ? Response.json({ jsonrpc: '2.0', id: request.id, result: { ...value, parentSlot: slot(101) } }) : undefined }));
+
+for (const result of [null, { ...certificate(), block: { slot: ALPENGLOW_GENESIS_SLOT, blockId: Array(32).fill(0) } }]) {
+  test('absent or foreign consensus certificate stops before any range or block request', () => fixture(async ({ options, hooks, calls }) => {
+    const captured = await captureFinalizedCoverage(options, hooks);
+    assert.equal(calls.length, 2); assert.deepEqual(captured.manifest.blockers, ['COVERAGE_CONSENSUS_RECEIPT']);
+    assert.equal(captured.verification, null);
+  }, { mutate: ({ request }) => request.method === 'getAgGenesisCert'
+    ? Response.json({ jsonrpc: '2.0', id: request.id, result }) : undefined }));
+}
+
+test('unsupported consensus RPC is not replaced by a guessed date or client version', () => fixture(async ({ options, hooks, calls }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(calls.length, 2); assert.deepEqual(result.manifest.blockers, ['RPC_-32601']);
+}, { mutate: ({ request }) => request.method === 'getAgGenesisCert'
+  ? Response.json({ jsonrpc: '2.0', id: request.id, error: { code: -32601, message: 'unsupported' } }) : undefined }));
+
+test('null boundary metadata fails before full-block acquisition', () => fixture(async ({ options, hooks, calls }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(calls.length, 6); assert.deepEqual(result.manifest.blockers, ['COVERAGE_BLOCK_HEADER']);
+}, { mutate: ({ request }) => request.method === 'getBlock' && request.params[1].transactionDetails === 'none'
+  ? Response.json({ jsonrpc: '2.0', id: request.id, result: null }) : undefined }));
+
+test('a header whose parent was omitted from the produced list stops the search', () => fixture(async ({ options, hooks, calls }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(calls.length, 7); assert.deepEqual(result.manifest.blockers, ['HEADER_PARENT_SLOT']);
+}, { mutate: ({ request, value }) => request.method === 'getBlock' && request.params[0] === slot(105)
+  ? Response.json({ jsonrpc: '2.0', id: request.id, result: { ...value, parentSlot: slot(103) } }) : undefined }));
 
 test('15-minute time cap stops further requests rather than waiting indefinitely', () => fixture(async ({ options, hooks, calls }) => {
   const result = await captureFinalizedCoverage(options, { ...hooks, sleep: async ms => hooks.sleep(ms + 15 * 60 * 1000) });
   assert.equal(calls.length, 1); assert.deepEqual(result.manifest.blockers, ['CAPTURE_TIME_BUDGET']);
 }));
+
+async function wideFixture(fn, { insideCount = 130, mutate } = {}) {
+  const parent = await mkdtemp(join(tmpdir(), 'voltex-coverage-wide-test-')), out = join(parent, 'packet');
+  const produced = Array.from({ length: 436 }, (_, index) => slot(1000 + index * 2));
+  // Deliberate skipped slots and equal timestamps. Search must use produced-list
+  // indices and the recorded times, never a slot-duration estimate.
+  const time = index => index <= 100 ? start - 101 + index
+    : index <= 100 + insideCount ? start + Math.floor((index - 101) * 60 / insideCount)
+      : start + 60 + index - 101 - insideCount;
+  const middle = 101 + Math.floor(insideCount / 2);
+  const poolRows = [{ index: 0, byte: 1 }, ...(insideCount ? [{ index: middle, byte: 2 }] : []), { index: 435, byte: 3 }];
+  const rows = poolRows.map(({ index, byte }) => ({ slot: produced[index], blockTime: time(index),
+    signature: sig(byte), confirmationStatus: 'finalized', err: null })).reverse();
+  const blocks = produced.map((value, index) => ({
+    blockTime: time(index), blockhash: publicKey(value), parentSlot: index ? produced[index - 1] : value - 2,
+    previousBlockhash: publicKey(index ? produced[index - 1] : value - 2),
+    transactions: poolRows.filter(row => row.index === index).map(row => ({ version: 1,
+      transaction: { signatures: [sig(row.byte)], message: { accountKeys: [PILOTS.SPYx.pool], instructions: [], transactionConfig: {} } },
+      meta: { err: null },
+    })),
+  }));
+  const calls = []; let milliseconds = (start + 180) * 1000;
+  const hooks = { now: () => milliseconds, sleep: async ms => { milliseconds += ms; }, fetchImpl: async (url, options) => {
+    assert.equal(url, RPC_ENDPOINT);
+    const request = JSON.parse(options.body); calls.push(request);
+    let value;
+    if (request.method === 'getGenesisHash') value = MAINNET_GENESIS;
+    else if (request.method === 'getAgGenesisCert') value = certificate();
+    else if (request.method === 'getSlot') value = slot(2000);
+    else if (request.method === 'getSignaturesForAddress') value = structuredClone(rows);
+    else if (request.method === 'getBlocks') value = [...produced];
+    else if (request.method === 'getBlock') {
+      const index = produced.indexOf(request.params[0]); assert(index >= 0);
+      value = structuredClone(blocks[index]);
+      if (request.params[1].transactionDetails === 'none') delete value.transactions;
+    } else assert.fail('Unexpected RPC ' + request.method);
+    return (mutate && await mutate({ request, value, calls })) ?? Response.json({ jsonrpc: '2.0', id: request.id, result: value });
+  } };
+  try { return await fn({ options: { ticker: 'SPYx', from, to, out }, hooks, calls, produced, blocks }); }
+  finally { await rm(parent, { recursive: true, force: true }); }
+}
+
+test('436 discovered blocks narrow to the exact minute and both signature anchors below unchanged budgets', () => wideFixture(async ({ options, hooks, calls, produced }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(result.manifest.status, 'CAPTURED_UNVERIFIED');
+  assert.equal(result.verification.receiptCoverageVerified, true);
+  assert.deepEqual(result.manifest.discoverySlotRange, { from: produced[0], to: produced[435] });
+  assert.deepEqual(result.manifest.slotRange, { from: produced[100], to: produced[231] });
+  const full = calls.filter(call => call.method === 'getBlock' && call.params[1].transactionDetails === 'full');
+  assert.deepEqual(full.map(call => call.params[0]), [produced[0], ...produced.slice(100, 232), produced[435]]);
+  assert.equal(full.length, 134); assert.equal(result.manifest.metrics.requiredFullBlocks, 134);
+  const probes = calls.filter(call => call.method === 'getBlock' && call.params[1].transactionDetails === 'none');
+  assert.equal(new Set(probes.map(call => call.params[0])).size, probes.length);
+  assert(probes.length <= 32 && calls.length <= 225);
+  assert.equal(result.verification.coverage.producedBlockCount, 132);
+  assert.equal(result.verification.coverage.successfulPoolTransactions, 1);
+  assert.equal(result.verification.acceptedIntervals, 0); assert.deepEqual(result.verification.candles, []);
+}));
+
+test('wide bracket with no pool trade still requires both adjacent boundary blocks and anchors', () => wideFixture(async ({ options, hooks, calls, produced }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(result.verification.receiptCoverageVerified, true);
+  assert.deepEqual(result.manifest.slotRange, { from: produced[100], to: produced[101] });
+  const full = calls.filter(call => call.method === 'getBlock' && call.params[1].transactionDetails === 'full');
+  assert.deepEqual(full.map(call => call.params[0]), [produced[0], produced[100], produced[101], produced[435]]);
+  assert.equal(result.verification.coverage.successfulPoolTransactions, 0);
+  assert.equal(result.verification.acceptedIntervals, 0); assert.deepEqual(result.verification.candles, []);
+}, { insideCount: 0 }));
+
+test('exact-minute cap includes separate anchors and fails before fetching any full block', () => wideFixture(async ({ options, hooks, calls }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.equal(result.manifest.metrics.selectedProducedBlocks, 199);
+  assert.equal(result.manifest.metrics.requiredFullBlocks, 201);
+  assert.deepEqual(result.manifest.blockers, ['EXACT_MINUTE_FULL_BLOCK_BUDGET']);
+  assert.equal(calls.filter(call => call.method === 'getBlock' && call.params[1].transactionDetails === 'full').length, 0);
+  assert.equal(result.verification, null);
+}, { insideCount: 197 }));
+
+test('a probe 429 is retained once with no full capture or retry', () => wideFixture(async ({ options, hooks, calls }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.deepEqual(result.manifest.blockers, ['HTTP_429']);
+  assert.equal(calls.length, 6); assert.equal(result.manifest.receipts.at(-1).httpStatus, 429);
+  assert.equal(result.manifest.metrics.automaticRetries, 0);
+}, { mutate: ({ request }) => request.method === 'getBlock'
+  ? new Response('{"error":"limited"}', { status: 429 }) : undefined }));
+
+test('observed timestamp inversion halts binary search without treating a partial minute as complete', () => wideFixture(async ({ options, hooks, calls }) => {
+  const result = await captureFinalizedCoverage(options, hooks);
+  assert.deepEqual(result.manifest.blockers, ['HEADER_TIME_ORDER']);
+  assert.equal(calls.length, 8); assert.equal(result.verification, null);
+}, { mutate: ({ request, value, calls }) => request.method === 'getBlock' && calls.length === 8
+  ? Response.json({ jsonrpc: '2.0', id: request.id, result: { ...value, blockTime: start + 9999 } }) : undefined }));
 
 test('unsupported or disabled native proxy configurations fail before network access', async () => {
   const keys = ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy', 'NODE_OPTIONS', 'NODE_USE_ENV_PROXY'];

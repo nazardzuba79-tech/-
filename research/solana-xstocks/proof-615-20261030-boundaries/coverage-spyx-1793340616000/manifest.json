@@ -1,0 +1,547 @@
+{
+  "schema": "voltex.solana-coverage-packet.v2",
+  "network": "solana-mainnet-beta",
+  "ticker": "SPYx",
+  "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+  "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "windowUTC": [
+    "2026-10-30T06:07:00.000Z",
+    "2026-10-30T06:08:00.000Z"
+  ],
+  "discoverySlotRange": {
+    "from": 463177907,
+    "to": 463178904
+  },
+  "slotRange": {
+    "from": 463177968,
+    "to": 463178246
+  },
+  "status": "BLOCKED",
+  "startedAt": "2026-10-30T06:10:33.888Z",
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "requestId": 1,
+      "at": "2026-10-30T06:10:33.889Z",
+      "httpStatus": 200,
+      "bytes": 81,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAgGenesisCert",
+      "params": [],
+      "requestId": 2,
+      "at": "2026-10-30T06:10:36.892Z",
+      "httpStatus": 200,
+      "bytes": 1229,
+      "sha256": "d84a6289c7ba2a8ee3103d30780694ee04c218705e7d898d5e1cfd5e26ce2236"
+    },
+    {
+      "file": "receipt-003.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSlot",
+      "params": [
+        {
+          "commitment": "finalized"
+        }
+      ],
+      "requestId": 3,
+      "at": "2026-10-30T06:10:39.894Z",
+      "httpStatus": 200,
+      "bytes": 44,
+      "sha256": "51673fe057e03e3fc7fafb7a5b02520751c3d6542882fe556dccf6cf96e28461"
+    },
+    {
+      "file": "receipt-004.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "commitment": "finalized",
+          "limit": 100
+        }
+      ],
+      "requestId": 4,
+      "at": "2026-10-30T06:10:42.894Z",
+      "httpStatus": 200,
+      "bytes": 24846,
+      "sha256": "031a10fed594c2609b01df7aa635d87434f8ad485e6d6aee370aa7dd46ff5d77"
+    },
+    {
+      "file": "receipt-005.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlocks",
+      "params": [
+        463177907,
+        463178904,
+        {
+          "commitment": "finalized"
+        }
+      ],
+      "requestId": 5,
+      "at": "2026-10-30T06:10:45.896Z",
+      "httpStatus": 200,
+      "bytes": 9986,
+      "sha256": "4f06e6fb2602436e1f42fd49bdb8f7ca5fb5035ced4f9ee40d2a69ee28ebdba8"
+    },
+    {
+      "file": "receipt-006.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177907,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 6,
+      "at": "2026-10-30T06:10:48.896Z",
+      "httpStatus": 200,
+      "bytes": 232,
+      "sha256": "5044ecf469e31fa4bfe52486e2b7a3190f8c24e03e164b701b1af0328078f38b"
+    },
+    {
+      "file": "receipt-007.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178904,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 7,
+      "at": "2026-10-30T06:10:51.898Z",
+      "httpStatus": 200,
+      "bytes": 232,
+      "sha256": "8afe81808135d5501b84ff1b0445c7e63c612759000b43acec551849d233c99c"
+    },
+    {
+      "file": "receipt-008.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178407,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 8,
+      "at": "2026-10-30T06:10:54.900Z",
+      "httpStatus": 200,
+      "bytes": 232,
+      "sha256": "0fd77ed846cfc9dfef8ac6ac6cf5a86d9578e28b341e1af513e015e280adc9b8"
+    },
+    {
+      "file": "receipt-009.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178158,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 9,
+      "at": "2026-10-30T06:10:57.900Z",
+      "httpStatus": 200,
+      "bytes": 232,
+      "sha256": "4a99516e0eb7cdb8423ec01326acff48f6ae575036de6c72bc798dc7fcadad2a"
+    },
+    {
+      "file": "receipt-010.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178034,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 10,
+      "at": "2026-10-30T06:11:00.900Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "03282af38ad02bf4324426dd814f106a331a772274cfc4930e94276c99ddf4d7"
+    },
+    {
+      "file": "receipt-011.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177972,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 11,
+      "at": "2026-10-30T06:11:03.900Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "ef8c10ff2c0593ea9ce2af7cb634e4372ca002333d333a268c24922aa7c8c972"
+    },
+    {
+      "file": "receipt-012.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177938,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 12,
+      "at": "2026-10-30T06:11:06.901Z",
+      "httpStatus": 200,
+      "bytes": 232,
+      "sha256": "462e8244791e99932be57bf45364f28d6ad5089ce3ddd5e6ebe55f5d9f756638"
+    },
+    {
+      "file": "receipt-013.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177956,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 13,
+      "at": "2026-10-30T06:11:09.903Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "114d74652698b0aec8a2a5fb277e362d3fe223184fa51f3e9d4bdb57e8054bf8"
+    },
+    {
+      "file": "receipt-014.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177964,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 14,
+      "at": "2026-10-30T06:11:12.903Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "9fa423725864a849ae43ae1b82a3677bad56793ac87c6f7856a0733e7c7a8276"
+    },
+    {
+      "file": "receipt-015.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177968,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 15,
+      "at": "2026-10-30T06:11:15.903Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "641c1d5df58d1b24dbf9b0c074dd7fab8b9c3c3597921a23049ebb741e00b72f"
+    },
+    {
+      "file": "receipt-016.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177970,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 16,
+      "at": "2026-10-30T06:11:18.904Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "1d92a41c95f81e9b358d4cd407df13754ea7dbbec50cc03f79c19db712a09f8a"
+    },
+    {
+      "file": "receipt-017.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463177969,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 17,
+      "at": "2026-10-30T06:11:21.904Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "b149e52ab33c5179f6189d9c1420705fff023d451826f3ef3f4f60d0a76412a7"
+    },
+    {
+      "file": "receipt-018.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178282,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 18,
+      "at": "2026-10-30T06:11:24.907Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "a69863846ee20525615bd913099908f9824e410eb375accec403ae0b3677cb94"
+    },
+    {
+      "file": "receipt-019.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178220,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 19,
+      "at": "2026-10-30T06:11:27.907Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "3b57a0c412cd91aa147cd783c7fd083036d4d129e65288259eb9a5fb32fe3b7b"
+    },
+    {
+      "file": "receipt-020.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178251,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 20,
+      "at": "2026-10-30T06:11:30.907Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "5e2570fd2937a4a772cd505e115023b3cdad0cd3bcac369653e57e482e33e8f9"
+    },
+    {
+      "file": "receipt-021.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178235,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 21,
+      "at": "2026-10-30T06:11:33.908Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "fdef5e88936b3c70fd97d329ae380258720191a3c8180606cdbb06f86a6fc484"
+    },
+    {
+      "file": "receipt-022.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178243,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 22,
+      "at": "2026-10-30T06:11:36.908Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "a7eac46cb48041c1775e280aa2e2d9311e3670a0879e7a412e5b46874ce3ee3e"
+    },
+    {
+      "file": "receipt-023.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178247,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 23,
+      "at": "2026-10-30T06:11:39.909Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "efc66296a4376edfeec27934d971b0f396ff3c7b95bdf3ec12cdbcf81d908bd9"
+    },
+    {
+      "file": "receipt-024.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178245,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 24,
+      "at": "2026-10-30T06:11:42.911Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "b734643b33207ca1f939fa49991bb72d273970a152c62f78aeb8922f09eeab55"
+    },
+    {
+      "file": "receipt-025.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        463178246,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "none",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "requestId": 25,
+      "at": "2026-10-30T06:11:45.911Z",
+      "httpStatus": 200,
+      "bytes": 233,
+      "sha256": "0856a1f66b49a942c773e81c0cfbf3ccc063bc9f8f0669b046c9edea67a47b09"
+    }
+  ],
+  "blockers": [
+    "EXACT_MINUTE_FULL_BLOCK_BUDGET"
+  ],
+  "acceptedIntervals": 0,
+  "acceptedMarkets": 0,
+  "productionReady": false,
+  "ohlcv": null,
+  "limits": {
+    "maxRpcAttempts": 225,
+    "maxProducedBlocks": 200,
+    "maxResponseBytes": 2500000,
+    "maxTotalResponseBytes": 268435456,
+    "minimumSpacingMs": 3000,
+    "maxSlotSpan": 10000,
+    "maxManifestBytes": 262144,
+    "maxSignaturePages": 3,
+    "maxCaptureMs": 900000,
+    "maxBoundaryProbes": 32
+  },
+  "metrics": {
+    "rpcAttempts": 25,
+    "rpcCompletions": 25,
+    "responseBytes": 40841,
+    "automaticRetries": 0,
+    "paidResources": false,
+    "monetarySpend": 0,
+    "producedBlocksDiscovered": 995,
+    "boundaryProbeCount": 20,
+    "selectedProducedBlocks": 279,
+    "requiredFullBlocks": 281,
+    "cpuUserMicros": 211691,
+    "cpuSystemMicros": 44215,
+    "elapsedMs": 72064.726002,
+    "rssBytes": 62091264
+  },
+  "lastAttempt": {
+    "method": "getBlock",
+    "params": [
+      463178246,
+      {
+        "commitment": "finalized",
+        "encoding": "json",
+        "transactionDetails": "none",
+        "maxSupportedTransactionVersion": 1,
+        "rewards": false
+      }
+    ],
+    "requestId": 25,
+    "at": "2026-10-30T06:11:45.911Z"
+  },
+  "finishedAt": "2026-10-30T06:11:45.952Z"
+}

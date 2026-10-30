@@ -4,12 +4,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { assert, boundedResponseText, CLMM, MAINNET_GENESIS, PILOTS, USDC } from './stocks-verify-clmm-proof.mjs';
-import { COVERAGE_SCHEMA, COVERAGE_LIMITS, RPC_ENDPOINT, verifyCoveragePacket } from './stocks-source-pipeline-coverage.mjs';
+import { COVERAGE_SCHEMA, COVERAGE_LIMITS, HEADER_OPTIONS, RPC_ENDPOINT, verifyCoveragePacket,
+  validateCoverageConsensus, validateCoverageHeader, assertProbeHeaderMatchesFull } from './stocks-source-pipeline-coverage.mjs';
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 const integer = value => Number.isSafeInteger(value) && value >= 0;
 const signature = value => typeof value === 'string' && /^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(value);
-const methods = new Set(['getGenesisHash', 'getSlot', 'getSignaturesForAddress', 'getBlocks', 'getBlock']);
+const methods = new Set(['getGenesisHash', 'getAgGenesisCert', 'getSlot', 'getSignaturesForAddress', 'getBlocks', 'getBlock']);
 const proxyVariables = ['HTTPS_PROXY', 'HTTP_PROXY', 'ALL_PROXY', 'https_proxy', 'http_proxy', 'all_proxy'];
 const nativeProxyEnabled = () => process.allowedNodeEnvironmentFlags.has('--use-env-proxy')
   && process.execArgv.includes('--use-env-proxy')
@@ -48,7 +49,7 @@ export async function captureFinalizedCoverage({ ticker, from, to, out,
   const pilot = PILOTS[ticker], cpu = process.cpuUsage(), started = performance.now(), startedAt = now();
   const manifest = {
     schema: COVERAGE_SCHEMA, network: 'solana-mainnet-beta', ticker, program: CLMM,
-    mint: pilot.mint, pool: pilot.pool, quoteMint: USDC, windowUTC: [from, to], slotRange: null,
+    mint: pilot.mint, pool: pilot.pool, quoteMint: USDC, windowUTC: [from, to], discoverySlotRange: null, slotRange: null,
     status: 'CAPTURING', startedAt: new Date(now()).toISOString(), receipts: [], blockers: [],
     acceptedIntervals: 0, acceptedMarkets: 0, productionReady: false, ohlcv: null,
     limits: { ...COVERAGE_LIMITS, maxRpcAttempts, maxProducedBlocks, minimumSpacingMs, maxSignaturePages },
@@ -101,8 +102,9 @@ export async function captureFinalizedCoverage({ ticker, from, to, out,
     // native environment-proxy support can use it; older releases fail closed.
     assert(fetchImpl || !proxyVariables.some(name => process.env[name]) || nativeProxyEnabled(), 'CONFIGURED_PROXY_TRANSPORT_REQUIRED');
     assert(await rpc('getGenesisHash', []) === MAINNET_GENESIS, 'WRONG_NETWORK');
+    const consensus = validateCoverageConsensus(await rpc('getAgGenesisCert', []));
     const firstFinalized = await rpc('getSlot', [{ commitment: 'finalized' }]);
-    assert(integer(firstFinalized), 'FINALIZED_SLOT_INVALID');
+    assert(integer(firstFinalized) && firstFinalized > consensus.genesisSlot, 'FINALIZED_SLOT_INVALID');
     const rows = [], seen = new Set(); let before;
     for (let page = 0; page < maxSignaturePages; page++) {
       const batch = await rpc('getSignaturesForAddress', [pilot.pool, { commitment: 'finalized', limit: 100, ...(before ? { before } : {}) }]);
@@ -123,17 +125,62 @@ export async function captureFinalizedCoverage({ ticker, from, to, out,
     const earlier = rows.filter(row => row.blockTime < start), later = rows.filter(row => row.blockTime >= end);
     assert(earlier.length && later.length, 'SIGNATURE_WINDOW_NOT_BRACKETED');
     const low = Math.max(...earlier.map(row => row.slot)), high = Math.min(...later.map(row => row.slot));
-    assert(high > low && high - low <= COVERAGE_LIMITS.maxSlotSpan, 'SLOT_RANGE_BUDGET');
-    manifest.slotRange = { from: low, to: high };
+    assert(low > consensus.genesisSlot && high > low
+      && high - low <= COVERAGE_LIMITS.maxSlotSpan, 'SLOT_RANGE_BUDGET');
+    manifest.discoverySlotRange = { from: low, to: high };
     const produced = await rpc('getBlocks', [low, high, { commitment: 'finalized' }]);
-    assert(Array.isArray(produced) && produced.length >= 2 && produced.length <= maxProducedBlocks
+    assert(Array.isArray(produced) && produced.length >= 2 && produced.length <= COVERAGE_LIMITS.maxSlotSpan + 1
       && produced[0] === low && produced.at(-1) === high
-      && produced.every((slot, index) => integer(slot) && slot >= low && slot <= high && (!index || slot > produced[index - 1])), 'PRODUCED_SLOTS_INCOMPLETE_OR_BUDGET');
-    assert(manifest.metrics.rpcAttempts + produced.length + 1 <= maxRpcAttempts, 'RPC_BUDGET_EXHAUSTED');
-    for (const slot of produced) {
+      && produced.every((slot, index) => integer(slot) && slot >= low && slot <= high && (!index || slot > produced[index - 1])), 'PRODUCED_SLOTS_INCOMPLETE');
+    manifest.metrics.producedBlocksDiscovered = produced.length;
+    // Pool transactions may be sparse. Locate the minute by finalized block
+    // metadata before spending the full-block budget on its wider signature bracket.
+    const probes = new Map();
+    async function probe(index) {
+      if (probes.has(index)) return probes.get(index);
+      assert(probes.size < COVERAGE_LIMITS.maxBoundaryProbes, 'BOUNDARY_PROBE_BUDGET');
+      const slot = produced[index];
+      const header = await rpc('getBlock', [slot, { ...HEADER_OPTIONS }]);
+      validateCoverageHeader(header, slot, { headerOnly: true });
+      assert(index === 0 || header.parentSlot === produced[index - 1], 'HEADER_PARENT_SLOT');
+      for (const [previousIndex, previous] of probes) {
+        assert(index < previousIndex ? header.blockTime <= previous.blockTime
+          : header.blockTime >= previous.blockTime, 'HEADER_TIME_ORDER');
+        if (index === previousIndex + 1) assert(header.previousBlockhash === previous.blockhash, 'HEADER_PARENT_HASH');
+        if (previousIndex === index + 1) assert(previous.previousBlockhash === header.blockhash, 'HEADER_PARENT_HASH');
+      }
+      const signatureRows = rows.filter(row => row.slot === slot);
+      assert(signatureRows.every(row => row.blockTime === header.blockTime), 'HEADER_SIGNATURE_TIME_MISMATCH');
+      probes.set(index, header); manifest.metrics.boundaryProbeCount = probes.size;
+      return header;
+    }
+    assert((await probe(0)).blockTime < start && (await probe(produced.length - 1)).blockTime >= end,
+      'HEADER_WINDOW_NOT_BRACKETED');
+    async function lowerBound(target) {
+      let left = 0, right = produced.length - 1;
+      while (right - left > 1) {
+        const middle = Math.floor((left + right) / 2);
+        if ((await probe(middle)).blockTime < target) left = middle;
+        else right = middle;
+      }
+      return right;
+    }
+    const first = await lowerBound(start), after = await lowerBound(end);
+    manifest.slotRange = { from: produced[first - 1], to: produced[after] };
+    const selected = produced.slice(first - 1, after + 1);
+    // Retain the original signature-boundary transactions as separate anchors.
+    // Every full response, including either extra anchor, counts toward the cap.
+    const fullSlots = [...new Set([low, ...selected, high])].sort((a, b) => a - b);
+    manifest.metrics.selectedProducedBlocks = selected.length;
+    manifest.metrics.requiredFullBlocks = fullSlots.length;
+    assert(fullSlots.length <= maxProducedBlocks, 'EXACT_MINUTE_FULL_BLOCK_BUDGET');
+    assert(manifest.metrics.rpcAttempts + fullSlots.length + 1 <= maxRpcAttempts, 'RPC_BUDGET_EXHAUSTED');
+    for (const slot of fullSlots) {
       const block = await rpc('getBlock', [slot, { commitment: 'finalized', encoding: 'json',
         transactionDetails: 'full', maxSupportedTransactionVersion: 1, rewards: false }]);
       assert(block && integer(block.blockTime) && Array.isArray(block.transactions), 'FULL_BLOCK_UNAVAILABLE');
+      const header = probes.get(produced.indexOf(slot));
+      if (header) assertProbeHeaderMatchesFull(header, block, slot);
     }
     const finalSlot = await rpc('getSlot', [{ commitment: 'finalized' }]);
     assert(integer(finalSlot) && finalSlot >= firstFinalized && finalSlot >= high

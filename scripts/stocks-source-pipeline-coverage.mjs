@@ -4,18 +4,23 @@ import { constants } from 'node:fs';
 import { lstat, open } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { CLMM, MAINNET_GENESIS, PILOTS, USDC, assert } from './stocks-verify-clmm-proof.mjs';
+import { b58, CLMM, MAINNET_GENESIS, PILOTS, USDC, assert } from './stocks-verify-clmm-proof.mjs';
 import { verifyFinalizedCoverage } from './stocks-source-pipeline.mjs';
 
-export const COVERAGE_SCHEMA = 'voltex.solana-coverage-packet.v1';
+export const LEGACY_COVERAGE_SCHEMA = 'voltex.solana-coverage-packet.v1';
+export const COVERAGE_SCHEMA = 'voltex.solana-coverage-packet.v2';
 export const RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 export const COVERAGE_LIMITS = Object.freeze({
   maxRpcAttempts: 225, maxProducedBlocks: 200, maxResponseBytes: 2500000,
   maxTotalResponseBytes: 268435456, minimumSpacingMs: 3000,
   maxSlotSpan: 10000, maxManifestBytes: 262144, maxSignaturePages: 3, maxCaptureMs: 900000,
+  maxBoundaryProbes: 32,
 });
 const BLOCK_OPTIONS = Object.freeze({ commitment: 'finalized', encoding: 'json',
   transactionDetails: 'full', maxSupportedTransactionVersion: 1, rewards: false });
+export const HEADER_OPTIONS = Object.freeze({ ...BLOCK_OPTIONS, transactionDetails: 'none' });
+export const ALPENGLOW_GENESIS_SLOT = 459652999;
+export const ALPENGLOW_GENESIS_BLOCK_ID = '4q1ScaDS6x3diDLCSTrEt6GWVyJ5oHKVCPmMb1LBH9iL';
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const hashString = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -65,6 +70,36 @@ function requireParams(receipt, expected) {
   assert(isDeepStrictEqual(receipt.params, expected), 'COVERAGE_RPC_PARAMS');
 }
 
+/** Activation receipt and known mainnet identity only; no BLS/validator-set proof. */
+export function validateCoverageConsensus(result) {
+  const bytes = (value, size) => Array.isArray(value) && (size === undefined ? value.length > 0 : value.length === size)
+    && value.every(byte => integer(byte) && byte <= 255);
+  assert(plain(result) && plain(result.block) && plain(result.signature)
+    && result.block.slot === ALPENGLOW_GENESIS_SLOT && bytes(result.block.blockId, 32)
+    && b58(Buffer.from(result.block.blockId)) === ALPENGLOW_GENESIS_BLOCK_ID
+    && bytes(result.signature.signature, 192) && bytes(result.signature.bitmap)
+    && result.signature.bitmap.some(byte => byte !== 0), 'COVERAGE_CONSENSUS_RECEIPT');
+  return { genesisSlot: ALPENGLOW_GENESIS_SLOT, genesisBlockId: ALPENGLOW_GENESIS_BLOCK_ID,
+    cryptographicVerification: false };
+}
+
+/** Only the saved finalized block header is a boundary observation, never a time estimate. */
+export function validateCoverageHeader(block, slot, { headerOnly = false } = {}) {
+  assert(integer(slot) && plain(block) && integer(block.blockTime) && integer(block.parentSlot)
+    && block.parentSlot < slot && base58(block.blockhash, 32) && base58(block.previousBlockhash, 32)
+    && (!own(block, 'blockHeight') || block.blockHeight === null || integer(block.blockHeight)),
+    'COVERAGE_BLOCK_HEADER');
+  if (headerOnly) assert(!own(block, 'transactions') && !own(block, 'signatures'), 'COVERAGE_HEADER_ONLY_RESPONSE');
+  return { blockTime: block.blockTime, parentSlot: block.parentSlot,
+    blockhash: block.blockhash, previousBlockhash: block.previousBlockhash,
+    ...(own(block, 'blockHeight') ? { blockHeight: block.blockHeight } : {}) };
+}
+
+export function assertProbeHeaderMatchesFull(probe, full, slot) {
+  assert(isDeepStrictEqual(validateCoverageHeader(probe, slot), validateCoverageHeader(full, slot)),
+    'COVERAGE_PROBE_FULL_MISMATCH');
+}
+
 function validateTransaction(tx, signatures) {
   const transaction = tx?.transaction, message = transaction?.message, version = tx?.version;
   assert(plain(tx) && plain(transaction) && plain(message) && ['legacy', 0, 1].includes(version),
@@ -111,9 +146,10 @@ export async function verifyCoveragePacket(directory, { expectedManifestSha256 }
   const manifest = JSON.parse(rawManifest.toString('utf8'));
   assert(plain(manifest) && own(PILOTS, manifest.ticker), 'COVERAGE_SOURCE_SCOPE');
   const pilot = PILOTS[manifest.ticker];
-  assert(manifest.schema === COVERAGE_SCHEMA && manifest.network === 'solana-mainnet-beta'
+  assert([COVERAGE_SCHEMA, LEGACY_COVERAGE_SCHEMA].includes(manifest.schema) && manifest.network === 'solana-mainnet-beta'
     && manifest.program === CLMM && manifest.quoteMint === USDC
     && manifest.pool === pilot.pool && manifest.mint === pilot.mint, 'COVERAGE_SOURCE_SCOPE');
+  const narrowed = manifest.schema === COVERAGE_SCHEMA;
   assert(manifest.status === 'CAPTURED_UNVERIFIED', 'COVERAGE_CAPTURE_INCOMPLETE');
   assert(Array.isArray(manifest.windowUTC) && manifest.windowUTC.length === 2, 'COVERAGE_WINDOW');
   const from = utc(manifest.windowUTC[0], 'COVERAGE_WINDOW') / 1000;
@@ -122,6 +158,10 @@ export async function verifyCoveragePacket(directory, { expectedManifestSha256 }
   const range = manifest.slotRange;
   assert(plain(range) && integer(range.from) && integer(range.to) && range.to > range.from
     && range.to - range.from <= COVERAGE_LIMITS.maxSlotSpan, 'COVERAGE_SLOT_RANGE');
+  const discoveryRange = narrowed ? manifest.discoverySlotRange : range;
+  assert(plain(discoveryRange) && integer(discoveryRange.from) && integer(discoveryRange.to)
+    && discoveryRange.to > discoveryRange.from && discoveryRange.to - discoveryRange.from <= COVERAGE_LIMITS.maxSlotSpan
+    && range.from >= discoveryRange.from && range.to <= discoveryRange.to, 'COVERAGE_DISCOVERY_SLOT_RANGE');
   assert(Array.isArray(manifest.receipts) && manifest.receipts.length > 0
     && manifest.receipts.length <= COVERAGE_LIMITS.maxRpcAttempts, 'COVERAGE_RPC_BUDGET');
   assert(manifest.receipts.reduce((n, row) => n + (integer(row?.bytes) ? row.bytes
@@ -177,8 +217,14 @@ export async function verifyCoveragePacket(directory, { expectedManifestSha256 }
   }
   const genesis = take('getGenesisHash'); requireParams(genesis.receipt, []);
   assert(genesis.result === MAINNET_GENESIS, 'COVERAGE_GENESIS');
+  let consensus = null;
+  if (narrowed) {
+    const certificate = take('getAgGenesisCert'); requireParams(certificate.receipt, []);
+    consensus = validateCoverageConsensus(certificate.result);
+    assert(discoveryRange.from > ALPENGLOW_GENESIS_SLOT, 'COVERAGE_CONSENSUS_SLOT_RANGE');
+  }
   const initialSlot = take('getSlot'); requireParams(initialSlot.receipt, [{ commitment: 'finalized' }]);
-  assert(integer(initialSlot.result), 'COVERAGE_FINALIZED_SLOT');
+  assert(integer(initialSlot.result) && (!narrowed || initialSlot.result >= ALPENGLOW_GENESIS_SLOT), 'COVERAGE_FINALIZED_SLOT');
   const signatureRows = [], seenSignatures = new Set(); let previousPage, pageCount = 0;
   while (records[next]?.receipt.method === 'getSignaturesForAddress') {
     assert(++pageCount <= COVERAGE_LIMITS.maxSignaturePages, 'COVERAGE_SIGNATURE_PAGE_BUDGET');
@@ -203,35 +249,80 @@ export async function verifyCoveragePacket(directory, { expectedManifestSha256 }
     'COVERAGE_SIGNATURE_BOUNDARIES');
   const before = signatureRows.filter(row => row.blockTime < from);
   const after = signatureRows.filter(row => row.blockTime >= to);
-  assert(range.from === Math.max(...before.map(row => row.slot))
-    && range.to === Math.min(...after.map(row => row.slot)), 'COVERAGE_DERIVED_SLOT_RANGE');
-  const produced = take('getBlocks'); requireParams(produced.receipt, [range.from, range.to, { commitment: 'finalized' }]);
+  assert(discoveryRange.from === Math.max(...before.map(row => row.slot))
+    && discoveryRange.to === Math.min(...after.map(row => row.slot)), 'COVERAGE_DERIVED_SLOT_RANGE');
+  const produced = take('getBlocks'); requireParams(produced.receipt, [discoveryRange.from, discoveryRange.to, { commitment: 'finalized' }]);
   assert(Array.isArray(produced.result) && produced.result.length >= 2
-    && produced.result.length <= COVERAGE_LIMITS.maxProducedBlocks
-    && produced.result[0] === range.from && produced.result.at(-1) === range.to
-    && produced.result.every((slot, i) => integer(slot) && slot >= range.from && slot <= range.to
+    && produced.result.length <= (narrowed ? COVERAGE_LIMITS.maxSlotSpan + 1 : COVERAGE_LIMITS.maxProducedBlocks)
+    && produced.result[0] === discoveryRange.from && produced.result.at(-1) === discoveryRange.to
+    && produced.result.every((slot, i) => integer(slot) && slot >= discoveryRange.from && slot <= discoveryRange.to
       && (!i || slot > produced.result[i - 1])), 'COVERAGE_PRODUCED_SLOTS');
+  let selectedSlots = produced.result, fullSlots = produced.result, boundaryProbeCount = 0;
+  const slotIndices = new Map(produced.result.map((slot, i) => [slot, i]));
+  const probeHeaders = new Map(), observedHeaders = new Map();
+  function observeHeader(index, header) {
+    if (index) assert(header.parentSlot === produced.result[index - 1], 'COVERAGE_HEADER_PARENT_SLOT');
+    for (const [otherIndex, other] of observedHeaders) {
+      assert(index < otherIndex ? header.blockTime <= other.blockTime : index === otherIndex || header.blockTime >= other.blockTime,
+        'COVERAGE_HEADER_TIME_ORDER');
+      if (otherIndex === index - 1) assert(header.previousBlockhash === other.blockhash, 'COVERAGE_HEADER_ANCESTRY');
+      if (otherIndex === index + 1) assert(other.previousBlockhash === header.blockhash, 'COVERAGE_HEADER_ANCESTRY');
+    }
+    observedHeaders.set(index, header);
+  }
+  if (narrowed) {
+    function probe(index) {
+      if (probeHeaders.has(index)) return probeHeaders.get(index);
+      assert(++boundaryProbeCount <= COVERAGE_LIMITS.maxBoundaryProbes, 'COVERAGE_BOUNDARY_PROBE_BUDGET');
+      const slot = produced.result[index], record = take('getBlock');
+      requireParams(record.receipt, [slot, { ...HEADER_OPTIONS }]);
+      const header = validateCoverageHeader(record.result, slot, { headerOnly: true });
+      observeHeader(index, header); probeHeaders.set(index, header); return header;
+    }
+    const first = probe(0), last = probe(produced.result.length - 1);
+    assert(first.blockTime < from && last.blockTime >= to, 'COVERAGE_HEADER_BOUNDARIES');
+    function lowerBound(threshold) {
+      let low = 0, high = produced.result.length - 1;
+      while (high - low > 1) {
+        const middle = Math.floor((low + high) / 2);
+        if (probe(middle).blockTime >= threshold) high = middle;
+        else low = middle;
+      }
+      return high;
+    }
+    const firstInWindow = lowerBound(from), firstAfterWindow = lowerBound(to);
+    selectedSlots = produced.result.slice(firstInWindow - 1, firstAfterWindow + 1);
+    assert(range.from === selectedSlots[0] && range.to === selectedSlots.at(-1), 'COVERAGE_NARROWED_SLOT_RANGE');
+    fullSlots = [...new Set([produced.result[0], ...selectedSlots, produced.result.at(-1)])].sort((a, b) => a - b);
+    assert(fullSlots.length <= COVERAGE_LIMITS.maxProducedBlocks, 'COVERAGE_FULL_BLOCK_BUDGET');
+    assert(next + fullSlots.length + 1 <= COVERAGE_LIMITS.maxRpcAttempts, 'COVERAGE_RPC_BUDGET');
+  }
   const blocks = [], blockSignatures = new Map(), allSignatures = new Set();
-  for (const slot of produced.result) {
+  for (const slot of fullSlots) {
     const record = take('getBlock'); requireParams(record.receipt, [slot, { ...BLOCK_OPTIONS }]);
     const block = record.result;
     assert(plain(block) && integer(block.blockTime) && integer(block.parentSlot) && block.parentSlot < slot
       && base58(block.blockhash, 32) && base58(block.previousBlockhash, 32)
       && Array.isArray(block.transactions), 'COVERAGE_FULL_BLOCK_REQUIRED');
+    if (narrowed) {
+      const index = slotIndices.get(slot), header = validateCoverageHeader(block, slot);
+      if (probeHeaders.has(index)) assertProbeHeaderMatchesFull(probeHeaders.get(index), block, slot);
+      observeHeader(index, header);
+    }
     for (const [transactionIndex, tx] of block.transactions.entries()) {
       const keys = validateTransaction(tx, allSignatures);
       if (keys.includes(pilot.pool)) blockSignatures.set(tx.transaction.signatures[0],
         { slot, blockTime: block.blockTime, transactionIndex, err: tx.meta.err });
     }
-    blocks.push({ slot, block });
+    if (slot >= range.from && slot <= range.to) blocks.push({ slot, block });
   }
   const finalSlot = take('getSlot'); requireParams(finalSlot.receipt, [{ commitment: 'finalized' }]);
   assert(next === records.length, 'COVERAGE_EXTRA_RECEIPTS');
-  assert(integer(finalSlot.result) && finalSlot.result >= initialSlot.result && finalSlot.result >= range.to
+  assert(integer(finalSlot.result) && finalSlot.result >= initialSlot.result && finalSlot.result >= discoveryRange.to
     && signatureRows.every(row => row.slot <= finalSlot.result), 'COVERAGE_FINALIZED_SLOT');
   // Include boundary pool transactions in the cross-check; fabricated boundary
   // rows cannot bracket a window without their full block transaction evidence.
-  for (const row of signatureRows.filter(row => row.slot >= range.from && row.slot <= range.to)) {
+  for (const row of signatureRows.filter(row => row.slot >= discoveryRange.from && row.slot <= discoveryRange.to)) {
     const actual = blockSignatures.get(row.signature);
     assert(actual && actual.slot === row.slot && actual.blockTime === row.blockTime
       && isDeepStrictEqual(actual.err, row.err), 'COVERAGE_BOUNDARY_SIGNATURE_MISMATCH');
@@ -240,7 +331,7 @@ export async function verifyCoveragePacket(directory, { expectedManifestSha256 }
   assert([...blockSignatures.values()].every(row => row.blockTime < from || row.blockTime >= to),
     'COVERAGE_SIGNATURE_ENUMERATION_INCOMPLETE');
   const coverage = verifyFinalizedCoverage({ pool: pilot.pool, from, to, genesis: genesis.result,
-    finalizedSlot: finalSlot.result, producedSlots: produced.result, blocks, signatures: signatureRows });
+    finalizedSlot: finalSlot.result, producedSlots: selectedSlots, blocks, signatures: signatureRows });
   return {
     schema: 'voltex.solana-coverage-result.v1', status: 'RECEIPT_COVERAGE_VERIFIED_NOT_SOURCE_ACCEPTED',
     receiptCoverageVerified: true, acceptedIntervals: 0, acceptedMarkets: 0, candles: [], networkRequests: 0,
@@ -250,6 +341,8 @@ export async function verifyCoveragePacket(directory, { expectedManifestSha256 }
     gates: { programIdentity: false, poolState: false, mintChronology: false, feeChronology: false,
       completeness: true, executionBinding: false },
     coverage: { ...coverage, producedBlockCount: blocks.length, signatureRows: signatureRows.length,
+      ...(narrowed ? { discoveryProducedBlockCount: produced.result.length, fullBlockCount: fullSlots.length,
+        boundaryProbeCount, discoverySlotRange: discoveryRange, slotRange: range, consensus } : {}),
       successfulPoolTransactions: coverage.positions.filter(p => p.err === null).length,
       failedPoolTransactions: coverage.positions.filter(p => p.err !== null).length },
     metrics: { receiptCount: records.length, retainedResponseBytes: totalBytes,

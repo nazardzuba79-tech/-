@@ -1,0 +1,318 @@
+{
+  "schema": "voltex.solana-boundary-assessment.v1",
+  "assessment": "OFFLINE_AUDIT_OF_BLOCKED_CAPTURE",
+  "packetDirectory": "research/solana-xstocks/proof-615-20261030-boundaries/coverage-spyx-1793340616000",
+  "expectedManifestSha256": "27aa4739c370c40814511ca22851f22b0ab7e4f21de0429844eb2f68ec697331",
+  "manifestHashMatched": true,
+  "source": {
+    "network": "solana-mainnet-beta",
+    "ticker": "SPYx",
+    "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+    "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+    "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+  },
+  "windowUTC": [
+    "2026-10-30T06:07:00.000Z",
+    "2026-10-30T06:08:00.000Z"
+  ],
+  "status": "BLOCKED",
+  "blockers": [
+    "EXACT_MINUTE_FULL_BLOCK_BUDGET"
+  ],
+  "audit": {
+    "networkRequests": 0,
+    "receiptFiles": 25,
+    "allReceiptHashesMatched": true,
+    "allByteCountsMatched": true,
+    "allHttp200": true,
+    "allJsonRpcResponsesSuccessful": true,
+    "exactRequestSequenceReplayed": true,
+    "allObservedHeadersMonotonic": true,
+    "observedParentSlotsMatchEnumeration": true,
+    "adjacentObservedHeaderHashesMatch": true,
+    "allObservedSignatureTimesMatchHeaders": true,
+    "discoveryAndSelectedRangesMatch": true,
+    "manifestMetricsMatchDerivedCounts": true,
+    "minimumObservedRequestSpacingMs": 3000,
+    "captureDurationByRecordedTimestampsMs": 72064,
+    "headerShapesAcceptedByStrictAdapter": true,
+    "fullHeaderVsProbeComparison": "NOT_APPLICABLE_NO_FULL_BLOCKS"
+  },
+  "activation": {
+    "genesisHash": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+    "genesisSlot": 459652999,
+    "genesisBlockId": "4q1ScaDS6x3diDLCSTrEt6GWVyJ5oHKVCPmMb1LBH9iL",
+    "signatureByteCount": 192,
+    "bitmapByteCount": 87,
+    "pinnedIdentityAndShapeChecked": true,
+    "blsSignatureVerified": false,
+    "consensusIndependentlyVerified": false
+  },
+  "initialFinalizedSlot": 463178989,
+  "finalFinalizedWatermarkCollected": false,
+  "discovery": {
+    "slotRange": {
+      "from": 463177907,
+      "to": 463178904
+    },
+    "producedBlockCount": 995,
+    "skippedSlotsInEnumeration": 3,
+    "boundaryProbeCount": 20,
+    "signatureRows": 100,
+    "inWindowSignatureRows": 1,
+    "signatureRowsAreAuthenticatedSwapExecutions": false,
+    "probeOrder": [
+      {
+        "requestId": 6,
+        "producedIndex": 0,
+        "slot": 463177907,
+        "blockTime": 1793340406
+      },
+      {
+        "requestId": 7,
+        "producedIndex": 994,
+        "slot": 463178904,
+        "blockTime": 1793340621
+      },
+      {
+        "requestId": 8,
+        "producedIndex": 497,
+        "slot": 463178407,
+        "blockTime": 1793340515
+      },
+      {
+        "requestId": 9,
+        "producedIndex": 248,
+        "slot": 463178158,
+        "blockTime": 1793340461
+      },
+      {
+        "requestId": 10,
+        "producedIndex": 124,
+        "slot": 463178034,
+        "blockTime": 1793340434
+      },
+      {
+        "requestId": 11,
+        "producedIndex": 62,
+        "slot": 463177972,
+        "blockTime": 1793340420
+      },
+      {
+        "requestId": 12,
+        "producedIndex": 31,
+        "slot": 463177938,
+        "blockTime": 1793340413
+      },
+      {
+        "requestId": 13,
+        "producedIndex": 46,
+        "slot": 463177956,
+        "blockTime": 1793340417
+      },
+      {
+        "requestId": 14,
+        "producedIndex": 54,
+        "slot": 463177964,
+        "blockTime": 1793340418
+      },
+      {
+        "requestId": 15,
+        "producedIndex": 58,
+        "slot": 463177968,
+        "blockTime": 1793340419
+      },
+      {
+        "requestId": 16,
+        "producedIndex": 60,
+        "slot": 463177970,
+        "blockTime": 1793340420
+      },
+      {
+        "requestId": 17,
+        "producedIndex": 59,
+        "slot": 463177969,
+        "blockTime": 1793340420
+      },
+      {
+        "requestId": 18,
+        "producedIndex": 372,
+        "slot": 463178282,
+        "blockTime": 1793340487
+      },
+      {
+        "requestId": 19,
+        "producedIndex": 310,
+        "slot": 463178220,
+        "blockTime": 1793340474
+      },
+      {
+        "requestId": 20,
+        "producedIndex": 341,
+        "slot": 463178251,
+        "blockTime": 1793340481
+      },
+      {
+        "requestId": 21,
+        "producedIndex": 325,
+        "slot": 463178235,
+        "blockTime": 1793340477
+      },
+      {
+        "requestId": 22,
+        "producedIndex": 333,
+        "slot": 463178243,
+        "blockTime": 1793340479
+      },
+      {
+        "requestId": 23,
+        "producedIndex": 337,
+        "slot": 463178247,
+        "blockTime": 1793340480
+      },
+      {
+        "requestId": 24,
+        "producedIndex": 335,
+        "slot": 463178245,
+        "blockTime": 1793340479
+      },
+      {
+        "requestId": 25,
+        "producedIndex": 336,
+        "slot": 463178246,
+        "blockTime": 1793340480
+      }
+    ]
+  },
+  "boundaryDiscovery": {
+    "replayed": true,
+    "boundaries": [
+      {
+        "name": "last_before_minute",
+        "producedIndex": 58,
+        "slot": 463177968,
+        "blockTime": 1793340419,
+        "utc": "2026-10-30T06:06:59.000Z",
+        "blockhash": "8B7hR7t9SDMzZtLG7Xe4gFLw1EAG3cy7ZZwyTHWm2ND9",
+        "parentSlot": 463177967,
+        "previousBlockhash": "4QVj3ftoBJTRZ3eM21oMPvTLwhedWSLW83EA4uz9YRZM"
+      },
+      {
+        "name": "first_in_minute",
+        "producedIndex": 59,
+        "slot": 463177969,
+        "blockTime": 1793340420,
+        "utc": "2026-10-30T06:07:00.000Z",
+        "blockhash": "2A6Sx5jpC1TUu787JAR4kwwGXKydgv29HqivmbENrWA7",
+        "parentSlot": 463177968,
+        "previousBlockhash": "8B7hR7t9SDMzZtLG7Xe4gFLw1EAG3cy7ZZwyTHWm2ND9"
+      },
+      {
+        "name": "last_in_minute",
+        "producedIndex": 335,
+        "slot": 463178245,
+        "blockTime": 1793340479,
+        "utc": "2026-10-30T06:07:59.000Z",
+        "blockhash": "5hyhLUYVzK4P6HQFzsPKtjZqJJkqAQQCtRQgBtfS9btd",
+        "parentSlot": 463178244,
+        "previousBlockhash": "4EbRfa72DwUdRG47UKyTjPYDQsxYJY5jKJ1feP5QDjjH"
+      },
+      {
+        "name": "first_after_minute",
+        "producedIndex": 336,
+        "slot": 463178246,
+        "blockTime": 1793340480,
+        "utc": "2026-10-30T06:08:00.000Z",
+        "blockhash": "5sjAx8ZXSP3Lhk2vE9DrHvHXmMaXStXKHftqdsYTZP2Y",
+        "parentSlot": 463178245,
+        "previousBlockhash": "5hyhLUYVzK4P6HQFzsPKtjZqJJkqAQQCtRQgBtfS9btd"
+      }
+    ],
+    "selectedSlotRange": {
+      "from": 463177968,
+      "to": 463178246
+    },
+    "inMinuteProducedBlocksInEnumeration": 277,
+    "selectedProducedBlocksIncludingTwoBoundaryBlocks": 279,
+    "requiredFullBlocksIncludingTwoOuterSignatureAnchors": 281,
+    "fullBlocksRequested": 0,
+    "fullChainAndTransactionsVerified": false
+  },
+  "resources": {
+    "recordedRpcAttempts": 25,
+    "successfulRpcResponses": 25,
+    "savedResponseBytes": 40841,
+    "automaticRetries": 0,
+    "providerFallbacks": 0,
+    "paidResources": false,
+    "monetarySpend": 0,
+    "existingLimits": {
+      "fullBlocks": 200,
+      "rpcAttempts": 225,
+      "minimumSpacingMs": 3000,
+      "captureMs": 900000,
+      "responseBytes": 2500000,
+      "totalResponseBytes": 268435456
+    },
+    "projectedRpcAttemptsForThisTranscriptAndAllRequiredFullBlocks": 307,
+    "projectedMinimumRequestStartSpanMs": 918000,
+    "projectedValuesAreNotExecutedRequests": true,
+    "fullBlockPayloadSizeNotMeasured": true,
+    "captureReportedMetrics": {
+      "elapsedMs": 72064.726002,
+      "cpuUserMicros": 211691,
+      "cpuSystemMicros": 44215,
+      "rssBytes": 62091264
+    }
+  },
+  "sourceAcceptance": {
+    "receiptCoverageVerified": false,
+    "acceptedIntervals": 0,
+    "acceptedMarkets": 0,
+    "candles": [],
+    "gates": {
+      "programIdentity": false,
+      "poolState": false,
+      "mintChronology": false,
+      "feeChronology": false,
+      "completeness": false,
+      "executionBinding": false
+    },
+    "productionReady": false
+  },
+  "tests": {
+    "artifact": "research/solana-xstocks/proof-615-20261030-boundaries/local-source-tests.json",
+    "sha256": "8d54d61ccd22bfe5f6d59f8c77646e181151253cfca06396fd7115fa9babb449",
+    "node": "v24.22.1",
+    "totals": {
+      "tests": 283,
+      "pass": 283,
+      "fail": 0,
+      "skipped": 0
+    },
+    "sourceBaseCommit": "ade1f6bd7ed603f25b34adf32346100945f27b5d",
+    "recordedRunOnly": true,
+    "ciNotAsserted": true
+  },
+  "limitations": [
+    "Pinned manifest and RPC hashes bind saved bytes, not independent provider truth or cryptographic consensus.",
+    "Only the bounded finalized-header discovery transcript was replayed. No full blocks or final watermark were collected.",
+    "The 277 in-minute produced slots are derived from the saved enumeration and parent-bounded finalized timestamps; their transactions and whole chain were not verified.",
+    "Outer signature anchors have header/time matches but no full transaction authentication in this blocked packet.",
+    "No deployed binary/source, historical pool/mint/fee, or execution attestation was established."
+  ],
+  "nextStep": "Design a separately reviewed finite evidence-capture resource budget for current 200 ms mainnet slots. This exact transcript would require 281 full blocks and 307 total RPCs, with at least 918000 ms between first and last starts at existing spacing; increasing only the full-block cap would not satisfy the other current bounds. Preserve all completeness/source/price gates; assess full-block bytes separately. No further live capture in this turn.",
+  "primarySources": [
+    "https://solana.com/upgrades/reduced-slot-times",
+    "https://solana.com/upgrades/alpenglow#the-clock-sysvar-has-a-new-source",
+    "https://solana.com/docs/rpc/http/getaggenesiscert",
+    "https://solana.com/docs/rpc/http/getblock",
+    "https://solana.com/docs/rpc/http/getblocks"
+  ],
+  "admissionReplay": {
+    "outcome": "REJECTED",
+    "reason": "COVERAGE_CAPTURE_INCOMPLETE",
+    "networkRequests": 0
+  }
+}
