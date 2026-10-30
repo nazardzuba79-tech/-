@@ -21,10 +21,72 @@ const disabledBranch = `  if (!eligible) {
 `;
 
 export function restoreCopyButtonDepositUx(source: string): string {
-  let result = once(source, '  const [showDepositRequirement, setShowDepositRequirement] = useState(false);\n', '');
+  let result = once(source, '  const { eligible, status, requestId, retry, isCurrent } = useCopyEligibility();', '  const { eligible } = useCopyEligibility();');
+  result = once(result, '  useEffect(() => setShowDepositRequirement(false), [requestId, status]);\n', '');
+  result = once(result, `  if (status !== 'ready') {
+    const loading = status === 'loading';
+    return <button className={\`button button-copy \${compact ? 'button-small' : ''}\`}
+      disabled={loading} aria-busy={loading ? 'true' : undefined}
+      title={loading ? 'Проверяем доступность копирования' : 'Не удалось проверить депозит. Нажмите, чтобы повторить.'}
+      onClick={event => { event.stopPropagation(); if (!loading) retry(); }}>
+      {loading ? 'Загрузка…' : 'Повторить проверку'}
+    </button>;
+  }
+
+`, '');
+  result = once(result, '        if (!isCurrent()) return;\n', '');
+  result = once(result, '  const [showDepositRequirement, setShowDepositRequirement] = useState(false);\n', '');
   result = once(result, '        if (!eligible) { setShowDepositRequirement(true); return; }\n', '');
   result = once(result, '  return (\n    <>\n    <button\n', disabledBranch + '  return (\n    <button\n');
   result = once(result, '    {showDepositRequirement && <CopyDepositDialog onClose={() => setShowDepositRequirement(false)} />}\n    </>\n', '');
+  return result;
+}
+
+// #144: reverse only the reviewed state/retry wiring before historical Card
+// fingerprints are checked. The original digests and all other bytes stay fixed.
+export function restoreCopyCheckContext(source: string): string {
+  let result = once(source, `export type CopyDepositCheck = {
+  status: 'loading' | 'unavailable' | 'ready';
+  depositUsd: number | null;
+  requestId: number;
+  retry: () => void;
+  isCurrent: () => boolean;
+};
+
+export type CopyEligibility = CopyDepositCheck & {`, `export type CopyEligibility = {
+  depositUsd: number;`);
+  result = once(result, '  check,\n', '  depositUsd,\n');
+  result = once(result, '  check: CopyDepositCheck;\n', '  depositUsd: number;\n');
+  result = once(result, `  const { depositUsd } = check;
+  const known = check.status === 'ready' && typeof depositUsd === 'number' && Number.isFinite(depositUsd) && depositUsd >= 0;
+  const value: CopyEligibility = { ...check, status: check.status === 'ready' && !known ? 'unavailable' : check.status,
+    eligible: known && depositUsd >= COPY_ELIGIBILITY_THRESHOLD_USD };`,
+    '  const value: CopyEligibility = { depositUsd, eligible: Number.isFinite(depositUsd) && depositUsd >= COPY_ELIGIBILITY_THRESHOLD_USD };');
+  return result;
+}
+
+export function restoreCopyCheckPage(source: string): string {
+  let result = once(source, "import { useMemo, useState } from 'react';", "import { useEffect, useMemo, useState } from 'react';");
+  result = once(result, "import { useCopyDepositCheck } from './copy-trading-bolt/useCopyDepositCheck';", "import { api } from '../lib/api';");
+  result = once(result, '  const depositCheck = useCopyDepositCheck();', '  const [depositUsd, setDepositUsd] = useState(0);');
+  result = once(result, '  const liveNazara = useMemo(() => withStrategyIdentityVerification(', `  // The archive hardcoded a USER_DEPOSIT constant to gate the deposit
+  // threshold; this account's real deposit is the most recent portfolio
+  // value the Wallet page has persisted (spot + futures, priced live —
+  // see portfolio.ts). A brand-new account that has never opened Wallet
+  // has no snapshot yet, so it correctly reads as $0 / not eligible rather
+  // than guessing.
+  useEffect(() => {
+    api
+      .getPortfolioHistory('90d')
+      .then(({ points }) => {
+        const latest = points[points.length - 1];
+        setDepositUsd(latest ? Number(latest.totalValueUsd) : 0);
+      })
+      .catch(() => setDepositUsd(0));
+  }, []);
+
+  const liveNazara = useMemo(() => withStrategyIdentityVerification(`);
+  result = once(result, '<CopyEligibilityProvider check={depositCheck}>', '<CopyEligibilityProvider depositUsd={depositUsd}>');
   return result;
 }
 

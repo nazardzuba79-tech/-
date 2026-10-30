@@ -1,0 +1,161 @@
+{
+  "status": "LOCAL_TESTED_CANDIDATE_NOT_DEPLOYED",
+  "recordedAt": "2026-10-30T06:46:49.055126+00:00",
+  "baseline": {
+    "commit": "077ae99d7dfdc1b373530c0a9cbd982ae8c54637",
+    "tree": "c877e1cbf88edccd123acc0780ed0282f2ecc0cc",
+    "deploymentReportedByParent": "a01c305f-60cc-41fa-9173-929dd4be42b3"
+  },
+  "branch": "review/copy-eligibility-144-live-20261030",
+  "patchSource": {
+    "existingPr": "https://github.com/nazardzuba79-tech/-/pull/641",
+    "parentReportedReviewedHead": "0d7bd51c5036d03a2f0a4a257452c50984377a19",
+    "runtimeByteMatchToReviewedCandidate": true,
+    "onlyRuntimePaths": [
+      "frontend/src/pages/CopyTradingPage.tsx",
+      "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx",
+      "frontend/src/pages/copy-trading-bolt/components.tsx",
+      "frontend/src/pages/copy-trading-bolt/useCopyDepositCheck.ts"
+    ]
+  },
+  "runtimePins": {
+    "frontend/src/pages/CopyTradingPage.tsx": {
+      "sha256": "3a08d78f662f17aa487b4965def53caf41ed27a12fc6763e8571c77f8a524ed9",
+      "gitBlob": "864db93e1d1cf40153a89f8c502ab0ba59c36942"
+    },
+    "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": {
+      "sha256": "b2f43c92965c162c36afb530140f62b4c739cc3d3f9777bd839f5d455768dfe0",
+      "gitBlob": "8059c32745a0fefa502832fd465f77eb74ff6b1c"
+    },
+    "frontend/src/pages/copy-trading-bolt/components.tsx": {
+      "sha256": "16659db03c50460f1e64af7b1a97e1e1d45a1367223d6a2528fc8f3c59c44b63",
+      "gitBlob": "5a46d17bbee21e449867d9e193b0b1aee7cdadeb"
+    },
+    "frontend/src/pages/copy-trading-bolt/useCopyDepositCheck.ts": {
+      "sha256": "0ed532b6ca0d5656fb0c937d378b534751faff55f99cfebbdd956d7ab5d29989",
+      "gitBlob": "b0c21bcf01208d752f15d15a8a79a15f2ceafcac"
+    }
+  },
+  "preservedBanking": {
+    "gitBlob": "64e58f63986f4c02dd417d49dd2d775ba085c158",
+    "sha256": "c6f012618b95843584f28e97ed2be3fb7225a79776d094efab193e1184b4de23"
+  },
+  "localRuntime": "v24.22.1",
+  "ciRuntime": "22.23.3",
+  "lockedDependencies": {
+    "package-lock.json": "2cb6d79adad11b0158d13d1041f01039bea7f059d38b6f7d62a0e2b5aa37352d",
+    "frontend/package-lock.json": "94c0532d80390e27ceac5374aafe4899fe24f95b329f4a0a11eb556899f8c449"
+  },
+  "prismaGeneration": {
+    "status": "PASS",
+    "version": "5.22.0",
+    "inputSchemaSha256": "66bdf72efe9514544e3427d452cc402bef1c99b10f3eb77fab363f4fc8786203",
+    "generatedSchemaMatchesInputApartFromWhitespace": true,
+    "databaseConnectionOrMigration": false
+  },
+  "tests": {
+    "status": "PASS",
+    "suites": 11,
+    "cases": 207,
+    "failed": 0,
+    "skipped": 0,
+    "singleFinalRun": true,
+    "exactProductionSchemaTypes": true,
+    "bySuite": [
+      {
+        "file": "frontend/src/lib/__tests__/copyPerformancePeriods.test.ts",
+        "status": "passed",
+        "cases": 15
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+        "status": "passed",
+        "cases": 12
+      },
+      {
+        "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "status": "passed",
+        "cases": 18
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts",
+        "status": "passed",
+        "cases": 2
+      },
+      {
+        "file": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "status": "passed",
+        "cases": 12
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyTradingEligibility.test.ts",
+        "status": "passed",
+        "cases": 42
+      },
+      {
+        "file": "frontend/src/lib/__tests__/customerFacingErrors.test.ts",
+        "status": "passed",
+        "cases": 66
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+        "status": "passed",
+        "cases": 13
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+        "status": "passed",
+        "cases": 19
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyStrategySocials.test.ts",
+        "status": "passed",
+        "cases": 4
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts",
+        "status": "passed",
+        "cases": 4
+      }
+    ]
+  },
+  "frontendBuild": {
+    "status": "PASS",
+    "typeScript": "PASS",
+    "manifestEntries": 117,
+    "productionOriginsInCompiledBytes": "PASS",
+    "assetGraphReferences": "PASS",
+    "env": {
+      "VITE_API_URL": "https://api.voltextech.net/api/v1",
+      "VITE_MARKET_EDGE_URL": "https://market.voltextech.net",
+      "VITE_KYC_EDGE_URL": "https://kyc.voltextech.net",
+      "VITE_DEPOSIT_CATALOGUE_URL": "https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev",
+      "VITE_MANUAL_DEPOSIT_CATALOGUE": "true",
+      "VITE_WALLET_CONVERSION_ENABLED": "false"
+    },
+    "localBuildReceipt": "No committed-candidate receipt is claimed for this uncommitted local build; CI emits its exact source receipt after commit."
+  },
+  "testPortNotes": [
+    "Original production Copy page/context/components were byte-identical to the original #641 baseline. Only the four reviewed eligibility runtime files are ported.",
+    "Production tests predated already-shipped social UI: restored social mocks, social source normalization and the four existing social link tests; copied existing Banking wording assertions to preserve the released fix.",
+    "Initial live test run: 206/207; only failure was inherited CI path coverage for src/shared/copyStrategySocials.ts. Added that exact path to both old workflow filters (two lines). Final single run: 207/207.",
+    "Dependencies came from matching lockfiles. Root node_modules was independently copied and Prisma client regenerated from the exact production schema before the final run."
+  ],
+  "workflowSafety": {
+    "matchedPushWorkflow": "copy-eligibility-144-live-source-qa.yml",
+    "exactBranchOnly": true,
+    "permissions": "contents: read",
+    "persistCredentials": false,
+    "secretsOrProductionEnvironment": false,
+    "deployOrMigrationCommands": false,
+    "heavyBenchmark": false,
+    "scopeGuard": "Exact baseline tree and ancestry; no merges; explicit required/allowed paths; four runtime SHA256 pins; unchanged Banking blob."
+  },
+  "boundaries": {
+    "productionChanged": false,
+    "productionAuthenticatedQa": "NOT_RUN",
+    "remoteCi": "PENDING_PUBLICATION",
+    "backendSchemaFinancialSourceChanged": false,
+    "eligibilityMeaning": "Existing latest 90-day portfolio snapshot only; not current deposit proof or financial authorization; threshold and local Following behavior preserved."
+  }
+}

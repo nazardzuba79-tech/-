@@ -1,0 +1,135 @@
+name: "Copy eligibility #144 live-source QA (review only)"
+on:
+  push:
+    branches:
+      - review/copy-eligibility-144-live-20261030
+permissions:
+  contents: read
+concurrency:
+  group: copy-eligibility144-live-source-review
+  cancel-in-progress: true
+jobs:
+  reviewed-frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      VITE_API_URL: https://api.voltextech.net/api/v1
+      VITE_MARKET_EDGE_URL: https://market.voltextech.net
+      VITE_KYC_EDGE_URL: https://kyc.voltextech.net
+      VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
+      VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+      VITE_WALLET_CONVERSION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - name: Pin deployed baseline, reviewed runtime and exact allowed paths
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process'), crypto = require('node:crypto'), assert = require('node:assert/strict');
+          const git = (...args) => cp.execFileSync('git', args, { encoding: 'utf8' }).trim();
+          const base = '077ae99d7dfdc1b373530c0a9cbd982ae8c54637';
+          assert.equal(git('rev-parse', base + '^{tree}'), 'c877e1cbf88edccd123acc0780ed0282f2ecc0cc');
+          git('merge-base', '--is-ancestor', base, 'HEAD');
+          assert.equal(git('rev-list', '--merges', base + '..HEAD'), '', 'Candidate must not merge unrelated history');
+          const runtime = {
+            'frontend/src/pages/CopyTradingPage.tsx': '3a08d78f662f17aa487b4965def53caf41ed27a12fc6763e8571c77f8a524ed9',
+            'frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx': 'b2f43c92965c162c36afb530140f62b4c739cc3d3f9777bd839f5d455768dfe0',
+            'frontend/src/pages/copy-trading-bolt/components.tsx': '16659db03c50460f1e64af7b1a97e1e1d45a1367223d6a2528fc8f3c59c44b63',
+            'frontend/src/pages/copy-trading-bolt/useCopyDepositCheck.ts': '0ed532b6ca0d5656fb0c937d378b534751faff55f99cfebbdd956d7ab5d29989',
+          };
+          const required = [
+            ...Object.keys(runtime),
+            'frontend/src/lib/__tests__/copyDepositUx.test.ts',
+            'frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts',
+            'frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts',
+            'frontend/src/lib/__tests__/nazaraCardPresentation.test.ts',
+            'frontend/src/lib/__tests__/copyTradingEligibility.test.ts',
+            'frontend/test-utils/copyDepositUx.ts',
+            'frontend/src/lib/__tests__/copyStrategySocials.test.ts',
+            'frontend/src/lib/__tests__/customerFacingErrors.test.ts',
+            'frontend/src/lib/__tests__/copyFirstLoad.test.ts',
+            'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts',
+            '.github/workflows/copy-eligibility-144-live-source-qa.yml',
+            '.github/workflows/copy-trading-card-regression.yml',
+          ];
+          const allowed = new Set([...required,
+            'docs/AI_HANDOFF.md',
+            'docs/qa/copy-eligibility-144/live-local-verification.json',
+          ]);
+          const changed = git('diff', '--name-only', base, 'HEAD').split('\n').filter(Boolean);
+          assert(changed.length && changed.every(path => allowed.has(path)), 'Candidate exceeds reviewed frontend/test scope');
+          for (const path of required) assert(changed.includes(path), 'Missing reviewed change: ' + path);
+          for (const [path, expected] of Object.entries(runtime)) {
+            assert(fs.lstatSync(path).isFile(), 'Runtime must be a regular file: ' + path);
+            assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex'), expected, path);
+          }
+          assert.equal(git('rev-parse', 'HEAD:frontend/src/pages/BankingPage.tsx'), git('rev-parse', base + ':frontend/src/pages/BankingPage.tsx'));
+          assert.equal(git('status', '--porcelain', '--untracked-files=no'), '', 'Review starts from committed source');
+          console.log('PASS: exact production ancestor; four reviewed runtime files; Banking and all other production source preserved');
+          NODE
+      - name: Install reproducible locked dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Copy eligibility and preserved customer experience (11 suites)
+        run: |
+          npm test -- --runInBand --runTestsByPath \
+            frontend/src/lib/__tests__/copyTradingEligibility.test.ts \
+            frontend/src/lib/__tests__/copyDepositUx.test.ts \
+            frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts \
+            frontend/src/lib/__tests__/nazaraCardPresentation.test.ts \
+            frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts \
+            frontend/src/lib/__tests__/customerFacingErrors.test.ts \
+            frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts \
+            frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts \
+            frontend/src/lib/__tests__/copyFirstLoad.test.ts \
+            frontend/src/lib/__tests__/copyPerformancePeriods.test.ts \
+            frontend/src/lib/__tests__/copyStrategySocials.test.ts \
+            --silent --json --outputFile=copy-eligibility-144-tests.json
+          node <<'NODE'
+          const result = require('./copy-eligibility-144-tests.json'), assert = require('node:assert/strict');
+          assert.equal(result.success, true);
+          assert.equal(result.numTotalTestSuites, 11);
+          assert.equal(result.numPassedTestSuites, 11);
+          assert.equal(result.numTotalTests, 207);
+          assert.equal(result.numPassedTests, 207);
+          assert.equal(result.numPendingTests, 0);
+          console.log('PASS: 11 suites, 207 tests, zero skips');
+          NODE
+      - name: Type-check and build with production origins and Wallet Conversion OFF
+        env:
+          VOLTEX_RELEASE_PROFILE: production
+          VOLTEX_RELEASE_SOURCE: ${{ github.sha }}
+        run: npm run build --prefix frontend -- --manifest
+      - name: Verify compiled origins, source receipt and complete asset graph
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), { audit } = require('./scripts/wallet591-frontend-artifact.cjs');
+          const result = audit('frontend/dist', 'production');
+          fs.writeFileSync('copy-eligibility-144-build.json', JSON.stringify({ ...result,
+            status: 'REVIEW_BUILD_ONLY_NOT_DEPLOYED', productionAuthenticatedQA: 'NOT_RUN',
+          }, null, 2) + '\n');
+          console.log(JSON.stringify({ source: result.source, profile: result.profile, assets: Object.keys(result.files).length, assetDigest: result.assetDigest }));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: copy-eligibility-144-review-${{ github.sha }}
+          path: |
+            copy-eligibility-144-tests.json
+            copy-eligibility-144-build.json
+            frontend/dist
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
