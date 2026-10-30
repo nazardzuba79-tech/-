@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { request } from '../lib/api';
+import { onSessionChange, request } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { futuresObserverText } from './copy-trading-bolt/futuresObserverText';
 import './copy-trading-bolt/FuturesObserver.css';
@@ -32,6 +32,17 @@ export default function CopyFuturesObserverPage() {
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
+    // A logout, login or cross-tab account switch invalidates all displayed
+    // observer data immediately, before another account can see it.
+    const unsubscribe = onSessionChange(() => {
+      current.current++;
+      setSnapshot(null);
+      setError(true);
+      setBusy(false);
+      setTrader('VX-001');
+      setLeverage('');
+      setFill('');
+    });
     const version = ++current.current;
     setBusy(true);
     void request<ObserverSnapshot>(API).then(data => {
@@ -49,7 +60,7 @@ export default function CopyFuturesObserverPage() {
     }).finally(() => {
       if (mounted.current && version === current.current) setBusy(false);
     });
-    return () => { mounted.current = false; current.current++; };
+    return () => { mounted.current = false; current.current++; unsubscribe(); };
   }, []);
   const act = async (method: 'GET' | 'PUT' | 'POST' | 'DELETE', body?: object) => {
     const version = ++current.current;
