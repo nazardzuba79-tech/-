@@ -145,6 +145,7 @@ export class FuturesDemoObserverService {
           || !Array.isArray(account.snapshot?.events) || account.snapshot.events.length > MAX_EVENTS_PER_REVISION)
           throw new FuturesDemoObserverError('SOURCE_REVISION_INVALID');
         const results = futuresDemoSourceFills(account);
+        const sourceIndices = new Map(account.snapshot.events.map((e,i) => [e.id,i]));
         rejected += results.rejected.filter(e => !previousEventIds.has(e.eventId)).length;
         for (const fill of results.accepted.filter(e => !previousEventIds.has(e.sourceEventId))) {
           if (futuresDemoSourceRiskCheck(fill, sub.maxLeverage.toString(), sub.maxFillUsdt.toString())) {
@@ -152,7 +153,8 @@ export class FuturesDemoObserverService {
           }
           const inserted = await tx.copyFuturesDemoEvent.createMany({
             data: [{ subscriptionId: sub.id, sourceEventId: fill.sourceEventId,
-              sourceRevision: revision.revision, sourceActionId: fill.sourceActionId,
+              sourceRevision: revision.revision, sourceEventIndex: sourceIndices.get(fill.sourceEventId) ?? 0,
+              sourceActionId: fill.sourceActionId,
               sourcePositionId: fill.sourcePositionId, symbol: fill.symbol, kind: fill.kind,
               side: fill.side, quantity: fill.quantity, price: fill.price,
               leverage: fill.leverage, marginType: fill.marginType,
