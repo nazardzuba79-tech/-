@@ -74,7 +74,7 @@ async function main() {
     await db.demoBalance.create({ data: { userId: id, asset: 'USDT', available: '1000', locked: '0' } });
     await db.balance.create({ data: { userId: id, asset: 'USDT', available: '250', locked: '20' } });
   }
-  await db.copyStrategyOwner.create({ data: { traderId: 'VX-001', publicName: 'Fixture Nazar', ownerUserId: 'leader' } });
+  await db.copyStrategyOwner.upsert({ where: { traderId: 'VX-001' }, create: { traderId: 'VX-001', publicName: 'Fixture Nazar', ownerUserId: 'leader' }, update: { publicName: 'Fixture Nazar', ownerUserId: 'leader' } });
   current = account(1);
   await db.nativeDemoAccount.create({ data: { userId: 'leader', revision: 1, payload: current } });
   await db.nativeDemoRevision.create({ data: { userId: 'leader', revision: 1,
