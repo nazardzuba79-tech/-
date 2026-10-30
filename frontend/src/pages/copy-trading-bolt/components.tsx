@@ -1,3 +1,4 @@
+import { StrategySocialLinks, StrategySocialEditor } from './StrategySocials';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownRight,
@@ -173,11 +174,12 @@ function useFiguresPending(traderId: string): boolean | undefined {
 /** Explain the unchanged deposit requirement only after an explicit Copy
  * click. Eligible accounts continue through the existing Following action. */
 function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
-  const { eligible } = useCopyEligibility();
+  const { eligible, status, requestId, retry, isCurrent } = useCopyEligibility();
   const { following, toggleFollowing } = useFollowing();
   const marketplace = useCopyMarketplace();
   const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
+  useEffect(() => setShowDepositRequirement(false), [requestId, status]);
 
   if ((trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && !Number.isFinite(trader.performanceFee) && !isFollowing) {
     // «Данные недоступны» is a VERDICT, and it was being shown before there
@@ -194,12 +196,23 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
           title="Условия стратегии недоступны">Данные недоступны</button>;
   }
 
+  if (status !== 'ready') {
+    const loading = status === 'loading';
+    return <button className={`button button-copy ${compact ? 'button-small' : ''}`}
+      disabled={loading} aria-busy={loading ? 'true' : undefined}
+      title={loading ? 'Проверяем доступность копирования' : 'Не удалось проверить депозит. Нажмите, чтобы повторить.'}
+      onClick={event => { event.stopPropagation(); if (!loading) retry(); }}>
+      {loading ? 'Загрузка…' : 'Повторить проверку'}
+    </button>;
+  }
+
   return (
     <>
     <button
       className={`button button-copy ${isFollowing ? 'button-copy-active' : ''} ${compact ? 'button-small' : ''}`}
       onClick={(event) => {
         event.stopPropagation();
+        if (!isCurrent()) return;
         if (!eligible) { setShowDepositRequirement(true); return; }
         toggleFollowing(trader.id);
         toast.success(
@@ -306,7 +319,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         </div>
         <div className="card-topline-right">
           {following.has(trader.id) && <span className="following-pill"><Check size={10} /> Копируется</span>}
-          <FavoriteButton trader={trader} />
+          <StrategySocialLinks traderId={trader.id} /><FavoriteButton trader={trader} />
         </div>
       </div>
       {(isNazara || trader.id === 'VX-KSENIA') && <p className="nazara-strategy">{trader.strategy}</p>}
@@ -804,7 +817,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       <section className="trader-profile-hero">
         <div className="trader-profile-identity">
           <div className="profile-avatar-wrap"><Avatar trader={trader} large /></div>
-          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
+          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p><StrategySocialLinks traderId={trader.id} /></div>
         </div>
         <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
           <div><span>Followers</span><strong><LiveMetric value={numberLabel(heroFollowers, 0)} /></strong></div>
@@ -815,6 +828,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /></div></div>
       </section>
 
+      <StrategySocialEditor key={trader.id} traderId={trader.id} />
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} data-period={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{t(periodLabelKey(item))}</button>)}</div>
@@ -938,7 +952,7 @@ function LockedTraderList({ traders }: { traders: Trader[] }) {
             <Avatar trader={trader} />
             <div>
               <div className="locked-trader-name"><span>{trader.name}</span><span className="locked-trader-lock" title="Только по приглашению"><LockKeyhole size={14} /></span></div>
-              <div className="locked-trader-subtitle">Master Trader · {trader.region}</div>
+              <div className="locked-trader-subtitle">Master Trader · {trader.region}</div><StrategySocialLinks traderId={trader.id} />
             </div>
           </div>
           <div className="locked-access"><LockKeyhole size={14} /><span>Только по приглашению</span></div>

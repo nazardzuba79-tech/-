@@ -1,3 +1,4 @@
+import { copyStrategySocialsRouter } from './copyStrategySocials';
 import { Router } from 'express';
 import type { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
@@ -131,5 +132,6 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
       res.json(identity);
     } catch { res.status(503).json({ error: 'Strategy identity temporarily unavailable' }); }
   });
+  router.use(copyStrategySocialsRouter(prisma));
   return router;
 }

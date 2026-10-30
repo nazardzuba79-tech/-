@@ -1,0 +1,63 @@
+name: Copy strategy socials ownership
+on:
+  pull_request:
+    paths:
+      - 'src/api/routes/copyStrategySocials.ts'
+      - 'src/api/routes/copyPerformance.ts'
+      - 'src/api/middleware/auth.ts'
+      - 'src/api/routes/__tests__/copyStrategySocials.pg.test.ts'
+      - 'src/services/copyTrading/strategyOwner.ts'
+      - 'src/shared/copyStrategySocials.ts'
+      - 'src/shared/__tests__/copyStrategySocials.test.ts'
+      - 'frontend/src/pages/copy-trading-bolt/**'
+      - 'frontend/src/pages/CopyTradingPage.tsx'
+      - 'frontend/src/lib/kseniaCopyTrading.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/__tests__/copyStrategySocials.test.ts'
+      - 'prisma/**'
+      - 'scripts/qa-copy-socials-*.cjs'
+      - '.github/workflows/copy-strategy-socials.yml'
+permissions:
+  contents: read
+concurrency:
+  group: copy-strategy-socials-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  postgres-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: URL, rendered permissions, existing Copy and byte guards
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/shared/__tests__/copyStrategySocials.test.ts
+          frontend/src/lib/__tests__/copyStrategySocials.test.ts
+          src/api/routes/__tests__/copyPerformance.test.ts
+          frontend/src/lib/__tests__/nazaraCardPresentation.test.ts
+          frontend/src/lib/__tests__/nazarProfileCorrection.test.ts
+          frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+      - run: npm run build
+      - run: npm --prefix frontend run build
+      - name: Install isolated PostgreSQL and browser tools
+        run: npm install --prefix node_modules/.cache/issue640-qa --no-audit --no-fund @embedded-postgres/linux-x64@18.4.0-beta.17 pg@8.23.1 playwright@1.64.1
+      - run: node node_modules/.cache/issue640-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Real disposable PostgreSQL and desktop/mobile ownership flow
+        env:
+          COPY_SOCIAL_BROWSER_QA: '1'
+        run: node scripts/qa-copy-socials-postgres.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: copy-strategy-socials-browser
+          path: output/copy-socials/
+          retention-days: 7
