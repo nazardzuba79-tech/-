@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'fs';
 import { resolve, relative } from 'path';
 import { LOCALES, readLocale } from '../../../test-utils/i18nSource';
 import { copyDemoText } from '../../pages/copy-trading-bolt/copyDemoText';
+import { futuresObserverText } from '../../pages/copy-trading-bolt/futuresObserverText';
 
 /**
  * The exchange is shown to people who are not building it. A screen that
@@ -197,6 +198,9 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     // #644 is an explicitly isolated demo, not a live-money screen. Its exact
     // dictionary must disclose demo funds; the positive contract below protects it.
     if (rel === 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts') continue;
+    // Isolated review-only observer: the explicit lack of order copying is a
+    // required consumer warning, not permitted anywhere in live product copy.
+    if (rel === 'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts') continue;
     // lib/customerError.ts holds no copy at all. Its string literals are
     // the SERVER's own sentences, listed so that each can be answered in
     // the customer's language instead — reading them as product copy would
@@ -226,6 +230,9 @@ test('no component copy, in any of the seven languages, is a practice / training
     // Staff-only screens and the isolated loopback review are not customer copy (as above).
     if (rel.startsWith('frontend/src/pages/admin/') || rel.startsWith('frontend/src/mobile-review/')) continue;
     if (rel === 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts') continue;
+    // Isolated review-only observer: the explicit lack of order copying is a
+    // required consumer warning, not permitted anywhere in live product copy.
+    if (rel === 'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts') continue;
     // The server's own sentences, mapped to neutral `serverError.*` wording (see above).
     if (rel === 'frontend/src/lib/customerError.ts') continue;
     // Stocks is Codex's work in progress and switched off on the exchange (VITE_STOCKS_ENABLED unset);
@@ -262,6 +269,25 @@ test('isolated copy review keeps mandatory demo disclosure in every language and
   const consumers = uiFiles(resolve(root, 'frontend/src')).filter(path =>
     readFileSync(path, 'utf8').includes('copyDemoText')).map(path => relative(root, path).replace(/\\/g, '/')).sort();
   expect(consumers).toEqual(['frontend/src/pages/CopyDemoPage.tsx', 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts']);
+});
+
+test('isolated Futures observer keeps truthful no-copy warnings in seven languages and remains flagged OFF', () => {
+  const vocabulary = { en: /demo/i, ru: /демо/i, es: /demo/i, zh: /模拟/, hi: /डेमो/, ja: /デモ/, ko: /데모/ };
+  expect(Object.keys(futuresObserverText).sort()).toEqual([...LOCALES].sort());
+  for (const lang of LOCALES) {
+    expect(futuresObserverText[lang].title).toMatch(vocabulary[lang]);
+    expect(futuresObserverText[lang].warning.length).toBeGreaterThan(30);
+    expect(futuresObserverText[lang].noTrade.length).toBeGreaterThan(6);
+    expect(futuresObserverText[lang].disclaimer.length).toBeGreaterThan(25);
+  }
+  const app = readFileSync(resolve(root, 'frontend/src/App.tsx'), 'utf8');
+  expect(app).toContain("import.meta.env.VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW === 'true'");
+  const consumers = uiFiles(resolve(root, 'frontend/src')).filter(path =>
+    readFileSync(path, 'utf8').includes('futuresObserverText')).map(path => relative(root, path).replace(/\\/g, '/')).sort();
+  expect(consumers).toEqual([
+    'frontend/src/pages/CopyFuturesObserverPage.tsx',
+    'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts',
+  ]);
 });
 
 test('the practice vocabulary catches every former notice and leaves ordinary wording alone', () => {
