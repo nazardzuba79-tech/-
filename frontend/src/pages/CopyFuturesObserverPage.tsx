@@ -34,7 +34,7 @@ export default function CopyFuturesObserverPage() {
     mounted.current = true;
     // A logout, login or cross-tab account switch invalidates all displayed
     // observer data immediately, before another account can see it.
-    const unsubscribe = onSessionChange(() => {
+    const clearPreviousAccount = () => {
       current.current++;
       setSnapshot(null);
       setError(true);
@@ -42,7 +42,14 @@ export default function CopyFuturesObserverPage() {
       setTrader('VX-001');
       setLeverage('');
       setFill('');
-    });
+    };
+    const unsubscribe = onSessionChange(clearPreviousAccount);
+    // Defense in depth: clear this sensitive view on the browser's real
+    // cross-tab token event, independently of the shared app event bus.
+    const onTokenStorage = (event: StorageEvent) => {
+      if (event.key === 'exchange_token' || event.key === null) clearPreviousAccount();
+    };
+    window.addEventListener('storage', onTokenStorage);
     const version = ++current.current;
     setBusy(true);
     void request<ObserverSnapshot>(API).then(data => {
@@ -60,7 +67,10 @@ export default function CopyFuturesObserverPage() {
     }).finally(() => {
       if (mounted.current && version === current.current) setBusy(false);
     });
-    return () => { mounted.current = false; current.current++; unsubscribe(); };
+    return () => {
+      mounted.current = false; current.current++; unsubscribe();
+      window.removeEventListener('storage', onTokenStorage);
+    };
   }, []);
   const act = async (method: 'GET' | 'PUT' | 'POST' | 'DELETE', body?: object) => {
     const version = ++current.current;
