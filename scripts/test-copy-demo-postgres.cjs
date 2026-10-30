@@ -158,14 +158,83 @@ async function main() {
     assert.equal(await db.demoOrder.count({ where: { userId: 'follower' } }), count + 1);
     await demo.cancelOrder('leader', source.order.id); await copy.drain();
   });
-  await check('sell cannot consume unrelated owned demo inventory; unsupported MARKET is explicitly rejected', async () => {
+  await check('MARKET BUY/SELL copy uses settled DemoTrade prices and never unrelated inventory', async () => {
+    await copy.subscribe('follower', 'VX-001', risk);
     const sell = await place('leader', 'SELL', '1', '130'); await copy.drain();
     assert.equal((await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: sell.order.id } })).reason, 'NO_COPIED_POSITION');
     await demo.cancelOrder('leader', sell.order.id);
-    await place('maker', 'SELL', '1', '100', 'ETH/USDT');
+
+    const ask = await place('maker', 'SELL', '3', '100', 'ETH/USDT');
     const market = await demo.placeOrder({ userId: 'leader', pair: 'ETH/USDT', side: 'BUY', type: 'MARKET', quantity: new BN(1) });
-    const result = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: market.order.id } });
-    assert.equal(result.status, 'REJECTED'); assert.equal(result.reason, 'UNSUPPORTED_ORDER'); assert.equal(result.demoOrderId, null);
+    const pending = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: market.order.id } });
+    assert.equal(pending.sourceType, 'MARKET'); assert.equal(pending.sourceQuantity.toString(), '1');
+    await Promise.all([copy.drain(), copy.drain()]);
+    const result = await db.copyDemoExecution.findFirstOrThrow({ where: { id: pending.id } });
+    assert.equal(result.status, 'EXECUTED');
+    const followerBuy = await db.demoOrder.findUniqueOrThrow({ where: { id: result.demoOrderId } });
+    assert.equal(followerBuy.type, 'MARKET'); assert.equal(followerBuy.originalQuantity.toString(), '0.5');
+    assert.equal(followerBuy.status, 'FILLED');
+    assert.equal((await copy.snapshot('follower')).positions.find(p => p.pair === 'ETH/USDT')?.quantity, '0.5');
+    assert.equal(await db.demoOrder.count({ where: { userId: 'follower', id: result.demoOrderId } }), 1);
+
+    // The existing copied ETH lot has a 50 USDT cost basis. Another 50 USDT
+    // market purchase must roll back if it exceeds the new 70 USDT cap.
+    await copy.subscribe('follower', 'VX-001', { ratio: '0.5', maxOrderUsdt: '60', maxExposureUsdt: '70' });
+    const extraBuy = await demo.placeOrder({ userId: 'leader', pair: 'ETH/USDT', side: 'BUY', type: 'MARKET', quantity: new BN(1) });
+    const balancesBefore = JSON.stringify(await db.demoBalance.findMany({ where: { userId: 'follower' }, orderBy: { id: 'asc' } }));
+    await copy.drain();
+    const overExposure = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: extraBuy.order.id } });
+    assert.equal(overExposure.reason, 'MAX_EXPOSURE_EXCEEDED'); assert.equal(overExposure.demoOrderId, null);
+    assert.equal(JSON.stringify(await db.demoBalance.findMany({ where: { userId: 'follower' }, orderBy: { id: 'asc' } })), balancesBefore);
+    await copy.subscribe('follower', 'VX-001', risk);
+    await demo.cancelOrder('maker', ask.order.id);
+
+    const bid = await place('other', 'BUY', '3', '120', 'ETH/USDT');
+    const beforePnl = new BN((await copy.snapshot('follower')).realizedPnlUsdt);
+    const masterSell = await demo.placeOrder({ userId: 'leader', pair: 'ETH/USDT', side: 'SELL', type: 'MARKET', quantity: new BN(1) });
+    await copy.drain();
+    const sale = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: masterSell.order.id } });
+    assert.equal(sale.status, 'EXECUTED');
+    assert.equal((await db.demoOrder.findUniqueOrThrow({ where: { id: sale.demoOrderId } })).type, 'MARKET');
+    const after = await copy.snapshot('follower');
+    assert.equal(after.positions.find(p => p.pair === 'ETH/USDT')?.quantity, '0');
+    assert.equal(new BN(after.realizedPnlUsdt).minus(beforePnl).toFixed(), '10');
+    await demo.cancelOrder('other', bid.order.id);
+
+    await copy.subscribe('follower', 'VX-001', { ratio: '0.5', maxOrderUsdt: '60', maxExposureUsdt: '70' });
+    const expensiveAsk = await place('maker', 'SELL', '3', '200', 'ETH/USDT');
+    const expensive = await demo.placeOrder({ userId: 'leader', pair: 'ETH/USDT', side: 'BUY', type: 'MARKET', quantity: new BN(1) });
+    const beforeReject = JSON.stringify(await db.demoBalance.findMany({ where: { userId: 'follower' }, orderBy: { id: 'asc' } }));
+    await copy.drain();
+    const overOrder = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: expensive.order.id } });
+    assert.equal(overOrder.reason, 'MAX_ORDER_EXCEEDED'); assert.equal(overOrder.demoOrderId, null);
+    assert.equal(JSON.stringify(await db.demoBalance.findMany({ where: { userId: 'follower' }, orderBy: { id: 'asc' } })), beforeReject);
+    await demo.cancelOrder('maker', expensiveAsk.order.id);
+    await copy.stop('follower');
+  });
+  await check('partial source MARKET fill copies only executed quantity; exhausted depth fails closed', async () => {
+    await copy.subscribe('follower', 'VX-001', risk);
+    const firstAsk = await place('maker', 'SELL', '1', '100', 'ETH/USDT');
+    const partiallyFilled = await demo.placeOrder({ userId: 'leader', pair: 'ETH/USDT', side: 'BUY', type: 'MARKET', quantity: new BN(2) });
+    const source = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: partiallyFilled.order.id } });
+    assert.equal(source.sourceQuantity.toString(), '1');
+    assert.equal(partiallyFilled.order.originalQuantity.toString(), '2');
+    const secondAsk = await place('maker', 'SELL', '1', '100', 'ETH/USDT');
+    await copy.drain();
+    const executed = await db.copyDemoExecution.findFirstOrThrow({ where: { id: source.id } });
+    assert.equal(executed.status, 'EXECUTED');
+    assert.equal((await db.demoOrder.findUniqueOrThrow({ where: { id: executed.demoOrderId } })).originalQuantity.toString(), '0.5');
+    await demo.cancelOrder('maker', firstAsk.order.id);
+    await demo.cancelOrder('maker', secondAsk.order.id);
+
+    const lastAsk = await place('maker', 'SELL', '0.5', '100', 'ETH/USDT');
+    const noDepth = await demo.placeOrder({ userId: 'leader', pair: 'ETH/USDT', side: 'BUY', type: 'MARKET', quantity: new BN('0.5') });
+    const followerBefore = JSON.stringify(await db.demoBalance.findMany({ where: { userId: 'follower' }, orderBy: { id: 'asc' } }));
+    await copy.drain();
+    const rejected = await db.copyDemoExecution.findFirstOrThrow({ where: { sourceOrderId: noDepth.order.id } });
+    assert.equal(rejected.reason, 'NO_LIQUIDITY'); assert.equal(rejected.demoOrderId, null);
+    assert.equal(JSON.stringify(await db.demoBalance.findMany({ where: { userId: 'follower' }, orderBy: { id: 'asc' } })), followerBefore);
+    await demo.cancelOrder('maker', lastAsk.order.id);
     await copy.stop('follower');
   });
   await check('a manual order cannot self-match a copied resting order', async () => {
