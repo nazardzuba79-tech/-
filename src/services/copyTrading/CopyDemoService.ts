@@ -22,7 +22,7 @@ export class CopyDemoError extends Error {
 }
 export interface CopyDemoRisk { ratio: string; maxOrderUsdt: string; maxExposureUsdt: string }
 
-/** First vertical slice: only bound leaders' real demo Spot LIMIT commands.
+/** Isolated review: only bound leaders' real demo Spot LIMIT/MARKET commands.
  * Synthetic performance snapshots are deliberately not imported. No top-up,
  * price feed, exchange connector or real ledger is reachable from this class.
  */
@@ -80,10 +80,18 @@ export class CopyDemoService {
     const order = await tx.demoOrder.findUniqueOrThrow({ where: { id: sourceOrderId } });
     const subs = await tx.copyDemoSubscription.findMany({ where: { ownerUserId: order.userId, status: 'ACTIVE' } });
     for (const sub of subs) {
-      const supported = order.type === 'LIMIT' && /^[A-Z0-9]{2,16}\/USDT$/.test(order.pair);
+      // MARKET requests may only partly fill; never copy their unexecuted remainder.
+      // The source trade receipts exist in this same committed order transaction.
+      const sourceFills = order.type === 'MARKET'
+        ? await tx.demoTrade.findMany({ where: { takerOrderId: sourceOrderId }, select: { quantity: true } }) : [];
+      const sourceQuantity = order.type === 'MARKET'
+        ? sourceFills.reduce((total, fill) => total.plus(bn(fill.quantity)), bn('0')) : bn(order.originalQuantity);
+      const supported = (order.type === 'LIMIT' || order.type === 'MARKET') && /^[A-Z0-9]{2,16}\/USDT$/.test(order.pair);
+      const reason = !supported ? 'UNSUPPORTED_ORDER' : sourceQuantity.lte(0) ? 'NO_SOURCE_FILL' : null;
       await tx.copyDemoExecution.create({ data: { subscriptionId: sub.id, sourceOrderId, pair: order.pair,
-        side: order.side, sourceType: order.type, sourcePrice: order.price, sourceQuantity: order.originalQuantity,
-        ratio: sub.ratio, status: supported ? 'PENDING' : 'REJECTED', reason: supported ? null : 'UNSUPPORTED_ORDER' } });
+        side: order.side, sourceType: order.type, sourcePrice: order.price,
+        sourceQuantity: sourceQuantity.gt(0) ? sourceQuantity.toFixed() : order.originalQuantity,
+        ratio: sub.ratio, status: reason ? 'REJECTED' : 'PENDING', reason } });
     }
   }
   /** Append only a reference/sequence, never duplicate price/quantity/balances.
@@ -186,9 +194,12 @@ export class CopyDemoService {
     const pending = await this.db.copyDemoExecution.findMany({ where: { status: 'PENDING' }, orderBy: { sequence: 'asc' }, take: 25, include: { subscription: true } });
     for (const row of pending) {
       const quantity = bn(row.sourceQuantity).times(bn(row.ratio)).decimalPlaces(18, BigNumber.ROUND_DOWN);
+      const market = row.sourceType === 'MARKET';
       try {
-        await this.demo.placeOrder({ userId: row.subscription.userId, pair: row.pair, side: row.side as 'BUY' | 'SELL', type: 'LIMIT',
-          price: bn(row.sourcePrice!), quantity, requestId: `copy-demo:${row.id}`,
+        if (!quantity.gt(0)) throw new CopyDemoError('MINIMUM_COPY_QUANTITY');
+        await this.demo.placeOrder({ userId: row.subscription.userId, pair: row.pair, side: row.side as 'BUY' | 'SELL',
+          type: market ? 'MARKET' : 'LIMIT', ...(market ? {} : { price: bn(row.sourcePrice!) }),
+          quantity, requestId: `copy-demo:${row.id}`,
           transactionGuard: async tx => {
             this.on(); const current = await tx.copyDemoExecution.findUniqueOrThrow({ where: { id: row.id }, include: { subscription: true } });
             if (current.status !== 'PENDING' || current.subscription.status !== 'ACTIVE') throw new CopyDemoError('SUBSCRIPTION_STOPPED');
@@ -199,14 +210,32 @@ export class CopyDemoService {
             if (await tx.copyStrategyOwner.findFirst({ where: { ownerUserId: row.subscription.userId } })) throw new CopyDemoError('LEADER_CANNOT_FOLLOW');
             const master = await tx.demoOrder.findUniqueOrThrow({ where: { id: row.sourceOrderId } });
             if (master.status === 'CANCELLED') throw new CopyDemoError('SOURCE_CANCELLED');
-            const amount = quantity.times(bn(row.sourcePrice!));
-            if (amount.gt(bn(current.subscription.maxOrderUsdt))) throw new CopyDemoError('MAX_ORDER_EXCEEDED');
+            // LIMIT risk is known before matching. MARKET notional is unknowable
+            // until committed demo-book matches, so validate it below before commit.
+            const amount = market ? null : quantity.times(bn(row.sourcePrice!));
+            if (amount && amount.gt(bn(current.subscription.maxOrderUsdt))) throw new CopyDemoError('MAX_ORDER_EXCEEDED');
             const ledger = await this.ledger(tx, row.subscriptionId);
-            if (row.side === 'BUY' && ledger.exposure.plus(amount).gt(bn(current.subscription.maxExposureUsdt))) throw new CopyDemoError('MAX_EXPOSURE_EXCEEDED');
+            if (row.side === 'BUY' && amount && ledger.exposure.plus(amount).gt(bn(current.subscription.maxExposureUsdt))) throw new CopyDemoError('MAX_EXPOSURE_EXCEEDED');
             const position = ledger.positions.get(row.pair);
             if (row.side === 'SELL' && (!position || quantity.gt(position.quantity.minus(position.reservedSell)))) throw new CopyDemoError('NO_COPIED_POSITION');
           },
           transactionComplete: async (tx, demoOrderId) => {
+            if (market) {
+              // This hook is inside DemoTradingService's book/DB transaction.
+              // A rejected notional/exposure rolls back trades, funds and the book.
+              const matched = await tx.demoTrade.findMany({
+                where: { takerOrderId: demoOrderId }, select: { price: true, quantity: true },
+              });
+              if (!matched.length) throw new CopyDemoError('NO_LIQUIDITY');
+              const spent = matched.reduce((total, fill) =>
+                total.plus(bn(fill.price).times(bn(fill.quantity))), bn('0'));
+              const current = await tx.copyDemoSubscription.findUniqueOrThrow({ where: { id: row.subscriptionId } });
+              if (spent.gt(bn(current.maxOrderUsdt))) throw new CopyDemoError('MAX_ORDER_EXCEEDED');
+              if (row.side === 'BUY') {
+                const ledger = await this.ledger(tx, row.subscriptionId);
+                if (ledger.exposure.plus(spent).gt(bn(current.maxExposureUsdt))) throw new CopyDemoError('MAX_EXPOSURE_EXCEEDED');
+              }
+            }
             await tx.copyDemoExecution.update({ where: { id: row.id }, data: { status: 'EXECUTED', demoOrderId } });
             const fills = await tx.demoTrade.findMany({ where: { OR: [{ makerOrderId: demoOrderId }, { takerOrderId: demoOrderId }] }, orderBy: [{ executedAt: 'asc' }, { id: 'asc' }] });
             await this.captureFills(tx, fills.map(fill => fill.id));
