@@ -36,6 +36,8 @@ export default function CopyFuturesObserverPage() {
     setBusy(true);
     void request<ObserverSnapshot>(API).then(data => {
       if (!mounted.current || version !== current.current) return;
+      if (data.mode !== 'OBSERVATION_ONLY' || data.automaticCopying !== false)
+        throw new Error('Unverified Futures observer mode');
       setSnapshot(data);
       if (data.subscription) {
         setTrader(data.subscription.traderId);
