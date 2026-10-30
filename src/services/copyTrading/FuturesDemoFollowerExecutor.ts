@@ -5,6 +5,7 @@ import type { NativeDemoService, NativeCommand } from '../../private-trading/nat
 import { inflate, type NativeAccount } from '../../private-trading/native/store';
 import { isNativeTestAccount } from '../../private-trading/native/testAccounts';
 import { futuresCopyCommitGuard, FuturesCopyGuardError } from './FuturesCopyCommitGuard';
+import { futuresDemoSourceFills } from './FuturesDemoSource';
 import { futuresDemoObserverEnabled, approvedFuturesDemoLeader } from './FuturesDemoObserverService';
 import { DemoEngineError } from '../../private-trading/native/engine';
 
@@ -136,6 +137,24 @@ export class FuturesDemoFollowerExecutor {
         return {status:'REJECTED' as const,reason,sourceEventId:source.sourceEventId};
       };
       if(!sourceQuantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
+      // The observer table is only a receipt index, not an execution oracle.
+      // Re-verify the exact source fill against the immutable NativeDemo
+      // revision and its native instruction/position provenance.
+      const revision=await tx.nativeDemoRevision.findUnique({
+        where:{userId_revision:{userId:consent.subscription.ownerUserId,revision:source.sourceRevision}},
+        select:{payload:true},
+      });
+      if(!revision)return reject('SOURCE_PROVENANCE_MISMATCH');
+      const sourceAccount=inflate(revision.payload as unknown as NativeAccount);
+      const verified=futuresDemoSourceFills(sourceAccount).accepted.find(f=>f.sourceEventId===source.sourceEventId);
+      const eventIndex=sourceAccount.snapshot.events.findIndex(e=>e.id===source.sourceEventId);
+      if(!verified || eventIndex!==source.sourceEventIndex || verified.sourceActionId!==source.sourceActionId
+        || verified.sourcePositionId!==source.sourcePositionId || verified.symbol!==source.symbol
+        || verified.kind!==source.kind || verified.side!==source.side
+        || verified.marginType!==source.marginType || verified.pricing!==source.pricing
+        || !n(verified.quantity).eq(source.quantity.toString()) || !n(verified.price).eq(source.price.toString())
+        || !n(verified.leverage).eq(source.leverage.toString()))
+        return reject('SOURCE_PROVENANCE_MISMATCH');
       if(n(source.leverage).gt(consent.maxLeverage.toString())||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt.toString()))
         return reject('COPY_SOURCE_RISK_LIMIT');
       const follower=await tx.nativeDemoAccount.findUnique({where:{userId},select:{payload:true}});
