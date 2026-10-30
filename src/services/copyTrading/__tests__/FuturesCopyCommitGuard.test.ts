@@ -69,6 +69,18 @@ describe('Native Demo internal, atomic copy replay commit guard', () => {
     })).rejects.toMatchObject({ code: 'COPY_FOLLOWER_POSITION_NOT_ISOLATED' });
     expect(f.repo.row).toEqual(before);
   });
+  test('resting manual LIMIT orders block new copied exposure', async () => {
+    const f = setup(); await f.service.initialize(actor, key());
+    await f.service.command(actor, { kind: 'OPEN', symbol: 'BTCUSDT',
+      side: 'LONG', type: 'LIMIT', price: '1000', quantity: '0.1',
+      leverage: '2', marginType: 'CROSS', idempotencyKey: key() });
+    expect(f.repo.row!.snapshot.orders.some(o => o.status === 'OPEN')).toBe(true);
+    const before = structuredClone(f.repo.row);
+    await expect(f.service.command(actor, command(key()), {
+      commitGuard: futuresCopyCommitGuard(limits('OPEN')),
+    })).rejects.toMatchObject({ code: 'COPY_FOLLOWER_POSITION_NOT_ISOLATED' });
+    expect(f.repo.row).toEqual(before);
+  });
   test('one valid copied position can be partially closed with the same guard', async () => {
     const f = setup(); await f.service.initialize(actor, key());
     const open = await f.service.command(actor, command(key()), {
