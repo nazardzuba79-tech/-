@@ -1,0 +1,39 @@
+name: Copy Futures demo observer PostgreSQL isolation
+on:
+  pull_request:
+    paths:
+      - 'prisma/schema.prisma'
+      - 'prisma/migrations/20261030210000_copy_futures_demo_observer/**'
+      - 'src/services/copyTrading/FuturesDemoObserverService.ts'
+      - 'src/services/copyTrading/FuturesDemoSource.ts'
+      - 'scripts/test-copy-futures-observer-postgres.cjs'
+      - '.github/workflows/copy-futures-demo-observer.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_PASSWORD: fixture
+          POSTGRES_DB: copy_demo_futures_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_futures_ci
+      DIRECT_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_futures_ci
+      COPY_FUTURES_OBSERVER_TEST_DATABASE_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_futures_ci
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy && npm run build
+      - run: node scripts/test-copy-futures-observer-postgres.cjs
