@@ -32,7 +32,8 @@ companies. This profile is **OFF** unless `STOCKS_DEMO_INDICATIVE_ENABLED=true`.
 ## Safety
 
 - View only: the gateway refuses every order on an indicative row or a MOEX row (`INDICATIVE_ONLY`, before any
-  authority command); the terminal shows "Демонстрационный режим: только просмотр цен" instead of the order form.
+  authority command); the terminal shows the indicative/delay label instead of the order form. No "demo"/practice
+  wording reaches the screen (owner rule 22.10, `plainLanguage.test.ts`).
 - Labels: "Индикативная цена из пула DEX Solana · задержка до 15 минут" / "Данные MOEX с задержкой не менее 15 минут",
   and the existing "задержка 15 мин" in the header.
 - Not the six-gate own-source history: `SOLANA:<mint>:<pool>` identities and `admitStockHistory` are unchanged.

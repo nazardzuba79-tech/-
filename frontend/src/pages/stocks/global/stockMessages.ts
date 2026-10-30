@@ -74,7 +74,6 @@ export const STOCK_MESSAGES = {
   '· возраст': ['· age', '· antigüedad', '· 数据距今', '· पुरानापन', '· 経過時間', '· 경과 시간'],
   'с': ['s', 's', '秒', 'सेकंड', '秒', '초'],
   'Индикативная цена из пула DEX Solana · задержка до 15 минут': ['Indicative price from a Solana DEX pool · delayed up to 15 minutes', 'Precio indicativo de un pool DEX de Solana · retraso de hasta 15 minutos', '来自 Solana DEX 池的参考价格 · 最多延迟 15 分钟', 'Solana DEX पूल से संकेतक मूल्य · 15 मिनट तक की देरी', 'Solana DEXプールの参考価格・最大15分遅延', 'Solana DEX 풀의 참고 가격 · 최대 15분 지연'],
-  'Демонстрационный режим: только просмотр цен': ['Demo mode: prices only', 'Modo demostración: solo precios', '演示模式：仅显示价格', 'डेमो मोड: केवल मूल्य', 'デモモード：価格の表示のみ', '데모 모드: 가격만 표시'],
   'Данные MOEX с задержкой не менее 15 минут': ['MOEX data delayed by at least 15 minutes', 'Datos de MOEX con al menos 15 minutos de retraso', 'MOEX 数据至少延迟 15 分钟', 'MOEX डेटा में कम से कम 15 मिनट की देरी है', 'MOEXデータは少なくとも15分遅延しています', 'MOEX 데이터는 최소 15분 지연됩니다'],
   'Курс:': ['Exchange rate:', 'Tipo de cambio:', '汇率：', 'विनिमय दर:', '換算レート：', '환율:'],
   'Цена токена уже в USDT. Пересчёт через USD не применяется.': ['The token price is already in USDT. No conversion via USD is applied.', 'El precio del token ya está en USDT. No se aplica conversión a través de USD.', '代币价格已以 USDT 计价。不经 USD 换算。', 'टोकन का मूल्य पहले से USDT में है। USD के माध्यम से रूपांतरण नहीं किया जाता।', 'トークン価格はUSDT建てです。USDを介した換算は行いません。', '토큰 가격은 이미 USDT 기준입니다. USD를 통한 환산은 적용하지 않습니다.'],

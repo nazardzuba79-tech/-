@@ -82,14 +82,15 @@ async function step(name, fn) {
         report.measured[tag].spyx = value;
         if (width >= 600) {
           const source = await page.locator('.vxg-source').first().innerText();
-          assert.match(source, /Индикативная цена из пула DEX Solana/); assert.match(source, /Демонстрационный режим/);
+          assert.match(source, /Индикативная цена из пула DEX Solana/); assert.doesNotMatch(source, /Демо|демо/);
         }
         await pause(1500); await shot(`${width}-xstock-spyx.png`);
       });
       await step(`${tag}: the order ticket cannot submit on an indicative row and the gateway refuses an order`, async () => {
         if (width >= 600) {
-          // The ticket shows the demo notice instead of the order form.
-          assert.match(await page.locator('.vxg-ticket').first().innerText(), /Демонстрационный режим: только просмотр цен/);
+          // The ticket shows the indicative-price label instead of the order form (no demo/practice wording, owner 22.10).
+          const ticket = await page.locator('.vxg-ticket').first().innerText();
+          assert.match(ticket, /Индикативная цена из пула DEX Solana/); assert.doesNotMatch(ticket, /Демо|демо/);
           assert.equal(await page.locator('.vxg-ticket form').count(), 0);
         }
         assert.equal(orders.length, 0, 'no order request left the page');
