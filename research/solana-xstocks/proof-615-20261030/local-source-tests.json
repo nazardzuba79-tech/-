@@ -1,0 +1,66 @@
+{
+  "runtime": "v24.22.1",
+  "suites": [
+    {
+      "file": "scripts/stocks-verify-clmm-proof.test.mjs",
+      "exitCode": 0,
+      "tests": 25,
+      "pass": 25,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "file": "scripts/stocks-reconcile-clmm-receipts.test.mjs",
+      "exitCode": 0,
+      "tests": 29,
+      "pass": 29,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "file": "scripts/stocks-source-pipeline.test.mjs",
+      "exitCode": 0,
+      "tests": 46,
+      "pass": 46,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "file": "scripts/stocks-capture-transport.test.mjs",
+      "exitCode": 0,
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "file": "scripts/stocks-source-pipeline-producer.test.mjs",
+      "exitCode": 0,
+      "tests": 35,
+      "pass": 35,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "file": "scripts/stocks-source-pipeline-coverage.test.mjs",
+      "exitCode": 0,
+      "tests": 73,
+      "pass": 73,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "file": "scripts/stocks-capture-clmm-coverage.test.mjs",
+      "exitCode": 0,
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "skipped": 0
+    }
+  ],
+  "tests": 236,
+  "pass": 236,
+  "failed": 0,
+  "skipped": 0,
+  "networkAcquisition": false
+}

@@ -184,7 +184,7 @@ function provenance(){
    if(problems.length)throw Error('CPU_SETS_NOT_ISOLATED:'+problems.join(','));
   }
   cfg=environment(a);fs.mkdirSync(cfg.out);report.nonce=crypto.randomBytes(6).toString('hex');
-  report.admission={scope:cfg.scope,platform:cfg.platform,node:cfg.node,nodeSha256:cfg.nodeSha256,harnessHead:cfg.harnessHead,dependencyVersions:cfg.versions,physicalFocusUsed:false,productionAccess:false,externalNetworkAllowed:false,heapLimitMb:384,resources:'Same sequential worker shape and PostgreSQL cluster/settings; Windows shared host is unpinned and not CX23 acceptance'};
+  report.admission={scope:cfg.scope,platform:cfg.platform,node:cfg.node,nodeSha256:cfg.nodeSha256,harnessHead:cfg.harnessHead,dependencyVersions:cfg.versions,physicalFocusUsed:false,productionAccess:false,externalNetworkAllowed:false,heapLimitMb:384,resources:'Same sequential worker shape and PostgreSQL cluster/settings; platform, CPU affinity and placement evidence are recorded separately; not CX23 acceptance'};
   // Report only: the CPUs this process tree may use, their SMT siblings and the model (Linux sysfs/procfs).
   if(process.platform==='linux')try{
    const allowed=(fs.readFileSync('/proc/self/status','utf8').match(/^Cpus_allowed_list:\s*(\S+)/m)||[])[1]??'';

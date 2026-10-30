@@ -1,0 +1,124 @@
+{
+  "schema": "voltex.solana-coverage-packet.v1",
+  "network": "solana-mainnet-beta",
+  "ticker": "SPYx",
+  "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+  "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "windowUTC": [
+    "2026-10-30T05:22:00.000Z",
+    "2026-10-30T05:23:00.000Z"
+  ],
+  "slotRange": {
+    "from": 463165300,
+    "to": 463165735
+  },
+  "status": "BLOCKED",
+  "startedAt": "2026-10-30T05:25:42.888Z",
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "requestId": 1,
+      "at": "2026-10-30T05:25:42.889Z",
+      "httpStatus": 200,
+      "bytes": 81,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSlot",
+      "params": [
+        {
+          "commitment": "finalized"
+        }
+      ],
+      "requestId": 2,
+      "at": "2026-10-30T05:25:45.891Z",
+      "httpStatus": 200,
+      "bytes": 44,
+      "sha256": "43ce851bf93e5f538b6dd97dc5b00a599ee2da7378538ebcedf922647825dd36"
+    },
+    {
+      "file": "receipt-003.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+        {
+          "commitment": "finalized",
+          "limit": 100
+        }
+      ],
+      "requestId": 3,
+      "at": "2026-10-30T05:25:48.893Z",
+      "httpStatus": 200,
+      "bytes": 24990,
+      "sha256": "71e0d89619abbf173921efe5e103038cc01a1fc4a7d09fdc7dff6017f94ead95"
+    },
+    {
+      "file": "receipt-004.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlocks",
+      "params": [
+        463165300,
+        463165735,
+        {
+          "commitment": "finalized"
+        }
+      ],
+      "requestId": 4,
+      "at": "2026-10-30T05:25:51.893Z",
+      "httpStatus": 200,
+      "bytes": 4396,
+      "sha256": "fa334b2638bbb2d99d1cd0c83b8b3f1c8777fd2193b64bdb02264a7021e44e3f"
+    }
+  ],
+  "blockers": [
+    "PRODUCED_SLOTS_INCOMPLETE_OR_BUDGET"
+  ],
+  "acceptedIntervals": 0,
+  "acceptedMarkets": 0,
+  "productionReady": false,
+  "ohlcv": null,
+  "limits": {
+    "maxRpcAttempts": 225,
+    "maxProducedBlocks": 200,
+    "maxResponseBytes": 2500000,
+    "maxTotalResponseBytes": 268435456,
+    "minimumSpacingMs": 3000,
+    "maxSlotSpan": 10000,
+    "maxManifestBytes": 262144,
+    "maxSignaturePages": 3,
+    "maxCaptureMs": 900000
+  },
+  "metrics": {
+    "rpcAttempts": 4,
+    "rpcCompletions": 4,
+    "responseBytes": 29511,
+    "automaticRetries": 0,
+    "paidResources": false,
+    "monetarySpend": 0,
+    "cpuUserMicros": 118583,
+    "cpuSystemMicros": 34050,
+    "elapsedMs": 9038.967342,
+    "rssBytes": 58155008
+  },
+  "lastAttempt": {
+    "method": "getBlocks",
+    "params": [
+      463165300,
+      463165735,
+      {
+        "commitment": "finalized"
+      }
+    ],
+    "requestId": 4,
+    "at": "2026-10-30T05:25:51.893Z"
+  },
+  "finishedAt": "2026-10-30T05:25:51.927Z"
+}
