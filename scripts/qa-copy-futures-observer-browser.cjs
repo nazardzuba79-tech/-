@@ -68,14 +68,14 @@ async function main() {
   };
   try {
     const desktop = await open(1440), page = desktop.page;
-    await page.getByText('No observer subscription', {exact:true}).waitFor();
+    await page.getByText('No observation subscription', {exact:true}).waitFor();
     await page.getByText('Automatic copying: OFF', {exact:true}).waitFor();
     await page.getByLabel('Maximum observed leverage').fill('3');
-    await page.getByLabel('Maximum observed fill (USDT)').fill('900');
+    await page.getByLabel('Maximum observed amount (USDT)').fill('900');
     await page.getByRole('button',{name:'Save observation'}).click();
-    await page.getByText('Observing confirmed demo events — NO order copying',{exact:true}).waitFor();
+    await page.getByText('Observing strategy events — orders are not copied',{exact:true}).waitFor();
     assert.equal(writes,1);
-    await page.getByRole('button',{name:'Check new source fills'}).click();
+    await page.getByRole('button',{name:'Check new events'}).click();
     await page.getByText(/BTCUSDT · OPEN · 0.125 @ 61000/).waitFor();
     assert.equal(writes,2);
     await page.reload();
