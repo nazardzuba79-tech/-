@@ -21,6 +21,7 @@ const leader=randomUUID(),follower=randomUUID(),viewer=randomUUID();
 process.env.PRIVATE_TRADING_ENABLED='true';
 process.env.PRIVATE_TRADING_OWNER_ID=leader;
 process.env.PRIVATE_TRADING_TEST_USER_IDS=follower;
+process.env.COPY_FUTURES_DEMO_APPROVED_LEADER_IDS=leader;
 const clock=new Clock(H0+5*H+5*M+30000),market=new FakeMarket(clock);
 const repo=new PrismaNativeRepository(db,()=>({enabled:true,ownerId:leader}));
 const native=new NativeDemoService(repo,market,clock.now);
