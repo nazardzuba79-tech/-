@@ -62,6 +62,7 @@ datasource db {
 }
 
 model User {
+  copyFuturesDemoConsent CopyFuturesDemoConsent?
   copyFuturesDemoSubscription CopyFuturesDemoSubscription?
   copyDemoSubscription CopyDemoSubscription?
   otcCashRequests OtcCashRequest[]
@@ -1510,6 +1511,7 @@ model CopyFuturesDemoSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   events CopyFuturesDemoEvent[]
+  executionConsent CopyFuturesDemoConsent?
   @@index([traderId, status])
 }
 
@@ -1520,6 +1522,7 @@ model CopyFuturesDemoEvent {
   subscription CopyFuturesDemoSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
   sourceEventId String
   sourceRevision Int
+  sourceEventIndex Int @default(0)
   sourceActionId String
   sourcePositionId String
   symbol String
@@ -1534,6 +1537,45 @@ model CopyFuturesDemoEvent {
   createdAt DateTime @default(now())
   @@unique([subscriptionId, sourceEventId])
   @@index([subscriptionId, sourceRevision])
+}
+
+/// Explicit execution consent, NEVER inferred from an OBSERVING subscription.
+/// This candidate runs only on isolated loopback test DB and Node test mode.
+model CopyFuturesDemoConsent {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subscriptionId String @unique
+  subscription CopyFuturesDemoSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  status String @default("ACTIVE")
+  ratio Decimal @db.Decimal(18, 8)
+  maxLeverage Decimal @db.Decimal(18, 8)
+  maxFillUsdt Decimal @db.Decimal(36, 18)
+  maxTotalExposureUsdt Decimal @db.Decimal(36, 18)
+  maxDeviationBps Decimal @db.Decimal(8, 2)
+  startedAfterRevision Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  mirrors CopyFuturesDemoMirror[]
+}
+
+/// Reconciliation journal: the real modeled outcome remains NativeDemoRevision.
+model CopyFuturesDemoMirror {
+  id String @id @default(uuid())
+  consentId String
+  consent CopyFuturesDemoConsent @relation(fields: [consentId], references: [id], onDelete: Restrict)
+  sourceEventId String
+  sourcePositionId String
+  sourceRevision Int
+  kind String
+  requestKey String @unique
+  followerPositionId String?
+  filledQuantity Decimal? @db.Decimal(36, 18)
+  status String @default("APPLIED")
+  reason String?
+  createdAt DateTime @default(now())
+  @@unique([consentId, sourceEventId])
+  @@index([consentId, sourcePositionId])
 }
 
 /// Approved pre-launch modeled histories, isolated from all account/financial
