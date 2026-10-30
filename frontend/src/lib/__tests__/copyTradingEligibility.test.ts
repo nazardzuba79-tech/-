@@ -120,169 +120,35 @@ const expectNoDepositOrAction = () => {
   expect(toast.success).not.toHaveBeenCalled();
 };
 
-test('pending portfolio read disables Copy without claiming the deposit is insufficient', async () => {
+test('watchlist is immediately available and makes no wallet portfolio request', async () => {
   await mount();
-  expect(requests).toHaveLength(1);
-  expect(button().disabled).toBe(true);
-  expect(button().textContent).toBe('Загрузка…');
-  await click(); expectNoDepositOrAction();
-});
-
-test('503 settles to a retry action, without a deposit/top-up instruction', async () => {
-  await mount();
-  await act(async () => { requests[0].reject(Object.assign(new Error('HTTP/1.1 503 service unavailable'), { status: 503 })); await flush(); });
-  expect(button().textContent).toBe('Повторить проверку');
+  expect(requests).toHaveLength(0);
+  expect(listeners.size).toBe(0);
   expect(button().disabled).toBe(false);
+  expect(button().textContent).toBe('Наблюдать за трейдером');
   expectNoDepositOrAction();
   await click();
-  expect(requests).toHaveLength(2);
-  expect(button().disabled).toBe(true);
-  expectNoDepositOrAction();
-});
-
-test('a null latest valuation stays unavailable instead of becoming a zero deposit', async () => {
-  await mount(); await resolveRequest(point(null));
-  expect(button().textContent).toBe('Повторить проверку');
-  await click(); expectNoDepositOrAction();
-});
-
-test('a confirmed zero keeps the existing deposit dialog only after a Copy click', async () => {
-  await mount(); await resolveRequest(point('0'));
-  expect(button().textContent).toBe('Наблюдать за трейдером');
-  expectNoDepositOrAction(); await click();
-  expect(document.querySelector('dialog')?.textContent).toContain('при депозите от $10 000.');
-  expect(document.querySelector('a[href="/wallet?action=deposit"]')).not.toBeNull();
-  expect(toggleFollowing).not.toHaveBeenCalled();
-});
-
-test('the confirmed 10000 boundary preserves the existing local Following action', async () => {
-  await mount(); await resolveRequest(point('10000')); await click();
   expect(toggleFollowing).toHaveBeenCalledTimes(1);
   expect(toggleFollowing).toHaveBeenCalledWith(trader.id);
-  expect(toast.success).toHaveBeenCalledTimes(1);
   expect(toast.success.mock.calls[0][0]).toContain('Добавлено в наблюдение');
-  expect(toast.success.mock.calls[0][1]?.description).toMatch(/сделки не копируются|копирование сделок не запущено/);
+  expect(toast.success.mock.calls[0][1]?.description).toContain('копирование сделок не запущено');
   expect(document.querySelector('dialog')).toBeNull();
 });
 
-test.each([undefined, '', ' ', false, true, NaN, Infinity, -Infinity, -1, '-1', 'NaN', 'Infinity', '0x2710', {}, []])(
-  'invalid latest valuation %p cannot become a zero or an eligible deposit', async value => {
-    await mount(); await resolveRequest(point(value));
-    expect(button().textContent).toBe('Повторить проверку');
-    expectNoDepositOrAction();
-  });
-
-test.each([null, {}, { points: null }, { points: {} }, { points: [] }, { points: [null] }, { points: [{}] }])(
-  'missing or malformed portfolio history %p stays unavailable', async payload => {
-    await mount(); await resolveRequest(payload);
-    expect(button().textContent).toBe('Повторить проверку'); expectNoDepositOrAction();
-  });
-
-test.each([0, '0.00', 9999.99, '9999.99', '9e3'])(
-  'confirmed valid amount %p below 10000 keeps the deposit requirement', async value => {
-    await mount(); await resolveRequest(point(value)); await click();
-    expect(document.querySelector('dialog')?.textContent).toContain('при депозите от $10 000.');
-    expect(toggleFollowing).not.toHaveBeenCalled();
-  });
-
-test('an unavailable latest row cannot reuse an older apparently eligible row', async () => {
-  await mount(); await resolveRequest({ points: [point('20000').points[0], point(null).points[0]] });
-  expect(button().textContent).toBe('Повторить проверку'); expectNoDepositOrAction();
-});
-
-test('retry is one in-flight read even if the old button receives two clicks', async () => {
-  await mount(); await resolveRequest(point(null));
-  const retryButton = button();
-  await act(async () => { retryButton.click(); retryButton.click(); await flush(); });
-  expect(requests).toHaveLength(2);
-  expect(button().disabled).toBe(true); expectNoDepositOrAction();
-  await resolveRequest(point('10000')); await click();
-  expect(toggleFollowing).toHaveBeenCalledTimes(1);
-});
-
-test('a session change immediately fences the old ready button before React commits', async () => {
-  await mount(); await resolveRequest(point('20000'));
-  const oldButton = button();
-  await act(async () => {
-    session = 'viewer-b'; listeners.forEach(listener => listener());
-    oldButton.click();
-    expect(toggleFollowing).not.toHaveBeenCalled();
-    await flush();
-  });
-  expect(requests).toHaveLength(2);
-  expect(requests[1].session).toBe('viewer-b');
-  expect(button().disabled).toBe(true); expectNoDepositOrAction();
-  await resolveRequest(point('0')); await click();
-  expect(document.querySelector('dialog')).not.toBeNull();
-  expect(toggleFollowing).not.toHaveBeenCalled();
-});
-
-test('the former session cannot open a stale deposit dialog or keep one open', async () => {
-  await mount(); await resolveRequest(point('0')); await click();
-  expect(document.querySelector('dialog')).not.toBeNull();
-  const oldButton = button();
-  await act(async () => {
-    session = 'viewer-b'; listeners.forEach(listener => listener()); oldButton.click(); await flush();
-  });
-  expectNoDepositOrAction();
-  await resolveRequest(point('0'));
-  expect(document.querySelector('dialog')).toBeNull();
-});
-
-test('a late eligible response from the previous session cannot replace the current zero', async () => {
+test('watchlist CTA has no retry, deposit or fake trading request', async () => {
   await mount();
-  await act(async () => { session = 'viewer-b'; listeners.forEach(listener => listener()); await flush(); });
-  await resolveRequest(point('0'), 1);
-  await resolveRequest(point('20000'), 0);
   await click();
-  expect(document.querySelector('dialog')).not.toBeNull();
-  expect(toggleFollowing).not.toHaveBeenCalled();
+  expect(requests).toHaveLength(0);
+  expect(document.querySelector('a[href="/wallet?action=deposit"]')).toBeNull();
+  expect(toast.success).toHaveBeenCalledTimes(1);
+  expect(toast.success.mock.calls[0][0]).not.toMatch(/Вы копируете|Копирование.*остановлено/);
 });
 
-test('a previous session failure cannot erase the current confirmed eligibility', async () => {
-  await mount();
-  await act(async () => { session = 'viewer-b'; listeners.forEach(listener => listener()); await flush(); });
-  await resolveRequest(point('10000'), 1);
-  await act(async () => { requests[0].reject(new Error('Failed to fetch')); await flush(); });
-  expect(button().textContent).toBe('Наблюдать за трейдером'); await click();
-  expect(toggleFollowing).toHaveBeenCalledTimes(1);
-});
-
-test('A to B to A invalidates the original response even when the token matches again', async () => {
-  await mount();
-  await act(async () => { session = 'viewer-b'; listeners.forEach(listener => listener()); await flush(); });
-  await act(async () => { session = 'viewer-a'; listeners.forEach(listener => listener()); await flush(); });
-  expect(requests).toHaveLength(3);
-  await resolveRequest(point('20000'), 0);
-  expect(button().disabled).toBe(true); expectNoDepositOrAction();
-  await resolveRequest(point('0'), 2); await click();
-  expect(document.querySelector('dialog')).not.toBeNull();
-  expect(toggleFollowing).not.toHaveBeenCalled();
-});
-
-test('logout discards the pending account read; late sign-in starts a fresh check', async () => {
-  await mount();
-  await act(async () => { session = null; listeners.forEach(listener => listener()); await flush(); });
-  await resolveRequest(point('20000'), 0); await click();
-  expect(requests).toHaveLength(1); expectNoDepositOrAction();
-  await act(async () => { session = 'viewer-b'; listeners.forEach(listener => listener()); await flush(); });
-  expect(requests).toHaveLength(2); expect(button().disabled).toBe(true);
-  await resolveRequest(point('10000'), 1); await click();
-  expect(toggleFollowing).toHaveBeenCalledTimes(1);
-});
-
-test('an anonymous transient page never requests account history or enables Copy', async () => {
-  session = null; await mount(); await click();
-  expect(requests).toHaveLength(0); expectNoDepositOrAction();
-});
-
-test('StrictMode cleanup invalidates its abandoned request and keeps one session subscription', async () => {
+test('StrictMode does not create duplicate portfolio reads or subscriptions', async () => {
   await act(async () => { root.render(React.createElement(React.StrictMode, null, React.createElement(Page))); await flush(); });
-  expect(listeners.size).toBe(1);
-  expect(requests).toHaveLength(2);
-  await resolveRequest(point('20000'), 0);
-  expect(button().disabled).toBe(true); expectNoDepositOrAction();
-  await resolveRequest(point('0'), 1); await click();
-  expect(document.querySelector('dialog')).not.toBeNull();
-  expect(toggleFollowing).not.toHaveBeenCalled();
+  expect(requests).toHaveLength(0);
+  expect(listeners.size).toBe(0);
+  expect(button().disabled).toBe(false);
+  await click();
+  expect(toggleFollowing).toHaveBeenCalledTimes(1);
 });

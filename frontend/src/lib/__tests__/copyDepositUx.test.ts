@@ -63,57 +63,35 @@ function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordi
   return { render, button, dialog, toggle, toast, following, DepositDialog, retry };
 }
 
-test.each([0, 9_999, 9_999.99])('deposit %s opens requirement only on click without starting Following', deposit => {
-  const fixture = copyFixture(deposit);
-  expect(fixture.button().props.disabled).not.toBe(true);
-  expect(fixture.button().props.children).toBe('Наблюдать за трейдером');
-  expect(fixture.dialog()).toBe(false);
-  const stopPropagation = jest.fn();
-  fixture.button().props.onClick({ stopPropagation });
-  expect(stopPropagation).toHaveBeenCalledTimes(1);
-  expect(fixture.dialog().type).toBe(fixture.DepositDialog);
-  expect(fixture.toggle).not.toHaveBeenCalled();
-  expect(fixture.toast.success).not.toHaveBeenCalled();
-  expect([...fixture.following]).toEqual([]);
-  fixture.dialog().props.onClose();
-  expect(fixture.dialog()).toBe(false);
-  expect(fixture.toggle).not.toHaveBeenCalled();
-});
+test.each([0, 9_999.99, 10_000, 200_000, -1, NaN, Infinity, -Infinity])(
+  'watchlist is local and never requires a deposit value %s', deposit => {
+    const f = copyFixture(deposit);
+    expect(f.button().props.disabled).not.toBe(true);
+    expect(f.button().props.children).toBe('Наблюдать за трейдером');
+    expect(f.dialog()).toBeUndefined();
+    const stopPropagation = jest.fn();
+    f.button().props.onClick({ stopPropagation });
+    expect(stopPropagation).toHaveBeenCalledTimes(1);
+    expect(f.toggle).toHaveBeenCalledWith(ordinary.id);
+    expect([...f.following]).toEqual([ordinary.id]);
+    expect(f.toast.success).toHaveBeenCalledWith(
+      `Добавлено в наблюдение: ${ordinary.name}`,
+      { description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.' },
+    );
+    expect(f.retry).not.toHaveBeenCalled();
+    expect(f.dialog()).toBeUndefined();
+    f.button().props.onClick({ stopPropagation });
+    expect(f.toggle).toHaveBeenCalledTimes(2);
+    expect(f.following.size).toBe(0);
+  },
+);
 
-test.each([-1, NaN, Infinity, -Infinity])('invalid deposit %s offers a check, never the top-up dialog', deposit => {
-  const fixture = copyFixture(deposit);
-  expect(fixture.button().props.children).toBe('Повторить проверку');
-  fixture.button().props.onClick({ stopPropagation: jest.fn() });
-  expect(fixture.retry).toHaveBeenCalledTimes(1);
-  expect(fixture.dialog()).toBeUndefined();
-  expect(fixture.toggle).not.toHaveBeenCalled();
-  expect(fixture.toast.success).not.toHaveBeenCalled();
-});
-
-test.each([10_000, 10_000.01, 200_000])('deposit %s preserves existing eligible start and stop actions', deposit => {
-  const fixture = copyFixture(deposit);
-  const stopPropagation = jest.fn();
-  fixture.button().props.onClick({ stopPropagation });
-  expect(fixture.dialog()).toBe(false);
-  expect(fixture.toggle).toHaveBeenNthCalledWith(1, ordinary.id);
-  expect([...fixture.following]).toEqual([ordinary.id]);
-  expect(fixture.toast.success).toHaveBeenNthCalledWith(1, `Добавлено в наблюдение: ${ordinary.name}`, {
-    description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.',
-  });
-  expect(fixture.button().props.className).toContain('button-copy-active');
-  fixture.button().props.onClick({ stopPropagation });
-  expect(fixture.toggle).toHaveBeenNthCalledWith(2, ordinary.id);
-  expect(fixture.following.size).toBe(0);
-  expect(fixture.toast.success).toHaveBeenNthCalledWith(2, `Убрано из наблюдения: ${ordinary.name}`, { description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.' });
-  expect(stopPropagation).toHaveBeenCalledTimes(2);
-});
-
-test('insufficient funds do not alter an already-followed local entry', () => {
-  const fixture = copyFixture(0, true);
-  fixture.button().props.onClick({ stopPropagation: jest.fn() });
-  expect(fixture.dialog().type).toBe(fixture.DepositDialog);
-  expect([...fixture.following]).toEqual([ordinary.id]);
-  expect(fixture.toggle).not.toHaveBeenCalled();
+test('existing local entry can be removed without a portfolio valuation', () => {
+  const f = copyFixture(0, true);
+  f.button().props.onClick({ stopPropagation: jest.fn() });
+  expect(f.toggle).toHaveBeenCalledWith(ordinary.id);
+  expect(f.following.size).toBe(0);
+  expect(f.dialog()).toBeUndefined();
 });
 
 test('unavailable Nazar conditions retain the separate disabled-data safety guard', () => {
@@ -231,7 +209,7 @@ test('dialog cleanup does not focus a trigger removed by route navigation', () =
   expect(fixture.previousFocus.focus).not.toHaveBeenCalled();
 });
 
-test('normal Copy surfaces have no permanent deposit requirement; only the click dialog contains it', () => {
+test('watchlist CTA never shows a deposit requirement; the historical dialog is not mounted', () => {
   expect(source).not.toMatch(/function EligibilityGate|<EligibilityGate|className="access-strip"|className="deposit-status"/);
   expect(source).not.toMatch(/Минимальный депозит:|Депозит от \$20 000|Разблокируйте копитрейдинг|Копирование доступно клиентам с депозитом/);
   expect(source).not.toMatch(/Текущий минимум для новых подписчиков|currentCopyMinimum|copyMinimumPolicyEffectiveDate/);
@@ -240,6 +218,7 @@ test('normal Copy surfaces have no permanent deposit requirement; only the click
   expect(body('Profile')).toContain('<div><CopyButton trader={trader} /></div></div>');
   expect(body('TraderCard')).toContain('<CopyButton trader={trader} compact />');
   expect(body('Marketplace')).toContain('Наблюдать за трейдером');
+  expect(body('CopyButton')).not.toMatch(/CopyDepositDialog|useCopyEligibility|eligible|depositUsd|isCurrent/);
   expect(body('Marketplace')).not.toMatch(/depositUsd|useCopyEligibility/);
   const css = read('src/pages/copy-trading-bolt/CopyDepositDialog.css');
   expect(css).toContain('calc(100vw - 32px)');
@@ -324,5 +303,5 @@ test('normalization only reverses exact approved UX edits, never hides copy-acti
   expect(hash(restoreCopyButtonDepositUx(wrongAction))).not.toBe(approved);
   const wrongLocalAction = source.replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
   expect(restoreCopyDepositUx(wrongLocalAction)).toContain('toggleFollowing("wrong-trader")');
-  expect(() => restoreCopyDepositUx(source.replace('setShowDepositRequirement(true); return;', 'setShowDepositRequirement(true);'))).toThrow('Expected one Copy UX anchor');
+  expect(() => restoreCopyDepositUx(source.replace('Наблюдать за трейдером', 'Запустить ордер'))).toThrow('Expected one Copy UX anchor');
 });

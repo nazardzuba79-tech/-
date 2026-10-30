@@ -3,6 +3,7 @@ import { resolve } from 'path';
 
 const root = resolve(__dirname, '../../..');
 const ui = readFileSync(resolve(root, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
+const page = readFileSync(resolve(root, 'src/pages/CopyTradingPage.tsx'), 'utf8');
 const lists = readFileSync(resolve(root, 'src/pages/copy-trading-bolt/useCopyLists.ts'), 'utf8');
 const route = readFileSync(resolve(root, '../src/api/routes/syntheticCopyTrading.ts'), 'utf8');
 
@@ -15,6 +16,8 @@ test('local watchlist never claims an actual copied order or verified server sub
   expect(ui).toContain('Автоматическое копирование сделок не запущено');
   expect(ui).toContain('Наблюдать за трейдером');
   expect(ui).toContain('toggleFollowing(trader.id)');
+  expect(ui).not.toMatch(/useCopyEligibility|CopyDepositDialog|showDepositRequirement|isCurrent\(\)/);
+  expect(page).not.toMatch(/getPortfolioHistory|useCopyDepositCheck|CopyEligibilityProvider|depositCheck/);
   expect(lists).toContain("const FOLLOWING_KEY = 'voltex_copy_following'");
   expect(lists).toContain('NOT an account-bound copy subscription');
   expect(route).toContain('Internal synthetic Copy Trading data only');
