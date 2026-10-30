@@ -27,6 +27,30 @@ const beforeRegistrationCommit=()=>{
   if(Atomics.load(registrationControl,4)===2)process.exit(74);
   if(Atomics.load(registrationControl,4))throw new SimError('ACCOUNT_TEST_REGISTRATION_COMMIT_FAILURE');
 };
+// Commit fence: with the write staged and the SQLite writer lock held, ask the
+// parent to re-authorize the request and wait for its answer. Slot 0 holds
+// (sequence<<2)|decision; a late answer for an earlier sequence cannot match.
+// The deadline is monotonic: a wall-clock step (NTP, manual) can neither
+// stretch the wait while the writer lock is held nor cut it short.
+const fenceState=workerData.fence?new Int32Array(workerData.fence):null;
+const FENCE_TIMEOUT_MS=2500,FENCE_ALLOW=1,FENCE_DENY=2,FENCE_UNAVAILABLE=3;
+let fenceSequence=0;
+const commitFence=requestId=>()=>{
+  check(fenceState,'ACCOUNT_COMMAND_INVALID');
+  fenceSequence=fenceSequence%0x1fffffff+1;const pending=fenceSequence<<2,deadline=performance.now()+FENCE_TIMEOUT_MS;
+  Atomics.store(fenceState,0,pending);
+  parentPort.postMessage({kind:'fence',requestId,sequence:fenceSequence});
+  while(Atomics.load(fenceState,0)===pending){
+    const left=deadline-performance.now();
+    // On timeout the worker settles the decision itself, so a parent answer
+    // racing the deadline can never turn this rollback into a commit.
+    if(left<=0){Atomics.compareExchange(fenceState,0,pending,pending|FENCE_UNAVAILABLE);break;}
+    Atomics.wait(fenceState,0,pending,left);
+  }
+  const decision=Atomics.load(fenceState,0);
+  if(decision===(pending|FENCE_ALLOW))return;
+  throw new SimError(decision===(pending|FENCE_DENY)?'AUTH_REQUIRED':'AUTH_UNAVAILABLE');
+};
 const repo=openAccounts(workerData.path,{now,diagnostics:workerData.diagnostics,beforeCommit,beforeRegistrationCommit}),handles=new Map();
 const observations=createObservations({now});
 const metrics=()=>({...repo.metrics(),...observations.metrics(),observedAt:Date.now()});
@@ -67,9 +91,11 @@ parentPort.on('message',async message=>{
     }
     const {principal,type,input}=message;check(message.existingOnly===undefined||typeof message.existingOnly==='boolean','ACCOUNT_COMMAND_INVALID');
     const store=get(principal,undefined,message.existingOnly===true);let value,financialCommit=false;
+    check(message.fenced===undefined||message.fenced===true,'ACCOUNT_COMMAND_INVALID');
+    const fence=message.fenced?commitFence(message.requestId):undefined;
     const mutate=async(fn,id,project=false)=>{
       let committedState,syncId=id;
-      const result=await store.transact((state,time)=>{if(type==='submitObserved'&&state.orders.some(o=>o.id===input?.order?.id))syncId=null;const result=fn(state,time);committedState=structuredClone(state);return result;});
+      const result=await store.transact((state,time)=>{if(type==='submitObserved'&&state.orders.some(o=>o.id===input?.order?.id))syncId=null;const result=fn(state,time);committedState=structuredClone(state);return result;},{commitFence:fence});
       financialCommit=true;
       try{committedState.revision=result.snapshot.revision;observations.committed(store.id,committedState,syncId);if(project)result.snapshot=observations.view(store.id,committedState);}
       catch{throw new SimError('ACCOUNT_OUTCOME_UNKNOWN');}

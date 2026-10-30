@@ -1,0 +1,50 @@
+{
+  "scope": "hosted Stocks bundle, in-page synthetic source pages, no server authority",
+  "checks": [
+    "1440: the viewer's Buy stays silent",
+    "390: the viewer's Buy stays silent",
+    "no POST, no outbound data request, no page error"
+  ],
+  "failures": [
+    {
+      "name": "1440: ACCEPTED 1m page with a gap — admitted candles, raw-token label, gap count, no native bar",
+      "error": "AssertionError [ERR_ASSERTION]: the raw-token marking «Цена токена» is not visibly rendered\n\nfalse !== true\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:94:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:150:9\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:146:7"
+    },
+    {
+      "name": "1440: valid UNKNOWN 5m envelope — no numbers, gap count only",
+      "error": "AssertionError [ERR_ASSERTION]: the raw-token marking «Цена токена» is not visibly rendered\n\nfalse !== true\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:94:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:166:11\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:159:9"
+    },
+    {
+      "name": "1440: valid UNKNOWN 1h envelope — no numbers, gap count only",
+      "error": "AssertionError [ERR_ASSERTION]: the raw-token marking «Цена токена» is not visibly rendered\n\nfalse !== true\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:94:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:166:11\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:159:9"
+    },
+    {
+      "name": "1440: valid UNKNOWN 1m envelope — no numbers, gap count only",
+      "error": "AssertionError [ERR_ASSERTION]: the raw-token marking «Цена токена» is not visibly rendered\n\nfalse !== true\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:94:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:166:11\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:159:9"
+    },
+    {
+      "name": "390: ACCEPTED 1m page with a gap — admitted candles, raw-token label, gap count, no native bar",
+      "error": "AssertionError [ERR_ASSERTION]: the gap warning is painted over at 5 of 5 points\n\n5 !== 0\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:98:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:150:9\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:146:7"
+    },
+    {
+      "name": "390: valid UNKNOWN 5m envelope — no numbers, gap count only",
+      "error": "AssertionError [ERR_ASSERTION]: the gap warning is painted over at 5 of 5 points\n\n5 !== 0\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:98:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:166:11\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:159:9"
+    },
+    {
+      "name": "390: valid UNKNOWN 1h envelope — no numbers, gap count only",
+      "error": "AssertionError [ERR_ASSERTION]: the gap warning is painted over at 5 of 5 points\n\n5 !== 0\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:98:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:166:11\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:159:9"
+    },
+    {
+      "name": "390: valid UNKNOWN 1m envelope — no numbers, gap count only",
+      "error": "AssertionError [ERR_ASSERTION]: the gap warning is painted over at 5 of 5 points\n\n5 !== 0\n\n    at assertReadableSourceMarks (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:98:10)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:166:11\n    at async step (<worktree>/scripts/qa-stocks-source-chart-browser.cjs:72:9)\n    at async <worktree>/scripts/qa-stocks-source-chart-browser.cjs:159:9"
+    }
+  ],
+  "screenshots": [],
+  "stocksPosts": [],
+  "outbound": 6,
+  "outboundHosts": {
+    "fonts.googleapis.com": 6
+  },
+  "apiAborted": 0,
+  "pageErrors": []
+}

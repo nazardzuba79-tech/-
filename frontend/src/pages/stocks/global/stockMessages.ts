@@ -1,6 +1,8 @@
 // Stocks-local messages: English, Spanish, Chinese, Hindi, Japanese, Korean.
 // Russian uses the exact source key. Keep named interpolation placeholders intact.
 export const STOCK_MESSAGES = {
+  'Цена токена': ['Token price', 'Precio del token', '代币价格', 'टोकन मूल्य', 'トークン価格', '토큰 가격'],
+  'Пробелы в данных': ['Data gaps', 'Lagunas de datos', '数据缺口', 'डेटा अंतराल', 'データの欠落', '데이터 공백'],
   'Открыт': ['Open', 'Abierta', '未成交', 'खुला', '未約定', '미체결'],
   'Частично исполнен': ['Partially filled', 'Ejecutada parcialmente', '部分成交', 'आंशिक रूप से निष्पादित', '一部約定', '부분 체결'],
   'Исполнен': ['Filled', 'Ejecutada', '已成交', 'निष्पादित', '約定済み', '체결 완료'],
@@ -71,6 +73,7 @@ export const STOCK_MESSAGES = {
   'Котировка': ['Quote', 'Cotización', '报价', 'भाव', '気配値', '시세'],
   '· возраст': ['· age', '· antigüedad', '· 数据距今', '· पुरानापन', '· 経過時間', '· 경과 시간'],
   'с': ['s', 's', '秒', 'सेकंड', '秒', '초'],
+  'Индикативная цена из пула DEX Solana · задержка до 15 минут': ['Indicative price from a Solana DEX pool · delayed up to 15 minutes', 'Precio indicativo de un pool DEX de Solana · retraso de hasta 15 minutos', '来自 Solana DEX 池的参考价格 · 最多延迟 15 分钟', 'Solana DEX पूल से संकेतक मूल्य · 15 मिनट तक की देरी', 'Solana DEXプールの参考価格・最大15分遅延', 'Solana DEX 풀의 참고 가격 · 최대 15분 지연'],
   'Данные MOEX с задержкой не менее 15 минут': ['MOEX data delayed by at least 15 minutes', 'Datos de MOEX con al menos 15 minutos de retraso', 'MOEX 数据至少延迟 15 分钟', 'MOEX डेटा में कम से कम 15 मिनट की देरी है', 'MOEXデータは少なくとも15分遅延しています', 'MOEX 데이터는 최소 15분 지연됩니다'],
   'Курс:': ['Exchange rate:', 'Tipo de cambio:', '汇率：', 'विनिमय दर:', '換算レート：', '환율:'],
   'Цена токена уже в USDT. Пересчёт через USD не применяется.': ['The token price is already in USDT. No conversion via USD is applied.', 'El precio del token ya está en USDT. No se aplica conversión a través de USD.', '代币价格已以 USDT 计价。不经 USD 换算。', 'टोकन का मूल्य पहले से USDT में है। USD के माध्यम से रूपांतरण नहीं किया जाता।', 'トークン価格はUSDT建てです。USDを介した換算は行いません。', '토큰 가격은 이미 USDT 기준입니다. USD를 통한 환산은 적용하지 않습니다.'],

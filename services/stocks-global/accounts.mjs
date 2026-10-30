@@ -6,13 +6,24 @@ import { performance } from 'node:perf_hooks';
 import { createState, snapshot, validate, check, SimError } from './engine.mjs';
 
 // The principal comes ONLY from the server's authentication adapter, never a URL/body.
+// The id is a pure function of (issuer, subject); the last ids derived are kept so that a gateway request
+// (which needs it three or four times) hashes once. Validation still runs on every call.
+const derived = new Map();
 export function accountId(principal) {
   check(typeof principal?.issuer === 'string' && principal.issuer.length > 0 && principal.issuer.length <= 512, 'AUTH_REQUIRED');
   check(typeof principal?.subject === 'string' && /^[A-Za-z0-9_.:@-]{1,128}$/.test(principal.subject), 'AUTH_REQUIRED');
-  return createHash('sha256').update(JSON.stringify([principal.issuer, principal.subject])).digest('hex');
+  const key = JSON.stringify([principal.issuer, principal.subject]);
+  let id = derived.get(key);
+  if (id === undefined) {
+    id = createHash('sha256').update(key).digest('hex');
+    if (derived.size >= 1024) derived.delete(derived.keys().next().value);
+    derived.set(key, id);
+  }
+  return id;
 }
 
 export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, beforeRegistrationCommit = () => {}, diagnostics = false } = {}) {
+  check(process.env.NODE_ENV !== 'production', 'STOCKS_LEGACY_STORAGE_UNSUPPORTED');
   check(path?.endsWith('.sqlite'), 'LOCAL_LEDGER_PATH_REQUIRED');
   mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
@@ -78,7 +89,8 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, be
         id, created,
         readState: () => load(id,missing),
         read: () => snapshot(load(id,missing), now()),
-        async transact(fn) {
+        async transact(fn, { commitFence } = {}) {
+          check(commitFence === undefined || typeof commitFence === 'function', 'ACCOUNT_COMMAND_INVALID');
           sql('begin','sqlExecCalls',()=>db.exec('BEGIN IMMEDIATE'));
           let committed=false;
           try {
@@ -87,6 +99,11 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, be
             state.revision++; validate(state);
             const encoded=JSON.stringify(state);
             sql('write','sqlWriteCalls',()=>update.run(encoded,id)); beforeCommit();
+            // The caller's authorization is confirmed again here, with the write
+            // staged and the writer lock held, as the PostgreSQL authority
+            // re-reads its session row before COMMIT. A revocation that lands
+            // before this point rolls the transaction back.
+            commitFence?.();
             sql('commit','sqlExecCalls',()=>db.exec('COMMIT'));
             committed=true;
             return { result, snapshot: snapshot(state, now()) };

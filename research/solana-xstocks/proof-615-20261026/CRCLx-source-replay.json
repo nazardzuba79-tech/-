@@ -1,0 +1,196 @@
+{
+  "ticker": "CRCLx",
+  "source": {
+    "network": "solana-mainnet-beta",
+    "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+    "pool": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "decimals": [
+      8,
+      6
+    ]
+  },
+  "currentPool": {
+    "bytes": 1544,
+    "contextSlot": 461227871,
+    "config": "bf03242a15ce182d3ec4b69d9663b011886609d4d10a4cbfed8c9d1b272b0769",
+    "tickSpacing": 10,
+    "status": 0,
+    "feeOn": 0,
+    "seedIndex": 0,
+    "historicalAtInterval": false
+  },
+  "candidateTransactions": 2,
+  "candidateTransfers": 4,
+  "acceptedIntervals": 0,
+  "acceptedMarkets": 0,
+  "networkRequests": 0,
+  "gates": {
+    "programIdentity": false,
+    "poolState": false,
+    "mintChronology": false,
+    "feeChronology": false,
+    "completeness": false,
+    "executionBinding": true
+  },
+  "metrics": {
+    "ingestedTrades": 2,
+    "duplicateTrades": 0,
+    "duplicateIntervals": 0,
+    "evictedMinutes": 0,
+    "rpcRequests": 0,
+    "cpuUserMicros": 115,
+    "cpuSystemMicros": 106,
+    "replayCpuUserMicros": 35155,
+    "replayCpuSystemMicros": 37854,
+    "replayWallMs": 85.106,
+    "storageBytes": 1682
+  },
+  "pages": {
+    "1m": {
+      "schema": "voltex.solana-ohlcv.v1",
+      "instrumentId": "SOLANA:XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1:GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+      "interval": "1m",
+      "priceKind": "raw-token",
+      "quoteCurrency": "USDC",
+      "equityEquivalent": null,
+      "range": {
+        "from": 1792924740,
+        "to": 1792924800
+      },
+      "candles": [],
+      "gaps": [
+        {
+          "time": 1792924740,
+          "reason": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "status": "UNKNOWN",
+        "intervalComplete": false,
+        "finality": "finalized",
+        "source": {
+          "network": "solana-mainnet-beta",
+          "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+          "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+          "pool": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+          "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "decimals": [
+            8,
+            6
+          ]
+        },
+        "acceptedTradeCount": 0,
+        "receiptsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "gates": {
+          "programIdentity": false,
+          "poolState": false,
+          "mintChronology": false,
+          "feeChronology": false,
+          "completeness": false,
+          "executionBinding": false
+        },
+        "synthetic": false,
+        "priceConvention": "gross-vault-transfers-zero-transfer-fee",
+        "volumeUnit": "raw-base-token"
+      }
+    },
+    "5m": {
+      "schema": "voltex.solana-ohlcv.v1",
+      "instrumentId": "SOLANA:XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1:GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+      "interval": "5m",
+      "priceKind": "raw-token",
+      "quoteCurrency": "USDC",
+      "equityEquivalent": null,
+      "range": {
+        "from": 1792924500,
+        "to": 1792924800
+      },
+      "candles": [],
+      "gaps": [
+        {
+          "time": 1792924500,
+          "reason": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "status": "UNKNOWN",
+        "intervalComplete": false,
+        "finality": "finalized",
+        "source": {
+          "network": "solana-mainnet-beta",
+          "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+          "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+          "pool": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+          "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "decimals": [
+            8,
+            6
+          ]
+        },
+        "acceptedTradeCount": 0,
+        "receiptsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "gates": {
+          "programIdentity": false,
+          "poolState": false,
+          "mintChronology": false,
+          "feeChronology": false,
+          "completeness": false,
+          "executionBinding": false
+        },
+        "synthetic": false,
+        "priceConvention": "gross-vault-transfers-zero-transfer-fee",
+        "volumeUnit": "raw-base-token"
+      }
+    },
+    "1h": {
+      "schema": "voltex.solana-ohlcv.v1",
+      "instrumentId": "SOLANA:XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1:GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+      "interval": "1h",
+      "priceKind": "raw-token",
+      "quoteCurrency": "USDC",
+      "equityEquivalent": null,
+      "range": {
+        "from": 1792922400,
+        "to": 1792926000
+      },
+      "candles": [],
+      "gaps": [
+        {
+          "time": 1792922400,
+          "reason": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "status": "UNKNOWN",
+        "intervalComplete": false,
+        "finality": "finalized",
+        "source": {
+          "network": "solana-mainnet-beta",
+          "program": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+          "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+          "pool": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+          "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "decimals": [
+            8,
+            6
+          ]
+        },
+        "acceptedTradeCount": 0,
+        "receiptsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "gates": {
+          "programIdentity": false,
+          "poolState": false,
+          "mintChronology": false,
+          "feeChronology": false,
+          "completeness": false,
+          "executionBinding": false
+        },
+        "synthetic": false,
+        "priceConvention": "gross-vault-transfers-zero-transfer-fee",
+        "volumeUnit": "raw-base-token"
+      }
+    }
+  }
+}

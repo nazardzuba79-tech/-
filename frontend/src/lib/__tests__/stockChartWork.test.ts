@@ -12,8 +12,9 @@ test('account/fill updates do not rebuild unchanged chart or indicators; entry a
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,IS_REACT_ACT_ENVIRONMENT:true});
   dom.window.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
   const setData=jest.fn(),createPriceLine=jest.fn(()=>({applyOptions:jest.fn()})),removePriceLine=jest.fn(),sma=jest.fn(()=>[]);
+  let move!:(p:{time:number})=>void;
   const chart={addSeries:()=>({setData,applyOptions(){},priceScale:()=>({applyOptions(){}}),createPriceLine,removePriceLine}),
-    applyOptions(){},timeScale:()=>({fitContent(){}}),priceScale:()=>({applyOptions(){}}),subscribeCrosshairMove(){},remove(){}};
+    applyOptions(){},timeScale:()=>({fitContent(){}}),priceScale:()=>({applyOptions(){}}),subscribeCrosshairMove(fn:typeof move){move=fn;},remove(){}};
   const imports:Record<string,unknown>={react:React,'react/jsx-runtime':req('react/jsx-runtime'),
     './useStocksText':{useStocksText:()=>({s:ruTranslator,lang:'ru',locale:'ru-RU'})},
     'lightweight-charts':{createChart:()=>chart,CandlestickSeries:{},HistogramSeries:{},LineSeries:{},ColorType:{Solid:'solid'},CrosshairMode:{Normal:0}},
@@ -33,5 +34,16 @@ test('account/fill updates do not rebuild unchanged chart or indicators; entry a
     await render({...props,entry:'10.5',fills:[{id:'new-fill'}]});expect(createPriceLine).toHaveBeenCalledTimes(1);expect(setData).toHaveBeenCalledTimes(writes);expect(sma).toHaveBeenCalledTimes(1);
     await render({...props,entry:'10.5',candles:[{...candles[0],close:11.5}]});expect(setData.mock.calls.length).toBeGreaterThan(writes);expect(sma).toHaveBeenCalledTimes(2);
     expect(createPriceLine).toHaveBeenCalledTimes(1);expect(candles[0].close).toBe(11);
+    const beforeGaps=setData.mock.calls.length;
+    const sparse=[candles[0],{...candles[0],time:103}];
+    await render({...props,candles:sparse,sourceGaps:[{time:101,reason:'UNKNOWN'},{time:102,reason:'NO_TRADES'}],priceKind:'raw-token'});
+    expect(setData.mock.calls[beforeGaps][0]).toEqual([sparse[0],{time:101},{time:102},sparse[1]]);
+    expect(setData.mock.calls[beforeGaps+1][0][1]).toEqual({time:101});
+    expect(sma.mock.calls.slice(-2).map((call:any)=>call[0])).toEqual([[sparse[0]],[sparse[1]]]);
+    expect(document.querySelector('[role="status"]')?.textContent).toContain('2');
+    expect(document.querySelector('.vxg-chart-tools')?.textContent).toContain('Цена токена');
+    await React.act(async()=>move({time:100}));
+    await render({...props,candles:[],sourceGaps:[{time:100,reason:'UNKNOWN'}]});
+    expect(document.querySelector('.vxg-ohlc')?.textContent).toBe('Свечи не получены');
   }finally{await React.act(async()=>root.unmount());dom.window.close();for(const key of ['window','document','IS_REACT_ACT_ENVIRONMENT'])delete (globalThis as any)[key];}
 });

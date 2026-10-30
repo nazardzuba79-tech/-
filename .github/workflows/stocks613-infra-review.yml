@@ -1,0 +1,115 @@
+name: Stocks 613 additive migrations and immutable review image
+on:
+  push:
+    branches: [codex/stocks613-infra-migrations-20261024]
+  # No path filter: every new head of #613 must re-run the complete contract.
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: stocks613-infra-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  additive-ddl-and-image:
+    if: github.event_name == 'push' || github.event.pull_request.number == 613
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      STOCKS_DISPOSABLE_PG_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_infra613
+      STOCKS_PG_DISPOSABLE_CONFIRM: stocks_disposable_infra613
+      STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+      STOCKS_TEST_CASH_ENABLED: 'false'
+      STOCKS_MARKET_DATA_ENABLED: 'false'
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CONTROL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NODE_IMAGE: node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+    services:
+      postgres:
+        image: postgres@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_USER: stocks_ci
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: stocks_disposable_infra613
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U stocks_ci -d stocks_disposable_infra613"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Exact source and mode-specific integrity (no deployment credentials)
+        run: node scripts/qa/stocks613-infra-source.cjs
+      - name: Locked dependencies and necessary tools only
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+      - name: Guard and liveness regressions
+        run: |
+          mkdir -p output
+          set -o pipefail
+          node --test scripts/qa/stocks613-infra.test.cjs scripts/qa/stocks613-infra-source.test.cjs scripts/qa/stocks-root-image-gate.test.cjs scripts/qa/api-image-contract.test.cjs services/stocks-global/edge-transport/benchmark-proxy.test.mjs 2>&1 | tee output/infra-tests.tap
+      - name: Verify original 44+2 SQL bytes and create build context
+        run: node scripts/qa/stocks-build-only-prepare.cjs "$GITHUB_WORKSPACE" /tmp/stocks613-package
+      - name: Apply only original additive SQL to EMPTY synthetic PostgreSQL
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks613-migration-rehearsal.cjs 2>&1 | tee output/migration-rehearsal.log
+      - name: API image build and migration-free runtime contract
+        run: |
+          set -o pipefail
+          test -f "$GITHUB_WORKSPACE/prisma/migrations/20261016000000_stocks_test_cash_authority/migration.sql"
+          test -f "$GITHUB_WORKSPACE/prisma/migrations/20261016170000_native_funding_model/migration.sql"
+          docker build --build-arg REVIEW_SOURCE_SHA="$SOURCE_SHA" -f "$GITHUB_WORKSPACE/Dockerfile" -t voltex-api-review:"$SOURCE_SHA" "$GITHUB_WORKSPACE" 2>&1 | tee output/api-docker-build.log
+          docker image inspect voltex-api-review:"$SOURCE_SHA" > output/api-docker-image-inspect.json
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 256m --cpus 0.25 --pids-limit 64 --entrypoint node voltex-api-review:"$SOURCE_SHA" /opt/voltex/stocks-root-image-gate.cjs
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 256m --cpus 0.25 --pids-limit 64 --entrypoint node voltex-api-review:"$SOURCE_SHA" -e 'const fs=require("node:fs");if(process.versions.node!=="22.23.3"||fs.existsSync("prisma/migrations"))process.exit(1);for(const file of ["dist/index.js","dist/marketDataCollector.js","scripts/start-render-single-service.cjs","prisma/schema.prisma"])fs.accessSync(file);require("./node_modules/@prisma/client");require("ws");console.log("API_NODE22_SCHEMA_ONLY_RUNTIME_PASS")'
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const image=JSON.parse(fs.readFileSync('output/api-docker-image-inspect.json'))[0];
+          if(image.Config.User!=='node'||image.Config.Cmd.join(' ')!=='node dist/index.js'||image.Config.Entrypoint?.length||image.Config.Labels['org.opencontainers.image.revision']!==process.env.SOURCE_SHA||image.Architecture!=='amd64'||image.Os!=='linux')throw Error('API_IMAGE_CONTRACT_MISMATCH');
+          fs.writeFileSync('output/api-image-receipt.json',JSON.stringify({source:process.env.SOURCE_SHA,imageId:image.Id,architecture:image.Architecture,os:image.Os,nodeBase:process.env.NODE_IMAGE,automaticMigrations:false,migrationFilesInApiImage:false,registryPush:false,productionBootstrap:'NOT_RUN',production:'NOT_TOUCHED'},null,2));
+          NODE
+          docker save voltex-api-review:"$SOURCE_SHA" | gzip -1 > output/voltex-api-review-image.tar.gz
+          sha256sum output/voltex-api-review-image.tar.gz > output/voltex-api-review-image.tar.gz.sha256
+      - name: Build immutable gateway only; never push an image or execute migrations
+        run: |
+          set -o pipefail
+          docker build --build-arg REVIEW_SOURCE_SHA="$SOURCE_SHA" --target gateway -f /tmp/stocks613-package/context/services/stocks-global/Dockerfile.release -t stocks613-review:"$SOURCE_SHA" /tmp/stocks613-package/context 2>&1 | tee output/docker-build.log
+          docker image inspect stocks613-review:"$SOURCE_SHA" > output/docker-image-inspect.json
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 256m --cpus 0.25 --pids-limit 64 --entrypoint node stocks613-review:"$SOURCE_SHA" -e 'if(process.versions.node!=="22.23.3")process.exit(1); require("./node_modules/@prisma/client"); console.log(process.versions.node)'
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const image=JSON.parse(fs.readFileSync('output/docker-image-inspect.json'))[0];
+          if(image.Config.User!=='node'||image.Config.Cmd.join(' ')!=='node services/stocks-global/release-entrypoint.mjs'||!image.Config.Healthcheck||image.Config.Labels['org.opencontainers.image.revision']!==process.env.SOURCE_SHA||image.Architecture!=='amd64'||image.Os!=='linux')throw Error('IMAGE_CONTRACT_MISMATCH');
+          fs.writeFileSync('output/image-receipt.json',JSON.stringify({source:process.env.SOURCE_SHA,imageId:image.Id,architecture:image.Architecture,os:image.Os,nodeBase:process.env.NODE_IMAGE,registryPush:false,positiveRuntime:'NOT_REPEATED',productionBootstrap:'NOT_RUN'},null,2));
+          NODE
+          set +e
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 256m --cpus 0.25 --pids-limit 64 stocks613-review:"$SOURCE_SHA" >output/default-off-boot.stdout 2>output/default-off-boot.stderr
+          status=$?
+          set -e
+          test "$status" -eq 1
+          grep -Fxq STOCKS_RELEASE_AUTHORITY_REQUIRED output/default-off-boot.stderr
+          docker save stocks613-review:"$SOURCE_SHA" | gzip -1 > output/stocks613-review-image.tar.gz
+          sha256sum output/stocks613-review-image.tar.gz > output/stocks613-review-image.tar.gz.sha256
+      - name: Collect byte receipt even on failure
+        if: always()
+        run: |
+          mkdir -p output
+          test ! -f /tmp/stocks613-package/sql-byte-receipt.json || cp /tmp/stocks613-package/sql-byte-receipt.json output/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks613-infra-${{ github.sha }}
+          path: output/
+          if-no-files-found: error
+          retention-days: 1

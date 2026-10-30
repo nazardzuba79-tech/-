@@ -1,0 +1,651 @@
+name: Stocks 613 50+2 paired diagnostic (report only)
+
+# The 50+2 plan (50 viewers polling every second, 2 synthetic traders with the original 4 s order cycle, 80 crypto
+# cycles) on a fresh GitHub-hosted runner: own PostgreSQL, synthetic users, loopback only; no secrets, no deployment,
+# no external market. CI_DIAGNOSTIC: never capacity acceptance. Both pins name the same runtime; 'before' runs it as
+# one process (crypto API, Stocks authority, gateway), 'after' as the separated release layout
+# (docs/STOCKS_613_PROCESS_ISOLATION.md).
+#
+# Methodology since R8 (owner request 29.10): isolated clients. The server side (PostgreSQL, the crypto API, the
+# Stocks authority and gateway) gets exactly the two hardware threads of one physical core (CPUs 0,1) and nothing
+# else; the load driver (the clients) and the synthetic market (the stand-in for the exchanges) run on the runner's
+# other core (CPUs 2,3), as production clients and exchanges are not on VOLTEX's host. The harness refuses a runner
+# whose two sets share a physical core and proves every thread's placement after every measured window. Until R7
+# every process, the load driver included, shared the same 2 vCPUs (the R6 results in the doc).
+#
+# Nothing expensive runs on a push alone. The head commit message names what to run, on a line of its own:
+#   RC50-RUN: methodology            placement proof + A/A calibration of the method (6 runs, about 12 min)
+#   RC50-RUN: acceptance             the above, then (only if the method is calibrated) the paired acceptance runs
+#   RC50-RUN: sustained              the above, then (only if calibrated) two 3-minute sustained-load runs
+#   RC50-RUN: pg-profile             the R6 PostgreSQL profile (answered; on request only)
+#   RC50-RUN: push-diagnostic        R10 PUSH_DIAGNOSTIC (owner 29.10, one run on the user's permission): placement
+#                                    proof + A/A calibration at the push pin, then (only if calibrated) one uncounted
+#                                    warm-up and 6 runs of 50 viewers on the quote stream + 2 traders on the 4 s cycle
+# Words combine on one line (e.g. 'RC50-RUN: acceptance sustained'); push-diagnostic runs alone.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stocks-613-50plus2-diagnostic.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stocks-613-50plus2-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  request:
+    name: 50+2 run request (head commit message; nothing runs without one)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      methodology: ${{ steps.read.outputs.methodology }}
+      acceptance: ${{ steps.read.outputs.acceptance }}
+      sustained: ${{ steps.read.outputs.sustained }}
+      pgprofile: ${{ steps.read.outputs.pgprofile }}
+      push: ${{ steps.read.outputs.push }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - id: read
+        run: |
+          set -euo pipefail
+          line=$(git log -1 --format=%B | grep -E '^RC50-RUN:' | tail -1 || true)
+          words=" ${line#RC50-RUN:} "
+          has() { case "$words" in *" $1 "*) echo true;; *) echo false;; esac; }
+          acceptance=$(has acceptance); sustained=$(has sustained); pgprofile=$(has pg-profile); methodology=$(has methodology); push=$(has push-diagnostic)
+          # PUSH_DIAGNOSTIC is its own experiment at its own pin: never in the same request as the polling runs, whose
+          # calibration is at the after pin.
+          if [ "$push" = true ] && { [ "$acceptance" = true ] || [ "$sustained" = true ] || [ "$pgprofile" = true ]; }; then
+            echo "::error title=50+2 run request::push-diagnostic runs alone"; exit 1
+          fi
+          # Acceptance, sustained and push runs are only ever measured with a calibrated method.
+          if [ "$acceptance" = true ] || [ "$sustained" = true ] || [ "$push" = true ]; then methodology=true; fi
+          { echo "methodology=$methodology"; echo "acceptance=$acceptance"; echo "sustained=$sustained"; echo "pgprofile=$pgprofile"; echo "push=$push"; } | tee -a "$GITHUB_OUTPUT"
+          echo "::notice title=50+2 run request::${line:-none} -> methodology=$methodology acceptance=$acceptance sustained=$sustained pg-profile=$pgprofile push-diagnostic=$push"
+
+  # The method first: does the isolated-client harness measure correctly on this runner? Placement admission and proof
+  # (every thread of every server process on CPUs 0,1, every client thread on 2,3, the sets on separate physical cores),
+  # client headroom, and six A/A runs of the after pin (both arms carry the baseline load only), whose pooled Δp95 is the
+  # method's own error. calibration-613.cjs fails this job unless the collection is complete and |A/A Δp95| <= 5 %; the
+  # acceptance and sustained jobs need it. For push-diagnostic the A/A runs are at the push pin (policy-613-after.cjs
+  # PUSH_RC, --push-viewers --null-arm: the gateway in the push profile, no viewers in either arm), so the method's error
+  # is measured on exactly the runtime the push runs measure.
+  methodology:
+    name: 50+2 isolated-client method — placement proof and A/A calibration (not a verdict)
+    needs: request
+    if: needs.request.outputs.methodology == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PUSH: ${{ needs.request.outputs.push }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Harness self-tests (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/placement.test.cjs scripts/qa/stocks-rc-50plus2/sustained-613.test.cjs scripts/qa/stocks-rc-50plus2/driver-sustained.test.cjs scripts/qa/stocks-rc-50plus2/push-viewers.test.cjs scripts/qa/stocks-rc-50plus2/calibration-613.test.cjs scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/push-report-613.test.cjs scripts/qa/stocks-rc-50plus2/topology-613.test.cjs
+      - name: Worktree with runtime exactly at the calibrated pin (after, or push for push-diagnostic); harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-cal"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          field=RC; [ "$PUSH" = true ] && field=PUSH_RC
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').$field")
+          echo "CAL_PIN=$sha" >> "$GITHUB_ENV"; echo "Calibrated pin: policy-613-after.cjs $field $sha"
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "CAL_DIR=$W" >> "$GITHUB_ENV"
+          echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
+          for n in 0 1 2 3; do echo "cpu$n siblings: $(cat /sys/devices/system/cpu/cpu$n/topology/thread_siblings_list 2>/dev/null || echo none)"; done
+      - name: Six A/A runs, server on CPUs 0,1, clients on 2,3
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          push=""; [ "$PUSH" = true ] && push="--push-viewers"
+          for i in 1 2 3 4 5 6; do
+            rc=0; mkdir -p "$CAL_DIR/runs/aa-$i"
+            (cd "$CAL_DIR/after" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after $push --isolated-clients --null-arm \
+              --root . --pg-bin "$PG_BIN" --out "$CAL_DIR/runs/aa-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$CAL_DIR/runs/aa-$i/exit-code"
+          done
+      - name: Calibration verdict (fails unless the method is calibrated)
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/calibration-613.cjs "$CAL_DIR/runs" "$CAL_DIR/calibration.json" --runs 6 --pin "$CAL_PIN" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Extended numbers of the A/A runs (report only)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$CAL_DIR/runs" "$CAL_DIR/extended.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          node -e '
+          const c = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          console.log(`::notice title=50+2 A/A calibration::${c.verdict} collection ${c.collection.status} ${c.collection.completeRuns}/${c.collection.expectedRuns}; pooled A/A dp95 ${f(c.pooledDeltaPercent)}% (bootstrap ${c.bootstrapPooledDeltaPercent95 ? f(c.bootstrapPooledDeltaPercent95[0], 1) + ".." + f(c.bootstrapPooledDeltaPercent95[1], 1) : "-"}); runs ${c.runDeltaPercent.map(x => f(x, 1)).join(", ")}; server util ${f(c.serverUtilization.mean, 3)}, client util max ${f(c.clientUtilization.max, 3)}, steal server ${f(c.stealMs.serverMean, 0)} ms`);
+          ' "$CAL_DIR/calibration.json"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-cal
+          cp "$CAL_DIR/calibration.json" "$CAL_DIR/extended.json" output/rc50-613-cal/ 2>/dev/null || true
+          for r in "$CAL_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-cal/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-cal/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-calibration-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613-cal
+          retention-days: 14
+          if-no-files-found: error
+
+  # Acceptance load: the original 50+2 plan with each trader's order cycle every 4 s, paired before/after runs in ABBA
+  # order, PAIRS 8, isolated clients. The verdict is unchanged: pooled crypto Δp95 <= +5 % per pin
+  # (summarize-613.cjs). Runs only on request and only after the method calibrated on its own runner.
+  paired-runs:
+    name: 50+2 paired before/after, original 4 s order cycle, isolated clients (report only)
+    needs: [request, methodology]
+    if: success() && needs.request.outputs.acceptance == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PAIRS: '8'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Collection-gate self-test on stored results (no benchmark)
+        run: node --test scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs scripts/qa/stocks-rc-50plus2/topology-613.test.cjs scripts/qa/stocks-rc-50plus2/placement.test.cjs
+      - name: Worktrees with runtime exactly at each pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          for kind in before after; do
+            policy=policy-613.cjs; [ "$kind" = after ] && policy=policy-613-after.cjs
+            sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/$policy').RC")
+            git worktree add --detach "$W/$kind" "$sha"
+            cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/$kind/scripts/qa/stocks-rc-50plus2/"
+            ln -s "$GITHUB_WORKSPACE/node_modules" "$W/$kind/node_modules"
+            git -C "$W/$kind" status --short
+          done
+          echo "RC50_DIR=$W" >> "$GITHUB_ENV"
+          echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
+      - name: Interleaved runs (ABBA), server on CPUs 0,1, clients on 2,3
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          # The A/A calibration (run 40880077260) found the first run on a fresh runner slower in its first arm
+          # (aa-1: 13.37 vs 9.93 ms p95; the other five within +-2.5 %), which would bias the first pair's dp95 down.
+          # One warm-up run of the after pin, outside the collection and never counted, precedes the pairs.
+          mkdir -p "$RC50_DIR/warmup"
+          (cd "$RC50_DIR/after" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --isolated-clients \
+            --root . --pg-bin "$PG_BIN" --out "$RC50_DIR/warmup/out" \
+            --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || echo "warm-up run exit $? (not counted)"
+          # Every run goes ahead whatever the previous one returned; its exit code
+          # is kept as raw evidence, and the collection gate below judges the set.
+          run() {
+            local kind=$1 i=$2 flag="" rc=0; [ "$kind" = after ] && flag="--after"
+            mkdir -p "$RC50_DIR/runs/$kind-$i"
+            (cd "$RC50_DIR/$kind" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs $flag --isolated-clients \
+              --root . --pg-bin "$PG_BIN" --out "$RC50_DIR/runs/$kind-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$RC50_DIR/runs/$kind-$i/exit-code"
+          }
+          for i in $(seq 1 "$PAIRS"); do
+            if [ $((i % 2)) -eq 1 ]; then run before "$i"; run after "$i"; else run after "$i"; run before "$i"; fi
+          done
+      # Collection gate: fails unless every expected run (PAIRS per pin) is present, parseable, pin-matched, measured
+      # on both arms, financially intact, placed as the method requires and cleaned up. The p95 verdict is reported
+      # separately and never fails this step.
+      - name: Collection gate and diagnostic report (p95 is report-only)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$RC50_DIR/runs" "$RC50_DIR/summary.json" --pairs "$PAIRS" --methodology isolated-clients | tee -a "$GITHUB_STEP_SUMMARY"
+      # Report only: p50/p95/p99, errors, API CPU, memory, event-loop utilization and
+      # delay, synthetic market WebSocket. It never decides or fails the job.
+      - name: Extended numbers (report only, not a gate)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$RC50_DIR/runs" "$RC50_DIR/extended.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          node -e '
+          const r = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          for (const [k, v] of Object.entries(r.kinds)) console.log(`::notice title=50+2 ${k} extended::crypto p50/p95/p99 ${f(v.baselineCrypto.p50)}/${f(v.baselineCrypto.p95)}/${f(v.baselineCrypto.p99)} -> ${f(v.mixedCrypto.p50)}/${f(v.mixedCrypto.p95)}/${f(v.mixedCrypto.p99)} ms; viewer p95 ${f(v.mixedViewer.p95)} ms; ELU ${f(v.meanBaselineElu, 3)} -> ${f(v.meanMixedElu, 3)}; loop p99 ${f(v.meanMixedLoopDelayP99Ms)} ms; RSS max ${f(v.maxMixedRssMb, 0)} MB; error rate ${f(v.meanErrorRate, 4)}`);
+          for (const [k, v] of Object.entries(r.kinds)) console.log(`::notice title=50+2 ${k} processes::${v.topology.join(",")} mixed CPU ms ${Object.entries(v.meanProcessCpuMs.mixed).map(([n, x]) => n + " " + f(x, 0)).join(", ")}; driver ${f(v.meanDriverCpuMs.mixed, 0)}; PostgreSQL ${f(v.meanPostgresCpuMs.mixed, 0)}; server-side crypto p95 ${f(v.serverCryptoP95Ms.baseline)} -> ${f(v.serverCryptoP95Ms.mixed)} ms`);
+          if (r.afterVsBefore) console.log(`::notice title=50+2 after vs before::mixed crypto p95 ${f(r.afterVsBefore.mixedCryptoP95Percent)}%, viewer p95 ${f(r.afterVsBefore.viewerStateP95Percent)}%, mixed API CPU ${f(r.afterVsBefore.mixedApiCpuPercent)}%`);
+          ' "$RC50_DIR/extended.json"
+      - name: Server and client CPU sets, memory, placement (report only)
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+          const fs = require("fs"), path = require("path"), dir = process.argv[1], f = (x, d = 1) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          const rows = ["| run | arm | server CPU set busy % (steal ms) | client set busy % | driver ELU | placement (threads) | server memory MB (API, authority, gateway HWM; PostgreSQL PSS) |", "|---|---|---|---|---|---|---|"];
+          for (const run of fs.readdirSync(dir).sort()) for (const arm of ["baseline", "mixed"]) {
+            let r; try { r = JSON.parse(fs.readFileSync(path.join(dir, run, "out", arm + "-result.json"), "utf8")); } catch { continue; }
+            const i = r.isolation; if (!i) continue; const m = i.memory ?? {}, mb = x => typeof x === "number" ? x / 1024 : null;
+            rows.push(`| ${run} | ${arm} | ${f(i.usage.server.utilization * 100)} (${f(i.usage.server.stealMs, 0)}) | ${f(i.usage.client.utilization * 100)} | ${f(i.headroom.driverElu, 3)} | ${i.proof.ok ? "ok" : "FAIL"} (${i.proof.checkedThreads}) | ${[m.api?.hwmKb, m.stocksAuthority?.hwmKb, m.stocksGateway?.hwmKb].map(x => f(mb(x), 0)).join(", ")}; ${f(mb(m.postgres?.pssKb), 0)} |`);
+          }
+          console.log(rows.join("\n"));
+          ' "$RC50_DIR/runs" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the numbers as check annotations (readable without sign-in)
+        if: always()
+        run: |
+          node -e '
+          const s = require(process.argv[1]), f = (x, d = 2) => typeof x === "number" ? x.toFixed(d) : "-";
+          if (s.collection.status !== "COMPLETE") console.log(`::error title=50+2 collection ${s.collection.status} ${s.collection.completeRuns}/${s.collection.expectedRuns}::${s.collection.failures.slice(0, 12).join(" ")}`);
+          for (const r of s.runs.slice(0, 8)) console.log(`::notice title=50+2 ${r.name} ${(r.runtime || "").slice(0, 8)}::${r.status} complete=${r.complete ? "yes" : "no"} dp95=${f(r.comparison?.cryptoP95ChangePercent)}% base/mixed p95=${f(r.baseline?.p95)}/${f(r.mixed?.p95)}ms apiCPU=${f(r.baseline?.apiCpuMs, 0)}/${f(r.mixed?.apiCpuMs, 0)}ms timeouts=${r.mixed?.timeouts ?? "-"} loss/double/viewer=${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join("/") : "-"}`);
+          for (const [k, v] of Object.entries(s.kinds)) console.log(`::notice title=50+2 ${k} ${(v.pin || "").slice(0, 8)} pooled::collection ${s.collection.status} complete ${v.completeRuns}/${v.runs} ${v.diagnosticP95} medianRunDp95=${f(v.medianRunDeltaPercent)}% pooledP95 base/mixed=${f(v.pooledBaselineP95Ms)}/${f(v.pooledMixedP95Ms)}ms pooledDp95=${f(v.pooledDeltaPercent)}% viewerInducedApiCPU=${f(v.meanViewerInducedApiCpuMs, 0)}ms meanMixedApiCPU=${f(v.meanMixedApiCpuMs, 0)}ms`);
+          ' "$RC50_DIR/summary.json"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613
+          cp "$RC50_DIR/summary.json" "$RC50_DIR/extended.json" output/rc50-613/ 2>/dev/null || true
+          for r in "$RC50_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-50plus2-isolated-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613
+          retention-days: 14
+          if-no-files-found: error
+
+
+  # R10 PUSH_DIAGNOSTIC (owner 29.10, report only, never the acceptance verdict): the separated release layout at the
+  # R10 runtime pin (policy-613-after.cjs PUSH_RC), the gateway in the viewer push profile (diagnostic-run-613.cjs
+  # --push-viewers, push-viewers.cjs). Each run measures the baseline arm (crypto only) and the mixed arm: 50 viewers
+  # holding the public quote stream (bearer in the header, opened and warmed before the window), each refused one order,
+  # and the 2 traders unchanged on the original 4 s cycle. Server on CPUs
+  # 0,1, clients and the synthetic market on 2,3, disposable PostgreSQL, synthetic users and market only. One uncounted
+  # warm-up run, then 6 runs; summarize-613.cjs --push gates the collection (pin, workload, placement, financial
+  # invariants) and reports crypto Δp95 with its bootstrap interval; push-report-613.cjs reports the streams (uptime,
+  # drops, quota waits, quote age), the private requests per window and the busiest minute against 240, the gateway's
+  # connections, and CPU per process. The R8 polling results and their method are unchanged.
+  push-diagnostic:
+    name: 50+2 PUSH_DIAGNOSTIC — 50 viewers on the quote stream + 2 traders at 4 s, isolated clients (report only)
+    needs: [request, methodology]
+    if: success() && needs.request.outputs.push == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RUNS: '6'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Push driver, collection gate and report self-tests on stored and synthetic results (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/push-viewers.test.cjs scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/push-report-613.test.cjs scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs scripts/qa/stocks-rc-50plus2/placement.test.cjs
+      - name: Worktree with runtime exactly at the push pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-push"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').PUSH_RC")
+          git worktree add --detach "$W/push" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/push/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/push/node_modules"
+          git -C "$W/push" status --short
+          # The runtime measured is the pin's, byte for byte: only the harness directory differs from it.
+          test -z "$(git -C "$W/push" diff --name-only "$sha" | grep -v '^scripts/qa/stocks-rc-50plus2/' || true)"
+          echo "PUSH_DIR=$W" >> "$GITHUB_ENV"
+          echo "Push pin: $sha"; echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
+          for n in 0 1 2 3; do echo "cpu$n siblings: $(cat /sys/devices/system/cpu/cpu$n/topology/thread_siblings_list 2>/dev/null || echo none)"; done
+      - name: One uncounted warm-up run, then the push runs, server on CPUs 0,1, clients on 2,3
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          mkdir -p "$PUSH_DIR/warmup"
+          (cd "$PUSH_DIR/push" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --push-viewers --isolated-clients \
+            --root . --pg-bin "$PG_BIN" --out "$PUSH_DIR/warmup/out" \
+            --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || echo "warm-up run exit $? (not counted)"
+          # Every run goes ahead whatever the previous one returned; its exit code is raw evidence, and the collection
+          # gate below judges the set.
+          for i in $(seq 1 "$RUNS"); do
+            rc=0; mkdir -p "$PUSH_DIR/runs/push-$i"
+            (cd "$PUSH_DIR/push" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --push-viewers --isolated-clients \
+              --root . --pg-bin "$PG_BIN" --out "$PUSH_DIR/runs/push-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$PUSH_DIR/runs/push-$i/exit-code"
+          done
+      # Fails unless every push run is present, parseable, at the push pin, of the push workload, measured on both arms,
+      # financially intact, placed as the method requires and cleaned up. The p95 numbers are reported, never a verdict.
+      - name: Collection gate and crypto Δp95 with its interval (report only)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$PUSH_DIR/runs" "$PUSH_DIR/summary.json" --push --pairs "$RUNS" --methodology isolated-clients | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Streams, private requests, connections and CPU (report only, not a gate)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/push-report-613.cjs "$PUSH_DIR/runs" "$PUSH_DIR/push-report.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$PUSH_DIR/runs" "$PUSH_DIR/extended.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Server and client CPU sets, memory, placement (report only)
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+          const fs = require("fs"), path = require("path"), dir = process.argv[1], f = (x, d = 1) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          const rows = ["| run | arm | server CPU set busy % (steal ms) | client set busy % | driver ELU | placement (threads) | server memory MB (API, authority, gateway HWM; PostgreSQL PSS) |", "|---|---|---|---|---|---|---|"];
+          for (const run of fs.readdirSync(dir).sort()) for (const arm of ["baseline", "mixed"]) {
+            let r; try { r = JSON.parse(fs.readFileSync(path.join(dir, run, "out", arm + "-result.json"), "utf8")); } catch { continue; }
+            const i = r.isolation; if (!i) continue; const m = i.memory ?? {}, mb = x => typeof x === "number" ? x / 1024 : null;
+            rows.push(`| ${run} | ${arm} | ${f(i.usage.server.utilization * 100)} (${f(i.usage.server.stealMs, 0)}) | ${f(i.usage.client.utilization * 100)} | ${f(i.headroom.driverElu, 3)} | ${i.proof.ok ? "ok" : "FAIL"} (${i.proof.checkedThreads}) | ${[m.api?.hwmKb, m.stocksAuthority?.hwmKb, m.stocksGateway?.hwmKb].map(x => f(mb(x), 0)).join(", ")}; ${f(mb(m.postgres?.pssKb), 0)} |`);
+          }
+          console.log(rows.join("\n"));
+          ' "$PUSH_DIR/runs" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the numbers as check annotations (readable without sign-in)
+        if: always()
+        run: |
+          node -e '
+          const s = require(process.argv[1]), p = require(process.argv[2]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          if (s.collection.status !== "COMPLETE") console.log(`::error title=PUSH_DIAGNOSTIC collection ${s.collection.status} ${s.collection.completeRuns}/${s.collection.expectedRuns}::${s.collection.failures.slice(0, 12).join(" ")}`);
+          for (const r of s.runs.slice(0, 8)) console.log(`::notice title=PUSH_DIAGNOSTIC ${r.name} ${(r.runtime || "").slice(0, 8)}::${r.status} complete=${r.complete ? "yes" : "no"} dp95=${f(r.comparison?.cryptoP95ChangePercent)}% base/mixed p50=${f(r.baseline?.p50)}/${f(r.mixed?.p50)} p95=${f(r.baseline?.p95)}/${f(r.mixed?.p95)}ms apiCPU=${f(r.baseline?.apiCpuMs, 0)}/${f(r.mixed?.apiCpuMs, 0)}ms timeouts=${r.mixed?.timeouts ?? "-"} loss/double/viewer=${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join("/") : "-"}`);
+          const k = s.kinds.push, st = k.statistics ?? {};
+          console.log(`::notice title=PUSH_DIAGNOSTIC ${(k.pin || "").slice(0, 8)} pooled::collection ${s.collection.status} complete ${k.completeRuns}/${k.runs}; pooled p95 base/mixed ${f(k.pooledBaselineP95Ms)}/${f(k.pooledMixedP95Ms)} ms; pooled dp95 ${f(k.pooledDeltaPercent)}% (bootstrap 95% ${st.bootstrapPooledDeltaPercent95 ? f(st.bootstrapPooledDeltaPercent95[0]) + ".." + f(st.bootstrapPooledDeltaPercent95[1]) : "-"}); median run dp95 ${f(k.medianRunDeltaPercent)}%; report only, the +5% threshold is not a verdict here`);
+          const t = p.total;
+          console.log(`::notice title=PUSH_DIAGNOSTIC streams::${t.runs} runs, ${t.opened} streams, quotes ${t.quotes}/${t.expectedQuotes} (uptime ${f(t.uptime * 100)}%), quota waits ${t.waits}, unavailable ${t.unavailable}, revoked ${t.revoked}, stale viewers ${t.staleViewers}, quote age p95 max ${f(t.quoteAgeP95MsMax, 0)} ms; private 429 ${t.private429}; busiest minute ${t.busiestMinuteMax}/240; gateway connections peak ${t.gatewayPeakConnectionsMax} shed ${t.gatewayShed} dropped ${t.gatewayDropped}; loss/double/viewer ${t.financial.orderLoss}/${t.financial.doubleSpend}/${t.financial.viewerMutations}`);
+          ' "$PUSH_DIR/summary.json" "$PUSH_DIR/push-report.json"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-push
+          cp "$PUSH_DIR/summary.json" "$PUSH_DIR/push-report.json" "$PUSH_DIR/extended.json" output/rc50-613-push/ 2>/dev/null || true
+          for r in "$PUSH_DIR"/runs/*/ "$PUSH_DIR"/warmup/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-push/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-push/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-push-diagnostic-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613-push
+          retention-days: 14
+          if-no-files-found: error
+
+  # Sustained load (report only, never the p95 verdict): two runs of the after pin with --sustained — both arms measure
+  # 3 minutes instead of 20 s, the original 4 s cycle, 50 viewers at 1 s, under the unchanged 240/min private ingress.
+  # sustained-613.cjs reports the busiest sliding minute at the ingress, the ingress's own 429s, viewer polls answered
+  # and refused (429 + Retry-After), trader and crypto errors (none tolerated), the financial invariants and crypto p95
+  # per minute. A run fails on an ingress over its quota, an ingress 429, any crypto or trader error, a viewer refusal
+  # without Retry-After, or a broken invariant; how many viewer polls the gateway could answer is reported, not gated.
+  sustained:
+    name: 50+2 sustained 3-minute load and private-quota behaviour, isolated clients (report only)
+    needs: [request, methodology]
+    if: success() && needs.request.outputs.sustained == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-sus"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "SUS_DIR=$W" >> "$GITHUB_ENV"
+          echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
+          for n in 0 1 2 3; do echo "cpu$n siblings: $(cat /sys/devices/system/cpu/cpu$n/topology/thread_siblings_list 2>/dev/null || echo none)"; done
+      - name: Two sustained runs, server on CPUs 0,1, clients on 2,3
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          for i in 1 2; do
+            rc=0; mkdir -p "$SUS_DIR/runs/sustained-$i"
+            (cd "$SUS_DIR/after" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --isolated-clients --sustained \
+              --root . --pg-bin "$PG_BIN" --out "$SUS_DIR/runs/sustained-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$SUS_DIR/runs/sustained-$i/exit-code"
+          done
+      - name: Sustained findings (report only)
+        if: always()
+        run: |
+          node scripts/qa/stocks-rc-50plus2/sustained-report-613.cjs "$SUS_DIR/runs" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-sus
+          for r in "$SUS_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-sus/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-sus/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-sustained-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613-sus
+          retention-days: 14
+          if-no-files-found: error
+
+  # PostgreSQL profile of the separated layout (owner request 28.10: find the concrete cause of the separated
+  # p95 tail by profiling, e.g. whether trader 0's DemoBalance row locks delay the crypto requests). Two runs of
+  # the after pin with --pg-profile: lock waits over 1 ms with their holder process, statements over 2 ms,
+  # connections named per process, checkpoints, autovacuum, WAL sync time. pg-profile-613.cjs compares the
+  # slowest 5 % of crypto requests with all of them. Logging costs both arms: never a p95 verdict. Answered in R6;
+  # runs again only on request (RC50-RUN: pg-profile in the head commit message).
+  pg-profile:
+    name: 50+2 PostgreSQL profile, separated (diagnostic, not a p95 verdict)
+    needs: request
+    if: needs.request.outputs.pgprofile == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Profile analysis self-test on a captured PostgreSQL log (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/pg-profile-613.test.cjs
+      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-pg"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "PG_DIR=$W" >> "$GITHUB_ENV"
+      - name: Two profiled runs, each pinned to 2 vCPUs
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          for i in 1 2; do
+            rc=0; mkdir -p "$PG_DIR/runs/after-$i"
+            (cd "$PG_DIR/after" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --pg-profile \
+              --root . --pg-bin "$PG_BIN" --out "$PG_DIR/runs/after-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$PG_DIR/runs/after-$i/exit-code"
+          done
+      - name: What overlapped the slow crypto requests (report only)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/pg-profile-613.cjs "$PG_DIR"/runs/after-*/out --json "$PG_DIR/pg-profile.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports and the PostgreSQL logs (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-pg
+          cp "$PG_DIR/pg-profile.json" output/rc50-613-pg/ 2>/dev/null || true
+          for r in "$PG_DIR"/runs/*/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-pg/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-pg/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-pg-profile-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/rc50-613-pg
+          retention-days: 14
+          if-no-files-found: error
+
+  # The R6 stocks-placement experiment (nice / idle / apart / alone, run 40838996816) and the driver-placement
+  # experiment before it (run 40831978973) are answered and recorded in docs/STOCKS_613_PROCESS_ISOLATION.md; they
+  # are not repeated on every push. diagnostic-run-613.cjs keeps --driver-apart and --stocks-apart for a new question.
+
+  # One server-side spans run (spans.cjs in BOTH measured arms) of the current
+  # runtime pin (policy-613-after.cjs) with the unchanged plan, to separate auth,
+  # Prisma/transaction and event-loop time behind the crypto p95. Same host
+  # shape as above (GitHub-hosted, ci-diagnostic admission, 2 vCPUs, own
+  # PostgreSQL, synthetic users, loopback only). Not a p95 verdict: the
+  # instrumentation overhead applies to both arms and is not removed.
+  # DISABLED. It ran once (approved one-shot on top of 77b4fffc, commit
+  # 1d02aea3). Any further run needs a new #613 coordinator approval. The after
+  # pin is now the separated layout, where spans.cjs sees the crypto API only.
+  spans-run:
+    name: 50+2 server-side spans, one run (diagnostic, not a p95 verdict)
+    if: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Spans summary self-test on synthetic data (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/spans-summary-613.test.cjs
+      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-spans"; mkdir -p "$W"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          git worktree add --detach "$W/after" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
+          echo "SPANS_DIR=$W" >> "$GITHUB_ENV"
+      - name: One spans run, pinned to 2 vCPUs
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1); rc=0
+          (cd "$SPANS_DIR/after" && taskset -c 0,1 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --spans \
+            --root . --pg-bin "$PG_BIN" --out "$SPANS_DIR/out" \
+            --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+          echo "$rc" > "$SPANS_DIR/exit-code"
+      - name: Spans decomposition (fails closed on missing or truncated spans)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/spans-summary-613.cjs "$SPANS_DIR/out" "$SPANS_DIR/spans-summary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Collect run reports and raw spans (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-spans
+          cp "$SPANS_DIR/exit-code" "$SPANS_DIR/spans-summary.json" "$SPANS_DIR"/out/*.json "$SPANS_DIR"/out/*.log output/rc50-613-spans/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-spans-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613-spans
+          retention-days: 14
+          if-no-files-found: error

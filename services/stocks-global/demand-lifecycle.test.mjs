@@ -8,7 +8,7 @@ import {CATALOG} from './catalog.mjs';
 const ID='BYBIT:AAPLXUSDT',NOW=1791849600000;
 async function fixture(t,accountWorkerOptions={}){
  const dir=await mkdtemp(join(tmpdir(),'stocks-demand-'));let time=NOW,price=100,calls=0,releaseQuote,quoteTime,authWait,authCalls=0;
- const app=await createServer({port:0,accountsPath:join(dir,'paper.sqlite'),accountWorkerOptions,ownerOnlyMode:true,tradeOwnerSubject:'alice',now:()=>time,autoPoll:true,
+ const app=await createServer({ financialEnabled: true,port:0,accountsPath:join(dir,'paper.sqlite'),accountWorkerOptions,ownerOnlyMode:true,tradeOwnerSubject:'alice',now:()=>time,autoPoll:true,
  authenticate:async req=>{authCalls++;if(authWait)await authWait;return{issuer:'demand-fixture',subject:req.headers.authorization==='Bearer synthetic-test-bob'?'bob':'alice'};},
  hub:{metrics:{},catalogue:async()=>CATALOG,history:async()=>({candles:[]}),quote:async id=>{calls++;if(releaseQuote)await releaseQuote;return{instrumentId:id,provider:'bybit',nativeCurrency:'USDT',timestamp:quoteTime??time,receivedAt:time,verified:true,marketOpen:true,eventId:'event-'+time,capacity:'1.00000000',bid:String(price),ask:String(price),prices:{USDT:{buy:String(price),sell:String(price)}},fx:{}};} }});
  t.after(async()=>{await app.close();await rm(dir,{recursive:true,force:true});});

@@ -6,6 +6,23 @@ const until=async callback=>{const end=Date.now()+5000;while(!await callback()){
 const deferred=()=>{let resolve;const promise=new Promise(done=>resolve=done);return{promise,resolve};};
 function pg(name,fn){test('real PostgreSQL: '+name,{timeout:20000,skip:available?false:'NOT_RUN: no confirmed disposable local PostgreSQL URL; SQLite/mock is not acceptance'},fn);}
 
+pg('gateway execution OFF preserves all cash, account, receipt and audit rows for both admitted sessions and a viewer',async t=>{
+  // Keep the API authority gate ON inside this isolated test: the separate
+  // gateway gate must reject commands independently, before any PG authority call.
+  const f=await fixture(t,{financialEnabled:false,orderExecutionEnabled:true}),viewer=await f.newViewer('execution-off');
+  const before=await f.rows();
+  for(const token of [...f.tokens,viewer.token]){
+    const state=await f.request('state?id='+encodeURIComponent(f.ID),{token});
+    assert.equal(state.status,200);assert.equal(state.data.account.canTrade,false);
+    for(const type of ['MARKET','LIMIT'])for(const side of ['BUY','SELL']){
+      const result=await f.request('orders',{token,body:{gatewayToken:state.data.token,...order('pg-default-off-'+type+side,{type,side})}});
+      assert.equal(result.status,403);assert.equal(result.data.error,'ACCOUNT_TRADING_DISABLED');
+    }
+    for(const route of ['cancel','balances','refresh'])assert.equal((await f.request(route,{token,body:{gatewayToken:state.data.token}})).status,403);
+  }
+  assert.deepEqual(await f.rows(),before);
+});
+
 pg('Market/Limit/partial sell/cancel/PnL and account isolation use existing DemoBalance',async t=>{
   const f=await fixture(t),token=await f.ready();const baseline=await f.db.demoBalance.findUnique({where:{userId_asset:{userId:f.users[0],asset:'USDT'}}});
   const bought=await f.request('orders',{body:{gatewayToken:token,...order('pg-market-buy-000001',{type:'MARKET'})}});assert.equal(bought.status,200,JSON.stringify(bought));assert.equal(bought.data.wallets.USDT.cash,'721.25000000');
@@ -55,6 +72,47 @@ pg('lost ACK/reopened repository replays the durable receipt without double debi
   const {openPostgresAuthority}=await import('./postgres-authority.mjs');const reopened=openPostgresAuthority(f.other,{issuer:f.actors[0].issuer,tradePrincipals:f.actors,now:()=>Date.now()});
   const replay=await reopened.execute(f.actors[0],'submitObserved',{order:order('pg-lost-ack-replay-001'),sourceBlocked:true});assert.equal(replay.receipt.intentId,'pg-lost-ack-replay-001');
   assert.deepEqual(await f.rows(),before);
+});
+
+pg('lost ACK survives fresh authority processes and restart cannot retain a revoked Session',async t=>{
+  const f=await fixture(t),token=await f.ready();
+  f.setAfter(()=>{throw Error('synthetic lost ACK before process restart');});
+  const intent=order('pg-process-restart-001');
+  const first=await f.request('orders',{body:{gatewayToken:token,...intent}});
+  assert.equal(first.status,503);assert.equal(first.data.error,'ACCOUNT_OUTCOME_UNKNOWN');
+  const durable=await f.rows();
+  const {promisify}=require('node:util'),{execFile}=require('node:child_process');
+  const {pathToFileURL}=require('node:url'),path=require('node:path');
+  const authorityUrl=pathToFileURL(path.join(__dirname,'postgres-authority.mjs')).href;
+  const script=`
+    const {PrismaClient}=require('@prisma/client');
+    (async()=>{
+      const input=JSON.parse(process.env.STOCKS_RESTART_FIXTURE);
+      const db=new PrismaClient({datasources:{db:{url:process.env.STOCKS_DISPOSABLE_PG_URL}}});
+      try {
+        const {openPostgresAuthority}=await import(${JSON.stringify(authorityUrl)});
+        const authority=openPostgresAuthority(db,{issuer:input.actor.issuer,tradePrincipals:input.principals});
+        try {
+          const result=await authority.execute(input.actor,'submitObserved',{order:input.order,sourceBlocked:true});
+          console.log(JSON.stringify({receipt:result.receipt,pid:process.pid}));
+        } catch(error) { console.log(JSON.stringify({error:error.code,pid:process.pid})); }
+      } finally {await db.$disconnect();}
+    })().catch(()=>{process.exitCode=1;});
+  `;
+  const restart=async()=>{
+    const {stdout}=await promisify(execFile)(process.execPath,['-e',script],{
+      cwd:path.resolve(__dirname,'../..'),windowsHide:true,timeout:8000,
+      env:{...process.env,STOCKS_RESTART_FIXTURE:JSON.stringify({actor:f.actors[0],principals:f.actors,order:intent})},
+    });
+    return JSON.parse(stdout.trim());
+  };
+  const a=await restart(),b=await restart();
+  assert.notEqual(a.pid,process.pid);assert.notEqual(b.pid,process.pid);
+  assert.equal(a.receipt.intentId,intent.id);assert.deepEqual(b.receipt,a.receipt);
+  assert.deepEqual(await f.rows(),durable,'fresh processes must replay COMMIT, never debit again');
+  await f.other.session.update({where:{id:f.sessions[0]},data:{revokedAt:new Date()}});
+  const denied=await restart();assert.equal(denied.error,'AUTH_REQUIRED');
+  assert.deepEqual(await f.rows(),durable,'restart must not cache the previous authorization');
 });
 
 pg('both permitted accounts trade independently and retain18-place shared Wallet remainder',async t=>{

@@ -129,8 +129,10 @@ function walk(dir, files = []) {
     }
     const panelOf = (page) => page.locator('.support-panel');
     async function fill(panel, v) {
-      if (v.name !== undefined) await panel.getByLabel('Имя').fill(v.name);
+      // The profile prefill (name and email in one update) must land before typing: between fill()'s
+      // select and its separate text insertion it would merge into the typed name (CI 40387670141).
       await panel.page().waitForFunction(() => document.querySelector('.support-panel input[type="email"]')?.value === 'member@example.com');
+      if (v.name !== undefined) await panel.getByLabel('Имя').fill(v.name);
       if (v.subject) await panel.locator(`input[name="support-subject"][value="${v.subject}"]`).check();
       if (v.message !== undefined) await panel.getByLabel('Сообщение').fill(v.message);
     }

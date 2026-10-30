@@ -1,0 +1,100 @@
+name: Stocks legacy SQLite unsupported control
+
+# Owner decision 2026-10-20: outside the PG production release contract.
+# The original assertions are unchanged and keep their genuine exit status.
+# Since the SQLite worker's pre-COMMIT authorization fence (#613) they pass:
+# a revocation before COMMIT rolls back with 401. This workflow stays
+# independent of the required PostgreSQL release gate.
+on:
+  pull_request:
+    paths:
+      - 'services/stocks-global/**'
+      - '.github/workflows/stocks-focused-review.yml'
+      - '.github/workflows/stocks-legacy-unsupported.yml'
+      - 'scripts/qa/stocks-ci-source-head.test.cjs'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  EXPECTED_SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+
+concurrency:
+  group: stocks-legacy-unsupported-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  legacy-unsupported:
+    name: Unsupported SQLite revocation (expected 401, no durable change)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Install locked test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run unchanged legacy assertions (real failure is retained)
+        id: legacy
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/two-trader-auth-lifetime.test.mjs | tee legacy-unsupported.tap
+      - name: SQLite worker commit fence (deny, unavailable, timeout, stale answer)
+        id: fence
+        if: success() || steps.legacy.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/account-commit-fence.test.mjs | tee commit-fence.tap
+      - name: Report actual legacy result independently of PG release
+        if: always()
+        env:
+          LEGACY_OUTCOME: ${{ steps.legacy.outcome }}
+          FENCE_OUTCOME: ${{ steps.fence.outcome }}
+          VERIFIED_SOURCE_SHA: ${{ steps.source-check.outputs.sha }}
+        run: |
+          echo "## Unsupported SQLite trading: $LEGACY_OUTCOME (commit fence: $FENCE_OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Expected source SHA: $EXPECTED_SOURCE_SHA; verified checkout SHA: $VERIFIED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pre-COMMIT revocation must return 401 with no durable change. No assertion was changed." >> "$GITHUB_STEP_SUMMARY"
+          echo "This job keeps its genuine exit status; it is not part of the PostgreSQL production contract." >> "$GITHUB_STEP_SUMMARY"
+          for tap in legacy-unsupported.tap commit-fence.tap; do
+            if test -f "$tap"; then
+              echo '```text' >> "$GITHUB_STEP_SUMMARY"
+              cat "$tap" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-legacy-unsupported-${{ env.EXPECTED_SOURCE_SHA }}
+          path: |
+            legacy-unsupported.tap
+            commit-fence.tap
+          if-no-files-found: error

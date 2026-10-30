@@ -28,7 +28,7 @@ async function fixture(t, { provision = true } = {}) {
     quote: async () => { quoteCalls++; return { instrumentId: ID, provider: 'bybit', nativeCurrency: 'USDT', bid: price, ask: price, timestamp: time, receivedAt: time, verified: true, marketOpen: true, eventId: `fixture-${time}`, capacity: '1.00000000', prices: { USDT: { buy: price, sell: price } }, fx: {} }; },
     history: async () => ({ candles: [{ time: NOW / 1000, open: 100, high: 100, low: 100, close: 100, volume: 1 }] }),
   };
-  const start = async () => { app = await createServer({ port: 0, accountsPath, tradePrincipals: traders, now: () => time, hub, accountDiagnostics: true, authenticate: async req => {
+  const start = async () => { app = await createServer({ financialEnabled: true, port: 0, accountsPath, tradePrincipals: traders, now: () => time, hub, accountDiagnostics: true, authenticate: async req => {
     authCalls++; if (revoked || !req.headers['x-fixture-subject']) throw new SimError('AUTH_REQUIRED');
     return { issuer: req.headers['x-fixture-issuer'] || 'fixture-authority', subject: req.headers['x-fixture-subject'] };
   } }); };

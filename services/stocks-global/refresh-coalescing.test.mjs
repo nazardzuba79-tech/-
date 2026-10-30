@@ -24,7 +24,7 @@ test('rapid selections share only pending background observations per account an
         capacity: '1.00000000', prices: { USDT: { buy: '100', sell: '100' } }, fx: {} };
     },
   };
-  const app = await createServer({ port: 0, accountsPath: join(dir, 'paper.sqlite'), now: () => now, hub,
+  const app = await createServer({ financialEnabled: true, port: 0, accountsPath: join(dir, 'paper.sqlite'), now: () => now, hub,
     authenticate: async req => ({ issuer: 'coalescing-fixture-only', subject: req.headers['x-fixture-user'] }) });
   const base = `http://127.0.0.1:${app.port}/__stocks_global/`;
   const state = async (user, id) => {

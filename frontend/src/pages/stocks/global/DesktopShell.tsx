@@ -6,9 +6,16 @@ import BigNumber from 'bignumber.js';
 import { quoteAge } from './tradeMarkers';
 import type { Asset, Candle, Currency, Fill, Quote } from './types';
 
-const formatNumber = (locale: string, value: string | number | null | undefined, digits = 2) =>
-  value == null || !Number.isFinite(Number(value)) ? '—' :
-    Number(value).toLocaleString(locale, { maximumFractionDigits: digits });
+// One Intl.NumberFormat per locale and precision: toLocaleString with options builds a new one on every call, and
+// these numbers re-render with the terminal's 1 s clock. Same output (toLocaleString is this formatter).
+const numberFormats = new Map<string, Intl.NumberFormat>();
+const formatNumber = (locale: string, value: string | number | null | undefined, digits = 2) => {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const key = locale + '|' + digits;
+  let format = numberFormats.get(key);
+  if (!format) numberFormats.set(key, format = new Intl.NumberFormat(locale, { maximumFractionDigits: digits }));
+  return format.format(Number(value));
+};
 
 export function allocationQuantity(available: string, price: string, side: 'BUY' | 'SELL', percent: number) {
   const balance = new BigNumber(available), unit = new BigNumber(price);
@@ -91,10 +98,10 @@ export function DesktopQuotes({ asset, quote, fills, now, ready }: {
     {tab === 'quote' ? <>
       <div className="vxg-pro-book-tools"><span aria-hidden="true">▥ ▤ ▥</span><span>Bid / Ask</span></div>
       <div className="vxg-pro-book-labels"><span>{s("Цена,")} {asset?.currency || '—'}</span><span>{s("Объём")}</span></div>
-      <div className="vxg-pro-book-side"><small>{s("Лучшая продажа · Ask")}</small><div className="down"><strong>{number(quote?.ask, 6)}</strong><span>—</span></div></div>
+      <div className="vxg-pro-book-side"><small>{s("Лучшая продажа · Ask")}</small><div className="down"><strong>{number(quote?.ask, 6)}</strong><span>{number(quote?.askSize, 8)}</span></div></div>
       <div className="vxg-pro-mid"><strong className={quote?.change24h != null && quote.change24h < 0 ? 'down' : 'up'}>{number(quote?.last, 6)}</strong><small>{asset?.currency || '—'}</small></div>
-      <div className="vxg-pro-book-side"><small>{s("Лучшая покупка · Bid")}</small><div className="up"><strong>{number(quote?.bid, 6)}</strong><span>—</span></div></div>
-      <p className="vxg-pro-depth-note">{s("Доступна верхняя котировка. Глубина рынка и объёмы заявок не предоставлены.")}</p>
+      <div className="vxg-pro-book-side"><small>{s("Лучшая покупка · Bid")}</small><div className="up"><strong>{number(quote?.bid, 6)}</strong><span>{number(quote?.bidSize, 8)}</span></div></div>
+      {!quote?.bidSize&&!quote?.askSize&&<p className="vxg-pro-depth-note">{s("Доступна верхняя котировка. Глубина рынка и объёмы заявок не предоставлены.")}</p>}
       <dl className="vxg-pro-provenance"><dt>{s("Источник")}</dt><dd>{asset?.provider.toUpperCase() || '—'}</dd><dt>{s("Инструмент")}</dt><dd>{asset?.sourceSymbol || '—'}</dd><dt>{s("Валюта цены")}</dt><dd>{asset?.currency || '—'}</dd></dl>
     </> : <div className="vxg-pro-executions"><small>{asset?.asset || '—'}</small>{executions.length ? executions.map(fill => <article key={fill.id}>
       <span className={fill.side === 'BUY' ? 'up' : 'down'}>{fill.side === 'BUY' ? '↑' : '↓'} {number(fill.nativePrice, 6)}<small>{asset?.currency}</small></span>

@@ -1,0 +1,201 @@
+VOLTEX RC50 diagnostic harness
+Runtime source: 234437f8bb106cc576375ff7df9b817d3fbc01cc (#613, repinned 2026-10-26; was 6cb82e3d).
+The pin is code preparation only. It does not authorize a run: the isolated
+Linux scope still needs an owner-approved, unexpired host attestation, a
+non-root process and a finite owned cgroup v2, and none of those is created
+here. Thresholds, admission and invariants are unchanged.
+This folder is test-only and is not imported by application startup.
+
+Real implementation: current RC stocksTestCashRouter, DemoTradingService,
+MatchingEngine, PostgreSQL authority, authority HTTP adapter and Stocks gateway.
+Only market transport is synthetic and loopback. No echo/mock business API.
+
+Admission: explicit scope/ack, unchanged RC runtime files, clean private-env
+boundary, locked existing dependencies, fresh owned output and PG database,
+127.0.0.1 only. No external target URL/DSN or production credential argument.
+The launcher creates/stops only its own fresh portable PostgreSQL and Node
+children; no Docker, remote server setup, software install or host changes.
+
+Before the sole workload: static admission, source/runtime hashes, fresh
+generated RC Prisma client, durable PG settings and short actual HTTP wiring
+qualification. Qualification does not claim the workload run budget.
+A persistent FINAL-50PLUS2-RUN-CLAIM.json is created before baseline setup.
+No automatic repeat or retry is permitted.
+
+Both arms: same Node/PG/settings, API worker heap cap, initial logical state,
+5s crypto warmup, 20s fixed arrivals, 80 crypto cycles and 320 crypto requests.
+Mixed: 50 distinct viewer sessions (one state/sec each, staggered), 50 direct
+mutation denials, 2 allowlisted traders (5 state reads each, 2 order cycles of
+Limit/cancel plus Market buy/sell and exact intent replays). Source TTL and rate
+gates unchanged.
+Normal load since 28.10 (driver.cjs PLAN.traderOrderEvery=2): each trader reads its
+state every 4 s and runs the order cycle (Limit/cancel, Market buy/sell, exact
+replays) on every second read, every 8 s. The old every-4 s cycle was 7 private
+authority requests per trader every 4 s (210/min for two) before the viewers'
+identity batches: about 300/min against the release ingress's 240/min ceiling.
+The separated topology's authority now sits behind that real private ingress
+(capability, loopback, 240/min), so a run over the quota fails on the 429.
+Over-limit behaviour is tested apart, on purpose: services/stocks-global/
+identity-load.pg.test.cjs ('over the private quota').
+Diagnostics (report only, never the verdict): --pg-profile (PostgreSQL lock waits,
+slow statements, WAL; pg-profile-613.cjs), --driver-apart (load driver on other
+CPUs than the server), schedstat run-queue waiting per process (sched.cjs, in
+every run's metrics) and per-pin statistics in summarize-613.cjs.
+The shared DemoBalance is exercised concurrently by actual Demo Spot/Stocks.
+Cash/order/receipt/viewer invariants and HTTP timeouts are checked independently.
+
+The Windows result is LOCAL_DIAGNOSTIC only: shared unpinned host, Node24.22.0,
+PG17.11, not a CX23/Node22/deployed-PG capacity certificate.
+Existing financial restart/commit-before-ACK tests are referenced, not rerun.
+
+Primary Linux wrapper: run-isolated-linux.cjs (Node syntax verified; runtime
+not executed on Linux). It requires a pre-existing approved host attestation,
+matching host/cgroup/runtime/expiry and finite non-root cgroup CPU/memory/PID
+limits. It never creates those limits or starts Docker.
+run-isolated-linux.sh is an optional equivalent shell entry; no Bash runtime
+was available here, so automated Bash syntax/execution is NOT_RUN.
+Do not repin/replay the older qualification-only B packet.
+
+Run parameters, commands, hashes, qualification, workload outcome, cleanup,
+known limits and the exact tested-file hash set are in the attached reports.
+No owner PowerShell commands, passwords or foreground keyboard access needed.
+
+#613 R8 methodology (2026-10-29, Claude, owner request): isolated clients
+diagnostic-run-613.cjs --isolated-clients gives the server side (PostgreSQL, the
+crypto API, the Stocks authority and gateway) exactly CPUs 0,1 (placement.SERVER)
+and nothing else; the load driver (this process: the 50 viewers', 2 traders' and
+crypto clients) runs on CPUs 2,3 (placement.CLIENT; the workflow starts it under
+taskset -c 2,3) together with the synthetic market (market-worker.cjs, the stand-in
+for the exchanges, which in production are not on VOLTEX's host; the gateway keeps
+its own market client). PostgreSQL and the API worker are exec'd by taskset, the
+Stocks processes inherit the API worker's CPUs. Admission refuses a host where the
+two sets share a physical core (sysfs thread_siblings_list), where the driver is not
+on exactly the client CPUs, or without 4 CPUs/taskset. After the qualification and
+after every measured window, placement.cjs proves every thread of every process on
+both sides (PostgreSQL backends and the Stocks processes as descendants), records
+per-CPU time of both sets from /proc/stat (user, system, softirq, steal), memory
+(VmHWM per Node process, PostgreSQL PSS) and checks client headroom (client set
+busy <= 50 %, driver event-loop utilisation <= 0.5); a violation fails the run.
+Same plan, thresholds and verdict (pooled crypto dp95 <= +5 %);
+summarize-613.cjs --methodology isolated-clients additionally requires every proof.
+--null-arm (calibration, never a verdict): the second arm carries the baseline load
+again; calibration-613.cjs judges six such runs (aa-1..aa-6): complete collection
+and |pooled A/A dp95| <= 5 %, else the method is not calibrated on that runner and
+no acceptance run follows. --sustained (separated pin, report only): both arms
+measure 3 minutes; viewer 429s from the gateway are counted with their Retry-After
+instead of failing the run; the authority logs every private request; sustained-613.cjs
+reports the busiest sliding minute against 240, ingress 429s, viewer polls answered
+or refused, trader and crypto errors and crypto p95 per minute. Known limits of the
+isolation: both CPU sets are one VM (shared L3 cache, memory bandwidth, kernel,
+hypervisor steal); loopback TCP is processed in the sender's context, so the server
+pays the receive side of its own answers and the clients the receive side of their
+requests. Placement experiments --driver-apart / --stocks-apart stay as they were.
+--push-viewers (#613 R10 PUSH_DIAGNOSTIC, with --after --isolated-clients; report only): the
+push pin (policy-613-after.cjs PUSH_RC), the gateway in the viewer push profile, 50 viewers
+holding the quote stream (push-viewers.cjs), the traders on the 4 s cycle. With --null-arm
+it is the A/A calibration at the push pin. summarize-613.cjs --push gates push-1..N;
+push-report-613.cjs reports streams, private requests per window, the busiest minute
+against 240, connections, CPU and memory.
+Self-tests (no workload): placement.test.cjs (synthetic /sys and /proc trees, live
+check), sustained-613.test.cjs, driver-sustained.test.cjs (the driver against fake
+loopback servers: 429 + Retry-After, the same intent sent again once, stale-quote
+retries, the acceptance path still failing on any of them), calibration-613.test.cjs,
+summarize-613.test.cjs (--methodology isolated-clients).
+
+#613 candidate pins (repinned 2026-10-29, Claude: R7)
+Both policies pin 47f5d04d (#613 R7): the runtime of d6da2c84 (8f73e373 plus the review 6490492921
+re-check of a failed observation after its live identity check) with the gateway's idle
+scheduling class removed again from the after pin and the compose example. 8f73e373 was (#613 R5: c67b3fc9 with auth.ts back to
+its 4daa14d0 form and, per review 6489779311, no change to the demand a principal's
+sessions share before a trader request is confirmed; c67b3fc9 is ed31f4e8 plus a trader's
+command as its own live identity judgement instead of a separate identity check,
+identity batches capped at Q - Q/16 of the last minute's private requests, and
+three per-poll gateway overheads removed). The acceptance workload is the original
+one (each trader's order cycle every 4 s); --revised-8s runs the 8 s cycle as a
+separately labelled diagnostic, never the verdict.
+ed31f4e8: 8d560d01 plus the authority reading the sessions of an identity batch in
+one query instead of one per bearer. 8d560d01 added state answers that leave the 16.6 KB catalogue out when the client
+names the version it holds; the driver does as the real terminal does, so a
+runtime from 8d560d01 on is required: an older gateway refuses ?catalogue= with 422.
+Earlier:
+e92cbd8a (P1: identity checks multiplexed with a quota-sized budget and
+arrival-spaced answers, no pre-command re-identity with the PostgreSQL authority),
+386f7fc8 0/8 in run 40719580431, 78e78d64 single 4/4 +187 % / separated 0/4 in run
+40726294118; the plan,
+thresholds, taskset, ABBA order and PAIRS are unchanged. Rounds 1-2 pinned
+5d69057d (#613 head runtime plus src/stocksAuthority.ts). Only the process topology
+differs between the policies (TOPOLOGY export):
+- policy-613.cjs, 'single-process': api-worker.cjs hosts the crypto API, the Stocks
+  authority (stocksTestCashRouter + PostgreSQL authority), the gateway and the
+  synthetic market, exactly as before this change (the head's behaviour).
+- policy-613-after.cjs, 'separated': the release layout of
+  docs/STOCKS_613_PROCESS_ISOLATION.md. api-worker.cjs keeps only the crypto API
+  (crypto-api.cjs: the fixture's crypto subset, same rows and routes; the protected
+  fixture file stays byte-identical) and forks stocks-worker.cjs twice: the Stocks
+  authority (src/stocksAuthority.ts app, real PostgreSQL authority, loopback) and
+  the gateway (server.mjs + authority adapter + synthetic market; trading follows
+  the authority's readiness, as release-entrypoint.mjs). Same taskset, same 384 MB
+  heap cap and egress fence per process; nothing added to the CPU budget. Neither
+  arm mounts the private ingress quota (see the doc's known limit).
+  STOCKS_NICE=10 (round 2): both Stocks processes run at nice 10, the release's
+  cpu_shares scheduling control; the qualification proves it (api 0, Stocks 10).
+  Round 1 (no weight) is recorded in docs/STOCKS_613_PROCESS_ISOLATION.md.
+  STOCKS_SCHED='gateway-idle' (R6 only): the gateway ran under chrt in Linux's
+  idle scheduling class; run 40838996816 showed no measurable p95 effect and R7
+  removed it from the pin and the compose example. api-worker.cjs keeps the
+  option (stocksSched) for experiments; the qualification still records every
+  Stocks thread's class (/proc/<pid>/task/*/stat) and proves the normal class.
+report.cpu (report only) lists the allowed CPUs, their SMT siblings and the model.
+The runner records every process's pid (cleanup must confirm each), refuses a
+topology other than the pin's, and the qualification proves the separation (the
+crypto API answers 404 for every Stocks authority route; three distinct pids).
+Report only: 'metrics' returns cpu/memory/loop of the crypto API (the gate's API
+CPU) plus 'processes' per topology process; result.metrics.host has the driver's
+and the whole PostgreSQL cluster's CPU; result.serverTimings has server-side time
+per driver request (x-rc50-request), for the client-minus-server split.
+topology-613.test.cjs checks the pins and the workers' refusals (no workload).
+Earlier pairs: fa92cc66 vs a820c18e (JWT change), 234437f8 vs fb6577be (one-query
+Stocks session read); local Windows runs measured 783aeedd vs c010bc67.
+extended-report-613.cjs prints p50/p95/p99, errors, API CPU, memory, event-loop
+utilization/delay (recorded by api-worker 'metrics' in every arm) and the
+synthetic market WebSocket counts. Report only; summarize-613.cjs stays the gate.
+diagnostic-run-613.cjs is run.cjs with that pin, plus two opt-in flags:
+--after selects the second pin; --cpu-prof writes a V8 profile of each
+measured API worker and reports PROFILE_ONLY_NOT_A_P95_VERDICT. Plan,
+driver, thresholds, admission and the one-shot claim are unchanged.
+Each pin runs from a worktree at that commit, because admission rejects
+any runtime change relative to the pin. The 613 pins add one scope,
+ci-diagnostic (Linux on a GitHub-hosted runner only), used by
+.github/workflows/stocks-613-50plus2-diagnostic.yml for interleaved
+before/after pairs pinned to 2 vCPUs; summarize-613.cjs aggregates them.
+Windows (LOCAL_DIAGNOSTIC) and CI results are diagnostics, never capacity
+acceptance; the isolated Linux attestation path is unchanged.
+
+Collection gate (2026-10-26, cloud Claude): summarize-613.cjs reports two separate
+results. "collection" fails closed (exit 1) unless every expected run, PAIRS per
+pin, is present, parseable, pin-matched, measured on both arms with the plan's
+sample floor and population, on the driver's exact trace (traceSha and
+measureMs/cryptoPeriodMs jobs in both arms), financially intact, with sane CPU
+counters (finite, non-negative, not decreasing) and confirmed cleanup (pg_ctl
+status 3, both stop flags, no cleanupError); the stored p95 values, failures and
+both statuses must follow from the stored latencies, and the run's own failures
+must be empty. "capacity" is the p95 verdict per pin,
+report only: a p95 FAIL never fails the collection and nothing is acceptance.
+summarize-613.test.cjs checks it on fixtures/summarize-613 (real CI results,
+see SOURCE.txt) and corrupted temporary copies; no benchmark runs there.
+
+Server-side spans run (prepared 2026-10-26, cloud Claude, NOT run):
+`diagnostic-run-613.cjs --after --spans` enables the existing spans.cjs in both
+measured arms (never with --cpu-prof) and writes <arm>-spans.json; its status is
+SPANS_ONLY_NOT_A_P95_VERDICT, so the collection gate never counts it.
+spans-summary-613.cjs splits every crypto request into time outside the API
+handler plus an exact partition of the handler's wall time by span intervals:
+JWT, auth/access-gate reads, trading Prisma, transaction admission, `overlap`
+(two or more categories at once) and `rest` (no wrapped call in progress); span
+time after the handler and same-category concurrency are reported, never
+subtracted or clamped. It fails closed on the full contract: the plan's exact
+request counts and population, expected HTTP statuses, handler route/status,
+finite non-negative numbers, the inner spans every crypto route must produce,
+spans covering the window, scope, pin, status and cleanup. The `spans-run` job in
+stocks-613-50plus2-diagnostic.yml is `if: false` and runs only after the #613
+coordinator approves one run. Plan, thresholds and admission are unchanged.

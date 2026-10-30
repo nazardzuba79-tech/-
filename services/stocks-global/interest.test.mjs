@@ -11,7 +11,7 @@ test('idle service does no provider work; polling projects selected/held interes
   t.mock.method(globalThis,'setInterval',fn=>{tick=fn;return 123456;});
   const A='BYBIT:AAPLXUSDT',N='BYBIT:NVDAXUSDT';
   const hub={metrics:{},history:async()=>({candles:[]}),catalogue:async()=>{catalogues++;return CATALOG;},quote:async id=>{quotes++;return{instrumentId:id,provider:'bybit',nativeCurrency:'USDT',bid:'100',ask:'100',last:'100',timestamp:time,receivedAt:time,verified:true,marketOpen:true,eventId:String(time),capacity:'1.00000000',prices:{USDT:{buy:'100',sell:'100'}},fx:{}};}};
-  const app=await createServer({port:0,accountsPath:join(dir,'paper.sqlite'),now:()=>time,hub,authenticate:async req=>({issuer:'fixture-only',subject:req.headers['x-fixture-user']})});
+  const app=await createServer({ financialEnabled: true,port:0,accountsPath:join(dir,'paper.sqlite'),now:()=>time,hub,authenticate:async req=>({issuer:'fixture-only',subject:req.headers['x-fixture-user']})});
   const base=`http://127.0.0.1:${app.port}/__stocks_global/`,tokens={};
   const state=async(user,id)=>{const s=await(await fetch(base+'state'+(id?'?id='+encodeURIComponent(id):''),{headers:{'x-fixture-user':user}})).json();tokens[user]=s.token;return s;};
   const post=async(user,path,body)=>{const r=await fetch(base+path,{method:'POST',headers:{'x-fixture-user':user,'X-Stocks-Token':tokens[user],'Content-Type':'application/json'},body:JSON.stringify(body)});assert.equal(r.status,200);return r.json();};

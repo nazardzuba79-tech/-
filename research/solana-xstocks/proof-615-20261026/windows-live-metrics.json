@@ -1,0 +1,121 @@
+{
+  "environment": "Windows, Node22.23.3 default HTTPS; no proxy environment or alternate RPC endpoint",
+  "endpoint": "https://api.mainnet-beta.solana.com",
+  "captures": [
+    {
+      "run": "windows-live-1793034723518",
+      "ticker": "SPYx",
+      "windowUTC": [
+        "2026-10-26T17:09:00.000Z",
+        "2026-10-26T17:10:00.000Z"
+      ],
+      "transactions": 0,
+      "metrics": {
+        "httpRequests": 11,
+        "rpcAttempts": 7,
+        "rpcCompletions": 7,
+        "responseBytes": 36791,
+        "cpuUserMicros": 281000,
+        "cpuSystemMicros": 140000,
+        "elapsedMs": 22408.469399999998,
+        "rssBytes": 53686272,
+        "heapUsedBytes": 8892496,
+        "paidResources": false,
+        "monetarySpend": 0,
+        "automaticRetries": 0
+      }
+    },
+    {
+      "run": "windows-live-1793034723518",
+      "ticker": "CRCLx",
+      "windowUTC": [
+        "2026-10-26T17:09:00.000Z",
+        "2026-10-26T17:10:00.000Z"
+      ],
+      "transactions": 0,
+      "metrics": {
+        "httpRequests": 11,
+        "rpcAttempts": 7,
+        "rpcCompletions": 7,
+        "responseBytes": 37199,
+        "cpuUserMicros": 31000,
+        "cpuSystemMicros": 47000,
+        "elapsedMs": 21849.4844,
+        "rssBytes": 54452224,
+        "heapUsedBytes": 9818616,
+        "paidResources": false,
+        "monetarySpend": 0,
+        "automaticRetries": 0
+      }
+    },
+    {
+      "run": "windows-executions-1793034915829",
+      "ticker": "SPYx",
+      "windowUTC": [
+        "2026-10-26T17:03:00.000Z",
+        "2026-10-26T17:04:00.000Z"
+      ],
+      "transactions": 8,
+      "metrics": {
+        "httpRequests": 21,
+        "rpcAttempts": 17,
+        "rpcCompletions": 17,
+        "responseBytes": 227717,
+        "cpuUserMicros": 391000,
+        "cpuSystemMicros": 125000,
+        "elapsedMs": 53495.4115,
+        "rssBytes": 55005184,
+        "heapUsedBytes": 10107472,
+        "paidResources": false,
+        "monetarySpend": 0,
+        "automaticRetries": 0
+      }
+    },
+    {
+      "run": "windows-executions-1793034915829",
+      "ticker": "CRCLx",
+      "windowUTC": [
+        "2026-10-26T17:03:00.000Z",
+        "2026-10-26T17:04:00.000Z"
+      ],
+      "transactions": 3,
+      "metrics": {
+        "httpRequests": 15,
+        "rpcAttempts": 11,
+        "rpcCompletions": 11,
+        "responseBytes": 131398,
+        "cpuUserMicros": 31000,
+        "cpuSystemMicros": 31000,
+        "elapsedMs": 34230.0875,
+        "rssBytes": 56135680,
+        "heapUsedBytes": 10324664,
+        "paidResources": false,
+        "monetarySpend": 0,
+        "automaticRetries": 0
+      }
+    }
+  ],
+  "totals": {
+    "rpcAttempts": 42,
+    "rpcCompletions": 42,
+    "httpRequests": 58,
+    "responseBytes": 433105,
+    "cpuMicros": 1077000,
+    "maxObservedRssBytes": 56135680
+  },
+  "separatePreflight": {
+    "method": "getSlot(finalized)",
+    "httpStatus": 200,
+    "slot": 461740924,
+    "elapsedMs": 383,
+    "rawReceiptRetained": false,
+    "rpcRequests": 1
+  },
+  "automaticRetries": 0,
+  "newExecutedTransactions": 11,
+  "acceptedIntervals": 0,
+  "acceptedMarkets": 0,
+  "paidResources": false,
+  "monetarySpend": 0,
+  "costScope": "No paid RPC key, purchase or paid runner. Wire/TLS overhead and ongoing provider allowance not measured; responseBytes are retained decoded bodies, RSS is sampled not peak."
+}

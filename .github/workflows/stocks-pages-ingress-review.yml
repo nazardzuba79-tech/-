@@ -1,0 +1,112 @@
+name: Stocks Pages ingress (isolated, zero activation)
+on:
+  push:
+    branches: [codex/stocks613-pages-ingress-20261024]
+  pull_request:
+    paths:
+      - frontend/edge/stocks-pages.mjs
+      - frontend/functions/__stocks_global/**
+      - frontend/public/_routes.json
+      - services/stocks-global/edge-transport/**
+      - services/stocks-global/hosted-ingress.mjs
+      - services/stocks-global/release-entrypoint.mjs
+      - deploy/stocks-pages-*
+      - .github/workflows/stocks-pages-ingress-review.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: stocks-pages-ingress-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ingress-chain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      STOCKS_DISPOSABLE_PG_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_pages
+      STOCKS_PG_DISPOSABLE_CONFIRM: stocks_disposable_pages
+      STOCKS_PG_COMPILED_ROUTER: 'true'
+      STOCKS_EDGE_NGINX_TEST: 'true'
+      STOCKS_TEST_CASH_ENABLED: 'false'
+      STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+      WRANGLER_SEND_METRICS: 'false'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stocks_ci
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: stocks_disposable_pages
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U stocks_ci -d stocks_disposable_pages"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Obtain the existing disposable fixture's pinned base schema (no production audit)
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+      - name: Install locked app and existing Worker tools; temporary local-only Pages builder
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+          npm install --prefix /tmp/stocks-pages-tools --no-save --ignore-scripts --no-audit --no-fund wrangler@4.148.0
+          sudo apt-get update -qq
+          sudo apt-get install -y nginx openssl
+      - name: Build API locally without any production connection or migration
+        run: |
+          npx prisma generate
+          npm run build
+      - name: Compile the actual Pages file-based router (no deploy)
+        run: |
+          mkdir -p output
+          node /tmp/stocks-pages-tools/node_modules/wrangler/bin/wrangler.js pages functions build frontend/functions --project-directory frontend --outdir output/pages-worker --output-routes-path output/pages-generated-routes.json --compatibility-date 2026-09-09
+      - name: Signed transport, same-origin policy and unchanged private ingress
+        run: >-
+          node --test
+          services/stocks-global/edge-transport/transport.test.mjs
+          services/stocks-global/hosted-ingress.test.mjs
+          services/stocks-global/execution-off.test.mjs
+      - name: Actual workerd Pages router -> actual Nginx TLS -> private gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/edge-transport/pages.workerd.test.mjs | tee /tmp/stocks-pages-workerd.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-pages-workerd.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-pages-workerd.tap
+      - name: New isolated chain with ordinary login, real PG auth/revocation and unchanged financial rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/edge-transport/pages-chain.pg.test.cjs | tee /tmp/stocks-pages-pg.tap
+          grep -Eq '^# pass 1$' /tmp/stocks-pages-pg.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-pages-pg.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-pages-pg.tap
+      - name: Preserve actual hosted silent controls, route gate and release defaults
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+          frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+          src/api/routes/__tests__/stocksTestCash.test.ts
+      - name: Build frontend default OFF without replacing VITE_API_URL
+        run: cd frontend && npm run build
+      - name: Preserve source-only receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-pages-isolated-chain
+          path: |
+            /tmp/stocks-pages-workerd.tap
+            /tmp/stocks-pages-pg.tap
+            output/pages-generated-routes.json
+          if-no-files-found: warn
+          retention-days: 5

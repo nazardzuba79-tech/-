@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "86ab8044403d368df69b00e93e37b89f0644bcd3",
+  "capturedAt": "2026-10-25T10:45:28.905Z",
+  "sources": {
+    "raydiumPoolAndSwapSchema": "https://github.com/raydium-io/raydium-clmm/blob/edfc5c0a0cd8084ed694668391174a35b5246cf5/programs/amm/src/states/pool.rs",
+    "solanaNetwork": "https://solana.com/docs/payments/agentic-payments/x402",
+    "raydiumSwapV2": "https://github.com/raydium-io/raydium-clmm/blob/edfc5c0a0cd8084ed694668391174a35b5246cf5/programs/amm/src/instructions/swap_v2.rs"
+  },
+  "note": "221-byte SwapEvent Borsh fields: amounts136/152, transfer fees144/160, direction168, sqrt169, liquidity185, tick201, AMM fees205/213. This source pin is not proof of deployed binary correspondence.",
+  "swapV2SourceCapture": {
+    "capturedAt": "2026-10-25T10:59:09Z",
+    "file": "swap_v2.pinned.rs",
+    "sha256": "8e9d7ecdfdea233acd49f00b9236835433db8fac454982deebb8b5b727e4fbfc"
+  }
+}

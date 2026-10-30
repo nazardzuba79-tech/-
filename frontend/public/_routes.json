@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/__stocks_global/*"],
+  "exclude": []
+}

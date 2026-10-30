@@ -1,0 +1,78 @@
+{
+  "baseCommit": "ade1f6bd7ed603f25b34adf32346100945f27b5d",
+  "startedAt": "2026-10-30T06:11:01.562302+00:00",
+  "node": "v24.22.1",
+  "network": "none; isolated fixtures only",
+  "suites": [
+    {
+      "path": "scripts/stocks-verify-clmm-proof.test.mjs",
+      "exitCode": 0,
+      "tests": 25,
+      "pass": 25,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 69.957
+    },
+    {
+      "path": "scripts/stocks-reconcile-clmm-receipts.test.mjs",
+      "exitCode": 0,
+      "tests": 29,
+      "pass": 29,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 94.849
+    },
+    {
+      "path": "scripts/stocks-source-pipeline.test.mjs",
+      "exitCode": 0,
+      "tests": 46,
+      "pass": 46,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 175.902
+    },
+    {
+      "path": "scripts/stocks-capture-transport.test.mjs",
+      "exitCode": 0,
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 103.301
+    },
+    {
+      "path": "scripts/stocks-source-pipeline-producer.test.mjs",
+      "exitCode": 0,
+      "tests": 35,
+      "pass": 35,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 500.357
+    },
+    {
+      "path": "scripts/stocks-source-pipeline-coverage.test.mjs",
+      "exitCode": 0,
+      "tests": 109,
+      "pass": 109,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 1036.563
+    },
+    {
+      "path": "scripts/stocks-capture-clmm-coverage.test.mjs",
+      "exitCode": 0,
+      "tests": 31,
+      "pass": 31,
+      "fail": 0,
+      "skipped": 0,
+      "elapsedMs": 650.608
+    }
+  ],
+  "totals": {
+    "tests": 283,
+    "pass": 283,
+    "fail": 0,
+    "skipped": 0
+  },
+  "finishedAt": "2026-10-30T06:11:04.198590+00:00"
+}

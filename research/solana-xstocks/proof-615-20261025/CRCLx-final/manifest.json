@@ -1,0 +1,381 @@
+{
+  "network": "solana-mainnet-beta",
+  "ticker": "CRCLx",
+  "startedAt": "2026-10-25T10:46:42.177Z",
+  "windowUTC": [
+    "2026-10-25T10:39:00Z",
+    "2026-10-25T10:40:00Z"
+  ],
+  "rpcRequests": 2,
+  "issuerVerified": true,
+  "poolOwnerVerified": true,
+  "pairMintVerified": true,
+  "vaultMintVerified": true,
+  "swapEventVerified": false,
+  "programVersionVerified": false,
+  "intervalComplete": false,
+  "multiplierChronologyVerified": false,
+  "commercialRightsVerified": false,
+  "productionReady": false,
+  "ohlcv": null,
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/CRCLx",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-25T10:44:01.853Z",
+      "httpStatus": 200,
+      "sha256": "c7a56ade6e402eadca4cb2c60306ce14005fb248d07021a78c1b4eb5cb7f847a",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "at": "2026-10-25T10:44:08.054Z",
+      "httpStatus": 200,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-003.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-25T10:44:13.778Z",
+      "httpStatus": 200,
+      "sha256": "df3f571fbac05d95de94a066c852d41e0ce809a15f929291aa52bfb0ba402af2",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-004.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getMultipleAccounts",
+      "params": [
+        [
+          "DMQver7kdMua1ANBY1rJPEFCX594zWn81ihv2yMVFEsF",
+          "8awg4iLSUmmmrkUGgj3T8VuWyvHRPudsLz8skyb3xV92"
+        ],
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "minContextSlot": 461227871
+        }
+      ],
+      "at": "2026-10-25T10:44:16.857Z",
+      "httpStatus": 200,
+      "sha256": "6f1349e8fd83237c072a3d9eac00b1763369dc2152f3cf1273759fb745d87437",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-005.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+        {
+          "encoding": "base64",
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-25T10:44:19.922Z",
+      "httpStatus": 200,
+      "sha256": "55046de5ee35c4dd57f8d160d3f6dda8179a045d72cb02fb01b0e2a9246c223f",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-006.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+        {
+          "encoding": "base64",
+          "commitment": "finalized",
+          "dataSlice": {
+            "offset": 0,
+            "length": 45
+          }
+        }
+      ],
+      "at": "2026-10-25T10:44:22.988Z",
+      "httpStatus": 200,
+      "sha256": "cb607f35880f137a817ce1c111002339f69ccc32fd5c42fe352fddfd065a69a0",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-007.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getAccountInfo",
+      "params": [
+        "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+        {
+          "encoding": "jsonParsed",
+          "commitment": "finalized",
+          "minContextSlot": 461227871
+        }
+      ],
+      "at": "2026-10-25T10:46:45.182Z",
+      "httpStatus": 200,
+      "sha256": "15a378434ca0a637d7cbeea2df1d509ae9140b1a6f838dcd655545b259efdfca"
+    },
+    {
+      "file": "receipt-008.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/CRCLx/multiplier/history?network=Solana",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-25T10:46:49.707Z",
+      "httpStatus": 200,
+      "sha256": "587365ee7c716e7744393c344b4dcd575daa3d5888f0c7a55beeadf0652ed7f5"
+    },
+    {
+      "file": "receipt-009.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/CRCLx/multiplier?network=Solana",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-25T10:46:51.808Z",
+      "httpStatus": 200,
+      "sha256": "84d7f61a014a16c9e7d49a9d7d646e6f73bd9ffa36ab4bd4f6a9e8f9f90f8b14"
+    },
+    {
+      "file": "receipt-010.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getSignaturesForAddress",
+      "params": [
+        "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+        {
+          "limit": 100,
+          "commitment": "finalized"
+        }
+      ],
+      "at": "2026-10-25T10:44:26.049Z",
+      "httpStatus": 200,
+      "sha256": "837340e63126a052ec8cbea765a793a8441ab029b878d73a7318091a693a37cd",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-011.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "pYYGXvaT37qBsohLdL74mpLSRWvBaH4di31qNrQvKPkV6RKBr56gnjr6NatZf8CqYxTyPh35ZYAueyP3xgG1qw4",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 0
+        }
+      ],
+      "at": "2026-10-25T10:44:29.125Z",
+      "httpStatus": 200,
+      "sha256": "008bda1c9c25fbd072c3bbd24362de4867e0d2f25498251d57d3603e66411925",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-012.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getTransaction",
+      "params": [
+        "ZkZQppc9RNLhJYiqUKBCRbuvFEco9DwAoYF7fYCnPMLqrcftijzmYuJieH2nkz4kiHByFc6AYLGgrph5EP8h3PN",
+        {
+          "encoding": "json",
+          "commitment": "finalized",
+          "maxSupportedTransactionVersion": 0
+        }
+      ],
+      "at": "2026-10-25T10:44:32.188Z",
+      "httpStatus": 200,
+      "sha256": "cfb6f3459004c854cb5e54bd49a5ca610e355e3e881c8cbc29468aea7a4047ed",
+      "reusedFrom": "research/solana-xstocks/proof-615-20261025/CRCLx"
+    },
+    {
+      "file": "receipt-013.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getBlock",
+      "params": [
+        461226504,
+        {
+          "commitment": "finalized",
+          "encoding": "json",
+          "transactionDetails": "signatures",
+          "maxSupportedTransactionVersion": 1,
+          "rewards": false
+        }
+      ],
+      "at": "2026-10-25T10:46:55.584Z",
+      "httpStatus": 200,
+      "sha256": "82cf545fb023d31ff70d804a32d1183fb543b07549483326d29753c5ee95579c"
+    }
+  ],
+  "pool": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV",
+  "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+  "accountSlot": 461227871,
+  "identity": {
+    "mints": [
+      "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    ],
+    "vaults": [
+      "DMQver7kdMua1ANBY1rJPEFCX594zWn81ihv2yMVFEsF",
+      "8awg4iLSUmmmrkUGgj3T8VuWyvHRPudsLz8skyb3xV92"
+    ],
+    "decimals": [
+      8,
+      6
+    ]
+  },
+  "vaults": [
+    {
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "authority": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV"
+    },
+    {
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "authority": "GYqHjuDzTiw7i52Xv1qohDE6eJr6eSZpsrBVikGZyaFV"
+    }
+  ],
+  "programDataAddress": "HzD2cCXXT3UQNjMMY6kDv9w6gZ9qquSdfoGXrLL3LXx",
+  "programLastDeploySlot": "459932378",
+  "mintExtensions": [
+    {
+      "extension": "metadataPointer",
+      "state": {
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "metadataAddress": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1"
+      }
+    },
+    {
+      "extension": "permanentDelegate",
+      "state": {
+        "delegate": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq"
+      }
+    },
+    {
+      "extension": "defaultAccountState",
+      "state": {
+        "accountState": "initialized"
+      }
+    },
+    {
+      "extension": "scaledUiAmountConfig",
+      "state": {
+        "authority": "S7vYFFWH6BjJyEsdrPQpqpYTqLTrPRK6KW3VwsJuRaS",
+        "multiplier": "1",
+        "newMultiplier": "1",
+        "newMultiplierEffectiveTimestamp": 0
+      }
+    },
+    {
+      "extension": "pausableConfig",
+      "state": {
+        "authority": "JDq14BWvqCRFNu1krb12bcRpbGtJZ1FLEakMw6FdxJNs",
+        "paused": false
+      }
+    },
+    {
+      "extension": "confidentialTransferMint",
+      "state": {
+        "auditorElgamalPubkey": null,
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "autoApproveNewAccounts": false
+      }
+    },
+    {
+      "extension": "transferHook",
+      "state": {
+        "authority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "programId": null
+      }
+    },
+    {
+      "extension": "tokenMetadata",
+      "state": {
+        "additionalMetadata": [],
+        "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+        "name": "Circle xStock",
+        "symbol": "CRCLx",
+        "updateAuthority": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+        "uri": "https://xstocks-metadata.backed.fi/tokens/Solana/CRCLx/metadata.json"
+      }
+    }
+  ],
+  "mintDecimalsVerified": true,
+  "issuerMultiplierHistory": {
+    "page": {
+      "currentPage": 0,
+      "hasNextPage": false
+    },
+    "nodes": []
+  },
+  "issuerCurrentMultiplier": {
+    "currentMultiplier": 1,
+    "newMultiplier": 0,
+    "activationDateTime": 0,
+    "reason": null
+  },
+  "signaturesScanned": 100,
+  "signaturesInWindow": 2,
+  "transactions": [
+    {
+      "signature": "pYYGXvaT37qBsohLdL74mpLSRWvBaH4di31qNrQvKPkV6RKBr56gnjr6NatZf8CqYxTyPh35ZYAueyP3xgG1qw4",
+      "slot": 461226504,
+      "blockTime": 1792924764,
+      "events": [
+        {
+          "logIndex": 9,
+          "invocationIndex": 3,
+          "eventBytes": 221,
+          "amount0": "471303464",
+          "amount1": "400224304",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": false,
+          "tradeFee0": "0",
+          "tradeFee1": "400225",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinBlock": 162
+    },
+    {
+      "signature": "ZkZQppc9RNLhJYiqUKBCRbuvFEco9DwAoYF7fYCnPMLqrcftijzmYuJieH2nkz4kiHByFc6AYLGgrph5EP8h3PN",
+      "slot": 461226504,
+      "blockTime": 1792924764,
+      "events": [
+        {
+          "logIndex": 9,
+          "invocationIndex": 3,
+          "eventBytes": 221,
+          "amount0": "942928768",
+          "amount1": "800684568",
+          "transferFee0": "0",
+          "transferFee1": "0",
+          "zeroForOne": false,
+          "tradeFee0": "0",
+          "tradeFee1": "800685",
+          "programVersionVerified": false
+        }
+      ],
+      "transactionOrderWithinBlock": 141
+    }
+  ],
+  "swapCandidates": 2,
+  "observedTransactionOrderVerified": true,
+  "status": "EVIDENCE_CAPTURED_NOT_PRICE_VERIFIED",
+  "blockers": [
+    "PROGRAM_SOURCE_BINARY_CORRESPONDENCE_UNVERIFIED",
+    "HISTORICAL_POOL_AND_VAULT_CONFIGURATION_UNVERIFIED",
+    "PAGINATION_COMPLETENESS_NOT_INDEPENDENTLY_PROVEN",
+    "TOKEN_2022_MULTIPLIER_AND_FEE_CHRONOLOGY_UNVERIFIED"
+  ],
+  "finishedAt": "2026-10-25T10:46:58.033Z"
+}

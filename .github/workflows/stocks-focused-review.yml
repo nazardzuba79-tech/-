@@ -8,17 +8,44 @@ on:
       - 'services/stocks-global/**'
       - 'src/api/routes/stocksTestCash.ts'
       - 'src/api/routes/__tests__/stocksTestCash.test.ts'
+      - 'src/api/middleware/auth.ts'
+      - 'src/stocksAuthority.ts'
+      - 'src/__tests__/stocksAuthority.test.ts'
+      - 'src/services/ContactEmailPolicy.ts'
       - 'prisma/schema.prisma'
       - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
+      - 'frontend/src/lib/__tests__/stocksViewerPush.test.ts'
+      - 'frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - 'frontend/src/lib/__tests__/stockOrderPanel.test.ts'
+      - 'frontend/src/lib/__tests__/stockCatalogueVersion.test.ts'
       - 'frontend/src/pages/stocks/StockOrderPanel.tsx'
       - '.github/workflows/stocks-focused-review.yml'
+      - 'scripts/qa-stocks-hosted-browser.cjs'
+      - 'scripts/qa-stocks-hosted-silent.cjs'
+      - 'scripts/qa-stocks-route-browser.cjs'
+      - 'scripts/qa-stocks-source-chart-browser.cjs'
+      - 'scripts/qa-stocks-viewer-push.cjs'
+      - 'frontend/src/pages/stocks/**'
+      - '.github/workflows/stocks-legacy-unsupported.yml'
+      - 'scripts/qa/stocks-migration-review*.cjs'
+      - 'scripts/qa/stocks-release-package*.cjs'
+      - 'scripts/qa/stocks-ci-source-head.test.cjs'
+      - 'scripts/qa/stocks-rc-50plus2/**'
+      - 'frontend/src/App.tsx'
+      - 'frontend/vite.config.ts'
+      - 'frontend/src/lib/__tests__/stocksHostedPilot.test.ts'
+      - 'frontend/src/lib/__tests__/stocksOriginalRouting.test.ts'
   workflow_dispatch: {}
 
 permissions:
   contents: read
+
+# PR source HEAD, never the synthetic pull_request merge commit in github.sha.
+# Manual review is only a source definition here, not authorization to dispatch.
+env:
+  EXPECTED_SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
 
 concurrency:
   group: stocks-focused-${{ github.event.pull_request.number || github.ref_name }}
@@ -26,6 +53,8 @@ concurrency:
 
 jobs:
   financial-review:
+    outputs:
+      source-sha: ${{ steps.source-check.outputs.sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -54,6 +83,25 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
       - name: Obtain pinned disposable-only base schema
         shell: bash
         run: |
@@ -74,7 +122,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --test --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs | tee /tmp/stocks-financial-pg.tap
+          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/session-read.pg.test.cjs | tee /tmp/stocks-financial-pg.tap
           grep -Eq '^# skipped 0$' /tmp/stocks-financial-pg.tap
           grep -Eq '^# fail 0$' /tmp/stocks-financial-pg.tap
           grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-financial-pg.tap
@@ -84,31 +132,362 @@ jobs:
           services/stocks-global/cash-authority-contract.test.mjs
           services/stocks-global/two-trader-http.test.mjs
           services/stocks-global/account-existing-only.test.mjs
+      - name: Gateway to authority transport and identity multiplexing (no cache, bounded batches, trader commands judged live)
+        run: >-
+          node --test
+          services/stocks-global/identity-batch.test.mjs
+          services/stocks-global/trader-bearer.test.mjs
+          services/stocks-global/authority-adapter.test.mjs
+          services/stocks-global/authority-rate-limit.test.mjs
+          services/stocks-global/catalogue-version.test.mjs
+      # #613 R9/R10: the private quota over whole minutes (simulated time), the explicit 503 near the connection bound,
+      # and the viewers' public quote stream (live judgement per delivery, bounds, viewer-only, off in the release).
+      - name: Private-quota window, connection admission and the viewer quote stream
+        run: >-
+          node --test
+          services/stocks-global/quota-sim.test.mjs
+          services/stocks-global/connection-admission.test.mjs
+          services/stocks-global/viewer-stream.test.mjs
+      # #613 demo/indicative prices (owner decision 30.10): pool decoders on recorded mainnet accounts, candles, MOEX
+      # ISS in roubles, OFF by default, viewable only in the demo profile and never tradable. No network.
+      - name: Demo/indicative prices (Solana pools, MOEX ISS), offline
+        run: node --test services/stocks-global/demo-indicative.test.mjs
       - name: Pilot read-only preflight contract (mock database only)
         run: node --test services/stocks-global/pilot-preflight.test.cjs
+      - name: Read-only preflight attempt gate on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/pilot-preflight.pg.test.cjs | tee /tmp/stocks-preflight-pg.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-preflight-pg.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-preflight-pg.tap
+          grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-preflight-pg.tap
       - name: Stocks-only shared trade stream bootstrap (synthetic and disconnected)
         run: >-
           node --test
           services/stocks-global/runtime-market.test.mjs
           services/stocks-global/binance-trade-feed.test.mjs
-      - name: Default-disabled API, viewer no-op and wallet projection
+      - name: Viewer no-op, wallet projection and native-bar vs own-source admission boundary
         run: >-
           npx jest --runInBand --runTestsByPath
-          src/api/routes/__tests__/stocksTestCash.test.ts
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/stocksViewerPush.test.ts
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
           frontend/src/lib/__tests__/stockOrderPanel.test.ts
-      - name: Confirm no production activation by source defaults
-        shell: bash
-        run: |
-          node -e "const fs=require('fs');const route=fs.readFileSync('src/api/routes/stocksTestCash.ts','utf8');if(!route.includes(\"process.env.STOCKS_TEST_CASH_ENABLED === 'true'\")||!route.includes('if (!enabled) return router'))process.exit(1)"
-          # The second gate: order execution stays refused unless STOCKS_ORDER_EXECUTION_ENABLED is exactly 'true'.
-          node -e "const fs=require('fs');const route=fs.readFileSync('src/api/routes/stocksTestCash.ts','utf8');if(!route.includes(\"process.env.STOCKS_ORDER_EXECUTION_ENABLED === 'true'\")||!route.includes(\"if (!orderExecutionEnabled) return res.status(403).json({ error: 'ACCOUNT_TRADING_DISABLED' })\"))process.exit(1)"
+          frontend/src/lib/__tests__/stocksNativeSourceBoundary.test.ts
+          frontend/src/lib/__tests__/stockCatalogueVersion.test.ts
+      - name: Bounded harness admission and financial assertion regressions (no workload run)
+        run: node --test scripts/qa/stocks-rc-50plus2/self-test.cjs
+      - name: Behavioral default-OFF, catalogue-only and explicit financial opt-in contract; dedicated authority process
+        run: npx jest --runInBand --runTestsByPath src/api/routes/__tests__/stocksTestCash.test.ts src/__tests__/stocksAuthority.test.ts
       - name: Review evidence (synthetic, no customer information)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stocks-focused-synthetic-pg
+          name: stocks-focused-synthetic-pg-${{ env.EXPECTED_SOURCE_SHA }}
           path: /tmp/stocks-financial-pg.tap
+          if-no-files-found: ignore
+          retention-days: 5
+
+  node22-hetzner-module-load:
+    outputs:
+      source-sha: ${{ steps.source-check.outputs.sha }}
+    # Compiled API + disposable PostgreSQL on the exact runtime.
+    # No production-image, ingress, provider or deployment attestation.
+    # identity-load.pg.test.cjs holds the 50+2 cadence for a full minute (about 75 s), runs the 50+2
+    # harness schedule (order cycle every 4 s) through the private ingress with the synthetic stream market (about 35 s), then
+    # goes over the private quota on purpose and waits for the next quota window (about 70 s).
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STOCKS_TEST_CASH_ENABLED: 'false'
+      DATABASE_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      DIRECT_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_DISPOSABLE_PG_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_PG_DISPOSABLE_CONFIRM: stocks_disposable_ci
+      STOCKS_PG_COMPILED_ROUTER: 'true'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stocks_ci
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: stocks_disposable_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stocks_ci -d stocks_disposable_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Obtain pinned disposable-only base schema
+        run: git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+      - name: Install exact locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Offline immutable-source CI contract
+        run: node --test scripts/qa/stocks-ci-source-head.test.cjs
+      - name: Generate API client locally (does not open any database)
+        run: npx prisma generate
+      - name: Compile production CommonJS API
+        run: npm run build
+      - name: Load actual ESM Stocks authority and default-off routes on Node 22.23.3
+        run: node --test services/stocks-global/testing/node22-route-load.test.cjs services/stocks-global/catalogue-readiness.test.cjs
+      - name: Catalogue missing-table regression in its own acknowledged disposable database
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const {disposableUrl}=require('./services/stocks-global/testing/disposable-postgres.cjs');
+          if(disposableUrl()?.name!=='stocks_disposable_ci')throw Error('DISPOSABLE_CI_PARENT_REQUIRED');
+          const {PrismaClient}=require('@prisma/client');const db=new PrismaClient();
+          (async()=>{try{await db.$executeRawUnsafe('CREATE DATABASE stocks_disposable_catalogue');}finally{await db.$disconnect();}})().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
+          STOCKS_DISPOSABLE_PG_URL=postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_catalogue \
+          STOCKS_PG_DISPOSABLE_CONFIRM=stocks_disposable_catalogue \
+          node --test --test-reporter=tap services/stocks-global/catalogue-missing-tables.pg.test.cjs | tee /tmp/catalogue-missing-tables.tap
+          grep -Eq '^# skipped 0$' /tmp/catalogue-missing-tables.tap
+          grep -Eq '^# fail 0$' /tmp/catalogue-missing-tables.tap
+          grep -Eq '^# pass 1$' /tmp/catalogue-missing-tables.tap
+      - name: Preserve missing-table regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogue-missing-tables-${{ env.EXPECTED_SOURCE_SHA }}
+          path: /tmp/catalogue-missing-tables.tap
+          retention-days: 5
+      - name: Release startup fails closed before listening
+        run: node --test services/stocks-global/release-startup.test.mjs
+      - name: Compiled authority financial fences, real release startup and the dedicated authority process on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/release-authority.pg.test.cjs services/stocks-global/separated-authority.pg.test.cjs services/stocks-global/identity-load.pg.test.cjs | tee /tmp/stocks-node22-pg.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-node22-pg.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-node22-pg.tap
+          grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-node22-pg.tap
+      - name: Stocks HTTP reuse and bounded CPU diagnostics (sequential loopback only)
+        run: >-
+          node --test
+          services/stocks-global/http-reuse.test.mjs
+          scripts/qa/stocks-rc-50plus2/cpu-http-profile.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-summary.test.cjs
+          scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs
+          scripts/qa/stocks-rc-50plus2/spans-summary-613.test.cjs
+          scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-session.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-contract.test.cjs
+      - name: Production factories reject all local ledgers and unverified authorities
+        run: node --test services/stocks-global/release-boundary.test.mjs
+
+      - name: Offline migration manifest contract (no SQL or image proof)
+        run: node --test scripts/qa/stocks-migration-review.test.cjs scripts/qa/stocks-release-package.test.cjs
+      - name: Preserve exact-head Node22 PostgreSQL evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-node22-pg-${{ env.EXPECTED_SOURCE_SHA }}
+          path: /tmp/stocks-node22-pg.tap
+          if-no-files-found: warn
+
+  pg-release-required:
+    name: Stocks PostgreSQL release contract
+    needs: [financial-review, node22-hetzner-module-load]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require both complete financial suites without skips or failures
+        env:
+          FINANCIAL_RESULT: ${{ needs.financial-review.result }}
+          NODE22_RESULT: ${{ needs.node22-hetzner-module-load.result }}
+          FINANCIAL_SHA: ${{ needs.financial-review.outputs.source-sha }}
+          NODE22_SHA: ${{ needs.node22-hetzner-module-load.outputs.source-sha }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), env = process.env;
+          console.log(`Expected source SHA: ${env.EXPECTED_SOURCE_SHA}\nFinancial checkout SHA: ${env.FINANCIAL_SHA}\nNode22 checkout SHA: ${env.NODE22_SHA}`);
+          if (!/^[0-9a-f]{40}$/.test(env.EXPECTED_SOURCE_SHA ?? '') ||
+              env.FINANCIAL_RESULT !== 'success' || env.NODE22_RESULT !== 'success' ||
+              env.FINANCIAL_SHA !== env.EXPECTED_SOURCE_SHA || env.NODE22_SHA !== env.EXPECTED_SOURCE_SHA) {
+            throw new Error('STOCKS_CI_REQUIRED_HEAD_OR_RESULT_MISMATCH');
+          }
+          fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
+            `PostgreSQL code contract PASS at source ${env.EXPECTED_SOURCE_SHA}. Legacy SQLite is unsupported and reported separately.\n` +
+            'This is not production topology, image, ingress, migration, capacity or release approval.\n');
+          NODE
+
+  hosted-browser:
+    # Same-app hosted Stocks in Chromium over the disposable PostgreSQL authority: ordinary login, the menu,
+    # silent viewers, two bound traders' Market/Limit orders, logout. Synthetic only; no secrets, no deploy.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40  # the whole-route QA adds about 6 minutes
+    env:
+      STOCKS_TEST_CASH_ENABLED: 'false'
+      DATABASE_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      DIRECT_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_DISPOSABLE_PG_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_PG_DISPOSABLE_CONFIRM: stocks_disposable_ci
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stocks_ci
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: stocks_disposable_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stocks_ci -d stocks_disposable_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Obtain pinned disposable-only base schema
+        run: git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Hosted bundle (catalogue visible; API on the fixture port; execution gate OFF as shipped)
+        run: cd frontend && npx vite build --outDir ../.stocks-hosted-dist --emptyOutDir
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+          VITE_API_URL: http://127.0.0.1:4791/api/v1
+      # Isolated acceptance only: the frontend execution gate (#611) ON, used solely with both server gates ON.
+      - name: Hosted bundle with the frontend execution gate ON (disposable acceptance only)
+        run: cd frontend && npx vite build --outDir ../.stocks-hosted-execution-dist --emptyOutDir
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+          VITE_API_URL: http://127.0.0.1:4791/api/v1
+          VITE_STOCKS_ORDER_EXECUTION_ENABLED: 'true'
+      - name: Install browser
+        run: |
+          npm install --prefix /tmp/stocks-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/stocks-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Guest, viewer (silent), two traders (PG DemoBalance), logout — 1440 and 390
+        run: node scripts/qa-stocks-hosted-browser.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_STOCKS_EXECUTION_DIST: .stocks-hosted-execution-dist
+          QA_OUT: /tmp/stocks-hosted-browser
+      - name: Whole user route — menu → catalogue → asset → every timeframe → «История» → back → another asset → reload → offline/online, request volume, silent BUY — viewer and trader, 1440 and 390
+        run: node scripts/qa-stocks-route-browser.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_OUT: /tmp/stocks-hosted-browser/route
+      # #613 + #621: the real chart with in-page synthetic source pages; no gateway, provider or RPC.
+      - name: Own-source chart — ACCEPTED 1m with a gap, UNKNOWN 1m/5m/1h, native bar excluded, silent viewer — 1440 and 390
+        run: node scripts/qa-stocks-source-chart-browser.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_OUT: /tmp/stocks-hosted-browser/source-chart
+      # #613 viewer push: the gateway in the isolated push profile (test fixture only; the release never enables it).
+      - name: Viewer push — header-only bearer, stale/fresh price, no reads while live, hidden tab, crafted out-of-order events, busy fallback, offline, dropped connections, instrument switch, sign-out, traders unchanged — 1440 and 390
+        run: node scripts/qa-stocks-viewer-push.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
+          QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_OUT: /tmp/stocks-hosted-browser/viewer-push
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-hosted-browser
+          path: /tmp/stocks-hosted-browser
+          retention-days: 14
+
+  # From #611, on the one canonical flag: the default build hides Stocks, the hosted build compiles, and every
+  # contradictory combination (local simulator, foreign gateway origin, the discarded flag name) refuses to build.
+  hosted-build-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Normal login, hosted route, loopback-only simulator, silent viewer
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+          frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+          frontend/src/lib/__tests__/stockNavigation.test.ts
+          frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/headerDropdown.test.ts
+      - name: Gateway execution OFF by default; forged financial requests 403 before any ledger work (#611)
+        run: node --test services/stocks-global/execution-off.test.mjs
+      - name: Default build (Stocks hidden)
+        run: cd frontend && npx vite build --outDir ../.stocks-default-dist --emptyOutDir
+      - name: Hosted build (canonical flag)
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+        run: cd frontend && npx vite build --outDir ../.stocks-hosted-dist --emptyOutDir
+      - name: Contradictory hosted builds are refused
+        shell: bash
+        run: |
+          set -u
+          refuse() { if (cd frontend && env "$@" npx vite build --outDir ../.stocks-refused-dist --emptyOutDir >/dev/null 2>&1); then echo "FAIL: accepted $*"; exit 1; fi; echo "refused: $*"; }
+          refuse VITE_STOCKS_CATALOGUE_VISIBLE=true VITE_STOCKS_ENABLED=true VITE_STOCKS_GLOBAL_SIMULATOR=true
+          refuse VITE_STOCKS_CATALOGUE_VISIBLE=true VITE_STOCKS_ORIGIN=https://stocks.example.invalid
+          refuse VITE_STOCKS_HOSTED_PILOT=true VITE_STOCKS_ENABLED=true
+      # From #611: the shipped hosted bundle (frontend execution gate OFF) against the real gateway with its
+      # default OFF, including two sessions that carry stale canTrade=true. Synthetic sessions and quotes only.
+      - name: Hosted bundle in frontend/dist for the silent-path check
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+        run: cd frontend && npx vite build --emptyOutDir
+      - name: Install isolated browser dependency
+        run: |
+          npm install --prefix /tmp/stocks-hosted-silent --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/stocks-hosted-silent/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Viewer and both stale canTrade sessions silent at 1440 and 390 (normal login UI)
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/stocks-hosted-silent/node_modules/playwright
+        run: node scripts/qa-stocks-hosted-silent.cjs
+      - name: Silent-path evidence (synthetic only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-hosted-silent-browser
+          path: docs/qa/stocks-hosted-silent
           if-no-files-found: ignore
           retention-days: 5

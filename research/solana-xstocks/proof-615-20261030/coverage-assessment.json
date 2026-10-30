@@ -1,0 +1,59 @@
+{
+  "schema": "voltex.solana-coverage-attempt-assessment.v1",
+  "sourceBase": "2d9782e86c6d89a980a0739c26599bbf55359008",
+  "packet": "coverage-spyx-1793337942886",
+  "manifestSha256": "9118bc48341deaec7bae108f9f8dbac4d25ed67d257dfbe5394a25bcfb55ffd6",
+  "network": "solana-mainnet-beta",
+  "endpoint": "https://api.mainnet-beta.solana.com",
+  "windowUTC": [
+    "2026-10-30T05:22:00.000Z",
+    "2026-10-30T05:23:00.000Z"
+  ],
+  "status": "BLOCKED_BY_PRODUCED_BLOCK_BUDGET",
+  "rpcAttempts": 4,
+  "successfulRpcResponses": 4,
+  "responseBytes": 29511,
+  "elapsedMs": 9038.967342,
+  "signatureRows": 100,
+  "signatureRowsWithinMinute": 5,
+  "nearestBefore": {
+    "blockTime": 1793337717,
+    "confirmationStatus": "finalized",
+    "err": null,
+    "memo": null,
+    "signature": "21cC5kRHBbYYLrsTK7FjrNJyHEYvr79J5BTkW5ocAc9LDQb9kZTZeAaiK8ur51ghtGU3ssDLCVJeMCh4SEHgvYAe",
+    "slot": 463165300,
+    "transactionIndex": 297
+  },
+  "nearestAfter": {
+    "blockTime": 1793337812,
+    "confirmationStatus": "finalized",
+    "err": null,
+    "memo": null,
+    "signature": "2eqsgwb7SAJJcjFJ7vgA2t6YXLELeD4Ep8KmXBrxbQuTe4CjeLHRYgEWQDX7MUPz57gRC1dUhRqq7f7Bbb5Txna8",
+    "slot": 463165735,
+    "transactionIndex": 131
+  },
+  "slotRange": {
+    "from": 463165300,
+    "to": 463165735
+  },
+  "producedBlocksReturned": 436,
+  "producedBlockLimit": 200,
+  "blockLimitComparison": "436 > 200",
+  "fullBlocksRequested": 0,
+  "automaticRetries": 0,
+  "receiptCoverageVerified": false,
+  "acceptedIntervals": 0,
+  "acceptedMarkets": 0,
+  "runtimePricesPublished": 0,
+  "productionChanges": 0,
+  "paidResources": false,
+  "limitations": [
+    "Four successful RPC responses establish endpoint access for this attempt only, not continuous service availability.",
+    "The bracketing signature interval spans more than the requested minute; 436 is not a claim about every one-minute window.",
+    "The five signatures in the minute have not been reconciled to full blocks or accepted as swaps.",
+    "No block or source completeness is claimed. Budget was not raised and no second capture was launched.",
+    "Program/source attestation and historical pool/mint/fee chronology remain separate unresolved source gates."
+  ]
+}

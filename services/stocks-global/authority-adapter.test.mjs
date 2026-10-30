@@ -7,13 +7,15 @@ import { createServer } from './server.mjs';
 
 const ISSUER='authority-transport-fixture',KEY='synthetic-internal-gateway-key-0000000000';
 const credential = letter => 'Bearer '+letter.repeat(32);
+const identityReply=options=>new Response(JSON.stringify({results:JSON.parse(options.body).tokens.map(()=>({issuer:ISSUER,subject:'synthetic-a'}))}));
 test('authority transport keeps per-request sessions when a principal handle is reused across concurrent tabs',async t=>{
-  const calls=[];
+  const calls=[],identities=[];
   const server=http.createServer(async(req,res)=>{
     const authorization=req.headers.authorization,subject=authorization===credential('B')?'synthetic-b':'synthetic-a';
     res.setHeader('content-type','application/json');
-    if(req.url.endsWith('/identity'))return res.end(JSON.stringify({issuer:ISSUER,subject}));
     const chunks=[];for await(const chunk of req)chunks.push(chunk);const body=JSON.parse(Buffer.concat(chunks));
+    // Identity checks travel as one capability-only batch: no user bearer in the header.
+    if(req.url.endsWith('/identities')){identities.push({authorization,key:req.headers['x-stocks-authority-key'],tokens:body.tokens});return res.end(JSON.stringify({results:body.tokens.map(token=>({issuer:ISSUER,subject:'Bearer '+token===credential('B')?'synthetic-b':'synthetic-a'}))}));}
     calls.push({authorization,key:req.headers['x-stocks-authority-key'],body});
     res.end(JSON.stringify({value:body.type==='ensure'?{id:accountId({issuer:ISSUER,subject})}:{syntheticCredential:authorization},metrics:{synthetic:true}}));
   });
@@ -28,12 +30,14 @@ test('authority transport keeps per-request sessions when a principal handle is 
   ]);
   assert.equal(a.syntheticCredential,credential('C'));assert.equal(b.syntheticCredential,credential('B'));
   assert.ok(calls.every(call=>call.key===KEY));assert.equal(JSON.stringify(adapter.metrics()).includes(KEY),false);
+  assert.ok(identities.length>=2&&identities.every(call=>call.key===KEY&&call.authorization===undefined));
+  assert.deepEqual(identities.flatMap(call=>call.tokens).map(token=>token[0]).sort(),['A','B','C']);
 });
 
 test('authority transport fails closed on a lost mutation response and never retries',async()=>{
   let requests=0;
-  const adapter=createAuthorityAdapter({endpoint:'http://127.0.0.1:1/api/v1/stocks-test-cash',issuer:ISSUER,gatewayKey:KEY,fetchImpl:async(_url,options)=>{
-    requests++;if(options.method==='GET')return new Response(JSON.stringify({issuer:ISSUER,subject:'synthetic-a'}));
+  const adapter=createAuthorityAdapter({endpoint:'http://127.0.0.1:1/api/v1/stocks-test-cash',issuer:ISSUER,gatewayKey:KEY,fetchImpl:async(url,options)=>{
+    requests++;if(url.endsWith('/identities'))return identityReply(options);
     if(JSON.parse(options.body).type==='ensure')return new Response(JSON.stringify({value:{id:accountId({issuer:ISSUER,subject:'synthetic-a'})}}));
     throw Error('synthetic lost response');
   }});
@@ -56,8 +60,8 @@ test('authority opt-in rejects mixed SQLite/authority configuration before openi
 
 test('authority handle forwards observation cancellation and never cancels financial intent from caller signal',async()=>{
   let observationStarted;const started=new Promise(resolve=>observationStarted=resolve),calls=[];
-  const adapter=createAuthorityAdapter({endpoint:'http://127.0.0.1:1/api/v1/stocks-test-cash',issuer:ISSUER,gatewayKey:KEY,fetchImpl:async(_url,options)=>{
-    if(options.method==='GET')return new Response(JSON.stringify({issuer:ISSUER,subject:'synthetic-a'}));
+  const adapter=createAuthorityAdapter({endpoint:'http://127.0.0.1:1/api/v1/stocks-test-cash',issuer:ISSUER,gatewayKey:KEY,fetchImpl:async(url,options)=>{
+    if(url.endsWith('/identities'))return identityReply(options);
     const body=JSON.parse(options.body);calls.push({body,aborted:options.signal.aborted});
     if(body.type==='ensure')return new Response(JSON.stringify({value:{id:accountId({issuer:ISSUER,subject:'synthetic-a'})}}));
     if(body.type==='observe'){observationStarted();return new Promise((_,reject)=>options.signal.addEventListener('abort',()=>reject(Error('synthetic transport aborted')),{once:true}));}

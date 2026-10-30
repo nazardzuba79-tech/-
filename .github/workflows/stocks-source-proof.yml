@@ -1,0 +1,58 @@
+name: Stocks source proof and admission
+on:
+  pull_request:
+    paths:
+      - '.gitattributes'
+      - 'scripts/stocks-*-clmm-*.mjs'
+      - 'scripts/stocks-source-pipeline*.mjs'
+      - 'scripts/stocks-capture-transport.test.mjs'
+      - 'research/solana-xstocks/proof-615-20261025/**'
+      - 'research/solana-xstocks/proof-615-20261026/**'
+      - 'research/solana-xstocks/proof-615-20261030/**'
+      - 'frontend/src/lib/__tests__/stocksSourceAdmission.test.ts'
+      - 'frontend/src/lib/__tests__/stockSourceContract.test.ts'
+      - 'frontend/src/pages/stocks/global/readWork.ts'
+      - 'frontend/src/pages/stocks/global/GlobalStocks.tsx'
+      - 'frontend/src/pages/stocks/global/GlobalChart.tsx'
+      - '.github/workflows/stocks-source-proof.yml'
+permissions:
+  contents: read
+jobs:
+  offline-proof:
+    name: Offline CLMM proof and source pipeline
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - run: node --test scripts/stocks-verify-clmm-proof.test.mjs scripts/stocks-reconcile-clmm-receipts.test.mjs scripts/stocks-source-pipeline.test.mjs scripts/stocks-capture-transport.test.mjs scripts/stocks-source-pipeline-producer.test.mjs scripts/stocks-source-pipeline-coverage.test.mjs scripts/stocks-capture-clmm-coverage.test.mjs
+  source-admission:
+    name: Source admission, gaps and viewer safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix frontend --ignore-scripts
+      - run: >-
+          npx --no-install jest --runInBand
+          frontend/src/lib/__tests__/stocksSourceAdmission.test.ts
+          frontend/src/lib/__tests__/stockSourceContract.test.ts
+          frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/stockReadWork.test.ts
+          frontend/src/lib/__tests__/stockChartWork.test.ts
+          frontend/src/lib/__tests__/stockLocalization.test.ts

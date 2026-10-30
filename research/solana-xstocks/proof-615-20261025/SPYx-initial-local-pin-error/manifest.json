@@ -1,0 +1,48 @@
+{
+  "network": "solana-mainnet-beta",
+  "ticker": "SPYx",
+  "startedAt": "2026-10-25T10:42:17.050Z",
+  "windowUTC": [
+    "2026-10-25T10:39:00Z",
+    "2026-10-25T10:40:00Z"
+  ],
+  "rpcRequests": 1,
+  "issuerVerified": true,
+  "poolOwnerVerified": false,
+  "pairMintVerified": false,
+  "vaultMintVerified": false,
+  "swapEventVerified": false,
+  "programVersionVerified": false,
+  "intervalComplete": false,
+  "multiplierChronologyVerified": false,
+  "commercialRightsVerified": false,
+  "productionReady": false,
+  "ohlcv": null,
+  "receipts": [
+    {
+      "file": "receipt-001.json",
+      "url": "https://api.xstocks.fi/api/v2/public/assets/SPYx",
+      "method": "GET",
+      "params": null,
+      "at": "2026-10-25T10:42:17.051Z",
+      "httpStatus": 200,
+      "sha256": "9197460730a4714d09251d2cfb203543f1420679413ac88360aebc18687200e9"
+    },
+    {
+      "file": "receipt-002.json",
+      "url": "https://api.mainnet-beta.solana.com",
+      "method": "getGenesisHash",
+      "params": [],
+      "at": "2026-10-25T10:42:24.959Z",
+      "httpStatus": 200,
+      "sha256": "072c547ad3321ad6379bf249c218bcf112eaa3bd0138f07ace4077db1785a37d"
+    }
+  ],
+  "pool": "4pCZCVEiYyT4efNdXUdL2tJF8VGMgiMXrZWq6FiNXhRw",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "status": "BLOCKED",
+  "blockers": [
+    "WRONG_NETWORK"
+  ],
+  "finishedAt": "2026-10-25T10:42:27.595Z"
+}

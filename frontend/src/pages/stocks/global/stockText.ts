@@ -9,7 +9,7 @@ const columns: Record<Exclude<Lang, 'ru'>, number> = { en: 0, es: 1, zh: 2, hi: 
 // loading preserves mounted forms/dialogs while the shared provider changes lang.
 export function stockText(lang: Lang, message: StockMessage, params: StockParams = {}): string {
   const text = lang === 'ru' ? message : STOCK_MESSAGES[message][columns[lang]];
-  return text.replace(/\{([A-Za-z0-9_]+)\}/g, (token, name: string) => Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : token);
+  return !text.includes('{') ? text : text.replace(/\{([A-Za-z0-9_]+)\}/g, (token, name: string) => Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : token);
 }
 export function stockTranslator(lang: Lang): StockTranslator { return (message, params) => stockText(lang, message, params); }
 export function stockOrderLabel(status: string, s: StockTranslator): string {

@@ -1,0 +1,9 @@
+{
+  "sourceRevision": "edfc5c0a0cd8084ed694668391174a35b5246cf5",
+  "path": "programs/amm/src/states/pool.rs",
+  "url": "https://github.com/raydium-io/raydium-clmm/blob/edfc5c0a0cd8084ed694668391174a35b5246cf5/programs/amm/src/states/pool.rs",
+  "gitBlobSha": "3103048d1a6f104c1e44771f56130c6e8cb4cb3b",
+  "savedFile": "../proof-615-20261025/pool.pinned.rs",
+  "sha256": "8a5cbfc7d6104a1458f4679f9863d6ec9d993923d57858b6b2bb689267244202",
+  "scope": "Pinned upstream source and current 1544-byte account layout only; source-to-deployed-binary correspondence and historical state are UNKNOWN."
+}

@@ -34,7 +34,7 @@ describe('Stocks original catalogue route boundary', () => {
     }, [kind, instrumentId]);
     return React.createElement('div', { 'data-view': kind, 'data-instrument': instrumentId || '' });
   };
-  const load = (enabled: boolean | undefined, widgetPreview = false) => {
+  const load = (enabled: boolean | undefined, widgetPreview = false, hosted = false) => {
     const empty = () => null;
     const imports: Record<string, unknown> = {
       react: React, 'react/jsx-runtime': req('react/jsx-runtime'), 'react-router-dom': router,
@@ -50,11 +50,11 @@ describe('Stocks original catalogue route boundary', () => {
       './StocksOverview': { default: () => React.createElement(Boundary, { kind: 'legacy-overview' }) },
     };
     const output: any = {};
-    new Function('exports', 'require', '__VOLTEX_STOCKS_GLOBAL_SIMULATOR__', source)(output, (name: string) => {
+    new Function('exports', 'require', '__VOLTEX_STOCKS_GLOBAL_SIMULATOR__', '__VOLTEX_STOCKS_CATALOGUE_VISIBLE__', source)(output, (name: string) => {
       importsSeen.push(name);
       if (!(name in imports)) throw new Error(`Unexpected StocksPage dependency: ${name}`);
       return imports[name];
-    }, enabled);
+    }, enabled, hosted);
     Page = output.StocksPage;
   };
   const Navigation = () => { navigate = router.useNavigate(); return null; };
@@ -88,6 +88,30 @@ describe('Stocks original catalogue route boundary', () => {
     expect(importsSeen).toContain('./global/GlobalStocksCatalogue');
     expect(importsSeen).not.toContain('./global/GlobalStocks');
     expect(importsSeen).not.toContain('./StocksTerminal'); expect(legacyReads).not.toHaveBeenCalled();
+  });
+
+  test('explicit hosted gate loads approved catalogue and terminal on a hosted origin without local/widget mode', async () => {
+    dom.reconfigure({url:'https://private-pilot.example.invalid/stocks'});
+    load(false,false,true);
+    await render();onlyView('global-catalogue');
+    await flush(()=>navigate(terminalPath(AAPLX)));onlyView('global-terminal',AAPLX);
+    expect(legacyReads).not.toHaveBeenCalled();
+    expect(importsSeen).not.toContain('./StocksTerminal');
+  });
+
+  // From #611: the hosted gate behaves the same on any origin, including direct entry to an instrument.
+  test.each(['https://voltextech.net/stocks', 'https://review.example.invalid/stocks', 'http://127.0.0.1:4438/stocks'])
+    ('explicit hosted gate on %s opens the professional catalogue without legacy reads', async url => {
+      dom.reconfigure({ url }); load(false, false, true);
+      await render(); onlyView('global-catalogue');
+      expect(legacyReads).not.toHaveBeenCalled();
+      expect(importsSeen).not.toContain('./StocksTerminal');
+    });
+
+  test('explicit hosted gate: a direct instrument URL opens GlobalStocks, not a stand-in terminal', async () => {
+    dom.reconfigure({ url: 'https://voltextech.net/stocks' }); load(false, false, true);
+    await render(terminalPath(AAPLX)); onlyView('global-terminal', AAPLX);
+    expect(legacyReads).not.toHaveBeenCalled();
   });
 
   test.each([AAPLX, AAPLB, SBER])('direct canonical route preserves %s without mounting catalogue', async id => {

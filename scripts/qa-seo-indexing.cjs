@@ -163,7 +163,10 @@ async function browsers(base, locs) {
       const onError = (error) => errors.push(String(error.message || error).slice(0, 200));
       page.on('pageerror', onError);
       await page.goto(base + address, { waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(() => document.getElementById('root')?.childElementCount > 0, null, { timeout: 15000 }).catch(() => {});
+      // Wait for the page's own text, not just any child of #root: a lazy route first mounts the text-free Suspense
+      // shell (RouteShell), and on a loaded runner its chunk can take longer than the 1.2 s settle below (#613 CI:
+      // Academy pages at 390 read `rendered: 0`). The assertion below is unchanged.
+      await page.waitForFunction(() => (document.getElementById('root')?.innerText || '').trim().length > 20, null, { timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(1200);
       const state = await page.evaluate(() => ({
         path: location.pathname,

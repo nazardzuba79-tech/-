@@ -1,0 +1,5 @@
+Node22.23.3 runner syntax: PASS
+YAML parse / one Ubuntu24.04 job / label-only / contents-read: PASS
+Template inactive: PASS
+Application source diff against5ed: empty
+These are preparation checks, not browser PASS.

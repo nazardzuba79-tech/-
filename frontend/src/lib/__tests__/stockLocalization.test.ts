@@ -22,7 +22,7 @@ const expected = {
 const placeholders = (text: string) => [...text.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map(m => m[1]).sort();
 
 test('all seven Stocks languages have complete explicit messages and identical placeholders', () => {
-  expect(Object.keys(STOCK_MESSAGES)).toHaveLength(178);
+  expect(Object.keys(STOCK_MESSAGES)).toHaveLength(181);
   for (const [source, translations] of Object.entries(STOCK_MESSAGES)) {
     expect(translations).toHaveLength(6);
     for (const text of translations) {

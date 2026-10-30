@@ -1,0 +1,60 @@
+name: Stocks public market feeds - exact-head Node22
+on:
+  pull_request:
+    paths:
+      - 'services/stocks-global/live-*.mjs'
+      - 'services/stocks-global/venue*.mjs'
+      - 'services/stocks-global/testing/fixtures/venues/**'
+      - 'services/stocks-global/mexc-public-protobuf.mjs'
+      - 'services/stocks-global/kraken-instrument.mjs'
+      - 'services/stocks-global/fixtures/live-public-20261024/**'
+      - 'services/stocks-global/vendor/mexc-proto/**'
+      - 'frontend/src/lib/stocksIdentity.ts'
+      - 'frontend/src/pages/stocks/global/**'
+      - '.github/workflows/stocks-live-market-review.yml'
+permissions:
+  contents: read
+concurrency:
+  group: stocks-live-market-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  public-wire-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+      STOCKS_MARKET_DATA_ENABLED: 'false'
+      VITE_STOCKS_ORDER_EXECUTION_ENABLED: 'false'
+      VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+      VITE_API_URL: https://api.voltextech.net/api/v1
+      EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact review HEAD
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Offline captured public wire, default-OFF and cache regressions
+        run: >-
+          node --test services/stocks-global/live-market.test.mjs
+          services/stocks-global/runtime-market.test.mjs
+          services/stocks-global/release-market.test.mjs
+          services/stocks-global/venues.test.mjs
+          services/stocks-global/venue-discovery.test.mjs
+          services/stocks-global/market-history-range.test.mjs
+          services/stocks-global/execution-off.test.mjs
+          services/stocks-global/viewer-projection.test.mjs
+          services/stocks-global/release-boundary.test.mjs
+      - name: Frontend TypeScript
+        run: cd frontend && npx tsc -b
+      - name: Production frontend build with financial execution OFF
+        run: cd frontend && npx vite build
+      # No secrets, deploy commands, PG/migrations, external market probes or
+      # resource/load workloads. Existing hosted browser/PG checks are retained.
