@@ -130,6 +130,11 @@ export function restoreCopyDepositUx(source: string): string {
   result = once(result, '<div><CopyButton trader={trader} /></div></div>', '<div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>');
   result = once(result, '  const { favorites } = useFavorites();\n  const { following } = useFollowing();', '  const { depositUsd, eligible } = useCopyEligibility();\n  const { favorites } = useFavorites();\n  const { following } = useFollowing();');
   result = once(result, '      <section className="marketplace-section">', '      <div className="access-strip"><EligibilityGate /><div className="deposit-status"><WalletCards size={17} /><div><span>Ваш депозит</span><strong>${depositUsd.toLocaleString()}.00</strong></div><span className="status-pill">{eligible ? \'Есть доступ\' : \'Нет доступа\'}</span></div></div>\n\n      <section className="marketplace-section">');
+  // #644: reverse the reviewed empty-watchlist label before the older
+  // guard, without accepting drift in the action or threshold.
+  result = once(result,
+    '<span>Откройте профиль трейдера и нажмите «Наблюдать за трейдером». Сделки не копируются автоматически.</span>',
+    '<span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span>');
   result = once(result, '<span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span>', '<span>{eligible ? \'Откройте профиль трейдера и нажмите «Копировать трейдера».\' : \'Копирование доступно клиентам с депозитом от $20 000.\'}</span>');
   return result;
 }
