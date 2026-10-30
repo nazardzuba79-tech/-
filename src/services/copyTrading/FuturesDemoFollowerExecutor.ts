@@ -5,7 +5,7 @@ import type { NativeDemoService, NativeCommand } from '../../private-trading/nat
 import { inflate, type NativeAccount } from '../../private-trading/native/store';
 import { isNativeTestAccount } from '../../private-trading/native/testAccounts';
 import { futuresCopyCommitGuard, FuturesCopyGuardError } from './FuturesCopyCommitGuard';
-import { futuresDemoObserverEnabled } from './FuturesDemoObserverService';
+import { futuresDemoObserverEnabled, approvedFuturesDemoLeader } from './FuturesDemoObserverService';
 import { DemoEngineError } from '../../private-trading/native/engine';
 
 type Tx = Prisma.TransactionClient;
@@ -25,7 +25,8 @@ export interface FuturesDemoExecutionLimits {
 export class FuturesDemoFollowerExecutor {
   constructor(private readonly db:PrismaClient,private readonly native:Pick<NativeDemoService,'command'>,
     private readonly enabled:()=>boolean=()=>process.env.COPY_FUTURES_DEMO_EXECUTION_ENABLED==='true'
-      && futuresDemoObserverEnabled()) {}
+      && futuresDemoObserverEnabled(),
+    private readonly leaderApproved:(userId:string)=>boolean=approvedFuturesDemoLeader) {}
   private on(){if(!this.enabled())throw new FuturesCopyExecutionError('FUTURES_COPY_EXECUTOR_OFF',403);}
   private limits(l:FuturesDemoExecutionLimits){
     if(!positive(l.ratio)||n(l.ratio).gt(1)||!positive(l.maxLeverage)||n(l.maxLeverage).gt(100)
@@ -44,6 +45,7 @@ export class FuturesDemoFollowerExecutor {
   private async source(tx:Tx,sub:{traderId:string;ownerUserId:string}){
     const strategy=await tx.copyStrategyOwner.findUnique({where:{traderId:sub.traderId},select:{ownerUserId:true}});
     if(strategy?.ownerUserId!==sub.ownerUserId)throw new FuturesCopyExecutionError('SOURCE_OWNER_CHANGED',403);
+    if(!this.leaderApproved(sub.ownerUserId))throw new FuturesCopyExecutionError('SOURCE_CONSENT_REVOKED',403);
     const owner=await tx.user.findUnique({where:{id:sub.ownerUserId},select:{blockedAt:true}});
     if(!owner||owner.blockedAt)throw new FuturesCopyExecutionError('SOURCE_UNAVAILABLE',403);
     const leader=await tx.nativeDemoAccount.findUnique({where:{userId:sub.ownerUserId},select:{revision:true,payload:true}});
@@ -133,6 +135,7 @@ export class FuturesDemoFollowerExecutor {
       if(n(source.leverage).gt(consent.maxLeverage.toString())||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt.toString()))
         return reject('COPY_SOURCE_RISK_LIMIT');
       const follower=await tx.nativeDemoAccount.findUnique({where:{userId},select:{payload:true}});
+      const followerState=follower?inflate(follower.payload as unknown as NativeAccount):null;
       const admitted=follower ? (follower.payload as Record<string,unknown>).executionSession as
         {userId?:string;sessionId?:string;expiresAt?:number}|undefined : undefined;
       // Never invent a worker identity or extend an expired native session.
@@ -161,6 +164,11 @@ export class FuturesDemoFollowerExecutor {
           sourcePositionId:source.sourcePositionId,kind:'CLOSE',status:'APPLIED'}});
         const available=n(opens[0].filledQuantity).minus(prior.reduce((sum,v)=>sum.plus(v.filledQuantity?.toString()??'0'),n('0')));
         if(!available.gt(0))return reject('COPY_POSITION_ALREADY_CLOSED');
+        const ownOpen=followerState?.snapshot.positions.filter(p=>p.status==='OPEN')??[];
+        if(ownOpen.length!==1||ownOpen[0].id!==opens[0].followerPositionId
+          ||!n(ownOpen[0].quantity).eq(available)
+          ||followerState!.snapshot.orders.some(o=>o.status==='OPEN'||o.status==='PARTIALLY_FILLED'))
+          return reject('FOLLOWER_POSITION_MIXED_WITH_OTHER_ACTIVITY');
         const quantity=BigNumber.minimum(sourceQuantity,available);
         existingPositionId=opens[0].followerPositionId;
         // CLOSE is modeled on follower's own book; the leader's price is only
