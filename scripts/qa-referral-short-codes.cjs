@@ -64,4 +64,3 @@ fs.mkdirSync(out, {recursive:true});
     await client.end();
   }
 })().catch(e=>{console.error(e);process.exitCode=1;});
-
