@@ -75,7 +75,9 @@ async function main() {
     await db.balance.create({ data: { userId: id, asset: 'USDT', available: '250', locked: '20' } });
   }
   await db.copyStrategyOwner.upsert({ where: { traderId: 'VX-001' }, create: { traderId: 'VX-001', publicName: 'Fixture Nazar', ownerUserId: 'leader' }, update: { publicName: 'Fixture Nazar', ownerUserId: 'leader' } });
-  current = account(1);
+  // A pre-existing fill in the immutable source journal MUST NOT be copied
+  // by a subscriber who starts observing at revision 1.
+  current = account(1, [open('old', '0.4', '1000')], [cmd('old')]);
   await db.nativeDemoAccount.create({ data: { userId: 'leader', revision: 1, payload: current } });
   await db.nativeDemoRevision.create({ data: { userId: 'leader', revision: 1,
     requestKey: 'fixture-1', requestHash: 'test-only', payload: current } });
@@ -97,16 +99,17 @@ async function main() {
     assert.deepEqual((await service.scan('follower', sessions.follower)).accepted, 0);
   });
   await check('source immutable revision captures one real OPEN receipt and not an order intent', async () => {
-    await append([open('e1', '0.5', '1000')], [cmd('e1')]);
+    await append([...current.snapshot.events, open('e1', '0.5', '1000')], [...current.commands, cmd('e1')]);
     const s = await service.scan('follower', sessions.follower);
     assert.equal(s.scannedRevisions, 1); assert.equal(s.accepted, 1); assert.equal(s.lastRevision, 2);
     const view = await service.snapshot('follower', sessions.follower);
     assert.equal(view.events.length, 1); assert.equal(view.events[0].status, 'OBSERVED_ONLY');
+    assert.equal(view.events.some(e => e.sourceEventId === 'old'), false, 'Pre-subscription history must never be imported');
     assert.equal(view.automaticCopying, false);
     assert.equal((await service.scan('follower', sessions.follower)).accepted, 0);
   });
   await check('duplicate receipts across revisions and overlapping polls never double insert', async () => {
-    await append([open('e1', '0.5', '1000'), open('e2', '0.25', '1000')], [cmd('e1'), cmd('e2')]);
+    await append([...current.snapshot.events, open('e2', '0.25', '1000')], [...current.commands, cmd('e2')]);
     const results = await Promise.all([service.scan('follower', sessions.follower), service.scan('follower', sessions.follower)]);
     assert.equal(results.reduce((sum, result) => sum + result.accepted, 0), 1);
     assert.equal(await db.copyFuturesDemoEvent.count(), 2);
