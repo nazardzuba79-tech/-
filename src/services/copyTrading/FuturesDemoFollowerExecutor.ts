@@ -109,18 +109,22 @@ export class FuturesDemoFollowerExecutor {
       if(consent.status!=='ACTIVE'||consent.subscription.status!=='OBSERVING')
         throw new FuturesCopyExecutionError('COPY_EXECUTION_STOPPED',403);
       await this.source(tx,consent.subscription);
-      // Never use source events present before explicit execution consent.
-      const candidates=await tx.copyFuturesDemoEvent.findMany({
-        where:{subscriptionId:consent.subscriptionId,sourceRevision:{gt:consent.startedAfterRevision}},
-        orderBy:[{sourceRevision:'asc'},{sourceEventIndex:'asc'},{id:'asc'}],take:50,
-      });
-      let source=undefined as (typeof candidates)[number]|undefined;
-      for(const item of candidates) {
-        if(!await tx.copyFuturesDemoMirror.findUnique({where:{consentId_sourceEventId:{consentId:consent.id,sourceEventId:item.sourceEventId}},select:{id:true}})){
-          source=item;break;
-        }
-      }
-      if(!source)return {status:'EMPTY' as const,automaticProductionCopying:false};
+      // A fixed first-page scan would starve at 50 processed receipts.
+      // Find the earliest unprocessed event in indexed PostgreSQL order,
+      // without unbounded application-side fetching or journal replays.
+      const pending=await tx.$queryRaw<{id:string}[]>`
+        SELECT e."id" FROM "CopyFuturesDemoEvent" e
+        WHERE e."subscriptionId"=${consent.subscriptionId}
+          AND e."sourceRevision" > ${consent.startedAfterRevision}
+          AND NOT EXISTS (
+            SELECT 1 FROM "CopyFuturesDemoMirror" m
+            WHERE m."consentId"=${consent.id}
+              AND m."sourceEventId"=e."sourceEventId"
+          )
+        ORDER BY e."sourceRevision", e."sourceEventIndex", e."id"
+        LIMIT 1`;
+      if (!pending.length) return {status:'EMPTY' as const,automaticProductionCopying:false};
+      const source=await tx.copyFuturesDemoEvent.findUniqueOrThrow({where:{id:pending[0].id}});
       const key='copy-futures-'+createHash('sha256').update(consent.id+':'+source.sourceEventId).digest('hex').slice(0,58);
       const sourceQuantity=n(source.quantity).times(n(consent.ratio)).decimalPlaces(8,BigNumber.ROUND_DOWN);
       const receipt=(status:'APPLIED'|'REJECTED',reason:string|null,positionId:string|null,quantity:string|null)=>
