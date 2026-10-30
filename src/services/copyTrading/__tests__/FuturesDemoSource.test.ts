@@ -37,9 +37,11 @@ describe('Native Futures demo-copy source: read-only provenance and risk admissi
       .toEqual([['OPEN', '0.25', 'native-event-1'], ['CLOSE', '0.10', 'native-event-2']]);
     expect(futuresDemoSourceNotional(result.accepted[0])).toBe('16250');
   });
-  test('unknown or historical account mode fails closed', () => {
+  test('historical accounts refuse, while legacy initialized accounts default to LIVE', () => {
     expect(mutate(row => { row.executionMode = 'HISTORICAL_DEMO'; }).accepted).toEqual([]);
-    expect(mutate(row => { delete row.executionMode; }).accepted).toEqual([]);
+    // PrismaNativeRepository.initialize omits executionMode; native service displays
+    // that state as LIVE_EXECUTION, so rejecting it would disable real fixtures.
+    expect(mutate(row => { delete row.executionMode; }).accepted).toHaveLength(2);
   });
   test('historical candle and historical instruction are excluded', () => {
     expect(mutate(row => { (row.commands[0] as any).candle = { source: 'BYBIT_LINEAR' }; }).rejected[0].reason).toBe('HISTORICAL_SOURCE');
