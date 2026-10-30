@@ -189,7 +189,7 @@ test('CopyButton preserves explicit deposit gating and eligible Following withou
   eligible = true;
   click();
   expect([...following]).toEqual([trader.id]);
-  expect(renderToStaticMarkup(render())).toContain('Копируется');
+  expect(renderToStaticMarkup(render())).toContain('В наблюдении');
   click();
   expect(following.size).toBe(0);
   expect(toggleFollowing.mock.calls).toEqual([[trader.id], [trader.id]]);

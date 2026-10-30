@@ -105,7 +105,7 @@ const MARKET_TABS: { id: MarketTab; label: string }[] = [
   { id: 'leaderboard', label: 'Лидерборд' },
   { id: 'all', label: 'Все трейдеры' },
   { id: 'favorites', label: 'Избранное' },
-  { id: 'following', label: 'Копирую' },
+  { id: 'following', label: 'Наблюдаю' },
 ];
 
 const sortOptions = ['Top Performance', 'Highest ROI', 'Best Win Rate', 'Lowest Drawdown', 'Most Copied', 'Largest AUM', 'Newest Traders'];
@@ -208,6 +208,7 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
   return (
     <>
     <button
+      title="Локальный список наблюдения. Автокопирование сделок не запущено."
       className={`button button-copy ${isFollowing ? 'button-copy-active' : ''} ${compact ? 'button-small' : ''}`}
       onClick={(event) => {
         event.stopPropagation();
@@ -215,12 +216,12 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
         if (!eligible) { setShowDepositRequirement(true); return; }
         toggleFollowing(trader.id);
         toast.success(
-          isFollowing ? `Копирование ${trader.name} остановлено` : `Вы копируете ${trader.name}`,
-          { description: isFollowing ? undefined : `Комиссия за результат ${Math.round(trader.performanceFee * 100)}%. Средства остаются на вашем счёте VOLTEX.` }
+          isFollowing ? `Убрано из наблюдения: ${trader.name}` : `Добавлено в наблюдение: ${trader.name}`,
+          { description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.' }
         );
       }}
     >
-      {isFollowing ? <><Check size={14} /> Копируется</> : 'Копировать трейдера'}
+      {isFollowing ? <><Check size={14} /> В наблюдении</> : 'Наблюдать за трейдером'}
     </button>
     {showDepositRequirement && <CopyDepositDialog onClose={() => setShowDepositRequirement(false)} />}
     </>
@@ -317,7 +318,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
           </div>
         </div>
         <div className="card-topline-right">
-          {following.has(trader.id) && <span className="following-pill"><Check size={10} /> Копируется</span>}
+          {following.has(trader.id) && <span className="following-pill"><Check size={10} /> В наблюдении</span>}
           <FavoriteButton trader={trader} />
         </div>
       </div>
@@ -866,7 +867,7 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
         <div className="hero-guide-copy">
           <span>БЫСТРЫЙ СТАРТ</span>
           <strong>Как начать Copy Trading</strong>
-          <p>Выберите трейдера, изучите риск-метрики и подключите копирование.</p>
+          <p>Изучайте риск-метрики трейдеров. Список наблюдения не запускает копирование сделок.</p>
           <em>Открыть руководство <ChevronRight size={15} /></em>
         </div>
         <div className="hero-guide-art" aria-hidden="true">
@@ -1093,7 +1094,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
         <div className="section-title">
           <div>
             <span className="eyebrow">{MARKET_TABS.find((t) => t.id === tab)?.label}</span>
-            <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Вы копируете' : 'Профессиональные трейдеры'}</h2>
+            <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Список наблюдения' : 'Профессиональные трейдеры'}</h2>
           </div>
           <span className="results-count">Трейдеров: {totalVisibleCount}</span>
         </div>
@@ -1107,7 +1108,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
             {tab === 'favorites' && favorites.size === 0 && !query ? (
               <><Star size={22} /><strong>Избранное пусто</strong><span>Нажмите на звёздочку в карточке трейдера, чтобы сохранить его здесь.</span></>
             ) : tab === 'following' && following.size === 0 && !query ? (
-              <><Users size={22} /><strong>Вы пока никого не копируете</strong><span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span></>
+              <><Users size={22} /><strong>Список наблюдения пуст</strong><span>Откройте профиль трейдера и нажмите «Наблюдать за трейдером». Сделки не копируются автоматически.</span></>
             ) : (
               <><Search size={22} /><strong>Трейдеры не найдены</strong><span>Измените параметры поиска или фильтры.</span></>
             )}

@@ -66,7 +66,7 @@ function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordi
 test.each([0, 9_999, 9_999.99])('deposit %s opens requirement only on click without starting Following', deposit => {
   const fixture = copyFixture(deposit);
   expect(fixture.button().props.disabled).not.toBe(true);
-  expect(fixture.button().props.children).toBe('Копировать трейдера');
+  expect(fixture.button().props.children).toBe('Наблюдать за трейдером');
   expect(fixture.dialog()).toBe(false);
   const stopPropagation = jest.fn();
   fixture.button().props.onClick({ stopPropagation });
@@ -97,14 +97,14 @@ test.each([10_000, 10_000.01, 200_000])('deposit %s preserves existing eligible 
   expect(fixture.dialog()).toBe(false);
   expect(fixture.toggle).toHaveBeenNthCalledWith(1, ordinary.id);
   expect([...fixture.following]).toEqual([ordinary.id]);
-  expect(fixture.toast.success).toHaveBeenNthCalledWith(1, `Вы копируете ${ordinary.name}`, {
-    description: `Комиссия за результат ${Math.round(ordinary.performanceFee * 100)}%. Средства остаются на вашем счёте VOLTEX.`,
+  expect(fixture.toast.success).toHaveBeenNthCalledWith(1, `Добавлено в наблюдение: ${ordinary.name}`, {
+    description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.',
   });
   expect(fixture.button().props.className).toContain('button-copy-active');
   fixture.button().props.onClick({ stopPropagation });
   expect(fixture.toggle).toHaveBeenNthCalledWith(2, ordinary.id);
   expect(fixture.following.size).toBe(0);
-  expect(fixture.toast.success).toHaveBeenNthCalledWith(2, `Копирование ${ordinary.name} остановлено`, { description: undefined });
+  expect(fixture.toast.success).toHaveBeenNthCalledWith(2, `Убрано из наблюдения: ${ordinary.name}`, { description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.' });
   expect(stopPropagation).toHaveBeenCalledTimes(2);
 });
 
@@ -239,7 +239,7 @@ test('normal Copy surfaces have no permanent deposit requirement; only the click
   expect(body('FollowersPanel')).toContain('Gross PnL после расходов на исполнение, до комиссии за результат.');
   expect(body('Profile')).toContain('<div><CopyButton trader={trader} /></div></div>');
   expect(body('TraderCard')).toContain('<CopyButton trader={trader} compact />');
-  expect(body('Marketplace')).toContain('<span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span>');
+  expect(body('Marketplace')).toContain('Наблюдать за трейдером');
   expect(body('Marketplace')).not.toMatch(/depositUsd|useCopyEligibility/);
   const css = read('src/pages/copy-trading-bolt/CopyDepositDialog.css');
   expect(css).toContain('calc(100vw - 32px)');
@@ -315,14 +315,14 @@ test('normalization only reverses exact approved UX edits, never hides copy-acti
   //    was still in flight.
   //
   // What this guard exists to protect is untouched and still asserted below:
-  // the copy action is still `toggleFollowing(trader.id)`, and the fee is
-  // still `trader.performanceFee * 100`. Neither the eligibility threshold,
+  // the local watchlist action is still `toggleFollowing(trader.id)`.
+  // Neither the eligibility threshold,
   // the dialog, nor any financial figure moved.
   const approved = '14f46f69112895010de1df831cd4fb4fa11e78ccac0852d958eaa0d0156a38ac';
   expect(hash(restoreCopyButtonDepositUx(body('CopyButton')))).toBe(approved);
   const wrongAction = body('CopyButton').replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
   expect(hash(restoreCopyButtonDepositUx(wrongAction))).not.toBe(approved);
-  const changedMoney = source.replace('trader.performanceFee * 100', 'trader.performanceFee * 101');
-  expect(restoreCopyDepositUx(changedMoney)).toContain('trader.performanceFee * 101');
+  const wrongLocalAction = source.replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
+  expect(restoreCopyDepositUx(wrongLocalAction)).toContain('toggleFollowing("wrong-trader")');
   expect(() => restoreCopyDepositUx(source.replace('setShowDepositRequirement(true); return;', 'setShowDepositRequirement(true);'))).toThrow('Expected one Copy UX anchor');
 });

@@ -148,7 +148,7 @@ test('a null latest valuation stays unavailable instead of becoming a zero depos
 
 test('a confirmed zero keeps the existing deposit dialog only after a Copy click', async () => {
   await mount(); await resolveRequest(point('0'));
-  expect(button().textContent).toBe('Копировать трейдера');
+  expect(button().textContent).toBe('Наблюдать за трейдером');
   expectNoDepositOrAction(); await click();
   expect(document.querySelector('dialog')?.textContent).toContain('при депозите от $10 000.');
   expect(document.querySelector('a[href="/wallet?action=deposit"]')).not.toBeNull();
@@ -160,6 +160,8 @@ test('the confirmed 10000 boundary preserves the existing local Following action
   expect(toggleFollowing).toHaveBeenCalledTimes(1);
   expect(toggleFollowing).toHaveBeenCalledWith(trader.id);
   expect(toast.success).toHaveBeenCalledTimes(1);
+  expect(toast.success.mock.calls[0][0]).toContain('Добавлено в наблюдение');
+  expect(toast.success.mock.calls[0][1]?.description).toMatch(/сделки не копируются|копирование сделок не запущено/);
   expect(document.querySelector('dialog')).toBeNull();
 });
 
@@ -242,7 +244,7 @@ test('a previous session failure cannot erase the current confirmed eligibility'
   await act(async () => { session = 'viewer-b'; listeners.forEach(listener => listener()); await flush(); });
   await resolveRequest(point('10000'), 1);
   await act(async () => { requests[0].reject(new Error('Failed to fetch')); await flush(); });
-  expect(button().textContent).toBe('Копировать трейдера'); await click();
+  expect(button().textContent).toBe('Наблюдать за трейдером'); await click();
   expect(toggleFollowing).toHaveBeenCalledTimes(1);
 });
 

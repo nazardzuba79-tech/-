@@ -21,7 +21,17 @@ const disabledBranch = `  if (!eligible) {
 `;
 
 export function restoreCopyButtonDepositUx(source: string): string {
-  let result = once(source, '  const { eligible, status, requestId, retry, isCurrent } = useCopyEligibility();', '  const { eligible } = useCopyEligibility();');
+  // #644: reverse reviewed watchlist wording BEFORE the historical digest.
+  // A changed target, action or threshold must still fail the original guard.
+  let result = source;
+  const wording: [string, string][] = [
+    ["      title=\"Локальный список наблюдения. Автокопирование сделок не запущено.\"\n", ""],
+    ["isFollowing ? `Убрано из наблюдения: ${trader.name}` : `Добавлено в наблюдение: ${trader.name}`", "isFollowing ? `Копирование ${trader.name} остановлено` : `Вы копируете ${trader.name}`"],
+    ["{ description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.' }", "{ description: isFollowing ? undefined : `Комиссия за результат ${Math.round(trader.performanceFee * 100)}%. Средства остаются на вашем счёте VOLTEX.` }"],
+    ["{isFollowing ? <><Check size={14} /> В наблюдении</> : 'Наблюдать за трейдером'}", "{isFollowing ? <><Check size={14} /> Копируется</> : 'Копировать трейдера'}"],
+  ];
+  for (const [current, historical] of wording) result = once(result, current, historical);
+  result = once(result, '  const { eligible, status, requestId, retry, isCurrent } = useCopyEligibility();', '  const { eligible } = useCopyEligibility();');
   result = once(result, '  useEffect(() => setShowDepositRequirement(false), [requestId, status]);\n', '');
   result = once(result, `  if (status !== 'ready') {
     const loading = status === 'loading';
