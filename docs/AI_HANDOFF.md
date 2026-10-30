@@ -1,5 +1,11 @@
 # AI Handoff Log
 
+## 2026-10-30 — Codex — #645 exact-head frontend regression repair
+- Follow-up to `7a2b9a22` on the existing #645 branch; stacked on #643, no merge/deploy. Commit: this handoff commit.
+- CI 41094884954 had exactly three assertion failures: an obsolete removed-provider mutation was a no-op; a changed watchlist target correctly threw before hashing; a historical comment matched a whole-file dependency regex.
+- Updated only those negative tests to assert the actual anchors and CopyButton execution/import boundaries. No production code, digest pins, financial thresholds or normalizer was changed. Wrong-target mutations must throw; unrelated page state still changes the protected digest.
+- Local four focused suites / 33 tests PASS. Canonical asset bytes restored locally for Windows CRLF checkout; no asset changes committed. Final exact-head CI still required. #643 exact-head 9/9 SUCCESS. Server-side demo execution remains separate Issue #644 work; Stocks performance gate is not waived.
+
 ## Codex — 2026-10-06 — Release QA fixture repair (review only)
 - Base: exact main ca69d47eaccccf18a1bd7e45e34452fcd60e9e91. Source commit: the commit containing this entry; candidate evidence records its exact SHA outside Git.
 - Reproduced both failing release suites on unchanged main (GitHub runs 37506530205 and 37506530337, attempt 2). Security: all 40 assertions passed but real registration notification delivery logged after Jest completion. Auth routing: 14 current read endpoints were absent from the fixture.

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
-import { useCopyDepositCheck } from './copy-trading-bolt/useCopyDepositCheck';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './copy-trading-bolt/CopyTradingBolt.css';
@@ -8,7 +7,6 @@ import './copy-trading-bolt/CopyTradingRefinement.css';
 import './copy-trading-bolt/KseniaReview.css';
 import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
-import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
 import { syntheticNazaraTrader } from '../lib/syntheticCopyTrading';
 import { kseniaTrader, KSENIA_TRADER_ID, withStrategyIdentityVerification } from '../lib/kseniaCopyTrading';
@@ -29,7 +27,6 @@ import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';
 export function CopyTradingPage() {
   const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
-  const depositCheck = useCopyDepositCheck();
   const marketplace = useCopyMarketplace();
   const { nazar: synthetic, ksenia, identities } = marketplace;
 
@@ -58,7 +55,6 @@ export function CopyTradingPage() {
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
-          <CopyEligibilityProvider check={depositCheck}>
             <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
@@ -66,7 +62,6 @@ export function CopyTradingPage() {
                 : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
             </DemoRoiProvider>
-          </CopyEligibilityProvider>
         </div>
       </div>
       <Footer />
