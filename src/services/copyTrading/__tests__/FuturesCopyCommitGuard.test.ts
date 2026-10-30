@@ -57,7 +57,7 @@ describe('Native Demo internal, atomic copy replay commit guard', () => {
     const before = structuredClone(f.repo.row);
     await expect(f.service.command(actor, command(key()), {
       commitGuard: futuresCopyCommitGuard(limits('OPEN')),
-    })).rejects.toMatchObject({ code: 'FOLLOWER_NOT_FILLED' });
+    })).rejects.toMatchObject({ code: 'market_data_invalid' });
     expect(f.repo.row).toEqual(before);
   });
   test('cannot add risk into a manually opened position', async () => {
