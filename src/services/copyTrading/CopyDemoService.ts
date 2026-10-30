@@ -209,7 +209,10 @@ export class CopyDemoService {
             if (owner?.ownerUserId !== row.subscription.ownerUserId) throw new CopyDemoError('OWNER_BINDING_CHANGED');
             if (await tx.copyStrategyOwner.findFirst({ where: { ownerUserId: row.subscription.userId } })) throw new CopyDemoError('LEADER_CANNOT_FOLLOW');
             const master = await tx.demoOrder.findUniqueOrThrow({ where: { id: row.sourceOrderId } });
-            if (master.status === 'CANCELLED') throw new CopyDemoError('SOURCE_CANCELLED');
+            // The matching engine marks partially-filled MARKET orders CANCELLED
+            // for their *unfilled remainder*; their committed taker fills are
+            // still eligible to copy. A cancelled resting LIMIT is not.
+            if (master.status === 'CANCELLED' && master.type !== 'MARKET') throw new CopyDemoError('SOURCE_CANCELLED');
             // LIMIT risk is known before matching. MARKET notional is unknowable
             // until committed demo-book matches, so validate it below before commit.
             const amount = market ? null : quantity.times(bn(row.sourcePrice!));
