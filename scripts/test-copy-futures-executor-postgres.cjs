@@ -124,6 +124,16 @@ async function main(){
   assert.equal(delivered.reason,'COPY_QUANTITY_TOO_SMALL');
   assert.equal(delivered.sourceEventId,'tail-test-only-small');
   assert.equal((await copy.drainOne(follower,sessions[follower])).status,'EMPTY');
+  const before=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:follower}});
+  await db.copyFuturesDemoEvent.create({data:{
+    ...old[0],sourceEventId:'unverified-metadata-only',sourceRevision:revision+2,
+    sourceEventIndex:0,quantity:'0.1',
+  }});
+  const refused=await copy.drainOne(follower,sessions[follower]);
+  assert.equal(refused.status,'REJECTED');
+  assert.equal(refused.reason,'SOURCE_PROVENANCE_MISMATCH');
+  assert.equal((await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:follower}})).revision,before.revision);
+  assert.equal((await copy.drainOne(follower,sessions[follower])).status,'EMPTY');
  });
  await check('stop prevents further execution and cannot liquidate an existing position',async()=>{
   assert.equal((await copy.stop(follower,sessions[follower])).status,'STOPPED');
