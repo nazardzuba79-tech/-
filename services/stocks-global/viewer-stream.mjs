@@ -17,7 +17,7 @@ import { SimError } from './engine.mjs';
 // source adds (native candles, event ids, matching capacity) stays off the wire: the chart keeps its own admitted
 // history path and no quote is ever turned into a candle.
 const PUBLIC_QUOTE_FIELDS = ['instrumentId', 'provider', 'nativeCurrency', 'bid', 'ask', 'bidSize', 'askSize', 'last', 'lastTimestamp',
-  'timestamp', 'receivedAt', 'ageSeconds', 'marketOpen', 'verified', 'multiplier', 'change24h', 'volume', 'transport', 'prices', 'status', 'fx', 'fxError'];
+  'timestamp', 'receivedAt', 'ageSeconds', 'marketOpen', 'verified', 'multiplier', 'change24h', 'volume', 'transport', 'prices', 'status', 'fx', 'fxError', 'indicative'];
 export const publicQuote = quote => Object.fromEntries(PUBLIC_QUOTE_FIELDS.filter(key => quote?.[key] !== undefined).map(key => [key, quote[key]]));
 
 export function createViewerStream({ authorize, readQuote, project, onDelivered = () => {}, now = Date.now, timers = globalThis, periodMs = 1000, maxStreams = 64, maxBufferedBytes = 64 * 1024 }) {

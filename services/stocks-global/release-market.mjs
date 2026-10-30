@@ -4,10 +4,20 @@ import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { BINANCE_HOSTS } from './market.mjs';
 import { venuesFromEnv } from './venues.mjs';
 import { LIVE_PROVIDERS } from './live-catalog.mjs';
+import { IndicativeSolanaPrices, indicativeFromEnv, withIndicativePrices } from './demo-indicative.mjs';
 
 // Distinct from catalogue visibility and financial activation. No provider
 // requests, fabricated prices or fallback when the operator has not enabled data.
 export function createReleaseMarket(env = process.env) {
+  // #613 demo/indicative prices (owner decision 30.10), OFF unless STOCKS_DEMO_INDICATIVE_ENABLED=true: the Solana
+  // xStock rows and the 15-minute-delayed MOEX rows become viewable, never tradable (demo-indicative.mjs, server.mjs).
+  const demo = indicativeFromEnv(env), base = releaseMarket(env);
+  if (!demo) return base;
+  const prices = new IndicativeSolanaPrices({ dataPath: demo.dataPath });
+  prices.start();
+  return withIndicativePrices(base, prices);
+}
+function releaseMarket(env) {
   const enabled=env.STOCKS_MARKET_DATA_ENABLED ?? 'false';
   check(['true','false'].includes(enabled),'STOCKS_RELEASE_FEED_CONFIG_INVALID');
   // Issue #561: additional venues only by explicit per-venue opt-in, each also named in the operator's

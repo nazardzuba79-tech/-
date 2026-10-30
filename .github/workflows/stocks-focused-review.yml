@@ -148,6 +148,10 @@ jobs:
           services/stocks-global/quota-sim.test.mjs
           services/stocks-global/connection-admission.test.mjs
           services/stocks-global/viewer-stream.test.mjs
+      # #613 demo/indicative prices (owner decision 30.10): pool decoders on recorded mainnet accounts, candles, MOEX
+      # ISS in roubles, OFF by default, viewable only in the demo profile and never tradable. No network.
+      - name: Demo/indicative prices (Solana pools, MOEX ISS), offline
+        run: node --test services/stocks-global/demo-indicative.test.mjs
       - name: Pilot read-only preflight contract (mock database only)
         run: node --test services/stocks-global/pilot-preflight.test.cjs
       - name: Read-only preflight attempt gate on disposable PostgreSQL

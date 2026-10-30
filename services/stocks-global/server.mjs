@@ -163,8 +163,12 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
   const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},readiness:{},observed:new Set(),observedQuotes:new Map(),ownerMayTrade:financialEnabled&&!ownerOnlyMode,token:randomBytes(32).toString('hex')});
   if(legacy)contexts.set('legacy',context({read:()=>legacy.read(),execute:(command,input)=>command==='interests'?Promise.resolve(executeAccountCommand(legacy.read(),command,input,now())):legacy.transact((s,t)=>executeAccountCommand(s,command,input,t))},'legacy'));
   else if(!accounts)contexts.set('legacy',context(null,'legacy'));
-  const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
-  const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
+  // #613 demo/indicative prices (demo-indicative.mjs, hub.indicative only with STOCKS_DEMO_INDICATIVE_ENABLED=true): the
+  // indicative Solana rows and the 15-minute-delayed MOEX rows may be viewed; no order is ever accepted on either.
+  const demoIndicative=hub.indicative===true;
+  const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='solana'||demoIndicative,'INVALID_PAIR');check(instrument(id).provider!=='moex'||demoIndicative,'MOEX_UNVERIFIED');};
+  const orderAllowed=id=>{sourceAllowed(id);check(!instrument(id).indicative&&instrument(id).provider!=='moex','INDICATIVE_ONLY');};
+  const blockedCatalogue=list=>list.map(i=>i.provider==='moex'&&!demoIndicative?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
   // The catalogue (about 17 KB of the state answer) changes only when it is reloaded, at most once a minute. Every
   // state answer names its version; a client that already holds that version (?catalogue=<version>) gets the
   // state without it. Without the parameter, or with any other value, the answer carries the catalogue as before.
@@ -337,9 +341,9 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
             observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);
             await confirmed();if(res.destroyed)return;
             if(sameDemand(ctx,id,req.headers['x-stocks-view'])){hub.setStockDemand?.(ctx.id,id);demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}
-            if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';
+            if(instrument(id).provider==='moex'&&!demoIndicative)ctx.errors[id]='MOEX_UNVERIFIED';
           }
-          else if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);else if(changed)refreshInBackground(ctx);}}
+          else if(id){check(instrument(id),'INVALID_PAIR');if(hub.setStockDemand&&!lastCatalogue)await loadCatalogue();hub.setStockDemand?.(ctx.id,id);const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else{ctx.selected=id;ctx.demandView=req.headers['x-stocks-view']??'legacy-http';}if(instrument(id).provider==='moex'&&!demoIndicative)ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,beforeCommand);else if(changed)refreshInBackground(ctx);}}
           let view=await status(ctx,observedView,readAbort.signal);
           // Read-only users share market data, never the owner matcher or ledger.
           if(!ctx.ownerMayTrade&&id){
@@ -387,7 +391,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
       await requireAccount(ctx);
       if(beforeCommand)await beforeCommand();
       if(res.destroyed)return;
-      let committed,result;if(u.pathname===API+'orders'){if(accounts && ownerOnlyMode)check(input.currency==='USDT','INVALID_ORDER');sourceAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:hub.quoteValid?.(ctx.observedQuotes.get(input.instrumentId),input.instrumentId)===false||!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]||(ownerOnlyMode&&(ctx.selected!==input.instrumentId||ctx.lease===0||now()-ctx.lease>=12000))}:input,commitFence(authorize));result=committed.result;}
+      let committed,result;if(u.pathname===API+'orders'){if(accounts && ownerOnlyMode)check(input.currency==='USDT','INVALID_ORDER');orderAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:hub.quoteValid?.(ctx.observedQuotes.get(input.instrumentId),input.instrumentId)===false||!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]||(ownerOnlyMode&&(ctx.selected!==input.instrumentId||ctx.lease===0||now()-ctx.lease>=12000))}:input,commitFence(authorize));result=committed.result;}
       else if(u.pathname===API+'cancel'){committed=await ctx.store.execute('cancel',{id:input.id},commitFence(authorize));result=committed.result;}
       else if(u.pathname===API+'balances')committed=await ctx.store.execute('balances',input);
       else if(u.pathname===API+'refresh'){
@@ -419,6 +423,9 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
   server.on('drop',()=>{connectionCounters.dropped++;});
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{await accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;
+  // Demo profile: the list (indicative rows, MOEX status) refreshed every minute even without a trading poller, so a
+  // terminal opened directly shows the same rows as the catalogue page.
+  const catalogueTimer=demoIndicative?setInterval(()=>{void loadCatalogue().catch(()=>{});},60000):null;catalogueTimer?.unref?.();if(demoIndicative)void loadCatalogue().catch(()=>{});
   const timer=financialEnabled&&autoPoll&&!ownerOnlyMode?setInterval(()=>{
     if(tick||closing)return;const interested=[...contexts.values()].filter(ctx=>now()-ctx.lease<12000);if(!interested.length)return;
     if(now()-lastCatalogue>60000)void loadCatalogue().catch(()=>{});
@@ -429,7 +436,7 @@ export async function createServer({financialEnabled=false,port=4437,dataPath,di
     })().catch(e=>{for(const ctx of interested)ctx.errors[ctx.selected]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{tick=null;});
     return tick;
   },3000):null;
-  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),connectionMetrics:()=>({open:openConnections,busyAt:BUSY_CONNECTIONS,max:MAX_CONNECTIONS,...connectionCounters}),streamMetrics:()=>stream?.metrics()??null,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;stream?.close();hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
+  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),connectionMetrics:()=>({open:openConnections,busyAt:BUSY_CONNECTIONS,max:MAX_CONNECTIONS,...connectionCounters}),streamMetrics:()=>stream?.metrics()??null,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;if(catalogueTimer)clearInterval(catalogueTimer);stream?.close();hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   check(process.env.NODE_ENV!=='production','STOCKS_RELEASE_ENTRYPOINT_REQUIRED');

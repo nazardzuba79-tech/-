@@ -9,6 +9,8 @@ export function isExactStocksProviderIdentity(asset: { id: string; provider: str
     kraken: /^[A-Z0-9]{1,24}xUSD$/, bingx: /^[A-Z0-9]{1,24}X-USDT$/,
     bitget: /^R[A-Z0-9]{1,24}USDT$/,
   };
+  // #613 demo/indicative xStocks priced from their Solana pools: XSTOCK:<token>, the token symbol as listed (e.g. SPYx).
+  if (asset.provider === 'solana') return /^[A-Z][A-Z.]{0,11}x$/.test(asset.sourceSymbol) && asset.id === 'XSTOCK:' + asset.sourceSymbol;
   return (['bybit', 'binance', 'moex'].includes(asset.provider) ||
       Object.prototype.hasOwnProperty.call(additional, asset.provider) && additional[asset.provider].test(asset.sourceSymbol)) &&
     asset.id === (asset.provider === 'moex' ? 'MOEX:TQBR:' : asset.provider.toUpperCase() + ':') + asset.sourceSymbol;

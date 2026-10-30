@@ -24,7 +24,7 @@ export function quoteStatus(q,now,currency='USDT') {
   if(currency!==q.nativeCurrency&&!fx) return 'FX_UNAVAILABLE';
   const maxFxAge=q.nativeCurrency==='RUB'&&currency==='USDT'?36*3600000:180000;
   if(fx && (!Number.isSafeInteger(fx.timestamp)||fx.timestamp>now+2000||!Number.isSafeInteger(fx.maxAgeMs)||fx.maxAgeMs<=0||fx.maxAgeMs>maxFxAge||now-fx.timestamp>fx.maxAgeMs)) return 'FX_STALE';
-  if(q.nativeCurrency==='RUB'&&(!Number.isSafeInteger(fx?.stableTimestamp)||(currency==='USDC'&&!Number.isSafeInteger(fx?.referenceTimestamp))))return 'FX_STALE';
+  if(q.nativeCurrency==='RUB'&&currency!==q.nativeCurrency&&(!Number.isSafeInteger(fx?.stableTimestamp)||(currency==='USDC'&&!Number.isSafeInteger(fx?.referenceTimestamp))))return 'FX_STALE';
   if(fx?.stableTimestamp && (fx.stableTimestamp>now+2000||now-fx.stableTimestamp>180000))return 'FX_STALE';
   if(fx?.referenceTimestamp && (fx.referenceTimestamp>now||now-fx.referenceTimestamp>36*3600000))return 'FX_STALE';
   if(fx){try{units(fx.rate,true);}catch{return 'FX_UNAVAILABLE';}}
@@ -110,5 +110,5 @@ export function validate(s){
 // clone: how the projection copies its input first (structuredClone; viewer-projection.mjs passes an equivalent
 // copy for plain JSON data). The input is never mutated either way.
 export function snapshot(s,now,clone=structuredClone){const r=clone(s);for(const c of currencies)r.wallets[c].available=decimal(units(s.wallets[c].cash)-units(s.wallets[c].reserved));for(const p of Object.values(r.positions)){const qty=units(p.quantity),q=s.quotes[p.instrumentId];p.available=decimal(qty-units(p.reserved));p.average=qty?decimal(units(p.cost)*SCALE/qty):null;p.averageNative=qty?decimal(units(p.nativeCost)*SCALE/qty):null;p.mark=null;p.unrealized=null;if(qty&&quoteStatus(q,now,p.currency)==='READY'){p.mark=q.prices[p.currency].sell;p.unrealized=decimal(gross(units(p.mark),qty,false)-units(p.cost));}}
-  for(const q of Object.values(r.quotes)){q.status=Object.fromEntries(currencies.map(c=>[c,quoteStatus(q,now,c)]));q.ageSeconds=Math.max(0,Math.floor((now-q.timestamp)/1000));}r.serverTime=now;for(const o of r.orders)delete o.signature;return r;
+  for(const q of Object.values(r.quotes)){q.status=Object.fromEntries((q.indicative&&!currencies.includes(q.nativeCurrency)?[...currencies,q.nativeCurrency]:currencies).map(c=>[c,quoteStatus(q,now,c)]));q.ageSeconds=Math.max(0,Math.floor((now-q.timestamp)/1000));}r.serverTime=now;for(const o of r.orders)delete o.signature;return r;
 }

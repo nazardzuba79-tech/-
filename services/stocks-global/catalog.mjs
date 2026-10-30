@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { LIVE_CATALOG } from './live-catalog.mjs';
 // Instrument identity includes venue and asset. Never merge AAPLB, AAPLX, or MOEX equities.
 // Canonical identity = issuer + token (asset) + venue (provider) + quote currency. The issuer
@@ -42,7 +43,15 @@ export const SOURCE_PRIORITY = {
   SPY:['GATE:SPYX_USDT','MEXC:SPYXUSDT'],
   QQQ:['GATE:QQQX_USDT'],
 };
-export const instrument = id => CATALOG.find(i => i.id === id) ?? VENUE_CATALOG.find(i => i.id === id) ?? LIVE_CATALOG.find(i => i.id === id);
+// #613 demo/indicative rows (demo-indicative.mjs): tokenized stocks priced from their own Solana DEX pools, served only
+// when the gateway runs with STOCKS_DEMO_INDICATIVE_ENABLED=true and never tradable. The list (mint, pool, DEX) is the
+// recorded catalogue evidence of research/solana-xstocks/proof-615-20261025.
+export const DEMO_CATALOG = Object.freeze(JSON.parse(readFileSync(new URL('./demo-xstocks.json', import.meta.url), 'utf8')).map(r => Object.freeze({
+  id: `XSTOCK:${r.asset}`, ticker: r.ticker, asset: r.asset, issuer: 'xstocks', name: r.name, ...(r.domain ? { domain: r.domain } : {}),
+  provider: 'solana', sourceSymbol: r.asset, mint: r.mint, pool: r.pool, dex: r.dex, region: 'US', kind: 'token', currency: 'USDC',
+  delaySeconds: 900, timeframes: TIMEFRAMES, indicative: true,
+})));
+export const instrument = id => CATALOG.find(i => i.id === id) ?? VENUE_CATALOG.find(i => i.id === id) ?? LIVE_CATALOG.find(i => i.id === id) ?? DEMO_CATALOG.find(i => i.id === id);
 // Ranked rows for one underlying with each source's own verified state. `rows` is a catalogue()
 // result; ids absent from it (venue not enabled, not configured) are reported, never replaced.
 export function rankedSources(ticker, rows) {

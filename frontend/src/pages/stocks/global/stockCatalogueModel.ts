@@ -25,7 +25,7 @@ export function filterCatalogue(assets: Asset[], filters: CatalogueFilters, favo
 /** Display only: a last quote is never turned into OHLC or an execution price. */
 export function catalogueObservation(asset: Asset, now: number) {
   const display = asset.display;
-  if (asset.provider === 'moex' || !display || !Number.isFinite(Number(display.price)) || Number(display.price) <= 0 ||
+  if (asset.provider === 'moex' && !asset.indicative || !display || !Number.isFinite(Number(display.price)) || Number(display.price) <= 0 ||
       !Number.isFinite(display.timestamp) || display.timestamp <= 0 || display.timestamp > now) return null;
   return { price: display.price, change: Number.isFinite(display.change24h) ? display.change24h : null,
     timestamp: display.timestamp, ageSeconds: Math.floor((now - display.timestamp) / 1000) };
