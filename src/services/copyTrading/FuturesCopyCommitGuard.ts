@@ -56,6 +56,12 @@ export function futuresCopyCommitGuard(limits: FuturesCopyCommitLimits): NativeC
       if (!n(fill.price!).gt(0) || n(fill.price!).minus(source).abs().times(10000).div(source).gt(limits.maxDeviationBps))
         throw new FuturesCopyGuardError('COPY_SLIPPAGE_EXCEEDED');
     }
+    // Reject mixing with existing manual positions/orders BEFORE evaluating
+    // portfolio exposure so the refusal names the actual segregation rule.
+    if (limits.action === 'OPEN' && (
+      before.snapshot.positions.some(p=>p.status==='OPEN') ||
+      before.snapshot.orders.some(o=>o.status==='OPEN'||o.status==='PARTIALLY_FILLED')
+    )) throw new FuturesCopyGuardError('COPY_FOLLOWER_POSITION_NOT_ISOLATED');
     const totalExposure = after.snapshot.positions.filter(p=>p.status==='OPEN').reduce((sum,p) => {
       if (n(p.leverage).gt(limits.maxLeverage)) throw new FuturesCopyGuardError('COPY_LEVERAGE_EXCEEDED');
       const price = BigNumber.maximum(p.entryPrice, p.markPrice);
