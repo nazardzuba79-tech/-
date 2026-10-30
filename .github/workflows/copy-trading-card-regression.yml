@@ -110,6 +110,8 @@ on:
       - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
       - 'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts'
       - 'frontend/test-utils/languageStub.ts'
+      - 'frontend/test-utils/copyDepositUx.ts'
+      - 'frontend/src/lib/__tests__/copyDepositUx.test.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
   push:
     branches: [main]
@@ -216,6 +218,8 @@ on:
       - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
       - 'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts'
       - 'frontend/test-utils/languageStub.ts'
+      - 'frontend/test-utils/copyDepositUx.ts'
+      - 'frontend/src/lib/__tests__/copyDepositUx.test.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
 
 permissions:
@@ -253,6 +257,8 @@ jobs:
           npm test -- --runInBand --runTestsByPath
           frontend/src/lib/__tests__/copyTradingCriticalPath.test.ts
           frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+          frontend/src/lib/__tests__/copyTradingEligibility.test.ts
+          frontend/src/lib/__tests__/copyDepositUx.test.ts
           src/services/copyTrading/__tests__/copyMarketplaceEndpointContract.test.ts
       # THE OWNER'S CADENCE. One new closed trade per strategy per UTC day,
       # a same-day refresh that adds none, and a three-day gap that adds

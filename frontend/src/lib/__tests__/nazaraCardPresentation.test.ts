@@ -172,9 +172,10 @@ test('CopyButton preserves explicit deposit gating and eligible Following withou
   let eligible = false, dialogOpen = false;
   const Dialog = empty;
   const { CopyButton } = copyFunctions(['CopyButton'], {
-    useCopyEligibility: () => ({ eligible }), useFollowing: () => ({ following, toggleFollowing }),
+    useCopyEligibility: () => ({ eligible, status: 'ready', requestId: 1, retry: empty, isCurrent: () => true }), useFollowing: () => ({ following, toggleFollowing }),
     useCopyMarketplace: () => ({ settled: true, nazar: {}, ksenia: {} }),
     useState: () => [dialogOpen, (next: boolean) => { dialogOpen = next; }],
+    useEffect: () => {},
     CopyDepositDialog: Dialog, nazarTrader, Check: empty, toast,
   });
   const render = () => CopyButton({ trader, compact: true });

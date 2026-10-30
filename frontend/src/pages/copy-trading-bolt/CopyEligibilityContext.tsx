@@ -15,21 +15,31 @@ import { createContext, useContext } from 'react';
  *  Lowered from $20,000 to $10,000 on the owner's instruction. */
 export const COPY_ELIGIBILITY_THRESHOLD_USD = 10_000;
 
-export type CopyEligibility = {
-  depositUsd: number;
+export type CopyDepositCheck = {
+  status: 'loading' | 'unavailable' | 'ready';
+  depositUsd: number | null;
+  requestId: number;
+  retry: () => void;
+  isCurrent: () => boolean;
+};
+
+export type CopyEligibility = CopyDepositCheck & {
   eligible: boolean;
 };
 
 const CopyEligibilityContext = createContext<CopyEligibility | null>(null);
 
 export function CopyEligibilityProvider({
-  depositUsd,
+  check,
   children,
 }: {
-  depositUsd: number;
+  check: CopyDepositCheck;
   children: React.ReactNode;
 }) {
-  const value: CopyEligibility = { depositUsd, eligible: Number.isFinite(depositUsd) && depositUsd >= COPY_ELIGIBILITY_THRESHOLD_USD };
+  const { depositUsd } = check;
+  const known = check.status === 'ready' && typeof depositUsd === 'number' && Number.isFinite(depositUsd) && depositUsd >= 0;
+  const value: CopyEligibility = { ...check, status: check.status === 'ready' && !known ? 'unavailable' : check.status,
+    eligible: known && depositUsd >= COPY_ELIGIBILITY_THRESHOLD_USD };
   return <CopyEligibilityContext.Provider value={value}>{children}</CopyEligibilityContext.Provider>;
 }
 
