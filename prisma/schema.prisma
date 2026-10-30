@@ -62,6 +62,7 @@ datasource db {
 }
 
 model User {
+  copyFuturesDemoSubscription CopyFuturesDemoSubscription?
   copyDemoSubscription CopyDemoSubscription?
   otcCashRequests OtcCashRequest[]
   copyStrategyOwnerships CopyStrategyOwner[]
@@ -1431,6 +1432,7 @@ model SyntheticCopyTradingState {
 /// Public strategy identity only. The optional same-environment User relation
 /// supplies the profile photo/KYC state; it never links performance to money.
 model CopyStrategyOwner {
+  futuresDemoSubscriptions CopyFuturesDemoSubscription[]
   demoSubscriptions CopyDemoSubscription[]
   traderId String @id
   publicName String
@@ -1490,6 +1492,48 @@ model CopyDemoFill {
   execution CopyDemoExecution @relation(fields: [executionId], references: [id], onDelete: Restrict)
   tradeId String
   @@unique([executionId, tradeId])
+}
+
+/// Isolated FUTURES metadata only; never places a trade or moves funds.
+/// Deliberately distinct from Spot copy and the financial NativeDemo journal.
+model CopyFuturesDemoSubscription {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  traderId String
+  strategy CopyStrategyOwner @relation(fields: [traderId], references: [traderId], onDelete: Restrict)
+  ownerUserId String
+  status String @default("OBSERVING")
+  maxLeverage Decimal @db.Decimal(18, 8)
+  maxFillUsdt Decimal @db.Decimal(36, 18)
+  lastRevision Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events CopyFuturesDemoEvent[]
+  @@index([traderId, status])
+}
+
+/// Accepted immutable source provenance; NEVER an executable order or entitlement.
+model CopyFuturesDemoEvent {
+  id String @id @default(uuid())
+  subscriptionId String
+  subscription CopyFuturesDemoSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  sourceEventId String
+  sourceRevision Int
+  sourceActionId String
+  sourcePositionId String
+  symbol String
+  kind String
+  side String
+  quantity Decimal @db.Decimal(36, 18)
+  price Decimal @db.Decimal(36, 18)
+  leverage Decimal @db.Decimal(18, 8)
+  marginType String
+  pricing String
+  status String @default("OBSERVED_ONLY")
+  createdAt DateTime @default(now())
+  @@unique([subscriptionId, sourceEventId])
+  @@index([subscriptionId, sourceRevision])
 }
 
 /// Approved pre-launch modeled histories, isolated from all account/financial

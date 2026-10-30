@@ -72,6 +72,8 @@ import { DemoTradingService } from './services/DemoTradingService';
 import { demoLiquidityConfig, marketReference } from './services/DemoLiquidity';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { copyDemoRouter } from './api/routes/copyDemo';
+import { copyFuturesDemoObserverRouter } from './api/routes/copyFuturesDemoObserver';
+import { FuturesDemoObserverService } from './services/copyTrading/FuturesDemoObserverService';
 import { CopyDemoService, copyDemoEnabled } from './services/copyTrading/CopyDemoService';
 import { startCopyDemoWorker } from './services/copyTrading/copyDemoWorker';
 import { isTestAssetPairOrSymbol } from './services/testMarkets/testAssetConfig';
@@ -336,6 +338,9 @@ app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, 
 // Demo Spot for admin-credited USER accounts: off unless DEMO_SPOT_ENABLED=true.
 // A pair is admitted only when the real market feed lists it (the terminal's pair set).
 app.use('/api/v1', copyDemoRouter(prisma, copyDemoService));
+// Review-only observer metadata: permanently OFF without a disposable local test DB.
+// No timer, follower order execution, or writes to NativeDemo/financial ledgers.
+app.use('/api/v1', copyFuturesDemoObserverRouter(prisma, new FuturesDemoObserverService(prisma)));
 startCopyDemoWorker(copyDemoService, copyDemoEnabled, () => console.error('[copy-demo] pass failed; pending work retained'));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
   isSpotPair: async pair => !isTestAssetPairOrSymbol(pair) && (await marketDataService.getTicker(pair)) !== null,
