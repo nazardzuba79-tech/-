@@ -6,10 +6,16 @@ assert(url, 'Explicit isolated database required');
 const host = new URL(url);
 assert(['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)
   && /^\/copy_demo_[a-z0-9_]+$/.test(host.pathname), 'Refuse non-fixture DB');
+process.env.JWT_SECRET = 'isolated-futures-observer-fixture-no-production-secrets';
+process.env.EMAIL_VERIFICATION_SECRET = 'isolated-futures-observer-email-fixture';
 require('ts-node/register/transpile-only');
 const { PrismaClient } = require('@prisma/client');
 const { FuturesDemoObserverService, futuresDemoObserverEnabled } =
   require('../src/services/copyTrading/FuturesDemoObserverService');
+const express = require('express');
+const request = require('supertest');
+const jwt = require('jsonwebtoken');
+const { copyFuturesDemoObserverRouter } = require('../src/api/routes/copyFuturesDemoObserver');
 const db = new PrismaClient({ datasources: { db: { url } } });
 const tests = [];
 const check = async (label, fn) => { await fn(); tests.push(label); console.log('PASS', label); };
@@ -139,6 +145,32 @@ async function main() {
     await deny(() => service.scan('follower', sessions.follower), 'SOURCE_REVISION_GAP');
     await db.nativeDemoAccount.update({ where: { userId: 'leader' }, data: { revision: seq } });
     assert.equal((await service.snapshot('follower', sessions.follower)).subscription.lastRevision, seq);
+  });
+  await check('HTTP route is OFF before auth, strict request schema and only own observer state', async () => {
+    const offApp = express(); offApp.use(express.json());
+    offApp.use('/api/v1', copyFuturesDemoObserverRouter(db, service, () => false));
+    assert.equal((await request(offApp).get('/api/v1/copy-trading/futures-demo-observer')).status, 403);
+    const app = express(); app.use(express.json());
+    app.use('/api/v1', copyFuturesDemoObserverRouter(db, service, () => true));
+    const endpoint = '/api/v1/copy-trading/futures-demo-observer';
+    const tokenFor = user => jwt.sign({ sub: user, sid: sessions[user] }, process.env.JWT_SECRET, { expiresIn: '10m' });
+    assert.equal((await request(app).get(endpoint)).status, 401);
+    assert.equal((await request(app).post(endpoint + '/scan').set('Authorization', 'Bearer ' + tokenFor('viewer'))).status, 404);
+    const forged = await request(app).put(endpoint + '/subscription')
+      .set('Authorization', 'Bearer ' + tokenFor('follower'))
+      .send({ traderId: 'VX-001', ...cap, userId: 'viewer' });
+    assert.equal(forged.status, 400);
+    const own = await request(app).get(endpoint).set('Authorization', 'Bearer ' + tokenFor('follower'));
+    assert.equal(own.status, 200); assert.equal(own.body.automaticCopying, false);
+    assert.equal(own.body.subscription.traderId, 'VX-001');
+    const scan = await request(app).post(endpoint + '/scan')
+      .set('Authorization', 'Bearer ' + tokenFor('follower'));
+    assert.equal(scan.status, 200); assert.equal(scan.body.accepted, 0);
+    const stopped = await request(app).delete(endpoint + '/subscription')
+      .set('Authorization', 'Bearer ' + tokenFor('follower'));
+    assert.equal(stopped.status, 200); assert.equal(stopped.body.status, 'STOPPED');
+    assert.equal((await request(app).post(endpoint + '/scan')
+      .set('Authorization', 'Bearer ' + tokenFor('follower'))).status, 409);
   });
   await check('real balances, demo balances, and order/trade books untouched', async () => {
     assert.equal(JSON.stringify(await db.balance.findMany({ orderBy: { id: 'asc' } })), moneyBefore);
