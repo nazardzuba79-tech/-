@@ -59,7 +59,9 @@ const NULL_ARM=process.argv.includes('--null-arm');
 // and crypto errors (none tolerated), the financial invariants, and crypto p95 per minute in both arms.
 const SUSTAIN=process.argv.includes('--sustained');
 const a=args(process.argv.slice(2).filter(x=>!['--cpu-prof','--after','--spans','--pg-profile','--driver-apart','--revised-8s','--terminal-3s','--stocks-apart','--isolated-clients','--null-arm','--sustained','--push-viewers'].includes(x)));
-if(PUSH&&(!AFTER||!ISOLATED||NULL_ARM||SUSTAIN||PROFILE||SPANS||PG_PROFILE||DRIVER_APART||STOCKS_APART||process.argv.includes('--terminal-3s')||process.argv.includes('--revised-8s')))throw Error('PUSH_DIAGNOSTIC_ISOLATED_SEPARATED_ONLY');
+// --push-viewers --null-arm (#613 R10 PUSH_DIAGNOSTIC calibration): the A/A runs at the push pin, the gateway in the push
+// profile and no viewers in either arm.
+if(PUSH&&(!AFTER||!ISOLATED||SUSTAIN||PROFILE||SPANS||PG_PROFILE||DRIVER_APART||STOCKS_APART||process.argv.includes('--terminal-3s')||process.argv.includes('--revised-8s')))throw Error('PUSH_DIAGNOSTIC_ISOLATED_SEPARATED_ONLY');
 let cfg,started=false,data,active,market,activePush,controller=new AbortController(),timer;
 const {openPushViewers}=require('./push-viewers.cjs');
 const report={startedAt:new Date().toISOString(),runtimeSourceSha:RC,topology:TOPOLOGY,stocksNice:STOCKS_NICE,stocksSched:SCHED,status:'ADMISSION',scope:a.scope,targetAcceptance:false,fullWorkloadRuns:0,newProductionChanges:0,containersStarted:0,ownPids:[],failures:[],methodology:ISOLATED?'isolated-clients':'shared-cpus',nullArm:NULL_ARM,sustained:SUSTAIN,pushDiagnostic:PUSH};
@@ -232,7 +234,7 @@ function provenance(){
    active=startWorker(name,50,gen,market);const info=await active.init();
    const warmup=await window(info,{arm:name,warmup:true,signal:controller.signal});json(name+'-warmup.json',warmup);
    if(warmup.timeouts||warmup.unexpectedErrors||warmup.missedJobs)throw Error('WARMUP_FAILED_'+name);
-   if(PUSH&&name==='mixed'){activePush=await openPushViewers(info,{signal:controller.signal});activePush.startMeasurement();}
+   if(PUSH&&name==='mixed'&&!NULL_ARM){activePush=await openPushViewers(info,{signal:controller.signal});activePush.startMeasurement();}
    await active.rpc('timings');
    const before=await active.rpc('snapshot'),metricsBefore=await active.rpc('metrics'),hostBefore=hostMetrics();
    if(market)metricsBefore.market=await market.rpc('snapshot');
@@ -249,7 +251,8 @@ function provenance(){
    if(PG_PROFILE){await new Promise(resolve=>setTimeout(resolve,1500));json(name+'-pg-stats.json',{before:pgBefore,after:pgStats(name),windowStartedAt:result.startedAt,windowFinishedAt:result.finishedAt});}
    const hostAfter=hostMetrics(),after=await active.rpc('snapshot'),metricsAfter=await active.rpc('metrics'),serverTimings=await active.rpc('timings');
    if(market)metricsAfter.market=await market.rpc('snapshot');
-   if(SUSTAIN)json(name+'-private-requests.json',await active.rpc('private-requests'));
+   // --push-viewers: the authority's private requests too (identity batches vs commands, the busiest minute against 240).
+   if(SUSTAIN||PUSH)json(name+'-private-requests.json',await active.rpc('private-requests'));
    // --isolated-clients: where everything ran (every thread), what each CPU set did over the window, memory, and
    // whether the clients had headroom; a violation or a saturated client fails the run.
    if(ISOLATED){
@@ -288,7 +291,7 @@ function provenance(){
   if(PROFILE){report.comparison.profiled=true;report.status='PROFILE_ONLY_NOT_A_P95_VERDICT';}
   if(SPANS){report.comparison.spans=true;report.status='SPANS_ONLY_NOT_A_P95_VERDICT';}
   if(PG_PROFILE){report.comparison.pgProfile=true;report.status='PG_PROFILE_ONLY_NOT_A_P95_VERDICT';}
-  if(PUSH){report.comparison.pushDiagnostic=true;report.status='PUSH_DIAGNOSTIC_REPORT_ONLY';
+  if(PUSH&&!NULL_ARM){report.comparison.pushDiagnostic=true;report.status='PUSH_DIAGNOSTIC_REPORT_ONLY';
     if(report.comparison.failures?.length||report.comparison.status!=='PASS_LOCAL_DIAGNOSTIC')report.failures.push('PUSH_P95_OR_INVARIANT_NOT_PASSED');}
   json('comparison.json',report.comparison);
   if(report.status!=='PASS_LOCAL_DIAGNOSTIC'&&!PUSH&&!PROFILE&&!SPANS&&!PG_PROFILE&&!NULL_ARM&&!SUSTAIN)process.exitCode=1;

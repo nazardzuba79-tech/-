@@ -18,7 +18,10 @@ name: Stocks 613 50+2 paired diagnostic (report only)
 #   RC50-RUN: acceptance             the above, then (only if the method is calibrated) the paired acceptance runs
 #   RC50-RUN: sustained              the above, then (only if calibrated) two 3-minute sustained-load runs
 #   RC50-RUN: pg-profile             the R6 PostgreSQL profile (answered; on request only)
-# Words combine on one line (e.g. 'RC50-RUN: acceptance sustained').
+#   RC50-RUN: push-diagnostic        R10 PUSH_DIAGNOSTIC (owner 29.10, one run on the user's permission): placement
+#                                    proof + A/A calibration at the push pin, then (only if calibrated) one uncounted
+#                                    warm-up and 6 runs of 50 viewers on the quote stream + 2 traders on the 4 s cycle
+# Words combine on one line (e.g. 'RC50-RUN: acceptance sustained'); push-diagnostic runs alone.
 on:
   pull_request:
     paths:
@@ -43,6 +46,7 @@ jobs:
       acceptance: ${{ steps.read.outputs.acceptance }}
       sustained: ${{ steps.read.outputs.sustained }}
       pgprofile: ${{ steps.read.outputs.pgprofile }}
+      push: ${{ steps.read.outputs.push }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,23 +59,32 @@ jobs:
           line=$(git log -1 --format=%B | grep -E '^RC50-RUN:' | tail -1 || true)
           words=" ${line#RC50-RUN:} "
           has() { case "$words" in *" $1 "*) echo true;; *) echo false;; esac; }
-          acceptance=$(has acceptance); sustained=$(has sustained); pgprofile=$(has pg-profile); methodology=$(has methodology)
-          # Acceptance and sustained runs are only ever measured with a calibrated method.
-          if [ "$acceptance" = true ] || [ "$sustained" = true ]; then methodology=true; fi
-          { echo "methodology=$methodology"; echo "acceptance=$acceptance"; echo "sustained=$sustained"; echo "pgprofile=$pgprofile"; } | tee -a "$GITHUB_OUTPUT"
-          echo "::notice title=50+2 run request::${line:-none} -> methodology=$methodology acceptance=$acceptance sustained=$sustained pg-profile=$pgprofile"
+          acceptance=$(has acceptance); sustained=$(has sustained); pgprofile=$(has pg-profile); methodology=$(has methodology); push=$(has push-diagnostic)
+          # PUSH_DIAGNOSTIC is its own experiment at its own pin: never in the same request as the polling runs, whose
+          # calibration is at the after pin.
+          if [ "$push" = true ] && { [ "$acceptance" = true ] || [ "$sustained" = true ] || [ "$pgprofile" = true ]; }; then
+            echo "::error title=50+2 run request::push-diagnostic runs alone"; exit 1
+          fi
+          # Acceptance, sustained and push runs are only ever measured with a calibrated method.
+          if [ "$acceptance" = true ] || [ "$sustained" = true ] || [ "$push" = true ]; then methodology=true; fi
+          { echo "methodology=$methodology"; echo "acceptance=$acceptance"; echo "sustained=$sustained"; echo "pgprofile=$pgprofile"; echo "push=$push"; } | tee -a "$GITHUB_OUTPUT"
+          echo "::notice title=50+2 run request::${line:-none} -> methodology=$methodology acceptance=$acceptance sustained=$sustained pg-profile=$pgprofile push-diagnostic=$push"
 
   # The method first: does the isolated-client harness measure correctly on this runner? Placement admission and proof
   # (every thread of every server process on CPUs 0,1, every client thread on 2,3, the sets on separate physical cores),
   # client headroom, and six A/A runs of the after pin (both arms carry the baseline load only), whose pooled Δp95 is the
   # method's own error. calibration-613.cjs fails this job unless the collection is complete and |A/A Δp95| <= 5 %; the
-  # acceptance and sustained jobs need it.
+  # acceptance and sustained jobs need it. For push-diagnostic the A/A runs are at the push pin (policy-613-after.cjs
+  # PUSH_RC, --push-viewers --null-arm: the gateway in the push profile, no viewers in either arm), so the method's error
+  # is measured on exactly the runtime the push runs measure.
   methodology:
     name: 50+2 isolated-client method — placement proof and A/A calibration (not a verdict)
     needs: request
     if: needs.request.outputs.methodology == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      PUSH: ${{ needs.request.outputs.push }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -92,13 +105,15 @@ jobs:
             git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
           sudo install -d -m 1777 /var/run/postgresql
       - name: Harness self-tests (no workload)
-        run: node --test scripts/qa/stocks-rc-50plus2/placement.test.cjs scripts/qa/stocks-rc-50plus2/sustained-613.test.cjs scripts/qa/stocks-rc-50plus2/driver-sustained.test.cjs scripts/qa/stocks-rc-50plus2/calibration-613.test.cjs scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/topology-613.test.cjs
-      - name: Worktree with runtime exactly at the after pin; harness from this head
+        run: node --test scripts/qa/stocks-rc-50plus2/placement.test.cjs scripts/qa/stocks-rc-50plus2/sustained-613.test.cjs scripts/qa/stocks-rc-50plus2/driver-sustained.test.cjs scripts/qa/stocks-rc-50plus2/push-viewers.test.cjs scripts/qa/stocks-rc-50plus2/calibration-613.test.cjs scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/push-report-613.test.cjs scripts/qa/stocks-rc-50plus2/topology-613.test.cjs
+      - name: Worktree with runtime exactly at the calibrated pin (after, or push for push-diagnostic); harness from this head
         run: |
           set -euo pipefail
           W="$(dirname "$GITHUB_WORKSPACE")/rc50-cal"; mkdir -p "$W/runs"
           echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
-          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').RC")
+          field=RC; [ "$PUSH" = true ] && field=PUSH_RC
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').$field")
+          echo "CAL_PIN=$sha" >> "$GITHUB_ENV"; echo "Calibrated pin: policy-613-after.cjs $field $sha"
           git worktree add --detach "$W/after" "$sha"
           cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/after/scripts/qa/stocks-rc-50plus2/"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$W/after/node_modules"
@@ -109,9 +124,10 @@ jobs:
         run: |
           set -uo pipefail
           PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          push=""; [ "$PUSH" = true ] && push="--push-viewers"
           for i in 1 2 3 4 5 6; do
             rc=0; mkdir -p "$CAL_DIR/runs/aa-$i"
-            (cd "$CAL_DIR/after" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --isolated-clients --null-arm \
+            (cd "$CAL_DIR/after" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after $push --isolated-clients --null-arm \
               --root . --pg-bin "$PG_BIN" --out "$CAL_DIR/runs/aa-$i/out" \
               --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
             echo "$rc" > "$CAL_DIR/runs/aa-$i/exit-code"
@@ -119,7 +135,7 @@ jobs:
       - name: Calibration verdict (fails unless the method is calibrated)
         run: |
           set -o pipefail
-          node scripts/qa/stocks-rc-50plus2/calibration-613.cjs "$CAL_DIR/runs" "$CAL_DIR/calibration.json" --runs 6 | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/qa/stocks-rc-50plus2/calibration-613.cjs "$CAL_DIR/runs" "$CAL_DIR/calibration.json" --runs 6 --pin "$CAL_PIN" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Extended numbers of the A/A runs (report only)
         if: always()
         continue-on-error: true
@@ -280,6 +296,134 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+
+  # R10 PUSH_DIAGNOSTIC (owner 29.10, report only, never the acceptance verdict): the separated release layout at the
+  # R10 runtime pin (policy-613-after.cjs PUSH_RC), the gateway in the viewer push profile (diagnostic-run-613.cjs
+  # --push-viewers, push-viewers.cjs). Each run measures the baseline arm (crypto only) and the mixed arm: 50 viewers
+  # holding the public quote stream (bearer in the header, opened and warmed before the window), each refused one order,
+  # and the 2 traders unchanged on the original 4 s cycle. Server on CPUs
+  # 0,1, clients and the synthetic market on 2,3, disposable PostgreSQL, synthetic users and market only. One uncounted
+  # warm-up run, then 6 runs; summarize-613.cjs --push gates the collection (pin, workload, placement, financial
+  # invariants) and reports crypto Δp95 with its bootstrap interval; push-report-613.cjs reports the streams (uptime,
+  # drops, quota waits, quote age), the private requests per window and the busiest minute against 240, the gateway's
+  # connections, and CPU per process. The R8 polling results and their method are unchanged.
+  push-diagnostic:
+    name: 50+2 PUSH_DIAGNOSTIC — 50 viewers on the quote stream + 2 traders at 4 s, isolated clients (report only)
+    needs: [request, methodology]
+    if: success() && needs.request.outputs.push == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RUNS: '6'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: Locked dependencies and Prisma engines, before any harness admission
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Fixture base schema and PostgreSQL socket directory
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          sudo install -d -m 1777 /var/run/postgresql
+      - name: Push driver, collection gate and report self-tests on stored and synthetic results (no workload)
+        run: node --test scripts/qa/stocks-rc-50plus2/push-viewers.test.cjs scripts/qa/stocks-rc-50plus2/summarize-613.test.cjs scripts/qa/stocks-rc-50plus2/push-report-613.test.cjs scripts/qa/stocks-rc-50plus2/extended-report-613.test.cjs scripts/qa/stocks-rc-50plus2/placement.test.cjs
+      - name: Worktree with runtime exactly at the push pin; harness from this head
+        run: |
+          set -euo pipefail
+          W="$(dirname "$GITHUB_WORKSPACE")/rc50-push"; mkdir -p "$W/runs"
+          echo node_modules >> "$(git rev-parse --git-common-dir)/info/exclude"
+          sha=$(node -p "require('./scripts/qa/stocks-rc-50plus2/policy-613-after.cjs').PUSH_RC")
+          git worktree add --detach "$W/push" "$sha"
+          cp scripts/qa/stocks-rc-50plus2/*.cjs scripts/qa/stocks-rc-50plus2/README.txt "$W/push/scripts/qa/stocks-rc-50plus2/"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$W/push/node_modules"
+          git -C "$W/push" status --short
+          # The runtime measured is the pin's, byte for byte: only the harness directory differs from it.
+          test -z "$(git -C "$W/push" diff --name-only "$sha" | grep -v '^scripts/qa/stocks-rc-50plus2/' || true)"
+          echo "PUSH_DIR=$W" >> "$GITHUB_ENV"
+          echo "Push pin: $sha"; echo "Host CPUs: $(nproc --all); $(lscpu | grep -E '^(Model name|Thread|Core|Socket)' | tr '\n' ';')"
+          for n in 0 1 2 3; do echo "cpu$n siblings: $(cat /sys/devices/system/cpu/cpu$n/topology/thread_siblings_list 2>/dev/null || echo none)"; done
+      - name: One uncounted warm-up run, then the push runs, server on CPUs 0,1, clients on 2,3
+        run: |
+          set -uo pipefail
+          PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          mkdir -p "$PUSH_DIR/warmup"
+          (cd "$PUSH_DIR/push" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --push-viewers --isolated-clients \
+            --root . --pg-bin "$PG_BIN" --out "$PUSH_DIR/warmup/out" \
+            --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || echo "warm-up run exit $? (not counted)"
+          # Every run goes ahead whatever the previous one returned; its exit code is raw evidence, and the collection
+          # gate below judges the set.
+          for i in $(seq 1 "$RUNS"); do
+            rc=0; mkdir -p "$PUSH_DIR/runs/push-$i"
+            (cd "$PUSH_DIR/push" && taskset -c 2,3 node scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs --after --push-viewers --isolated-clients \
+              --root . --pg-bin "$PG_BIN" --out "$PUSH_DIR/runs/push-$i/out" \
+              --scope ci-diagnostic --ack SYNTHETIC_LOCAL_ONLY --run-local) || rc=$?
+            echo "$rc" > "$PUSH_DIR/runs/push-$i/exit-code"
+          done
+      # Fails unless every push run is present, parseable, at the push pin, of the push workload, measured on both arms,
+      # financially intact, placed as the method requires and cleaned up. The p95 numbers are reported, never a verdict.
+      - name: Collection gate and crypto Δp95 with its interval (report only)
+        if: always()
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/summarize-613.cjs "$PUSH_DIR/runs" "$PUSH_DIR/summary.json" --push --pairs "$RUNS" --methodology isolated-clients | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Streams, private requests, connections and CPU (report only, not a gate)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/qa/stocks-rc-50plus2/push-report-613.cjs "$PUSH_DIR/runs" "$PUSH_DIR/push-report.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/qa/stocks-rc-50plus2/extended-report-613.cjs "$PUSH_DIR/runs" "$PUSH_DIR/extended.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Server and client CPU sets, memory, placement (report only)
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+          const fs = require("fs"), path = require("path"), dir = process.argv[1], f = (x, d = 1) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          const rows = ["| run | arm | server CPU set busy % (steal ms) | client set busy % | driver ELU | placement (threads) | server memory MB (API, authority, gateway HWM; PostgreSQL PSS) |", "|---|---|---|---|---|---|---|"];
+          for (const run of fs.readdirSync(dir).sort()) for (const arm of ["baseline", "mixed"]) {
+            let r; try { r = JSON.parse(fs.readFileSync(path.join(dir, run, "out", arm + "-result.json"), "utf8")); } catch { continue; }
+            const i = r.isolation; if (!i) continue; const m = i.memory ?? {}, mb = x => typeof x === "number" ? x / 1024 : null;
+            rows.push(`| ${run} | ${arm} | ${f(i.usage.server.utilization * 100)} (${f(i.usage.server.stealMs, 0)}) | ${f(i.usage.client.utilization * 100)} | ${f(i.headroom.driverElu, 3)} | ${i.proof.ok ? "ok" : "FAIL"} (${i.proof.checkedThreads}) | ${[m.api?.hwmKb, m.stocksAuthority?.hwmKb, m.stocksGateway?.hwmKb].map(x => f(mb(x), 0)).join(", ")}; ${f(mb(m.postgres?.pssKb), 0)} |`);
+          }
+          console.log(rows.join("\n"));
+          ' "$PUSH_DIR/runs" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the numbers as check annotations (readable without sign-in)
+        if: always()
+        run: |
+          node -e '
+          const s = require(process.argv[1]), p = require(process.argv[2]), f = (x, d = 2) => typeof x === "number" && Number.isFinite(x) ? x.toFixed(d) : "-";
+          if (s.collection.status !== "COMPLETE") console.log(`::error title=PUSH_DIAGNOSTIC collection ${s.collection.status} ${s.collection.completeRuns}/${s.collection.expectedRuns}::${s.collection.failures.slice(0, 12).join(" ")}`);
+          for (const r of s.runs.slice(0, 8)) console.log(`::notice title=PUSH_DIAGNOSTIC ${r.name} ${(r.runtime || "").slice(0, 8)}::${r.status} complete=${r.complete ? "yes" : "no"} dp95=${f(r.comparison?.cryptoP95ChangePercent)}% base/mixed p50=${f(r.baseline?.p50)}/${f(r.mixed?.p50)} p95=${f(r.baseline?.p95)}/${f(r.mixed?.p95)}ms apiCPU=${f(r.baseline?.apiCpuMs, 0)}/${f(r.mixed?.apiCpuMs, 0)}ms timeouts=${r.mixed?.timeouts ?? "-"} loss/double/viewer=${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join("/") : "-"}`);
+          const k = s.kinds.push, st = k.statistics ?? {};
+          console.log(`::notice title=PUSH_DIAGNOSTIC ${(k.pin || "").slice(0, 8)} pooled::collection ${s.collection.status} complete ${k.completeRuns}/${k.runs}; pooled p95 base/mixed ${f(k.pooledBaselineP95Ms)}/${f(k.pooledMixedP95Ms)} ms; pooled dp95 ${f(k.pooledDeltaPercent)}% (bootstrap 95% ${st.bootstrapPooledDeltaPercent95 ? f(st.bootstrapPooledDeltaPercent95[0]) + ".." + f(st.bootstrapPooledDeltaPercent95[1]) : "-"}); median run dp95 ${f(k.medianRunDeltaPercent)}%; report only, the +5% threshold is not a verdict here`);
+          const t = p.total;
+          console.log(`::notice title=PUSH_DIAGNOSTIC streams::${t.runs} runs, ${t.opened} streams, quotes ${t.quotes}/${t.expectedQuotes} (uptime ${f(t.uptime * 100)}%), quota waits ${t.waits}, unavailable ${t.unavailable}, revoked ${t.revoked}, stale viewers ${t.staleViewers}, quote age p95 max ${f(t.quoteAgeP95MsMax, 0)} ms; private 429 ${t.private429}; busiest minute ${t.busiestMinuteMax}/240; gateway connections peak ${t.gatewayPeakConnectionsMax} shed ${t.gatewayShed} dropped ${t.gatewayDropped}; loss/double/viewer ${t.financial.orderLoss}/${t.financial.doubleSpend}/${t.financial.viewerMutations}`);
+          ' "$PUSH_DIR/summary.json" "$PUSH_DIR/push-report.json"
+      - name: Collect run reports (no database files)
+        if: always()
+        run: |
+          mkdir -p output/rc50-613-push
+          cp "$PUSH_DIR/summary.json" "$PUSH_DIR/push-report.json" "$PUSH_DIR/extended.json" output/rc50-613-push/ 2>/dev/null || true
+          for r in "$PUSH_DIR"/runs/*/ "$PUSH_DIR"/warmup/; do
+            n=$(basename "$r"); mkdir -p "output/rc50-613-push/$n"
+            cp "$r"exit-code "$r"out/*.json "$r"out/*.log "output/rc50-613-push/$n/" 2>/dev/null || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-613-push-diagnostic-${{ github.event.pull_request.head.sha }}
+          path: output/rc50-613-push
+          retention-days: 14
+          if-no-files-found: error
 
   # Sustained load (report only, never the p95 verdict): two runs of the after pin with --sustained — both arms measure
   # 3 minutes instead of 20 s, the original 4 s cycle, 50 viewers at 1 s, under the unchanged 240/min private ingress.

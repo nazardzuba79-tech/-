@@ -74,7 +74,7 @@ async function gateway(c){
 }
 function metrics(){
  const value={role,pid:process.pid,nice:require('node:os').getPriority(),cpu:process.cpuUsage(),memory:process.memoryUsage(),loop:loop(),sched:require('./sched.cjs').read(),policies:require('./sched.cjs').policies(),cpus:require('./sched.cjs').allowed(),network:global.__rc50Network};
- if(role==='gateway')Object.assign(value,{quote:state.gateway.quoteMetrics(),account:state.gateway.accountMetrics(),market:state.market?{...state.market.snapshot(),starts:state.market.starts.map(x=>({host:x.host,kind:x.kind}))}:null});
+ if(role==='gateway')Object.assign(value,{quote:state.gateway.quoteMetrics(),account:state.gateway.accountMetrics(),connections:state.gateway.connectionMetrics?.()??null,streams:state.gateway.streamMetrics?.()??null,market:state.market?{...state.market.snapshot(),starts:state.market.starts.map(x=>({host:x.host,kind:x.kind}))}:null});
  return value;
 }
 async function close(){

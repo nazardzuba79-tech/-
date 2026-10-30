@@ -235,3 +235,36 @@ test('#613 R9: the 3 s terminal cadence is labelled a diagnostic, never mixed wi
   incomplete(mixed, 'MIXED_WORKLOADS:original-4s,terminal-3s-diagnostic');
   assert.deepEqual(mixed.capacity.kinds, {before: 'NOT_EVALUATED_INCOMPLETE_COLLECTION', after: 'NOT_EVALUATED_INCOMPLETE_COLLECTION'});
 });
+
+test('#613 R10 PUSH_DIAGNOSTIC (--push): push-N runs at the push pin, healthy push viewers, a p95 overrun recorded honestly', t => {
+  const dir = copy(t), pin = FIXTURE_PINS.after;
+  fs.rmSync(path.join(dir, 'before-1'), {recursive: true}); fs.renameSync(path.join(dir, 'after-1'), path.join(dir, 'push-1'));
+  // As diagnostic-run-613.cjs --push-viewers records it: the fixture's run is over +5 %, so its own failure is recorded.
+  edit(dir, 'push-1', 'result.json', j => { j.workload = 'push-viewers-diagnostic'; j.pushDiagnostic = true; j.status = 'PUSH_DIAGNOSTIC_REPORT_ONLY'; j.failures = ['PUSH_P95_OR_INVARIANT_NOT_PASSED']; });
+  const healthy = {kind: 'PUSH_DIAGNOSTIC', viewers: 50, opened: 50, quotes: 1000, waits: 0, unavailable: 0, revoked: 0, discarded: 0, staleViewers: 0, quoteAgeP95Ms: 2071, deliveryDelayP95Ms: 26, errors: []};
+  edit(dir, 'push-1', 'mixed-result.json', j => { j.push = healthy; });
+  const opts = {pairs: 1, push: true, pins: {push: pin}};
+  const r = summarizeWithPins(dir, opts);
+  assert.deepEqual(r.collection, {status: 'COMPLETE', expectedRuns: 1, completeRuns: 1, failures: []});
+  assert.deepEqual(r.capacity.kinds, {push: 'DIAGNOSTIC_P95_FAIL'}); assert.equal(r.capacity.acceptance, false);
+  assert.match(markdown(r), /PUSH_DIAGNOSTIC: 50 viewers on the public quote stream, 2 traders on the original 4 s cycle — a separate experiment/);
+  // Fail closed.
+  const variant = (fn, code) => { const d = copy(t); fs.rmSync(path.join(d, 'before-1'), {recursive: true}); fs.rmSync(path.join(d, 'after-1'), {recursive: true}); fs.cpSync(path.join(dir, 'push-1'), path.join(d, 'push-1'), {recursive: true}); fn(d); incomplete(summarizeWithPins(d, opts), code); };
+  variant(d => edit(d, 'push-1', 'mixed-result.json', j => { j.push = {...healthy, opened: 49}; }), 'push-1:PUSH_VIEWERS_UNHEALTHY');
+  variant(d => edit(d, 'push-1', 'mixed-result.json', j => { j.push = {...healthy, staleViewers: 1}; }), 'push-1:PUSH_VIEWERS_UNHEALTHY');
+  variant(d => edit(d, 'push-1', 'mixed-result.json', j => { delete j.push; }), 'push-1:PUSH_VIEWERS_UNHEALTHY');
+  variant(d => edit(d, 'push-1', 'result.json', j => { j.failures = []; }), 'push-1:STATUS_INCONSISTENT');
+  variant(d => edit(d, 'push-1', 'result.json', j => { j.failures.push('SOMETHING_ELSE'); }), 'push-1:RUN_FAILURES_RECORDED');
+  variant(d => edit(d, 'push-1', 'result.json', j => { j.status = 'FAIL_LOCAL_DIAGNOSTIC'; }), 'push-1:INCOMPLETE_RUN');
+  variant(d => edit(d, 'push-1', 'result.json', j => { j.workload = 'original-4s'; }), 'WORKLOAD_MISMATCH:original-4s');
+  incomplete(summarizeWithPins(dir, {...opts, pins: {push: FIXTURE_PINS.before}}), 'push-1:PROVENANCE_MISMATCH');
+  incomplete(summarizeWithPins(dir, {...opts, pairs: 2}), 'push-2:RUN_MISSING');
+  // A push run is never judged as a polling run.
+  const both = copy(t); edit(both, 'after-1', 'result.json', j => { j.workload = 'push-viewers-diagnostic'; });
+  incomplete(summarize(both, {pairs: 1}), 'WORKLOAD_MISMATCH:original-4s,push-viewers-diagnostic');
+  // The CLI's --push takes the push pin from policy-613-after.cjs (PUSH_RC) unless --pins names one.
+  assert.equal(cli(dir, ['--pairs', '1', '--push'], {}, pin).status, 0);
+  const res = cli(dir, ['--pairs', '1', '--push'], {}, null);
+  assert.equal(res.status, 1); assert.match(res.stdout, /push-1:PROVENANCE_MISMATCH/);
+  assert.match(require('./policy-613-after.cjs').PUSH_RC, /^[0-9a-f]{40}$/);
+});

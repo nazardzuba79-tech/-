@@ -1027,6 +1027,25 @@ Same release chain and method as R9 §1 (authority + gateway + PostgreSQL on CPU
   server CPU) is narrowly missed (−47 %); the identity batches halve (20 instead of 41–43 per 20 s), which also leaves
   more of the 240/min quota to the traders.
 
+### PUSH_DIAGNOSTIC 50+2 in CI (one run by Codex; then a calibrated set on the user's permission of 30.10)
+
+- **First run (Codex, run 40947288590, single pair, no calibration):** harness `--push-viewers` (`push-viewers.cjs`,
+  pin `policy-613-after.cjs` PUSH_RC `7942c59d`): crypto p95 11.31 → 12.19 ms (**+7.78 %, +0.88 ms**), p50 7.17 → 7.11,
+  p99 32.7 → 17.1; 50/50 streams, 1 000 quotes in 20 s, 0 waits / unavailable / revoked / stale; quote age p95 2 071 ms;
+  financial invariants intact. Over +5 %, one pair, no interval.
+- **Calibrated set (`stocks-613-50plus2-diagnostic.yml`, `RC50-RUN: push-diagnostic`, runs alone):** the same
+  `--push-viewers` mode and pin. The methodology job proves placement and runs six A/A runs **at the push pin**
+  (`--push-viewers --null-arm`: gateway in the push profile, no viewers in either arm; `calibration-613.cjs --pin`), the
+  calibration gate |A/A Δp95| ≤ 5 % unchanged. Then one uncounted warm-up and 6 push runs (server CPUs 0,1, clients 2,3,
+  disposable PostgreSQL, synthetic market). `summarize-613.cjs --push` gates the collection (pin, workload
+  `push-viewers-diagnostic`, placement, financial invariants, cleanup, every push viewer healthy; a run's own
+  `PUSH_P95_OR_INVARIANT_NOT_PASSED` is accepted only when the p95 overrun is the reason) and reports pooled crypto Δp95
+  with its bootstrap interval; `push-report-613.cjs` the streams, private requests in the window and the busiest minute
+  against 240, gateway connections (peak / shed / dropped), CPU per process, server utilisation and memory. Report only.
+- Harness changes on top of Codex's mode: `--push-viewers --null-arm` allowed for the calibration (viewers not opened,
+  status stays `CALIBRATION_ONLY_NOT_A_VERDICT`); the authority's private-request log is written for push runs; gateway
+  metrics carry connection and stream counters; `policy-613-after.cjs` exports `PUSH_RC` (the pins are unchanged).
+
 ### R10 remaining blockers
 
 1. Acceptance unchanged: +22.73 % FAIL (R8). Push alone projects ≈ +12 %; the traders' authority path (≈ 1.1–1.3 s per

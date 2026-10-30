@@ -90,6 +90,12 @@ isolation: both CPU sets are one VM (shared L3 cache, memory bandwidth, kernel,
 hypervisor steal); loopback TCP is processed in the sender's context, so the server
 pays the receive side of its own answers and the clients the receive side of their
 requests. Placement experiments --driver-apart / --stocks-apart stay as they were.
+--push-viewers (#613 R10 PUSH_DIAGNOSTIC, with --after --isolated-clients; report only): the
+push pin (policy-613-after.cjs PUSH_RC), the gateway in the viewer push profile, 50 viewers
+holding the quote stream (push-viewers.cjs), the traders on the 4 s cycle. With --null-arm
+it is the A/A calibration at the push pin. summarize-613.cjs --push gates push-1..N;
+push-report-613.cjs reports streams, private requests per window, the busiest minute
+against 240, connections, CPU and memory.
 Self-tests (no workload): placement.test.cjs (synthetic /sys and /proc trees, live
 check), sustained-613.test.cjs, driver-sustained.test.cjs (the driver against fake
 loopback servers: 429 + Retry-After, the same intent sent again once, stale-quote

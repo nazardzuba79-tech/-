@@ -9,7 +9,11 @@
 //   inconsistent or incomplete fails the collection.
 // - capacity: the p95 verdict per pin, report only. A p95 FAIL is an honest
 //   diagnostic result and never fails the collection; nothing here is acceptance.
-// Usage: node summarize-613.cjs <runsDir> [out.json] [--pairs N] [--methodology isolated-clients]  (PAIRS env otherwise)
+// Usage: node summarize-613.cjs <runsDir> [out.json] [--pairs N] [--methodology isolated-clients] [--push]  (PAIRS env otherwise)
+// --push (#613 R10 PUSH_DIAGNOSTIC, diagnostic-run-613.cjs --push-viewers): the runs are push-1..N at the push pin
+// (policy-613-after.cjs PUSH_RC), each of the 'push-viewers-diagnostic' workload with every push viewer healthy; the same
+// collection gate and statistics. Such a run is labelled PUSH_DIAGNOSTIC_REPORT_ONLY and records
+// PUSH_P95_OR_INVARIANT_NOT_PASSED when its p95 is over the threshold: accepted only when the p95 overrun is the reason.
 // --methodology isolated-clients (#613 R8): every run must also say so and carry its placement proofs (qualification
 // and both measured windows: every server thread on the server CPUs, every client thread on the client CPUs) and the
 // client headroom check of both windows; anything missing or failed fails the collection.
@@ -17,7 +21,7 @@ const fs = require('node:fs'), path = require('node:path');
 const {percentile} = require('./policy.cjs');
 const {PLAN, traceSha: TRACE_SHA} = require('./driver.cjs');
 
-const KINDS = ['before', 'after'];
+const PAIRED_KINDS = ['before', 'after'];
 const MEASURED = ['PASS_LOCAL_DIAGNOSTIC', 'FAIL_LOCAL_DIAGNOSTIC'];
 const P95_ONLY = 'CRYPTO_P95_OVER_5_PERCENT';
 const THRESHOLD_PERCENT = 5, MIN_SAMPLES = 200; // policy comparison()'s threshold and floor; unchanged
@@ -28,6 +32,8 @@ const POPULATION = {baseline: [0, 0], mixed: [50, 2]};
 const ZERO = ['timeouts', 'unexpectedErrors', 'missedJobs'], FINANCIAL = ['orderLoss', 'doubleSpend', 'viewerMutations'];
 
 const pinsFromPolicies = () => ({before: require('./policy-613.cjs').RC, after: require('./policy-613-after.cjs').RC});
+const PUSH_KINDS = ['push'], PUSH_WORKLOAD = 'push-viewers-diagnostic', PUSH_STATUS = 'PUSH_DIAGNOSTIC_REPORT_ONLY', PUSH_FAILURE = 'PUSH_P95_OR_INVARIANT_NOT_PASSED';
+const pushPins = () => ({push: require('./policy-613-after.cjs').PUSH_RC});
 // Every counter present, finite, non-negative and not decreasing over the window.
 const cpuMs = m => CPU.every(k => [m?.before?.cpu?.[k], m?.after?.cpu?.[k]].every(x => finite(x) && x >= 0) && m.after.cpu[k] >= m.before.cpu[k])
   ? CPU.reduce((t, k) => t + m.after.cpu[k] - m.before.cpu[k], 0) / 1000 : null;
@@ -83,7 +89,7 @@ function readArm(out, arm, problems, methodology) {
     apiCpuMs, timeouts: a.timeouts, errors: a.unexpectedErrors, orderLoss: a.orderLoss, doubleSpend: a.doubleSpend, viewerMutations: a.viewerMutations};
 }
 
-function readRun(runsDir, name, kind, pin, methodology) {
+function readRun(runsDir, name, kind, pin, methodology, push = false) {
   const out = path.join(runsDir, name, 'out'), problems = [];
   const run = {name, kind, status: 'NO_RESULT', problems};
   const exitFile = path.join(runsDir, name, 'exit-code');
@@ -95,12 +101,20 @@ function readRun(runsDir, name, kind, pin, methodology) {
   if (methodology && (result.methodology !== methodology || result.nullArm || result.sustained)) problems.push('METHODOLOGY_MISMATCH');
   if (methodology === 'isolated-clients' && (result.qualification?.placement?.ok !== true || result.isolation?.admission?.length !== 0)) problems.push('QUALIFICATION_PLACEMENT_UNPROVEN');
   if (result.status === 'QUALIFICATION_OR_ADMISSION_FAILED_NOT_RUN') problems.push('ADMISSION_FAILED');
-  else if (!MEASURED.includes(result.status)) problems.push('INCOMPLETE_RUN');
+  else if (!(push ? result.status === PUSH_STATUS && result.pushDiagnostic === true : MEASURED.includes(result.status))) problems.push('INCOMPLETE_RUN');
   if (result.fullWorkloadRuns !== 1) problems.push('WORKLOAD_NOT_RUN_ONCE');
-  if (!Array.isArray(result.failures) || result.failures.length) problems.push('RUN_FAILURES_RECORDED');
+  // --push: the run's own PUSH_P95_OR_INVARIANT_NOT_PASSED is checked against the comparison below.
+  const runFailures = Array.isArray(result.failures) ? result.failures.filter(f => !(push && f === PUSH_FAILURE)) : null;
+  if (!runFailures || runFailures.length) problems.push('RUN_FAILURES_RECORDED');
   if (result.allRecordedPidsStopped !== true || result.postgresStopped !== true || result.postgresStatusExit !== PG_NOT_RUNNING || Object.hasOwn(result, 'cleanupError')) problems.push('CLEANUP_UNCONFIRMED');
   run.baseline = readArm(out, 'baseline', problems, methodology);
   run.mixed = readArm(out, 'mixed', problems, methodology);
+  if (push) {
+    // Every push viewer opened, none stale, revoked or in error over the measured window.
+    const p = readJson(path.join(out, 'mixed-result.json'), [], '', '')?.push;
+    if (!p || p.opened !== 50 || p.viewers !== 50 || p.staleViewers !== 0 || p.revoked !== 0 || !Array.isArray(p.errors) || p.errors.length || !(p.quotes > 0)) problems.push('PUSH_VIEWERS_UNHEALTHY');
+    else run.push = p;
+  }
   const c = result.comparison;
   if (!c || !finite(c.cryptoP95ChangePercent) || !Array.isArray(c.failures)) problems.push('COMPARISON_INVALID');
   else {
@@ -112,13 +126,14 @@ function readRun(runsDir, name, kind, pin, methodology) {
       const over = delta > THRESHOLD_PERCENT, verdict = over ? 'FAIL_LOCAL_DIAGNOSTIC' : 'PASS_LOCAL_DIAGNOSTIC';
       if (delta === null || Math.abs(delta - c.cryptoP95ChangePercent) > 1e-9 || c.baselineCryptoP95Ms !== run.baseline.p95 || c.mixedCryptoP95Ms !== run.mixed.p95 ||
           c.thresholdPercent !== THRESHOLD_PERCENT || c.failures.length !== (over ? 1 : 0) || over !== c.failures.includes(P95_ONLY)) problems.push('COMPARISON_INCONSISTENT');
-      else if (c.status !== verdict || result.status !== verdict) problems.push('STATUS_INCONSISTENT');
+      else if (c.status !== verdict || (push ? result.status !== PUSH_STATUS || result.failures.includes(PUSH_FAILURE) !== over : result.status !== verdict)) problems.push('STATUS_INCONSISTENT');
     }
   }
   return run;
 }
 
-function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = null} = {}) {
+function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = null, push = false} = {}) {
+  const KINDS = push ? PUSH_KINDS : PAIRED_KINDS;
   const collection = {status: 'COMPLETE', expectedRuns: 0, completeRuns: 0, failures: []};
   const fail = x => collection.failures.push(x);
   if (!Number.isSafeInteger(pairs) || pairs < 1) fail('EXPECTED_PAIRS_UNKNOWN');
@@ -133,7 +148,7 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = nul
   for (const name of expected) {
     const kind = name.split('-')[0];
     if (!names.includes(name)) { runs.push({name, kind, status: 'MISSING', problems: ['RUN_MISSING']}); fail(name + ':RUN_MISSING'); continue; }
-    const run = readRun(runsDir, name, kind, pins[kind], methodology);
+    const run = readRun(runsDir, name, kind, pins[kind], methodology, push);
     for (const p of run.problems) fail(name + ':' + p);
     run.complete = run.problems.length === 0;
     if (run.complete) collection.completeRuns++;
@@ -143,6 +158,8 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = nul
   // terminal cadence is a labelled diagnostic. Runs of different loads are never pooled (fail-closed, before any verdict).
   const workloads = [...new Set(runs.map(r => r.workload).filter(Boolean))];
   if (workloads.length > 1) fail('MIXED_WORKLOADS:' + workloads.join(','));
+  // --push: only the push workload; never a polling run judged as a push run or the reverse.
+  if (push ? workloads.some(w => w !== PUSH_WORKLOAD) : workloads.includes(PUSH_WORKLOAD)) fail('WORKLOAD_MISMATCH:' + workloads.join(','));
   if (collection.failures.length) collection.status = 'INCOMPLETE';
 
   const kinds = {};
@@ -165,7 +182,7 @@ function summarize(runsDir, {pairs, pins = pinsFromPolicies(), methodology = nul
 
 function markdown({collection, capacity, kinds, runs}) {
   const f = (x, d = 2) => typeof x === 'number' && Number.isFinite(x) ? x.toFixed(d) : '—';
-  const lines = [`Workload: **${capacity.workload === 'revised-8s-diagnostic' ? 'revised 8 s order cycle — diagnostic only, not the acceptance load' : capacity.workload === 'terminal-3s-diagnostic' ? 'viewers every 3 s as the real terminal polls — diagnostic only, not the acceptance load' : 'original 4 s order cycle (acceptance load)'}**`, '', `Collection: **${collection.status}** (${collection.completeRuns}/${collection.expectedRuns} complete runs)`];
+  const lines = [`Workload: **${capacity.workload === 'revised-8s-diagnostic' ? 'revised 8 s order cycle — diagnostic only, not the acceptance load' : capacity.workload === 'terminal-3s-diagnostic' ? 'viewers every 3 s as the real terminal polls — diagnostic only, not the acceptance load' : capacity.workload === PUSH_WORKLOAD ? 'PUSH_DIAGNOSTIC: 50 viewers on the public quote stream, 2 traders on the original 4 s cycle — a separate experiment, not the acceptance load' : 'original 4 s order cycle (acceptance load)'}**`, '', `Collection: **${collection.status}** (${collection.completeRuns}/${collection.expectedRuns} complete runs)`];
   if (collection.failures.length) lines.push('', 'Collection failures: ' + collection.failures.map(x => '`' + x + '`').join(', '));
   lines.push('', '| run | runtime | status | complete | Δp95 % | baseline p95 ms | mixed p95 ms | baseline API CPU ms | mixed API CPU ms | mixed timeouts | order loss / double spend / viewer mutations |', '|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of runs) lines.push(`| ${r.name} | ${(r.runtime || '').slice(0, 8)} | ${r.status} | ${r.complete ? 'yes' : 'no'} | ${f(r.comparison?.cryptoP95ChangePercent)} | ${f(r.baseline?.p95)} | ${f(r.mixed?.p95)} | ${f(r.baseline?.apiCpuMs, 0)} | ${f(r.mixed?.apiCpuMs, 0)} | ${r.mixed?.timeouts ?? '—'} | ${r.mixed ? [r.mixed.orderLoss, r.mixed.doubleSpend, r.mixed.viewerMutations].join(' / ') : '—'} |`);
@@ -183,11 +200,12 @@ module.exports = {summarize, markdown};
 if (require.main === module) {
   // --pins <before>:<after> judges stored runs recorded at other pins (e.g. a fixture); default: the policies.
   const argv = process.argv.slice(2), flags = {}, rest = [];
-  for (let i = 0; i < argv.length; i++) if (argv[i] === '--pairs' || argv[i] === '--pins' || argv[i] === '--methodology') flags[argv[i]] = argv[++i]; else rest.push(argv[i]);
+  for (let i = 0; i < argv.length; i++) if (argv[i] === '--pairs' || argv[i] === '--pins' || argv[i] === '--methodology') flags[argv[i]] = argv[++i]; else if (argv[i] === '--push') flags['--push'] = true; else rest.push(argv[i]);
   const pairs = Number('--pairs' in flags ? flags['--pairs'] : process.env.PAIRS);
   const [before, after] = '--pins' in flags ? String(flags['--pins']).split(':') : [];
   const [runsDir, jsonOut] = rest;
-  const report = summarize(runsDir, {pairs, ...('--pins' in flags ? {pins: {before, after}} : {}), ...('--methodology' in flags ? {methodology: flags['--methodology']} : {})});
+  const report = summarize(runsDir, {pairs, ...('--pins' in flags ? {pins: {before, after}} : {}), ...('--methodology' in flags ? {methodology: flags['--methodology']} : {}),
+    ...(flags['--push'] ? {push: true, pins: '--pins' in flags ? {push: String(flags['--pins'])} : pushPins()} : {})});
   console.log(markdown(report));
   if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({...report, runs: report.runs.map(({baseline, mixed, ...r}) => ({...r, baseline: baseline && {...baseline, latencies: undefined}, mixed: mixed && {...mixed, latencies: undefined}}))}, null, 2));
   process.exitCode = report.collection.status === 'COMPLETE' ? 0 : 1;
