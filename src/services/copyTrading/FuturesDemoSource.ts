@@ -42,7 +42,10 @@ const symbolOk = (value: string) => /^[A-Z0-9]{2,32}USDT$/.test(value);
  */
 export function futuresDemoSourceFills(account: NativeAccount): FuturesDemoSourceResult {
   const accepted: FuturesDemoCopyFill[] = [], rejected: FuturesDemoSourceResult['rejected'] = [];
-  if (account.executionMode !== 'LIVE_EXECUTION') return { accepted, rejected };
+  // NativeDemoAccount initialization intentionally omits executionMode: the
+  // existing NativeDemoService treats that legacy/default value as LIVE.
+  // Explicit historical accounts remain categorically excluded.
+  if (account.executionMode === 'HISTORICAL_DEMO') return { accepted, rejected };
   const commands = new Map(account.commands.map(c => [c.id, c]));
   const positions = new Map(account.snapshot.positions.map(p => [p.id, p]));
   const ids = new Set<string>();
