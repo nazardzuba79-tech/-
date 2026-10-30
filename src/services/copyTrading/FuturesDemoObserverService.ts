@@ -125,6 +125,18 @@ export class FuturesDemoObserverService {
         where: { userId: sub.ownerUserId, revision: { gt: sub.lastRevision, lte: currentRevision } },
         orderBy: { revision: 'asc' }, take: MAX_REVISIONS_PER_SCAN,
       });
+      // Each NativeDemoRevision contains a COMPLETE snapshot, not only its new
+      // events. Compare to the preceding immutable snapshot, otherwise every
+      // subscriber would unintentionally receive the leader's PRE-subscription
+      // history on the first future REFRESH command.
+      const previous = await tx.nativeDemoRevision.findUnique({
+        where: { userId_revision: { userId: sub.ownerUserId, revision: sub.lastRevision } },
+        select: { payload: true },
+      });
+      if (!previous) throw new FuturesDemoObserverError('SOURCE_REVISION_GAP');
+      const baseline = inflate(previous.payload as unknown as NativeAccount);
+      if (!Array.isArray(baseline.snapshot?.events)) throw new FuturesDemoObserverError('SOURCE_REVISION_INVALID');
+      let previousEventIds = new Set(baseline.snapshot.events.map(e => e.id));
       let nextRevision = sub.lastRevision, accepted = 0, rejected = 0;
       for (const revision of revisions) {
         if (revision.revision !== nextRevision + 1) throw new FuturesDemoObserverError('SOURCE_REVISION_GAP');
@@ -133,8 +145,8 @@ export class FuturesDemoObserverService {
           || !Array.isArray(account.snapshot?.events) || account.snapshot.events.length > MAX_EVENTS_PER_REVISION)
           throw new FuturesDemoObserverError('SOURCE_REVISION_INVALID');
         const results = futuresDemoSourceFills(account);
-        rejected += results.rejected.length;
-        for (const fill of results.accepted) {
+        rejected += results.rejected.filter(e => !previousEventIds.has(e.eventId)).length;
+        for (const fill of results.accepted.filter(e => !previousEventIds.has(e.sourceEventId))) {
           if (futuresDemoSourceRiskCheck(fill, sub.maxLeverage.toString(), sub.maxFillUsdt.toString())) {
             rejected++; continue;
           }
@@ -149,6 +161,7 @@ export class FuturesDemoObserverService {
           });
           accepted += inserted.count;
         }
+        previousEventIds = new Set(account.snapshot.events.map(e => e.id));
         nextRevision = revision.revision;
       }
       if (currentRevision > nextRevision && revisions.length === 0)
