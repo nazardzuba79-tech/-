@@ -101,6 +101,16 @@ async function main() {
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
       await ctx.close();cases.push(lang+' mobile layout');
     }
+    const switched = await open(1440);
+    await switched.page.getByText(/BTCUSDT · OPEN · 0.125 @ 61000/).waitFor();
+    await switched.page.evaluate(() => {
+      localStorage.setItem('exchange_token', 'another-test-account');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'exchange_token' }));
+    });
+    await switched.page.getByRole('alert').waitFor();
+    assert.equal(await switched.page.getByText(/BTCUSDT · OPEN · 0.125 @ 61000/).count(), 0);
+    await switched.ctx.close(); cases.push('account switch clears prior observer state');
+
     failGet = true;
     const faulty = await open(1440);
     await faulty.page.getByRole('alert').waitFor();
