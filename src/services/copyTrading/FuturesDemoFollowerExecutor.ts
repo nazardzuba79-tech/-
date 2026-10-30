@@ -132,7 +132,16 @@ export class FuturesDemoFollowerExecutor {
       if(!sourceQuantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
       if(n(source.leverage).gt(consent.maxLeverage)||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt))
         return reject('COPY_SOURCE_RISK_LIMIT');
-      const actor={userId,sessionId,expiresAt:Date.now()+30000};
+      const follower=await tx.nativeDemoAccount.findUnique({where:{userId},select:{payload:true}});
+      const admitted=follower ? (follower.payload as Record<string,unknown>).executionSession as
+        {userId?:string;sessionId?:string;expiresAt?:number}|undefined : undefined;
+      // Never invent a worker identity or extend an expired native session.
+      // The follower must have explicitly admitted their current live session
+      // to NativeDemoService, and the real repository checks it again at commit.
+      if(admitted?.userId!==userId||admitted.sessionId!==sessionId
+        ||!Number.isFinite(admitted.expiresAt)||admitted.expiresAt!<=Date.now())
+        throw new FuturesCopyExecutionError('FOLLOWER_NATIVE_SESSION_NOT_ADMITTED',403);
+      const actor={userId,sessionId,expiresAt:admitted.expiresAt!};
       // Actual issuer is the signed-in existing account. The native service
       // rechecks User/Session authorization before its financial CAS commit.
       let command:NativeCommand,existingPositionId:string|undefined;
