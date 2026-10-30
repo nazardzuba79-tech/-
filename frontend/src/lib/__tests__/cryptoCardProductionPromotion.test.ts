@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { restoreCopyCheckContext, restoreCopyCheckPage } from '../../../test-utils/copyDepositUx';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { routeElement } from '../../../test-utils/sourceContracts';
@@ -127,6 +128,7 @@ test('all approved masters and the two new presentation assets are byte-exact an
 test('unchanged collateral sources remain exact and the removed prelaunch wrapper stays absent', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     let text = source(file);
+    if (file === 'frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx') text = restoreCopyCheckContext(text);
     if (file === 'frontend/src/pages/home/HomeCardSection.tsx') {
       // The existing homepage framing opt-in is the only normalized change here.
       expect(text.split('<WatchCardVisual framing="homepage" />')).toHaveLength(2);
@@ -191,7 +193,7 @@ test('CopyTradingPage preserves the approved base except the exact display-only 
   // avatar/content tree. Normalize those three required lines only, then
   // compare all remaining bytes with fresh base 2e7acf15. This protects
   // marketplace data, financial adapters, routing and eligibility unchanged.
-  let text = source('frontend/src/pages/CopyTradingPage.tsx');
+  let text = restoreCopyCheckPage(source('frontend/src/pages/CopyTradingPage.tsx'));
   const additions = [
     "import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';\n",
     '            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>\n',
@@ -202,6 +204,15 @@ test('CopyTradingPage preserves the approved base except the exact display-only 
     text = text.replace(addition, '');
   }
   expect(digest(text)).toBe('920963c23a9da98710f0c4805455ddb7ba97eb9e4cababc6043d5b350d45f112');
+});
+
+test('eligibility normalization refuses unrelated state changes and preserves the deposit threshold', () => {
+  const context = source('frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx');
+  const page = source('frontend/src/pages/CopyTradingPage.tsx');
+  expect(() => restoreCopyCheckPage(page.replace('check={depositCheck}', 'check={otherAccount}'))).toThrow();
+  expect(() => restoreCopyCheckContext(context.replace('eligible: known &&', 'eligible: true ||'))).toThrow();
+  expect(digest(restoreCopyCheckContext(context.replace('= 10_000;', '= 9_000;'))))
+    .not.toBe(preservedMainSources['frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx']);
 });
 
 test('the released currency section uses its translated balance-yield copy and unchanged currency assets', () => {

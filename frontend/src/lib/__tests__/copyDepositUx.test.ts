@@ -40,12 +40,16 @@ function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordi
   const following = new Set<string>(alreadyFollowing ? [trader.id] : []);
   const toggle = jest.fn((id: string) => following.has(id) ? following.delete(id) : following.add(id));
   const toast = { success: jest.fn() };
+  const retry = jest.fn();
   let show = false;
   const DepositDialog = () => null;
   const actual = compile(body('CopyButton') + '\nexports.CopyButton = CopyButton;', {
-    useCopyEligibility: () => eligibility.CopyEligibilityProvider({ depositUsd, children: null }).props.value,
+    useCopyEligibility: () => eligibility.CopyEligibilityProvider({ check: {
+      depositUsd, status: 'ready', requestId: 1, retry, isCurrent: () => true,
+    }, children: null }).props.value,
     useFollowing: () => ({ following, toggleFollowing: toggle }),
     useState: () => [show, (next: boolean) => { show = next; }],
+    useEffect: () => {},
     useCopyMarketplace: () => marketplace,
     nazarTrader, CopyDepositDialog: DepositDialog, Check: () => null, toast,
   });
@@ -56,10 +60,10 @@ function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordi
   };
   const button = () => children()[0];
   const dialog = () => children()[1];
-  return { render, button, dialog, toggle, toast, following, DepositDialog };
+  return { render, button, dialog, toggle, toast, following, DepositDialog, retry };
 }
 
-test.each([0, -1, 9_999, 9_999.99, NaN, Infinity, -Infinity])('deposit %s opens requirement only on click without starting Following', deposit => {
+test.each([0, 9_999, 9_999.99])('deposit %s opens requirement only on click without starting Following', deposit => {
   const fixture = copyFixture(deposit);
   expect(fixture.button().props.disabled).not.toBe(true);
   expect(fixture.button().props.children).toBe('Копировать трейдера');
@@ -74,6 +78,16 @@ test.each([0, -1, 9_999, 9_999.99, NaN, Infinity, -Infinity])('deposit %s opens 
   fixture.dialog().props.onClose();
   expect(fixture.dialog()).toBe(false);
   expect(fixture.toggle).not.toHaveBeenCalled();
+});
+
+test.each([-1, NaN, Infinity, -Infinity])('invalid deposit %s offers a check, never the top-up dialog', deposit => {
+  const fixture = copyFixture(deposit);
+  expect(fixture.button().props.children).toBe('Повторить проверку');
+  fixture.button().props.onClick({ stopPropagation: jest.fn() });
+  expect(fixture.retry).toHaveBeenCalledTimes(1);
+  expect(fixture.dialog()).toBeUndefined();
+  expect(fixture.toggle).not.toHaveBeenCalled();
+  expect(fixture.toast.success).not.toHaveBeenCalled();
 });
 
 test.each([10_000, 10_000.01, 200_000])('deposit %s preserves existing eligible start and stop actions', deposit => {
