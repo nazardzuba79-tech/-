@@ -130,7 +130,7 @@ export class FuturesDemoFollowerExecutor {
         return {status:'REJECTED' as const,reason,sourceEventId:source.sourceEventId};
       };
       if(!sourceQuantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
-      if(n(source.leverage).gt(consent.maxLeverage)||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt))
+      if(n(source.leverage).gt(consent.maxLeverage.toString())||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt.toString()))
         return reject('COPY_SOURCE_RISK_LIMIT');
       const follower=await tx.nativeDemoAccount.findUnique({where:{userId},select:{payload:true}});
       const admitted=follower ? (follower.payload as Record<string,unknown>).executionSession as
@@ -159,7 +159,7 @@ export class FuturesDemoFollowerExecutor {
           return reject('NO_COPY_ATTRIBUTED_POSITION');
         const prior=await tx.copyFuturesDemoMirror.findMany({where:{consentId:consent.id,
           sourcePositionId:source.sourcePositionId,kind:'CLOSE',status:'APPLIED'}});
-        const available=n(opens[0].filledQuantity).minus(prior.reduce((sum,v)=>sum.plus(v.filledQuantity??0),n('0')));
+        const available=n(opens[0].filledQuantity).minus(prior.reduce((sum,v)=>sum.plus(v.filledQuantity?.toString()??'0'),n('0')));
         if(!available.gt(0))return reject('COPY_POSITION_ALREADY_CLOSED');
         const quantity=BigNumber.minimum(sourceQuantity,available);
         existingPositionId=opens[0].followerPositionId;
