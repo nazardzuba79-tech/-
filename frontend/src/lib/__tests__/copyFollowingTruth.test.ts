@@ -16,7 +16,14 @@ test('local watchlist never claims an actual copied order or verified server sub
   expect(ui).toContain('Автоматическое копирование сделок не запущено');
   expect(ui).toContain('Наблюдать за трейдером');
   expect(ui).toContain('toggleFollowing(trader.id)');
-  expect(ui).not.toMatch(/useCopyEligibility|CopyDepositDialog|showDepositRequirement|isCurrent\(\)/);
+  // Scope execution assertions to the actual button. A retained historical
+  // comment elsewhere mentioning useCopyEligibility is not a dependency.
+  const start = ui.indexOf('function CopyButton(');
+  const end = ui.indexOf('/** The star', start);
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  expect(ui.slice(start, end)).not.toMatch(/useCopyEligibility|CopyDepositDialog|showDepositRequirement|isCurrent\(\)/);
+  expect(ui).not.toMatch(/import[^;]*(?:useCopyEligibility|CopyDepositDialog)/);
   expect(page).not.toMatch(/getPortfolioHistory|useCopyDepositCheck|CopyEligibilityProvider|depositCheck/);
   expect(lists).toContain("const FOLLOWING_KEY = 'voltex_copy_following'");
   expect(lists).toContain('NOT an account-bound copy subscription');

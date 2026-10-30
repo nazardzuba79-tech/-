@@ -300,8 +300,10 @@ test('normalization only reverses exact approved UX edits, never hides copy-acti
   const approved = '14f46f69112895010de1df831cd4fb4fa11e78ccac0852d958eaa0d0156a38ac';
   expect(hash(restoreCopyButtonDepositUx(body('CopyButton')))).toBe(approved);
   const wrongAction = body('CopyButton').replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
-  expect(hash(restoreCopyButtonDepositUx(wrongAction))).not.toBe(approved);
+  // The exact action is now part of the reverse-normalization anchor. A
+  // changed target must be rejected before hashing, not silently normalized.
+  expect(() => restoreCopyButtonDepositUx(wrongAction)).toThrow('Expected one Copy UX anchor');
   const wrongLocalAction = source.replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
-  expect(restoreCopyDepositUx(wrongLocalAction)).toContain('toggleFollowing("wrong-trader")');
+  expect(() => restoreCopyDepositUx(wrongLocalAction)).toThrow('Expected one Copy UX anchor');
   expect(() => restoreCopyDepositUx(source.replace('Наблюдать за трейдером', 'Запустить ордер'))).toThrow('Expected one Copy UX anchor');
 });

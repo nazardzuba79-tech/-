@@ -221,7 +221,13 @@ test('CopyTradingPage preserves the approved base except the exact display-only 
 test('eligibility normalization refuses unrelated state changes and preserves the deposit threshold', () => {
   const context = source('frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx');
   const page = source('frontend/src/pages/CopyTradingPage.tsx');
-  expect(() => restoreCopyCheckPage(page.replace('check={depositCheck}', 'check={otherAccount}'))).toThrow();
+  // #644 removed the provider from this nonfinancial page. Mutate a live
+  // normalization anchor instead of replacing text that is no longer present.
+  const selection = 'useState<Trader>(nazarTrader)';
+  expect(page).toContain(selection);
+  expect(() => restoreCopyCheckPage(page.replace(selection, 'useState<Trader>(otherAccount)'))).toThrow();
+  expect(digest(restoreCopyCheckPage(page.replace("setView('profile')", "setView('marketplace')"))))
+    .not.toBe(digest(restoreCopyCheckPage(page)));
   expect(() => restoreCopyCheckContext(context.replace('eligible: known &&', 'eligible: true ||'))).toThrow();
   expect(digest(restoreCopyCheckContext(context.replace('= 10_000;', '= 9_000;'))))
     .not.toBe(preservedMainSources['frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx']);
