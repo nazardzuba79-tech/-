@@ -94,7 +94,7 @@ export class CopyDemoService {
     for (const tradeId of tradeIds) {
       const trade = await tx.demoTrade.findUniqueOrThrow({ where: { id: tradeId } });
       const executions = await tx.copyDemoExecution.findMany({ where: { demoOrderId: { in: [trade.makerOrderId, trade.takerOrderId] } } });
-      if (executions.length && trade.makerUserId === trade.takerUserId) throw new CopyDemoError('COPY_SELF_MATCH_REFUSED');
+      if (executions.length && trade.makerUserId === trade.takerUserId) throw new DemoTradingError('Self matching with a copied demo order is not allowed', 'COPY_SELF_MATCH_REFUSED');
       for (const execution of executions) await tx.copyDemoFill.upsert({
         where: { executionId_tradeId: { executionId: execution.id, tradeId } }, create: { executionId: execution.id, tradeId }, update: {},
       });

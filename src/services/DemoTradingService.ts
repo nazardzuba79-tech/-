@@ -10,7 +10,7 @@ import { checkReference, DemoLiquidity, DemoReferenceQuote, liquidityAccountRefu
 type TxClient = Prisma.TransactionClient;
 
 /** Machine-readable reason for a refusal; the message keeps the real Spot wording. */
-export type DemoTradingErrorCode = 'INVALID_ORDER' | 'INSUFFICIENT_BALANCE' | 'NO_LIQUIDITY' | 'REQUEST_CONFLICT';
+export type DemoTradingErrorCode = 'INVALID_ORDER' | 'INSUFFICIENT_BALANCE' | 'NO_LIQUIDITY' | 'REQUEST_CONFLICT' | 'COPY_SELF_MATCH_REFUSED';
 
 export class DemoTradingError extends Error {
   constructor(message: string, readonly code: DemoTradingErrorCode = 'INVALID_ORDER') { super(message); }
