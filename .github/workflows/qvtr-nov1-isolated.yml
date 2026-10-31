@@ -1,0 +1,33 @@
+name: QVTR Nov1 08:00 Kyiv isolated modeled preview
+on:
+  pull_request:
+    paths:
+      - 'src/services/listings/qvtrNov1Isolated.ts'
+      - 'src/services/listings/__tests__/qvtrNov1Isolated.test.ts'
+      - 'scripts/qvtr-nov1-capture.cjs'
+      - '.github/workflows/qvtr-nov1-isolated.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  isolated-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx jest --runInBand --runTestsByPath src/services/listings/__tests__/qvtrNov1Isolated.test.ts
+      - name: Capture a NEW read-only quote at actual execution instant
+        run: node scripts/qvtr-nov1-capture.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qvtr-nov1-isolated-${{ github.sha }}
+          path: artifacts/qvtr-isolated/nov1-*
+          if-no-files-found: warn
