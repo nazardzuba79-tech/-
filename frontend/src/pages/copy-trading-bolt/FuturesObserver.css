@@ -42,3 +42,7 @@
   .copy-futures-observer .observer-actions { flex-direction: column; align-items: stretch; }
   .copy-futures-observer .observer-actions button { width: 100%; }
 }
+.copy-futures-observer .futures-copy form { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.copy-futures-observer .futures-copy h3 { font-size: 1.05rem; margin: 18px 0 8px; }
+.copy-futures-observer .futures-copy li[data-status="REJECTED"] { color: #6b4a12; }
+@media (max-width: 600px) { .copy-futures-observer .futures-copy form { grid-template-columns: minmax(0,1fr); } }

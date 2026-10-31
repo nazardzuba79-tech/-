@@ -12,6 +12,9 @@ import { DemoEngineError } from '../../private-trading/native/engine';
 type Tx = Prisma.TransactionClient;
 const n=(s:{toString():string}|string)=>new BigNumber(s.toString());
 const positive=(s:string)=>/^(0|[1-9][0-9]{0,11})([.][0-9]{1,8})?$/.test(s)&&n(s).gt(0);
+/** Hard-OFF unless explicitly enabled on top of the disposable loopback review gate. */
+export const futuresDemoExecutionEnabled=(env:NodeJS.ProcessEnv=process.env)=>
+  env.COPY_FUTURES_DEMO_EXECUTION_ENABLED==='true'&&futuresDemoObserverEnabled(env);
 export class FuturesCopyExecutionError extends Error {
   constructor(readonly code:string,readonly status=409){super(code);}
 }
@@ -25,8 +28,7 @@ export interface FuturesDemoExecutionLimits {
  */
 export class FuturesDemoFollowerExecutor {
   constructor(private readonly db:PrismaClient,private readonly native:Pick<NativeDemoService,'command'>,
-    private readonly enabled:()=>boolean=()=>process.env.COPY_FUTURES_DEMO_EXECUTION_ENABLED==='true'
-      && futuresDemoObserverEnabled(),
+    private readonly enabled:()=>boolean=futuresDemoExecutionEnabled,
     private readonly leaderApproved:(userId:string)=>boolean=approvedFuturesDemoLeader) {}
   private on(){if(!this.enabled())throw new FuturesCopyExecutionError('FUTURES_COPY_EXECUTOR_OFF',403);}
   private limits(l:FuturesDemoExecutionLimits){
@@ -232,6 +234,46 @@ export class FuturesDemoFollowerExecutor {
       if(!applied)throw new FuturesCopyExecutionError('COPY_NATIVE_CONFIRMATION_UNKNOWN',503);
       return reconcile(applied);
     },{timeout:60000,maxWait:10000});
+  }
+  /** Authenticated read of this follower's own consent and copy receipts.
+   * Every APPLIED row names the follower position its NativeDemoRevision opened
+   * or reduced; REJECTED rows carry the exact refusal code. Nothing is derived
+   * from the leader's balances, and no other account's rows are reachable.
+   */
+  async snapshot(userId:string,sessionId:string){
+    this.on();
+    return this.db.$transaction(async tx=>{
+      await this.authorized(tx,userId,sessionId);
+      const consent=await tx.copyFuturesDemoConsent.findUnique({where:{userId}});
+      if(!consent)return{consent:null,mirrors:[] as never[]};
+      const mirrors=await tx.copyFuturesDemoMirror.findMany({where:{consentId:consent.id},
+        orderBy:[{sourceRevision:'desc'},{createdAt:'desc'}],take:50});
+      const events=await tx.copyFuturesDemoEvent.findMany({where:{subscriptionId:consent.subscriptionId,
+        sourceEventId:{in:mirrors.map(m=>m.sourceEventId)}},select:{sourceEventId:true,symbol:true,side:true,price:true}});
+      const byEvent=new Map(events.map(e=>[e.sourceEventId,e]));
+      return{consent:{status:consent.status as 'ACTIVE'|'STOPPED',ratio:consent.ratio.toString(),
+          maxLeverage:consent.maxLeverage.toString(),maxFillUsdt:consent.maxFillUsdt.toString(),
+          maxTotalExposureUsdt:consent.maxTotalExposureUsdt.toString(),maxDeviationBps:consent.maxDeviationBps.toString(),
+          startedAfterRevision:consent.startedAfterRevision},
+        mirrors:mirrors.map(m=>({sourceEventId:m.sourceEventId,kind:m.kind,status:m.status as 'APPLIED'|'REJECTED',
+          reason:m.reason,symbol:byEvent.get(m.sourceEventId)?.symbol??null,side:byEvent.get(m.sourceEventId)?.side??null,
+          sourcePrice:byEvent.get(m.sourceEventId)?.price.toString()??null,
+          followerPositionId:m.followerPositionId,filledQuantity:m.filledQuantity?.toString()??null,createdAt:m.createdAt}))};
+    });
+  }
+  /** Deliver up to `max` pending source events, one serialized drainOne at a
+   * time, stopping at the first EMPTY. An unknown outcome propagates unchanged
+   * so the caller retries with the SAME deterministic request keys.
+   */
+  async run(userId:string,sessionId:string,max=10){
+    this.on();
+    const results:Array<{status:string;reason?:string;sourceEventId?:string}>=[];
+    for(let i=0;i<max;i++){
+      const r=await this.drainOne(userId,sessionId);
+      if(r.status==='EMPTY')return{results,hasMore:false};
+      results.push(r);
+    }
+    return{results,hasMore:true};
   }
   /** Journal a committed follower command from its own NativeDemo receipt. */
   private async reconcileReceipt(tx:Tx,userId:string,kind:string,sourceEventId:string,

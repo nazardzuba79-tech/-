@@ -73,6 +73,10 @@ import { demoLiquidityConfig, marketReference } from './services/DemoLiquidity';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { copyDemoRouter } from './api/routes/copyDemo';
 import { copyFuturesDemoObserverRouter } from './api/routes/copyFuturesDemoObserver';
+import { copyFuturesDemoExecutionRouter } from './api/routes/copyFuturesDemoExecution';
+import { FuturesDemoFollowerExecutor, futuresDemoExecutionEnabled } from './services/copyTrading/FuturesDemoFollowerExecutor';
+import { NativeDemoService } from './private-trading/native/service';
+import { PrismaNativeRepository } from './private-trading/native/store';
 import { FuturesDemoObserverService } from './services/copyTrading/FuturesDemoObserverService';
 import { CopyDemoService, copyDemoEnabled } from './services/copyTrading/CopyDemoService';
 import { startCopyDemoWorker } from './services/copyTrading/copyDemoWorker';
@@ -341,6 +345,14 @@ app.use('/api/v1', copyDemoRouter(prisma, copyDemoService));
 // Review-only observer metadata: permanently OFF without a disposable local test DB.
 // No timer, follower order execution, or writes to NativeDemo/financial ledgers.
 app.use('/api/v1', copyFuturesDemoObserverRouter(prisma, new FuturesDemoObserverService(prisma)));
+// Follower-initiated Futures copy in the follower's own session: same hard-OFF
+// disposable review gate plus COPY_FUTURES_DEMO_EXECUTION_ENABLED. No worker.
+{
+  const copyNative = futuresDemoExecutionEnabled() && privateTradingService.market
+    ? new NativeDemoService(new PrismaNativeRepository(prisma, privateTradingService.store?.config), privateTradingService.market) : null;
+  app.use('/api/v1', copyFuturesDemoExecutionRouter(prisma,
+    copyNative ? new FuturesDemoFollowerExecutor(prisma, copyNative) : null, copyNative, futuresDemoExecutionEnabled));
+}
 startCopyDemoWorker(copyDemoService, copyDemoEnabled, () => console.error('[copy-demo] pass failed; pending work retained'));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
   isSpotPair: async pair => !isTestAssetPairOrSymbol(pair) && (await marketDataService.getTicker(pair)) !== null,

@@ -4,6 +4,8 @@ import { onSessionChange, request } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { futuresObserverText } from './copy-trading-bolt/futuresObserverText';
 import './copy-trading-bolt/FuturesObserver.css';
+import { FuturesCopyPanel } from './copy-trading-bolt/FuturesCopyPanel';
+import { futuresCopyText } from './copy-trading-bolt/futuresCopyText';
 
 interface ObserverSnapshot {
   mode: 'OBSERVATION_ONLY';
@@ -28,6 +30,9 @@ export default function CopyFuturesObserverPage() {
   const [traderId, setTrader] = useState('VX-001');
   const [maxLeverage, setLeverage] = useState('');
   const [maxFillUsdt, setFill] = useState('');
+  // While the follower's own order copying is ON, the observation-only notice
+  // ("orders are not copied") would be false; the copy panel states the truth.
+  const [copying, setCopying] = useState(false);
   const current = useRef(0);
   const mounted = useRef(true);
   useEffect(() => {
@@ -109,12 +114,12 @@ export default function CopyFuturesObserverPage() {
     void act('PUT', { traderId, maxLeverage, maxFillUsdt });
   };
   const status = error ? t.error : snapshot?.subscription?.status === 'OBSERVING'
-    ? t.active : snapshot?.subscription?.status === 'STOPPED' ? t.stopped : t.none;
+    ? (copying ? futuresCopyText[lang].observing : t.active) : snapshot?.subscription?.status === 'STOPPED' ? t.stopped : t.none;
   return <main className="copy-futures-observer">
     <Link to="/copy-trading">← VOLTEX Copy Trading</Link>
     <h1>{t.title}</h1>
-    <p className="observer-warning" role="note">{t.warning}</p>
-    <p className="observer-no-trade"><strong>{t.noTrade}</strong></p>
+    {!copying && <p className="observer-warning" role="note">{t.warning}</p>}
+    {!copying && <p className="observer-no-trade"><strong>{t.noTrade}</strong></p>}
     <p role="status" aria-live="polite">{busy ? t.loading : status}</p>
     {error && <p role="alert">{t.error}</p>}
     <div className="observer-actions">
@@ -142,7 +147,8 @@ export default function CopyFuturesObserverPage() {
           disabled={busy || error || snapshot?.subscription?.status !== 'OBSERVING'}>{t.stop}</button>
       </div>
     </form>
-    <p>{t.disclaimer}</p><p>{t.noBackfill}</p>
+    {!copying && <p>{t.disclaimer}</p>}<p>{t.noBackfill}</p>
+    <FuturesCopyPanel observing={!error && snapshot?.subscription?.status === 'OBSERVING'} onActive={setCopying} />
     {snapshot && !error && <section>
       <h2>{t.events}</h2>
       <p>{t.revision}: {snapshot.subscription?.lastRevision ?? '—'}</p>
