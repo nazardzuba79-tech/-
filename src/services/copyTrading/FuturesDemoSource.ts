@@ -90,6 +90,48 @@ export function futuresDemoSourceFills(account: NativeAccount): FuturesDemoSourc
   return { accepted, rejected };
 }
 
+/** A source position that left the market by its own protection or by liquidation. */
+export type FuturesDemoSourceExit = Readonly<{
+  sourceEventId: string;
+  sourceActionId: string;
+  sourcePositionId: string;
+  symbol: string;
+  kind: 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION';
+  side: 'LONG' | 'SHORT';
+  quantity: string;
+  price: string;
+  leverage: string;
+  marginType: 'CROSS' | 'ISOLATED';
+  pricing: string;
+}>;
+const EXIT_KINDS = new Set(['TAKE_PROFIT', 'STOP_LOSS', 'LIQUIDATION']);
+
+/**
+ * Exits the follower is NOT sent. A take-profit, stop-loss or liquidation
+ * closes the source position without a CLOSE command, so `futuresDemoSourceFills`
+ * never admits it. They are listed here only so the observer can record them
+ * and the executor can refuse them on the record (SOURCE_EXIT_NOT_MIRRORED):
+ * a copied position must not stay open with nothing saying why.
+ */
+export function futuresDemoSourceExits(account: NativeAccount): FuturesDemoSourceExit[] {
+  if (account.executionMode === 'HISTORICAL_DEMO') return [];
+  const positions = new Map(account.snapshot.positions.map(p => [p.id, p]));
+  const exits: FuturesDemoSourceExit[] = [];
+  for (const event of account.snapshot.events) {
+    if (!EXIT_KINDS.has(event.kind) || !event.id || !event.positionId) continue;
+    const position = positions.get(event.positionId);
+    if (!position || position.historical || position.executionMode === 'HISTORICAL_DEMO'
+      || position.symbol !== event.symbol || !symbolOk(event.symbol) || !decimal(event.quantity)) continue;
+    exits.push({
+      sourceEventId: event.id, sourceActionId: event.actionId ?? event.id,
+      sourcePositionId: position.id, symbol: event.symbol, kind: event.kind as FuturesDemoSourceExit['kind'],
+      side: position.side, quantity: event.quantity, price: decimal(event.price) ? event.price : position.entryPrice,
+      leverage: position.leverage, marginType: position.marginType, pricing: event.pricing,
+    });
+  }
+  return exits;
+}
+
 export function futuresDemoSourceNotional(fill: FuturesDemoCopyFill): string {
   return new BigNumber(fill.quantity).times(fill.price).toFixed();
 }

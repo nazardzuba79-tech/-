@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js';
 import { inflate, NativeAccount } from '../../private-trading/native/store';
 import { PUBLIC_STRATEGIES } from './strategyOwner';
 import { copyDemoEnabled } from './CopyDemoService';
-import { futuresDemoSourceFills, futuresDemoSourceRiskCheck } from './FuturesDemoSource';
+import { futuresDemoSourceExits, futuresDemoSourceFills, futuresDemoSourceRiskCheck } from './FuturesDemoSource';
 
 type Tx = Prisma.TransactionClient;
 const MAX_REVISIONS_PER_SCAN = 8;
@@ -159,6 +159,23 @@ export class FuturesDemoObserverService {
               side: fill.side, quantity: fill.quantity, price: fill.price,
               leverage: fill.leverage, marginType: fill.marginType,
               pricing: fill.pricing, status: 'OBSERVED_ONLY' }],
+            skipDuplicates: true,
+          });
+          accepted += inserted.count;
+        }
+        // A position this subscription saw open, closed by take-profit, stop-loss or liquidation:
+        // recorded (never copied) so the copied position's fate is on the record, not silent.
+        for (const exit of futuresDemoSourceExits(account).filter(e => !previousEventIds.has(e.sourceEventId))) {
+          const seen = await tx.copyFuturesDemoEvent.findFirst({ where: { subscriptionId: sub.id,
+            sourcePositionId: exit.sourcePositionId, kind: 'OPEN' }, select: { id: true } });
+          if (!seen) continue;
+          const inserted = await tx.copyFuturesDemoEvent.createMany({
+            data: [{ subscriptionId: sub.id, sourceEventId: exit.sourceEventId,
+              sourceRevision: revision.revision, sourceEventIndex: sourceIndices.get(exit.sourceEventId) ?? 0,
+              sourceActionId: exit.sourceActionId, sourcePositionId: exit.sourcePositionId,
+              symbol: exit.symbol, kind: exit.kind, side: exit.side, quantity: exit.quantity,
+              price: exit.price, leverage: exit.leverage, marginType: exit.marginType,
+              pricing: exit.pricing, status: 'OBSERVED_ONLY' }],
             skipDuplicates: true,
           });
           accepted += inserted.count;

@@ -17,10 +17,10 @@ const {FuturesDemoObserverService}=require('../src/services/copyTrading/FuturesD
 const {FuturesDemoFollowerExecutor}=require('../src/services/copyTrading/FuturesDemoFollowerExecutor');
 const {FuturesCopyGuardError}=require('../src/services/copyTrading/FuturesCopyCommitGuard');
 const db=new PrismaClient({datasources:{db:{url}}});
-const leader=randomUUID(),follower=randomUUID(),viewer=randomUUID(),second=randomUUID();
+const leader=randomUUID(),follower=randomUUID(),viewer=randomUUID(),second=randomUUID(),third=randomUUID();
 process.env.PRIVATE_TRADING_ENABLED='true';
 process.env.PRIVATE_TRADING_OWNER_ID=leader;
-process.env.PRIVATE_TRADING_TEST_USER_IDS=follower+','+second;
+process.env.PRIVATE_TRADING_TEST_USER_IDS=[follower,second,third].join(',');
 process.env.COPY_FUTURES_DEMO_APPROVED_LEADER_IDS=leader;
 const clock=new Clock(H0+5*H+5*M+30000),market=new FakeMarket(clock);
 const repo=new PrismaNativeRepository(db,()=>({enabled:true,ownerId:leader}));
@@ -51,7 +51,7 @@ async function main(){
   assert.equal(futuresDemoObserverEnabled({NODE_ENV:'production',COPY_FUTURES_DEMO_OBSERVER_ENABLED:'true'}),false);
   await refuse(()=>new FuturesDemoFollowerExecutor(db,native,()=>false).begin(follower,'fake',limits),'FUTURES_COPY_EXECUTOR_OFF');
  });
- for(const [id,role] of [[leader,'ADMIN'],[follower,'USER'],[viewer,'USER'],[second,'USER']]){
+ for(const [id,role] of [[leader,'ADMIN'],[follower,'USER'],[viewer,'USER'],[second,'USER'],[third,'USER']]){
   await db.user.create({data:{id,email:id+'@example.invalid',passwordHash:'fixture',role,referralCode:id.replaceAll('-','').slice(0,18)}});
   sessions[id]=(await db.session.create({data:{userId:id}})).id;
   await db.demoBalance.create({data:{userId:id,asset:'USDT',available:'10000'}});
@@ -63,6 +63,8 @@ async function main(){
  await native.command(q(follower),{kind:'REFRESH',idempotencyKey:'fixture-admit-native-session'}, {persist:true});
  await native.initialize(q(second),'fixture-initialize-second');
  await native.command(q(second),{kind:'REFRESH',idempotencyKey:'fixture-admit-second-session'}, {persist:true});
+ await native.initialize(q(third),'fixture-initialize-third');
+ await native.command(q(third),{kind:'REFRESH',idempotencyKey:'fixture-admit-third-session'}, {persist:true});
  const beforeFinancial=await financial();
  await check('watchlist/observer does not grant consent, and wrong session is refused',async()=>{
   await refuse(()=>copy.begin(follower,sessions[follower],limits),'OBSERVATION_REQUIRED');
@@ -195,9 +197,43 @@ async function main(){
   assert.equal(await revisions(second),before,'no follower command after a refusal');
   assert.equal(await db.copyFuturesDemoMirror.count({where:{consent:{userId:second}}}),2,'nothing journaled');
  });
+ await check('a source take-profit exit is recorded and refused on the record; the copied position is not touched',async()=>{
+  await observer.subscribe(third,sessions[third],'VX-001',{maxLeverage:'3',maxFillUsdt:'6000'});
+  await copy.begin(third,sessions[third],limits);
+  clock.t+=M+100;
+  const tp=new (require('bignumber.js'))(market.price).plus(100).toFixed();
+  const opened=await placeLeader();
+  const sourcePosition=opened.positions[opened.positions.length-1].id;
+  clock.t+=M+100;
+  await native.command(q(leader),{kind:'PROTECTION',positionId:sourcePosition,
+   protection:{takeProfit:tp,stopLoss:null,triggerBy:'LAST',quantity:null},idempotencyKey:'leader-tp-'+randomUUID()});
+  assert.equal((await observer.scan(third,sessions[third])).accepted,1);
+  assert.equal((await copy.drainOne(third,sessions[third])).status,'APPLIED');
+  assert.equal((await openPositions(third)).length,1);
+  market.price=new (require('bignumber.js'))(tp).plus(200).toFixed();
+  for(let i=0;i<4;i++){
+   clock.t+=M+100;
+   await native.command(q(leader),{kind:'REFRESH',idempotencyKey:'leader-refresh-'+randomUUID()},{persist:true});
+   const leaderOpen=(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:leader}})).payload.snapshot.positions
+    .filter(p=>p.id===sourcePosition&&p.status==='OPEN');
+   if(!leaderOpen.length)break;
+  }
+  const leaderEvents=(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:leader}})).payload.snapshot.events;
+  const dbgPos=(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:leader}})).payload.snapshot.positions.find(p=>p.id===sourcePosition);
+  assert.ok(leaderEvents.some(e=>e.kind==='TAKE_PROFIT'&&e.positionId===sourcePosition),'the source position closed by its take-profit');
+  await observer.scan(third,sessions[third]);
+  const recorded=await db.copyFuturesDemoEvent.findMany({where:{subscription:{userId:third},sourcePositionId:sourcePosition}});
+  assert.deepEqual(recorded.map(e=>e.kind).sort(),['OPEN','TAKE_PROFIT']);
+  const before=await revisions(third);
+  const refused=await copy.drainOne(third,sessions[third]);
+  assert.equal(refused.status,'REJECTED');assert.equal(refused.reason,'SOURCE_EXIT_NOT_MIRRORED');
+  assert.equal(await revisions(third),before,'no follower command for an exit that is not mirrored');
+  assert.equal((await openPositions(third)).length,1,'the copied position stays as it is, on the record');
+  assert.equal((await copy.drainOne(third,sessions[third])).status,'EMPTY');
+ });
  await check('real orders and balances untouched; demo balances not topped up by copy',async()=>{
   assert.equal(await financial(),beforeFinancial);
-  assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),4);
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),5);
  });
  console.log(checks.length+' isolated PostgreSQL copy Futures executor checks PASS');
 }

@@ -144,6 +144,9 @@ export class FuturesDemoFollowerExecutor {
       // refuse a CLOSE that really happened, or re-send an OPEN.
       const committed=await tx.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId,requestKey:key}}});
       if(committed)return reconcile(committed);
+      // Take-profit, stop-loss and liquidation exits of the source are recorded by the
+      // observer but not mirrored in this slice: refused on the record, follower untouched.
+      if(source.kind!=='OPEN'&&source.kind!=='CLOSE')return reject('SOURCE_EXIT_NOT_MIRRORED');
       if(!sourceQuantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
       // The observer table is only a receipt index, not an execution oracle.
       // Re-verify the exact source fill against the immutable NativeDemo
