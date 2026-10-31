@@ -2,6 +2,9 @@ name: Banking referral browser review (isolated fixtures)
 on:
   pull_request:
     paths:
+      - 'frontend/src/pages/BankingPage.tsx'
+      - 'frontend/src/pages/banking/*.css'
+      - 'frontend/src/lib/bankingApi.ts'
       - 'scripts/qa-banking-referral.cjs'
       - 'scripts/serve-banking-review.cjs'
       - '.github/workflows/banking-referral-browser-review.yml'
@@ -34,9 +37,9 @@ jobs:
           QA_OUT: output/banking-referral-review
           PORT: '4181'
         run: node scripts/qa-banking-referral.cjs
-      - name: Assert all 70 checks passed
+      - name: Assert all 78 checks passed
         run: |
-          node -e "const fs=require('fs');const report=JSON.parse(fs.readFileSync('output/banking-referral-review/report.json','utf8'));const checks=report.checks||[];if(checks.length!==70 || checks.some(c=>!c.ok))process.exit(1);console.log('70/70 Banking referral checks PASS');"
+          node -e "const fs=require('fs');const report=JSON.parse(fs.readFileSync('output/banking-referral-review/report.json','utf8'));const checks=report.checks||[];if(checks.length!==78 || checks.some(c=>!c.ok))process.exit(1);console.log('78/78 Banking referral checks PASS');"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

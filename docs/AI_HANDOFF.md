@@ -7538,3 +7538,7 @@ Live guarded Banking read showed false zero active placements and an empty-accou
 ### #659 frontend artifact provenance gate
 
 Fresh immutable Pages root and custom-domain root use index-wS4Z9N50.js, whereas exact 9ed179c6 CI artifact 12959472968 references index-oD3uJukg.js. Public release-build.json still declares 21b10560. The Pages deployment metadata alone does not attest served source. Source patch remains prepared, but no sealed production artifact is claimed until this is reconciled. No purge or deploy performed.
+
+### #660 CI count correction
+
+Run41204666241 passed the expanded78 browser checks and failed only the old hard-coded70 count. Updated the required count to78 without removing assertions, and added the covered Banking component/API/CSS to workflow paths. No product behavior change in this follow-up.
