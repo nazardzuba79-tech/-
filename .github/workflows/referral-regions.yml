@@ -11,6 +11,10 @@ on:
       - 'frontend/src/lib/i18n/locales/**'
       - 'src/api/routes/auth.ts'
       - 'src/api/routes/referral.ts'
+      - 'src/banking/service.ts'
+      - 'prisma/schema.prisma'
+      - 'prisma/migrations/20261030120000_referral_short_codes/**'
+      - 'scripts/qa-referral-short-codes.cjs'
       - 'scripts/qa-referral-regions.cjs'
       - '.github/workflows/referral-regions.yml'
 permissions:
@@ -24,7 +28,7 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18.6
         env:
           POSTGRES_USER: voltex
           POSTGRES_PASSWORD: synthetic-local-only
@@ -56,6 +60,11 @@ jobs:
       - run: npm run build
       - run: npm run build --prefix frontend
         env: { VITE_API_URL: '/api/v1' }
+      - name: Alias migration on historical users, collision and concurrency checks
+        env: { QA_PG_MODULE: '/tmp/referral-db/node_modules/pg' }
+        run: |
+          npm install --prefix /tmp/referral-db --no-save --ignore-scripts --no-audit --no-fund pg@8.16.3
+          node scripts/qa-referral-short-codes.cjs
       - name: Migrate only the guarded disposable test database
         run: npx prisma migrate deploy
       - name: Disposable browser tools

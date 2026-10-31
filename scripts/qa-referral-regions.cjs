@@ -19,6 +19,7 @@ const express = require('express'), request = require('supertest');
 const { PrismaClient } = require('@prisma/client');
 const { authRouter } = require('../dist/api/routes/auth');
 const { referralRouter } = require('../dist/api/routes/referral');
+const { BankingService } = require('../dist/banking/service');
 const { requireAuth } = require('../dist/api/middleware/auth');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const db = new PrismaClient(), app = express();
@@ -54,8 +55,7 @@ app.get('/api/v1/banking/config', auth, (_, res) => res.json({ programs: [], ass
 app.get('/api/v1/banking/me', auth, (_, res) => res.json({ placements: [], ledger: [], summary: { totalUsd: null, accruedUsd: null, activeCount: 0 }, cardYield }));
 app.get('/api/v1/banking/state', auth, (_, res) => res.json({ placements: [], ledger: [], summary: { totalUsd: null, accruedUsd: null, activeCount: 0 }, cardYield }));
 app.get('/api/v1/banking/referral', auth, async (req, res) => {
-  const user = await db.user.findUnique({ where: { id: req.userId }, select: { referralCode: true } });
-  res.json({ referralCode: user.referralCode, referredCount: await db.user.count({ where: { referredById: req.userId } }), referralPercent: 20, rewardsByAsset: [], recentRewards: [] });
+  res.json(await new BankingService(db).referralSummary(req.userId));
 });
 // Unrelated market feeds are explicitly unavailable, never successful malformed JSON.
 app.use('/api/v1', (_, res) => res.status(503).json({ error: 'Offline market fixture' }));
@@ -74,6 +74,7 @@ async function finances() {
   const seed = await request(app).post('/api/v1/auth/register').send({ email: ownerEmail, password });
   assert.equal(seed.status, 201);
   const owner = await db.user.findUnique({ where: { email: ownerEmail } });
+  assert.match(owner.referralShortCode, /^[A-Z0-9]{5}$/);
   const before = await finances();
   assert.ok(Object.values(before).every(n => n === 0), 'fixture starts without financial rows');
   const server = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
@@ -120,20 +121,20 @@ async function finances() {
   try {
     browser = await chromium.launch({ headless: true, args: ['--disable-gpu'] });
     // Unauthenticated visits, ordinary same-origin marketing CTA and unchanged registration.
-    for (const [region, width] of [['world', 1440], ['ru', 390]]) {
+    for (const [region, width, code] of [['world', 1440, owner.referralShortCode], ['ru', 390, owner.referralShortCode.toLowerCase()], ['world', 390, owner.referralCode], ['ru', 1440, owner.referralCode]]) {
       const ctx = await context(width), page = await ctx.newPage(); watch(page);
       const origin = origins[region];
-      await page.goto(`${origin}/${owner.referralCode}`);
+      await page.goto(`${origin}/${code}`);
       await page.waitForURL(url => url.origin === origin && url.pathname === '/');
       await page.waitForFunction(key => localStorage.getItem(key), codeKey);
-      assert.equal(await page.evaluate(key => localStorage.getItem(key), codeKey), owner.referralCode);
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), codeKey), code);
       assert.equal(await page.evaluate(() => localStorage.getItem('exchange_token')), null);
       const homeSignup = page.locator('a[href="/register"]:visible').first();
       await homeSignup.click();
       await page.waitForURL(url => url.origin === origin && url.pathname === '/register');
       // Exercise the existing safe return path and avoid mounting an unrelated trading terminal.
       await page.evaluate(() => history.replaceState(history.state, '', '/register?next=%2Fsettings%3Ftab%3Dreferral'));
-      const email = `${region}-${nonce}@example.invalid`;
+      const email = `${region}-${width}-${nonce}@example.invalid`;
       await page.locator('#reg-email').fill(email);
       await page.locator('#reg-password').fill(password);
       await page.locator('form button[type="submit"]').click();
@@ -142,10 +143,10 @@ async function finances() {
       assert.equal(new URL(page.url()).origin, origin, 'registration never leaves the visitor origin');
       assert.equal(await page.evaluate(key => localStorage.getItem(key), codeKey), null);
       const body = signupBodies.find(row => row.email === email);
-      assert.equal(body.ref, owner.referralCode);
+      assert.equal(body.ref, code);
       const registered = await db.user.findUnique({ where: { email } });
       assert.equal(registered.referredById, owner.id);
-      checks.push({ name: `${region}: guest link → home CTA → registration → shared referredById`, result: 'PASS' });
+      checks.push({ name: `${region} ${code.length} chars: guest link → home CTA → registration → shared referredById`, result: 'PASS' });
       await closeContext(ctx);
     }
     for (const width of [1440, 390]) {
@@ -154,7 +155,7 @@ async function finances() {
         await profile(page, origin);
         for (const region of ['world', 'ru']) {
           await page.locator(`[data-referral-region="${region}"]`).click();
-          const link = `${origins[region]}/${owner.referralCode}`;
+          const link = `${origins[region]}/${owner.referralShortCode}`;
           assert.equal(await page.locator('[data-referral-link]').textContent(), link);
           await page.locator('[data-copy-referral]').click();
           assert.equal(await page.evaluate(() => window.__copiedReferral), link);
@@ -168,17 +169,17 @@ async function finances() {
           await page.screenshot({ path: path.join(out, `profile-${new URL(origin).hostname}-${region}-${width}.png`) });
         }
         const stats = await page.evaluate(async () => (await fetch('/api/v1/referral/me', { headers: { Authorization: `Bearer ${localStorage.getItem('exchange_token')}` } })).json());
-        assert.equal(stats.referralCode, owner.referralCode);
-        assert.equal(stats.referredCount, 2);
+        assert.equal(stats.referralCode, owner.referralShortCode);
+        assert.equal(stats.referredCount, 4);
         assert.deepEqual(stats.rewardsByAsset, []);
         await page.goto(origin + '/banking');
         await page.locator('[data-banking-referral-link]').waitFor();
         await page.waitForFunction(() => document.querySelector('[data-banking-referral-link]')?.textContent?.startsWith('https://'));
-        const link = `${origins.ru}/${owner.referralCode}`;
+        const link = `${origins.ru}/${owner.referralShortCode}`;
         assert.equal(await page.locator('[data-banking-referral-link]').textContent(), link);
         await page.locator('[data-copy-banking-referral]').click();
         assert.equal(await page.evaluate(() => window.__copiedReferral), link);
-        checks.push({ name: `${new URL(origin).hostname} ${width}: choose/copy/reload, shared stats=2, Banking preference`, result: 'PASS' });
+        checks.push({ name: `${new URL(origin).hostname} ${width}: choose/copy/reload, shared stats=4, Banking preference`, result: 'PASS' });
       }
       await closeContext(ctx);
     }

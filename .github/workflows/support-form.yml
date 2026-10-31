@@ -122,7 +122,9 @@ jobs:
         with:
           node-version: 22
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npx prisma generate && npx prisma db push --skip-generate
+      # Defaults supplied by SQL migrations (including referral aliases) must
+      # exist before account fixtures; db push cannot create those functions.
+      - run: npx prisma generate && npx prisma migrate deploy
       - run: npm run build
       - run: >-
           npm test -- --runInBand --runTestsByPath

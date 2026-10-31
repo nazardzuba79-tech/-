@@ -27,6 +27,8 @@ const CopyTradingPage = lazy(() => {
   prefetchCopyMarketplace();
   return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
 });
+const CopyDemoPage = lazy(() => import('./pages/CopyDemoPage'));
+const CopyFuturesObserverPage = lazy(() => import('./pages/CopyFuturesObserverPage'));
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
 const TradingToolsPage = lazy(() => import('./pages/TradingToolsPage').then((m) => ({ default: m.TradingToolsPage })));
 const TradingBotsPage = lazy(() => import('./pages/TradingBotsPage').then((m) => ({ default: m.TradingBotsPage })));
@@ -117,6 +119,8 @@ export function App() {
         <Route path="/otc" element={<RequireAuth><OtcPage /></RequireAuth>} />
         <Route path="/dashboard" element={<Navigate to="/wallet" replace />} />
         <Route path="/copy-trading" element={<RequireAuth><CopyTradingPage /></RequireAuth>} />
+        {import.meta.env.VITE_COPY_DEMO_REVIEW === 'true' && <Route path="/copy-trading/demo" element={<RequireAuth><CopyDemoPage /></RequireAuth>} />}
+        {import.meta.env.VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW === 'true' && <Route path="/copy-trading/futures-demo-observer" element={<RequireAuth><CopyFuturesObserverPage /></RequireAuth>} />}
         <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
         <Route path="/tools" element={<RequireAuth><TradingToolsPage /></RequireAuth>} />
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />

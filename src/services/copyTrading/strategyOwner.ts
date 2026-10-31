@@ -1,5 +1,5 @@
-import { publicStrategySocials } from '../../shared/copyStrategySocials';
 import { createHash } from 'crypto';
+import { publicStrategySocials } from '../../shared/copyStrategySocials';
 import type { PrismaClient } from '@prisma/client';
 
 export const KSENIA_EXTERNAL_OWNER_ID = 'a2184cdc-c0fc-4892-9141-e493967245fd';
@@ -11,7 +11,7 @@ export interface PublicStrategyIdentity {
 }
 
 /** Only the explicitly bound same-environment owner, never an email or viewer.
- * No account mutation; the public response has only allowlisted public fields. */
+ * No account mutation; the public response has exactly six allowlisted fields. */
 export async function resolveStrategyOwner(db: Pick<PrismaClient, 'copyStrategyOwner' | 'user'>, traderId: string): Promise<PublicStrategyIdentity | null> {
   if (!(PUBLIC_STRATEGIES as readonly string[]).includes(traderId)) return null;
   const strategy = await db.copyStrategyOwner.findUnique({ where: { traderId } });

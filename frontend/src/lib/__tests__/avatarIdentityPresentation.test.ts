@@ -131,7 +131,14 @@ test('unchanged marketplace hero and demo performance retain their original fing
   // behavioral presentation suites, not obsolete pre-feature hashes.
   const digest = (value: string) => createHash('sha256').update(value).digest('hex');
   const hero = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'MarketplaceHero')!;
-  expect(digest(hero.getText(ast))).toBe('6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258');
+  // #644: only the reviewed hero sentence may vary. Retain the immutable
+  // historical fingerprint for all other hero markup and behavior.
+  const watchlistNotice = "<p>Изучайте риск-метрики трейдеров. Список наблюдения не запускает копирование сделок.</p>";
+  const historicalNotice = "<p>Выберите трейдера, изучите риск-метрики и подключите копирование.</p>";
+  let heroSource = hero.getText(ast);
+  expect(heroSource.split(watchlistNotice)).toHaveLength(2);
+  heroSource = heroSource.replace(watchlistNotice, historicalNotice);
+  expect(digest(heroSource)).toBe('6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258');
   const demo = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/demoPerformance.ts'), 'utf8').replace(/\r\n/g, '\n');
   expect(digest(demo)).toBe('1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead');
 });

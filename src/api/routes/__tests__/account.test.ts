@@ -6,7 +6,6 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { accountRouter } from '../account';
-import { decryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
@@ -100,9 +99,8 @@ describe('account routes', () => {
         expect.objectContaining({ where: { id: 'user-1' } })
       );
       const data = prisma.user.update.mock.calls[0][0].data;
-      const encrypted = data.adminPasswordVault.upsert.update.encryptedPassword;
-      expect(data.adminPasswordVault.upsert.create.encryptedPassword).toBe(encrypted);
-      expect(decryptAdminPassword(encrypted, 'alice@team.com')).toBe('newlongenoughpassword');
+      expect(data.adminPasswordVault).toBeUndefined(); // password must not be recoverable
+      expect(await bcrypt.compare('newlongenoughpassword', data.passwordHash)).toBe(true);
     });
 
     it('signs every other device out, remembered ones included, and keeps this one', async () => {

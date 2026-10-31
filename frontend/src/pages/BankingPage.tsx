@@ -142,7 +142,7 @@ export function BankingPage() {
         <section className="banking-summary" aria-label="Обзор Banking & Earn">
           <article><span>Всего в Earn</span><strong>{state?.summary.totalUsd === null ? '—' : `$${bankingNumber(state?.summary.totalUsd)}`}</strong><small>Текущая справочная оценка в USD</small></article>
           <article><span>Начислено</span><strong>{state?.summary.accruedUsd === null ? '—' : `$${bankingNumber(state?.summary.accruedUsd)}`}</strong><small>За завершённые календарные месяцы</small></article>
-          <article><span>Активные размещения</span><strong>{state?.summary.activeCount ?? (loading ? '—' : '0')}</strong><small>По данным вашего счёта Banking</small></article>
+          <article><span>Активные размещения</span><strong>{loading ? '—' : state?.summary.activeCount ?? '—'}</strong><small>По данным вашего счёта Banking</small></article>
         </section>
 
         <section className="banking-section">
@@ -258,7 +258,7 @@ export function BankingPage() {
         <section className="banking-section">
           <div className="banking-heading"><div><h2>Мои размещения</h2><p>Только ваши фактические размещения.</p></div></div>
           <div className="banking-table-wrap">
-            {placements.length ? <table><thead><tr><th>Актив</th><th>Программа</th><th>Основная сумма</th><th>Ставка</th><th>Начислено</th><th>Статус</th><th>Завершение</th></tr></thead><tbody>{placements.map((row) => <tr key={row.id}><td><b>{row.asset}</b></td><td>{programLabel(row.programId)}</td><td>{bankingNumber(row.principal, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)}</td><td>{percent(row.monthlyRate)} / мес.</td><td>{bankingNumber(row.rewardAccrued, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)} {row.asset}</td><td>{row.status === 'ACTIVE' ? 'Активно' : 'Завершено'}</td><td>{row.maturityDate}</td></tr>)}</tbody></table> : <div className="banking-empty">Активных размещений пока нет.</div>}
+            {loading || !state ? <div className="banking-empty">—</div> : placements.length ? <table><thead><tr><th>Актив</th><th>Программа</th><th>Основная сумма</th><th>Ставка</th><th>Начислено</th><th>Статус</th><th>Завершение</th></tr></thead><tbody>{placements.map((row) => <tr key={row.id}><td><b>{row.asset}</b></td><td>{programLabel(row.programId)}</td><td>{bankingNumber(row.principal, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)}</td><td>{percent(row.monthlyRate)} / мес.</td><td>{bankingNumber(row.rewardAccrued, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)} {row.asset}</td><td>{row.status === 'ACTIVE' ? 'Активно' : 'Завершено'}</td><td>{row.maturityDate}</td></tr>)}</tbody></table> : <div className="banking-empty">Активных размещений пока нет.</div>}
           </div>
         </section>
       </main>

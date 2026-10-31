@@ -1,5 +1,5 @@
-import { copyStrategySocialsRouter } from './copyStrategySocials';
 import { Router } from 'express';
+import { copyStrategySocialsRouter } from './copyStrategySocials';
 import type { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { CopyPerformanceService } from '../../services/copyTrading/CopyPerformanceService';

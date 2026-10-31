@@ -1,7 +1,5 @@
-import { StrategySocialProvider } from './copy-trading-bolt/StrategySocials';
 import { useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
-import { useCopyDepositCheck } from './copy-trading-bolt/useCopyDepositCheck';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './copy-trading-bolt/CopyTradingBolt.css';
@@ -9,12 +7,12 @@ import './copy-trading-bolt/CopyTradingRefinement.css';
 import './copy-trading-bolt/KseniaReview.css';
 import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
-import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
 import { syntheticNazaraTrader } from '../lib/syntheticCopyTrading';
 import { kseniaTrader, KSENIA_TRADER_ID, withStrategyIdentityVerification } from '../lib/kseniaCopyTrading';
 import { useCopyMarketplace } from '../lib/useCopyMarketplace';
 import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';
+import { StrategySocialProvider } from './copy-trading-bolt/StrategySocials';
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -30,7 +28,6 @@ import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';
 export function CopyTradingPage() {
   const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
-  const depositCheck = useCopyDepositCheck();
   const marketplace = useCopyMarketplace();
   const { nazar: synthetic, ksenia, identities } = marketplace;
 
@@ -59,7 +56,6 @@ export function CopyTradingPage() {
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
-          <CopyEligibilityProvider check={depositCheck}>
             <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>
             <StrategySocialProvider identities={identities}>
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
@@ -69,7 +65,6 @@ export function CopyTradingPage() {
             </FeaturedAvatarProvider>
             </StrategySocialProvider>
             </DemoRoiProvider>
-          </CopyEligibilityProvider>
         </div>
       </div>
       <Footer />

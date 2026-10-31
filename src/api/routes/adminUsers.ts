@@ -7,7 +7,6 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
-import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
 import { adminPagedReadsRouter } from './adminPagedReads';
 import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
@@ -40,22 +39,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
 
     // One read for all returned customers; no per-row requests and no new timer.
     const copies = await latestDepositCopiesForUsers(prisma, users.map((u) => u.id));
-    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
-    const passwordByUser = new Map<string, string>();
-    if (ownerId && req.userId === ownerId && users.length > 0) {
-      const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: users.map((u) => u.id) } } });
-      const emailByUser = new Map(users.map((u) => [u.id, u.email]));
-      for (const record of records) {
-        const email = emailByUser.get(record.userId);
-        if (!email) continue;
-        try {
-          passwordByUser.set(record.userId, decryptAdminPassword(record.encryptedPassword, email));
-        } catch {
-          // A damaged record must not expose ciphertext or break the user list.
-        }
-      }
-    }
-
+    // Do not decrypt or load customer passwords from the vault.
     const balancesByUser = new Map<string, typeof balances>();
     for (const b of balances) {
       const list = balancesByUser.get(b.userId) ?? [];
@@ -73,7 +57,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       users.map((u) => ({
         id: u.id,
         email: u.email,
-        password: passwordByUser.get(u.id) ?? null,
+        password: null, // deprecated compatibility field
         role: u.role,
         isAdmin: u.role === 'ADMIN',
         kycStatus: u.kycStatus,
