@@ -129,6 +129,8 @@ model User {
   /// the short code their own referral link embeds (/r/:code). Unique so a
   /// link unambiguously identifies exactly one referrer.
   referralCode  String    @unique
+  /// Five-character public referral alias. Keep the historical code unchanged.
+  referralShortCode String? @unique @default(dbgenerated("voltex_referral_short_code()"))
   /// Set once, at registration, from the ?ref= code on the link the new
   /// user signed up through — never changed afterward. Null for anyone who
   /// registered without a referral link.
