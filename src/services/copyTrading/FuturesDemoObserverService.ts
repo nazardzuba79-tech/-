@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js';
 import { inflate, NativeAccount } from '../../private-trading/native/store';
 import { PUBLIC_STRATEGIES } from './strategyOwner';
 import { copyDemoEnabled } from './CopyDemoService';
-import { futuresDemoSourceFills, futuresDemoSourceRiskCheck } from './FuturesDemoSource';
+import { futuresDemoSourceExits, futuresDemoSourceFills, futuresDemoSourceRiskCheck } from './FuturesDemoSource';
 
 type Tx = Prisma.TransactionClient;
 const MAX_REVISIONS_PER_SCAN = 8;
@@ -145,6 +145,7 @@ export class FuturesDemoObserverService {
           || !Array.isArray(account.snapshot?.events) || account.snapshot.events.length > MAX_EVENTS_PER_REVISION)
           throw new FuturesDemoObserverError('SOURCE_REVISION_INVALID');
         const results = futuresDemoSourceFills(account);
+        const sourceIndices = new Map(account.snapshot.events.map((e,i) => [e.id,i]));
         rejected += results.rejected.filter(e => !previousEventIds.has(e.eventId)).length;
         for (const fill of results.accepted.filter(e => !previousEventIds.has(e.sourceEventId))) {
           if (futuresDemoSourceRiskCheck(fill, sub.maxLeverage.toString(), sub.maxFillUsdt.toString())) {
@@ -152,11 +153,29 @@ export class FuturesDemoObserverService {
           }
           const inserted = await tx.copyFuturesDemoEvent.createMany({
             data: [{ subscriptionId: sub.id, sourceEventId: fill.sourceEventId,
-              sourceRevision: revision.revision, sourceActionId: fill.sourceActionId,
+              sourceRevision: revision.revision, sourceEventIndex: sourceIndices.get(fill.sourceEventId) ?? 0,
+              sourceActionId: fill.sourceActionId,
               sourcePositionId: fill.sourcePositionId, symbol: fill.symbol, kind: fill.kind,
               side: fill.side, quantity: fill.quantity, price: fill.price,
               leverage: fill.leverage, marginType: fill.marginType,
               pricing: fill.pricing, status: 'OBSERVED_ONLY' }],
+            skipDuplicates: true,
+          });
+          accepted += inserted.count;
+        }
+        // A position this subscription saw open, closed by take-profit, stop-loss or liquidation:
+        // recorded (never copied) so the copied position's fate is on the record, not silent.
+        for (const exit of futuresDemoSourceExits(account).filter(e => !previousEventIds.has(e.sourceEventId))) {
+          const seen = await tx.copyFuturesDemoEvent.findFirst({ where: { subscriptionId: sub.id,
+            sourcePositionId: exit.sourcePositionId, kind: 'OPEN' }, select: { id: true } });
+          if (!seen) continue;
+          const inserted = await tx.copyFuturesDemoEvent.createMany({
+            data: [{ subscriptionId: sub.id, sourceEventId: exit.sourceEventId,
+              sourceRevision: revision.revision, sourceEventIndex: sourceIndices.get(exit.sourceEventId) ?? 0,
+              sourceActionId: exit.sourceActionId, sourcePositionId: exit.sourcePositionId,
+              symbol: exit.symbol, kind: exit.kind, side: exit.side, quantity: exit.quantity,
+              price: exit.price, leverage: exit.leverage, marginType: exit.marginType,
+              pricing: exit.pricing, status: 'OBSERVED_ONLY' }],
             skipDuplicates: true,
           });
           accepted += inserted.count;
