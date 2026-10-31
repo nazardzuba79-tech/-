@@ -1,0 +1,33 @@
+{
+  "sourceFilename": "Кристальный космический символ A.png",
+  "sourceSha256": "d7e86fe859498da331d890a5697f9c4516bd2161b65625bb0af79b4d4ee42bf8",
+  "processing": "Resize only, square contain, PNG palette 256, no image generation",
+  "approval": "Second attached purple/gold A",
+  "images": [
+    {
+      "size": 20,
+      "bytes": 1287,
+      "sha256": "cbb70a0ecf3b81083653823bdc57c9bcdba863f17c67450788581b48d83e0884"
+    },
+    {
+      "size": 24,
+      "bytes": 1437,
+      "sha256": "293e92d6ebde30cf814b1a6e3a99522e8b6267e74effcd5d2bf925a60445aca7"
+    },
+    {
+      "size": 48,
+      "bytes": 2823,
+      "sha256": "efde89c621d497cf7ef471d4acb1bb1a938a9d1dacd10e67eee885598db538b7"
+    },
+    {
+      "size": 128,
+      "bytes": 11981,
+      "sha256": "374a0fe147eaf75e67d9276ae59c75cbcfbfa76770ec3552d4062f911e830ef6"
+    },
+    {
+      "size": 256,
+      "bytes": 35668,
+      "sha256": "6f57135fe0c7f2ef10c0e8e9f4843784f4ca3625942638f3c4dba6fd66b408e1"
+    }
+  ]
+}

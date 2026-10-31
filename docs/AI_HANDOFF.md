@@ -7520,3 +7520,10 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Local: backend TypeScript and frontend build PASS; 20/20 Chromium checks, 22 screenshots; 35 frontend unit tests. Model/QVTR recheck 18/18 including AELRI under preparation. Full listing regressions passed except a Windows CRLF QVTR-logo checkout mismatch (resolved locally without a tracked diff) and a misplaced test helper (moved out of __tests__). Exact-head CI still required.
 - Preserved other agents' branches/dirty files, production services, old listing data and financial logic. AELRI will be a second stacked candidate, sharing this implementation. Trademark/issuer clearance and final launch time remain owner gates.
 
+
+## 2026-10-31 — Codex — AELRI private candidate
+- Stacked on NRYIA PR #666, 879fd6444a6dff8e3b7264dbdcd05611cdc14010; exact candidate SHA is this entry's commit. Separate config/logo/test/evidence only; no second engine.
+- DEEP_RECOVERY 192h, exact 154.668 terminal peak. Initial 18h range retained, first breakthrough split at 24h (+75%) to meet the existing contract; all original later checkpoints retained.
+- Verified shared local code: model tests PASS; Chromium 20/20, 22 screenshots at 1440/390 and seven locales. AELRI uses the same code/build as PR #666, with its independent config/seed. Exact-head CI required.
+- No production writes, publication, timer activation, orders, allocation, migration, merge or deploy. Prior listing records preserved. Issuer/trademark rights, private production collision checks and final launch approval remain gates.
+
