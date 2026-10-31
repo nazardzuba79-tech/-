@@ -12,6 +12,7 @@ export interface ScenarioRevision {
 }
 export interface ScenarioPrincipal { id: string; role: 'ADMIN' | 'USER'; }
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+export const scenarioSourceFingerprint = (source: ListingConfig) => digest(parseListingConfig(source));
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 const hashRevision = ({ hash: _hash, ...entry }: ScenarioRevision) => digest(entry);
 // Local DTO extends only stage granularity. Public schema/history guards stay intact.
@@ -123,10 +124,9 @@ export class IsolatedScenarioJournal {
     const boundary = rows[0]?.effectiveAt ?? Infinity;
     const original = interval === '1m' ? sources[0].candles1m(Math.min(now, boundary), start)
       : aggregateCandles(sources[0].candles5m(Math.min(now, boundary), start), SIM_INTERVALS[interval]);
-    const immutable = new Map(original.filter(c => c.openTime + SIM_INTERVALS[interval] <= boundary).map(c => [c.openTime,c]));
+    const immutable = new Map(original.filter(c => now < boundary || c.openTime + SIM_INTERVALS[interval] <= boundary).map(c => [c.openTime,c]));
     return { source: 'ISOLATED_MODEL_ONLY' as const, executable: false as const, interval,
       candles: aggregateIsolatedMinutes(candles, SIM_INTERVALS[interval]).map(c => immutable.get(c.openTime) ?? c)
         .filter(c => c.openTime >= Math.floor(from / SIM_INTERVALS[interval]) * SIM_INTERVALS[interval]) };
   }
 }
-

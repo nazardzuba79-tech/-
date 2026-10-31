@@ -1,0 +1,95 @@
+{
+  "scope": "ISOLATED_MODEL_ONLY",
+  "sourceConfigSha256": "c8b1daedc8841f9ecc3883c3fb791e5c22c73c16b9d5b27c647b1d7a8ddf0036",
+  "effectiveAt": 1793464200000,
+  "anchor": 0.1573959405,
+  "program": {
+    "kind": "scenario-controls-v2",
+    "scenario": "WAVES",
+    "first24hGainPercent": "680",
+    "maxPrice": "0.88858",
+    "stages": [
+      {
+        "type": "growth",
+        "durationHours": 24,
+        "targetPrice": "0.1092"
+      },
+      {
+        "type": "pullback",
+        "durationHours": 12,
+        "targetPrice": "0.0784"
+      },
+      {
+        "type": "growth",
+        "durationHours": 39.5,
+        "targetPrice": "0.1573959405"
+      },
+      {
+        "type": "growth",
+        "durationHours": 2,
+        "targetPrice": "0.5383"
+      },
+      {
+        "type": "range",
+        "durationHours": 7.5,
+        "targetPrice": "0.5383"
+      },
+      {
+        "type": "pullback",
+        "durationHours": 16.5,
+        "targetPrice": "0.32298"
+      },
+      {
+        "type": "recovery",
+        "durationHours": 6.5,
+        "targetPrice": "0.352"
+      },
+      {
+        "type": "range",
+        "durationHours": 24,
+        "targetPrice": "0.352"
+      },
+      {
+        "type": "growth",
+        "durationHours": 72,
+        "targetPrice": "0.685"
+      },
+      {
+        "type": "pullback",
+        "durationHours": 24,
+        "targetPrice": "0.51"
+      },
+      {
+        "type": "recovery",
+        "durationHours": 72,
+        "targetPrice": "0.818"
+      }
+    ],
+    "afterGrowth": "range",
+    "pullbacks": {
+      "frequency": "moderate",
+      "minDepthPercent": "3",
+      "maxDepthPercent": "12",
+      "durationMinutes": 60
+    },
+    "candles": {
+      "intensity": "high",
+      "diversity": 0.75,
+      "pauseFrequency": "moderate"
+    },
+    "wicks": {
+      "length": "normal",
+      "longFrequency": "moderate"
+    }
+  },
+  "correctionEndApproved": true,
+  "candidateId": "qvtr-20261031-1630",
+  "expectedSource": {
+    "listingId": "qvtr-19568743",
+    "activeVersion": 1,
+    "draftRevision": 1
+  },
+  "productionApplicable": false,
+  "observedAt": "2026-10-31T15:16:20.375Z",
+  "isolatedApplyDeadline": "2026-10-31T16:29:00.000Z"
+}

@@ -9,6 +9,7 @@ on:
       - 'config/isolated/**'
       - 'scripts/*qvtr-isolated*'
       - 'scripts/isolated-scenario-admin.cjs'
+      - 'scripts/qa-qvtr-candidate-admission.cjs'
       - '.github/workflows/qvtr-isolated-preview.yml'
 permissions:
   contents: read
@@ -28,6 +29,7 @@ jobs:
       - run: npm ci
       - run: npx jest --runInBand src/services/listings/__tests__/isolatedScenarioJournal.test.ts src/services/listings/__tests__/qvtrDraft.test.ts src/services/listings/__tests__/listingScenarioControls.test.ts
       - run: node scripts/qvtr-isolated-preview.cjs
+      - run: node scripts/qa-qvtr-candidate-admission.cjs
       - run: npm install --no-save --package-lock=false playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node scripts/qa-qvtr-isolated-preview.cjs

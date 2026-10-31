@@ -1,7 +1,10 @@
 import { mkdtemp, rm, readFile, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import snapshot from '../../../../config/isolated/qvtr-source-20261031.json';
+import snapshot from '../../../../config/isolated/qvtr-source-20261031-refresh.json';
+import priorSnapshot from '../../../../config/isolated/qvtr-source-20261031.json';
+import plan from '../../../../config/isolated/qvtr-candidate-20261031.json';
+import sealed from '../../../../config/isolated/qvtr-future-20261031-1630.json';
 import { parseListingConfig, listingSimulationConfig, checkPublishable } from '../listingConfig';
 import { IsolatedScenarioJournal } from '../isolatedScenarioJournal';
 import { qvtrIsolatedCandidate, QVTR_PEAK_AT, QVTR_CORRECTION_START, QVTR_CORRECTION_END } from '../qvtrIsolatedCandidate';
@@ -9,7 +12,7 @@ import { TestMarketSimulation, aggregateCandles, SIM_INTERVALS } from '../../tes
 import { exactGainFromPrice, exactPriceFraction } from '../../../shared/listingScenarioControls';
 
 jest.setTimeout(120000);
-const source = parseListingConfig(snapshot.config), at = Date.parse('2026-10-31T15:00:00Z');
+const source = parseListingConfig(snapshot.config), at = Date.parse(plan.effectiveAt);
 const now = Date.parse(snapshot.observedAt), admin = { id: 'isolated-admin', role: 'ADMIN' as const };
 const proposal = qvtrIsolatedCandidate(source, at);
 let dir: string, file: string, journal: IsolatedScenarioJournal;
@@ -22,6 +25,19 @@ test('live snapshot source fields match GitHub; last completed observed minute r
   const closed = snapshot.history.candles.filter(c=>c.time*1000+60000<=snapshot.history.serverTime);
   for(const c of closed){const local=sim.candles1m(c.time*1000+60000,c.time*1000)[0];
     expect([local.open,local.high,local.low,local.close]).toEqual([c.open,c.high,c.low,c.close]);}
+});
+test('refreshed future boundary keeps approved checkpoints and captured old history intact',()=>{
+  expect(plan.effectiveAt).toBe('2026-10-31T16:30:00Z');expect(at-now).toBeGreaterThan(3600000);
+  expect([Date.parse(plan.peakAt),Date.parse(plan.correctionStart),Date.parse(plan.correctionEnd)]).toEqual([QVTR_PEAK_AT,QVTR_CORRECTION_START,QVTR_CORRECTION_END]);
+  expect([plan.peakPrice,plan.correctionPrice,plan.correctionEndApproved,proposal.correctionEndApproved]).toEqual(['0.53830','0.32298',true,true]);
+  expect([sealed.effectiveAt,sealed.sourceConfigSha256,sealed.anchor,sealed.program]).toEqual([at,proposal.sourceConfigSha256,proposal.anchor,proposal.program]);
+  expect([snapshot.listingId,snapshot.activeVersion,snapshot.draftRevision]).toEqual([plan.expectedListingId,plan.expectedActiveVersion,plan.expectedDraftRevision]);
+  expect(snapshot.config).toEqual(priorSnapshot.config);
+  const old = new Map(priorSnapshot.history.candles.filter(c=>c.time*1000+60000<=priorSnapshot.history.serverTime).map(c=>[c.time,c]));
+  const overlap = snapshot.history.candles.filter(c=>old.has(c.time));
+  expect(overlap.length).toBe(snapshot.priorCompletedRowsUnchanged);expect(overlap.length).toBeGreaterThan(900);
+  for(const c of overlap)expect(c).toEqual(old.get(c.time));
+  expect(()=>qvtrIsolatedCandidate(source,QVTR_PEAK_AT)).toThrow('FUTURE_TARGET_EXPIRED');
 });
 test('RED control: original cannot satisfy accelerated peak; GREEN proposal satisfies exact prices and returns',async()=>{
   const baseline=new TestMarketSimulation(listingSimulationConfig(source));
@@ -44,16 +60,18 @@ test('history byte-for-byte retained on four intervals; append/restart determini
     const from=at-6*3600000;
     const result=await journal.preview(QVTR_CORRECTION_END,from,interval);
     expect(await reloaded.preview(QVTR_CORRECTION_END,from,interval)).toEqual(result);
-    const original=(interval==='1m'?baseline.candles1m(at,from):aggregateCandles(baseline.candles5m(at,from),SIM_INTERVALS[interval])).filter(c=>c.openTime<at);
+    const bucketFrom=Math.floor(from/SIM_INTERVALS[interval])*SIM_INTERVALS[interval];
+    const original=(interval==='1m'?baseline.candles1m(at,bucketFrom):aggregateCandles(baseline.candles5m(at,bucketFrom),SIM_INTERVALS[interval])).filter(c=>c.openTime+SIM_INTERVALS[interval]<=at);
     expect(result.candles.filter(c=>c.openTime+SIM_INTERVALS[interval]<=at)).toEqual(original);
     const past=await journal.preview(at-1,from,interval);
-    const forming=interval==='1m'?baseline.candles1m(at-1,from):aggregateCandles(baseline.candles5m(at-1,from),SIM_INTERVALS[interval]);expect(past.candles).toEqual(forming);
+    const forming=interval==='1m'?baseline.candles1m(at-1,bucketFrom):aggregateCandles(baseline.candles5m(at-1,bucketFrom),SIM_INTERVALS[interval]);expect(past.candles).toEqual(forming);
   }
 });
 test('canonical OHLC aggregate across intervals; cap, counter-moves, variable bodies/wicks, WAVES endpoints',async()=>{
   await journal.append(admin,0,at,proposal.program,'offline model');
   const end=Date.parse(source.listingAt)+300*3600000;
-  const minutes=(await journal.preview(end,at,'1m')).candles;
+  const allMinutes=(await journal.preview(end,Math.floor(at/3600000)*3600000,'1m')).candles;
+  const minutes=allMinutes.filter(c=>c.openTime>=at);
   for(const c of minutes){expect(c.low).toBeGreaterThan(0);expect(c.high).toBeLessThanOrEqual(.88858);
     expect(c.high).toBeGreaterThanOrEqual(Math.max(c.open,c.close));expect(c.low).toBeLessThanOrEqual(Math.min(c.open,c.close));}
   const rise=minutes.filter(c=>c.openTime<QVTR_PEAK_AT);
@@ -61,10 +79,14 @@ test('canonical OHLC aggregate across intervals; cap, counter-moves, variable bo
   expect(new Set(rise.map(c=>(c.high-c.low).toFixed(7))).size).toBeGreaterThan(20);
   for(const interval of ['5m','15m','1h'] as const){
     const actual=(await journal.preview(end,at,interval)).candles;
-    const aggregated=interval==='5m'?minutes.filter((_,i)=>i%5===0).map((c,i)=>{
-      const group=minutes.slice(i*5,i*5+5);return {...c,high:Math.max(...group.map(x=>x.high)),low:Math.min(...group.map(x=>x.low)),close:group[group.length-1].close};
-    }):aggregateCandles(minutes,SIM_INTERVALS[interval]);
-    expect(actual.length).toBe(Math.floor((end-at)/SIM_INTERVALS[interval])+1);
+    // The 16:30 boundary splits the UTC 16:00 hour. Include its original
+    // first half, rather than treating it as an already completed candle.
+    const bucketFrom=Math.floor(at/SIM_INTERVALS[interval])*SIM_INTERVALS[interval];
+    const canonical=allMinutes.filter(c=>c.openTime>=bucketFrom);
+    const aggregated=interval==='5m'?canonical.filter((_,i)=>i%5===0).map((c,i)=>{
+      const group=canonical.slice(i*5,i*5+5);return {...c,high:Math.max(...group.map(x=>x.high)),low:Math.min(...group.map(x=>x.low)),close:group[group.length-1].close};
+    }):aggregateCandles(canonical,SIM_INTERVALS[interval]);
+    expect(actual.length).toBe(Math.floor(end/SIM_INTERVALS[interval])-Math.floor(at/SIM_INTERVALS[interval])+1);
     expect(actual.map(c=>[c.openTime,c.open,c.high,c.low,c.close])).toEqual(aggregated.map(c=>[c.openTime,c.open,c.high,c.low,c.close]));
   }
   for(const [hour,price] of [[108,.352],[132,.352],[204,.685],[228,.51],[300,.818]]){
@@ -102,5 +124,3 @@ test('concurrent administrators append exactly one revision; existing 5m aggrega
   const base=new TestMarketSimulation(listingSimulationConfig(source)).candles5m(at,at-3600000);
   expect(aggregateCandles(base,300000)).toEqual(base);
 });
-
-

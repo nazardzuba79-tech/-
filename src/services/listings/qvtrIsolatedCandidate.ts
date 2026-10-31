@@ -2,10 +2,11 @@
 import { TestMarketSimulation } from '../testMarkets/testMarketSimulation';
 import { listingSimulationConfig, type ListingConfig } from './listingConfig';
 import { validateScenarioControls, type ScenarioControlsProgram } from '../../shared/listingScenarioControls';
+import { scenarioSourceFingerprint } from './isolatedScenarioJournal';
 
 export const QVTR_PEAK_AT = Date.parse('2026-10-31T18:30:00Z');
 export const QVTR_CORRECTION_START = Date.parse('2026-11-01T02:00:00Z');
-export const QVTR_CORRECTION_END = Date.parse('2026-11-01T18:30:00Z'); // provisional, not owner-approved completion
+export const QVTR_CORRECTION_END = Date.parse('2026-11-01T18:30:00Z'); // owner-approved completion
 export function qvtrIsolatedCandidate(source: ListingConfig, effectiveAt: number) {
   if (source.symbol !== 'QVTR' || source.tradable || source.initialPrice !== '0.0140'
       || source.seed !== 'qaventra-20261028-v1' || source.listingAt !== '2026-10-28T13:00:00Z'
@@ -29,5 +30,5 @@ export function qvtrIsolatedCandidate(source: ListingConfig, effectiveAt: number
   // Reuse the pure controls validator/canonical ticks. Fractional hours are
   // intentional in this offline DTO; the public ListingConfig schema stays unchanged.
   validateScenarioControls(program, source.initialPrice);
-  return { scope: 'ISOLATED_MODEL_ONLY' as const, effectiveAt, anchor, program, provisionalCorrectionEnd: true };
+  return { scope: 'ISOLATED_MODEL_ONLY' as const, sourceConfigSha256: scenarioSourceFingerprint(source), effectiveAt, anchor, program, correctionEndApproved: true };
 }
