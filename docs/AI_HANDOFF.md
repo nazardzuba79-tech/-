@@ -7521,3 +7521,7 @@ Added disposable browser guard with forced service-worker block and six tests in
 ### #659 fresh read-only SSH evidence supersedes console-access blocker
 
 Existing SSH key with strict host checking reached voltex-prod. Verified actual disk/RAM, Docker image362eb750a7a0, rollback4e2b59e0b521, PG18.6/14connections/80MB WAL, active successful backup timers and two encrypted backup hashes. Five installed compiled #629 modules EXACTLY match TypeScript emission from70b7ac2; packaged TS is stale. Demo Spot/Liquidity/Withdrawal Guard are TRUE in both config and process-start environment; do not claim all OFF or switch them automatically. Wallet Conversion UNSET, frontend metadata false. No fresh restore/deploy/financial mutation. Manifest updated; frontend served-artifact provenance remains a release blocker.
+
+### #659 final operator-guard regression and SEO access
+
+Confirmed and fixed an encoded dot-segment bypass of the static-directory allowlist; RED before correction, six tests GREEN afterward. Google session lacks domain-property access; Yandex official endpoint DNS fails. No verification/DNS/submission changes. Final Banking headca1893e0 has78 browser checks and4967 frontend tests PASS; final remaining workflows must complete before readiness is asserted.

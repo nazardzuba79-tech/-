@@ -26,7 +26,8 @@ function createPolicy({ documents, resources = [], apiReads }) {
     try { pathname = decodeURIComponent(url.pathname); } catch { return false; }
     // GET is not synonymous with read-only. These known commands stay refused
     // even if a caller accidentally puts them in an allowlist.
-    if (FORBIDDEN_READS.test(pathname) || /\\|\/{2}/.test(pathname)) return false;
+    if (FORBIDDEN_READS.test(pathname) || /\\|\/{2}|%/.test(pathname)
+      || /(?:^|\/)\.{1,2}(?:\/|$)/.test(pathname)) return false;
     url.hash = ''; url.search = '';
     if (exact.has(url.href)) return true;
     return prefixes.some(p => url.origin === p.origin && pathname.startsWith(p.pathname));

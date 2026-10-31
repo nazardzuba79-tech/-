@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "observedAt": "2026-10-31T13:26:51.447Z",
+  "observedAt": "2026-10-31T13:35:32.374Z",
   "issue": 659,
   "permission": {
     "merge": false,
@@ -352,7 +352,7 @@
     },
     "bankingBrowser": {
       "passed": 78,
-      "scope": "isolated real component; final-head CI pending"
+      "scope": "final Banking head ca1893e0, run41205387417 SUCCESS"
     },
     "referralLinks": {
       "passed": 26,
@@ -366,12 +366,15 @@
     "readOnlyGuard": {
       "passed": 6,
       "scope": "policy and real Chromium loopback negative control",
-      "ci": "PASS at479a8e916bd16bb2af4489257ed0cd4ce302ffe6; current documentation follow-up requires fresh final-head CI"
+      "ci": "Final-head CI required after encoded-path regression fix; 6/6 local PASS",
+      "negativeControl": "Encoded traversal allowed before fix (RED); percent/dot-segment normalization now refuses encoded and double-encoded traversal (GREEN)"
     },
     "seo": {
       "status": "HTTP_PASS",
       "sitemapCount": 42,
-      "indexation": "NOT_VERIFIED"
+      "indexation": "NOT_VERIFIED",
+      "searchConsole": "Authenticated existing Google session: no access to sc-domain:voltextech.net; no ownership verification or DNS change",
+      "yandex": "Official webmaster.yandex.com endpoint: browser ERR_NAME_NOT_RESOLVED; no authenticated index coverage"
     },
     "bankingLive": {
       "viewports": [
@@ -391,6 +394,11 @@
       "recorded": true,
       "classification": "analytics write; not read-only; not a balance/ledger write",
       "cleanup": "NONE"
+    },
+    "bankingFrontend": {
+      "passed": 4967,
+      "suites": 302,
+      "scope": "final Banking head ca1893e0, run41205387586 SUCCESS; two other workflows still running at manifest checkpoint"
     }
   },
   "eclavo": {

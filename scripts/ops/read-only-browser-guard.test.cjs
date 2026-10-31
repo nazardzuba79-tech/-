@@ -24,6 +24,8 @@ test('mutations, lookalike origins, encoded commands and unreviewed GETs fail cl
     'https://voltextech.net@evil.invalid/assets/a.js',
     'https://voltextech.net/assets/../api/v1/banking/state',
     'https://voltextech.net/assets/%73tate',
+    'https://voltextech.net/assets/%2e%2e%2fapi/v1/me',
+    'https://voltextech.net/assets/%252e%252e%252fadmin/users',
     'https://api.voltextech.net/api/v1/banking/state',
     'https://api.voltextech.net/api/v1/wallet/portfolio-snapshot',
     'https://voltextech.net/assets/%ZZ']) assert.equal(allow('GET', path), false, path);
