@@ -61,7 +61,9 @@ test('canonical OHLC aggregate across intervals; cap, counter-moves, variable bo
   expect(new Set(rise.map(c=>(c.high-c.low).toFixed(7))).size).toBeGreaterThan(20);
   for(const interval of ['5m','15m','1h'] as const){
     const actual=(await journal.preview(end,at,interval)).candles;
-    const aggregated=aggregateCandles(minutes,SIM_INTERVALS[interval],0,60000);
+    const aggregated=interval==='5m'?minutes.filter((_,i)=>i%5===0).map((c,i)=>{
+      const group=minutes.slice(i*5,i*5+5);return {...c,high:Math.max(...group.map(x=>x.high)),low:Math.min(...group.map(x=>x.low)),close:group[group.length-1].close};
+    }):aggregateCandles(minutes,SIM_INTERVALS[interval]);
     expect(actual.length).toBe(Math.floor((end-at)/SIM_INTERVALS[interval])+1);
     expect(actual.map(c=>[c.openTime,c.open,c.high,c.low,c.close])).toEqual(aggregated.map(c=>[c.openTime,c.open,c.high,c.low,c.close]));
   }

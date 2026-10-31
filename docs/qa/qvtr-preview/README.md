@@ -33,7 +33,7 @@ The planned boundary/anchor is **projected from the captured unchanged v1 model*
 
 Each append records revision, effectiveAt, createdAt, author, reason, full program, previous hash and hash. A filesystem `wx` lock serializes writers; expectedRevision rejects stale requests. Writes append one JSON line and fsync it. Reload verifies the source identity/hash chain, sequence, timestamps, price continuity and cap. There are no edit/delete operations. Interrupted/truncated records and stale locks fail closed; retain the file and investigate rather than auto-truncating history. The hash chain detects corruption; it is not a signature against a host administrator with write access. Local storage is not a distributed production store.
 
-Effective boundaries are future, at least 60 seconds ahead, aligned to 5m. The old canonical generator owns every tick through the boundary. The new canonical generator opens at exactly its prior close; completed historical candles are retained verbatim at 1m/5m/15m/1h. A candle still forming at the boundary may acquire future extrema, but its previous ticks are preserved. All future intervals aggregate the same canonical minutes/ticks. The offline fractional-hour DTO reuses the existing controls schema, math, seeded ticks and OHLC aggregation; it cannot be published through the public ListingConfig schema.
+Effective boundaries are future, at least 60 seconds ahead, aligned to 5m. The old canonical generator owns every tick through the boundary. The new canonical generator opens at exactly its prior close; completed historical candles are retained verbatim at 1m/5m/15m/1h. A candle still forming at the boundary may acquire future extrema, but its previous ticks are preserved. All future intervals aggregate the same canonical minutes/ticks. The offline fractional-hour DTO reuses the existing controls schema, math and seeded ticks. A local presentation adapter folds canonical minutes to 5m because the frozen public aggregator assumes 5m inputs; all shared production source bytes remain unchanged. The proposal it cannot be published through the public ListingConfig schema.
 
 ```powershell
 node scripts/qvtr-isolated-preview.cjs
@@ -56,3 +56,4 @@ Preview does not persist a proposal. Only explicit local `append` creates a jour
 - Exact commit CI builds/screenshots an artifact named with the PR head SHA. No workflow has deployment credentials or a deployment step.
 
 Rollback of this code-only PR: discard the candidate branch/artifact. Retain any local audit journal; a later isolated scenario change must be another future revision. Production rollback is unnecessary because nothing was installed there. No production authorization is implied by this PR.
+

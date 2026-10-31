@@ -22,6 +22,23 @@ function validateProgram(program: ScenarioControlsProgram, initialPrice: string)
   offlineProgramSchema.parse(program);
   validateScenarioControls(program, initialPrice);
 }
+/** Presentation aggregation only. The frozen public helper assumes 5m input.
+ * This adapter folds the existing canonical 1m OHLCV; it generates no prices.
+ */
+export function aggregateIsolatedMinutes(minutes: readonly SimCandle[], intervalMs: number): SimCandle[] {
+  if (intervalMs !== 300000) return aggregateCandles(minutes, intervalMs);
+  const out: SimCandle[] = [];
+  for (const candle of minutes) {
+    const bucket = Math.floor(candle.openTime / intervalMs) * intervalMs, last = out[out.length - 1];
+    if (!last || last.openTime !== bucket) out.push({ ...candle, openTime: bucket });
+    else {
+      last.high = Math.max(last.high, candle.high); last.low = Math.min(last.low, candle.low); last.close = candle.close;
+      last.volume = Number((last.volume + candle.volume).toFixed(4));
+      last.quoteVolume = Number((last.quoteVolume + candle.quoteVolume).toFixed(2));
+    }
+  }
+  return out;
+}
 
 /** Caller supplies a server-authenticated principal, never request-body identity.
  * Filesystem permissions are the boundary of this local tool; no public API is installed.
@@ -108,7 +125,7 @@ export class IsolatedScenarioJournal {
       : aggregateCandles(sources[0].candles5m(Math.min(now, boundary), start), SIM_INTERVALS[interval]);
     const immutable = new Map(original.filter(c => c.openTime + SIM_INTERVALS[interval] <= boundary).map(c => [c.openTime,c]));
     return { source: 'ISOLATED_MODEL_ONLY' as const, executable: false as const, interval,
-      candles: aggregateCandles(candles, SIM_INTERVALS[interval], 0, 60000).map(c => immutable.get(c.openTime) ?? c)
+      candles: aggregateIsolatedMinutes(candles, SIM_INTERVALS[interval]).map(c => immutable.get(c.openTime) ?? c)
         .filter(c => c.openTime >= Math.floor(from / SIM_INTERVALS[interval]) * SIM_INTERVALS[interval]) };
   }
 }
