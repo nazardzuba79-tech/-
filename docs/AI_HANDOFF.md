@@ -7534,3 +7534,7 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 ## 2026-10-31 — #659 Banking unknown-state correction
 
 Live guarded Banking read showed false zero active placements and an empty-account message after state failure. Changed only two BankingPage JSX expressions to unknown placeholders while state is unavailable/loading; successful zero unchanged. Extended existing #657 real-component QA with failed/pending state at 1440/390, eight checks. No CSS, financial API, rate, schema or Claude-owned UI edits. Production-base source patch prepared against byte-identical BankingPage in Pages 9ed179c6; no deployment. Exact final-head CI required.
+
+### #659 frontend artifact provenance gate
+
+Fresh immutable Pages root and custom-domain root use index-wS4Z9N50.js, whereas exact 9ed179c6 CI artifact 12959472968 references index-oD3uJukg.js. Public release-build.json still declares 21b10560. The Pages deployment metadata alone does not attest served source. Source patch remains prepared, but no sealed production artifact is claimed until this is reconciled. No purge or deploy performed.
