@@ -15,7 +15,7 @@
  *     figures — and the empty-activity list is an empty state, not samples;
  *   - Funding lists the real spot ledger with the server's valuation.
  */
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const fs = require('node:fs');
 
 const BASE = process.env.WALLET_REVIEW_URL || 'http://127.0.0.1:4179';
@@ -236,6 +236,75 @@ async function run() {
       await context.close();
       await setMode('ordinary', '?history=45');
     }
+
+    // Seven languages, both widths. Every visible string comes from the reader's dictionary (no raw
+    // `wallet.*` key, no Russian/English sentence hard-coded for everyone else), the page never scrolls
+    // sideways, Supreme VIP is on the owner's account only, and an admin's separate simulation Spot scope
+    // is titled in the reader's language and offers no deposit/withdraw/transfer.
+    const VTA_TITLE = { ru: 'Спотовый счёт · VTA / USDT', en: 'Spot account · VTA / USDT', es: 'Cuenta spot · VTA / USDT',
+      zh: '现货账户 · VTA / USDT', hi: 'स्पॉट खाता · VTA / USDT', ja: '現物口座 · VTA / USDT', ko: '현물 계정 · VTA / USDT' };
+    const RAW_KEY = /\b(wallet|common|nav)\.[a-z][A-Za-z]+\b/;
+    for (const lang of Object.keys(VTA_TITLE)) {
+      for (const vp of VIEWPORTS) {
+        const tag = `${lang}-${vp.label}`;
+        await setMode('owner', `?lang=${lang}&vta=inactive`);
+        const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, deviceScaleFactor: 1 });
+        const page = await context.newPage();
+        const errors = [];
+        page.on('pageerror', (e) => errors.push(String(e.message || e)));
+        await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+        await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+        await page.waitForTimeout(500);
+        const ov = await page.evaluate(() => ({
+          lang: document.documentElement.lang || localStorage.getItem('exchange_lang'),
+          text: document.body.innerText,
+          badge: document.querySelector('.wallet-tier-badge')?.textContent?.trim() ?? null,
+          nav: [...document.querySelectorAll('.wallet-side-nav .wallet-nav-item')].map((n) => n.textContent.trim()),
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+        }));
+        check(`${tag}: the page reads in the chosen language`, ov.lang === lang, String(ov.lang));
+        check(`${tag}: no raw dictionary key on screen`, !RAW_KEY.test(ov.text), (ov.text.match(RAW_KEY) || [])[0] ?? '');
+        check(`${tag}: Supreme VIP on the owner's account`, ov.badge === 'Supreme VIP', String(ov.badge));
+        check(`${tag}: five named sections`, ov.nav.length >= 5 && ov.nav.every(Boolean), ov.nav.join('|'));
+        check(`${tag}: no horizontal page overflow`, ov.overflow <= 1, `${ov.overflow}px`);
+
+        await page.locator('.wallet-side-nav .wallet-nav-item').nth(1).click();
+        await page.waitForSelector('.wallet-funding[data-account-scope="REAL_FUNDING"]', { timeout: 15000 });
+        const real = await page.evaluate(() => document.querySelectorAll('.wallet-funding-row').length);
+        check(`${tag}/funding: the real ledger is listed`, real >= 3, String(real));
+
+        await setMode('owner', `?lang=${lang}&vta=active`);
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.locator('.wallet-side-nav .wallet-nav-item').nth(1).click();
+        await page.waitForSelector('.wallet-funding[data-account-scope="SIMULATION_SPOT"]', { timeout: 15000 });
+        const sim = await page.evaluate(() => ({
+          title: document.querySelector('.wallet-funding h2')?.textContent?.trim(),
+          select: document.querySelector('.wallet-funding select')?.getAttribute('aria-label'),
+          note: document.querySelector('.wallet-funding-head p')?.textContent?.trim(),
+          actions: document.querySelectorAll('.wallet-funding-head button').length,
+          rows: [...document.querySelectorAll('.wallet-funding-row')].map((r) => r.dataset.asset),
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+        }));
+        check(`${tag}/simulation: titled in the reader's language`, sim.title === VTA_TITLE[lang], String(sim.title));
+        check(`${tag}/simulation: the account selector and note are localized`, Boolean(sim.select) && Boolean(sim.note)
+          && (lang === 'en' || (!/^Account$/.test(sim.select) && !/Unified Trading account/.test(sim.note))), `${sim.select} | ${sim.note}`);
+        check(`${tag}/simulation: no deposit, withdraw or transfer`, sim.actions === 0, String(sim.actions));
+        check(`${tag}/simulation: only the simulation balances`, sim.rows.join(',') === 'USDT,VTA', sim.rows.join(','));
+        check(`${tag}/simulation: no horizontal page overflow`, sim.overflow <= 1, `${sim.overflow}px`);
+        check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
+        if (vp.label === '390' || lang === 'ru') await page.screenshot({ path: `${OUT}/funding-simulation-${tag}.png`, fullPage: true });
+        await context.close();
+      }
+      await setMode('ordinary', `?lang=${lang}&vta=inactive`);
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, deviceScaleFactor: 1 });
+      const page = await context.newPage();
+      await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+      await page.waitForTimeout(400);
+      check(`${lang}-ordinary: no tier badge`, (await page.locator('.wallet-tier-badge').count()) === 0);
+      await context.close();
+    }
+    await setMode('owner', '?lang=ru&vta=inactive');
   } finally {
     await browser.close();
   }

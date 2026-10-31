@@ -33,6 +33,7 @@ const React = frontendRequire('react');
 const { renderToStaticMarkup } = frontendRequire('react-dom/server');
 const empty = () => null;
 const dependencies = {
+  StrategySocialLinks: empty, StrategySocialEditor: empty,
   ...liveMetricModule(), ...languageModule('ru'), ...demoRoiModule(),
   useFiguresPending: () => false,
   useFollowing: () => ({ following: new Set<string>() }),
@@ -163,35 +164,27 @@ test.each(['7D', '30D', '90D', 'ALL'] as const)('%s mini chart and yellow profil
   expect(JSON.stringify(response)).toBe(before);
 });
 
-test('CopyButton preserves explicit deposit gating and eligible Following without requests', () => {
+test('CopyButton is a browser-local watchlist action independent of deposit eligibility', () => {
   const trader = marketplaceTraders.find(item => item.id !== nazarTrader.id)!;
   const following = new Set<string>();
   const toggleFollowing = jest.fn((id: string) => following.has(id) ? following.delete(id) : following.add(id));
   const toast = { success: jest.fn() };
-  let eligible = false, dialogOpen = false;
-  const Dialog = empty;
   const { CopyButton } = copyFunctions(['CopyButton'], {
-    useCopyEligibility: () => ({ eligible }), useFollowing: () => ({ following, toggleFollowing }),
+    useFollowing: () => ({ following, toggleFollowing }),
     useCopyMarketplace: () => ({ settled: true, nazar: {}, ksenia: {} }),
-    useState: () => [dialogOpen, (next: boolean) => { dialogOpen = next; }],
-    CopyDepositDialog: Dialog, nazarTrader, Check: empty, toast,
+    nazarTrader, Check: empty, toast,
   });
   const render = () => CopyButton({ trader, compact: true });
-  const click = () => render().props.children[0].props.onClick({ stopPropagation: jest.fn() });
-  expect(render().props.children[1]).toBe(false);
-  click();
-  expect(render().props.children[1].type).toBe(Dialog);
-  expect(toggleFollowing).not.toHaveBeenCalled();
-  expect(toast.success).not.toHaveBeenCalled();
-  render().props.children[1].props.onClose();
-  eligible = true;
+  const click = () => render().props.onClick({ stopPropagation: jest.fn() });
+  expect(renderToStaticMarkup(render())).toContain('Наблюдать за трейдером');
   click();
   expect([...following]).toEqual([trader.id]);
-  expect(renderToStaticMarkup(render())).toContain('Копируется');
+  expect(renderToStaticMarkup(render())).toContain('В наблюдении');
   click();
   expect(following.size).toBe(0);
   expect(toggleFollowing.mock.calls).toEqual([[trader.id], [trader.id]]);
   expect(toast.success).toHaveBeenCalledTimes(2);
+  expect(toast.success.mock.calls[0][1]?.description).toContain('копирование сделок не запущено');
 });
 
 test('premium CSS stays card-scoped, keeps the approved eligibility border, and respects reduced motion', () => {

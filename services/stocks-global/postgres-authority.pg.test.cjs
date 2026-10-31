@@ -118,7 +118,7 @@ pg('joined read fences deny missing, mismatched, revoked and blocked identities 
   const f=await fixture(t),before=await f.rows();
   await assert.rejects(f.authority.execute({...f.actors[0],sessionId:f.sessions[1]},'read'),/AUTH_REQUIRED/);
   await assert.rejects(f.authority.execute({...f.actors[0],sessionId:'synthetic-missing-session'},'read'),/AUTH_REQUIRED/);
-  await f.other.user.update({where:{id:f.users[0]},data:{blockedAt:new Date()}});
+  await f.other.user.update({where:{id:f.users[0]},data:{blockedAt:new Date()},select:{id:true}});
   await assert.rejects(f.authority.execute(f.actors[0],'readView'),/AUTH_REQUIRED/);
   await f.other.session.update({where:{id:f.sessions[1]},data:{revokedAt:new Date()}});
   await assert.rejects(f.authority.execute(f.actors[1],'readView'),/AUTH_REQUIRED/);

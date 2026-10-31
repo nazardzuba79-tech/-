@@ -4,6 +4,7 @@ export const KSENIA_TRADER_ID = 'VX-KSENIA';
 export interface PublicStrategyIdentity {
   traderId: string; displayName: string; avatarUrl: string | null;
   avatarVersion: string | null; verified: boolean; premium: boolean;
+  xUrl?: string | null; telegramUrl?: string | null;
 }
 export type KseniaResponse = SyntheticCopyTradingResponse & { provenance: 'SYNTHETIC_REVIEW'; traderEarnings365: number };
 export function withStrategyIdentityVerification(trader: Trader, identity?: PublicStrategyIdentity): Trader {

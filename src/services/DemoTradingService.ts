@@ -10,7 +10,7 @@ import { checkReference, DemoLiquidity, DemoReferenceQuote, liquidityAccountRefu
 type TxClient = Prisma.TransactionClient;
 
 /** Machine-readable reason for a refusal; the message keeps the real Spot wording. */
-export type DemoTradingErrorCode = 'INVALID_ORDER' | 'INSUFFICIENT_BALANCE' | 'NO_LIQUIDITY' | 'REQUEST_CONFLICT';
+export type DemoTradingErrorCode = 'INVALID_ORDER' | 'INSUFFICIENT_BALANCE' | 'NO_LIQUIDITY' | 'REQUEST_CONFLICT' | 'COPY_SELF_MATCH_REFUSED';
 
 export class DemoTradingError extends Error {
   constructor(message: string, readonly code: DemoTradingErrorCode = 'INVALID_ORDER') { super(message); }
@@ -36,6 +36,9 @@ export interface DemoTradingOptions {
   liquidity?: DemoLiquidity | null;
   /** Why configured liquidity stayed off (shown to the admin), if it did. */
   liquidityProblem?: string;
+  /** Optional transactional outbox; absent when isolated demo copy is off. */
+  orderLifecycle?: (tx: TxClient, orderId: string, event: 'PLACED' | 'CANCELLED') => Promise<void>;
+  tradeLifecycle?: (tx: TxClient, tradeIds: string[]) => Promise<void>;
 }
 
 /**
@@ -122,6 +125,9 @@ export class DemoTradingService {
     quantity: BigNumber;
     /** Optional client request ID (UUID): makes a retry return the same order. */
     requestId?: string;
+    /** Internal server-only hooks, never populated from an HTTP body. */
+    transactionGuard?: (tx: TxClient) => Promise<void>;
+    transactionComplete?: (tx: TxClient, orderId: string) => Promise<void>;
   }) {
     if (isTestAssetPairOrSymbol(params.pair)) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const [base, quote] = params.pair.split('/');
@@ -146,6 +152,7 @@ export class DemoTradingService {
         const existing = await tx.demoOrder.findUnique({ where: { id: orderId } });
         if (existing) return this.replay(tx, existing, params);
       }
+      await params.transactionGuard?.(tx);
       const staged = await session.book(params.pair);
       const liquidity = reference ? await this.stageLiquidity(tx, staged, orderId, params.pair, params.side, base, quote, reference) : null;
       let lockAmount: BigNumber;
@@ -197,6 +204,9 @@ export class DemoTradingService {
       const result = await this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, params.price ?? null, liquidity);
       // A liquidity quote answers this taker only: whatever it did not fill never rests.
       if (liquidity) staged.cancelOrder(params.pair, liquidity.id);
+      await params.transactionComplete?.(tx, orderId);
+      await this.options.orderLifecycle?.(tx, orderId, 'PLACED');
+      await this.options.tradeLifecycle?.(tx, result.trades.map(trade => trade.id));
       return result;
     }, DEMO_SPOT_LEDGER);
   }
@@ -293,6 +303,7 @@ export class DemoTradingService {
         await this.adjustBalance(tx, userId, base, { available: remaining, locked: remaining.negated() });
       }
 
+      await this.options.orderLifecycle?.(tx, orderId, 'CANCELLED');
       return order;
     }, DEMO_SPOT_LEDGER);
   }

@@ -47,7 +47,14 @@ function load(file: string): any {
     if (name.endsWith('/Nav')) return {Nav:() => null};
     if (name.endsWith('/Footer')) return {Footer:() => null};
     if (name === 'sonner') return {Toaster:() => null, toast:{success:jest.fn()}};
-    if (name.endsWith('/api')) return {getToken:() => session, api:{getPortfolioHistory:async () => ({points:[]})}};
+    if (name.endsWith('/api')) return {
+      getToken: () => session,
+      onSessionChange: () => () => {},
+      // The fixture viewer cannot edit strategy socials. Preserve the real
+      // components while substituting this unrelated private transport read.
+      request: async () => { throw new Error('Forbidden'); },
+      api: { getPortfolioHistory: async () => ({ points: [] }) },
+    };
     // The app mounts this page inside LanguageProvider; the harness reads
     // the shipped Russian dictionary through the same substitution rules.
     if (name.endsWith('/lib/i18n')) return languageModule('ru');

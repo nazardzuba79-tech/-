@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { StrategySocialLinks, StrategySocialEditor } from './StrategySocials';
 import {
   ArrowDownRight,
   ArrowLeft,
@@ -39,7 +40,6 @@ import {
   sortTraders,
   searchTraders,
 } from './traders';
-import { useCopyEligibility } from './CopyEligibilityContext';
 import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
@@ -54,7 +54,6 @@ import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
 import { VerifiedBadge } from './VerifiedBadge';
-import { CopyDepositDialog } from './CopyDepositDialog';
 import { MonthlyPerformanceLauncher } from './CopyMonthlyPerformanceModal';
 import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
@@ -105,7 +104,7 @@ const MARKET_TABS: { id: MarketTab; label: string }[] = [
   { id: 'leaderboard', label: 'Лидерборд' },
   { id: 'all', label: 'Все трейдеры' },
   { id: 'favorites', label: 'Избранное' },
-  { id: 'following', label: 'Копирую' },
+  { id: 'following', label: 'Наблюдаю' },
 ];
 
 const sortOptions = ['Top Performance', 'Highest ROI', 'Best Win Rate', 'Lowest Drawdown', 'Most Copied', 'Largest AUM', 'Newest Traders'];
@@ -170,13 +169,10 @@ function useFiguresPending(traderId: string): boolean | undefined {
   return !marketplace.settled && !marketplace[traderId === nazarTrader.id ? 'nazar' : 'ksenia'];
 }
 
-/** Explain the unchanged deposit requirement only after an explicit Copy
- * click. Eligible accounts continue through the existing Following action. */
+/** Browser-only watchlist: no deposit, no finance request, no copy execution. */
 function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
-  const { eligible } = useCopyEligibility();
   const { following, toggleFollowing } = useFollowing();
   const marketplace = useCopyMarketplace();
-  const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
 
   if ((trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && !Number.isFinite(trader.performanceFee) && !isFollowing) {
@@ -195,23 +191,20 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
   }
 
   return (
-    <>
     <button
+      title="Локальный список наблюдения. Автокопирование сделок не запущено."
       className={`button button-copy ${isFollowing ? 'button-copy-active' : ''} ${compact ? 'button-small' : ''}`}
       onClick={(event) => {
         event.stopPropagation();
-        if (!eligible) { setShowDepositRequirement(true); return; }
         toggleFollowing(trader.id);
         toast.success(
-          isFollowing ? `Копирование ${trader.name} остановлено` : `Вы копируете ${trader.name}`,
-          { description: isFollowing ? undefined : `Комиссия за результат ${Math.round(trader.performanceFee * 100)}%. Средства остаются на вашем счёте VOLTEX.` }
+          isFollowing ? `Убрано из наблюдения: ${trader.name}` : `Добавлено в наблюдение: ${trader.name}`,
+          { description: 'Только список в этом браузере. Автоматическое копирование сделок не запущено.' }
         );
       }}
     >
-      {isFollowing ? <><Check size={14} /> Копируется</> : 'Копировать трейдера'}
+      {isFollowing ? <><Check size={14} /> В наблюдении</> : 'Наблюдать за трейдером'}
     </button>
-    {showDepositRequirement && <CopyDepositDialog onClose={() => setShowDepositRequirement(false)} />}
-    </>
   );
 }
 
@@ -305,8 +298,8 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
           </div>
         </div>
         <div className="card-topline-right">
-          {following.has(trader.id) && <span className="following-pill"><Check size={10} /> Копируется</span>}
-          <FavoriteButton trader={trader} />
+          {following.has(trader.id) && <span className="following-pill"><Check size={10} /> В наблюдении</span>}
+          <StrategySocialLinks traderId={trader.id} /><FavoriteButton trader={trader} />
         </div>
       </div>
       {(isNazara || trader.id === 'VX-KSENIA') && <p className="nazara-strategy">{trader.strategy}</p>}
@@ -804,7 +797,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       <section className="trader-profile-hero">
         <div className="trader-profile-identity">
           <div className="profile-avatar-wrap"><Avatar trader={trader} large /></div>
-          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
+          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p><StrategySocialLinks traderId={trader.id} /></div>
         </div>
         <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
           <div><span>Followers</span><strong><LiveMetric value={numberLabel(heroFollowers, 0)} /></strong></div>
@@ -815,6 +808,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /></div></div>
       </section>
 
+      <StrategySocialEditor key={trader.id} traderId={trader.id} />
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} data-period={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{t(periodLabelKey(item))}</button>)}</div>
@@ -854,7 +848,7 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
         <div className="hero-guide-copy">
           <span>БЫСТРЫЙ СТАРТ</span>
           <strong>Как начать Copy Trading</strong>
-          <p>Выберите трейдера, изучите риск-метрики и подключите копирование.</p>
+          <p>Изучайте риск-метрики трейдеров. Список наблюдения не запускает копирование сделок.</p>
           <em>Открыть руководство <ChevronRight size={15} /></em>
         </div>
         <div className="hero-guide-art" aria-hidden="true">
@@ -1081,7 +1075,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
         <div className="section-title">
           <div>
             <span className="eyebrow">{MARKET_TABS.find((t) => t.id === tab)?.label}</span>
-            <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Вы копируете' : 'Профессиональные трейдеры'}</h2>
+            <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Список наблюдения' : 'Профессиональные трейдеры'}</h2>
           </div>
           <span className="results-count">Трейдеров: {totalVisibleCount}</span>
         </div>
@@ -1095,7 +1089,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
             {tab === 'favorites' && favorites.size === 0 && !query ? (
               <><Star size={22} /><strong>Избранное пусто</strong><span>Нажмите на звёздочку в карточке трейдера, чтобы сохранить его здесь.</span></>
             ) : tab === 'following' && following.size === 0 && !query ? (
-              <><Users size={22} /><strong>Вы пока никого не копируете</strong><span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span></>
+              <><Users size={22} /><strong>Список наблюдения пуст</strong><span>Откройте профиль трейдера и нажмите «Наблюдать за трейдером». Сделки не копируются автоматически.</span></>
             ) : (
               <><Search size={22} /><strong>Трейдеры не найдены</strong><span>Измените параметры поиска или фильтры.</span></>
             )}

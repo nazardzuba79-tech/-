@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { resolve, relative } from 'path';
 import { LOCALES, readLocale } from '../../../test-utils/i18nSource';
+import { copyDemoText } from '../../pages/copy-trading-bolt/copyDemoText';
+import { futuresObserverText } from '../../pages/copy-trading-bolt/futuresObserverText';
 
 /**
  * The exchange is shown to people who are not building it. A screen that
@@ -193,6 +195,10 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     // unavailable auth honestly. Its entry and build are isolated from the
     // production app; only this exact directory is outside customer copy.
     if (rel.startsWith('frontend/src/mobile-review/')) continue;
+    // #644 is an explicitly isolated demo, not a live-money screen. Its exact
+    // dictionary must disclose demo funds; the positive contract below protects it.
+    // Isolated review-only observer: the explicit lack of order copying is a
+    // required consumer warning, not permitted anywhere in live product copy.
     // lib/customerError.ts holds no copy at all. Its string literals are
     // the SERVER's own sentences, listed so that each can be answered in
     // the customer's language instead — reading them as product copy would
@@ -221,6 +227,8 @@ test('no component copy, in any of the seven languages, is a practice / training
     const rel = relative(root, path).replace(/\\/g, '/');
     // Staff-only screens and the isolated loopback review are not customer copy (as above).
     if (rel.startsWith('frontend/src/pages/admin/') || rel.startsWith('frontend/src/mobile-review/')) continue;
+    // Isolated review-only observer: the explicit lack of order copying is a
+    // required consumer warning, not permitted anywhere in live product copy.
     // The server's own sentences, mapped to neutral `serverError.*` wording (see above).
     if (rel === 'frontend/src/lib/customerError.ts') continue;
     // Stocks is Codex's work in progress and switched off on the exchange (VITE_STOCKS_ENABLED unset);
@@ -242,6 +250,48 @@ test('no component copy, in any of the seven languages, is a practice / training
     for (const m of source.matchAll(/>\s*(SIM|DEMO|TEST|PRACTICE|ДЕМО|ТЕСТ)\s*</g)) offenders.push(`${rel}: badge «${m[1]}»`);
   }
   expect(offenders).toEqual([]);
+});
+
+test('Copy Trading account displays no technical labels but states non-withdrawable balance in seven languages', () => {
+  const blocked = /demo|sandbox|synthetic|simulat|демо|тестов|симулир|синтети|práctica|simulad|模拟|测试|डेमो|सिमुल|デモ|シミュレ|데모|모의|시뮬레/i;
+  const nonWithdrawable = { en: /cannot be withdrawn/, ru: /без возможности вывода/,
+    es: /no retirable/, zh: /不可提现/, hi: /निकाला नहीं जा सकता/,
+    ja: /出金できません/, ko: /출금할 수 없습니다/ };
+  expect(Object.keys(copyDemoText).sort()).toEqual([...LOCALES].sort());
+  for (const lang of LOCALES) {
+    const values = Object.values(copyDemoText[lang]);
+    for (const value of values) expect(value).not.toMatch(blocked);
+    expect(copyDemoText[lang].notice).toMatch(nonWithdrawable[lang]);
+  }
+  const app = readFileSync(resolve(root, 'frontend/src/App.tsx'), 'utf8');
+  expect(app).toContain("import.meta.env.VITE_COPY_DEMO_REVIEW === 'true'");
+  const consumers = uiFiles(resolve(root, 'frontend/src')).filter(path =>
+    readFileSync(path, 'utf8').includes('copyDemoText')).map(path => relative(root, path).replace(/\\/g, '/')).sort();
+  expect(consumers).toEqual(['frontend/src/pages/CopyDemoPage.tsx', 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts']);
+});
+
+test('Futures observer has no test/simulation labels and never implies that orders were copied', () => {
+  expect(Object.keys(futuresObserverText).sort()).toEqual([...LOCALES].sort());
+  const noCopy = { en: /not copy|not copied/i, ru: /не копирую|не копируются/i,
+    es: /no se copian|sin copiar/i, zh: /不会?复制/, hi: /कॉपी नहीं/, ja: /コピーされません|コピー.*行わず/,
+    ko: /복사.*없|복사.*하지/ };
+  const internalLabels = /demo|sandbox|synthetic|simulat|test.only|демо|тестов|симулир|синтети|práctica|simulad|模拟|测试|डेमो|सिमुल|デモ|シミュレ|데모|모의|시뮬레/i;
+  for (const lang of LOCALES) {
+    const text = futuresObserverText[lang];
+    for (const value of Object.values(text)) expect(value).not.toMatch(internalLabels);
+    expect(text.warning).toMatch(noCopy[lang]);
+    expect(text.warning.length).toBeGreaterThan(30);
+    expect(text.noTrade.length).toBeGreaterThan(6);
+    expect(text.disclaimer.length).toBeGreaterThan(25);
+  }
+  const app = readFileSync(resolve(root, 'frontend/src/App.tsx'), 'utf8');
+  expect(app).toContain("import.meta.env.VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW === 'true'");
+  const consumers = uiFiles(resolve(root, 'frontend/src')).filter(path =>
+    readFileSync(path, 'utf8').includes('futuresObserverText')).map(path => relative(root, path).replace(/\\/g, '/')).sort();
+  expect(consumers).toEqual([
+    'frontend/src/pages/CopyFuturesObserverPage.tsx',
+    'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts',
+  ]);
 });
 
 test('the practice vocabulary catches every former notice and leaves ordinary wording alone', () => {
