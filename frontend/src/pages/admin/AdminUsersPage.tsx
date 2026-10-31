@@ -155,7 +155,7 @@ export function AdminUsersPage() {
       <td>—</td><td>{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : '—'}</td><td>—</td><td>—</td><td>—</td><td>{actions(user)}</td>
     </tr> : <tr key={user.id} data-user-row={user.id}>
       <td className="admin-user-email-cell"><span className="admin-user-email">{user.email}</span>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}{signals(user)}</td>
-      <td className="mono" data-user-password={user.id}>{user.password ?? '—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
+      <td className="mono" data-user-password={user.id}>{'—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
     </tr>)}</tbody></table></div>}
     <div className="admin-table-mobile">{users.map(user => user.adminHidden ? <article key={user.id} data-user-card={user.id} data-hidden-account className="admin-user-mobile" style={styles.card}>
       <div className="admin-user-mobile-header"><div className="admin-user-mobile-identity"><strong className="admin-hidden-account">Скрытый аккаунт</strong><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small></div>{actions(user)}</div>
@@ -176,7 +176,7 @@ export function AdminUsersPage() {
         <details className="admin-user-mobile-details">
           <summary>Подробнее</summary>
           <dl>
-            <dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd>
+            <dt>Пароль</dt><dd className="mono">{'—'}</dd>
             <dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd>
             <dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd>
             <dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd>
