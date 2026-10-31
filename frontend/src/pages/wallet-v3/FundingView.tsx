@@ -53,7 +53,7 @@ export function FundingView({
   const held = balances.filter(b => Number(b.available) + Number(b.locked) > 0);
   const value = simulation ? vta.snapshot?.totalValueUsd : overview?.real.spotValueUsd;
   const totalUsd = viewUnavailable || pendingScope || value == null ? null : Number(value);
-  const spotTitle = lang === 'ru' ? 'Спотовый счёт · VTA / USDT' : 'Spot account · VTA / USDT';
+  const spotTitle = t('wallet.vtaSpotTitle');
 
 
   return (
@@ -61,8 +61,8 @@ export function FundingView({
       <header className="wallet-funding-head flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <h2 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">{simulation ? spotTitle : t('wallet.navFunding')}</h2>
-          <p className="mt-1 text-[13px] text-ink-3">{simulation ? (lang === 'ru' ? 'USDT также учитывается в едином торговом счёте.' : 'USDT is also included in the Unified Trading account.') : t('wallet.fundingSubtitle')}</p>
-          {(vta.snapshot?.account.active || simulation) && <select aria-label={lang === 'ru' ? 'Счёт' : 'Account'} className="mt-3 rounded-w border border-hair bg-panel px-3 py-2 text-[13px] text-ink" value={scope ?? 'simulation'} onChange={e => setScope(e.target.value as 'real' | 'simulation')}>
+          <p className="mt-1 text-[13px] text-ink-3">{simulation ? t('wallet.vtaUsdtShared') : t('wallet.fundingSubtitle')}</p>
+          {(vta.snapshot?.account.active || simulation) && <select aria-label={t('wallet.accountSelect')} className="mt-3 rounded-w border border-hair bg-panel px-3 py-2 text-[13px] text-ink" value={scope ?? 'simulation'} onChange={e => setScope(e.target.value as 'real' | 'simulation')}>
             <option value="simulation">{spotTitle}</option>
             <option value="real">{t('wallet.navFunding')}</option>
           </select>}
