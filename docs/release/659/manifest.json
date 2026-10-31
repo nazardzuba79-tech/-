@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "observedAt": "2026-10-31T13:16:16.373Z",
+  "observedAt": "2026-10-31T13:26:51.447Z",
   "issue": 659,
   "permission": {
     "merge": false,
@@ -27,8 +27,56 @@
     "api": {
       "healthStatus": "ok",
       "releaseLabel": "3636cf80a44b68cfe023a05618f9ad6d1c2e0a11",
-      "completeInstalledSource": "NOT_VERIFIED",
-      "reason": "Overlay label is not whole-image attestation; OS console framebuffer unavailable"
+      "completeInstalledSource": "PARTIAL_ATTESTATION",
+      "reason": "SSH succeeded with existing key and strict known-host verification. All five installed compiled #629 modules hash-match exact source emission; packaged TS is stale and not runtime identity. Whole-container source not asserted.",
+      "image": "sha256:362eb750a7a0d7db207c6a3818eaba8006e96b96e829218783550fec05cdd44b",
+      "rollbackImage": "sha256:4e2b59e0b521daa906630ae417ef92536f920621dc214403c4a94f27dbcbaa49",
+      "financialFences": {
+        "compiler": "5.9.3",
+        "source": "70b7ac2ec8ed61bc86796e15530fd81c2504cb3e",
+        "rows": [
+          {
+            "module": "services/WithdrawalService",
+            "transpiledExpectedSha256": "b5fbd7301412712db15674ca40595053dd70fc5825bde1cab88a49b379200470",
+            "installedSha256": "b5fbd7301412712db15674ca40595053dd70fc5825bde1cab88a49b379200470",
+            "exact": true
+          },
+          {
+            "module": "services/OrderService",
+            "transpiledExpectedSha256": "c03a392fd4f90a637e45e7c18a9f30a1457c1aa5cca97732522a098e6be2ef97",
+            "installedSha256": "c03a392fd4f90a637e45e7c18a9f30a1457c1aa5cca97732522a098e6be2ef97",
+            "exact": true
+          },
+          {
+            "module": "services/demoSpotAccess",
+            "transpiledExpectedSha256": "723a5386cf90284af3f6a4ec5a67a0a2490fdc53250e87645baaf6696a9cca26",
+            "installedSha256": "723a5386cf90284af3f6a4ec5a67a0a2490fdc53250e87645baaf6696a9cca26",
+            "exact": true
+          },
+          {
+            "module": "api/routes/adminWithdrawals",
+            "transpiledExpectedSha256": "c904e8c2bfb283c447691d60a29347aaa19163c68288132b6523cf99cd21279a",
+            "installedSha256": "c904e8c2bfb283c447691d60a29347aaa19163c68288132b6523cf99cd21279a",
+            "exact": true
+          },
+          {
+            "module": "api/routes/withdrawals",
+            "transpiledExpectedSha256": "ea9aa95ca1d3f5a6dbc36eb78bca60a6a9308b3c258c30b810be961da5dfbf34",
+            "installedSha256": "ea9aa95ca1d3f5a6dbc36eb78bca60a6a9308b3c258c30b810be961da5dfbf34",
+            "exact": true
+          }
+        ]
+      },
+      "flags": {
+        "DEMO_SPOT_ENABLED": true,
+        "DEMO_LIQUIDITY_ENABLED": true,
+        "DEMO_WITHDRAWAL_GUARD_ENABLED": true,
+        "WALLET_CONVERSION_ENABLED": "UNSET",
+        "evidence": "selected production_config and /proc/1/environ; no changes",
+        "warning": "Historical all-OFF assumption is false. Do not toggle automatically."
+      },
+      "bootstrapSha256": "1a76646d2a0987b9560cb70d2cabe870656b9eab1d7e698d764b2a9aee631866",
+      "egressGuardSha256": "55e1ecbb4ed1bb9a206e0da241296b3fda26cf65405bbd5efed4813bdbb92499"
     },
     "worker": {
       "deployment": "8288c972-cebe-469e-b12f-034f818e6bdc",
@@ -49,19 +97,77 @@
       "power": "ON",
       "providerBackups": "DISABLED",
       "providerSnapshots": 0,
-      "osDiskRamDockerWalBackupTimer": "NOT_VERIFIED",
+      "osDiskRamDockerWalBackupTimer": "VERIFIED_READ_ONLY",
       "metricsWindowUtc": [
         "2026-10-31T12:43:26.689Z",
         "2026-10-31T12:48:26.689Z"
       ],
       "cpuMeanPercent": 18.208809,
-      "cpuMaxPercent": 49.724063
+      "cpuMaxPercent": 49.724063,
+      "availableMemoryBytes": 2648240128,
+      "swapBytes": 0,
+      "rootDisk": {
+        "used": "22GiB",
+        "available": "15GiB",
+        "usePercent": 61
+      },
+      "apiMemory": {
+        "usedMiB": 454.2,
+        "limitBytes": 1572864000
+      },
+      "postgres": {
+        "version": "18.6",
+        "containerLimitGiB": 1.562,
+        "maxConnections": 100,
+        "connectionsObserved": 14,
+        "activeObserved": 1,
+        "sharedBuffersMiB": 128,
+        "workMemMiB": 4,
+        "maintenanceWorkMemMiB": 64,
+        "effectiveCacheSizeGiB": 4,
+        "walObserved": "80MB"
+      },
+      "oomSince": "2026-10-30T00:00:00Z: no kernel entries",
+      "backup": {
+        "dailyTimer": "active waiting",
+        "lastDailyResult": "success",
+        "lastDailyUtc": "2026-10-31T03:23:52Z",
+        "offsitePeriod": "6h",
+        "retainedEncryptedCopies": [
+          {
+            "label": "r2-20261031T062652Z",
+            "createdAt": "2026-10-31T06:28:17.960137+00:00",
+            "encryptedBytes": 264345600,
+            "ciphertextSha256": "36a26361b5cfd2aeca04b08498e40b49903b722781245d5e178232de3197ac48",
+            "hashMatchesReceipt": true,
+            "verifiedDump": {
+              "sha256": "261f341309daf5a8e606eb80e3dc5ae98f3081afaa529c740e547f106380d4ab",
+              "bytes": 264037799,
+              "method": "pg_restore --file=/dev/null"
+            }
+          },
+          {
+            "label": "r2-20261031T122827Z",
+            "createdAt": "2026-10-31T12:30:09.305644+00:00",
+            "encryptedBytes": 264980480,
+            "ciphertextSha256": "d8bf1f66f94ad7170e0a0fbabe844b4ab319c9a3c87a7bf9057129d0de61a155",
+            "hashMatchesReceipt": true,
+            "verifiedDump": {
+              "sha256": "f73aa91d4a3374453815a202063df84d00a0b74411ff95eb353399092ca55575",
+              "bytes": 264675318,
+              "method": "pg_restore --file=/dev/null"
+            }
+          }
+        ],
+        "freshRestoreExecuted": false,
+        "note": "Retained local encrypted offsite copies hash-match receipts. Stored verification method pg_restore --file=/dev/null; no live restore or remote-object redownload claimed."
+      }
     }
   },
   "candidates": [
     {
       "pr": 660,
-      "sha": "5c8cb5d901a403f782bb4e7c6d5f4410345cba3d",
+      "sha": "ca1893e0df500af5cea93913d37704d1fb0e2da8",
       "runtimeScope": [
         "frontend/src/pages/BankingPage.tsx"
       ],
@@ -80,7 +186,8 @@
         656
       ],
       "productionStatus": "TARGET_ALREADY_PERSISTED_NO_IMPORT",
-      "blocker": "Cloudflare CI Pages403 gate; no blind old-base deploy"
+      "blocker": "Cloudflare CI Pages403 gate; no blind old-base deploy",
+      "codeStatus": "21_SUCCESS_1_CLOUDFLARE_CREDENTIAL_FAILURE"
     },
     {
       "pr": 661,
@@ -258,7 +365,8 @@
     },
     "readOnlyGuard": {
       "passed": 6,
-      "scope": "policy and real Chromium loopback negative control"
+      "scope": "policy and real Chromium loopback negative control",
+      "ci": "PASS at479a8e916bd16bb2af4489257ed0cd4ce302ffe6; current documentation follow-up requires fresh final-head CI"
     },
     "seo": {
       "status": "HTTP_PASS",
@@ -340,6 +448,26 @@
     {
       "path": "G:/Codex/voltex-evidence659/banking-browser-fixed/report.json",
       "sha256": "9fc4013c8f1882e854ebfe7ff29416004754c25e13a9890ffb538d41dbf0ae02"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-host-inventory.log",
+      "sha256": "d6f7f1f0fb2ee4b93a6a23ddd4d6a26717c5fd8ea93153b9bab6953503883b01"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-runtime-details.log",
+      "sha256": "90983c2108a2f159eea0488b66e0e6e85cd4742abf31d482eefa74c9751d2408"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-effective-flags.log",
+      "sha256": "b843f711fc4ea1f984ed9515d5ed86c8b0e9334c93636a752e1396540e4e32ff"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-backup-hashes.jsonl",
+      "sha256": "56ff1ca69ac8e3acf42ad504d439a54ebb674e7dd290b666926a2eb98672c507"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/financial-compiled-comparison.json",
+      "sha256": "b6974898dafb1ff9c747c1c980abf633113af4c83f8abeacffdba428218795e6"
     }
   ]
 }

@@ -7517,3 +7517,7 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 ## 2026-10-31 — #659 operations release gates and read-only guard
 
 Added disposable browser guard with forced service-worker block and six tests including real Chromium negative control. Release manifest separates Pages metadata9ed179c6 from unmatching served entry/release receipt21b10560, preventing an unproven whole-main release. Actual ECLAVO already published; old Draft plan superseded in #628. Banking #660 and infra-only Stocks #661 separate; Stocks A/A calibration +40.72% failed, workload skipped. Beget remains STOPPED. No merge/deploy/start/financial activation; Claude-owned UI untouched. See docs/release/659/README.md and manifest.json for exact references and rollback.
+
+### #659 fresh read-only SSH evidence supersedes console-access blocker
+
+Existing SSH key with strict host checking reached voltex-prod. Verified actual disk/RAM, Docker image362eb750a7a0, rollback4e2b59e0b521, PG18.6/14connections/80MB WAL, active successful backup timers and two encrypted backup hashes. Five installed compiled #629 modules EXACTLY match TypeScript emission from70b7ac2; packaged TS is stale. Demo Spot/Liquidity/Withdrawal Guard are TRUE in both config and process-start environment; do not claim all OFF or switch them automatically. Wallet Conversion UNSET, frontend metadata false. No fresh restore/deploy/financial mutation. Manifest updated; frontend served-artifact provenance remains a release blocker.
