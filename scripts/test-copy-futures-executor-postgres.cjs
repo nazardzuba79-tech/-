@@ -17,10 +17,10 @@ const {FuturesDemoObserverService}=require('../src/services/copyTrading/FuturesD
 const {FuturesDemoFollowerExecutor}=require('../src/services/copyTrading/FuturesDemoFollowerExecutor');
 const {FuturesCopyGuardError}=require('../src/services/copyTrading/FuturesCopyCommitGuard');
 const db=new PrismaClient({datasources:{db:{url}}});
-const leader=randomUUID(),follower=randomUUID(),viewer=randomUUID();
+const leader=randomUUID(),follower=randomUUID(),viewer=randomUUID(),second=randomUUID();
 process.env.PRIVATE_TRADING_ENABLED='true';
 process.env.PRIVATE_TRADING_OWNER_ID=leader;
-process.env.PRIVATE_TRADING_TEST_USER_IDS=follower;
+process.env.PRIVATE_TRADING_TEST_USER_IDS=follower+','+second;
 process.env.COPY_FUTURES_DEMO_APPROVED_LEADER_IDS=leader;
 const clock=new Clock(H0+5*H+5*M+30000),market=new FakeMarket(clock);
 const repo=new PrismaNativeRepository(db,()=>({enabled:true,ownerId:leader}));
@@ -51,7 +51,7 @@ async function main(){
   assert.equal(futuresDemoObserverEnabled({NODE_ENV:'production',COPY_FUTURES_DEMO_OBSERVER_ENABLED:'true'}),false);
   await refuse(()=>new FuturesDemoFollowerExecutor(db,native,()=>false).begin(follower,'fake',limits),'FUTURES_COPY_EXECUTOR_OFF');
  });
- for(const [id,role] of [[leader,'ADMIN'],[follower,'USER'],[viewer,'USER']]){
+ for(const [id,role] of [[leader,'ADMIN'],[follower,'USER'],[viewer,'USER'],[second,'USER']]){
   await db.user.create({data:{id,email:id+'@example.invalid',passwordHash:'fixture',role,referralCode:id.replaceAll('-','').slice(0,18)}});
   sessions[id]=(await db.session.create({data:{userId:id}})).id;
   await db.demoBalance.create({data:{userId:id,asset:'USDT',available:'10000'}});
@@ -61,6 +61,8 @@ async function main(){
  await native.initialize(q(leader),'fixture-initialize-leader');
  await native.initialize(q(follower),'fixture-initialize-follower');
  await native.command(q(follower),{kind:'REFRESH',idempotencyKey:'fixture-admit-native-session'}, {persist:true});
+ await native.initialize(q(second),'fixture-initialize-second');
+ await native.command(q(second),{kind:'REFRESH',idempotencyKey:'fixture-admit-second-session'}, {persist:true});
  const beforeFinancial=await financial();
  await check('watchlist/observer does not grant consent, and wrong session is refused',async()=>{
   await refuse(()=>copy.begin(follower,sessions[follower],limits),'OBSERVATION_REQUIRED');
@@ -141,9 +143,61 @@ async function main(){
   const before=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:follower}});
   assert.equal((await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:follower}})).revision,before.revision);
  });
+ // A NativeDemo commit whose response is lost (transport reset, restart) must be
+ // recovered from its own receipt on retry: never re-executed, never journaled
+ // as a refusal although the follower's position really changed.
+ const lostResponse=new FuturesDemoFollowerExecutor(db,{command:async(...args)=>{
+  await native.command(...args);throw new Error('fixture: connection reset after commit');
+ }},()=>true);
+ const openPositions=async id=>(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:id}}))
+  .payload.snapshot.positions.filter(p=>p.status==='OPEN');
+ const revisions=id=>db.nativeDemoRevision.count({where:{userId:id}});
+ let secondSource;
+ await check('lost response after a committed OPEN is recovered once on retry',async()=>{
+  await observer.subscribe(second,sessions[second],'VX-001',{maxLeverage:'3',maxFillUsdt:'6000'});
+  await copy.begin(second,sessions[second],limits);
+  clock.t+=M+100;
+  secondSource=(await placeLeader()).positions[0].id;
+  assert.equal((await observer.scan(second,sessions[second])).accepted,1);
+  const before=await revisions(second);
+  await assert.rejects(()=>lostResponse.drainOne(second,sessions[second]),/connection reset/);
+  assert.equal(await revisions(second),before+1,'the command committed before the response was lost');
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{consent:{userId:second}}}),0);
+  const retried=await copy.drainOne(second,sessions[second]);
+  assert.equal(retried.status,'APPLIED');assert.equal(retried.filledQuantity,'0.1');
+  assert.equal(await revisions(second),before+1,'retry must not execute a second OPEN');
+  assert.equal((await openPositions(second)).length,1);
+  assert.equal((await copy.drainOne(second,sessions[second])).status,'EMPTY');
+ });
+ await check('lost response after a committed CLOSE is recorded as applied, not refused',async()=>{
+  clock.t+=M+100;
+  await native.command(q(leader),{kind:'CLOSE',positionId:secondSource,quantity:'0.1',idempotencyKey:'leader-close-'+randomUUID()});
+  assert.equal((await observer.scan(second,sessions[second])).accepted,1);
+  const before=await revisions(second);
+  await assert.rejects(()=>lostResponse.drainOne(second,sessions[second]),/connection reset/);
+  assert.equal(await revisions(second),before+1);
+  assert.equal((await openPositions(second)).length,0);
+  const retried=await copy.drainOne(second,sessions[second]);
+  assert.equal(retried.status,'APPLIED',JSON.stringify(retried));
+  assert.equal(retried.filledQuantity,'0.1');
+  assert.equal(await revisions(second),before+1,'retry must not execute a second CLOSE');
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{consent:{userId:second},status:'APPLIED'}}),2);
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{consent:{userId:second},status:'REJECTED'}}),0);
+ });
+ await check('withdrawn leader consent and a revoked follower session stop delivery',async()=>{
+  clock.t+=M+100;
+  await placeLeader();
+  assert.equal((await observer.scan(second,sessions[second])).accepted,1);
+  const before=await revisions(second);
+  await refuse(()=>new FuturesDemoFollowerExecutor(db,native,()=>true,()=>false).drainOne(second,sessions[second]),'SOURCE_CONSENT_REVOKED');
+  await db.session.update({where:{id:sessions[second]},data:{revokedAt:new Date()}});
+  await refuse(()=>copy.drainOne(second,sessions[second]),'FUTURES_COPY_ACCESS_DENIED');
+  assert.equal(await revisions(second),before,'no follower command after a refusal');
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{consent:{userId:second}}}),2,'nothing journaled');
+ });
  await check('real orders and balances untouched; demo balances not topped up by copy',async()=>{
   assert.equal(await financial(),beforeFinancial);
-  assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),2);
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),4);
  });
  console.log(checks.length+' isolated PostgreSQL copy Futures executor checks PASS');
 }

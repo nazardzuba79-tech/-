@@ -136,6 +136,14 @@ export class FuturesDemoFollowerExecutor {
         await receipt('REJECTED',reason,null,null);
         return {status:'REJECTED' as const,reason,sourceEventId:source.sourceEventId};
       };
+      const reconcile=(applied:{revision:number;payload:Prisma.JsonValue})=>
+        this.reconcileReceipt(tx,userId,source.kind,source.sourceEventId,applied,receipt);
+      // A previous attempt may have committed this exact command and lost its
+      // response (transport reset, restart, transaction timeout). Its receipt is
+      // the answer: re-running the pre-checks against the CHANGED position would
+      // refuse a CLOSE that really happened, or re-send an OPEN.
+      const committed=await tx.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId,requestKey:key}}});
+      if(committed)return reconcile(committed);
       if(!sourceQuantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
       // The observer table is only a receipt index, not an execution oracle.
       // Re-verify the exact source fill against the immutable NativeDemo
@@ -219,22 +227,28 @@ export class FuturesDemoFollowerExecutor {
       }
       const applied=await tx.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId,requestKey:key}}});
       if(!applied)throw new FuturesCopyExecutionError('COPY_NATIVE_CONFIRMATION_UNKNOWN',503);
-      const previous=await tx.nativeDemoRevision.findUnique({where:{userId_revision:{userId,revision:applied.revision-1}}});
-      if(!previous)throw new FuturesCopyExecutionError('COPY_NATIVE_PREVIOUS_REVISION_MISSING',503);
-      const before=inflate(previous.payload as unknown as NativeAccount);
-      const after=inflate(applied.payload as unknown as NativeAccount);
-      const old=new Set(before.snapshot.events.map(e=>e.id));
-      const added=after.snapshot.events.filter(e=>!old.has(e.id)&&e.kind===source.kind);
-      // Defense in depth: the internal commitGuard already validated the
-      // new events in the same simulated financial CAS transaction.
-      if(!added.length||new Set(added.map(e=>e.positionId)).size!==1)
-        throw new FuturesCopyExecutionError('COPY_NATIVE_RECEIPT_UNRECONCILED',503);
-      const qty=added.reduce((sum,e)=>sum.plus(e.quantity),n('0'));
-      const followerPositionId=added[0].positionId;
-      if(!followerPositionId)throw new FuturesCopyExecutionError('COPY_NATIVE_RECEIPT_UNRECONCILED',503);
-      await receipt('APPLIED',null,followerPositionId,qty.toFixed());
-      return {status:'APPLIED' as const,sourceEventId:source.sourceEventId,
-        followerPositionId,filledQuantity:qty.toFixed(),automaticProductionCopying:false};
+      return reconcile(applied);
     },{timeout:60000,maxWait:10000});
+  }
+  /** Journal a committed follower command from its own NativeDemo receipt. */
+  private async reconcileReceipt(tx:Tx,userId:string,kind:string,sourceEventId:string,
+    applied:{revision:number;payload:Prisma.JsonValue},
+    receipt:(status:'APPLIED',reason:null,positionId:string,quantity:string)=>Promise<unknown>){
+    const previous=await tx.nativeDemoRevision.findUnique({where:{userId_revision:{userId,revision:applied.revision-1}}});
+    if(!previous)throw new FuturesCopyExecutionError('COPY_NATIVE_PREVIOUS_REVISION_MISSING',503);
+    const before=inflate(previous.payload as unknown as NativeAccount);
+    const after=inflate(applied.payload as unknown as NativeAccount);
+    const old=new Set(before.snapshot.events.map(e=>e.id));
+    const added=after.snapshot.events.filter(e=>!old.has(e.id)&&e.kind===kind);
+    // Defense in depth: the internal commitGuard already validated the
+    // new events in the same simulated financial CAS transaction.
+    if(!added.length||new Set(added.map(e=>e.positionId)).size!==1)
+      throw new FuturesCopyExecutionError('COPY_NATIVE_RECEIPT_UNRECONCILED',503);
+    const qty=added.reduce((sum,e)=>sum.plus(e.quantity),n('0'));
+    const followerPositionId=added[0].positionId;
+    if(!followerPositionId)throw new FuturesCopyExecutionError('COPY_NATIVE_RECEIPT_UNRECONCILED',503);
+    await receipt('APPLIED',null,followerPositionId,qty.toFixed());
+    return {status:'APPLIED' as const,sourceEventId,
+      followerPositionId,filledQuantity:qty.toFixed(),automaticProductionCopying:false};
   }
 }
