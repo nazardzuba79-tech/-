@@ -60,7 +60,10 @@ pageSource = pageSource
   .replace("from '../components/Nav';", `from ${JSON.stringify(navMock)};`)
   .replace("from '../lib/bankingApi';", `from ${JSON.stringify(apiMock)};`)
   .replace("import './banking/BankingPage.css';", `import ${JSON.stringify(bankingCssPath)};`)
-  .replace("import './banking/BankingReadability.css';", `import ${JSON.stringify(bankingReadabilityCssPath)};`);
+  .replace("import './banking/BankingReadability.css';", `import ${JSON.stringify(bankingReadabilityCssPath)};`)
+  // The preview copy lives in a temp dir: point the page's remaining relative
+  // imports (referral links, clipboard, …) back at the real source tree.
+  .replace(/from '\.\.\/([^']+)';/g, (_, rel) => `from ${JSON.stringify(path.join(frontend, 'src', rel))};`);
 fs.writeFileSync(pagePreviewPath, pageSource);
 
 const entry = `

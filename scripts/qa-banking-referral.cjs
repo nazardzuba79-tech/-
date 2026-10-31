@@ -5,7 +5,7 @@
  * BankingPage.tsx against preview fixtures — so what is measured here is the
  * shipped component, not a mock of it. Fixture data only; no account, no money.
  */
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -65,7 +65,8 @@ async function main() {
     check(`${vp.name} referral states 20% от прибыли`, /20%/.test(text) && /от прибыли/.test(text), 'missing');
     check(`${vp.name} referral never says от депозита`, !/от депозита|от оборота|от суммы размещения/.test(text), 'forbidden wording present');
     const link = await page.$eval('.banking-referral-link code', el => el.textContent || '');
-    check(`${vp.name} referral link uses the real origin and code`, link === `http://127.0.0.1:${PORT}/PREVIEW1`, link);
+    // Referral links always use a trusted public origin (World by default), never the host serving the page.
+    check(`${vp.name} referral link uses the trusted origin and code`, link === 'https://voltextech.net/PREVIEW1', link);
     const copy = await page.$('.banking-referral-link button');
     check(`${vp.name} copy button present and enabled`, !!copy && !(await copy.isDisabled()), 'missing or disabled');
     check(`${vp.name} referred count is the real 2`, /Рефералов\s*\n?\s*2/.test(text), text.match(/Рефералов[\s\S]{0,12}/)?.[0] ?? '');
