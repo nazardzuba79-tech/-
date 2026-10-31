@@ -8176,3 +8176,7 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - **Fix:** the message is removed (7 languages); the ticket of an indicative row shows the existing indicative/delay label (Solana pool or MOEX) instead of the order form; the source panel keeps that label only. Orders stay refused server-side (`INDICATIVE_ONLY`). Localization count 182 → 181 (one message fewer, the guard itself unchanged). The manual QA script and `docs/STOCKS_613_DEMO_INDICATIVE.md` now expect no demo wording.
 - **Tests run:** `plainLanguage` + `stockLocalization` + `customerFacingErrors` 81/81; Stocks frontend Jest 28 suites / 300; frontend `tsc`. The live browser QA script was not re-run for this text change.
 - **Separate:** Server idle / idle failed on b67c8d71 in `serverWatcherSleep.pg.test.ts` (CFD loop scan seen within 600 ms after sleep) — code this PR does not touch; passed on 22e82239; re-run once, see the PR comment.
+
+## 2026-10-31 — Codex — #659 isolated Stocks infrastructure measurement
+- Retargeted only the PUSH_DIAGNOSTIC runtime pin to actual PR613 HEAD ad833ee6. Original polling baseline, 5% threshold, placement proof, A/A calibration, six measured runs and financial/no-mutation assertions unchanged. Existing workflow now notices pin changes; commit request still required.
+- Runtime source unchanged. No production load, Stocks activation, paid rescale, merge or deploy. This run is diagnostic, never production capacity acceptance; latest prior current-head workflow skipped all workload jobs.
