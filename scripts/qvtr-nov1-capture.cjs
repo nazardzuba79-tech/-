@@ -19,5 +19,5 @@ const {buildQvtrNov1Isolated,previewQvtrNov1Price,NOV1_PEAK_AT,NOV1_CORRECTION_E
   observations.sort((a,b)=>a.time.localeCompare(b.time));
   const fd=fs.openSync(path.join(dirname,'review.json'),'wx',0o600);
   try{fs.writeFileSync(fd,JSON.stringify({review,observations,source:'OFFLINE_MODEL_NOT_MARKET_QUOTE',executable:false,promotionAllowed:false},null,2));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
-  console.log(JSON.stringify({mode:'ISOLATED_QVTR_REVIEW_ONLY',start:new Date(review.effectiveAt).toISOString(),anchor:review.observed.lastPrice,peak:new Date(NOV1_PEAK_AT).toISOString(),peakPrice:review.peakPrice,correctionPrice:review.correctionPrice,dir:dirname,promotionAllowed:false}));
+  console.log(JSON.stringify({mode:'ISOLATED_QVTR_REVIEW_ONLY',start:new Date(review.effectiveAt).toISOString(),observedLastPrice:review.observed.lastPrice,projectedTickAnchor:review.modeledFutureAnchor,peak:new Date(NOV1_PEAK_AT).toISOString(),peakPrice:review.peakPrice,correctionPrice:review.correctionPrice,dir:dirname,promotionAllowed:false}));
 })().catch(e=>{console.error('QVTR NOV1 isolated capture:',e.message);process.exitCode=1});
