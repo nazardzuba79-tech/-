@@ -207,6 +207,9 @@ test('CopyTradingPage preserves the approved base except the exact display-only 
   // marketplace data, financial adapters, routing and eligibility unchanged.
   let text = restoreCopyCheckPage(source('frontend/src/pages/CopyTradingPage.tsx'));
   const additions = [
+    "import { StrategySocialProvider } from './copy-trading-bolt/StrategySocials';\n",
+    '            <StrategySocialProvider identities={identities}>\n',
+    '            </StrategySocialProvider>\n',
     "import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';\n",
     '            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>\n',
     '            </DemoRoiProvider>\n',
