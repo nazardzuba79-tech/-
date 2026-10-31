@@ -7513,3 +7513,15 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - On top of the session-authority commits and the main `fed5ee6a` merge pushed from the owner's account (2e1b71cd…a9c6fce9, kept as is; an independent local merge of the same main gave a byte-identical tree apart from this file). Main's overlapping changes (SIMUSDT valuation in WalletPortfolioService, History20 router in src/index.ts) need nothing here: conversion admission already refuses SIMUSDT-settled assets via `isTestAssetPairOrSymbol`.
 - `scripts/test-wallet-conversion-postgres.cjs` +2 checks: a bearer without `sid`, or without `exp`, is refused at confirm (401 SESSION_REVOKED, nothing moves); ordinary Spot limit bids (`OrderService`) and conversions racing on one Balance never overdraw, and the USDT hold equals the open orders.
 - Verified locally on the merged tree (disposable PostgreSQL, synthetic users): backend tsc/build, frontend tsc + flagged build; Jest 322/322 (conversion, portfolio, adjustments, deposits, OrderService, wallet UI, fingerprints, i18n); Balance fixture 29/29 + browser (flag ON) and default-OFF browser; DemoBalance fixture 27/27. No flag enabled, no deploy, no production data.
+
+## 2026-10-31 — #659 operations release gates and read-only guard
+
+Added disposable browser guard with forced service-worker block and six tests including real Chromium negative control. Release manifest separates Pages metadata9ed179c6 from unmatching served entry/release receipt21b10560, preventing an unproven whole-main release. Actual ECLAVO already published; old Draft plan superseded in #628. Banking #660 and infra-only Stocks #661 separate; Stocks A/A calibration +40.72% failed, workload skipped. Beget remains STOPPED. No merge/deploy/start/financial activation; Claude-owned UI untouched. See docs/release/659/README.md and manifest.json for exact references and rollback.
+
+### #659 fresh read-only SSH evidence supersedes console-access blocker
+
+Existing SSH key with strict host checking reached voltex-prod. Verified actual disk/RAM, Docker image362eb750a7a0, rollback4e2b59e0b521, PG18.6/14connections/80MB WAL, active successful backup timers and two encrypted backup hashes. Five installed compiled #629 modules EXACTLY match TypeScript emission from70b7ac2; packaged TS is stale. Demo Spot/Liquidity/Withdrawal Guard are TRUE in both config and process-start environment; do not claim all OFF or switch them automatically. Wallet Conversion UNSET, frontend metadata false. No fresh restore/deploy/financial mutation. Manifest updated; frontend served-artifact provenance remains a release blocker.
+
+### #659 final operator-guard regression and SEO access
+
+Confirmed and fixed an encoded dot-segment bypass of the static-directory allowlist; RED before correction, six tests GREEN afterward. Google session lacks domain-property access; Yandex official endpoint DNS fails. No verification/DNS/submission changes. Final Banking headca1893e0 has78 browser checks and4967 frontend tests PASS; final remaining workflows must complete before readiness is asserted.

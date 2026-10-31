@@ -1,0 +1,481 @@
+{
+  "schema": 1,
+  "observedAt": "2026-10-31T13:35:32.374Z",
+  "issue": 659,
+  "permission": {
+    "merge": false,
+    "deploy": false,
+    "migrate": false,
+    "financialWrites": false,
+    "startBeget": false,
+    "activateStocks": false
+  },
+  "main": "c1f13828c5d398c6792c2a20be551a7132ecf77a",
+  "production": {
+    "pages": {
+      "deployment": "8ac0fa93-4230-408c-a7a5-f8c29cb4ebee",
+      "metadataSource": "9ed179c697ea86dc6fb97dbbfa5b8674705f2e57",
+      "publicBuildSource": "21b105602e5c79d32d2f9fe82b3c110171e22a33",
+      "servedEntry": "/assets/index-wS4Z9N50.js",
+      "servedEntrySha256": "3f7a3a730be51bd7c78ee55bea12830dcac603fe7f505966a43806507a6fe1cb",
+      "expectedCiEntry": "/assets/index-oD3uJukg.js",
+      "ciArtifact": 12959472968,
+      "identity": "SOURCE_UNATTESTED",
+      "productionAutoDeploy": false,
+      "preview": "none"
+    },
+    "api": {
+      "healthStatus": "ok",
+      "releaseLabel": "3636cf80a44b68cfe023a05618f9ad6d1c2e0a11",
+      "completeInstalledSource": "PARTIAL_ATTESTATION",
+      "reason": "SSH succeeded with existing key and strict known-host verification. All five installed compiled #629 modules hash-match exact source emission; packaged TS is stale and not runtime identity. Whole-container source not asserted.",
+      "image": "sha256:362eb750a7a0d7db207c6a3818eaba8006e96b96e829218783550fec05cdd44b",
+      "rollbackImage": "sha256:4e2b59e0b521daa906630ae417ef92536f920621dc214403c4a94f27dbcbaa49",
+      "financialFences": {
+        "compiler": "5.9.3",
+        "source": "70b7ac2ec8ed61bc86796e15530fd81c2504cb3e",
+        "rows": [
+          {
+            "module": "services/WithdrawalService",
+            "transpiledExpectedSha256": "b5fbd7301412712db15674ca40595053dd70fc5825bde1cab88a49b379200470",
+            "installedSha256": "b5fbd7301412712db15674ca40595053dd70fc5825bde1cab88a49b379200470",
+            "exact": true
+          },
+          {
+            "module": "services/OrderService",
+            "transpiledExpectedSha256": "c03a392fd4f90a637e45e7c18a9f30a1457c1aa5cca97732522a098e6be2ef97",
+            "installedSha256": "c03a392fd4f90a637e45e7c18a9f30a1457c1aa5cca97732522a098e6be2ef97",
+            "exact": true
+          },
+          {
+            "module": "services/demoSpotAccess",
+            "transpiledExpectedSha256": "723a5386cf90284af3f6a4ec5a67a0a2490fdc53250e87645baaf6696a9cca26",
+            "installedSha256": "723a5386cf90284af3f6a4ec5a67a0a2490fdc53250e87645baaf6696a9cca26",
+            "exact": true
+          },
+          {
+            "module": "api/routes/adminWithdrawals",
+            "transpiledExpectedSha256": "c904e8c2bfb283c447691d60a29347aaa19163c68288132b6523cf99cd21279a",
+            "installedSha256": "c904e8c2bfb283c447691d60a29347aaa19163c68288132b6523cf99cd21279a",
+            "exact": true
+          },
+          {
+            "module": "api/routes/withdrawals",
+            "transpiledExpectedSha256": "ea9aa95ca1d3f5a6dbc36eb78bca60a6a9308b3c258c30b810be961da5dfbf34",
+            "installedSha256": "ea9aa95ca1d3f5a6dbc36eb78bca60a6a9308b3c258c30b810be961da5dfbf34",
+            "exact": true
+          }
+        ]
+      },
+      "flags": {
+        "DEMO_SPOT_ENABLED": true,
+        "DEMO_LIQUIDITY_ENABLED": true,
+        "DEMO_WITHDRAWAL_GUARD_ENABLED": true,
+        "WALLET_CONVERSION_ENABLED": "UNSET",
+        "evidence": "selected production_config and /proc/1/environ; no changes",
+        "warning": "Historical all-OFF assumption is false. Do not toggle automatically."
+      },
+      "bootstrapSha256": "1a76646d2a0987b9560cb70d2cabe870656b9eab1d7e698d764b2a9aee631866",
+      "egressGuardSha256": "55e1ecbb4ed1bb9a206e0da241296b3fda26cf65405bbd5efed4813bdbb92499"
+    },
+    "worker": {
+      "deployment": "8288c972-cebe-469e-b12f-034f818e6bdc",
+      "version": "f3a02fb5-60e0-4efa-bc3e-d48e5ecd02a2",
+      "percent": 100,
+      "sourceSha": "NOT_VERIFIED"
+    },
+    "beget": {
+      "status": "STOPPED",
+      "manageEnabled": false,
+      "action": "DEFERRED_BY_OWNER"
+    },
+    "hetzner": {
+      "serverType": "CX23",
+      "vcpu": 2,
+      "ramQuotaGiB": 4,
+      "diskQuotaGB": 40,
+      "power": "ON",
+      "providerBackups": "DISABLED",
+      "providerSnapshots": 0,
+      "osDiskRamDockerWalBackupTimer": "VERIFIED_READ_ONLY",
+      "metricsWindowUtc": [
+        "2026-10-31T12:43:26.689Z",
+        "2026-10-31T12:48:26.689Z"
+      ],
+      "cpuMeanPercent": 18.208809,
+      "cpuMaxPercent": 49.724063,
+      "availableMemoryBytes": 2648240128,
+      "swapBytes": 0,
+      "rootDisk": {
+        "used": "22GiB",
+        "available": "15GiB",
+        "usePercent": 61
+      },
+      "apiMemory": {
+        "usedMiB": 454.2,
+        "limitBytes": 1572864000
+      },
+      "postgres": {
+        "version": "18.6",
+        "containerLimitGiB": 1.562,
+        "maxConnections": 100,
+        "connectionsObserved": 14,
+        "activeObserved": 1,
+        "sharedBuffersMiB": 128,
+        "workMemMiB": 4,
+        "maintenanceWorkMemMiB": 64,
+        "effectiveCacheSizeGiB": 4,
+        "walObserved": "80MB"
+      },
+      "oomSince": "2026-10-30T00:00:00Z: no kernel entries",
+      "backup": {
+        "dailyTimer": "active waiting",
+        "lastDailyResult": "success",
+        "lastDailyUtc": "2026-10-31T03:23:52Z",
+        "offsitePeriod": "6h",
+        "retainedEncryptedCopies": [
+          {
+            "label": "r2-20261031T062652Z",
+            "createdAt": "2026-10-31T06:28:17.960137+00:00",
+            "encryptedBytes": 264345600,
+            "ciphertextSha256": "36a26361b5cfd2aeca04b08498e40b49903b722781245d5e178232de3197ac48",
+            "hashMatchesReceipt": true,
+            "verifiedDump": {
+              "sha256": "261f341309daf5a8e606eb80e3dc5ae98f3081afaa529c740e547f106380d4ab",
+              "bytes": 264037799,
+              "method": "pg_restore --file=/dev/null"
+            }
+          },
+          {
+            "label": "r2-20261031T122827Z",
+            "createdAt": "2026-10-31T12:30:09.305644+00:00",
+            "encryptedBytes": 264980480,
+            "ciphertextSha256": "d8bf1f66f94ad7170e0a0fbabe844b4ab319c9a3c87a7bf9057129d0de61a155",
+            "hashMatchesReceipt": true,
+            "verifiedDump": {
+              "sha256": "f73aa91d4a3374453815a202063df84d00a0b74411ff95eb353399092ca55575",
+              "bytes": 264675318,
+              "method": "pg_restore --file=/dev/null"
+            }
+          }
+        ],
+        "freshRestoreExecuted": false,
+        "note": "Retained local encrypted offsite copies hash-match receipts. Stored verification method pg_restore --file=/dev/null; no live restore or remote-object redownload claimed."
+      }
+    }
+  },
+  "candidates": [
+    {
+      "pr": 660,
+      "sha": "ca1893e0df500af5cea93913d37704d1fb0e2da8",
+      "runtimeScope": [
+        "frontend/src/pages/BankingPage.tsx"
+      ],
+      "dependencies": [
+        656,
+        657
+      ],
+      "codeStatus": "EXACT_HEAD_CI_PENDING",
+      "productionStatus": "BLOCKED_SOURCE_ATTESTATION",
+      "rollback": "retain Pages deployment 8ac0fa93-4230-408c-a7a5-f8c29cb4ebee; no DB rollback"
+    },
+    {
+      "pr": 628,
+      "sha": "a29f7eea724ec4701d85f1f1bec30f730c465419",
+      "dependencies": [
+        656
+      ],
+      "productionStatus": "TARGET_ALREADY_PERSISTED_NO_IMPORT",
+      "blocker": "Cloudflare CI Pages403 gate; no blind old-base deploy",
+      "codeStatus": "21_SUCCESS_1_CLOUDFLARE_CREDENTIAL_FAILURE"
+    },
+    {
+      "pr": 661,
+      "sha": "c3ddcce7088a4fd9d55d67da6888665f55f26f9f",
+      "runtimeUnderMeasurement": "ad833ee6d16c4c573809fdc14e6fa16a4e371271",
+      "calibrationRun": 41203669740,
+      "calibrationArtifact": 13044351147,
+      "result": "METHOD_NOT_CALIBRATED",
+      "aaDeltaPercent": 40.72,
+      "acceptanceThresholdPercent": 5,
+      "loadResult": "SKIPPED_BY_GATE",
+      "activation": false
+    }
+  ],
+  "unchangedPrInventory": [
+    {
+      "pr": 629,
+      "sha": "70b7ac2ec8ed61bc86796e15530fd81c2504cb3e",
+      "base": "release/demo-off-api-20261023",
+      "branch": "claude/voltex-mobile-audit-7rpjni-api-p0-hotfix",
+      "owner": "existing candidate",
+      "ciAtInventory": {
+        "success": 12
+      }
+    },
+    {
+      "pr": 630,
+      "sha": "1eefd305c9baa05328a3921af41bc9d89c756bd6",
+      "base": "main",
+      "branch": "claude/voltex-mobile-audit-7rpjni-synthetic-floor",
+      "owner": "existing candidate",
+      "ciAtInventory": {
+        "success": 24
+      }
+    },
+    {
+      "pr": 642,
+      "sha": "3636cf80a44b68cfe023a05618f9ad6d1c2e0a11",
+      "base": "main",
+      "branch": "work/referral-five-chars-20261030",
+      "owner": "existing candidate",
+      "ciAtInventory": {
+        "success": 20
+      }
+    },
+    {
+      "pr": 643,
+      "sha": "74140acd5af90756e152b05dec189dd4ec7d264f",
+      "base": "main",
+      "branch": "fix/copy-eligibility-main-sync-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 9
+      }
+    },
+    {
+      "pr": 645,
+      "sha": "f37553656a7237516bdcfe2766a6845b0a8a8e38",
+      "base": "fix/copy-eligibility-main-sync-20261030",
+      "branch": "fix/copy-watchlist-honesty-644-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 8
+      }
+    },
+    {
+      "pr": 646,
+      "sha": "a95080e145f3e94cb0c4f69173eeff64e0949651",
+      "base": "fix/copy-watchlist-honesty-644-20261030",
+      "branch": "feature/copy-demo644-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 30
+      }
+    },
+    {
+      "pr": 647,
+      "sha": "fbbe628fda534ab2ea3aa44b29ce080a203941f7",
+      "base": "feature/copy-demo644-20261030",
+      "branch": "feature/copy-demo644-market-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 10
+      }
+    },
+    {
+      "pr": 648,
+      "sha": "98e2f909f14d0a84590becd02a7902099cb39370",
+      "base": "feature/copy-demo644-market-20261030",
+      "branch": "feature/copy-demo644-futures-events-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 6
+      }
+    },
+    {
+      "pr": 649,
+      "sha": "f33b02b27be5c868c52e5851312af692d9dc71a2",
+      "base": "feature/copy-demo644-futures-events-20261030",
+      "branch": "feature/copy-demo644-futures-inbox-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 25
+      }
+    },
+    {
+      "pr": 650,
+      "sha": "d3c61896293e0e0fb91ca5dab8ee98c44b73e2bf",
+      "base": "feature/copy-demo644-futures-inbox-20261030",
+      "branch": "feature/copy-demo644-futures-observer-ui-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 13
+      }
+    },
+    {
+      "pr": 651,
+      "sha": "7b325aeb950adee59fd2a07b151530a1a5191247",
+      "base": "feature/copy-demo644-futures-observer-ui-20261030",
+      "branch": "feature/copy-demo644-futures-executor-guard-20261030",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 20,
+        "failure": 1
+      }
+    },
+    {
+      "pr": 655,
+      "sha": "f203e44c14ee2add1c75156ca374108578f9baf9",
+      "base": "main",
+      "branch": "claude/voltex-mobile-audit-7rpjni-wallet-locales",
+      "owner": "Claude #658",
+      "ciAtInventory": {
+        "success": 22
+      }
+    },
+    {
+      "pr": 656,
+      "sha": "2bbaca1be203997ba8937b2e4c7f51225a0ee575",
+      "base": "main",
+      "branch": "claude/voltex-mobile-audit-7rpjni-banking-month-end",
+      "owner": "existing candidate",
+      "ciAtInventory": {
+        "success": 2
+      }
+    },
+    {
+      "pr": 657,
+      "sha": "dcd93171663f0403303ed637cabe7878da62a863",
+      "base": "main",
+      "branch": "claude/voltex-mobile-audit-7rpjni-banking-review-stand",
+      "owner": "existing candidate",
+      "ciAtInventory": {
+        "success": 1
+      }
+    }
+  ],
+  "checks": {
+    "bankingMath": {
+      "passed": 100,
+      "scope": "local"
+    },
+    "bankingBrowser": {
+      "passed": 78,
+      "scope": "final Banking head ca1893e0, run41205387417 SUCCESS"
+    },
+    "referralLinks": {
+      "passed": 26,
+      "scope": "trusted origins, malicious inputs, seven-language region dictionaries"
+    },
+    "depositSafety": {
+      "passed": 63,
+      "suites": 4,
+      "scope": "local fixtures; no production credits"
+    },
+    "readOnlyGuard": {
+      "passed": 6,
+      "scope": "policy and real Chromium loopback negative control",
+      "ci": "Final-head CI required after encoded-path regression fix; 6/6 local PASS",
+      "negativeControl": "Encoded traversal allowed before fix (RED); percent/dot-segment normalization now refuses encoded and double-encoded traversal (GREEN)"
+    },
+    "seo": {
+      "status": "HTTP_PASS",
+      "sitemapCount": 42,
+      "indexation": "NOT_VERIFIED",
+      "searchConsole": "Authenticated existing Google session: no access to sc-domain:voltextech.net; no ownership verification or DNS change",
+      "yandex": "Official webmaster.yandex.com endpoint: browser ERR_NAME_NOT_RESOLVED; no authenticated index coverage"
+    },
+    "bankingLive": {
+      "viewports": [
+        1440,
+        390
+      ],
+      "me": 200,
+      "config": 200,
+      "referral": 200,
+      "reloadAuthentication": "PASS",
+      "state": "BLOCKED_BEFORE_NAVIGATION",
+      "settlement": "NOT_VERIFIED",
+      "crossUser": "NOT_VERIFIED"
+    },
+    "priorWalletProbe": {
+      "request": "POST /api/v1/wallet/portfolio-snapshot",
+      "recorded": true,
+      "classification": "analytics write; not read-only; not a balance/ledger write",
+      "cleanup": "NONE"
+    },
+    "bankingFrontend": {
+      "passed": 4967,
+      "suites": 302,
+      "scope": "final Banking head ca1893e0, run41205387586 SUCCESS; two other workflows still running at manifest checkpoint"
+    }
+  },
+  "eclavo": {
+    "activeVersion": 1,
+    "draftRevision": 4,
+    "publishedAt": "2026-10-27T17:48:04.387Z",
+    "listingAt": "2026-11-06T13:00:00Z",
+    "initial": "0.0140",
+    "target": "1.01472",
+    "seed": "eclavo-20261103-v1",
+    "logoSha256": "4f9ffc2f38645beeccf238a2609607064a63f7ef6c2d71018d5fae8aa9ca45a7",
+    "tradable": false,
+    "ownerAllocation": "0",
+    "preview": {
+      "http": 200,
+      "candles": 253,
+      "terminal": "1.01472",
+      "maxHigh": "1.01472"
+    },
+    "countdown": "UI says running; native descriptor null; no timer action"
+  },
+  "localEvidence": [
+    {
+      "path": "G:/Codex/voltex-evidence659/seo-live.json",
+      "sha256": "cb41127ca09e43a93719f3bf472f9958683c38d08ede538f8d0720913323ba15"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-metrics.json",
+      "sha256": "94ff48247bf94c2f771b8cb7a636858e99ec391a217119c024de0c47bc433d55"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/eclavo-live.json",
+      "sha256": "17893c8b5699e075e3bca2ba6f63fa50c62e85681e2e48cc7b1b7627b31533cb"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/eclavo-preview.json",
+      "sha256": "dd1adfadb79d8d2637d9e1de1685035122acdc990f19ca27563b9e53e572f18e"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/frontend-live-identity-comparison.json",
+      "sha256": "2de2941463eb0702d3b49aceb5bb27c766355a776211e22d413ed13322b126b3"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/pages-immutable-identity.json",
+      "sha256": "474f0af1cac0e93e090a1dd91223e88029d16f5a09018d49401c1bc5b56a52fc"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/pages-release-build.json",
+      "sha256": "a1128e7626e137a54ba961dddf9005b8af0c05b382c4f042aec803e2616e4bd3"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/banking-unknown-state.patch",
+      "sha256": "3c2d8371b3a50dbe48ce8f643c9eada522616795581aa67525b804e9410ddae1"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/banking-browser-fixed/report.json",
+      "sha256": "9fc4013c8f1882e854ebfe7ff29416004754c25e13a9890ffb538d41dbf0ae02"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-host-inventory.log",
+      "sha256": "d6f7f1f0fb2ee4b93a6a23ddd4d6a26717c5fd8ea93153b9bab6953503883b01"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-runtime-details.log",
+      "sha256": "90983c2108a2f159eea0488b66e0e6e85cd4742abf31d482eefa74c9751d2408"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-effective-flags.log",
+      "sha256": "b843f711fc4ea1f984ed9515d5ed86c8b0e9334c93636a752e1396540e4e32ff"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/hetzner-backup-hashes.jsonl",
+      "sha256": "56ff1ca69ac8e3acf42ad504d439a54ebb674e7dd290b666926a2eb98672c507"
+    },
+    {
+      "path": "G:/Codex/voltex-evidence659/financial-compiled-comparison.json",
+      "sha256": "b6974898dafb1ff9c747c1c980abf633113af4c83f8abeacffdba428218795e6"
+    }
+  ]
+}
