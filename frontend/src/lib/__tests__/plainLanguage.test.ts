@@ -273,7 +273,7 @@ test('Copy Trading account displays no technical labels but states non-withdrawa
 test('Futures observer has no test/simulation labels and never implies that orders were copied', () => {
   expect(Object.keys(futuresObserverText).sort()).toEqual([...LOCALES].sort());
   const noCopy = { en: /not copy|not copied/i, ru: /не копирую|не копируются/i,
-    es: /no se copian|sin copiar/i, zh: /不复制/, hi: /कॉपी नहीं/, ja: /コピーされません|コピー.*行わず/,
+    es: /no se copian|sin copiar/i, zh: /不会?复制/, hi: /कॉपी नहीं/, ja: /コピーされません|コピー.*行わず/,
     ko: /복사.*없|복사.*하지/ };
   const internalLabels = /demo|sandbox|synthetic|simulat|test.only|демо|тестов|симулир|синтети|práctica|simulad|模拟|测试|डेमो|सिमुल|デモ|シミュレ|데모|모의|시뮬레/i;
   for (const lang of LOCALES) {

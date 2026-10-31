@@ -9,11 +9,15 @@ assert(fs.existsSync(path.join(root, 'index.html')), 'Build flagged review front
 const app = express(); app.use(express.json());
 const endpoint = '/api/v1/copy-trading/futures-demo-observer';
 let subscription = null, events = [], scanned = 0, writes = 0, failGet = false;
-const snapshot = () => ({ mode: 'OBSERVATION_ONLY', automaticCopying: false,
-  subscription, events });
-app.get(endpoint, (_req, res) => {
+// The fixture state belongs to one account. Another session (cross-tab account
+// switch) is answered as a server would answer it: with that account's own
+// empty state, never the first account's subscription or events.
+const owner = req => req.get('authorization') === 'Bearer isolated-review-token';
+const snapshot = req => ({ mode: 'OBSERVATION_ONLY', automaticCopying: false,
+  subscription: owner(req) ? subscription : null, events: owner(req) ? events : [] });
+app.get(endpoint, (req, res) => {
   if (failGet) return res.status(503).json({ code: 'FIXTURE_OUTAGE' });
-  res.json(snapshot());
+  res.json(snapshot(req));
 });
 app.put(endpoint + '/subscription', (req, res) => {
   writes++;
@@ -69,7 +73,7 @@ async function main() {
   try {
     const desktop = await open(1440), page = desktop.page;
     await page.getByText('No observation subscription', {exact:true}).waitFor();
-    await page.getByText('Automatic copying: OFF', {exact:true}).waitFor();
+    await page.getByText('Automatic order copying: OFF', {exact:true}).waitFor();
     await page.getByLabel('Maximum observed leverage').fill('3');
     await page.getByLabel('Maximum observed amount (USDT)').fill('900');
     await page.getByRole('button',{name:'Save observation'}).click();
@@ -95,7 +99,7 @@ async function main() {
     cases.push('390 independent device, stop and desktop synchronization');
     for(const lang of ['ru','zh','es','hi','ja','ko']){
       const {ctx,page} = await open(390,lang);
-      await page.getByText('Automatic copying: OFF',{exact:true}).count().catch(()=>0);
+      await page.getByText('Automatic order copying: OFF',{exact:true}).count().catch(()=>0);
       await page.locator('h1').waitFor();
       assert.ok((await page.locator('h1').innerText()).length>4);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);

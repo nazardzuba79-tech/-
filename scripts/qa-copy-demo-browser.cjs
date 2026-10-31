@@ -31,13 +31,13 @@ async function run({ origin, token, sourceOrder, cancelSource, drain, out }) {
     await page.getByLabel('Maximum order (USDT)', { exact: true }).fill('50');
     await page.getByLabel('Maximum total exposure (USDT)', { exact: true }).fill('100');
     await page.getByRole('button', { name: 'Subscribe / save limits', exact: true }).click();
-    await page.getByText('Active demo subscription', { exact: true }).waitFor();
+    await page.getByText('Subscription active', { exact: true }).waitFor();
     const master = await sourceOrder(); await drain();
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await page.getByText(/BTC\/USDT · BUY · Open/).waitFor();
     await page.reload(); await page.getByText(/BTC\/USDT · BUY · Open/).waitFor();
     await page.screenshot({ path: path.join(out, 'demo-desktop.png'), fullPage: true }); results.push('1440 subscribe, actual DB-backed order, reload');
-    const mobile = await open(390); await mobile.page.getByText('Active demo subscription', { exact: true }).waitFor();
+    const mobile = await open(390); await mobile.page.getByText('Subscription active', { exact: true }).waitFor();
     await mobile.page.getByText(/BTC\/USDT · BUY · Open/).waitFor();
     assert.equal(await mobile.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
     await mobile.page.screenshot({ path: path.join(out, 'demo-mobile.png'), fullPage: true });
