@@ -54,6 +54,7 @@ Preview does not persist a proposal. Only explicit local `append` creates a jour
 - Targeted tests cover observed OHLC parity, immutable historical OHLCV on four intervals, reload, multiple revisions, preview isolation, authorization, CAS, future limits, cap, anchor, tampering, truncation and WAVES endpoints.
 - Browser artifact QA uses Chromium at 1440 and 390, four intervals each, reload, no horizontal overflow, no page errors and zero network requests. This verifies the offline preview only.
 - Exact commit CI builds/screenshots an artifact named with the PR head SHA. No workflow has deployment credentials or a deployment step.
+- The browser workflow pins Ubuntu 24.04: Playwright 1.56.1 rejects the newer Ubuntu 26.04 runner before launching a browser. The general OTC workflow also exposes the existing Banking referral month-overflow fixture (`setUTCMonth` from Oct31); its file and Banking runtime are byte-identical to main in this PR. That separate integration blocker is not a QVTR pass and has not been hidden or disabled.
 
 Rollback of this code-only PR: discard the candidate branch/artifact. Retain any local audit journal; a later isolated scenario change must be another future revision. Production rollback is unnecessary because nothing was installed there. No production authorization is implied by this PR.
 
