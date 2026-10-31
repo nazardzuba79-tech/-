@@ -18,6 +18,10 @@ test('1 November 08:00 Kyiv is 06:00 UTC: +3745% from listing, not anchor', () =
   expect(.014 * (1 + 3745 / 100)).toBeCloseTo(.5383, 10);
   expect(previewQvtrNov1Price(r, NOV1_PEAK_AT)).toBe(.5383);
   expect(previewQvtrNov1Price(r, t0)).toBe(snapshot.lastPrice);
+  expect(r.effectiveAt).toBeGreaterThan(t0);
+  expect(r.effectiveAt % 10000).toBe(0);
+  expect(previewQvtrNov1Price(r,r.effectiveAt)).toBe(r.modeledFutureAnchor);
+  expect(r.modeledFutureAnchor).toBe(original.priceAt(r.effectiveAt));
   expect(r.scope).toBe('ISOLATED_QVTR_REVIEW_ONLY');
   expect(r.promotionAllowed).toBe(false);
 });
@@ -34,7 +38,7 @@ test('40% correction after peak, then original WAVES 108h return and later endpo
 });
 test('past price history is entirely unchanged, never a rewind', () => {
   const r=make();
-  for(let time=t0-6*3600000;time<=t0;time+=60000)
+  for(let time=t0-6*3600000;time<=r.effectiveAt;time+=60000)
     expect(previewQvtrNov1Price(r,time)).toBe(original.priceAt(time));
   for(let time=t0+60000;time<=NOV1_CORRECTION_END;time+=300000) {
     const price=previewQvtrNov1Price(r,time);
