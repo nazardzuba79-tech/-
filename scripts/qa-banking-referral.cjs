@@ -84,6 +84,21 @@ async function main() {
     await page.close();
   }
 
+  // Unknown state must never masquerade as a confirmed empty account.
+  for (const vp of VIEWPORTS.filter(v => v.width === 1440 || v.width === 390)) {
+    for (const mode of ['failed', 'loading']) {
+      const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
+      await page.goto(`http://127.0.0.1:${PORT}/?bankingState=${mode}`, { waitUntil: 'networkidle' });
+      if (mode === 'failed') await page.waitForSelector('[role="alert"]');
+      const count = await page.locator('.banking-summary article').nth(2).locator('strong').innerText();
+      const text = await page.locator('body').innerText();
+      check(`${vp.name} ${mode} active count unknown`, count === '—', count);
+      check(`${vp.name} ${mode} no false empty account`, !text.includes('Активных размещений пока нет.'), 'no confirmed state');
+      await page.screenshot({ path: path.join(OUT, `banking-${vp.name}-${mode}.png`), fullPage: true });
+      await page.close();
+    }
+  }
+
   await browser.close();
   server.kill('SIGTERM');
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));

@@ -46,7 +46,7 @@ const referral={referralCode:'PREVIEW1',referralPercent:20,referredCount:2,
   {id:'r1',asset:'USDT',amount:'24',sourceProfitAmount:'120',createdAt:'2026-09-01T00:00:00.000Z'},
   {id:'r2',asset:'USDT',amount:'24',sourceProfitAmount:'120',createdAt:'2026-08-01T00:00:00.000Z'},
   {id:'r3',asset:'BTC',amount:'0.002',sourceProfitAmount:'0.01',createdAt:'2026-07-01T00:00:00.000Z'}]};
-export const bankingApi={config:async()=>config,state:async()=>state,calculate:async body=>calc(body),referral:async()=>referral,createPlacement:async()=>{throw new Error('preview_only')}};
+export const bankingApi={config:async()=>config,state:async()=>{const mode=new URLSearchParams(location.search).get('bankingState');if(mode==='failed')throw new Error('preview_network_unavailable');if(mode==='loading')return new Promise(()=>{});return state;},calculate:async body=>calc(body),referral:async()=>referral,createPlacement:async()=>{throw new Error('preview_only')}};
 export const bankingNumber=(value,digits=2)=>{if(value===null||value===undefined||value==='')return '—';const n=Number(value);return Number.isFinite(n)?new Intl.NumberFormat('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(n):'—'};
 export const bankingErrorText=()=> 'Preview mode: операции со средствами отключены.';
 `);
@@ -89,11 +89,12 @@ const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta nam
 const server=http.createServer((request,response)=>{
   response.setHeader('Cache-Control','no-store');
   response.setHeader('X-Robots-Tag','noindex, nofollow');
-  if(request.url==='/'||request.url==='/banking'||request.url==='/banking/'){
+  const pathname=new URL(request.url,'http://127.0.0.1').pathname;
+  if(pathname==='/'||pathname==='/banking'||pathname==='/banking/'){
     response.setHeader('Content-Type','text/html; charset=utf-8');response.end(html);return;
   }
   if(request.url==='/health'){response.setHeader('Content-Type','application/json');response.end(JSON.stringify({status:'ok',preview:true}));return;}
   response.writeHead(404);response.end('Not found');
 });
-server.listen(port,'0.0.0.0',()=>console.log(`VOLTEX Banking review on :${port}`));
+server.listen(port,'127.0.0.1',()=>console.log(`VOLTEX Banking review on :${port}`));
 process.on('SIGTERM',()=>server.close(()=>process.exit(0)));

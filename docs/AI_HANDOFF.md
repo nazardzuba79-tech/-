@@ -7530,3 +7530,7 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 
 ## 2026-10-31 — Codex — Issue659 Banking integration
 - Combined exact #656 and #657 commits in an isolated review branch from c1f13828. Only handoff append conflict resolved; all product runtime files unchanged. Existing exact-head Banking workflows retained. No main merge, deploy, financial write or activation. See docs/BANKING_INTEGRATION_659.md; integration CI pending at commit time.
+
+## 2026-10-31 — #659 Banking unknown-state correction
+
+Live guarded Banking read showed false zero active placements and an empty-account message after state failure. Changed only two BankingPage JSX expressions to unknown placeholders while state is unavailable/loading; successful zero unchanged. Extended existing #657 real-component QA with failed/pending state at 1440/390, eight checks. No CSS, financial API, rate, schema or Claude-owned UI edits. Production-base source patch prepared against byte-identical BankingPage in Pages 9ed179c6; no deployment. Exact final-head CI required.
