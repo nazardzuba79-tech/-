@@ -26,6 +26,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/stocks-613-50plus2-diagnostic.yml'
+      - 'scripts/qa/stocks-rc-50plus2/policy-613-after.cjs'
   workflow_dispatch: {}
 
 permissions:
