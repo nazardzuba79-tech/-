@@ -1,0 +1,67 @@
+name: Copy Trading integration review (Spot + Futures, isolated PostgreSQL)
+on:
+  pull_request:
+    paths:
+      - 'src/services/copyTrading/**'
+      - 'src/api/routes/copyDemo.ts'
+      - 'src/api/routes/copyFuturesDemoObserver.ts'
+      - 'src/api/routes/copyFuturesDemoExecution.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'src/private-trading/native/**'
+      - 'src/index.ts'
+      - 'frontend/src/pages/CopyFuturesObserverPage.tsx'
+      - 'frontend/src/pages/copy-trading-bolt/**'
+      - 'prisma/**'
+      - 'scripts/test-copy-integration-review.cjs'
+      - 'scripts/test-copy-migrations-rollback.sh'
+      - '.github/workflows/copy-integration-review.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: fixture
+          POSTGRES_DB: copy_demo_integration_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_integration_ci
+      DIRECT_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_integration_ci
+      COPY_INTEGRATION_TEST_DATABASE_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_integration_ci
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy && npx tsc --noEmit -p tsconfig.json
+      - name: Seven-language customer copy contract
+        run: npx jest --runInBand --runTestsByPath frontend/src/lib/__tests__/plainLanguage.test.ts frontend/src/lib/__tests__/futuresCopyText.test.ts
+      - name: Flagged review frontend
+        run: cd frontend && npx vite build --outDir ../output/copy-integration-658/frontend
+        env: { VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW: 'true', VITE_API_URL: /api/v1 }
+      - name: Chromium
+        run: npm install --prefix /tmp/pw --no-save --package-lock=false --no-audit --no-fund playwright@1.62.1 && node /tmp/pw/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Authenticated HTTP + browser integration (Spot LIMIT/MARKET, Futures OPEN/CLOSE)
+        run: node scripts/test-copy-integration-review.cjs
+        env: { COPY_INTEGRATION_BROWSER: '1', QA_PLAYWRIGHT_MODULE: /tmp/pw/node_modules/playwright }
+      - name: Migrations apply -> rollback == main schema -> re-apply
+        run: bash scripts/test-copy-migrations-rollback.sh
+        env: { PGURL_ADMIN: 'postgresql://postgres:fixture@127.0.0.1:5432/postgres', BASE_REF: origin/main }
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copy-integration-658-${{ github.sha }}
+          path: |
+            output/copy-integration-658/report.json
+            output/copy-integration-658/screens
+          if-no-files-found: ignore

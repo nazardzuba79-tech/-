@@ -71,6 +71,15 @@ import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoLiquidityConfig, marketReference } from './services/DemoLiquidity';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { copyDemoRouter } from './api/routes/copyDemo';
+import { copyFuturesDemoObserverRouter } from './api/routes/copyFuturesDemoObserver';
+import { copyFuturesDemoExecutionRouter } from './api/routes/copyFuturesDemoExecution';
+import { FuturesDemoFollowerExecutor, futuresDemoExecutionEnabled } from './services/copyTrading/FuturesDemoFollowerExecutor';
+import { NativeDemoService } from './private-trading/native/service';
+import { PrismaNativeRepository } from './private-trading/native/store';
+import { FuturesDemoObserverService } from './services/copyTrading/FuturesDemoObserverService';
+import { CopyDemoService, copyDemoEnabled } from './services/copyTrading/CopyDemoService';
+import { startCopyDemoWorker } from './services/copyTrading/copyDemoWorker';
 import { isTestAssetPairOrSymbol } from './services/testMarkets/testAssetConfig';
 import { stocksTestCashRouter } from './api/routes/stocksTestCash';
 import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
@@ -160,11 +169,15 @@ const demoEngine = new MatchingEngine();
 // Internal demo liquidity: off unless DEMO_LIQUIDITY_ENABLED=true and its configuration parses
 // (docs/DEMO_LIQUIDITY.md). Its reference is the market-data cache; nothing is sent to a venue.
 const demoLiquidity = demoLiquidityConfig();
+let copyDemoService: CopyDemoService | undefined;
 if (demoLiquidity.problem) console.warn(`[demo-liquidity] off: ${demoLiquidity.problem}`);
 const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine, {
   liquidity: demoLiquidity.config ? { config: demoLiquidity.config, reference: marketReference(marketDataService) } : null,
   liquidityProblem: demoLiquidity.problem,
+  orderLifecycle: (tx, id, event) => copyDemoService?.orderLifecycle(tx, id, event) ?? Promise.resolve(),
+  tradeLifecycle: (tx, ids) => copyDemoService?.captureFills(tx, ids) ?? Promise.resolve(),
 }), ['placeOrder', 'cancelOrder', 'topUp']);
+copyDemoService = new CopyDemoService(prisma, demoEngine, demoTradingService);
 const adminUserDeletion = new AdminUserDeletionService(prisma, accountDeletionGate, { spot: engine, futures: futuresEngine, demo: demoEngine });
 const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
@@ -328,6 +341,19 @@ app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, 
 // No Support timers or new tables are needed.
 // Demo Spot for admin-credited USER accounts: off unless DEMO_SPOT_ENABLED=true.
 // A pair is admitted only when the real market feed lists it (the terminal's pair set).
+app.use('/api/v1', copyDemoRouter(prisma, copyDemoService));
+// Review-only observer metadata: permanently OFF without a disposable local test DB.
+// No timer, follower order execution, or writes to NativeDemo/financial ledgers.
+app.use('/api/v1', copyFuturesDemoObserverRouter(prisma, new FuturesDemoObserverService(prisma)));
+// Follower-initiated Futures copy in the follower's own session: same hard-OFF
+// disposable review gate plus COPY_FUTURES_DEMO_EXECUTION_ENABLED. No worker.
+{
+  const copyNative = futuresDemoExecutionEnabled() && privateTradingService.market
+    ? new NativeDemoService(new PrismaNativeRepository(prisma, privateTradingService.store?.config), privateTradingService.market) : null;
+  app.use('/api/v1', copyFuturesDemoExecutionRouter(prisma,
+    copyNative ? new FuturesDemoFollowerExecutor(prisma, copyNative) : null, copyNative, futuresDemoExecutionEnabled));
+}
+startCopyDemoWorker(copyDemoService, copyDemoEnabled, () => console.error('[copy-demo] pass failed; pending work retained'));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
   isSpotPair: async pair => !isTestAssetPairOrSymbol(pair) && (await marketDataService.getTicker(pair)) !== null,
 }));
