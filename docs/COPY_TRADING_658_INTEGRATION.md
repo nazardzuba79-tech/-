@@ -28,6 +28,19 @@ start copying, a real leader OPEN, press **Apply new trades**, the row shows
 page at 390 px in all seven languages: no overflow, no raw keys, no page errors,
 no external requests except blocked web fonts.
 
+## Load check (disposable, local — not production)
+
+`scripts/bench-copy-integration.cjs`: 50 signed-in followers polling
+`GET /copy-trading/demo` every 3 s and 2 leaders placing Spot orders every 4 s
+with the copy worker on, against an unrelated user's `GET /demo/orders/open`,
+baseline and load phases alternated. Local run (2 rounds × 20 s, one Node
+process, local PostgreSQL 16): p95 baseline 14.51 ms, load 11.89 ms (no
+degradation; the +5% criterion is met within this setup's noise), 300 copied
+orders executed, 0 left pending, 0 worker errors. A first run showed a Prisma
+P2028 from stopping the database while the worker was mid-pass — a harness
+artefact, fixed by letting the worker settle before stopping. Production
+hardware and the Futures path were not measured.
+
 ## What this branch adds on top of #651
 
 - `src/api/routes/copyFuturesDemoExecution.ts`: `GET/PUT/DELETE /copy-trading/futures-demo-execution`
@@ -42,7 +55,7 @@ no external requests except blocked web fonts.
   review-only observer route. While copying is ON the observation-only notice
   ("orders are not copied") is withdrawn because it would be false.
 - `prisma/rollback/copy-trading-658.sql` and `scripts/test-copy-migrations-rollback.sh`.
-- `.github/workflows/copy-integration-review.yml`.
+- `.github/workflows/copy-integration-review.yml`; `scripts/bench-copy-integration.cjs`.
 
 ## Gates (unchanged in kind)
 
@@ -86,6 +99,5 @@ which is a separate owner decision.
 - Native Demo initialisation moves the account's demo USDT into the Futures
   ledger (existing behaviour); Spot and Futures copy therefore use separate demo
   balances.
-- The 50 readers + 2 traders p95 benchmark was not run for this candidate.
 - Production gate change, deploy, migrations on the production database: owner
   approval required. Green CI is not a release permission.
