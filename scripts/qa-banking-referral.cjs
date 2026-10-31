@@ -5,7 +5,7 @@
  * BankingPage.tsx against preview fixtures — so what is measured here is the
  * shipped component, not a mock of it. Fixture data only; no account, no money.
  */
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
