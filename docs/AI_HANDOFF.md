@@ -7527,3 +7527,6 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Fix: the stand rewrites the remaining `../` imports to absolute source paths; the check expects `https://voltextech.net/PREVIEW1`.
 - Verified locally: `node scripts/qa-banking-referral.cjs` 70/70 at 1920/1440/1366/390/430 (also 70/70 on the #642 tree with 5-character aliases). Neither script runs in any workflow; no CI covers it.
 - Same session, review-only (no push to Codex branches): #642 `3636cf80` — `qa-referral-short-codes.cjs` PASS on local PostgreSQL 16 (6 backfilled, 250 concurrent registrations, 256 unique aliases, legacy codes/referrers and finance fixtures unchanged); `auth.test.ts` 52/52; referralLinks/clipboard/i18n 71/71; applying all migrations to an empty DB shows no `User` drift against schema.prisma. Note for owner/Codex: aliases use 0/O/1/I/L, which the legacy alphabet deliberately excluded.
+
+## 2026-10-31 — Codex — Issue659 Banking integration
+- Combined exact #656 and #657 commits in an isolated review branch from c1f13828. Only handoff append conflict resolved; all product runtime files unchanged. Existing exact-head Banking workflows retained. No main merge, deploy, financial write or activation. See docs/BANKING_INTEGRATION_659.md; integration CI pending at commit time.
