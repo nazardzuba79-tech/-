@@ -1,0 +1,42 @@
+name: Copy Futures observer UI (isolated review)
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/CopyFuturesObserverPage.tsx'
+      - 'frontend/src/pages/copy-trading-bolt/FuturesObserver.css'
+      - 'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts'
+      - 'frontend/src/App.tsx'
+      - 'scripts/qa-copy-futures-observer-browser.cjs'
+      - '.github/workflows/copy-futures-observer-ui.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  review-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx tsc -b frontend
+      - run: npm install --prefix output/copy-futures-observer-deps --no-save --package-lock=false playwright@1.62.1
+      - run: node output/copy-futures-observer-deps/node_modules/playwright/cli.js install --with-deps chromium
+      - run: cd frontend && npx vite build --outDir ../output/copy-futures-observer/frontend
+        env:
+          VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW: 'true'
+          VITE_API_URL: /api/v1
+      - run: node scripts/qa-copy-futures-observer-browser.cjs
+        env:
+          COPY_FUTURES_OBSERVER_PLAYWRIGHT: ../output/copy-futures-observer-deps/node_modules/playwright
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: copy-futures-observer-ui-fixture
+          path: |
+            output/copy-futures-observer/*.json
+            output/copy-futures-observer/*.png
+          retention-days: 7
