@@ -7,7 +7,7 @@ This **does not amend the public QVTR/USDT market**. It is a safety-gated, revie
 - Sunday 2026-11-01 08:00 Kyiv = **2026-11-01 06:00 UTC**: **0.53830 USDT** = 0.0140 × (1 + 3745/100).
 - Immediately after this target, modeled correction is 40% of peak to **0.32298 USDT**. Existing agreed completion **Nov1 20:30 Kyiv / 18:30 UTC** is retained.
 - Rejoin original WAVES at **Nov2 03:00 Kyiv / 01:00 UTC**, 0.352; then original 0.352, 0.685, 0.51, 0.818 endpoints, same 0.88858 upper boundary.
-- Start is a fresh observation only when the read-only capture succeeds, recording source serverTime and observed lastPrice. A previous review is not silently activated or backdated.
+- Read-only admission verifies a fresh observed source price, then schedules the isolated model at the **next 10-second canonical tick strictly after the capture receipt**. That future tick price is calculated from the original source and explicitly marked projected; it is not passed off as an observed quote. No earlier review is silently activated or backdated.
 
 ## Technical contract
 `qvtrNov1Isolated.ts` refuses missing/changed QVTR v1, `tradable:true`, source quote drift, observations older than 5s / future by over 2s, an already elapsed target or an anchor >= target. It verifies the unchanged old source model, exact target, correction and rejoin; preview selects the old canonical source for every earlier price and a new modeled continuation only for later display. The public stage schema is unchanged; this offline DTO permits fractional-hour durations. This does not prove immutable real trade history or production eligibility.
