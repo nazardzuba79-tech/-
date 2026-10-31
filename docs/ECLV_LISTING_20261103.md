@@ -1,4 +1,7 @@
-# ECLAVO — move the existing private Draft to 6 November 2026
+# ECLAVO — scenario and historical preparation
+
+> **2026-10-31 superseding production receipt:** ECLAVO is already published (active version 1, draft revision 4) with the November 6 / 1.01472 configuration. Do not run the private-Draft importer or the old 89c3 rollout/rollback procedure. Historical observations below are dated evidence, not current instructions. See [current production reconciliation](release/ECLAVO_659_RECONCILIATION.md).
+
 
 Owner-requested update of the existing ECLAVO/ECLV, **not a new listing**. Historical filenames and seed deliberately remain `20261103` so there is one active config. This is a synthetic, non-executable scenario, not an investment return or independent market quote.
 
@@ -49,7 +52,7 @@ This affects synthetic presentation only. No order engine, balance, execution, m
 
 Legacy `--create` remains for compatibility and isolated tests, but is **not authorized for this owner task**. Never create a second ECLV. `--create` and `--update` cannot be combined. The default remains read-only.
 
-## Production gates and rollback
+## Historical production gates and rollback — superseded 2026-10-31
 
 No ECLV production merge, API/Worker/frontend release, publication or countdown activation has been performed by this update. QVTR was subsequently published as version1 and its native countdown started once with explicit owner permission; actual main-domain checks are in PR624 and the QVTR production proof. ADMIN access is now verified in the cloud browser. Actual production has one private ECLV with the old November3 date, cap0.518 and seed eclavo-20261103-v1. It was subsequently moved date-only toNovember6,revision3, with actual reload/Preview PASS; the new cap/recovery have not yet been installed. It remains private and unpublished.
 
@@ -68,7 +71,7 @@ If rollback is needed while still never-published, use the same official draft P
 - `.github/workflows/eclv-listing-draft.yml` runs on review PRs with read-only GitHub permissions and no deployment job. Review commits carry Cloudflare Pages/Render skip markers. Exact-head results and evidence are recorded on the PR after execution.
 
 
-## Actual production preflight on 27 October
+## Historical production preflight on 27 October
 
 - Secure ADMIN sign-in succeeded. ECLV is one existing private Draft; all51 displayed controls and the exact logo remain unchanged after the separate authorized QVTR creation. Preview selector preferences were restored before the full comparison. After this read-only check, one owner-authorized date-only CAS save moved the SAME private Draft toNovember6,revision3. Reload and actual first24h Preview PASS; seed/logo/all other fields preserved. The cap/recovery remain old until an approved compatible runtime release. No publication or timer action occurred.
 - **Actual approved logo differs from the old repository SVG.** Preserve the existing PNG:52194bytes,969×965, SHA256 `4f9ffc2f38645beeccf238a2609607064a63f7ef6c2d71018d5fae8aa9ca45a7`. The historical SVG is removed from active assets; the single config now contains the production PNG. The authoritative64KiB limit is unchanged, with an additional exact byte-count/signature/hash guard. Do not upload the old SVG over the owner's approved image.

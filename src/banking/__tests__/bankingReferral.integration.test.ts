@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { REFERRAL_REWARD_PERCENT } from '../../config/limits';
 import { BANKING_REFERRAL_REWARD_PERCENT } from '../config';
 import { BankingService } from '../service';
+import { bankingFixtureNow, monthsAfter, monthsBefore } from '../testing/calendarFixture';
 
 const enabled = process.env.BANKING_DB_TESTS === '1';
 if (enabled) {
@@ -18,8 +19,11 @@ const prisma = new PrismaClient();
 /** Settlement needs no prices; the stub keeps the suite off the network entirely. */
 const service = new BankingService(prisma, { prices: async () => ({ USDT: '1', BTC: '100000' }) } as any);
 
-const months = (n: number) => { const d = new Date(); d.setUTCMonth(d.getUTCMonth() - n); return d; };
-const plus = (from: Date, n: number) => { const d = new Date(from); d.setUTCMonth(d.getUTCMonth() + n); return d; };
+/** One clock for the whole suite (BANKING_TEST_NOW pins it), handed to every call that reads time,
+ *  and placements dated by production's own clamped calendar rule — see calendarFixture.ts (#654). */
+const NOW = bankingFixtureNow();
+const months = (n: number) => monthsBefore(NOW, n);
+const plus = monthsAfter;
 
 async function user(referredBy?: string) {
   const id = randomUUID();
@@ -51,7 +55,7 @@ dbDescribe('Banking referral commission', () => {
   test('a referral with no referrer produces no commission at all', async () => {
     const solo = await user();
     const id = await placement(solo, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
-    const result = await service.settlePlacement(solo, id);
+    const result = await service.settlePlacement(solo, id, NOW);
     expect(result.settledCount).toBe(1);
     expect(result.settled[0].amount).toBe('120');
     expect(result.settled[0].commission).toBeNull();
@@ -63,7 +67,7 @@ dbDescribe('Banking referral commission', () => {
   test('120 USDT of profit pays the referrer 24 USDT, same asset, without touching the referral', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
-    const result = await service.settlePlacement(referred, id);
+    const result = await service.settlePlacement(referred, id, NOW);
 
     expect(result.settled[0].amount).toBe('120');
     expect(result.settled[0].commission).toBe('24');
@@ -83,7 +87,7 @@ dbDescribe('Banking referral commission', () => {
   test('the commission base is profit, never principal', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
-    await service.settlePlacement(referred, id);
+    await service.settlePlacement(referred, id, NOW);
     const row = await prisma.bankingReferralReward.findFirstOrThrow({ where: { placementId: id } });
     expect(row.sourceProfitAmount.toString()).toBe('120');
     expect(row.amount.toString()).not.toBe('200');  // 20% of the 1000 principal
@@ -94,8 +98,8 @@ dbDescribe('Banking referral commission', () => {
   test('settling the same placement again pays nothing more', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
-    await service.settlePlacement(referred, id);
-    const second = await service.settlePlacement(referred, id);
+    await service.settlePlacement(referred, id, NOW);
+    const second = await service.settlePlacement(referred, id, NOW);
     expect(second.settledCount).toBe(0);
     expect(await balance(referred)).toBe('120');
     expect(await balance(referrer)).toBe('24');
@@ -108,7 +112,7 @@ dbDescribe('Banking referral commission', () => {
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
     // Serializable may abort one of the pair; a rejection is an acceptable
     // outcome, a double credit is not. Assert on the money, not the promise.
-    await Promise.allSettled([service.settlePlacement(referred, id), service.settlePlacement(referred, id)]);
+    await Promise.allSettled([service.settlePlacement(referred, id, NOW), service.settlePlacement(referred, id, NOW)]);
     expect(await prisma.bankingReferralReward.count({ where: { placementId: id } })).toBe(1);
     expect(await balance(referred)).toBe('120');
     expect(await balance(referrer)).toBe('24');
@@ -118,7 +122,7 @@ dbDescribe('Banking referral commission', () => {
   test('each completed month is its own reward and funds exactly one commission', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 3 });
-    const result = await service.settlePlacement(referred, id);
+    const result = await service.settlePlacement(referred, id, NOW);
     expect(result.settledCount).toBe(3);
     expect(result.settled.map(r => r.amount)).toEqual(['120', '120', '120']);
     expect(await balance(referred)).toBe('360');
@@ -132,7 +136,7 @@ dbDescribe('Banking referral commission', () => {
   test('a compound placement pays the referrer nothing before maturity', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.17', compound: true, term: 24, openedMonthsAgo: 6 });
-    const result = await service.settlePlacement(referred, id);
+    const result = await service.settlePlacement(referred, id, NOW);
     expect(result.settledCount).toBe(0);
     expect(await balance(referrer)).toBe('0');
   });
@@ -140,7 +144,7 @@ dbDescribe('Banking referral commission', () => {
   test('a matured compound placement settles its whole profit once, and pays 20% of it', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.17', compound: true, term: 24, openedMonthsAgo: 25 });
-    const result = await service.settlePlacement(referred, id);
+    const result = await service.settlePlacement(referred, id, NOW);
     expect(result.settledCount).toBe(1);
     // Quantised to the ledger's own 18 places, rounded DOWN: what is paid is
     // exactly what the column can hold, and never a hair more than was earned.
@@ -159,7 +163,7 @@ dbDescribe('Banking referral commission', () => {
   test('the commission is paid in the asset the profit was earned in', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '0.1', rate: '0.1', asset: 'BTC', openedMonthsAgo: 1 });
-    const result = await service.settlePlacement(referred, id);
+    const result = await service.settlePlacement(referred, id, NOW);
     expect(result.settled[0].amount).toBe('0.01');
     expect(result.settled[0].commission).toBe('0.002');
     expect(await balance(referrer, 'BTC')).toBe('0.002');
@@ -170,7 +174,7 @@ dbDescribe('Banking referral commission', () => {
   test('a placement opened at the old 17% settles 170, not 120', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.17', openedMonthsAgo: 1 });
-    const result = await service.settlePlacement(referred, id);
+    const result = await service.settlePlacement(referred, id, NOW);
     expect(result.settled[0].amount).toBe('170');
     expect(result.settled[0].commission).toBe('34');
   });
@@ -181,8 +185,8 @@ dbDescribe('Banking referral commission', () => {
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 2 });
 
     await service.calculate({ programId: 'MONTHLY_17_24M', asset: 'USDT', amount: '1000',
-      startDate: new Date().toISOString().slice(0, 10), periodMonths: 6 });
-    for (let i = 0; i < 3; i += 1) await service.state(referred);
+      startDate: NOW.toISOString().slice(0, 10), periodMonths: 6 });
+    for (let i = 0; i < 3; i += 1) await service.state(referred, NOW);
 
     expect(await balance(referred)).toBe('0');
     expect(await balance(referrer)).toBe('0');
@@ -202,7 +206,7 @@ dbDescribe('Banking referral commission', () => {
     expect(BANKING_REFERRAL_REWARD_PERCENT).toBe(20);
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
-    await service.settlePlacement(referred, id);
+    await service.settlePlacement(referred, id, NOW);
     // Settling Banking profit must not write into the deposit referral table.
     expect(await prisma.referralReward.count({ where: { referrerId: referrer } })).toBe(0);
     expect(await prisma.bankingReferralReward.count({ where: { referrerId: referrer } })).toBe(1);
@@ -216,7 +220,7 @@ dbDescribe('Banking referral commission', () => {
   test('every credit leaves an audit trail that recomputes', async () => {
     const referrer = await user(), referred = await user(referrer);
     const id = await placement(referred, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
-    await service.settlePlacement(referred, id);
+    await service.settlePlacement(referred, id, NOW);
     const log = await prisma.auditLog.findFirstOrThrow({
       where: { userId: referrer, action: 'BANKING_REFERRAL_REWARD_CREDITED' } });
     const meta = log.metadata as Record<string, unknown>;

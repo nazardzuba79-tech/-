@@ -1,5 +1,8 @@
 # ECLAVO November 6 / +7148% — executed local QA
 
+> **2026-10-31 superseding production receipt:** ECLAVO is already published (active version 1, draft revision 4) with the November 6 / 1.01472 configuration. Do not run the private-Draft importer or the old 89c3 rollout/rollback procedure. Historical observations below are dated evidence, not current instructions. See [current production reconciliation](../../release/ECLAVO_659_RECONCILIATION.md).
+
+
 **These are synthetic loopback-only runs, not production screenshots or proof of a production Draft update.**
 
 - Chromium 156.0.8078.47 / Playwright 1.62.1, actual built frontend, real admin router, real market Worker in workerd/SQLite. Two disposable stores, synthetic sessions, no database or financial writes.
@@ -11,7 +14,7 @@
 - The first local browser run had one QA snapshot-comparison failure. Its exact message is preserved in `initial-failures.json`; fixed by comparing identical full-row projections, then rerun. No assertions about target price or financial isolation were removed.
 - Initial config-only endpoint=cap failed the existing3% validator. Narrow, separately reviewed terminal-DEEP_RECOVERY support resolves it; all previously valid paths keep their fingerprint.
 
-## Production status
+## Historical production status — superseded 2026-10-31
 
 Actual cloud-browser ADMIN access is restored. The SAME existing ECLV private Draft was moved date-only toNovember6,revision3; reload and actual first24h Preview PASS. Cap0.518/finalRecovery0.435 remain pending the approved runtime upgrade. Seed/logo/other fields preserved; **no ECLV publication or timer**. Its approved production PNG is now preserved in the candidate, replacing the historical repository SVG. Exact PNG hash is locked by tests.
 
