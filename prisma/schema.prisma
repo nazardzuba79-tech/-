@@ -1435,6 +1435,9 @@ model SyntheticCopyTradingState {
 /// Public strategy identity only. The optional same-environment User relation
 /// supplies the profile photo/KYC state; it never links performance to money.
 model CopyStrategyOwner {
+  xUrl String?
+  telegramUrl String?
+  socialOwnerUserId String?
   futuresDemoSubscriptions CopyFuturesDemoSubscription[]
   demoSubscriptions CopyDemoSubscription[]
   traderId String @id

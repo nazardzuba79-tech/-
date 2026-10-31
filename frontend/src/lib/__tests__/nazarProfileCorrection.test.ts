@@ -32,6 +32,7 @@ const empty = () => null;
 // Actual profile/readout/follower/histogram markup, with only unrelated children
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
+  StrategySocialLinks: empty, StrategySocialEditor: empty,
   isModeledTraderData, periodRatioFacts,
   ...languageModule('ru'), ...liveMetricModule(), ...demoRoiModule(),
   useFiguresPending: () => false, useEffect: () => {},

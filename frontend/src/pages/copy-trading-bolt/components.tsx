@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { StrategySocialLinks, StrategySocialEditor } from './StrategySocials';
 import {
   ArrowDownRight,
   ArrowLeft,
@@ -298,7 +299,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         </div>
         <div className="card-topline-right">
           {following.has(trader.id) && <span className="following-pill"><Check size={10} /> В наблюдении</span>}
-          <FavoriteButton trader={trader} />
+          <StrategySocialLinks traderId={trader.id} /><FavoriteButton trader={trader} />
         </div>
       </div>
       {(isNazara || trader.id === 'VX-KSENIA') && <p className="nazara-strategy">{trader.strategy}</p>}
@@ -796,7 +797,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       <section className="trader-profile-hero">
         <div className="trader-profile-identity">
           <div className="profile-avatar-wrap"><Avatar trader={trader} large /></div>
-          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
+          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p><StrategySocialLinks traderId={trader.id} /></div>
         </div>
         <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
           <div><span>Followers</span><strong><LiveMetric value={numberLabel(heroFollowers, 0)} /></strong></div>
@@ -807,6 +808,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /></div></div>
       </section>
 
+      <StrategySocialEditor key={trader.id} traderId={trader.id} />
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} data-period={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{t(periodLabelKey(item))}</button>)}</div>
