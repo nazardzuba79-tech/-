@@ -67,11 +67,17 @@ export function buildQvtrNov1Isolated(sourceInput: ListingConfig, observed: Fres
     correctionPrice: '0.32298', rejoinAt: NOV1_REJOIN_AT, sourceType: 'MODELED_NOT_EXTERNAL',
   };
 }
+/** Single-review memoization avoids rebuilding 10-second tick plans per chart point. */
+const previewCache = new WeakMap<object, { original: TestMarketSimulation; future: TestMarketSimulation }>();
 /** A *read-only* display calculation, spliced at the captured instant. No backend writes. */
 export function previewQvtrNov1Price(review: ReturnType<typeof buildQvtrNov1Isolated>, at: number) {
   if (review.scope !== 'ISOLATED_QVTR_REVIEW_ONLY' || review.promotionAllowed !== false ||
       !Number.isSafeInteger(at)) throw Error('REVIEW_ONLY');
-  const original = new TestMarketSimulation(listingSimulationConfig(review.source));
-  const future = new TestMarketSimulation(listingSimulationConfig({ ...review.source, simulationProgram: review.program }));
-  return at <= review.effectiveAt ? original.priceAt(at) : future.priceAt(at);
+  let models = previewCache.get(review);
+  if (!models) {
+    models = { original: new TestMarketSimulation(listingSimulationConfig(review.source)),
+      future: new TestMarketSimulation(listingSimulationConfig({ ...review.source, simulationProgram: review.program })) };
+    previewCache.set(review, models);
+  }
+  return at <= review.effectiveAt ? models.original.priceAt(at) : models.future.priceAt(at);
 }
