@@ -23,3 +23,4 @@ output/
 # generated set stays out of the history rather than re-landing each run.
 docs/qa/native-demo/large-numbers/card-*-1440.png
 docs/qa/native-demo/large-numbers/card-*-390.png
+/artifacts/qvtr-isolated/

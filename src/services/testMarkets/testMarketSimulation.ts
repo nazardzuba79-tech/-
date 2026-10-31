@@ -731,8 +731,8 @@ export const SIM_INTERVAL_OFFSETS: Record<string, number> = { '1w': 4 * DAY_MS }
  * first, close of the last, the highest high, the lowest low, summed
  * volume. Every timeframe tells the same history.
  */
-export function aggregateCandles(candles: readonly SimCandle[], intervalMs: number, offsetMs = 0): SimCandle[] {
-  if (intervalMs === CANDLE_MS) return candles.slice();
+export function aggregateCandles(candles: readonly SimCandle[], intervalMs: number, offsetMs = 0, sourceIntervalMs = CANDLE_MS): SimCandle[] {
+  if (intervalMs === sourceIntervalMs) return candles.slice();
   const out: SimCandle[] = [];
   for (const candle of candles) {
     const bucket = Math.floor((candle.openTime - offsetMs) / intervalMs) * intervalMs + offsetMs;
