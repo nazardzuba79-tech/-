@@ -50,7 +50,14 @@ function load(file: string): any {
     if (name.endsWith('/Nav')) return { Nav: () => null };
     if (name.endsWith('/Footer')) return { Footer: () => null };
     if (name === 'sonner') return { Toaster: () => null, toast: { success: jest.fn() } };
-    if (name.endsWith('/api')) return { getToken: () => session, api: { getPortfolioHistory: async () => ({ points: [] }) } };
+    if (name.endsWith('/api')) return {
+      getToken: () => session,
+      onSessionChange: () => () => {},
+      // This period fixture is a viewer, not a bound strategy owner. Keep the
+      // real social components mounted with a denied private editor request.
+      request: async () => { throw new Error('Forbidden'); },
+      api: { getPortfolioHistory: async () => ({ points: [] }) },
+    };
     if (name.endsWith('/lib/i18n')) return { useLanguage: () => languageModule(language).useLanguage() };
     if (name.endsWith('/useCopyMarketplace')) return { useCopyMarketplace: () => React.useSyncExternalStore(store.subscribe, store.getState, store.getState) };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);

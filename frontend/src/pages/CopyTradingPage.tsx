@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
-import { api } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './copy-trading-bolt/CopyTradingBolt.css';
@@ -8,7 +7,6 @@ import './copy-trading-bolt/CopyTradingRefinement.css';
 import './copy-trading-bolt/KseniaReview.css';
 import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
-import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
 import { syntheticNazaraTrader } from '../lib/syntheticCopyTrading';
 import { kseniaTrader, KSENIA_TRADER_ID, withStrategyIdentityVerification } from '../lib/kseniaCopyTrading';
@@ -29,25 +27,8 @@ import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';
 export function CopyTradingPage() {
   const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
-  const [depositUsd, setDepositUsd] = useState(0);
   const marketplace = useCopyMarketplace();
   const { nazar: synthetic, ksenia, identities } = marketplace;
-
-  // The archive hardcoded a USER_DEPOSIT constant to gate the deposit
-  // threshold; this account's real deposit is the most recent portfolio
-  // value the Wallet page has persisted (spot + futures, priced live —
-  // see portfolio.ts). A brand-new account that has never opened Wallet
-  // has no snapshot yet, so it correctly reads as $0 / not eligible rather
-  // than guessing.
-  useEffect(() => {
-    api
-      .getPortfolioHistory('90d')
-      .then(({ points }) => {
-        const latest = points[points.length - 1];
-        setDepositUsd(latest ? Number(latest.totalValueUsd) : 0);
-      })
-      .catch(() => setDepositUsd(0));
-  }, []);
 
   const liveNazara = useMemo(() => withStrategyIdentityVerification(
     syntheticNazaraTrader(synthetic), identities.find(i => i.traderId === nazarTrader.id),
@@ -74,7 +55,6 @@ export function CopyTradingPage() {
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
-          <CopyEligibilityProvider depositUsd={depositUsd}>
             <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
@@ -82,7 +62,6 @@ export function CopyTradingPage() {
                 : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
             </DemoRoiProvider>
-          </CopyEligibilityProvider>
         </div>
       </div>
       <Footer />
