@@ -115,10 +115,16 @@ export function LicencesPage() {
   useEffect(() => {
     const originalTitle = document.title;
     document.title = `${t('licenses.pageTitle')} | VOLTEX`;
-    const robots = document.createElement('meta');
-    robots.name = 'robots'; robots.content = 'noindex, nofollow';
-    document.head.append(robots);
-    return () => { document.title = originalTitle; robots.remove(); };
+    // The global RouteSeo already places this directive on /legal/licenses.
+    // When this component is mounted outside the route shell, supply it here.
+    // Never duplicate or remove a tag owned by RouteSeo.
+    const existing = document.head.querySelector<HTMLMetaElement>('meta[name="robots"][content="noindex, nofollow"]');
+    const robots = existing ?? document.createElement('meta');
+    if (!existing) {
+      robots.name = 'robots'; robots.content = 'noindex, nofollow';
+      document.head.append(robots);
+    }
+    return () => { document.title = originalTitle; if (!existing) robots.remove(); };
   }, [t]);
   return <div className="licences-page"><div className="vx-home"><HomeHeader /></div><LicencesContent documents={publishedDocuments(REGULATORY_DOCUMENTS, new Date(`${day}T00:00:00Z`))} portfolio /><div className="vx-home"><HomeFooter /></div></div>;
 }

@@ -1,18 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin, ResolvedConfig } from 'vite';
-import { compileContent, seoPages, withPageHead, type CompiledContent } from './src/lib/content/compile';
+import { compileContent, withPageHead, type CompiledContent } from './src/lib/content/compile';
+import { publicPages, robotsTxt, sitemapUrls, sitemapXml, unlistedPages, withRobots } from './src/lib/seo/pages';
 
 /**
  * Academy and Help are static: frontend/content/ is read and compiled while
  * the site is built, and the pages import the result as two virtual modules.
  * No API request, no database table, no server code shows an article.
  *
- * The build also writes one small HTML file per Academy/Help address — the
- * same index.html with that page's <title> and description — so a search
- * engine sees them before any script runs. Cloudflare Pages serves
- * /academy/x/y from academy/x/y.html; everything else still falls back to
- * index.html as before.
+ * The build also writes one small HTML file per public Academy, Help and
+ * legal address — the same index.html with that page's <title>, description
+ * and canonical — so a search engine sees them before any script runs.
+ * Cloudflare Pages serves /academy/x/y from academy/x/y.html; everything else
+ * still falls back to index.html as before. Signed-in and sign-in addresses
+ * get the same copy with a noindex robots meta, and the build adds
+ * sitemap.xml and robots.txt (lib/seo/pages.ts, lib/seo/site.ts).
  */
 
 const MODULES = { 'virtual:voltex-academy': 'academy', 'virtual:voltex-help': 'help' } as const;
@@ -79,9 +82,14 @@ export function voltexContent(): Plugin[] {
       const index = bundle['index.html'];
       if (!index || index.type !== 'asset') return;
       const html = String(index.source);
-      for (const page of seoPages(compile())) {
+      for (const page of publicPages(compile())) {
         this.emitFile({ type: 'asset', fileName: `${page.path}.html`, source: withPageHead(html, page) });
       }
+      for (const { path: page, robots } of unlistedPages()) {
+        this.emitFile({ type: 'asset', fileName: `${page}.html`, source: withRobots(html, robots) });
+      }
+      this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: sitemapXml(sitemapUrls(compile())) });
+      this.emitFile({ type: 'asset', fileName: 'robots.txt', source: robotsTxt() });
     },
   };
   return [content, pageHeads];

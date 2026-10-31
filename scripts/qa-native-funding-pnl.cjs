@@ -52,7 +52,29 @@ async function startServer() {
   server.once('exit', () => log.end());
   for (let i = 0; i < 120; i++) {
     if (server.exitCode !== null) throw Error(`Fixture server exited: ${server.exitCode}`);
-    try { const r = await fetch(origin + '/health'); const h = await r.json(); if (r.ok && h.fixtureMarket === true) return; } catch {}
+    let healthy = false;
+    try {
+      const r = await fetch(origin + '/health'); const h = await r.json();
+      if (r.ok && h.fixtureMarket === true) {
+        healthy = true;
+        // Replay settles against COMPLETE boundary candles (replay.ts), while
+        // /live.asOf is a display clock and never commits funding. The original
+        // wall-clock scenario landed its third width in 00:00's forming minute
+        // and incorrectly expected that unfinished candle to have settled.
+        // Anchor only this isolated fixture, using its existing forward-only QA
+        // lever. 34h per width then stays five minutes beyond an even hour, not
+        // in any 00/08/16 forming boundary candle. No assertion/rate is relaxed.
+        const clock = async advanceMs => {
+          const response = await fetch(origin + '/qa/clock', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ advanceMs }) });
+          assert(response.ok, 'isolated forward-only fixture clock unavailable'); return response.json();
+        };
+        const { now } = await clock(1);
+        const anchor = Math.ceil(now / (4 * H)) * 4 * H + 5 * 60_000;
+        await clock(anchor - now);
+        report.fixtureClock = { original: now, anchored: anchor, reason: 'completed funding candles, not a forming boundary minute' };
+        return;
+      }
+    } catch (error) { if (healthy) throw error; }
     await delay(500);
   }
   throw Error('fixture server did not become healthy');

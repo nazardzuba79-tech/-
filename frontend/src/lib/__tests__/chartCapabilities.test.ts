@@ -19,6 +19,11 @@ describe('one capability answer per market + instrument + source', () => {
     expect(candleSourceFor('spot', 'BTC/USDT')).toBe('spot-public');
     expect(candleSourceFor('spot', 'VTA/USDT')).toBe('test-market');
     expect(candleSourceFor('spot', 'NRX/USDT')).toBe('test-market');
+    // Retired alternate-pair chart requests must not fall through to a venue.
+    for (const pair of ['NRX/BTC', 'BTC/NRX', 'NRX/SIMUSDT', 'NRXSIMUSDT']) {
+      expect(candleSourceFor('spot', pair)).toBe('test-market');
+      expect(candleLoaderFor('spot', pair, loaders)).toBe(testMarketCandleLoader);
+    }
     expect(candleSourceFor('spot', 'AITH/USDT')).toBe('test-market');
     expect(candleLoaderFor('futures', 'BTC/USDT', loaders)).toBe(getFuturesCandles);
     expect(candleLoaderFor('spot', 'BTC/USDT', loaders)).toBe(getSpotPublicCandles);

@@ -66,7 +66,7 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
   test('the owner (ADMIN): allocated NRX cannot be sold to the simulation; no USDT appears, nothing more becomes withdrawable', async () => {
     expect(await allocateNrxOwner(db, owner)).toMatchObject({ applied: true, quantity: '6250' });
     const supply = await usdtSupply();
-    await expect(sell(owner, '6000')).rejects.toThrow('Simulation Spot sale is not available');
+    await expect(sell(owner, '6000')).rejects.toThrow('NRX is no longer available');
     expect(await balance(owner, 'NRX')).toEqual(['6250', '0']);
     expect(await balance(owner, 'USDT')).toEqual(['1000', '0']);
     expect(await synthetic(owner)).toEqual({ trades: 0, audits: 0 });
@@ -78,104 +78,32 @@ pg('a synthetic Spot sale never mints withdrawable USDT from a simulated asset (
     expect(await db.withdrawal.count({ where: { userId: owner } })).toBe(0);
   });
 
-  test('a simulation-only tester: NRX bought on the real book cannot be turned into model-priced USDT', async () => {
+
+  test('a tester cannot obtain NRX via new orders, even with available ordinary USDT', async () => {
     await allocateNrxOwner(db, owner);
-    // A real trade at 0.01: the owner's resting ask, the tester's bid.
-    await service.placeOrder({ userId: owner, pair: NEURIX.pair, side: 'SELL', type: 'LIMIT', price: new BigNumber('0.01'), quantity: new BigNumber('100') });
-    const bought = await service.placeOrder({ userId: tester, pair: NEURIX.pair, side: 'BUY', type: 'LIMIT', price: new BigNumber('0.01'), quantity: new BigNumber('100') });
-    expect(bought.order.status).toBe('FILLED');
-    expect(await balance(tester, 'NRX')).toEqual(['100', '0']);
-    expect(await balance(tester, 'USDT')).toEqual(['9', '0']);
     const supply = await usdtSupply();
-    await expect(sell(tester, '100')).rejects.toThrow('Simulation Spot sale is not available');
-    expect(await balance(tester, 'NRX')).toEqual(['100', '0']);
-    expect(await balance(tester, 'USDT')).toEqual(['9', '0']);
+    await expect(service.placeOrder({ userId: tester, pair: NEURIX.pair, side: 'BUY', type: 'LIMIT',
+      price: new BigNumber('0.01'), quantity: new BigNumber('100') }))
+      .rejects.toThrow('NRX is no longer available');
+    expect(await balance(tester, 'NRX')).toBeNull();
+    expect(await balance(tester, 'USDT')).toEqual(['10', '0']);
     expect(await synthetic(tester)).toEqual({ trades: 0, audits: 0 });
     expect(await usdtSupply()).toBe(supply);
-    await expect(new WithdrawalService(db).requestWithdrawal({ userId: tester, asset: 'USDT', network: 'TRC20', toAddress: 'Tmint0000000000000000000000000000', amount: '9.01' })).rejects.toThrow('Insufficient USDT balance');
   });
 
-  test('repeated and concurrent attempts, also after a service restart, never create USDT', async () => {
+  test('retirement wins even with synthetic settlement enabled or simultaneous requests', async () => {
+    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
     await allocateNrxOwner(db, owner);
     const supply = await usdtSupply();
-    const outcomes = await Promise.allSettled([sell(owner, '1'), sell(owner, '2'), sell(owner, '3')]);
-    expect(outcomes.every(o => o.status === 'rejected')).toBe(true);
+    const result = await Promise.allSettled([sell(owner, '1'), sell(owner, '2'), sell(owner, '3')]);
+    expect(result.every(value => value.status === 'rejected'
+      && String(value.reason).includes('NRX is no longer available'))).toBe(true);
     service = new OrderService(db, new MatchingEngine(), source);
-    await expect(sell(owner, '1')).rejects.toThrow('Simulation Spot sale is not available');
-    expect(await usdtSupply()).toBe(supply);
-    expect(await synthetic(owner)).toEqual({ trades: 0, audits: 0 });
+    await expect(sell(owner, '1')).rejects.toThrow('NRX is no longer available');
     expect(await balance(owner, 'NRX')).toEqual(['6250', '0']);
-  });
-
-  test('opt-in NRX MARKET SELL keeps execution, but proceeds exist only in DemoBalance (never withdrawable)', async () => {
-    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
-    await allocateNrxOwner(db, owner);
-    const realBefore = await usdtSupply();
-    const filled = await sell(owner, '6000');
-    expect(filled.order.status).toBe('FILLED');
-    expect(filled.trades).toHaveLength(1);
-    const expectedDemo = new BigNumber(filled.trades[0].price.toString()).times('6000');
-    const demo = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
-    expect(demo?.available.toString()).toBe(expectedDemo.toFixed());
-    expect(await balance(owner, 'NRX')).toEqual(['250', '0']);
     expect(await balance(owner, 'USDT')).toEqual(['1000', '0']);
-    expect(await usdtSupply()).toBe(realBefore);
-    expect(await synthetic(owner)).toEqual({ trades: 1, audits: 1 });
-    const audit = await db.auditLog.findFirst({ where: { userId: owner, action: 'TEAM_SPOT_SIMULATION_SOLD' }, orderBy: { createdAt: 'desc' } });
-    expect(audit?.metadata).toMatchObject({ settlementLedger: 'DemoBalance', withdrawableProceeds: false });
-    await expect(new WithdrawalService(db).requestWithdrawal({
-      userId: owner, asset: 'USDT', network: 'TRC20',
-      toAddress: 'Tmint0000000000000000000000000000', amount: '1000.01',
-    })).rejects.toThrow('Insufficient USDT balance');
-    expect(await db.withdrawal.count({ where: { userId: owner } })).toBe(0);
-  });
-
-  test('opt-in is idempotent under retry and preserves the exact demo amount after restart', async () => {
-    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
-    await allocateNrxOwner(db, owner);
-    const realBefore = await usdtSupply();
-    const requestId = randomUUID();
-    const place = () => service.placeOrder({
-      userId: owner, pair: NEURIX.pair, side: 'SELL', type: 'MARKET',
-      quantity: new BigNumber('5'), requestId,
-    });
-    const first = await place();
-    service = new OrderService(db, new MatchingEngine(), source);
-    const second = await place();
-    expect(second.order.id).toBe(first.order.id);
-    expect('replayed' in second && second.replayed).toBe(true);
-    expect(await balance(owner, 'NRX')).toEqual(['6245', '0']);
-    expect(await usdtSupply()).toBe(realBefore);
-    expect(await synthetic(owner)).toEqual({ trades: 1, audits: 1 });
-    const credit = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
-    expect(credit?.available.toString()).toBe(new BigNumber(first.trades[0].price.toString()).times('5').toFixed());
-  });
-
-  test('opt-in under concurrent sales: NRX is never oversold and every demo credit matches a filled sale', async () => {
-    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
-    await allocateNrxOwner(db, owner);
-    const realBefore = await usdtSupply();
-    // 4 × 2000 against 6250 allocated: at most three can fill.
-    const outcomes = await Promise.allSettled([sell(owner, '2000'), sell(owner, '2000'), sell(owner, '2000'), sell(owner, '2000')]);
-    const filled = outcomes.flatMap(o => (o.status === 'fulfilled' ? [o.value] : []));
-    expect(filled.length).toBeGreaterThanOrEqual(1);
-    expect(filled.length).toBeLessThanOrEqual(3);
-    const expectedDemo = filled.reduce((sum, f) => sum.plus(new BigNumber(f.trades[0].price.toString()).times('2000')), new BigNumber(0));
-    const demo = await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset: 'USDT' } } });
-    expect(demo?.available.toString()).toBe(expectedDemo.toFixed());
-    expect(await balance(owner, 'NRX')).toEqual([new BigNumber('6250').minus(2000 * filled.length).toFixed(), '0']);
-    expect(await synthetic(owner)).toEqual({ trades: filled.length, audits: filled.length });
-    expect(await usdtSupply()).toBe(realBefore);
-    expect(await balance(owner, 'USDT')).toEqual(['1000', '0']);
-  });
-
-  test('opt-in still rejects insufficient NRX without creating a demo credit', async () => {
-    process.env.SIMULATION_SPOT_DEMO_SETTLEMENT_ENABLED = 'true';
-    const realBefore = await usdtSupply();
-    await expect(sell(owner, '1')).rejects.toThrow('Insufficient NRX balance');
     expect(await db.demoBalance.count({ where: { userId: owner } })).toBe(0);
     expect(await synthetic(owner)).toEqual({ trades: 0, audits: 0 });
-    expect(await usdtSupply()).toBe(realBefore);
+    expect(await usdtSupply()).toBe(supply);
   });
-
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Built Spot/NRX ruler regression, using disposable read-only fixtures only.
+ * Built Spot/VTA ruler regression, using disposable read-only fixtures only.
  * Reuses the terminal fixture server and persisted drawings used by the existing
  * qa-vta-presentation harness. Nothing is sent to a market/account service.
  *
@@ -25,7 +25,7 @@ const WIDTHS = arg('--widths', '1440,1366,390').split(',').map(Number);
 const LABEL = arg('--label', 'after');
 const HOUR = 3600;
 const END = Math.floor(Date.now() / (HOUR * 1000)) * HOUR;
-const STORAGE_KEY = 'voltex.drawings.spot.NRX/USDT';
+const STORAGE_KEY = 'voltex.drawings.spot.VTA/USDT';
 const CASES = [
   { name: 'zero-baseline', from: 0, to: 247.58, expected: '+247,58 (—%)' },
   { name: 'negative-baseline', from: -5, to: 247.58, expected: '+252,58 (—%)' },
@@ -44,7 +44,7 @@ function candles(lastClose = 247.58) {
   });
 }
 function asset(lastClose) {
-  return { pair: 'NRX/USDT', symbol: 'NRX', name: 'NEURIX', quote: 'USDT', isTestAsset: true, isTradable: true,
+  return { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT', isTestAsset: true, isTradable: false,
     status: 'live', listingArmed: true, listingAt: new Date((END - 50 * HOUR) * 1000).toISOString(), initialPrice: 0.81,
     state: { phase: 'live', lastPrice: lastClose, openPrice24h: 125, change24hPercent: 98.06,
       high24h: lastClose + 0.15, low24h: 124, volume24h: 360000, quoteVolume24h: 71000000, serverTime: Date.now() } };
@@ -116,7 +116,7 @@ function verify(m, expected, context) {
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const report = { label: LABEL, environment: 'Built frontend; local NRX fixtures; all writes and external transports denied', cases: [] };
+  const report = { label: LABEL, environment: 'Built frontend; local VTA fixtures; all writes and external transports denied', cases: [] };
   let server, browser;
   try {
     server = fixtureServer();
@@ -140,8 +140,8 @@ function verify(m, expected, context) {
         await context.route('**/*', async route => {
           const q = route.request(), u = new URL(q.url());
           if (!['GET', 'HEAD'].includes(q.method())) { view.writes.push(`${q.method()} ${u.pathname}`); return route.abort(); }
-          if (/\/market\/test-assets\/NRX-USDT\/candles$/i.test(u.pathname)) return route.fulfill({ json: { candles: candles(lastClose) } });
-          if (/\/market\/nrx\/?$/.test(u.pathname)) return route.fulfill({ json: { serverTime: Date.now(), assets: [asset(lastClose)] } });
+          if (/\/market\/test-assets\/VTA-USDT\/candles$/i.test(u.pathname)) return route.fulfill({ json: { pair:'VTA/USDT', interval:u.searchParams.get('interval') ?? '1h', candles: candles(lastClose) } });
+          if (/\/market\/test-assets\/?$/.test(u.pathname)) return route.fulfill({ json: { serverTime: Date.now(), assets: [asset(lastClose)] } });
           if (/\/market\/(test-assets|listings)\/?$/.test(u.pathname)) return route.fulfill({ json: { serverTime: Date.now(), assets: [] } });
           // route.fetch is explicitly redirected to loopback, never the request's origin.
           if (u.pathname.startsWith('/api/v1/')) return route.fulfill({ response: await route.fetch({ url: origin + u.pathname + u.search, maxRedirects: 0 }) });
@@ -151,7 +151,7 @@ function verify(m, expected, context) {
         });
         page = await context.newPage();
         page.on('pageerror', e => view.errors.push(e.message));
-        await page.goto(origin + '/trade?pair=NRX%2FUSDT', { waitUntil: 'domcontentloaded' });
+        await page.goto(origin + '/trade?pair=VTA%2FUSDT', { waitUntil: 'domcontentloaded' });
         // Tradable Spot opens on the mobile trading tab; explicitly open its chart.
         if (width < 600) await page.locator('#mobile-trade-chart').click();
         await page.locator('g[data-drawing-kind="ruler"] text').first().waitFor({ timeout: 20000 });

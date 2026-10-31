@@ -136,13 +136,13 @@ describe('bot triggers are preserved; unresolved pairs are never ordinary', () =
     expect(slow.resolved()).toBe(false); // an upstream timeout is not a resolution
   });
 
-  test('while unresolved, an unknown venue-unpriced pair is refused; venue pairs, NRX and known listings keep their own gate', async () => {
+  test('while unresolved, an unknown venue-unpriced pair is refused; venue pairs and known listings keep their gate while retired NRX is rejected', async () => {
     const unresolved = { ensureFresh: jest.fn(async () => {}), resolved: () => false };
     await expect(assertSpotListingReady('VHX9/USDT', venue, listingAt, unresolved)).rejects.toThrow(SPOT_PAIR_UNRESOLVED_MESSAGE);
     await expect(assertSpotListingReady('BTC/USDT', venue, listingAt, unresolved)).resolves.toBeUndefined();
     const failing = { getTicker: jest.fn(async () => { throw new Error('venue down'); }) };
     await expect(assertSpotListingReady('VHX9/USDT', failing, listingAt, unresolved)).rejects.toThrow(SPOT_PAIR_UNRESOLVED_MESSAGE);
-    await expect(assertSpotListingReady(NEURIX.pair, venue, NEURIX.listingAt + 60_000, unresolved)).resolves.toBeUndefined();
+    await expect(assertSpotListingReady(NEURIX.pair, venue, NEURIX.listingAt + 60_000, unresolved)).rejects.toThrow('NRX is no longer available');
     setManagedListingAssets([listingSimulationConfig(config())]);
     await expect(assertSpotListingReady('QAX/USDT', venue, listingAt + 1, unresolved)).resolves.toBeUndefined();
     setManagedListingAssets([listingSimulationConfig(config({ tradable: false }))]);

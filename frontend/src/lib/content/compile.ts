@@ -3,6 +3,7 @@ import type {
   AcademyContent, AcademySection, Article, ByLang, FaqItem, Fees, GlossaryTerm, HelpContent, Incident,
   StatusComponent, TocEntry,
 } from './types';
+import { SITE_ORIGIN } from '../seo/site';
 
 /**
  * Build-time compiler for frontend/content/. Pure: it takes the files as
@@ -22,6 +23,8 @@ export interface SeoPage {
   path: string;
   title: string;
   description: string;
+  /** Absolute URL search engines should index instead of this address (a page the app redirects elsewhere). */
+  canonical?: string;
 }
 
 type Frontmatter = Record<string, string | number | string[]>;
@@ -197,6 +200,8 @@ export function compileContent(files: Record<string, string>): CompiledContent {
 export const ACADEMY_TITLE = 'Академия VOLTEX';
 export const ACADEMY_DESCRIPTION = 'Бесплатные статьи о криптовалюте, фьючерсах, рисках и безопасности — простым языком.';
 export const HELP_TITLE = 'Помощь VOLTEX';
+export const FAQ_DESCRIPTION = 'Ответы на частые вопросы об аккаунте, пополнении, торговле и выводе на VOLTEX.';
+export const KNOWLEDGE_DESCRIPTION = 'Практическая информация о комиссиях и правилах торговли на VOLTEX.';
 
 /** One entry per public Academy/Help address, for the static <title> and
  * description search engines read before any script runs. */
@@ -204,6 +209,9 @@ export function seoPages(content: CompiledContent): SeoPage[] {
   const { sections, articles } = content.academy.ru;
   const pages: SeoPage[] = [
     { path: 'academy', title: ACADEMY_TITLE, description: ACADEMY_DESCRIPTION },
+    { path: 'academy/learn', title: `Обучение — ${ACADEMY_TITLE}`, description: ACADEMY_DESCRIPTION },
+    { path: 'academy/knowledge', title: `База знаний — ${ACADEMY_TITLE}`, description: KNOWLEDGE_DESCRIPTION },
+    { path: 'academy/faq', title: `Вопросы и ответы — ${ACADEMY_TITLE}`, description: FAQ_DESCRIPTION },
     { path: 'academy/glossary', title: `Глоссарий — ${ACADEMY_TITLE}`, description: 'Короткие определения основных терминов криптовалютной торговли.' },
   ];
   for (const section of sections) {
@@ -213,24 +221,30 @@ export function seoPages(content: CompiledContent): SeoPage[] {
   for (const article of articles) {
     pages.push({ path: `academy/${article.section}/${article.slug}`, title: `${article.title} — ${ACADEMY_TITLE}`, description: article.summary });
   }
-  const help: [string, string, string][] = [
-    ['help', 'Вопросы и ответы', 'Ответы на частые вопросы об аккаунте, пополнении, торговле и выводе на VOLTEX.'],
-    ['help/faq', 'Вопросы и ответы', 'Ответы на частые вопросы об аккаунте, пополнении, торговле и выводе на VOLTEX.'],
-    ['help/fees', 'Комиссии', 'Торговые комиссии, пополнение и вывод на VOLTEX.'],
-    ['help/rules', 'Правила торговли', 'Как работают ордера, маржа, ликвидация и ставка финансирования на VOLTEX.'],
-    ['help/status', 'Статус системы', 'Отвечают ли сервер VOLTEX и рыночные данные; опубликованные сообщения о сбоях.'],
+  // The app redirects the old Help addresses into the Academy (HelpPage); their
+  // static copies stay for old links and name the new page as canonical.
+  const help: [string, string, string, string][] = [
+    ['help', 'Вопросы и ответы', FAQ_DESCRIPTION, 'academy/faq'],
+    ['help/faq', 'Вопросы и ответы', FAQ_DESCRIPTION, 'academy/faq'],
+    ['help/fees', 'Комиссии', 'Торговые комиссии, пополнение и вывод на VOLTEX.', 'academy/knowledge'],
+    ['help/rules', 'Правила торговли', 'Как работают ордера, маржа, ликвидация и ставка финансирования на VOLTEX.', 'academy/knowledge'],
   ];
-  for (const [path, title, description] of help) pages.push({ path, title: `${title} — ${HELP_TITLE}`, description });
+  for (const [path, title, description, target] of help) pages.push({ path, title: `${title} — ${HELP_TITLE}`, description, canonical: `${SITE_ORIGIN}/${target}` });
+  pages.push({ path: 'help/status', title: `Статус системы — ${ACADEMY_TITLE}`, description: 'Отвечают ли сервер VOLTEX и рыночные данные; опубликованные сообщения о сбоях.' });
   return pages;
 }
 
-/** index.html with this page's title and description. */
+/** index.html with this page's title, description and canonical address
+ * (its own URL unless the page names another). */
 export function withPageHead(indexHtml: string, page: SeoPage): string {
   const title = escapeHtml(page.title);
   const description = escapeHtml(page.description);
+  const canonical = escapeHtml(page.canonical ?? `${SITE_ORIGIN}/${page.path}`);
   return indexHtml
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`)
     .replace(/(<meta name="description" content=")[^"]*(")/, `$1${description}$2`)
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${canonical}$2`)
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${canonical}$2`)
     .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${title}$2`)
     .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${description}$2`)
     .replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${title}$2`)
