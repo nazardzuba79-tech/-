@@ -50,10 +50,10 @@ export function buildQvtrNov1Isolated(sourceInput: ListingConfig, observed: Fres
   };
   validateScenarioControls(program, source.initialPrice);
   const proposal = new TestMarketSimulation(listingSimulationConfig({ ...source, simulationProgram: program }));
-  if (proposal.priceAt(t0) !== observed.lastPrice ||
-      proposal.priceAt(NOV1_PEAK_AT) !== NOV1_PEAK_PRICE ||
-      proposal.priceAt(NOV1_CORRECTION_END) !== NOV1_CORRECTION_PRICE ||
-      proposal.priceAt(NOV1_REJOIN_AT) !== 0.352) throw Error('MODEL_ANCHOR_DRIFT');
+  const actual = [proposal.priceAt(t0), proposal.priceAt(NOV1_PEAK_AT), proposal.priceAt(NOV1_CORRECTION_END), proposal.priceAt(NOV1_REJOIN_AT)];
+  const expected = [observed.lastPrice, NOV1_PEAK_PRICE, NOV1_CORRECTION_PRICE, 0.352];
+  if (actual.some((v,i) => v === null || !Number.isFinite(v) || Math.abs(v-expected[i]) > 1e-8))
+    throw Error('MODEL_ANCHOR_DRIFT '+JSON.stringify({ actual, expected }));
   return {
     scope: 'ISOLATED_QVTR_REVIEW_ONLY' as const, promotionAllowed: false as const,
     effectiveAt: t0, receivedAt, observed: JSON.parse(JSON.stringify(observed)) as FreshQvtrObservation,
