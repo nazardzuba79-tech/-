@@ -10,7 +10,6 @@ import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
 import { authRouter } from '../auth';
 import { generateBackupCodes } from '../../../services/TwoFactorService';
-import { decryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function makePrismaMock(overrides: Partial<any> = {}) {
   const base: any = {
@@ -117,8 +116,7 @@ describe('auth routes', () => {
     expect(prisma.user.create).toHaveBeenCalled();
     expect(typeof res.body.token).toBe('string');
     const stored = prisma.user.create.mock.calls[0][0].data;
-    expect(stored.adminPasswordVault.create.encryptedPassword).not.toContain('Correcthorsebattery');
-    expect(decryptAdminPassword(stored.adminPasswordVault.create.encryptedPassword, 'alice@team.com')).toBe('Correcthorsebattery');
+    expect(stored.adminPasswordVault).toBeUndefined(); // no reversible password copy
     expect(JSON.stringify(res.body)).not.toContain('Correcthorsebattery');
 
     // A token requireAuth would accept: the account's id, a session id, and

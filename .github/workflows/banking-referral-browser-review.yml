@@ -1,0 +1,49 @@
+name: Banking referral browser review (isolated fixtures)
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/BankingPage.tsx'
+      - 'frontend/src/pages/banking/*.css'
+      - 'frontend/src/lib/bankingApi.ts'
+      - 'scripts/qa-banking-referral.cjs'
+      - 'scripts/serve-banking-review.cjs'
+      - '.github/workflows/banking-referral-browser-review.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: banking-referral-review-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Install disposable browser tools
+        run: |
+          npm install --prefix /tmp/voltex-banking-referral-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-banking-referral-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Test real BankingPage with isolated fixture data across five viewports
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-banking-referral-qa/node_modules/playwright
+          QA_OUT: output/banking-referral-review
+          PORT: '4181'
+        run: node scripts/qa-banking-referral.cjs
+      - name: Assert all 78 checks passed
+        run: |
+          node -e "const fs=require('fs');const report=JSON.parse(fs.readFileSync('output/banking-referral-review/report.json','utf8'));const checks=report.checks||[];if(checks.length!==78 || checks.some(c=>!c.ok))process.exit(1);console.log('78/78 Banking referral checks PASS');"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: banking-referral-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/banking-referral-review/
+          if-no-files-found: warn
+          retention-days: 7

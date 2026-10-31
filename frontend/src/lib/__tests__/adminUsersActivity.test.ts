@@ -24,11 +24,11 @@ test('compact user KPIs remain global and never sum different queue units', asyn
   expect(f.host.querySelector('.admin-attention-grid')).toBeNull();
   expect(f.host.querySelector('[data-credit-user]')).toBeNull();
 });
-test('existing password values and unavailable markers remain unchanged in desktop and mobile', async () => {
+test('recovered password values are never rendered in desktop or mobile', async () => {
   f.api.getAdminUsersPage.mockResolvedValue(page([user('plain', { password: 'FixturePassword123' }), user('unknown')])); await f.mount();
-  expect(f.host.querySelector('[data-user-password="plain"]')?.textContent).toBe('FixturePassword123');
+  expect(f.host.querySelector('[data-user-password="plain"]')?.textContent).toBe('—');
   expect(f.host.querySelector('[data-user-password="unknown"]')?.textContent).toBe('—');
-  expect(f.host.querySelector('[data-user-card="plain"]')?.textContent).toContain('FixturePassword123');
+  expect(f.host.querySelector('[data-user-card="plain"]')?.textContent).not.toContain('FixturePassword123');
 });
 test('Users has no duplicated financial queue cards or financial submit actions', async () => {
   await f.mount();
@@ -152,7 +152,7 @@ test('phone layout keeps two compact filters and expandable user details without
   expect(card.querySelector('.admin-user-mobile-heading .admin-user-email')).not.toBeNull();
   expect(card.querySelector('.admin-user-mobile-summary .admin-last-login')).not.toBeNull();
   expect(card.querySelector('.admin-user-mobile-details summary')?.textContent).toBe('Подробнее');
-  expect(card.querySelector('.admin-user-mobile-details dl')?.textContent).toContain('FixturePassword123');
+  expect(card.querySelector('.admin-user-mobile-details dl')?.textContent).not.toContain('FixturePassword123');
   expect(card.querySelector('.admin-user-mobile-bottom .admin-open-button')).not.toBeNull();
   const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
   expect(css).toMatch(/\.admin-page-grid \.admin-users-workspace \.admin-users-filters \{/);

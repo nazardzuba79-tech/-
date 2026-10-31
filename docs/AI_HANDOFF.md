@@ -7514,10 +7514,31 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - `scripts/test-wallet-conversion-postgres.cjs` +2 checks: a bearer without `sid`, or without `exp`, is refused at confirm (401 SESSION_REVOKED, nothing moves); ordinary Spot limit bids (`OrderService`) and conversions racing on one Balance never overdraw, and the USDT hold equals the open orders.
 - Verified locally on the merged tree (disposable PostgreSQL, synthetic users): backend tsc/build, frontend tsc + flagged build; Jest 322/322 (conversion, portfolio, adjustments, deposits, OrderService, wallet UI, fingerprints, i18n); Balance fixture 29/29 + browser (flag ON) and default-OFF browser; DemoBalance fixture 27/27. No flag enabled, no deploy, no production data.
 
+### 2026-10-31 — Claude — Issue #654: Banking referral fixture month-end date (test-only)
+- **Defect (reproduced on local PostgreSQL 16.15 on 2026-10-31 08:00 UTC):** main's `bankingReferral.integration.test.ts` 9/13 failed — exactly CI run 41172248250. Its helper `months(n)` used `setUTCMonth(getUTCMonth() - n)`, which overflows (31 Oct − 1 month = «31 Sep» = 1 Oct, 30 days), while production counts months with the clamped rule (`addCalendarMonthsClamped` / `completedCalendarMonths`), so a «one month old» placement had completed no month.
+- **Fix (no production code, balances or Banking formulas touched):** `src/banking/testing/calendarFixture.ts` dates fixtures by production's own clamp (`monthsBefore` / `monthsAfter`); `BANKING_TEST_NOW` pins one clock passed to every `settlePlacement` / `state` / `calculate` call in the suite.
+- **Tests:** new `calendarFixture.test.ts` — 18 instants (28th–31st, Feb common/leap, 31 Mar, year boundary, DST days) × spans 1–25 × four process time zones, the defect itself, ten exact dates, env validation; with `math.test.ts` 100/100. PostgreSQL suite 13/13 at the real clock and at 2026-10-31, 2026-11-30, 2027-02-28, 2028-02-29, 2028-03-31, 2026-12-31, 2027-01-01T00:00:00Z, 2026-10-31T23:59:59Z.
+- **CI:** new `banking-calendar-review.yml` (the OTC workflow that ran this suite does not trigger on `src/banking/**`) runs the tables and the PostgreSQL suite at eight pinned clocks.
+- **Checked, not changed:** other `setUTCMonth` uses (copy analytics, synthetic copy history, CFD labels) reset to day 1 first — no overflow; Stocks `stockModel.ts` not touched. Production `addCalendarMonthsClamped` returns 00:00 UTC (time of day of the opening is dropped) — not shown to be a defect, left as is.
 
-## 2026-10-30 — Codex — five-character referral aliases
-- Implementation commit `32b6c1a1d27c996997abeb1b48d2f927201c2522`, branch `work/referral-five-chars-20261030`, fresh main `c1f13828`. The documented integration branch no longer exists remotely; isolated current-main checkout preserves unrelated dirty work.
-- Added nullable unique short-code metadata, additive migration/default allocator, auth alias resolution, Profile/Banking response selection, targeted auth and isolated PG/browser checks. No frontend runtime/design or financial behavior change.
-- Preserved legacy codes and referredById, both domains, seven languages, existing auth protections and every financial path. Production/main were not changed.
-- Local: 79 tests, 13 Banking integration tests, PostgreSQL 18.6 collision/reconnect preservation checks and 8 browser cases PASS; both builds PASS. See docs/REFERRAL_SHORT_CODES.md for release order and rollback that retains alias resolution.
-- CI pending on final PR SHA. Production requires separately authorized migration and an overlay against installed runtime; never publish all main.
+## 2026-10-31 — Claude (session 01EmV3Pt) — #653 Wallet/Banking: Banking review stand repaired (QA tooling only)
+- Base: main `c1f13828`. Files: `scripts/serve-banking-review.cjs`, `scripts/qa-banking-referral.cjs`. No product code, API, DB, balances or Codex files touched.
+- Found: the stand could not start on main. It copies `BankingPage.tsx` into a temp dir, so the page's later relative imports (`../lib/clipboard`, `../lib/referralLinks`, `../lib/useReferralRegion`) no longer resolved (esbuild "Could not resolve"). After that, the browser check still expected a link on the serving host (`http://127.0.0.1:<port>/PREVIEW1`), but since #627 referral links always use a trusted public origin (`https://voltextech.net/…` by default). The page was right; the check was stale.
+- Fix: the stand rewrites the remaining `../` imports to absolute source paths; the check expects `https://voltextech.net/PREVIEW1`.
+- Verified locally: `node scripts/qa-banking-referral.cjs` 70/70 at 1920/1440/1366/390/430 (also 70/70 on the #642 tree with 5-character aliases). Neither script runs in any workflow; no CI covers it.
+- Same session, review-only (no push to Codex branches): #642 `3636cf80` — `qa-referral-short-codes.cjs` PASS on local PostgreSQL 16 (6 backfilled, 250 concurrent registrations, 256 unique aliases, legacy codes/referrers and finance fixtures unchanged); `auth.test.ts` 52/52; referralLinks/clipboard/i18n 71/71; applying all migrations to an empty DB shows no `User` drift against schema.prisma. Note for owner/Codex: aliases use 0/O/1/I/L, which the legacy alphabet deliberately excluded.
+
+## 2026-10-31 — Codex — Issue659 Banking integration
+- Combined exact #656 and #657 commits in an isolated review branch from c1f13828. Only handoff append conflict resolved; all product runtime files unchanged. Existing exact-head Banking workflows retained. No main merge, deploy, financial write or activation. See docs/BANKING_INTEGRATION_659.md; integration CI pending at commit time.
+
+## 2026-10-31 — #659 Banking unknown-state correction
+
+Live guarded Banking read showed false zero active placements and an empty-account message after state failure. Changed only two BankingPage JSX expressions to unknown placeholders while state is unavailable/loading; successful zero unchanged. Extended existing #657 real-component QA with failed/pending state at 1440/390, eight checks. No CSS, financial API, rate, schema or Claude-owned UI edits. Production-base source patch prepared against byte-identical BankingPage in Pages 9ed179c6; no deployment. Exact final-head CI required.
+
+### #659 frontend artifact provenance gate
+
+Fresh immutable Pages root and custom-domain root use index-wS4Z9N50.js, whereas exact 9ed179c6 CI artifact 12959472968 references index-oD3uJukg.js. Public release-build.json still declares 21b10560. The Pages deployment metadata alone does not attest served source. Source patch remains prepared, but no sealed production artifact is claimed until this is reconciled. No purge or deploy performed.
+
+### #660 CI count correction
+
+Run41204666241 passed the expanded78 browser checks and failed only the old hard-coded70 count. Updated the required count to78 without removing assertions, and added the covered Banking component/API/CSS to workflow paths. No product behavior change in this follow-up.
