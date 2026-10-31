@@ -197,10 +197,8 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     if (rel.startsWith('frontend/src/mobile-review/')) continue;
     // #644 is an explicitly isolated demo, not a live-money screen. Its exact
     // dictionary must disclose demo funds; the positive contract below protects it.
-    if (rel === 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts') continue;
     // Isolated review-only observer: the explicit lack of order copying is a
     // required consumer warning, not permitted anywhere in live product copy.
-    if (rel === 'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts') continue;
     // lib/customerError.ts holds no copy at all. Its string literals are
     // the SERVER's own sentences, listed so that each can be answered in
     // the customer's language instead — reading them as product copy would
@@ -229,10 +227,8 @@ test('no component copy, in any of the seven languages, is a practice / training
     const rel = relative(root, path).replace(/\\/g, '/');
     // Staff-only screens and the isolated loopback review are not customer copy (as above).
     if (rel.startsWith('frontend/src/pages/admin/') || rel.startsWith('frontend/src/mobile-review/')) continue;
-    if (rel === 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts') continue;
     // Isolated review-only observer: the explicit lack of order copying is a
     // required consumer warning, not permitted anywhere in live product copy.
-    if (rel === 'frontend/src/pages/copy-trading-bolt/futuresObserverText.ts') continue;
     // The server's own sentences, mapped to neutral `serverError.*` wording (see above).
     if (rel === 'frontend/src/lib/customerError.ts') continue;
     // Stocks is Codex's work in progress and switched off on the exchange (VITE_STOCKS_ENABLED unset);
@@ -256,13 +252,16 @@ test('no component copy, in any of the seven languages, is a practice / training
   expect(offenders).toEqual([]);
 });
 
-test('isolated copy review keeps mandatory demo disclosure in every language and stays separately gated', () => {
-  const vocabulary = { en: /\bdemo\b/i, ru: /демо/i, es: /\bdemo\b/i, zh: /模拟/, hi: /डेमो/, ja: /デモ/, ko: /데모/ };
+test('Copy Trading account displays no technical labels but states non-withdrawable balance in seven languages', () => {
+  const blocked = /demo|sandbox|synthetic|simulat|демо|тестов|симулир|синтети|práctica|simulad|模拟|测试|डेमो|सिमुल|デモ|シミュレ|데모|모의|시뮬레/i;
+  const nonWithdrawable = { en: /cannot be withdrawn/, ru: /без возможности вывода/,
+    es: /no retirable/, zh: /不可提现/, hi: /निकाला नहीं जा सकता/,
+    ja: /出金できません/, ko: /출금할 수 없습니다/ };
   expect(Object.keys(copyDemoText).sort()).toEqual([...LOCALES].sort());
   for (const lang of LOCALES) {
-    expect(copyDemoText[lang].title).toMatch(vocabulary[lang]);
-    expect(copyDemoText[lang].notice).toMatch(vocabulary[lang]);
-    expect(copyDemoText[lang].pnl).toMatch(vocabulary[lang]);
+    const values = Object.values(copyDemoText[lang]);
+    for (const value of values) expect(value).not.toMatch(blocked);
+    expect(copyDemoText[lang].notice).toMatch(nonWithdrawable[lang]);
   }
   const app = readFileSync(resolve(root, 'frontend/src/App.tsx'), 'utf8');
   expect(app).toContain("import.meta.env.VITE_COPY_DEMO_REVIEW === 'true'");
@@ -271,14 +270,19 @@ test('isolated copy review keeps mandatory demo disclosure in every language and
   expect(consumers).toEqual(['frontend/src/pages/CopyDemoPage.tsx', 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts']);
 });
 
-test('isolated Futures observer keeps truthful no-copy warnings in seven languages and remains flagged OFF', () => {
-  const vocabulary = { en: /demo/i, ru: /демо/i, es: /demo/i, zh: /模拟/, hi: /डेमो/, ja: /デモ/, ko: /데모/ };
+test('Futures observer has no test/simulation labels and never implies that orders were copied', () => {
   expect(Object.keys(futuresObserverText).sort()).toEqual([...LOCALES].sort());
+  const noCopy = { en: /not copy|not copied/i, ru: /не копирую|не копируются/i,
+    es: /no se copian|sin copiar/i, zh: /不会?复制/, hi: /कॉपी नहीं/, ja: /コピーされません|コピー.*行わず/,
+    ko: /복사.*없|복사.*하지/ };
+  const internalLabels = /demo|sandbox|synthetic|simulat|test.only|демо|тестов|симулир|синтети|práctica|simulad|模拟|测试|डेमो|सिमुल|デモ|シミュレ|데모|모의|시뮬레/i;
   for (const lang of LOCALES) {
-    expect(futuresObserverText[lang].title).toMatch(vocabulary[lang]);
-    expect(futuresObserverText[lang].warning.length).toBeGreaterThan(30);
-    expect(futuresObserverText[lang].noTrade.length).toBeGreaterThan(6);
-    expect(futuresObserverText[lang].disclaimer.length).toBeGreaterThan(25);
+    const text = futuresObserverText[lang];
+    for (const value of Object.values(text)) expect(value).not.toMatch(internalLabels);
+    expect(text.warning).toMatch(noCopy[lang]);
+    expect(text.warning.length).toBeGreaterThan(30);
+    expect(text.noTrade.length).toBeGreaterThan(6);
+    expect(text.disclaimer.length).toBeGreaterThan(25);
   }
   const app = readFileSync(resolve(root, 'frontend/src/App.tsx'), 'utf8');
   expect(app).toContain("import.meta.env.VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW === 'true'");
