@@ -1,0 +1,69 @@
+name: Private AI listing candidate
+on:
+  pull_request:
+    paths:
+      - 'config/test-markets/nryia-20261115**'
+      - 'config/test-markets/aelri-20261125**'
+      - 'config/test-markets/nryia-20261115/**'
+      - 'config/test-markets/aelri-20261125/**'
+      - 'scripts/qa/aiCandidateContract.ts'
+      - 'src/services/listings/__tests__/nryiaDraft.test.ts'
+      - 'src/services/listings/__tests__/aelriDraft.test.ts'
+      - 'src/shared/listingScenarioControls.ts'
+      - 'src/services/testMarkets/simulationScenarioControls.ts'
+      - 'src/services/listings/listingConfig.ts'
+      - 'frontend/src/lib/pairList.ts'
+      - 'frontend/src/components/PairListSidebar.tsx'
+      - 'frontend/src/pages/admin/listingMovementModel.ts'
+      - 'frontend/src/lib/__tests__/aiCandidateUi.test.ts'
+      - 'scripts/qa-ai-candidate.cjs'
+      - 'scripts/ai-draft-import.cjs'
+      - '.github/workflows/ai-listing-candidate.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-candidates:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: frontend
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: workers/market-edge
+      - run: npx prisma generate
+      - run: npx tsc --noEmit
+      - name: Model, history and frontend regressions
+        run: npx jest --runInBand --testPathPattern='nryiaDraft|aelriDraft|aiCandidateUi|qvtrDraft|eclvDraft|tyvnDraft|listingCountdown|listingScenarioControls|listingMovementControls|pairListFavorites|nrx'
+      - run: npm run build
+        working-directory: frontend
+        env:
+          VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
+      - name: Install Chromium for isolated QA
+        run: |
+          npm install --prefix /tmp/ai-browser playwright@1.63.0 --no-audit --no-fund
+          /tmp/ai-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Real browser over disposable local API and workerd
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/ai-browser/node_modules/playwright
+        run: |
+          for candidate in nryia-20261115 aelri-20261125; do
+            if test -f "config/test-markets/$candidate.draft.json"; then
+              QA_AI_CANDIDATE="$candidate" QA_OUT="/tmp/ai-evidence/$candidate" node scripts/qa-ai-candidate.cjs
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-ai-browser-${{ github.event.pull_request.head.sha }}
+          path: /tmp/ai-evidence
+          retention-days: 14

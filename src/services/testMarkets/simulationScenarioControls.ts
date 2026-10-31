@@ -57,6 +57,10 @@ function stageAt(config: ControlledScenarioConfig, at: number): Stage {
   return { start, end: Infinity, open, close: open, regime: 'consolidation', index: config.controls.stages.length };
 }
 function baseline(config: ControlledScenarioConfig, stage: Stage, at: number): number {
+  // Only the opt-in terminal model approaches a 96%-of-cap range after its
+  // exact peak. Continuous at the boundary; no growth reset or price clipping.
+  if (config.controls.terminalPeak === 'bounded-v1' && stage.index === config.controls.stages.length)
+    return stage.open * (1 - .04 * (1 - Math.exp(-(at - stage.start) / HOUR)));
   if (stage.open === stage.close) return stage.open;
   const u = (at - stage.start) / (stage.end - stage.start);
   const travelled = progress(config.controls.scenario, u);
@@ -103,6 +107,9 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
     + noise(seed, label + ':micro', t, 31_000) * amplitude * .4 * c.candles.diversity;
   // The permanent range has no elapsed-time trend or resetting growth cycle.
   const range = p.regime === 'consolidation' ? noise(seed, label + ':range', t, 137 * MINUTE) * intensity * 2.5 : 0;
+  // The exact terminal endpoint has no remaining headroom. Legacy configs
+  // never enter this branch and retain their original floating-point path.
+  if (c.terminalPeak === 'bounded-v1' && base === cap) return cap;
   return displaced(base, envelope * (move + range), cap);
 }
 
