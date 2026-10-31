@@ -1,15 +1,19 @@
-name: QVTR isolated append-only preview
+name: QVTR isolated observed-NOW review
 on:
   pull_request:
     paths:
       - 'src/services/listings/isolatedScenarioJournal.ts'
       - 'src/services/listings/qvtrIsolatedCandidate.ts'
+      - 'src/services/listings/qvtrObservedNowReview.ts'
       - 'src/services/testMarkets/testMarketSimulation.ts'
       - 'src/services/listings/__tests__/isolatedScenarioJournal.test.ts'
+      - 'src/services/listings/__tests__/qvtrObservedNowReview.test.ts'
       - 'config/isolated/**'
       - 'scripts/*qvtr-isolated*'
       - 'scripts/isolated-scenario-admin.cjs'
       - 'scripts/qa-qvtr-candidate-admission.cjs'
+      - 'scripts/qvtr-now-review.cjs'
+      - 'scripts/qa-qvtr-now-review.cjs'
       - '.github/workflows/qvtr-isolated-preview.yml'
 permissions:
   contents: read
@@ -27,12 +31,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx jest --runInBand src/services/listings/__tests__/isolatedScenarioJournal.test.ts src/services/listings/__tests__/qvtrDraft.test.ts src/services/listings/__tests__/listingScenarioControls.test.ts
-      - run: node scripts/qvtr-isolated-preview.cjs
-      - run: node scripts/qa-qvtr-candidate-admission.cjs
+      - run: npx jest --runInBand src/services/listings/__tests__/qvtrObservedNowReview.test.ts src/services/listings/__tests__/isolatedScenarioJournal.test.ts src/services/listings/__tests__/qvtrDraft.test.ts src/services/listings/__tests__/listingScenarioControls.test.ts
+      - run: node scripts/qvtr-now-review.cjs replay
       - run: npm install --no-save --package-lock=false playwright@1.56.1
       - run: npx playwright install --with-deps chromium
-      - run: node scripts/qa-qvtr-isolated-preview.cjs
+      - run: node scripts/qa-qvtr-now-review.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: qvtr-isolated-${{ github.event.pull_request.head.sha }}

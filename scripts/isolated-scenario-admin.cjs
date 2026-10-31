@@ -13,6 +13,8 @@ const {IsolatedScenarioJournal,scenarioSourceFingerprint}=require('../src/servic
   if(action==='history'){console.log(JSON.stringify(await journal.history(),null,2));return;}
   const proposal=JSON.parse(fs.readFileSync(proposalFile,'utf8'));
   if(proposal.scope!=='ISOLATED_MODEL_ONLY')throw Error('ISOLATED_PROPOSAL_REQUIRED');
+  const retired=require('../config/isolated/qvtr-candidate-20261031.json');
+  if(retired.superseded&&proposal.candidateId===retired.candidateId)throw Error('SUPERSEDED_CANDIDATE');
   if(proposal.sourceConfigSha256!==scenarioSourceFingerprint(source.config??source))throw Error('CANDIDATE_SOURCE_MISMATCH');
   if(proposal.expectedSource && ['listingId','activeVersion','draftRevision'].some(k=>proposal.expectedSource[k]!==source[k]))throw Error('CANDIDATE_SOURCE_VERSION_MISMATCH');
   if(action==='append')console.log(JSON.stringify(await journal.append({id:os.userInfo().username,role:'ADMIN'},Number(revision),proposal.effectiveAt,proposal.program,reason||''),null,2));

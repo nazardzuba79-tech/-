@@ -1,0 +1,176 @@
+{
+  "scope": "OBSERVED_NOW_REVIEW_ONLY",
+  "promotionAllowed": false,
+  "startAt": 1793462942345,
+  "admittedAt": 1793462941670,
+  "author": "nazar",
+  "observation": {
+    "serverTime": 1793462942345,
+    "lastPrice": 0.1589305735,
+    "listingId": "qvtr-19568743",
+    "version": 1,
+    "source": "simulation",
+    "isTradable": false
+  },
+  "sourceConfig": {
+    "schemaVersion": 1,
+    "symbol": "QVTR",
+    "name": "QAVENTRA",
+    "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlFBVkVOVFJBIGZhY2V0ZWQgUSBtYXJrIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjNDZmMWRmIi8+PHN0b3Agb2Zmc2V0PSIuNTUiIHN0b3AtY29sb3I9IiMxYmE5ZDMiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM3NDY4ZTQiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYiIgeDE9IjAiIHkxPSIxIiB4Mj0iMSIgeTI9IjAiPjxzdG9wIHN0b3AtY29sb3I9IiNmZmYyYmQiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNlOWE5NWMiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSI2NCIgY3k9IjY0IiByPSI2MSIgZmlsbD0iIzA5MTkyNyIvPjxjaXJjbGUgY3g9IjY0IiBjeT0iNjQiIHI9IjU1IiBzdHJva2U9InVybCgjYSkiIHN0cm9rZS13aWR0aD0iMi41IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTY0IDE3IDEwNiA1NyA2NCAxMDggMjIgNTdaIiBmaWxsPSIjMTAyODM3IiBzdHJva2U9IiMzYThiYTciIHN0cm9rZS13aWR0aD0iMS41Ii8+PHBhdGggZD0iTTY0IDI4IDk1IDU3IDY0IDk1IDMzIDU3WiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMWZiOWM4IiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii42Ii8+PGNpcmNsZSBjeD0iNjEiIGN5PSI2MSIgcj0iMjMiIGZpbGw9IiMwYzIzMzMiIHN0cm9rZT0idXJsKCNhKSIgc3Ryb2tlLXdpZHRoPSI5Ii8+PHBhdGggZD0iTTY5IDcwIDkzIDkzIiBmaWxsPSJub25lIiBzdHJva2U9IiMwOTE5MjciIHN0cm9rZS13aWR0aD0iMTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik02OSA3MCA5MyA5MyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2IpIiBzdHJva2Utd2lkdGg9IjciIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9Ijk3IiBjeT0iMzEiIHI9IjMiIGZpbGw9IiNmZmU0YTAiLz48L3N2Zz4K",
+    "initialPrice": "0.0140",
+    "listingAt": "2026-10-28T13:00:00Z",
+    "displayTimeZone": "Europe/Moscow",
+    "ownerAllocation": "0",
+    "seedMode": "manual",
+    "seed": "qaventra-20261028-v1",
+    "tradable": false,
+    "simulationProfile": "COMPRESSION_BREAKOUT",
+    "wickModel": "NATURAL_V1",
+    "simulationProgram": {
+      "kind": "scenario-controls-v2",
+      "scenario": "WAVES",
+      "first24hGainPercent": "680",
+      "maxPrice": "0.88858",
+      "stages": [
+        {
+          "type": "growth",
+          "durationHours": 24,
+          "targetPrice": "0.1092"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 12,
+          "targetPrice": "0.0784"
+        },
+        {
+          "type": "growth",
+          "durationHours": 72,
+          "targetPrice": "0.352"
+        },
+        {
+          "type": "range",
+          "durationHours": 24,
+          "targetPrice": "0.352"
+        },
+        {
+          "type": "growth",
+          "durationHours": 72,
+          "targetPrice": "0.685"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 24,
+          "targetPrice": "0.51"
+        },
+        {
+          "type": "recovery",
+          "durationHours": 72,
+          "targetPrice": "0.818"
+        }
+      ],
+      "afterGrowth": "range",
+      "pullbacks": {
+        "frequency": "moderate",
+        "minDepthPercent": "3",
+        "maxDepthPercent": "12",
+        "durationMinutes": 60
+      },
+      "candles": {
+        "intensity": "high",
+        "diversity": 0.75,
+        "pauseFrequency": "moderate"
+      },
+      "wicks": {
+        "length": "normal",
+        "longFrequency": "moderate"
+      }
+    }
+  },
+  "sourceConfigSha256": "c8b1daedc8841f9ecc3883c3fb791e5c22c73c16b9d5b27c647b1d7a8ddf0036",
+  "candidate": {
+    "scope": "ISOLATED_MODEL_ONLY",
+    "sourceConfigSha256": "c8b1daedc8841f9ecc3883c3fb791e5c22c73c16b9d5b27c647b1d7a8ddf0036",
+    "effectiveAt": 1793462942345,
+    "anchor": 0.1589305735,
+    "program": {
+      "kind": "scenario-controls-v2",
+      "scenario": "WAVES",
+      "first24hGainPercent": "680",
+      "maxPrice": "0.88858",
+      "stages": [
+        {
+          "type": "growth",
+          "durationHours": 24,
+          "targetPrice": "0.1092"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 12,
+          "targetPrice": "0.0784"
+        },
+        {
+          "type": "growth",
+          "durationHours": 39.15065138888889,
+          "targetPrice": "0.1589305735"
+        },
+        {
+          "type": "growth",
+          "durationHours": 2.349348611111111,
+          "targetPrice": "0.5383"
+        },
+        {
+          "type": "range",
+          "durationHours": 7.5,
+          "targetPrice": "0.5383"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 16.5,
+          "targetPrice": "0.32298"
+        },
+        {
+          "type": "recovery",
+          "durationHours": 6.5,
+          "targetPrice": "0.352"
+        },
+        {
+          "type": "range",
+          "durationHours": 24,
+          "targetPrice": "0.352"
+        },
+        {
+          "type": "growth",
+          "durationHours": 72,
+          "targetPrice": "0.685"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 24,
+          "targetPrice": "0.51"
+        },
+        {
+          "type": "recovery",
+          "durationHours": 72,
+          "targetPrice": "0.818"
+        }
+      ],
+      "afterGrowth": "range",
+      "pullbacks": {
+        "frequency": "moderate",
+        "minDepthPercent": "3",
+        "maxDepthPercent": "12",
+        "durationMinutes": 60
+      },
+      "candles": {
+        "intensity": "high",
+        "diversity": 0.75,
+        "pauseFrequency": "moderate"
+      },
+      "wicks": {
+        "length": "normal",
+        "longFrequency": "moderate"
+      }
+    },
+    "correctionEndApproved": true
+  }
+}

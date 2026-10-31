@@ -1,5 +1,7 @@
 {
   "scope": "ISOLATED_MODEL_ONLY",
+  "superseded": true,
+  "supersededBy": "qvtr-review-current.json",
   "candidateId": "qvtr-20261031-1630",
   "sourceSnapshot": "qvtr-source-20261031-refresh.json",
   "effectiveAt": "2026-10-31T16:30:00Z",
