@@ -1,6 +1,6 @@
 'use strict';
 /**
- * ECLAVO (ECLV/USDT), the candidate listing of 2026-11-03 13:00 UTC = 16:00 Moscow,
+ * ECLAVO (ECLV/USDT), the candidate listing of 2026-11-06 13:00 UTC = 16:00 Moscow,
  * end to end in a local, disposable copy of the managed-listings system.
  *
  * Real pieces: the market-edge Worker bundle in workerd (Miniflare, SQLite
@@ -13,7 +13,7 @@
  *    API with the JSON file (worker B): both store the same draft, equal to
  *    config/test-markets/eclv-20261103.draft.json; the seed is the manual one
  *    and survives every save; a second ECLV is refused (DUPLICATE_TICKER).
- * 2. Private preview: 0.0140 → 0.1092 USDT after 24 h, nothing above 0.518.
+ * 2. Private preview: 0.0140 → 0.1092 USDT after 24 h, nothing above 1.01472.
  * 3. LOCAL worker A only: publish with the timer off (staged, hidden), then
  *    start the timer — the exchange shows the countdown card, the logo at
  *    20/24/64 px, Spot search and Markets, desktop 1440 and phone 390.
@@ -58,9 +58,9 @@ const EDGE = `http://127.0.0.1:${EDGE_PORT}`;
 const EDGE_B = `http://127.0.0.1:${Number(process.env.QA_EDGE_B_PORT || 8796)}`;
 const STORE_TOKEN = 'synthetic-local-only-listings-secret-0602';
 const file = JSON.parse(fs.readFileSync(path.join(root, 'config/test-markets/eclv-20261103.draft.json'), 'utf8'));
-const logoPath = path.join(root, 'config/test-markets/eclv-20261103.logo.svg');
+const logoPath = path.join(root, 'config/test-markets/eclv-20261103.logo.png');
 const AT = Date.parse(file.listingAt), HOUR = 3_600_000, DAY = 24 * HOUR;
-const DATE_LINE = '03.11.2026 — 13:00 UTC / 16:00 МСК';
+const DATE_LINE = '06.11.2026 — 13:00 UTC / 16:00 МСК';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' };
 fs.mkdirSync(output, { recursive: true });
 
@@ -137,11 +137,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
   assert.ok(fs.existsSync(path.join(dist, 'index.html')), `build the frontend first: QA_FRONTEND_DIST=${dist}`);
   const persistA = fs.mkdtempSync(path.join(os.tmpdir(), 'voltex-eclv-qa-a-'));
   const persistB = fs.mkdtempSync(path.join(os.tmpdir(), 'voltex-eclv-qa-b-'));
-  const mfA = await startEdge(EDGE_PORT, persistA);
-  const mfB = await startEdge(Number(new URL(EDGE_B).port), persistB);
-  const A = await renderFor(EDGE, 'A');
-  const B = await renderFor(EDGE_B, 'B');
-  const browser = await chromium.launch(process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {});
+  let mfA, mfB, A, B, browser;
   let viaForm = null, viaApi = null, idA = null;
 
   const newPage = async (origin, width, who = 'admin', clock = null) => {
@@ -155,6 +151,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         const response = managedListingResponse(new Request(u, { method: route.request().method() }), published.listings, clock.now(), published.revision);
         if (response) return route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: Buffer.from(await response.arrayBuffer()) });
       }
+      if(new URL(u).hostname==='fonts.googleapis.com')return route.fulfill({status:200,contentType:'text/css',body:'/* isolated QA system fonts */'});
       if (u.startsWith(origin) || u.startsWith(EDGE) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
       return route.abort();
     });
@@ -169,8 +166,12 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
   const shot = async (page, name, options = {}) => { await page.screenshot({ path: path.join(output, name), animations: 'disabled', ...options }); report.screenshots.push(name); };
 
   try {
+    mfA = await startEdge(EDGE_PORT, persistA);
+    mfB = await startEdge(Number(new URL(EDGE_B).port), persistB);
+    A = await renderFor(EDGE, 'A'); B = await renderFor(EDGE_B, 'B');
+    browser = await chromium.launch(process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {});
     /* 1a. Import through the Admin Listings form on worker A, exactly as the owner would type it. */
-    await step('form import (1440): every field typed in Admin → Listings, logo uploaded from the SVG file, «Сохранить черновик»', async () => {
+    await step('form import (1440): every field typed in Admin → Listings, logo uploaded from the PNG file, «Сохранить черновик»', async () => {
       const page = await newPage(A.origin, 1440);
       await page.goto(`${A.origin}/admin/listings`);
       await page.locator('[data-create-listing]').click({ timeout: 20000 });
@@ -181,8 +182,8 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       await page.fill('[data-field="initialPrice"]', file.initialPrice);
       await page.fill('[data-field="ownerAllocation"]', file.ownerAllocation);
       await page.selectOption('[data-field="timeZone"]', 'Europe/Moscow');
-      await page.fill('[data-field="wallTime"]', '2026-11-03T16:00');
-      assert.match(await page.locator('[data-listing-utc]').innerText(), /03\.11\.2026 13:00 Всемирное время \(UTC\)/);
+      await page.fill('[data-field="wallTime"]', '2026-11-06T16:00');
+      assert.match(await page.locator('[data-listing-utc]').innerText(), /06\.11\.2026 13:00 Всемирное время \(UTC\)/);
       await page.locator('.listing-seed label', { hasText: 'Вручную' }).locator('input').check();
       await page.fill('[data-field="seed"]', file.seed);
       await page.setInputFiles('[data-field="logo"]', logoPath);
@@ -259,6 +260,37 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       report.draft = { id: listed[0].id, scenario: viaApi.simulationProgram.scenario, simulationProfile: viaApi.simulationProfile, wickModel: viaApi.wickModel, seed: viaApi.seed };
     });
 
+    await step('update the SAME legacy private ECLV through real CAS; reload preserves November 6, +7148%, seed/profile and an unrelated QVTR; repeat sends no PUT', async()=>{
+      const rows=(await B.api('/admin/listings')).body.listings, existing=rows.find(l=>l.symbol==='ECLV');
+      const q=JSON.parse(fs.readFileSync(path.join(root,'config/test-markets/qvtr-20261028.draft.json'),'utf8'));
+      const {schemaVersion:_q,...qconfig}=q;
+      const other=await B.api('/admin/listings',{method:'POST',body:{config:qconfig}});
+      assert.equal(other.status,201,JSON.stringify(other.body));
+      const qBefore=(await B.api('/admin/listings')).body.listings.find(l=>l.id===other.body.id);
+      const prior=structuredClone(file);prior.listingAt='2026-11-03T13:00:00Z';prior.simulationProgram.maxPrice='0.518';prior.simulationProgram.stages.at(-1).targetPrice='0.435';
+      const {schemaVersion:_s,...oldConfig}=prior;
+      const old=await B.api(`/admin/listings/${existing.id}/draft`,{method:'PUT',ifMatch:existing.draftRevision,body:{config:oldConfig}});
+      assert.equal(old.status,200,JSON.stringify(old.body));
+      const puts=()=>report.renderCalls.filter(c=>c===`B PUT /admin/listings/${existing.id}/draft`).length;
+      const before=puts(),updated=await importTool(['--update']);assert.equal(updated.code,0,updated.out);
+      assert.equal(puts(),before+1);assert.equal((await importTool(['--update'])).code,0);assert.equal(puts(),before+1);
+      const after=(await B.api('/admin/listings')).body.listings,saved=after.find(l=>l.symbol==='ECLV');
+      assert.equal(saved.id,existing.id);assert.equal(saved.draftRevision,old.body.draftRevision+1);
+      assert.deepEqual(comparable(saved.draft),file);assert.equal(saved.draft.seed,existing.draft.seed);
+      assert.equal(saved.draft.simulationProfile,existing.draft.simulationProfile);assert.equal(saved.draft.wickModel,existing.draft.wickModel);
+      assert.deepEqual(after.find(l=>l.id===other.body.id),qBefore);
+      assert.equal(after.filter(l=>l.symbol==='ECLV').length,1);
+      for(const width of [1440,390]){
+        const page=await newPage(B.origin,width);await page.goto(`${B.origin}/admin/listings`);await page.reload();
+        await page.locator('[data-edit-listing="ECLV"]').click({timeout:20000});
+        assert.equal(await page.inputValue('[data-field="wallTime"]'),'2026-11-06T16:00');
+        assert.equal(await page.inputValue('[data-field="seed"]'),file.seed);
+        assert.equal(await page.inputValue('[data-field="stageTarget-4"]'),'1.01472');
+        await shot(page,`updated-private-draft-${width}.png`,{fullPage:true});await page.context().close();
+      }
+      report.privateUpdate={sameId:true,revision: saved.draftRevision,cas:true,repeatWrites:0,qvtrUnchanged:true};
+    });
+
     await step('no duplicates, no new seed: a second ECLV is 409 DUPLICATE_TICKER (manual or automatic seed); saves keep the seed and profile; a stale save is 409', async () => {
       const { schemaVersion: _schema, ...config } = file;
       for (const body of [{ config }, { config: { ...config, seedMode: 'auto', seed: undefined } }, { config: { ...config, seed: 'eclavo-20261103-v2' } }]) {
@@ -267,7 +299,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       }
       const listed = (await B.api('/admin/listings')).body.listings;
       assert.equal(listed.filter((l) => l.symbol === 'ECLV').length, 1);
-      const id = listed[0].id, revision = listed[0].draftRevision;
+      const eclv=listed.find(l=>l.symbol==='ECLV');const id = eclv.id, revision = eclv.draftRevision;
       const resaved = await B.api(`/admin/listings/${id}/draft`, { method: 'PUT', ifMatch: revision, body: { config } });
       assert.equal(resaved.status, 200, JSON.stringify(resaved.body));
       assert.deepEqual([resaved.body.draftRevision, resaved.body.draft.seed, resaved.body.draft.simulationProfile], [revision + 1, file.seed, viaApi.simulationProfile]);
@@ -291,18 +323,18 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
     });
 
     /* 2. The private preview of the draft. */
-    await step('private preview: 0.014 at 13:00 UTC, 0.1092 after 24 h (+680 %), every 5m/1h candle within (0, 0.518]; 12:59:50 UTC has no candles', async () => {
+    await step('private preview: 0.014 at 13:00 UTC, 0.1092 after 24 h (+680 %), every 5m/1h candle within (0, 1.01472]; 12:59:50 UTC has no candles', async () => {
       const first = await A.api(`/admin/listings/${idA}/preview?horizon=first24h&interval=5m`);
       assert.equal(first.status, 200, JSON.stringify(first.body));
       const summary = first.body.scenarioSummary;
-      assert.deepEqual([summary.initialPrice, summary.first24hPrice, summary.maxPrice].map(Number), [0.014, 0.1092, 0.518]);
+      assert.deepEqual([summary.initialPrice, summary.first24hPrice, summary.maxPrice].map(Number), [0.014, 0.1092, 1.01472]);
       const candles = first.body.candles;
       assert.equal(candles[0].open, 0.014);
       assert.ok(Math.abs(candles.at(-1).close - 0.1092) < 1e-9, `24 h close ${candles.at(-1).close}`);
       const growth = await A.api(`/admin/listings/${idA}/preview?horizon=growth&interval=1h`);
       assert.equal(growth.status, 200);
-      for (const c of [...candles, ...growth.body.candles]) assert.ok(c.low > 0 && c.high <= 0.518, JSON.stringify(c));
-      const before = await A.api(`/admin/listings/${idA}/preview?at=2026-11-03T12:59:50Z&interval=5m`);
+      for (const c of [...candles, ...growth.body.candles]) assert.ok(c.low > 0 && c.high <= 1.01472, JSON.stringify(c));
+      const before = await A.api(`/admin/listings/${idA}/preview?at=2026-11-06T12:59:50Z&interval=5m`);
       assert.deepEqual([before.body.asset.state.phase, before.body.candles.length], ['pre-listing', 0]);
       report.preview = { first24h: { ...summary, candles: candles.length, high: Math.max(...candles.map((c) => c.high)), low: Math.min(...candles.map((c) => c.low)) },
         growth: { ...growth.body.scenarioSummary, candles: growth.body.candles.length, high: Math.max(...growth.body.candles.map((c) => c.high)) } };
@@ -324,12 +356,12 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         const row = page.locator('[data-listing-row="ECLV"]');
         await row.waitFor({ timeout: 20000 });
         const text = await row.innerText();
-        for (const part of ['ECLV/USDT', 'ECLAVO', 'Черновик', '03.11.2026 13:00 Всемирное время (UTC)', '03.11.2026 15:00 Киев (UTC+2)', '03.11.2026 16:00 Москва (UTC+3)']) assert.ok(text.includes(part), `${width}: ${part} in «${text}»`);
+        for (const part of ['ECLV/USDT', 'ECLAVO', 'Черновик', '06.11.2026 13:00 Всемирное время (UTC)', '06.11.2026 15:00 Киев (UTC+2)', '06.11.2026 16:00 Москва (UTC+3)']) assert.ok(text.includes(part), `${width}: ${part} in «${text}»`);
         await shot(page, `admin-draft-row-${width}.png`);
         await page.locator('[data-edit-listing="ECLV"]').click();
         await page.locator('[data-listing-form]').waitFor();
         assert.deepEqual(await Promise.all(['symbol', 'name', 'initialPrice', 'wallTime', 'timeZone', 'seed'].map((f) => page.inputValue(`[data-field="${f}"]`))),
-          ['ECLV', 'ECLAVO', '0.0140', '2026-11-03T16:00', 'Europe/Moscow', 'eclavo-20261103-v1']);
+          ['ECLV', 'ECLAVO', '0.0140', '2026-11-06T16:00', 'Europe/Moscow', 'eclavo-20261103-v1']);
         await page.locator('[data-preview]').click();
         await page.locator('[data-listing-preview]').waitFor({ timeout: 30000 });
         await page.locator('[data-preview-summary]').scrollIntoViewIfNeeded();
@@ -452,12 +484,12 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
     }
 
     /* 4. After the opening — browser only, the Worker's response code at a simulated server time. */
-    const moments = [['open-plus-30m', AT + 30 * 60_000], ['open-plus-24h', AT + DAY], ['open-plus-7d', AT + 7 * DAY]];
+    const moments = [['open-plus-30m', AT + 30 * 60_000], ['open-plus-24h', AT + DAY], ['open-plus-7d', AT + 7 * DAY], ['recovery-peak', AT + 252 * HOUR]];
     for (const width of [1440, 390]) {
       for (const [name, at] of moments) {
-        await step(`after the opening ${width}, ${name}: the chart replaces the countdown, candles start at 0.014 and stay ≤ 0.518`, async () => {
+        await step(`after the opening ${width}, ${name}: the chart replaces the countdown, candles start at 0.014 and stay ≤ 1.01472`, async () => {
           const offset = at - Date.now();
-          const clock = { offset, now: () => Date.now() + offset };
+          const clock = { offset, now: () => at };
           const page = await newPage(A.origin, width, 'user', clock);
           const candleResponses = [];
           page.on('response', async (r) => { if (/ECLV-USDT\/candles|spot-candles\/ECLV/i.test(r.url())) candleResponses.push(await r.json().catch(() => null)); });
@@ -468,14 +500,15 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
           await page.waitForTimeout(1500);
           const candles = candleResponses.filter(Boolean).flatMap((b) => b.candles || []);
           assert.ok(candles.length > 0, 'no candles were served');
-          assert.ok(candles.every((c) => c.high <= 0.518 && c.low > 0));
+          assert.ok(candles.every((c) => c.high <= 1.01472 && c.low > 0));
           if (name === 'open-plus-30m') assert.ok(candles.some((c) => c.open === 0.014), 'the first candle opens at 0.014');
-          if (name === 'open-plus-24h') {
+          if (name === 'open-plus-24h' || name === 'recovery-peak') {
             const published = await A.store.published();
             const response = managedListingResponse(new Request(`${EDGE}/market/test-assets/ECLV-USDT`), published.listings, at, published.revision);
             const state = (await response.json()).state;
-            assert.ok(Math.abs(state.lastPrice - 0.1092) < 1e-9, `24 h price ${state.lastPrice}`);
-            report.dayOne = state;
+            const expected=name==='recovery-peak'?1.01472:0.1092;
+            assert.ok(Math.abs(state.lastPrice - expected) < 1e-9, `${name} price ${state.lastPrice}`);
+            if(name==='recovery-peak')report.recoveryPeak=state;else report.dayOne = state;
           }
           await shot(page, `exchange-${name}-${width}.png`);
           await page.context().close();
@@ -483,7 +516,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       }
     }
 
-    await step('after the opening 1440, +24 h: «1m», «5m» and «1h» each load their own candles, spaced by the interval, within (0, 0.518], the last close 0.1092', async () => {
+    await step('after the opening 1440, +24 h: «1m», «5m» and «1h» each load their own candles, spaced by the interval, within (0, 1.01472], the last close 0.1092', async () => {
       const at = AT + DAY, offset = at - Date.now();
       const page = await newPage(A.origin, 1440, 'user', { offset, now: () => Date.now() + offset });
       const served = {};
@@ -507,7 +540,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         const step = candles[1].time - candles[0].time;
         assert.ok(step === ms || step === ms / 1000, `${tf} spacing ${step}`);
         for (let i = 1; i < candles.length; i++) assert.equal(candles[i].time - candles[i - 1].time, step, `${tf} gap at ${i}`);
-        assert.ok(candles.every((c) => c.low > 0 && c.high <= 0.518), `${tf} out of (0, 0.518]`);
+        assert.ok(candles.every((c) => c.low > 0 && c.high <= 1.01472), `${tf} out of (0, 1.01472]`);
         assert.ok(Math.abs(candles.at(-1).close - 0.1092) < 1e-9, `${tf} last close ${candles.at(-1).close}`);
         assert.equal(await chart.locator(`[data-cw-tf="${tf}"][aria-pressed="true"], [data-cw-tf-plan][aria-pressed="true"]`).count() > 0, true, `${tf} is not shown as selected`);
         report.intervals[tf] = { candles: candles.length, high: Math.max(...candles.map((c) => c.high)), low: Math.min(...candles.map((c) => c.low)) };
@@ -522,9 +555,9 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       assert.deepEqual((await edgeJson(EDGE_B, '/market/listings')).body.assets, [], 'worker B stays a draft');
     });
   } finally {
-    await browser.close();
-    A.server.close(); B.server.close();
-    await mfA.dispose(); await mfB.dispose();
+    await browser?.close();
+    A?.server.close(); B?.server.close();
+    await mfA?.dispose(); await mfB?.dispose();
     fs.rmSync(persistA, { recursive: true, force: true });
     fs.rmSync(persistB, { recursive: true, force: true });
     fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2));

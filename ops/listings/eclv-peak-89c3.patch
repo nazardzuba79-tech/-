@@ -1,0 +1,31 @@
+diff --git a/src/services/testMarkets/simulationScenarioControls.ts b/src/services/testMarkets/simulationScenarioControls.ts
+index dd30169e..715f35e6 100644
+--- a/src/services/testMarkets/simulationScenarioControls.ts
++++ b/src/services/testMarkets/simulationScenarioControls.ts
+@@ -76,2 +76,9 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
+   let base = baseline(config, p, at);
++  // At the explicit terminal peak, ease into the existing bounded range over
++  // one real hour. No History20 or other main-branch code is backported.
++  const lastStage = c.stages[c.stages.length - 1];
++  if (c.scenario === 'DEEP_RECOVERY' && c.afterGrowth === 'range'
++      && p.index === c.stages.length && lastStage.type === 'recovery' && p.open === cap) {
++    base = cap * (1 - .06 * smooth(Math.min(1, t / HOUR)));
++  }
+   // An episode is a local peak -> local percentage drawdown -> recovery, all
+diff --git a/src/shared/listingScenarioControls.ts b/src/shared/listingScenarioControls.ts
+index ec6202c0..ee5603ed 100644
+--- a/src/shared/listingScenarioControls.ts
++++ b/src/shared/listingScenarioControls.ts
+@@ -76,6 +76,10 @@ export function validateScenarioControls(program: ScenarioControlsProgram, initi
+   let elapsed = 0, previous = initial, foundDayOne = false;
+-  for (const stage of program.stages) {
++  for (const [index, stage] of program.stages.entries()) {
+     elapsed += stage.durationHours;
+     const target = units(stage.targetPrice);
+-    if (target <= 0n || target > cap * 97n / 100n || target + 2n >= cap) throw new RangeError('Цель этапа должна оставлять не менее 3% до максимальной цены для колебаний и теней');
++    // Only the explicit final DEEP_RECOVERY peak may touch the cap.
++    // Every previously valid program keeps the existing headroom behavior.
++    const terminalPeak = program.scenario === 'DEEP_RECOVERY' && program.afterGrowth === 'range'
++      && index === program.stages.length - 1 && stage.type === 'recovery' && target === cap;
++    if (target <= 0n || (!terminalPeak && (target > cap * 97n / 100n || target + 2n >= cap))) throw new RangeError('Цель этапа должна оставлять не менее 3% до максимальной цены для колебаний и теней');
+     if ((stage.type === 'growth' || stage.type === 'recovery') && target <= previous) throw new RangeError('Цена в конце роста или восстановления должна быть выше цены в начале этапа');

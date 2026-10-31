@@ -76,6 +76,16 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
   const label = `scenario-controls-v2:${p.index}`;
   const envelope = Math.min(1, t / (5 * MINUTE), (p.end - at) / (5 * MINUTE));
   let base = baseline(config, p, at);
+  // Only the newly admitted explicit terminal DEEP_RECOVERY peak takes this
+  // branch. Existing valid programs are bit-identical. At the phase boundary
+  // the canonical price is exactly cap; over the following real hour it eases
+  // to 94% before continuing the ordinary deterministic range. A cap-valued
+  // permanent baseline would make displaced() divide by zero or freeze price.
+  const lastStage = c.stages[c.stages.length - 1];
+  if (c.scenario === 'DEEP_RECOVERY' && c.afterGrowth === 'range'
+      && p.index === c.stages.length && lastStage.type === 'recovery' && p.open === cap) {
+    base = cap * (1 - .06 * smooth(Math.min(1, t / HOUR)));
+  }
   // An episode is a local peak -> local percentage drawdown -> recovery, all
   // part of the same price flow. It cannot leak across a configured endpoint.
   const duration = c.pullbacks.durationMinutes * MINUTE;

@@ -1,0 +1,40 @@
+{
+  "scope": "Actual production ADMIN UI, not local QA",
+  "createdExactlyOnePrivateDraft": true,
+  "revision": 1,
+  "date": "2026-10-28T13:00:00Z",
+  "seed": "qaventra-20261028-v1",
+  "fieldsAndApprovedLogoExactAfterReload": true,
+  "first24hPreview": {
+    "price": 0.1092,
+    "candles": 289
+  },
+  "fullGrowthPreview": {
+    "hours": 300,
+    "candles": 301,
+    "lastPrice": 0.818,
+    "high": 0.8182198871,
+    "cap": 0.88858
+  },
+  "published": true,
+  "timerStarted": true,
+  "financialWrites": false,
+  "tradable": false,
+  "ownerAllocation": "0",
+  "nextGate": "Future opening not observed before its scheduled instant; no server clock manipulation",
+  "publishedVersion": 1,
+  "timerState": "running",
+  "activation": "Owner-authorized normal ADMIN publish once, automatic timer initially off, then normal Start timer once",
+  "actualMainDomain": {
+    "route": "https://voltextech.net/trade?pair=QVTR%2FUSDT",
+    "spotSearch": "PASS",
+    "marketsCardAndNavigation": "PASS",
+    "reload": "PASS",
+    "timerDecreases": "PASS",
+    "initialPrice": "0.014000 USDT",
+    "dateLabel": "28.10.2026 — 13:00 UTC / 16:00 МСК",
+    "approvedLogoHash": "8de8764c0accb25f53c645ccf7db6033ff46503316790b87f4c0c29e1976cd73",
+    "desktopCssWidth": 1363,
+    "productionMobile": "NOT RUN; isolated1440/390 PASS"
+  }
+}

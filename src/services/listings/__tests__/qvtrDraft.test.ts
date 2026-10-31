@@ -13,7 +13,7 @@ const AT = Date.parse('2026-10-28T13:00:00Z');
 const item = { id:'qvtr-candidate-only', version:1, publishedAt:new Date(AT-2*DAY_MS).toISOString(), config:saved,
   countdown:{state:'running' as const,updatedAt:AT-2*DAY_MS,updatedBy:'fixture'} };
 
-test('independent ticker, name, date, logo and seed; ECLAVO stays November 3',()=>{
+test('independent ticker, name, date, logo and seed; ECLAVO remains independently scheduled',()=>{
   // The standalone importer compares the saved canonical draft to this file.
   // A numerically equal but noncanonical stage price (e.g.0.510) used to
   // report a false failure after the draft was already created.
@@ -24,9 +24,9 @@ test('independent ticker, name, date, logo and seed; ECLAVO stays November 3',()
   expect(RESERVED_LISTING_SYMBOLS.has(draft.symbol)).toBe(false);
   expect(original.symbol).toBe('ECLV');
   expect(original.name).toBe('ECLAVO');
-  expect(original.listingAt).toBe('2026-11-03T13:00:00Z');
+  expect(original.listingAt).toBe('2026-11-06T13:00:00Z');
   expect(original.seed).toBe('eclavo-20261103-v1');
-  expect(original.simulationProgram.maxPrice).toBe('0.518');
+  expect(original.simulationProgram.maxPrice).toBe('1.01472');
   expect(draft.symbol).not.toBe(original.symbol);
   expect(draft.name).not.toBe(original.name);
   expect(draft.seed).not.toBe(original.seed);

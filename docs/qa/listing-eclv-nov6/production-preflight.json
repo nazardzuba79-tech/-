@@ -1,0 +1,90 @@
+{
+  "observedAt": "2026-10-27T12:24:56.710Z",
+  "scope": "Actual production ADMIN UI, no credentials or user identifiers",
+  "apiHealth": {
+    "status": "ok",
+    "commit": "89c3ac003b44a6a0e7630d2ecbe5d7164e85b683"
+  },
+  "qvtr": {
+    "createdPrivateDraft": true,
+    "revision": 1,
+    "duplicates": 0,
+    "reload": "PASS",
+    "fieldsAndLogoMatchCandidate": true,
+    "first24hPreviewPrice": 0.1092,
+    "fullGrowthPreview": {
+      "hours": 300,
+      "candles": 301,
+      "finalPrice": 0.818,
+      "maxShown": 0.8182198871,
+      "cap": 0.88858
+    },
+    "published": true,
+    "timerStarted": true,
+    "publishedVersion": 1,
+    "actualPublicRoute": "https://voltextech.net/trade?pair=QVTR%2FUSDT",
+    "spotSearch": "PASS",
+    "marketsCard": "PASS",
+    "timerAndReload": "PASS"
+  },
+  "eclv": {
+    "existingPrivateDraft": true,
+    "listingAt": "2026-11-06T13:00:00Z",
+    "seed": "eclavo-20261103-v1",
+    "cap": 0.518,
+    "finalRecovery": 0.435,
+    "logo": "Existing approved PNG, different from historical repository SVG",
+    "unchangedDuringQvtr": true,
+    "updated": true,
+    "updateScope": "date only; peak/cap remain pending compatible runtime release",
+    "savedRevision": 3,
+    "reload": "PASS",
+    "first24hPreview": {
+      "at": "2026-11-07T13:00:00Z",
+      "price": 0.1092,
+      "candles": 289
+    },
+    "seedAndLogoAndOtherFieldsPreserved": true,
+    "approvedPngSha256": "4f9ffc2f38645beeccf238a2609607064a63f7ef6c2d71018d5fae8aa9ca45a7",
+    "desiredPeak": 1.01472,
+    "newScenarioInstalled": false,
+    "dateOnlyPreview": "PASS; first24h at2026-11-07T13:00:00Z=0.1092,289candles"
+  },
+  "frontendReleaseCoordination": "PR627 first through agreed operator; no concurrent frontend deploy; no new production rights inferred",
+  "cloudflareReadOnly": {
+    "status": "BLOCKED",
+    "reason": "Google sign-in returned Unable to sign in. Try again or use your email and password. Stopped after the first generic failure; no settings or deployment changed."
+  },
+  "operatorCoordination": {
+    "at": "2026-10-27T12:50:00Z",
+    "reportedCanonicalFrontendSha": "a7593324be9118cfda91ee8fc6bad0b6ff3acba9",
+    "reportedDeploymentPrefix": "9dbc9e80",
+    "reportedAutoDeploy": false,
+    "reportedPreviews": "none",
+    "source": "Owner coordination message; not independently inspected in this cloud session",
+    "main": "e27117a61d191cbc03456abaf5e88fa38bdf5d62",
+    "frontendPriority": "627 first; no parallel frontend action"
+  },
+  "productionResponsiveQa": {
+    "desktopCssViewport": {
+      "width": 1363,
+      "height": 936
+    },
+    "exact1440Or390ProductionEmulation": "NOT RUN; no documented resize control; standard responsive shortcut did not change the viewport",
+    "localAndCi1440x390": "PASS; independent from production viewport"
+  },
+  "hetznerReadOnly": {
+    "observedAt": "2026-10-27T14:05:31Z",
+    "access": "Secure login and email verification succeeded; existing root VNC session reused; no credential values observed",
+    "apiContainer": "voltex-cutover-api-production-1",
+    "apiImage": "sha256:10e66b427b7941fc49335a7fc251c55e6c93a0415e45897f2518798c6e5acc7a",
+    "retainedImageTag": "voltex-demo-off:89c3ac003b44a6a0e7630d2ecbe5d7164e85b683",
+    "containers": "API healthy, PostgreSQL healthy; no new container started",
+    "memoryAvailableMiB": 2469,
+    "runtimeBootstrap": "Existing read-only runtime-bootstrap.cjs and readonly-egress.cjs mounts preserved; production_config and database password content NOT read",
+    "compose": "Existing full stack includes runtime, hotfix, KYC, TYVN and demo overlays. Never replace it with a standalone older compose/API. Add only an image overlay and retain existing authoritative configuration if a narrow release becomes safe.",
+    "writes": "No production image/config/container change; only read-only docker ps/inspect/images, free, grep and ls",
+    "inputRecovery": "Bulk VNC typing initially truncated; unparameterized dd read stdin/stdout only, terminated with EOF. No file writes. Stable per-character input with explicit modifier names and35ms spacing subsequently verified before execution."
+  },
+  "latestPermission": "Owner authorizes necessary task actions; missing Cloudflare current-version access/operator coordination remains an actual release gate, not missing approval"
+}

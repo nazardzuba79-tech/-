@@ -1,0 +1,7 @@
+{
+  "scope": "Local synthetic QA only",
+  "failures": [
+    "update the SAME legacy private ECLV through real CAS; reload preserves November 6, +7148%, seed/profile and an unrelated QVTR; repeat sends no PUT: AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal: + actual - expected ... Skipped lines { + active: null, + activeVersion: null, + countdown: null, draft: { displayTimeZone: 'Europe/Moscow', initialPrice: '0.0140', listingAt: '2026-10-28T13:00:00Z', logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlFBVkVOVFJBIGZhY2V0ZWQgUSBtYXJrIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjNDZmMWRmIi8+PHN0b3Agb2Zmc2V0PSIuNTUiIHN0b3At"
+  ],
+  "cause": "QA compared a create response projection to a full list row. Fixed by comparing full list snapshots before/after. No product failure suppressed. Earlier candidate also failed the existing 3% endpoint guard, addressed by tested terminal-peak support."
+}

@@ -1,0 +1,114 @@
+name: ECLAVO Cloudflare release identity (GET only)
+
+# Uses the repository's existing Cloudflare credentials only for provider GETs.
+# No checkout, build, upload, deployment, settings, secret or listing write.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/eclv-cloudflare-readonly.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare-readonly:
+    if: >-
+      github.event.pull_request.number == 628 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'work/eclavo-20261106-target7148' &&
+      github.actor == github.repository_owner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      CF_WORKER_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_PAGES_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+      REVIEW_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read current Worker deployments, retained versions and Pages identity
+        shell: bash
+        run: |
+          node <<'NODE'
+          'use strict';
+          const fs = require('node:fs'), path = require('node:path');
+          const account = 'c379227476dedde6dff09c787ffdb510';
+          const worker = `/accounts/${account}/workers/scripts/voltex-market-edge`;
+          const pages = `/accounts/${account}/pages/projects/voltex-exchange`;
+          const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+          const allowed = p => p === `${worker}/deployments` || p === pages
+            || p.startsWith(`${worker}/versions/`) && uuid.test(p.slice(`${worker}/versions/`.length));
+          const report = {scope:'Existing VOLTEX Cloudflare resources; HTTP GET only; no secrets/PII/binding values exported',
+            at:new Date().toISOString(), head:process.env.REVIEW_HEAD, requests:[], worker:null, pages:null};
+          async function get(p, token) {
+            if (!allowed(p)) throw new Error('PATH_REFUSED');
+            if (!token) throw new Error('MISSING_STORED_TOKEN');
+            const r = await fetch(`https://api.cloudflare.com/client/v4${p}`, {
+              method:'GET', redirect:'error', signal:AbortSignal.timeout(20000),
+              headers:{Authorization:`Bearer ${token}`,Accept:'application/json'}
+            });
+            report.requests.push({resource:p===pages?'pages-project':p.endsWith('/deployments')?'worker-deployments':'worker-version',method:'GET',http:r.status});
+            if (!r.ok) throw new Error(`HTTP_${r.status}`);
+            let j; try { j=await r.json(); } catch { throw new Error('INVALID_PROVIDER_JSON'); }
+            if (j.success !== true) throw new Error('PROVIDER_REFUSED');
+            return j.result;
+          }
+          function deployment(d) {
+            if (!uuid.test(d?.id) || !Array.isArray(d.versions) || !d.versions.length
+              || d.versions.some(v=>!uuid.test(v.version_id)||!Number.isFinite(v.percentage))
+              || Math.abs(d.versions.reduce((sum,v)=>sum+v.percentage,0)-100)>0.001)
+              throw new Error('INVALID_WORKER_DEPLOYMENT');
+            return {id:d.id,createdOn:d.created_on,versions:d.versions.map(v=>({id:v.version_id,percentage:v.percentage}))};
+          }
+          async function readWorker() {
+            const result=await get(`${worker}/deployments`,process.env.CF_WORKER_TOKEN);
+            const list=Array.isArray(result)?result:result?.deployments;
+            if(!Array.isArray(list)||!list.length) throw new Error('NO_WORKER_DEPLOYMENTS');
+            const recent=list.slice().sort((a,b)=>Date.parse(b.created_on)-Date.parse(a.created_on)).slice(0,4).map(deployment);
+            const ids=[...new Set(recent.flatMap(d=>d.versions.map(v=>v.id)))];
+            const retained=[];
+            for(const id of ids){
+              const v=await get(`${worker}/versions/${id}`,process.env.CF_WORKER_TOKEN);
+              if(v?.id!==id) throw new Error('WORKER_VERSION_MISMATCH');
+              // Deliberately exclude author identities and all binding values.
+              retained.push({id,createdOn:v.metadata?.created_on,number:v.number,
+                scriptEtag:v.resources?.script?.etag,compatibilityDate:v.resources?.script_runtime?.compatibility_date});
+            }
+            const active=recent[0];
+            return {status:'READ_CONFIRMED',active,recent,retained,
+              matchesRecordedOctober22Version:active.versions.length===1&&active.versions[0].percentage===100
+                &&active.versions[0].id==='40ceafb6-b2ec-42b4-b05e-53a7b3e912e4',
+              sourceMapping:'Only an exact active-version match may reuse the previously recorded source mapping; never infer from the semantic v10 health label'};
+          }
+          async function readPages(){
+            const p=await get(pages,process.env.CF_PAGES_TOKEN||process.env.CF_WORKER_TOKEN);
+            if(p?.name!=='voltex-exchange') throw new Error('PAGES_PROJECT_MISMATCH');
+            const d=p.canonical_deployment,c=p.source?.config;
+            if(!d?.id||!c) throw new Error('NO_CANONICAL_PAGES_IDENTITY');
+            const sha=d.deployment_trigger?.metadata?.commit_hash;
+            if(!/^[a-f0-9]{40}$/.test(sha||'')) throw new Error('NO_CANONICAL_PAGES_SHA');
+            return {status:'READ_CONFIRMED',project:p.name,productionBranch:p.production_branch,
+              canonical:{id:d.id,createdOn:d.created_on,sha,stage:d.latest_stage?.name,status:d.latest_stage?.status},
+              automatic:{legacyEnabled:c.deployments_enabled,productionEnabled:c.production_deployments_enabled,
+                previews:c.preview_deployment_setting,previewIncludes:c.preview_branch_includes,previewExcludes:c.preview_branch_excludes},
+              environmentValues:'NOT_EXPORTED'};
+          }
+          function safeFailure(e){return /^(MISSING_STORED_TOKEN|HTTP_\d{3}|[A-Z_]+)$/.test(e.message)?e.message:'REQUEST_FAILED';}
+          (async()=>{
+            try{report.worker=await readWorker();}catch(e){report.worker={status:'BLOCKED',reason:safeFailure(e)};}
+            try{report.pages=await readPages();}catch(e){report.pages={status:'BLOCKED',reason:safeFailure(e)};}
+            const file=path.join(process.env.RUNNER_TEMP,'eclv-cloudflare-readonly.json');
+            fs.writeFileSync(file,JSON.stringify(report,null,2)+'\n',{mode:0o600});
+            console.log(JSON.stringify(report,null,2));
+            if(report.worker.status!=='READ_CONFIRMED'||report.pages.status!=='READ_CONFIRMED')process.exitCode=1;
+          })().catch(()=>{console.error('Read-only preflight failed safely; production unchanged');process.exitCode=1;});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eclv-cloudflare-readonly
+          path: ${{ runner.temp }}/eclv-cloudflare-readonly.json
+          if-no-files-found: warn
+          retention-days: 7
