@@ -15,5 +15,6 @@ DELETE FROM "_prisma_migrations" WHERE migration_name IN (
   '20261030180000_copy_demo_subscriptions',
   '20261030210000_copy_futures_demo_observer',
   '20261030230000_copy_futures_demo_execution',
-  '20261031090000_copy_futures_demo_exit_receipts');
+  '20261031090000_copy_futures_demo_exit_receipts',
+  '20261101090000_copy_futures_demo_delegation');
 COMMIT;

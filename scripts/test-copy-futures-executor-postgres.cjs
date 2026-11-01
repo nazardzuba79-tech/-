@@ -197,7 +197,7 @@ async function main(){
   assert.equal(await revisions(second),before,'no follower command after a refusal');
   assert.equal(await db.copyFuturesDemoMirror.count({where:{consent:{userId:second}}}),2,'nothing journaled');
  });
- await check('a source take-profit exit is recorded and refused on the record; the copied position is not touched',async()=>{
+ await check('a source take-profit exit is mirrored: the copied position closes with it',async()=>{
   await observer.subscribe(third,sessions[third],'VX-001',{maxLeverage:'3',maxFillUsdt:'6000'});
   await copy.begin(third,sessions[third],limits);
   clock.t+=M+100;
@@ -224,16 +224,16 @@ async function main(){
   await observer.scan(third,sessions[third]);
   const recorded=await db.copyFuturesDemoEvent.findMany({where:{subscription:{userId:third},sourcePositionId:sourcePosition}});
   assert.deepEqual(recorded.map(e=>e.kind).sort(),['OPEN','TAKE_PROFIT']);
-  const before=await revisions(third);
-  const refused=await copy.drainOne(third,sessions[third]);
-  assert.equal(refused.status,'REJECTED');assert.equal(refused.reason,'SOURCE_EXIT_NOT_MIRRORED');
-  assert.equal(await revisions(third),before,'no follower command for an exit that is not mirrored');
-  assert.equal((await openPositions(third)).length,1,'the copied position stays as it is, on the record');
+  // Mirrored: the source take-profit closes the copied position in full (risk-reducing exit).
+  const mirrored=await copy.drainOne(third,sessions[third]);
+  assert.equal(mirrored.status,'APPLIED',JSON.stringify(mirrored));
+  assert.equal((await openPositions(third)).length,0,'the copied position is closed with the source exit');
+  assert.equal((await db.copyFuturesDemoMirror.findFirstOrThrow({where:{consent:{userId:third},kind:'TAKE_PROFIT'}})).status,'APPLIED');
   assert.equal((await copy.drainOne(third,sessions[third])).status,'EMPTY');
  });
  await check('real orders and balances untouched; demo balances not topped up by copy',async()=>{
   assert.equal(await financial(),beforeFinancial);
-  assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),5);
+  assert.equal(await db.copyFuturesDemoMirror.count({where:{status:'APPLIED'}}),6);
  });
  console.log(checks.length+' isolated PostgreSQL copy Futures executor checks PASS');
 }

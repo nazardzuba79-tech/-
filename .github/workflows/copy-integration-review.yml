@@ -14,6 +14,8 @@ on:
       - 'prisma/**'
       - 'scripts/test-copy-integration-review.cjs'
       - 'scripts/test-copy-migrations-rollback.sh'
+      - 'scripts/test-copy-futures-auto-postgres.cjs'
+      - 'scripts/test-copy-futures-executor-postgres.cjs'
       - '.github/workflows/copy-integration-review.yml'
   workflow_dispatch: {}
 permissions:
@@ -54,6 +56,16 @@ jobs:
       - name: Authenticated HTTP + browser integration (Spot LIMIT/MARKET, Futures OPEN/CLOSE)
         run: node scripts/test-copy-integration-review.cjs
         env: { COPY_INTEGRATION_BROWSER: '1', QA_PLAYWRIGHT_MODULE: /tmp/pw/node_modules/playwright }
+      - name: Automatic Futures copy worker (consent delegation, add-ons, exits, revoke, stop)
+        run: |
+          psql "postgresql://postgres:fixture@127.0.0.1:5432/postgres" -c "CREATE DATABASE copy_demo_auto_ci"
+          DATABASE_URL=postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_auto_ci DIRECT_URL=postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_auto_ci npx prisma migrate deploy
+          COPY_FUTURES_AUTO_TEST_DATABASE_URL=postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_auto_ci node scripts/test-copy-futures-auto-postgres.cjs
+      - name: Executor regression (manual drain, lost response, exits mirrored)
+        run: |
+          psql "postgresql://postgres:fixture@127.0.0.1:5432/postgres" -c "CREATE DATABASE copy_demo_exec_ci"
+          DATABASE_URL=postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_exec_ci DIRECT_URL=postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_exec_ci npx prisma migrate deploy
+          COPY_FUTURES_EXEC_TEST_DATABASE_URL=postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_exec_ci node scripts/test-copy-futures-executor-postgres.cjs
       - name: Migrations apply -> rollback == main schema -> re-apply
         run: bash scripts/test-copy-migrations-rollback.sh
         env: { PGURL_ADMIN: 'postgresql://postgres:fixture@127.0.0.1:5432/postgres', BASE_REF: origin/main }

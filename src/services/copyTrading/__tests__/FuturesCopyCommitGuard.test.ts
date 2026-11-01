@@ -95,6 +95,38 @@ describe('Native Demo internal, atomic copy replay commit guard', () => {
     expect(close.positions).toHaveLength(0);
     expect(close.events.some(e => e.kind === 'CLOSE' && e.positionId === positionId)).toBe(true);
   });
+  test('protective partial CLOSE remains possible when price/exposure/leverage exceed entry-only caps', async () => {
+    const f = setup(); await f.service.initialize(actor, key());
+    const opened = await f.service.command(actor, command(key()), {
+      commitGuard: futuresCopyCommitGuard(limits('OPEN')),
+    });
+    const positionId = opened.positions[0].id;
+    f.step();
+    const close = { kind: 'CLOSE' as const, positionId, quantity: '0.05', idempotencyKey: key() };
+    // With the previous guard, this valid risk-reducing exit failed at
+    // COPY_FILL_NOTIONAL_EXCEEDED (or leverage/exposure on partial close).
+    const reduced = await f.service.command(actor, close, {
+      commitGuard: futuresCopyCommitGuard({
+        ...limits('CLOSE', positionId), requestedQuantity: '0.05',
+        maxFillUsdt: '100', maxTotalExposureUsdt: '1000', maxLeverage: '1',
+        sourcePrice: '1', maxDeviationBps: '0', riskReducingExit: true,
+      }),
+    });
+    expect(reduced.positions).toHaveLength(1);
+    expect(Number(reduced.positions[0].quantity)).toBeCloseTo(0.05);
+    expect(reduced.events.some(e => e.kind === 'CLOSE' && e.positionId === positionId)).toBe(true);
+    // A non-protective CLOSE still requires source-price/slippage admission.
+    const before = structuredClone(f.repo.row);
+    await expect(f.service.command(actor, {
+      kind: 'CLOSE', positionId, quantity: '0.05', idempotencyKey: key(),
+    }, {
+      commitGuard: futuresCopyCommitGuard({
+        ...limits('CLOSE', positionId), requestedQuantity: '0.05',
+        sourcePrice: '1', maxDeviationBps: '0',
+      }),
+    })).rejects.toMatchObject({ code: 'COPY_SLIPPAGE_EXCEEDED' });
+    expect(f.repo.row).toEqual(before);
+  });
   test('disabled copy gate blocks a command before NativeDemo commit', async () => {
     const f = setup(); await f.service.initialize(actor, key());
     const before = structuredClone(f.repo.row);

@@ -11,7 +11,7 @@ interface Mirror {
   sourceEventId: string; kind: string; status: 'APPLIED' | 'REJECTED'; reason: string | null;
   symbol: string | null; side: string | null; filledQuantity: string | null; createdAt: string;
 }
-export interface FuturesCopySnapshot { consent: Consent | null; mirrors: Mirror[] }
+export interface FuturesCopySnapshot { automatic?: boolean; consent: Consent | null; mirrors: Mirror[] }
 const API = '/copy-trading/futures-demo-execution';
 /** Only a confirmed server shape is shown; anything else is treated as unavailable. */
 const verified = (next: unknown): FuturesCopySnapshot => {
@@ -76,7 +76,7 @@ export function FuturesCopyPanel({ observing, onActive }: { observing: boolean; 
       onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} /></label>;
   return <section className="futures-copy" aria-labelledby="futures-copy-title">
     <h2 id="futures-copy-title">{t.title}</h2>
-    <p className="observer-no-trade" role="status"><strong>{active ? t.on : t.off}</strong></p>
+    <p className="observer-no-trade" role="status"><strong>{active ? (data?.automatic ? t.onAuto : t.on) : t.off}</strong></p>
     <p className="observer-warning" role="note">{t.notice}</p>
     {error && <p role="alert">{t.reasons.other}</p>}
     {!observing && !active && <p>{t.needObservation}</p>}

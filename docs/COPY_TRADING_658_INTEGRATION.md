@@ -101,3 +101,25 @@ which is a separate owner decision.
   balances.
 - Production gate change, deploy, migrations on the production database: owner
   approval required. Green CI is not a release permission.
+
+## 1 Nov 2026 — automatic Futures copy and exits (still default OFF)
+
+- **Automatic:** consent now creates one revocable delegated `Session` row for the
+  follower (user agent "VOLTEX copy trading (automatic)", visible in their session
+  list, no token ever issued, 7-day delegation). `FuturesCopyWorker` (3 s, bounded
+  to 50 consents per pass) scans the leader's new committed events and runs them
+  through the same executor and commit guard as the manual path, acting with that
+  session. Requires `COPY_FUTURES_DEMO_AUTOMATIC=true` on top of every previous gate.
+  Stop revokes the delegation at once; a user revoking it in the session list stops
+  copying too.
+- **Mirrored now:** leader add-ons (into the same copied position), several symbols
+  at once, proportional partial closes (full close leaves no dust), and leader
+  take-profit / stop-loss / liquidation exits (risk-reducing: not refused for
+  price distance).
+- **Still refused:** any follower position or resting order that the consent did
+  not open (no mixing with own trading); a new consent while old copied history
+  exists.
+- Migration `20261101090000_copy_futures_demo_delegation` (two nullable columns on
+  the new consent table); rollback SQL updated.
+- Verified: `scripts/test-copy-futures-auto-postgres.cjs` 13/13 and the executor
+  regression 12/12 on PostgreSQL 16.
