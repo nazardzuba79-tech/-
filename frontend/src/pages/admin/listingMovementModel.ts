@@ -17,6 +17,7 @@ export const MOVEMENT_SCENARIOS = [
 export type MovementScenario = typeof MOVEMENT_SCENARIOS[number]['id'];
 export type MovementFrequency = 'rare' | 'moderate' | 'often';
 export interface ListingMovement {
+  terminalPeak?: 'bounded-v1';
   kind: 'scenario-controls-v2';
   scenario: MovementScenario | 'AUTO';
   first24hGainPercent: string;
@@ -137,7 +138,8 @@ export function validateListingMovement(initial: string, program: ListingMovemen
   for (const stage of program.stages) {
     if (!Number.isFinite(stage.durationHours) || stage.durationHours <= 0) return 'Продолжительность каждого этапа должна быть больше нуля.';
     elapsed += stage.durationHours;
-    if (!decimal(stage.targetPrice).isGreaterThan(0) || decimal(stage.targetPrice).isGreaterThanOrEqualTo(decimal(program.maxPrice))) return 'Цель этапа должна быть положительной и ниже максимальной цены — оставьте запас для теней.';
+    const terminal = program.terminalPeak === 'bounded-v1' && stage === program.stages[program.stages.length - 1] && decimal(stage.targetPrice).isEqualTo(decimal(program.maxPrice));
+    if (!terminal && (!decimal(stage.targetPrice).isGreaterThan(0) || decimal(stage.targetPrice).isGreaterThanOrEqualTo(decimal(program.maxPrice)))) return 'Цель этапа должна быть положительной и ниже максимальной цены — оставьте запас для теней.';
     if (elapsed === 24) {
       hasDayOne = true;
       if (!decimal(stage.targetPrice).isEqualTo(first)) return 'Цель этапа через 24 часа не совпадает с ростом за первые сутки.';
