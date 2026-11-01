@@ -82,6 +82,7 @@ export const historicalGrowthSchema = z.object({
   logsSha256: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
 export const scenarioControlsSchema = z.object({
+  terminalPeak: z.literal('bounded-v1').optional(),
   kind: z.literal('scenario-controls-v2'),
   scenario: z.enum(['AUTO', ...LISTING_SCENARIOS]),
   first24hGainPercent: scenarioDecimal,
@@ -202,6 +203,8 @@ export function parseListingConfig(input: unknown): ListingConfig {
   }
   const config = parsed.data;
   if (config.simulationProgram?.kind === 'scenario-controls-v2') {
+    if (config.simulationProgram.terminalPeak && (config.tradable || Number(config.ownerAllocation) !== 0))
+      throw new ListingValidationError('INVALID_SCENARIO', 'Terminal peak models require tradable:false and zero owner allocation');
     if (Date.parse(config.listingAt) % 10_000 !== 0) throw new ListingValidationError('INVALID_SCENARIO', 'Время запуска должно совпадать с границей 10 секунд');
     if ((config.simulationProgram.afterGrowth === 'historical' || config.simulationProgram.growth === 'historical-window')
         && historicalSerializedBytes(config) > 80 * 1024)

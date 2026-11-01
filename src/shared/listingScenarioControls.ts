@@ -5,6 +5,8 @@ export const LISTING_SCENARIOS = ['CALM', 'WAVES', 'FREQUENT_PULLBACKS', 'COMPRE
 export type ListingScenario = typeof LISTING_SCENARIOS[number];
 export type ScenarioFrequency = 'rare' | 'moderate' | 'often';
 export interface ScenarioControlsProgram {
+  /** Opt-in private model: exact final cap, then a bounded range. Legacy paths stay unchanged. */
+  terminalPeak?: 'bounded-v1';
   kind: 'scenario-controls-v2';
   scenario: ListingScenario | 'AUTO';
   first24hGainPercent: string;
@@ -194,6 +196,11 @@ function validateHistoricalWindowControls(program: ScenarioControlsProgram, init
 }
 
 export function validateScenarioControls(program: ScenarioControlsProgram, initialPrice: string): void {
+  if (program.terminalPeak && (program.afterGrowth !== 'range' || program.growth || program.historical ||
+      !['WAVES', 'DEEP_RECOVERY', 'COMPRESSION_BREAKOUT'].includes(program.scenario) ||
+      !['growth', 'recovery'].includes(program.stages[program.stages.length - 1]?.type ?? '') ||
+      units(program.stages[program.stages.length - 1]?.targetPrice ?? '0') !== units(program.maxPrice)))
+    throw new RangeError('Terminal peak requires a final growth/recovery at the cap and bounded continuation');
   if (program.growth !== undefined || program.historicalGrowth !== undefined) { validateHistoricalWindowControls(program, initialPrice); return; }
   const initial = units(initialPrice), cap = units(program.maxPrice), first = units(exactPriceFromGain(initialPrice, program.first24hGainPercent));
   // Ten decimal asset precision still needs enough distinct prices for actual
@@ -209,10 +216,11 @@ export function validateScenarioControls(program: ScenarioControlsProgram, initi
   if (Number(program.first24hGainPercent) <= 0 || Number(program.first24hGainPercent) > 100000) throw new RangeError('Рост за первые сутки должен быть больше нуля и не выше 100000%');
   if (units(program.pullbacks.minDepthPercent) > units(program.pullbacks.maxDepthPercent)) throw new RangeError('Минимальная глубина отката не может быть больше максимальной');
   let elapsed = 0, previous = initial, foundDayOne = false;
-  for (const stage of program.stages) {
+  for (const [index, stage] of program.stages.entries()) {
     elapsed += stage.durationHours;
     const target = units(stage.targetPrice);
-    if (target <= 0n || target > cap * 97n / 100n || target + 2n >= cap) throw new RangeError('Цель этапа должна оставлять не менее 3% до максимальной цены для колебаний и теней');
+    const terminal = program.terminalPeak === 'bounded-v1' && index === program.stages.length - 1 && target === cap;
+    if (!terminal && (target <= 0n || target > cap * 97n / 100n || target + 2n >= cap)) throw new RangeError('Цель этапа должна оставлять не менее 3% до максимальной цены для колебаний и теней');
     if ((stage.type === 'growth' || stage.type === 'recovery') && target <= previous) throw new RangeError('Цена в конце роста или восстановления должна быть выше цены в начале этапа');
     if (stage.type === 'range' && target !== previous) throw new RangeError('Для боковика цена в начале и конце этапа должна совпадать');
     if (stage.type === 'pullback' && target >= previous) throw new RangeError('Цена в конце отката должна быть ниже цены в начале этапа');

@@ -1,0 +1,162 @@
+[
+  {
+    "schemaVersion": 1,
+    "symbol": "AITH",
+    "name": "Aitheron AI",
+    "logo": null,
+    "initialPrice": "2.00",
+    "listingAt": "2026-10-13T15:00:00Z",
+    "displayTimeZone": "UTC",
+    "ownerAllocation": "0",
+    "seedMode": "manual",
+    "seed": "aitheron-ai-20261011-v1",
+    "tradable": false,
+    "simulationProfile": "COMPRESSION_BREAKOUT",
+    "wickModel": "NATURAL_V1",
+    "simulationProgram": {
+      "kind": "capped-growth-range-v1",
+      "first24hGainPercent": 1725,
+      "maxGainPercent": 9247,
+      "peakAfterHours": 168,
+      "rangeFraction": 0.12
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "symbol": "ECLV",
+    "name": "ECLAVO",
+    "logo": null,
+    "initialPrice": "0.0140",
+    "listingAt": "2026-11-06T13:00:00Z",
+    "displayTimeZone": "Europe/Moscow",
+    "ownerAllocation": "0",
+    "seedMode": "manual",
+    "seed": "eclavo-20261103-v1",
+    "tradable": false,
+    "simulationProfile": "PULLBACK_TREND",
+    "wickModel": "NATURAL_V1",
+    "simulationProgram": {
+      "kind": "scenario-controls-v2",
+      "scenario": "DEEP_RECOVERY",
+      "first24hGainPercent": "680",
+      "maxPrice": "1.01472",
+      "stages": [
+        {
+          "type": "growth",
+          "durationHours": 24,
+          "targetPrice": "0.1092"
+        },
+        {
+          "type": "range",
+          "durationHours": 24,
+          "targetPrice": "0.1092"
+        },
+        {
+          "type": "growth",
+          "durationHours": 96,
+          "targetPrice": "0.315"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 36,
+          "targetPrice": "0.2142"
+        },
+        {
+          "type": "recovery",
+          "durationHours": 72,
+          "targetPrice": "1.01472"
+        }
+      ],
+      "afterGrowth": "range",
+      "pullbacks": {
+        "frequency": "often",
+        "minDepthPercent": "5",
+        "maxDepthPercent": "15",
+        "durationMinutes": 70
+      },
+      "candles": {
+        "intensity": "high",
+        "diversity": 0.85,
+        "pauseFrequency": "moderate"
+      },
+      "wicks": {
+        "length": "pronounced",
+        "longFrequency": "often"
+      }
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "symbol": "QVTR",
+    "name": "QAVENTRA",
+    "logo": null,
+    "initialPrice": "0.0140",
+    "listingAt": "2026-10-28T13:00:00Z",
+    "displayTimeZone": "Europe/Moscow",
+    "ownerAllocation": "0",
+    "seedMode": "manual",
+    "seed": "qaventra-20261028-v1",
+    "tradable": false,
+    "simulationProfile": "COMPRESSION_BREAKOUT",
+    "wickModel": "NATURAL_V1",
+    "simulationProgram": {
+      "kind": "scenario-controls-v2",
+      "scenario": "WAVES",
+      "first24hGainPercent": "680",
+      "maxPrice": "0.88858",
+      "stages": [
+        {
+          "type": "growth",
+          "durationHours": 24,
+          "targetPrice": "0.1092"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 12,
+          "targetPrice": "0.0784"
+        },
+        {
+          "type": "growth",
+          "durationHours": 72,
+          "targetPrice": "0.352"
+        },
+        {
+          "type": "range",
+          "durationHours": 24,
+          "targetPrice": "0.352"
+        },
+        {
+          "type": "growth",
+          "durationHours": 72,
+          "targetPrice": "0.685"
+        },
+        {
+          "type": "pullback",
+          "durationHours": 24,
+          "targetPrice": "0.51"
+        },
+        {
+          "type": "recovery",
+          "durationHours": 72,
+          "targetPrice": "0.818"
+        }
+      ],
+      "afterGrowth": "range",
+      "pullbacks": {
+        "frequency": "moderate",
+        "minDepthPercent": "3",
+        "maxDepthPercent": "12",
+        "durationMinutes": 60
+      },
+      "candles": {
+        "intensity": "high",
+        "diversity": 0.75,
+        "pauseFrequency": "moderate"
+      },
+      "wicks": {
+        "length": "normal",
+        "longFrequency": "moderate"
+      }
+    }
+  }
+]

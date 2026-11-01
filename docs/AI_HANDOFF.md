@@ -7528,6 +7528,20 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - `scripts/test-wallet-conversion-postgres.cjs` +2 checks: a bearer without `sid`, or without `exp`, is refused at confirm (401 SESSION_REVOKED, nothing moves); ordinary Spot limit bids (`OrderService`) and conversions racing on one Balance never overdraw, and the USDT hold equals the open orders.
 - Verified locally on the merged tree (disposable PostgreSQL, synthetic users): backend tsc/build, frontend tsc + flagged build; Jest 322/322 (conversion, portfolio, adjustments, deposits, OrderService, wallet UI, fingerprints, i18n); Balance fixture 29/29 + browser (flag ON) and default-OFF browser; DemoBalance fixture 27/27. No flag enabled, no deploy, no production data.
 
+## 2026-10-31 — Codex — NRYIA private candidate
+- Base main c1f13828; exact candidate SHA is this entry's commit. Separate Draft PR; no merge/deploy or production write.
+- NRYIA owner-approved blue logo, fixed seed, 240h model; opt-in bounded terminal peak in the existing v2 engine, refused for tradable/allocated configs. Legacy paths unchanged. Shared localhost-only importer/QA; Spot full-name search reuses existing metadata.
+- Local: backend TypeScript and frontend build PASS; 20/20 Chromium checks, 22 screenshots; 35 frontend unit tests. Model/QVTR recheck 18/18 including AELRI under preparation. Full listing regressions passed except a Windows CRLF QVTR-logo checkout mismatch (resolved locally without a tracked diff) and a misplaced test helper (moved out of __tests__). Exact-head CI still required.
+- Preserved other agents' branches/dirty files, production services, old listing data and financial logic. AELRI will be a second stacked candidate, sharing this implementation. Trademark/issuer clearance and final launch time remain owner gates.
+
+
+## 2026-10-31 — Codex — AELRI private candidate
+- Stacked on NRYIA PR #666, 879fd6444a6dff8e3b7264dbdcd05611cdc14010; exact candidate SHA is this entry's commit. Separate config/logo/test/evidence only; no second engine.
+- DEEP_RECOVERY 192h, exact 154.668 terminal peak. Initial 18h range retained, first breakthrough split at 24h (+75%) to meet the existing contract; all original later checkpoints retained.
+- Verified shared local code: model tests PASS; Chromium 20/20, 22 screenshots at 1440/390 and seven locales. AELRI uses the same code/build as PR #666, with its independent config/seed. Exact-head CI required.
+- No production writes, publication, timer activation, orders, allocation, migration, merge or deploy. Prior listing records preserved. Issuer/trademark rights, private production collision checks and final launch approval remain gates.
+
+
 Copy demo #644 follow-up: copied-order self-match now propagates the existing DemoTradingError contract as HTTP 400, rather than an unhandled 500. Isolated PG18.6 fixture verifies actual demo order route, rollback and unchanged fills/balances; 16 groups + 8 browser cases PASS, existing demo service/router 38 tests PASS, backend typecheck PASS. No production actions.
 
 Copy demo #644 CI follow-up: the live-product plainLanguage guard rejected mandatory demo disclosures in the isolated dictionary. Exempt only that exact dictionary, assert demo title/notice/PnL in all 7 languages, gated route and no live-module consumers; 13 wording checks PASS. Added real scheduled-worker PostgreSQL scenario: a new source event is picked up after the initial empty pass without direct drain; OFF performs no work. 17 PG groups + 8 browser cases PASS. SEO CI had one Academy mobile blank-render result (113/114, no JS errors); no unrelated product/test change made, final-head CI will check recurrence.
@@ -7587,6 +7601,16 @@ Fresh immutable Pages root and custom-domain root use index-wS4Z9N50.js, whereas
 
 Run41204666241 passed the expanded78 browser checks and failed only the old hard-coded70 count. Updated the required count to78 without removing assertions, and added the covered Banking component/API/CSS to workflow paths. No product behavior change in this follow-up.
 
+
+## 2026-11-01 — Codex — authorized NRYIA/AELRI launch preparation
+- Existing PR666 reconciled with fresh main e5e65f0d; PR667 remains stacked. Added atomic future-only DEMO date postponement in the existing Durable Object, authenticated API and admin dialog, preserving wall hour across DST, immutable versions, countdown state and all config fields except listingAt.
+- Real local workerd restart/CAS/idempotence test PASS; 47 focused Jest tests and API/frontend TypeScript PASS; Chromium 1440/390 22 checks PASS before final explicit DEMO provenance label. Current test-only Banking calendar correction from main retained.
+- Owner authorized publication and timer start of these two DEMO markets only. Before mutation, actual API still 3636cf80 (security hotfix 1b8d34c8 not deployed), actual Pages aca96cbc /13a1bc9b; Worker f3a02fb5. No private NRYIA/AELRI duplicates. Production gate remains closed until narrow safe release is proven.
+- Preserved Claude Copy Trading/Futures/Wallet UI, other listings and all financial data. Source SHA is the commit containing this entry; final release evidence tracked in PRs.
+
+- Release continuation: actual Pages entry reproduced byte-for-byte after using its three real build settings. Narrow Pages source 2467a86e is separate from main. Additive Worker/API builder preserves 10,080 live-model ticks and matches 10,080 new-model ticks. Twelve API modules only include four approved #668 security files and eight listing modules; no Prisma/client/financial/config replacement. Sealed production-byte Chromium acceptance passed 22/22 before adding the explicit UI-expiry assertion.
+- Initial CI failures diagnosed: exact required DEMO provenance sentence was rejected by plainLanguage; permitted only that sentence in testMarkets.ts with positive non-tradable/provenance tests. Existing admin operational fixture navigated from KYC before blob image decode; now waits for actual decoded fixture images, with console-error failures unchanged. See AI_LISTINGS_RELEASE_20261101.md for pinned order and secure rollback.
+
 ## 2026-11-01 — Claude (session 01EmV3Pt) — main socials parity with production Pages 13a1bc9b
 - Found: production Pages source `13a1bc9b` carries two Copy Trading socials details that `main` lost when #641 was merged from an earlier head: the blue Telegram link style (`21b10560`) and the social links on locked trader rows (`97bbfa04`). A future release of `main` would have removed both from the live site.
 - Change: those two exact lines restored in `StrategySocials.css` and `copy-trading-bolt/components.tsx`; socials files now byte-equal to 13a1bc9b. No API, DB or other module touched.
@@ -7599,3 +7623,4 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Page: automatic state and updated notice in 7 languages (exits are now copied).
 - Verified locally on PostgreSQL 16: `test-copy-futures-auto-postgres.cjs` 13/13, executor regression 12/12 (TP now mirrored), integration review 15/15 (HTTP), migration apply → rollback == origin/main → re-apply; backend `tsc`; futuresCopyText + plainLanguage 16/16; CI workflow extended.
 - Not production: the gate is code-level; turning on real users needs an owner decision and a server release.
+- Final local sealed AELRI acceptance: 22/22 Chromium checks, 28 screenshots, including +1/+2/+3/reload/double-click and disabled expired date dialog. Corrected the reschedule fixture to initialize its existing synthetic Date clock (no product-clock change). Source and release code unchanged by this test fix.

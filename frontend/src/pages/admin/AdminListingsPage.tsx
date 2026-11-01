@@ -16,6 +16,7 @@ import { HISTORICAL_GROWTH_LABEL, HISTORICAL_GROWTH_PREVIEW_UNIT, historicalGrow
 import { listingHistoricalPublicationBlocked } from './listingHistoricalPublicationGate';
 import { useAdminCompact } from './useAdminCompact';
 import { listingPublicationAllowed, listingTimerSupported } from './listingTimerCapability';
+import { canRescheduleListing, ListingRescheduleDialog } from './ListingRescheduleDialog';
 import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
@@ -162,6 +163,7 @@ export function AdminListingsPage() {
   const [previewInterval, setPreviewInterval] = useState('5m');
   const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string; startTimer: boolean } | null>(null);
   const [deleting, setDeleting] = useState<AdminListing | null>(null);
+  const [rescheduling, setRescheduling] = useState<AdminListing | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   // Server clock from the last list read: the timer statuses never trust the browser's clock alone.
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
@@ -500,6 +502,8 @@ export function AdminListingsPage() {
                 <span className={`listing-status listing-status-${status.tone}`} data-listing-status={status.tone}>{status.text}</span>
                 <span className="listing-actions">
                   <button type="button" onClick={() => openEdit(listing)} data-edit-listing={listing.draft.symbol}>Изменить</button>
+                  {canRescheduleListing(listing, Date.now() + clockOffsetMs) && <button type="button" disabled={busy}
+                    onClick={() => { if (canRescheduleListing(listing, Date.now() + clockOffsetMs)) setRescheduling(listing); else void load(); }} data-reschedule-listing={listing.symbol}>Перенести дату</button>}
                    <button type="button" className="listing-delete-button" disabled={busy} onClick={() => {
                      setDeleting(listing); setDeleteConfirmText(''); setTimerError(null);
                    }} data-delete-listing={listing.draft.symbol}>Удалить</button>
@@ -707,6 +711,11 @@ export function AdminListingsPage() {
         </div>
       )}
 
+      {rescheduling && <ListingRescheduleDialog listing={rescheduling} serverOffsetMs={clockOffsetMs} onClose={() => setRescheduling(null)} onSaved={async listingAt => {
+        setRescheduling(null); setNotice(`Дата ${rescheduling.symbol}/USDT перенесена: ${listingTimerLine(listingAt)}.`);
+        if (editing?.id === rescheduling.id) setEditing(null);
+        await load();
+      }} />}
       {publishing && (
         <div className="listing-dialog-backdrop" role="presentation">
           <div className="listing-dialog" role="dialog" aria-modal="true" aria-label="Публикация листинга" data-publish-dialog ref={publishDialog} tabIndex={-1}>

@@ -1,0 +1,33 @@
+{
+  "sourceFilename": "Футуристическая неоновая эмблема.png",
+  "sourceSha256": "59810d98ab1c649e884cf3333f4afd60359b9f9c9ca398e725b16b65a3087333",
+  "processing": "Resize only, square contain, PNG palette 256, no image generation",
+  "approval": "Owner explicitly chose the attached blue N over the contradictory green description",
+  "images": [
+    {
+      "size": 20,
+      "bytes": 1289,
+      "sha256": "8a8be45f1a18e1dba0541ae7565a065bfe8d9b5c17965a63c04d0ad0e4b49427"
+    },
+    {
+      "size": 24,
+      "bytes": 1451,
+      "sha256": "539d986b5bd9a6771fe957cb647d7f432a2449c576433a285cd3f22cc42baebe"
+    },
+    {
+      "size": 48,
+      "bytes": 2858,
+      "sha256": "e55ecf1f3eb3a1c067da79a81d19c8c080064ea8a3fd2a00f3844d9c8498dcee"
+    },
+    {
+      "size": 128,
+      "bytes": 12341,
+      "sha256": "6d84b18de8eb7014f77aa01c5cf60e64425d5daad4dd7e9abf4776a267137591"
+    },
+    {
+      "size": 256,
+      "bytes": 35238,
+      "sha256": "851f97b010eb310b142992e79cba30c5ecc8f713c8711ea6fbd21547a34dd224"
+    }
+  ]
+}
