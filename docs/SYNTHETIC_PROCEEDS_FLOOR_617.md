@@ -144,3 +144,18 @@ proceeds are held while origin is reconciled. Implemented server-side in `synthe
 - Not deployed. Live API `/health` still reports `3636cf80`. Operator step: compose over the actual running API
   after the #668 security hotfix, backup, run the preflight read-only, deploy, then confirm with the preflight that
   `accounts_on_hold` equals the identified count. Rollback: previous API image (no schema change, no data to undo).
+
+### Owner correction 2026-11-01 (comment 6554371962): realized ≠ verified
+
+- While `UNVERIFIED`, the only value that can leave is a **USDT/USDC withdrawal of independently evidenced genuine
+  deposits**: `Deposit` rows of the account that are `CREDITED`, proven on-chain (`verifiedAt`) and not ignored.
+  All the account's non-rejected stable withdrawals together must stay within that sum, and the stable cash left
+  must still cover S — a deposit spent in trading counts as consumed. Admin `BALANCE_ADJUSTED` credits, trades,
+  transfers and sale proceeds are never evidence.
+- Mandatory regression (PG): synthetic 100000 → buy 1 BTC at 60000 → sell at 120000 → withdrawals of 160000,
+  60000 and 1 all refused, Spot→Futures refused. Positive: an evidenced 10000 deposit is withdrawable (10000 yes,
+  10001 no), approved and SENT; next to synthetic profit only the 10000 leaves; spent, unproven, ignored or
+  admin-credited funds are refused; two concurrent 10000 withdrawals → exactly one.
+- OTC, Spot→Futures, Banking and non-stable withdrawals stay fully refused while UNVERIFIED.
+- `RELEASE_TO_FLOOR` remains an explicit audited admin decision after manual provenance resolution; nothing
+  releases automatically.

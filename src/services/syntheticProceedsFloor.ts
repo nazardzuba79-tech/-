@@ -221,19 +221,48 @@ export class ProvenanceHoldError extends SyntheticProceedsLockedError {
   constructor() { super('This account is under provenance review; value cannot leave it until the review is complete'); }
 }
 
+/** A cash-out being judged: only a withdrawal of a stable asset can ever pass a quarantined account. */
+export interface FloorOutflow { withdrawalAsset: string }
+
+/**
+ * Independently evidenced genuine funds of a quarantined account: USDT/USDC deposits credited to it that were
+ * proven on-chain (`verifiedAt`) and not marked as "not a client deposit". Admin balance adjustments, trades,
+ * transfers and sale proceeds are never evidence.
+ */
+async function evidencedDeposits(tx: Tx, userId: string): Promise<BigNumber> {
+  const rows = await tx.deposit.findMany({ where: { userId, status: 'CREDITED', verifiedAt: { not: null }, ignoredAt: null, asset: { in: [...FLOOR_CASH] } }, select: { amount: true } });
+  return rows.reduce((sum, r) => sum.plus(num(r.amount)), new BigNumber(0));
+}
+
+/** Every stable-asset withdrawal of the account that was not rejected, including the one being judged. */
+async function stableWithdrawn(tx: Tx, userId: string): Promise<BigNumber> {
+  const rows = await tx.withdrawal.findMany({ where: { userId, status: { in: ['PENDING', 'APPROVED', 'SENT'] }, asset: { in: [...FLOOR_CASH] } }, select: { amount: true } });
+  return rows.reduce((sum, r) => sum.plus(num(r.amount)), new BigNumber(0));
+}
+
 /**
  * Refuse when the account would end below its floor. `before` (the value at the start of the same
  * transaction) marks a Spot order, judged at the marks; a cash-out passes no `before`.
- * UNVERIFIED (quarantine): every cash-out is refused, and a Spot change may not lower the value at all.
- * RELEASED_TO_FLOOR: a cash-out is judged on realized stable cash only (`cashOutMarks`); a Spot order may
- * not take the account below S unless it does not lower the value (e.g. selling a listing allocation).
+ *
+ * UNVERIFIED (quarantine): no Spot change may lower the value, and no value leaves — except a USDT/USDC
+ * withdrawal of independently evidenced genuine deposits: all such withdrawals together stay within those
+ * deposits, AND the stable cash left still covers S (a deposit spent in trading counts as consumed). The
+ * synthetic principal and everything derived from it (realized or not) never leave.
+ * RELEASED_TO_FLOOR (after an audited admin decision): a cash-out is judged on realized stable cash only
+ * (`cashOutMarks`); a Spot order may not take the account below S unless it does not lower the value.
  */
-export async function assertFloor(tx: Tx, userId: string, marks: FloorMarks, before?: BigNumber): Promise<void> {
+export async function assertFloor(tx: Tx, userId: string, marks: FloorMarks, before?: BigNumber, outflow?: FloorOutflow): Promise<void> {
   const status = await provenanceStatus(tx, userId);
   if (status === 'CLEAR') return;
   if (status === 'UNVERIFIED') {
-    if (before === undefined) throw new ProvenanceHoldError();
-    if ((await floorValue(tx, userId, marks)).lt(before)) throw new ProvenanceHoldError();
+    if (before !== undefined) {
+      if ((await floorValue(tx, userId, marks)).lt(before)) throw new ProvenanceHoldError();
+      return;
+    }
+    if (!outflow || !FLOOR_CASH.includes(outflow.withdrawalAsset)) throw new ProvenanceHoldError();
+    const genuine = await evidencedDeposits(tx, userId);
+    if (!genuine.isFinite() || (await stableWithdrawn(tx, userId)).gt(genuine)) throw new ProvenanceHoldError();
+    if ((await floorValue(tx, userId, cashOutMarks(marks))).lt(await syntheticProceeds(tx, userId))) throw new ProvenanceHoldError();
     return;
   }
   const floor = await syntheticProceeds(tx, userId);

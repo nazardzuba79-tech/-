@@ -38,6 +38,12 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     return id;
   };
   const identify = (id: string, proceeds = '100000') => db.auditLog.create({ data: { userId: id, action: 'TEAM_SPOT_SIMULATION_SOLD', metadata: { pair: 'QVTR/USDT', proceeds, counterparty: 'simulation:QVTR' } } });
+  /** An independently evidenced genuine deposit: credited, proven on-chain, and actually in the balance. */
+  const genuineDeposit = async (id: string, amount: string, proof: { verified?: boolean; ignored?: boolean } = {}) => {
+    await db.deposit.create({ data: { userId: id, asset: 'USDT', chain: 'TRC20', txHash: 'fixture-' + randomUUID(), amount, status: 'CREDITED', creditedAt: new Date(),
+      verifiedAt: proof.verified === false ? null : new Date(), ignoredAt: proof.ignored ? new Date() : null } });
+    await db.balance.update({ where: { userId_asset: { userId: id, asset: 'USDT' } }, data: { available: { increment: amount } } });
+  };
   const decide = (userId: string, decision: 'QUARANTINE' | 'RELEASE_TO_FLOOR', requestId = 'req-' + randomUUID()) =>
     recordProvenanceDecision(db, { userId, adminId: 'fixture-admin', decision, reason: 'fixture review: provenance adjudication', requestId });
   const bal = async (id: string, asset = 'USDT') => {
@@ -224,5 +230,84 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
       'open_orders_on_identified', 'open_withdrawals_on_identified', 'sent_withdrawals_after_first_sale', 'trades_with_other_accounts_after_first_sale']);
     expect(Number(rows[0].identified_accounts)).toBeGreaterThan(0);
     expect(await digest(made)).toBe(before);
+  });
+
+  test('owner mandatory regression: synthetic 100000, buy 1 BTC at 60000, SELL it for 120000 — principal AND the derived 60000 profit stay held', async () => {
+    const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
+    await identify(legacy);
+    await limit(seller, 'SELL', '60000');
+    await limit(legacy, 'BUY', '60000');
+    marks['BTC/USDT'] = '120000';
+    await limit(buyer, 'BUY', '120000');
+    await limit(legacy, 'SELL', '120000'); // a real buyer at the market: allowed, nothing leaves the account
+    expect(await bal(legacy)).toEqual(['160000', '0']);
+    const before = await digest([legacy]);
+    for (const amount of ['160000', '60000', '1']) await expect(withdraw(legacy, amount)).rejects.toMatchObject(HOLD);
+    await expect(transfer(legacy, '1')).rejects.toMatchObject(HOLD);
+    expect(await digest([legacy])).toBe(before);
+  });
+
+  test('an independently evidenced genuine 10000 USDT deposit stays withdrawable — exactly that much, and an admin can pay it out', async () => {
+    const legacy = await user('100000');
+    await identify(legacy);
+    await genuineDeposit(legacy, '10000');
+    await expect(withdraw(legacy, '10001')).rejects.toMatchObject(HOLD);
+    const paid = await withdraw(legacy, '10000');
+    expect(paid).toMatchObject({ status: 'PENDING' });
+    await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD);
+    const withdrawals = new WithdrawalService(db, prices);
+    await expect(withdrawals.approveWithdrawal({ withdrawalId: paid.id, performedByAdminId: 'fixture-admin' })).resolves.toMatchObject({ status: 'APPROVED' });
+    await expect(withdrawals.markSent({ withdrawalId: paid.id, performedByAdminId: 'fixture-admin', txHash: 'NO-CHAIN' })).resolves.toMatchObject({ status: 'SENT' });
+    expect(await bal(legacy)).toEqual(['100000', '0']);
+    await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD); // the SENT 10000 used the whole evidence
+  });
+
+  test('genuine deposit next to synthetic profit: only the deposit leaves, never the profit', async () => {
+    const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
+    await identify(legacy);
+    await genuineDeposit(legacy, '10000');
+    await limit(seller, 'SELL', '60000');
+    await limit(legacy, 'BUY', '60000');
+    marks['BTC/USDT'] = '120000';
+    await limit(buyer, 'BUY', '120000');
+    await limit(legacy, 'SELL', '120000');
+    expect(await bal(legacy)).toEqual(['170000', '0']);
+    await expect(withdraw(legacy, '70000')).rejects.toMatchObject(HOLD);
+    await expect(withdraw(legacy, '10000')).resolves.toMatchObject({ status: 'PENDING' });
+    await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD);
+  });
+
+  test('a genuine deposit spent in trading counts as consumed; unproven, ignored and admin-credited funds are not evidence', async () => {
+    const spent = await user('100000'), seller = await user('0', '1');
+    await identify(spent);
+    await genuineDeposit(spent, '10000');
+    await limit(seller, 'SELL', '60000');
+    await limit(spent, 'BUY', '60000'); // cash 50000 < S: the deposit is treated as used
+    await expect(withdraw(spent, '10000')).rejects.toMatchObject(HOLD);
+    await expect(withdraw(spent, '1')).rejects.toMatchObject(HOLD);
+    for (const proof of [{ verified: false }, { ignored: true }]) {
+      const id = await user('100000');
+      await identify(id);
+      await genuineDeposit(id, '10000', proof);
+      await expect(withdraw(id, '1')).rejects.toMatchObject(HOLD);
+    }
+    const adjusted = await user('110000');
+    await identify(adjusted);
+    await db.auditLog.create({ data: { userId: adjusted, action: 'BALANCE_ADJUSTED', metadata: { asset: 'USDT', amount: '10000' } } });
+    await expect(withdraw(adjusted, '1')).rejects.toMatchObject(HOLD);
+  });
+
+  test('genuine evidence covers one stable withdrawal at a time; never BTC, Futures, OTC or Banking', async () => {
+    const legacy = await user('100000', '1');
+    await identify(legacy);
+    await genuineDeposit(legacy, '10000');
+    const results = await Promise.allSettled([withdraw(legacy, '10000'), withdraw(legacy, '10000')]);
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    expect(await bal(legacy)).toEqual(['100000', '10000']);
+    const other = await user('100000', '1');
+    await identify(other);
+    await genuineDeposit(other, '10000');
+    await expect(withdraw(other, '0.1', 'BTC')).rejects.toMatchObject(HOLD);
+    await expect(transfer(other, '100')).rejects.toMatchObject(HOLD);
   });
 });

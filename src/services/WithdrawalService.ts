@@ -105,7 +105,7 @@ export class WithdrawalService {
         },
       });
       // Judged with this request counted as leaving: the account keeps at least its synthetic proceeds.
-      if (floor) await assertFloor(tx, params.userId, floor);
+      if (floor) await assertFloor(tx, params.userId, floor, undefined, { withdrawalAsset: params.asset });
 
       await tx.auditLog.create({
         data: {
@@ -153,7 +153,7 @@ export class WithdrawalService {
       this.refuseDemoFunds(withdrawal);
       await this.requireRealAsset(tx, withdrawal.asset);
       // Also a request filed before this fence: the account must still cover its synthetic proceeds.
-      if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor); }
+      if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor, undefined, { withdrawalAsset: withdrawal.asset }); }
 
       const updated = await tx.withdrawal.update({
         where: { id: withdrawal.id },
@@ -181,7 +181,7 @@ export class WithdrawalService {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['APPROVED']);
       this.refuseDemoFunds(withdrawal);
       await this.requireRealAsset(tx, withdrawal.asset);
-      if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor); }
+      if (floor) { await lockFloor(tx, withdrawal.userId); await assertFloor(tx, withdrawal.userId, floor, undefined, { withdrawalAsset: withdrawal.asset }); }
 
       // An unheld request moved nothing, so there is no lock to release.
       if (withdrawal.balanceHeld !== false) {

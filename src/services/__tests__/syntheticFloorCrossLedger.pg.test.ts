@@ -146,9 +146,10 @@ pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
     expect((await db.demoBalance.findUniqueOrThrow({ where: { userId_asset: { userId: other, asset: 'USDT' } } })).available.toFixed()).toBe('1000000');
   });
 
-  test('owner policy (fail-closed): an unrealized BTC mark rise never unlocks legacy synthetic USDT; realized market proceeds do', async () => {
-    // The counterexample reproduced on the previous head: 100000 synthetic USDT, buy 1 BTC at 60000,
-    // mark doubles, the remaining 40000 was withdrawable. No genuine USDT is credited here.
+  test('owner policy (fail-closed): neither an unrealized BTC mark rise nor its realized proceeds unlock legacy synthetic USDT while provenance is unresolved', async () => {
+    // The counterexample: 100000 synthetic USDT, buy 1 BTC at 60000, the mark doubles. No genuine USDT is credited.
+    // This suite releases accounts to the floor in beforeEach; the account is put back on hold here (latest decision wins).
+    if (recordProvenanceDecision) await recordProvenanceDecision(db, { userId, adminId: 'fixture-admin', decision: 'QUARANTINE', reason: 'fixture: provenance unresolved', requestId: 'q-' + randomUUID() });
     await db.balance.update({ where: { userId_asset: { userId, asset: 'USDT' } }, data: { available: '100000' } });
     await order(other, 'SELL', '60000');
     await order(userId, 'BUY', '60000');
@@ -156,23 +157,16 @@ pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
     await expect(request('40000')).rejects.toMatchObject(locked);
     marks['BTC/USDT'] = '120000';
     try {
-      // Cash-out is judged on realized stable cash only: the mark rise changes nothing.
       await expect(request('40000')).rejects.toMatchObject(locked);
       await expect(request('1')).rejects.toMatchObject(locked);
       await expect(transfer(db, userId, 'USDT', new BigNumber(1), 'TO_FUTURES', prices)).rejects.toMatchObject(locked);
       await expect(otc.create({ userId, sessionId }, payload())).rejects.toMatchObject(locked);
-      expect(await balance()).toEqual(['40000', '0']);
-      expect(await balance(userId, 'BTC')).toEqual(['1', '0']);
-      expect(await db.withdrawal.count({ where: { userId } })).toBe(0);
-      // Nothing is frozen: the account may still sell its BTC to a real buyer at the market.
+      // Selling to a real buyer realizes the gain, but realized is not verified: principal and profit stay held.
       await order(other, 'BUY', '120000');
       await order(userId, 'SELL', '120000');
       expect(await balance()).toEqual(['160000', '0']);
-      expect(await balance(userId, 'BTC')).toEqual(['0', '0']);
-      // Realized cash above the floor S = 100000 is free; one unit more is not.
-      await expect(request('60001')).rejects.toMatchObject(locked);
-      await expect(request('60000')).resolves.toMatchObject({ status: 'PENDING', balanceHeld: true });
-      expect(await balance()).toEqual(['100000', '60000']);
+      for (const amount of ['60000', '1']) await expect(request(amount)).rejects.toMatchObject(locked);
+      expect(await db.withdrawal.count({ where: { userId } })).toBe(0);
     } finally { marks['BTC/USDT'] = '60000'; }
   });
 });
