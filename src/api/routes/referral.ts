@@ -34,7 +34,7 @@ export function referralRouter(prisma: PrismaClient): Router {
     ]);
 
     res.json({
-      referralCode: user.referralCode,
+      referralCode: user.referralShortCode ?? user.referralCode,
       rewardPercent: REFERRAL_REWARD_PERCENT,
       referredCount,
       rewardsByAsset: rewardsByAsset.map((r) => ({ asset: r.asset, amount: r._sum.amount?.toString() ?? '0' })),

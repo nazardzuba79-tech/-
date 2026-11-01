@@ -1,0 +1,60 @@
+name: Wallet overview and funding (isolated browser review)
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/WalletPage.tsx'
+      - 'frontend/src/pages/wallet-v3/**'
+      - 'frontend/src/lib/useVtaSpotAccount.ts'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'scripts/serve-wallet-review.cjs'
+      - 'scripts/qa-wallet-overview.cjs'
+      - '.github/workflows/wallet-overview-review.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: wallet-overview-review-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      # The review server loads the REAL native account model and performance engine from dist/;
+      # it holds an in-memory repository only: no database, credentials or external host.
+      - run: npx prisma generate && npm run build
+      - name: Production frontend build
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix frontend
+      - name: Disposable browser tools
+        run: |
+          npm install --prefix /tmp/voltex-wallet-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-wallet-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Wallet overview, funding, theme and seven languages at 1440 and 390
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-wallet-qa/node_modules/playwright
+          QA_OUT: output/wallet-overview
+          PORT: '4179'
+        run: |
+          node scripts/serve-wallet-review.cjs > output-wallet-server.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:4179/health >/dev/null && break; sleep 1; done
+          node scripts/qa-wallet-overview.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wallet-overview-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            output/wallet-overview/
+            output-wallet-server.log
+          if-no-files-found: warn
+          retention-days: 7

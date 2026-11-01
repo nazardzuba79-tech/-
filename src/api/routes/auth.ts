@@ -10,7 +10,6 @@ import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
 import { generateReferralCode } from '../../services/referralCode';
 import { CountryDetectionService } from '../../services/CountryDetectionService';
 import { notifyUserRegistered } from '../../services/TelegramNotifications';
-import { encryptAdminPassword } from '../../services/AdminPasswordVault';
 import { requireAuth, AuthedRequest, REMEMBERED_SESSION_MAX } from '../middleware/auth';
 
 // Real login metadata for the account's Security Log — never a placeholder.
@@ -206,9 +205,14 @@ export function authRouter(
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const role = email.toLowerCase() === ADMIN_EMAIL ? 'ADMIN' : 'USER';
-    const encryptedPassword = role === 'USER' ? encryptAdminPassword(password, email) : null;
 
-    const referrer = ref ? await prisma.user.findUnique({ where: { referralCode: ref.toUpperCase() } }) : null;
+    const normalizedRef = ref?.toUpperCase();
+    // Preserve canonical legacy codes and referrer ownership before checking short aliases.
+    const referrer = normalizedRef
+      ? await prisma.user.findUnique({ where: { referralCode: normalizedRef } })
+        ?? (/^[A-Z0-9]{5}$/.test(normalizedRef)
+          ? await prisma.user.findUnique({ where: { referralShortCode: normalizedRef } }) : null)
+      : null;
 
     // Astronomically unlikely to ever collide (32^8 combinations), but a
     // unique constraint is only actually enforced if we respect it — retry
@@ -220,12 +224,11 @@ export function authRouter(
         user = await prisma.user.create({
           data: {
             email, passwordHash, role, referralCode: generateReferralCode(), referredById: referrer?.id,
-            ...(encryptedPassword ? { adminPasswordVault: { create: { encryptedPassword } } } : {}),
           },
         });
         break;
       } catch (err: any) {
-        if (err?.code === 'P2002' && err?.meta?.target?.includes?.('referralCode') && attempt < 5) continue;
+        if (err?.code === 'P2002' && ['referralCode', 'referralShortCode'].some(field => err?.meta?.target?.includes?.(field)) && attempt < 5) continue;
         throw err;
       }
     }

@@ -49,6 +49,14 @@ import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, ins
 import type { PrivateFreshQuote } from '../marketData';
 import { markDemoAccount } from './engine';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
+/** Server-internal, synchronous guard evaluated after the authoritative
+ * simulation replay and again just before its CAS/financial journal commit.
+ * It cannot be supplied through a public HTTP request. Returning normally
+ * admits the simulated result; throwing prevents its complete transaction.
+ */
+export type NativeCommitGuard = (before: Readonly<NativeAccount>, after: Readonly<NativeAccount>,
+  actionId: string | null) => void;
+
 export type NativeCommand = {idempotencyKey:string;executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'} & (
   | {kind:'REFRESH'}
   /**
@@ -689,7 +697,7 @@ export class NativeDemoService {
     const bar=bars.find(b=>b.time===start);if(!bar)throw new DemoEngineError('ENTRY_MARK_UNAVAILABLE');
     return edge==='START'?bar.mark.open:bar.mark.close;
   }
-  command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean;scope?:CommandScope}={}){
+  command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean;scope?:CommandScope;commitGuard?:NativeCommitGuard}={}){
     // The lane is entered SYNCHRONOUSLY, so arrival order is call order and
     // not the order in which two idempotency lookups happened to return.
     const scope=options.scope??new CommandScope(request.kind);
@@ -736,7 +744,7 @@ export class NativeDemoService {
    * before. Nothing here is optimistic — every attempt persists only through
    * the same CAS, and a receipt is returned only for a committed row.
    */
-  private async execute(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean}){
+  private async execute(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean;commitGuard?:NativeCommitGuard}){
     for(let attempt=1;;attempt++){
       try{return await this.attempt(actor,request,hash,options);}
       catch(e){
@@ -749,7 +757,7 @@ export class NativeDemoService {
   conflicts=0;
   /** Live decisions made again because the execution book had expired during the command's waits (audit only). */
   expiredDecisions=0;
-  private async attempt(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean}){
+  private async attempt(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean;commitGuard?:NativeCommitGuard}){
     {
       // Re-checked INSIDE the lane: a double click queues the same key twice,
       // and the second must answer with the first's receipt rather than find
@@ -884,10 +892,13 @@ export class NativeDemoService {
       // Seal only persisted live decisions AFTER OBSERVE/BOOK were appended.
       // Historical scenarios keep the minute checkpoint and OHLC replay.
       next.checkpoint=liveCheckpoint(next.snapshot,commands)??result.checkpoint;
+      // Only an internal caller may supply a commit guard. It sees actual
+      // modeled fills, collateral and position changes, never a quote guess.
+      options.commitGuard?.(row,next,instruction?.id??null);
       next.executionSession={...actor};
       next.executionPending=executionPending;
       commandCheck();commandScope()?.trace('commit',{revision:row.revision});
-      const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash,()=>{commandCheck();if(this.expiredAtDecision(instruction))throw new PrivateMarketDataError('quote_stale');});
+      const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash,()=>{commandCheck();if(this.expiredAtDecision(instruction))throw new PrivateMarketDataError('quote_stale');options.commitGuard?.(row,next,instruction?.id??null);});
       return this.authoritative(actor,this.view(committed),committed,valuation);
     }
   }

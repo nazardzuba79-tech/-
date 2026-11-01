@@ -435,7 +435,11 @@ describe('translation integrity', () => {
           // «Не удалось закрыть позицию», named in every language. `git diff
           // --numstat` over the locales reports `2 0` per language,
           // additions only; asserted by name below.
-          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch'];
+          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch',
+          // Wallet Funding (2026-10-31, Issue #85): the separate simulation Spot scope's title, its
+          // USDT note and the account selector's label were hard-coded Russian/English; now in every
+          // language. `git diff --numstat` over the locales reports `3 0` per language, additions only.
+          'wallet.vtaSpotTitle', 'wallet.vtaUsdtShared', 'wallet.accountSelect'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

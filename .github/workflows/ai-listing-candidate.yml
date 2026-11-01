@@ -12,6 +12,17 @@ on:
       - 'src/shared/listingScenarioControls.ts'
       - 'src/services/testMarkets/simulationScenarioControls.ts'
       - 'src/services/listings/listingConfig.ts'
+      - 'src/shared/listingSchedule.ts'
+      - 'src/services/listings/store.ts'
+      - 'src/api/routes/adminListings.ts'
+      - 'src/api/routes/__tests__/listingReschedule.test.ts'
+      - 'src/services/listings/__tests__/listingSchedule.test.ts'
+      - 'workers/market-edge/reschedule.integration.test.mjs'
+      - 'workers/market-edge/src/listingsStore.ts'
+      - 'frontend/src/pages/admin/ListingRescheduleDialog.tsx'
+      - 'frontend/src/pages/admin/adminListingsApi.ts'
+      - 'frontend/src/pages/admin/adminListingsTime.ts'
+      - 'frontend/src/pages/admin/AdminListingsPage.tsx'
       - 'frontend/src/lib/pairList.ts'
       - 'frontend/src/components/PairListSidebar.tsx'
       - 'frontend/src/pages/admin/listingMovementModel.ts'
@@ -43,7 +54,10 @@ jobs:
       - run: npx prisma generate
       - run: npx tsc --noEmit
       - name: Model, history and frontend regressions
-        run: npx jest --runInBand --testPathPattern='nryiaDraft|aelriDraft|aiCandidateUi|qvtrDraft|eclvDraft|tyvnDraft|listingCountdown|listingScenarioControls|listingMovementControls|pairListFavorites|nrx'
+        run: npx jest --runInBand --testPathPattern='nryiaDraft|aelriDraft|aiCandidateUi|qvtrDraft|eclvDraft|tyvnDraft|listingCountdown|listingScenarioControls|listingMovementControls|pairListFavorites|nrx|listingSchedule|listingReschedule|adminListings.test|storeConfig'
+      - name: Real persisted schedule transaction and restart
+        run: node --test reschedule.integration.test.mjs
+        working-directory: workers/market-edge
       - run: npm run build
         working-directory: frontend
         env:

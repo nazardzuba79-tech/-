@@ -28,6 +28,14 @@ const adminListSchema = z.object({ revision: z.string(), serverTime: z.number(),
 const publishedSchema = z.object({ revision: z.string(), listings: z.array(publishedListingSchema) });
 const publishReceiptSchema = z.object({ id: z.string(), version: z.number(), replayed: z.boolean(), publishedAt: z.string(), countdown: listingCountdownSchema.nullable().optional() });
 const countdownReceiptSchema = z.object({ id: z.string(), countdown: listingCountdownSchema, changed: z.boolean() });
+export const rescheduleRequestSchema = z.object({
+  days: z.union([z.literal(1), z.literal(2), z.literal(3)]), draftRevision: z.number().int().positive(),
+  activeVersion: z.number().int().positive().nullable(), operationKey: z.string().regex(/^[A-Za-z0-9-]{16,64}$/),
+}).strict();
+export type ListingRescheduleRequest = z.infer<typeof rescheduleRequestSchema>;
+const rescheduleReceiptSchema = z.object({ id: z.string(), draftRevision: z.number().int().positive(),
+  activeVersion: z.number().int().positive().nullable(), previousListingAt: z.string(), listingAt: z.string(),
+  replayed: z.boolean(), countdown: listingCountdownSchema.nullable(), operationKey: z.string() });
 const deleteReceiptSchema = z.object({ id: z.string(), symbol: z.string(), deleted: z.literal(true), catalogueRevision: z.string() });
 export type ListingPublishReceipt = z.infer<typeof publishReceiptSchema>;
 export type ListingCountdownReceipt = z.infer<typeof countdownReceiptSchema>;
@@ -40,6 +48,7 @@ export interface ListingStore {
   publish(id: string, draftRevision: number, publishKey: string, actor: string, countdown?: 'staged' | 'running'): Promise<ListingPublishReceipt>;
   /** Start, pause or stop the public pre-listing timer of a published listing. */
   countdown?(id: string, action: ListingCountdownAction, actor: string): Promise<ListingCountdownReceipt>;
+  reschedule?(id: string, body: ListingRescheduleRequest, actor: string): Promise<z.infer<typeof rescheduleReceiptSchema>>;
   replacePrelisting?(id: string, body: Record<string, unknown>, actor: string): Promise<Record<string, unknown>>;
   deleteListing?(id: string, symbol: string, draftRevision: number, activeVersion: number | null, actor: string): Promise<z.infer<typeof deleteReceiptSchema>>;
 }
@@ -123,6 +132,9 @@ export class CloudflareListingStore implements ListingStore {
   }
   countdown(id: string, action: ListingCountdownAction, actor: string): Promise<ListingCountdownReceipt> {
     return this.call(`/${encodeURIComponent(id)}/countdown`, countdownReceiptSchema, { method: 'POST', body: { action }, actor });
+  }
+  reschedule(id: string, body: ListingRescheduleRequest, actor: string) {
+    return this.call(`/${encodeURIComponent(id)}/reschedule`, rescheduleReceiptSchema, { method: 'POST', body, actor });
   }
   deleteListing(id: string, symbol: string, draftRevision: number, activeVersion: number | null, actor: string) {
     return this.call(`/${encodeURIComponent(id)}/delete`, deleteReceiptSchema, {

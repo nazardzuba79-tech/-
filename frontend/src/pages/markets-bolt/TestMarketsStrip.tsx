@@ -45,6 +45,7 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
                 <span>
                   <strong>{asset.pair}</strong>
                   <small>{asset.name}</small>
+                  {asset.provenanceLabel && <small data-demo-provenance>{asset.provenanceLabel}</small>}
                 </span>
               </span>
               <span className="test-market-figure">

@@ -1,0 +1,29 @@
+name: Release 659 read-only browser guard
+on:
+  pull_request:
+    paths:
+      - 'scripts/ops/read-only-browser-guard*'
+      - 'docs/release/659/**'
+      - '.github/workflows/release-readonly-659.yml'
+permissions:
+  contents: read
+jobs:
+  no-writes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Disposable browser tools only
+        run: |
+          npm install --prefix /tmp/voltex-readonly-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-readonly-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Real HTTP negative control and guarded Chromium; no external accounts
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-readonly-qa/node_modules/playwright
+        run: node --test scripts/ops/read-only-browser-guard.test.cjs
