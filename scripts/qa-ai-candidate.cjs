@@ -21,11 +21,12 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || (fs.existsSync(
 const edgeRequire = require('node:module').createRequire(path.join(root, 'workers/market-edge/package.json'));
 const { build } = edgeRequire('esbuild');
 const { Miniflare, convertV4MiniflareOptions } = edgeRequire('miniflare');
-const { adminListingsRouter } = require('../src/api/routes/adminListings');
-const { CloudflareListingStore } = require('../src/services/listings/store');
-const { ManagedListingRegistry } = require('../src/services/listings/registry');
-const { managedListingResponse } = require('../src/services/listings/listingPublic');
-const { assertSpotListing } = require('../src/services/testMarkets/nrxSpot');
+const apiModule = (p) => require(process.env.QA_API_DIST ? path.join(path.resolve(process.env.QA_API_DIST),p) : '../src/'+p);
+const { adminListingsRouter } = apiModule('api/routes/adminListings');
+const { CloudflareListingStore } = apiModule('services/listings/store');
+const { ManagedListingRegistry } = apiModule('services/listings/registry');
+const { managedListingResponse } = apiModule('services/listings/listingPublic');
+const { assertSpotListing } = apiModule('services/testMarkets/nrxSpot');
 const { execFile } = require('node:child_process');
 
 const dist = path.resolve(process.env.QA_FRONTEND_DIST || 'frontend/dist');
@@ -62,7 +63,9 @@ async function startEdge(port, persist) {
   // The esbuild substitutions exist ONLY in this disposable workerd bundle; the
   // repository Worker source, canonical QVTR date and production bundle are untouched.
   // Every Date.now() inside this local Worker sees the same historical clock.
-  const bundle = await build({ entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')],
+  const bundle = await build({ ...(process.env.QA_WORKER_BUNDLE
+      ? {stdin:{contents:fs.readFileSync(process.env.QA_WORKER_BUNDLE,'utf8'),resolveDir:root,loader:'js'}}
+      : {entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')]}),
     bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022',
     external: ['cloudflare:*'],
     define: { 'Date.now': '__voltexQaNow' },
@@ -133,9 +136,29 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
 
   const newPage = async (origin, width, who = 'admin', clock = null, language = 'ru') => {
     const context = await browser.newContext({ viewport: { width, height: width < 500 ? 844 : 1000 }, locale: 'ru-RU', serviceWorkers: 'block' });
+    let closing=false;
+    const closeContext=context.close.bind(context);
+    context.close=async(...args)=>{closing=true;return closeContext(...args);};
     await context.routeWebSocket(/.*/, (ws) => ws.close());
     await context.route('**/*', async (route) => {
       const u = route.request().url();
+      if(closing)return route.abort().catch(()=>{});
+      if(process.env.QA_PRODUCTION_BUNDLE==='true' && /^https:\/\/(api|market)\.voltextech\.net\//.test(u)){
+        // Test the sealed production bytes, but NEVER send fixture credentials or writes to production.
+        const parsed=new URL(u),local=parsed.hostname==='api.voltextech.net'?origin:EDGE;
+        const cors={'access-control-allow-origin':origin,'access-control-allow-headers':'authorization,content-type,if-match','access-control-allow-methods':'GET,POST,PUT,OPTIONS'};
+        if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
+        if(parsed.hostname==='market.voltextech.net' && clock){
+          const published=await A.store.published();
+          const response=managedListingResponse(new Request(EDGE+parsed.pathname+parsed.search,{method:route.request().method()}),published.listings,clock.now(),published.revision);
+          if(response)return route.fulfill({status:response.status,headers:{...Object.fromEntries(response.headers),...cors},body:Buffer.from(await response.arrayBuffer())});
+        }
+        try{
+          const response=await route.fetch({url:local+parsed.pathname+parsed.search});
+          return await route.fulfill({response,headers:{...response.headers(),...cors}});
+        }catch(error){if(!closing)throw error;}
+        return;
+      }
       if (clock && u.startsWith(EDGE)) {
         // After the opening: the Worker's own response code, at a simulated server time, over the listing published on worker A.
         const published = await A.store.published();
@@ -330,6 +353,12 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         assert.equal(Date.parse(publicAsset.body.listingAt),Date.parse(after.active.listingAt));
         await page.reload();await open.waitFor();
       }
+      const latest=(await A.api(prefix)).body.listings.find(x=>x.id===idA);
+      const writes=report.renderCalls.filter(x=>x.includes(`/admin/listings/${idA}/reschedule`)).length;
+      await open.click();
+      await page.evaluate(at=>{globalThis.__voltexQaClock.offset+=at-Date.now();},Date.parse(latest.active.listingAt)-30_000);
+      await page.waitForFunction(()=>document.querySelector('[data-confirm-reschedule]')?.disabled===true);
+      assert.equal(report.renderCalls.filter(x=>x.includes(`/admin/listings/${idA}/reschedule`)).length,writes,'expired UI cannot submit');
       await page.context().close();
     });
   }finally{
