@@ -1,0 +1,60 @@
+name: Copy demo isolated PostgreSQL and browser
+on:
+  pull_request:
+    paths:
+      - 'src/services/copyTrading/CopyDemoService.ts'
+      - 'src/services/copyTrading/copyDemoWorker.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'src/api/routes/copyDemo.ts'
+      - 'prisma/**'
+      - 'frontend/src/pages/CopyDemoPage.tsx'
+      - 'frontend/src/pages/copy-trading-bolt/copyDemoText.ts'
+      - 'frontend/src/pages/copy-trading-bolt/CopyDemo.css'
+      - 'scripts/*copy-demo*'
+      - '.github/workflows/copy-demo-review.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_PASSWORD: fixture
+          POSTGRES_DB: copy_demo_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_ci
+      DIRECT_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_ci
+      COPY_DEMO_TEST_DATABASE_URL: postgresql://postgres:fixture@127.0.0.1:5432/copy_demo_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy && npm run build
+      - run: npm install --prefix output/copy-demo-deps --no-save --package-lock=false playwright@1.62.1
+      - run: node output/copy-demo-deps/node_modules/playwright/cli.js install --with-deps chromium
+      - run: npx tsc -b frontend && cd frontend && npx vite build --outDir ../output/copy-demo644/frontend
+        env:
+          VITE_COPY_DEMO_REVIEW: 'true'
+          VITE_API_URL: /api/v1
+      - run: node scripts/test-copy-demo-postgres.cjs
+        env:
+          COPY_DEMO_BROWSER: '1'
+          COPY_DEMO_PLAYWRIGHT: ../output/copy-demo-deps/node_modules/playwright
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: copy-demo-isolated-evidence
+          path: |
+            output/copy-demo644/*.json
+            output/copy-demo644/*.png
+          retention-days: 7

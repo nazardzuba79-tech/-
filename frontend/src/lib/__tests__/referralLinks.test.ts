@@ -1,6 +1,13 @@
 import { buildReferralLink, isReferralRegion, readReferralRegion, REFERRAL_REGION_STORAGE_KEY } from '../referralLinks';
 import { readDictionaries } from '../../../test-utils/i18nSource';
 
+test('five-character public aliases and legacy codes retain the existing direct path', () => {
+  for (const code of ['9BB77', '9BB77B42']) {
+    expect(buildReferralLink(code, 'ru')).toBe(`https://ru.voltextech.net/${code}`);
+    expect(buildReferralLink(code, 'world')).toBe(`https://voltextech.net/${code}`);
+  }
+});
+
 test('both trusted origins contain the exact same personal API code', () => {
   const code = 'VLTXa234';
   expect(buildReferralLink(code, 'world')).toBe('https://voltextech.net/VLTXa234');

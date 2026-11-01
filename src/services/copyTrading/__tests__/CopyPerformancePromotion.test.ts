@@ -116,7 +116,7 @@ test('stable same-environment identity exposes only allowed fields and dynamical
     user: { findUnique: jest.fn().mockResolvedValue({ avatarUrl: 'data:image/png;base64,YWJj', kycStatus: 'NOT_STARTED', email: 'private', id: 'private' }) } };
   const first = await resolveStrategyOwner(db, 'VX-KSENIA');
   expect(db.user.findUnique).toHaveBeenCalledWith({ where: { id: KSENIA_EXTERNAL_OWNER_ID }, select: { avatarUrl: true, kycStatus: true } });
-  expect(Object.keys(first!).sort()).toEqual(['traderId', 'displayName', 'avatarUrl', 'avatarVersion', 'verified', 'premium'].sort());
+  expect(Object.keys(first!).sort()).toEqual(['traderId', 'displayName', 'avatarUrl', 'avatarVersion', 'verified', 'premium', 'xUrl', 'telegramUrl'].sort());
   expect(first).toMatchObject({ displayName: 'Ksenia', verified: false });
   db.user.findUnique.mockResolvedValue({ avatarUrl: 'data:image/png;base64,ZGVm', kycStatus: 'APPROVED' });
   const next = await resolveStrategyOwner(db, 'VX-KSENIA');

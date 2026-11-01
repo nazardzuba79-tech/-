@@ -1,0 +1,13 @@
+.copytrading-bolt-root .strategy-socials { display:inline-flex; align-items:center; gap:4px; vertical-align:middle; }
+.copytrading-bolt-root .strategy-socials > a,
+.copytrading-bolt-root .strategy-socials > button { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:6px; color:inherit; border:0; padding:0; background:transparent; }
+.copytrading-bolt-root .strategy-socials > button { opacity:.4; cursor:default; }
+.copytrading-bolt-root .strategy-socials a:hover { background:#ffffff14; }
+.copytrading-bolt-root .strategy-socials a:focus-visible { outline:2px solid #e9b44c; }
+.copytrading-bolt-root .strategy-social-editor { --text-primary:#172033; color-scheme:light; margin:12px 0; padding:14px; border:1px solid #dfe4ec; border-radius:12px; background:#fff; color:#172033; font-size:13px; }
+.copytrading-bolt-root .strategy-social-editor summary { cursor:pointer; font-weight:600; }
+.copytrading-bolt-root .strategy-social-editor form { display:grid; gap:10px; max-width:440px; padding:12px 0; }
+.copytrading-bolt-root .strategy-social-editor label { display:grid; gap:5px; }
+.copytrading-bolt-root .strategy-social-editor input { width:100%; min-width:0; box-sizing:border-box; padding:10px; color:inherit; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; }
+.copytrading-bolt-root .strategy-social-editor button { justify-self:start; padding:10px 14px; border:0; border-radius:6px; background:#ffb000; color:#172033; font-weight:600; cursor:pointer; }
+@media(max-width:600px) { .copytrading-bolt-root .strategy-socials > a,.copytrading-bolt-root .strategy-socials > button { width:32px; height:32px; } }

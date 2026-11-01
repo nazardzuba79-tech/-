@@ -1,0 +1,10 @@
+.copy-demo-review { max-width: 780px; margin: 32px auto; padding: 20px; color: #e4e8ef; background: #171b22; border-radius: 12px; overflow-wrap: anywhere; }
+.copy-demo-review form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.copy-demo-review label { display: flex; flex-direction: column; gap: 8px; }
+.copy-demo-review input, .copy-demo-review select, .copy-demo-review button { min-width: 0; padding: 12px; border: 1px solid #778292; border-radius: 6px; color: inherit; background: #252c36; }
+.copy-demo-review button { cursor: pointer; }
+.copy-demo-review button:disabled { opacity: .5; cursor: default; }
+.copy-demo-review [role=alert] { color: #ffb8b8; }
+.copy-demo-review li { margin: 12px 0; }
+.copy-demo-review dd { margin: 0 0 12px; }
+@media (max-width: 600px) { .copy-demo-review { margin: 12px 8px; padding: 16px; } .copy-demo-review form { grid-template-columns: 1fr; } }

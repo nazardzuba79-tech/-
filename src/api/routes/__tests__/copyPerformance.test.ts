@@ -32,7 +32,7 @@ test('identities allowlist does not disclose owner IDs, email or financial field
   const response = await request(app).get('/api/v1/copy-trading/identities').expect(200);
   expect(response.body.identities).toHaveLength(2);
   for (const identity of response.body.identities) expect(Object.keys(identity).sort())
-    .toEqual(['traderId', 'displayName', 'avatarUrl', 'avatarVersion', 'verified', 'premium'].sort());
+    .toEqual(['traderId', 'displayName', 'avatarUrl', 'avatarVersion', 'verified', 'premium', 'xUrl', 'telegramUrl'].sort());
   await request(app).get('/api/v1/copy-trading/identity/unrelated-account').expect(404);
   expect(db.user.findUnique).not.toHaveBeenCalled();
 });
