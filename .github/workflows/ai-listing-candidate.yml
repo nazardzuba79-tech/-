@@ -23,6 +23,11 @@ on:
       - 'frontend/src/pages/admin/adminListingsApi.ts'
       - 'frontend/src/pages/admin/adminListingsTime.ts'
       - 'frontend/src/pages/admin/AdminListingsPage.tsx'
+      - 'scripts/ops/build-ai-listing-overlay.cjs'
+      - 'scripts/ops/qa-ai-runtime-overlay.cjs'
+      - 'scripts/ops/prepare-ai-pages-overlay.cjs'
+      - 'scripts/qa/fixtures/ai-live-runtime-20261101.json.gz'
+      - 'scripts/qa/fixtures/ai-preserved-models-20261101.json'
       - 'frontend/src/lib/pairList.ts'
       - 'frontend/src/components/PairListSidebar.tsx'
       - 'frontend/src/pages/admin/listingMovementModel.ts'
@@ -41,6 +46,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -58,6 +64,10 @@ jobs:
       - name: Real persisted schedule transaction and restart
         run: node --test reschedule.integration.test.mjs
         working-directory: workers/market-edge
+      - name: Build only additive live-runtime overlay and verify preserved legacy ticks
+        run: |
+          node scripts/ops/build-ai-listing-overlay.cjs
+          node scripts/ops/qa-ai-runtime-overlay.cjs
       - run: npm run build
         working-directory: frontend
         env:
@@ -80,4 +90,74 @@ jobs:
         with:
           name: private-ai-browser-${{ github.event.pull_request.head.sha }}
           path: /tmp/ai-evidence
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-listing-runtime-${{ github.event.pull_request.head.sha }}
+          path: artifacts/ai-listing-release
+          retention-days: 14
+  narrow-pages-artifact:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: workers/market-edge
+      - name: Check out only the narrow release based on actual Pages source
+        run: |
+          git worktree add --detach /tmp/ai-pages 2467a86e907a8c22377b387921923a029eab6bc1
+          git diff --name-only 13a1bc9b92b6a42f3bac15b085d561bfb05ce5e8 2467a86e907a8c22377b387921923a029eab6bc1 > /tmp/ai-pages-diff.txt
+          node -e "const fs=require('fs');const expected=new Set(['docs/AI_HANDOFF.md','src/shared/listingSchedule.ts','frontend/src/pages/admin/ListingRescheduleDialog.tsx','frontend/src/pages/admin/adminListingsTime.ts','frontend/src/pages/admin/AdminListingsPage.tsx','frontend/src/pages/admin/adminListingsApi.ts','frontend/src/lib/testMarkets.ts','frontend/src/components/TestMarketTerminal.tsx','frontend/src/pages/markets-bolt/TestMarketsStrip.tsx','frontend/src/pages/admin/listingMovementModel.ts','frontend/src/lib/pairList.ts','frontend/src/components/PairListSidebar.tsx']);const got=fs.readFileSync('/tmp/ai-pages-diff.txt','utf8').trim().split('\n');if(got.length!==expected.size||got.some(x=>!expected.has(x)))throw Error('Narrow Pages scope changed');"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: /tmp/ai-pages/frontend
+      - name: Build pinned production artifact with actual deployment environment
+        run: npm run build
+        working-directory: /tmp/ai-pages/frontend
+        env:
+          VITE_API_URL: https://api.voltextech.net/api/v1
+          VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
+          VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+      - name: Record artifact source and explicit OFF defaults
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node -e "require('fs').writeFileSync('/tmp/ai-pages/frontend/dist/ai-listings-release.json',JSON.stringify({candidate:process.env.CANDIDATE_SHA,source:'2467a86e907a8c22377b387921923a029eab6bc1',parent:'13a1bc9b92b6a42f3bac15b085d561bfb05ce5e8',walletConversion:false,stocks:false,demoSpotFrontend:false}))"
+      - run: npx prisma generate
+      - name: Build additive Worker and install isolated Chromium
+        run: |
+          node scripts/ops/build-ai-listing-overlay.cjs
+          npm install --prefix /tmp/ai-browser playwright@1.63.0 --no-audit --no-fund
+          /tmp/ai-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test exact production-configured artifact with all remote traffic redirected to disposable localhost services
+        env:
+          QA_PRODUCTION_BUNDLE: 'true'
+          QA_FRONTEND_DIST: /tmp/ai-pages/frontend/dist
+          QA_WORKER_BUNDLE: artifacts/ai-listing-release/worker.js
+          QA_PLAYWRIGHT_MODULE: /tmp/ai-browser/node_modules/playwright
+        run: |
+          for candidate in nryia-20261115 aelri-20261125; do
+            if test -f "config/test-markets/$candidate.draft.json"; then
+              QA_AI_CANDIDATE="$candidate" QA_OUT="/tmp/ai-sealed-evidence/$candidate" node scripts/qa-ai-candidate.cjs
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-listing-pages-${{ github.event.pull_request.head.sha }}
+          path: /tmp/ai-pages/frontend/dist
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-listing-sealed-qa-${{ github.event.pull_request.head.sha }}
+          path: /tmp/ai-sealed-evidence
           retention-days: 14

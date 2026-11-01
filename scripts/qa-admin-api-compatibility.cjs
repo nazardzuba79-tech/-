@@ -51,6 +51,13 @@ exports.run = async ({ origin, out, state, users, variant }) => {
   }
   async function capture(page, mode, slug, width, height) {
     await page.locator('.admin-main').waitFor({ state: 'visible' });
+    if (!baseline && slug === 'kyc') {
+      // networkidle does not include the browser's subsequent blob-image decode.
+      // Verify the fixture's document image before navigating away and revoking its URL.
+      // Console errors remain hard failures; no blob error is filtered out.
+      await page.locator('img[alt="Документ"][src^="blob:"]').first().waitFor();
+      await page.locator('img[alt="Документ"][src^="blob:"]').evaluateAll(images => Promise.all(images.map(image => image.decode())));
+    }
     await page.screenshot({ path: path.join(out, `${mode}-${slug.replaceAll('/', '-')}-${width}.png`), fullPage: false });
     const layout = await page.evaluate(({ mode, slug, width, height }) => ({ mode, route: slug, width, height,
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
