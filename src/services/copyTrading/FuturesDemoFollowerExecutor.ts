@@ -5,7 +5,7 @@ import type { NativeDemoService, NativeCommand } from '../../private-trading/nat
 import { inflate, type NativeAccount } from '../../private-trading/native/store';
 import { isNativeTestAccount } from '../../private-trading/native/testAccounts';
 import { futuresCopyCommitGuard, FuturesCopyGuardError } from './FuturesCopyCommitGuard';
-import { futuresDemoSourceFills } from './FuturesDemoSource';
+import { futuresDemoSourceExits, futuresDemoSourceFills } from './FuturesDemoSource';
 import { futuresDemoObserverEnabled, approvedFuturesDemoLeader } from './FuturesDemoObserverService';
 import { DemoEngineError } from '../../private-trading/native/engine';
 
@@ -15,6 +15,11 @@ const positive=(s:string)=>/^(0|[1-9][0-9]{0,11})([.][0-9]{1,8})?$/.test(s)&&n(s
 /** Hard-OFF unless explicitly enabled on top of the disposable loopback review gate. */
 export const futuresDemoExecutionEnabled=(env:NodeJS.ProcessEnv=process.env)=>
   env.COPY_FUTURES_DEMO_EXECUTION_ENABLED==='true'&&futuresDemoObserverEnabled(env);
+/** Automatic copying additionally needs this flag; without it copy runs only on the follower's request. */
+export const futuresDemoAutomaticEnabled=(env:NodeJS.ProcessEnv=process.env)=>
+  env.COPY_FUTURES_DEMO_AUTOMATIC==='true'&&futuresDemoExecutionEnabled(env);
+/** How long one consent lets the server act for the follower without the follower returning. */
+export const COPY_DELEGATION_MS=7*24*3600_000;
 export class FuturesCopyExecutionError extends Error {
   constructor(readonly code:string,readonly status=409){super(code);}
 }
@@ -77,10 +82,15 @@ export class FuturesDemoFollowerExecutor {
       if(current?.status==='ACTIVE')throw new FuturesCopyExecutionError('ALREADY_CONSENTED');
       if(current&&await tx.copyFuturesDemoMirror.count({where:{consentId:current.id,kind:'OPEN',status:'APPLIED'}}))
         throw new FuturesCopyExecutionError('EXISTING_COPY_HISTORY_RECONCILIATION_REQUIRED');
+      // The delegation is an ordinary revocable Session of this follower, visible in
+      // their session list. No token is ever issued for it; only this service uses it.
+      if(current?.delegatedSessionId)await tx.session.updateMany({where:{id:current.delegatedSessionId,revokedAt:null},data:{revokedAt:new Date()}});
+      const delegated=await tx.session.create({data:{userId,userAgent:'VOLTEX copy trading (automatic)'}});
+      const delegation={delegatedSessionId:delegated.id,delegationExpiresAt:new Date(Date.now()+COPY_DELEGATION_MS)};
       const row=await tx.copyFuturesDemoConsent.upsert({
         where:{userId},
-        create:{userId,subscriptionId:sub.id,startedAfterRevision:currentRevision,...limits,status:'ACTIVE'},
-        update:{startedAfterRevision:currentRevision,...limits,status:'ACTIVE'},
+        create:{userId,subscriptionId:sub.id,startedAfterRevision:currentRevision,...limits,status:'ACTIVE',...delegation},
+        update:{startedAfterRevision:currentRevision,...limits,status:'ACTIVE',...delegation},
       });
       return {execution:'ISOLATED_TEST_ONLY' as const,automaticProductionCopying:false,consentId:row.id,startedAfterRevision:currentRevision};
     },{timeout:20000});
@@ -90,7 +100,11 @@ export class FuturesDemoFollowerExecutor {
     return this.db.$transaction(async tx=>{
       const rows=await tx.$queryRaw<{id:string}[]>`SELECT "id" FROM "CopyFuturesDemoConsent" WHERE "userId"=${userId} FOR UPDATE`;
       await this.authorized(tx,userId,sessionId);
-      if(rows.length)await tx.copyFuturesDemoConsent.update({where:{userId},data:{status:'STOPPED'}});
+      if(rows.length){
+        const c=await tx.copyFuturesDemoConsent.update({where:{userId},data:{status:'STOPPED',delegationExpiresAt:null}});
+        // Withdrawing consent revokes the server's delegation at once.
+        if(c.delegatedSessionId)await tx.session.updateMany({where:{id:c.delegatedSessionId,revokedAt:null},data:{revokedAt:new Date()}});
+      }
       // Existing opened positions remain as modeled demo assets; stop
       // authorizes no automatic liquidation or new order.
       return {status:'STOPPED' as const,existingPositionsRetained:true};
@@ -139,16 +153,17 @@ export class FuturesDemoFollowerExecutor {
         return {status:'REJECTED' as const,reason,sourceEventId:source.sourceEventId};
       };
       const reconcile=(applied:{revision:number;payload:Prisma.JsonValue})=>
-        this.reconcileReceipt(tx,userId,source.kind,source.sourceEventId,applied,receipt);
+        this.reconcileReceipt(tx,userId,source.kind==='OPEN'?'OPEN':'CLOSE',source.sourceEventId,applied,receipt);
       // A previous attempt may have committed this exact command and lost its
       // response (transport reset, restart, transaction timeout). Its receipt is
       // the answer: re-running the pre-checks against the CHANGED position would
       // refuse a CLOSE that really happened, or re-send an OPEN.
       const committed=await tx.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId,requestKey:key}}});
       if(committed)return reconcile(committed);
-      // Take-profit, stop-loss and liquidation exits of the source are recorded by the
-      // observer but not mirrored in this slice: refused on the record, follower untouched.
-      if(source.kind!=='OPEN'&&source.kind!=='CLOSE')return reject('SOURCE_EXIT_NOT_MIRRORED');
+      // Source take-profit, stop-loss and liquidation exits close the copied position
+      // (proportionally, or fully when the source position is gone). They only reduce risk.
+      const exit=source.kind==='TAKE_PROFIT'||source.kind==='STOP_LOSS'||source.kind==='LIQUIDATION';
+      if(!exit&&source.kind!=='OPEN'&&source.kind!=='CLOSE')return reject('SOURCE_EXIT_NOT_MIRRORED');
       if(!sourceQuantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
       // The observer table is only a receipt index, not an execution oracle.
       // Re-verify the exact source fill against the immutable NativeDemo
@@ -159,17 +174,28 @@ export class FuturesDemoFollowerExecutor {
       });
       if(!revision)return reject('SOURCE_PROVENANCE_MISMATCH');
       const sourceAccount=inflate(revision.payload as unknown as NativeAccount);
-      const verified=futuresDemoSourceFills(sourceAccount).accepted.find(f=>f.sourceEventId===source.sourceEventId);
       const eventIndex=sourceAccount.snapshot.events.findIndex(e=>e.id===source.sourceEventId);
-      if(!verified || eventIndex!==source.sourceEventIndex || verified.sourceActionId!==source.sourceActionId
-        || verified.sourcePositionId!==source.sourcePositionId || verified.symbol!==source.symbol
-        || verified.kind!==source.kind || verified.side!==source.side
-        || verified.marginType!==source.marginType || verified.pricing!==source.pricing
-        || !n(verified.quantity).eq(source.quantity.toString()) || !n(verified.price).eq(source.price.toString())
-        || !n(verified.leverage).eq(source.leverage.toString()))
-        return reject('SOURCE_PROVENANCE_MISMATCH');
-      if(n(source.leverage).gt(consent.maxLeverage.toString())||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt.toString()))
-        return reject('COPY_SOURCE_RISK_LIMIT');
+      if(exit){
+        const verifiedExit=futuresDemoSourceExits(sourceAccount).find(f=>f.sourceEventId===source.sourceEventId);
+        if(!verifiedExit||eventIndex!==source.sourceEventIndex||verifiedExit.sourcePositionId!==source.sourcePositionId
+          ||verifiedExit.symbol!==source.symbol||verifiedExit.kind!==source.kind||verifiedExit.side!==source.side
+          ||!n(verifiedExit.quantity).eq(source.quantity.toString()))
+          return reject('SOURCE_PROVENANCE_MISMATCH');
+      }else{
+        const verified=futuresDemoSourceFills(sourceAccount).accepted.find(f=>f.sourceEventId===source.sourceEventId);
+        if(!verified || eventIndex!==source.sourceEventIndex || verified.sourceActionId!==source.sourceActionId
+          || verified.sourcePositionId!==source.sourcePositionId || verified.symbol!==source.symbol
+          || verified.kind!==source.kind || verified.side!==source.side
+          || verified.marginType!==source.marginType || verified.pricing!==source.pricing
+          || !n(verified.quantity).eq(source.quantity.toString()) || !n(verified.price).eq(source.price.toString())
+          || !n(verified.leverage).eq(source.leverage.toString()))
+          return reject('SOURCE_PROVENANCE_MISMATCH');
+        if(n(source.leverage).gt(consent.maxLeverage.toString())||n(source.price).times(sourceQuantity).gt(consent.maxFillUsdt.toString()))
+          return reject('COPY_SOURCE_RISK_LIMIT');
+      }
+      // Is the source position still open after this event? An exit or close that
+      // ends it must end the copied position too, never leave rounding dust.
+      const sourceStillOpen=sourceAccount.snapshot.positions.some(p=>p.id===source.sourcePositionId&&p.status==='OPEN');
       const follower=await tx.nativeDemoAccount.findUnique({where:{userId},select:{payload:true}});
       const followerState=follower?inflate(follower.payload as unknown as NativeAccount):null;
       const admitted=follower ? (follower.payload as Record<string,unknown>).executionSession as
@@ -184,29 +210,36 @@ export class FuturesDemoFollowerExecutor {
       // Actual issuer is the signed-in existing account. The native service
       // rechecks User/Session authorization before its financial CAS commit.
       let command:NativeCommand,existingPositionId:string|undefined;
+      // Positions this consent opened and still holds: the only positions copy may touch.
+      const heldMirrors=await tx.copyFuturesDemoMirror.findMany({where:{consentId:consent.id,status:'APPLIED'}});
+      const held=new Map<string,BigNumber>();
+      for(const m of heldMirrors){
+        if(!m.followerPositionId||!m.filledQuantity)continue;
+        const q=held.get(m.followerPositionId)??n('0');
+        held.set(m.followerPositionId,m.kind==='OPEN'?q.plus(m.filledQuantity.toString()):q.minus(m.filledQuantity.toString()));
+      }
+      const attributed=heldMirrors.find(m=>m.sourcePositionId===source.sourcePositionId&&m.kind==='OPEN'&&m.followerPositionId)?.followerPositionId??null;
+      const openPositions=followerState?.snapshot.positions.filter(p=>p.status==='OPEN')??[];
+      const copiedIds=[...held].filter(([,q])=>q.gt(0)).map(([id])=>id);
+      // The follower's own trades and copied trades never mix: every open position must
+      // be one this consent holds, at exactly the quantity it holds; no own resting orders.
+      if(openPositions.some(p=>!held.has(p.id)||!n(p.quantity).eq(held.get(p.id)!))
+        ||followerState?.snapshot.orders.some(o=>o.status==='OPEN'||o.status==='PARTIALLY_FILLED'))
+        return reject('FOLLOWER_POSITION_MIXED_WITH_OTHER_ACTIVITY');
       if(source.kind==='OPEN'){
-        const existing=await tx.copyFuturesDemoMirror.count({where:{consentId:consent.id,
-          sourcePositionId:source.sourcePositionId,kind:'OPEN',status:'APPLIED'}});
-        if(existing)return reject('SOURCE_POSITION_ADDON_UNSUPPORTED');
+        if(attributed&&!(held.get(attributed)?.gt(0)))return reject('COPY_POSITION_ALREADY_CLOSED');
+        existingPositionId=attributed??undefined;
         command={kind:'OPEN',symbol:source.symbol,side:source.side as 'LONG'|'SHORT',
           type:'MARKET',quantity:sourceQuantity.toFixed(),leverage:source.leverage.toString(),
           marginType:'ISOLATED',executionMode:'LIVE_EXECUTION',idempotencyKey:key};
       }else{
-        const opens=await tx.copyFuturesDemoMirror.findMany({where:{consentId:consent.id,
-          sourcePositionId:source.sourcePositionId,kind:'OPEN',status:'APPLIED'}});
-        if(opens.length!==1||!opens[0].followerPositionId||!opens[0].filledQuantity)
-          return reject('NO_COPY_ATTRIBUTED_POSITION');
-        const prior=await tx.copyFuturesDemoMirror.findMany({where:{consentId:consent.id,
-          sourcePositionId:source.sourcePositionId,kind:'CLOSE',status:'APPLIED'}});
-        const available=n(opens[0].filledQuantity).minus(prior.reduce((sum,v)=>sum.plus(v.filledQuantity?.toString()??'0'),n('0')));
+        if(!attributed)return reject('NO_COPY_ATTRIBUTED_POSITION');
+        const available=held.get(attributed)??n('0');
         if(!available.gt(0))return reject('COPY_POSITION_ALREADY_CLOSED');
-        const ownOpen=followerState?.snapshot.positions.filter(p=>p.status==='OPEN')??[];
-        if(ownOpen.length!==1||ownOpen[0].id!==opens[0].followerPositionId
-          ||!n(ownOpen[0].quantity).eq(available)
-          ||followerState!.snapshot.orders.some(o=>o.status==='OPEN'||o.status==='PARTIALLY_FILLED'))
-          return reject('FOLLOWER_POSITION_MIXED_WITH_OTHER_ACTIVITY');
-        const quantity=BigNumber.minimum(sourceQuantity,available);
-        existingPositionId=opens[0].followerPositionId;
+        if(!openPositions.some(p=>p.id===attributed))return reject('FOLLOWER_POSITION_MIXED_WITH_OTHER_ACTIVITY');
+        const quantity=sourceStillOpen?BigNumber.minimum(sourceQuantity,available):available;
+        if(!quantity.gt(0))return reject('COPY_QUANTITY_TOO_SMALL');
+        existingPositionId=attributed;
         // CLOSE is modeled on follower's own book; the leader's price is only
         // a slippage reference, never a settlement price.
         command={kind:'CLOSE',positionId:existingPositionId,quantity:quantity.toFixed(),
@@ -214,8 +247,9 @@ export class FuturesDemoFollowerExecutor {
       }
       const positionId=existingPositionId;
       const guard=futuresCopyCommitGuard({
-        action:source.kind as 'OPEN'|'CLOSE',symbol:source.symbol,
-        ...(positionId?{positionId}:{}),requestedQuantity:command.kind==='OPEN'?command.quantity!:command.quantity!,
+        action:source.kind==='OPEN'?'OPEN':'CLOSE',symbol:source.symbol,
+        ...(positionId?{positionId}:{}),requestedQuantity:command.quantity!,
+        copiedPositionIds:copiedIds,riskReducingExit:exit,
         sourcePrice:source.price.toString(),maxDeviationBps:consent.maxDeviationBps.toString(),
         maxFillUsdt:consent.maxFillUsdt.toString(),maxTotalExposureUsdt:consent.maxTotalExposureUsdt.toString(),
         maxLeverage:consent.maxLeverage.toString(),stillEnabled:this.enabled,
@@ -245,13 +279,15 @@ export class FuturesDemoFollowerExecutor {
     return this.db.$transaction(async tx=>{
       await this.authorized(tx,userId,sessionId);
       const consent=await tx.copyFuturesDemoConsent.findUnique({where:{userId}});
-      if(!consent)return{consent:null,mirrors:[] as never[]};
+      if(!consent)return{automatic:false,consent:null,mirrors:[] as never[]};
       const mirrors=await tx.copyFuturesDemoMirror.findMany({where:{consentId:consent.id},
         orderBy:[{sourceRevision:'desc'},{createdAt:'desc'}],take:50});
       const events=await tx.copyFuturesDemoEvent.findMany({where:{subscriptionId:consent.subscriptionId,
         sourceEventId:{in:mirrors.map(m=>m.sourceEventId)}},select:{sourceEventId:true,symbol:true,side:true,price:true}});
       const byEvent=new Map(events.map(e=>[e.sourceEventId,e]));
-      return{consent:{status:consent.status as 'ACTIVE'|'STOPPED',ratio:consent.ratio.toString(),
+      return{automatic:consent.status==='ACTIVE'&&!!consent.delegatedSessionId&&futuresDemoAutomaticEnabled()
+          &&!!consent.delegationExpiresAt&&consent.delegationExpiresAt.getTime()>Date.now(),
+        consent:{status:consent.status as 'ACTIVE'|'STOPPED',ratio:consent.ratio.toString(),
           maxLeverage:consent.maxLeverage.toString(),maxFillUsdt:consent.maxFillUsdt.toString(),
           maxTotalExposureUsdt:consent.maxTotalExposureUsdt.toString(),maxDeviationBps:consent.maxDeviationBps.toString(),
           startedAfterRevision:consent.startedAfterRevision},

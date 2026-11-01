@@ -74,7 +74,8 @@ import { demoTradingRouter } from './api/routes/demoTrading';
 import { copyDemoRouter } from './api/routes/copyDemo';
 import { copyFuturesDemoObserverRouter } from './api/routes/copyFuturesDemoObserver';
 import { copyFuturesDemoExecutionRouter } from './api/routes/copyFuturesDemoExecution';
-import { FuturesDemoFollowerExecutor, futuresDemoExecutionEnabled } from './services/copyTrading/FuturesDemoFollowerExecutor';
+import { FuturesDemoFollowerExecutor, futuresDemoExecutionEnabled, futuresDemoAutomaticEnabled } from './services/copyTrading/FuturesDemoFollowerExecutor';
+import { FuturesCopyWorker, startFuturesCopyWorker } from './services/copyTrading/FuturesCopyWorker';
 import { NativeDemoService } from './private-trading/native/service';
 import { PrismaNativeRepository } from './private-trading/native/store';
 import { FuturesDemoObserverService } from './services/copyTrading/FuturesDemoObserverService';
@@ -350,8 +351,12 @@ app.use('/api/v1', copyFuturesDemoObserverRouter(prisma, new FuturesDemoObserver
 {
   const copyNative = futuresDemoExecutionEnabled() && privateTradingService.market
     ? new NativeDemoService(new PrismaNativeRepository(prisma, privateTradingService.store?.config), privateTradingService.market) : null;
-  app.use('/api/v1', copyFuturesDemoExecutionRouter(prisma,
-    copyNative ? new FuturesDemoFollowerExecutor(prisma, copyNative) : null, copyNative, futuresDemoExecutionEnabled));
+  const copyExecutor = copyNative ? new FuturesDemoFollowerExecutor(prisma, copyNative) : null;
+  app.use('/api/v1', copyFuturesDemoExecutionRouter(prisma, copyExecutor, copyNative, futuresDemoExecutionEnabled));
+  // Automatic copying: also hard-OFF unless COPY_FUTURES_DEMO_AUTOMATIC=true on top of the gate.
+  if (copyNative && copyExecutor && futuresDemoAutomaticEnabled())
+    startFuturesCopyWorker(new FuturesCopyWorker(prisma, new FuturesDemoObserverService(prisma), copyExecutor, copyNative),
+      futuresDemoAutomaticEnabled, () => console.error('[copy-futures] pass failed; pending work retained'));
 }
 startCopyDemoWorker(copyDemoService, copyDemoEnabled, () => console.error('[copy-demo] pass failed; pending work retained'));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
