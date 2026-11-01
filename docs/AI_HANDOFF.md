@@ -7535,6 +7535,13 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Preserved other agents' branches/dirty files, production services, old listing data and financial logic. AELRI will be a second stacked candidate, sharing this implementation. Trademark/issuer clearance and final launch time remain owner gates.
 
 
+## 2026-10-31 — Codex — AELRI private candidate
+- Stacked on NRYIA PR #666, 879fd6444a6dff8e3b7264dbdcd05611cdc14010; exact candidate SHA is this entry's commit. Separate config/logo/test/evidence only; no second engine.
+- DEEP_RECOVERY 192h, exact 154.668 terminal peak. Initial 18h range retained, first breakthrough split at 24h (+75%) to meet the existing contract; all original later checkpoints retained.
+- Verified shared local code: model tests PASS; Chromium 20/20, 22 screenshots at 1440/390 and seven locales. AELRI uses the same code/build as PR #666, with its independent config/seed. Exact-head CI required.
+- No production writes, publication, timer activation, orders, allocation, migration, merge or deploy. Prior listing records preserved. Issuer/trademark rights, private production collision checks and final launch approval remain gates.
+
+
 Copy demo #644 follow-up: copied-order self-match now propagates the existing DemoTradingError contract as HTTP 400, rather than an unhandled 500. Isolated PG18.6 fixture verifies actual demo order route, rollback and unchanged fills/balances; 16 groups + 8 browser cases PASS, existing demo service/router 38 tests PASS, backend typecheck PASS. No production actions.
 
 Copy demo #644 CI follow-up: the live-product plainLanguage guard rejected mandatory demo disclosures in the isolated dictionary. Exempt only that exact dictionary, assert demo title/notice/PnL in all 7 languages, gated route and no live-module consumers; 13 wording checks PASS. Added real scheduled-worker PostgreSQL scenario: a new source event is picked up after the initial empty pass without direct drain; OFF performs no work. 17 PG groups + 8 browser cases PASS. SEO CI had one Academy mobile blank-render result (113/114, no JS errors); no unrelated product/test change made, final-head CI will check recurrence.
