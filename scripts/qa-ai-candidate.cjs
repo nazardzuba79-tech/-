@@ -331,7 +331,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       assert.deepEqual(report.renderCalls.filter(c=>/ (POST|PUT|DELETE) \/(orders|withdrawals|transfers|deposits|futures)(?:\/|$)/.test(c)),[]);
     });
     for(const width of [1440,390]) await step(`reschedule dialog ${width}: cancel, +1/+2/+3, double-click, server reload and countdown`,async()=>{
-      const page=await newPage(A.origin,width,'admin',{now:()=>QA_PRELISTING_NOW});
+      const page=await newPage(A.origin,width,'admin');
       await page.goto(`${A.origin}/admin/listings`);
       const open=page.locator(`[data-reschedule-listing="${file.symbol}"]`);await open.waitFor();
       await open.click();await page.getByRole('button',{name:'Отмена',exact:true}).click();
