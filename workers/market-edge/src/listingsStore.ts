@@ -18,6 +18,7 @@ import {
   type ListingConfig, type ListingCountdown, type ListingCountdownAction, type PublishedListing,
 } from '../../../src/services/listings/listingConfig';
 import { aithReplacementConfig } from '../../../src/services/listings/aithReplacement';
+import { shiftListingDate } from '../../../src/shared/listingSchedule';
 import { AITH_READ_LEASE_MS, AITH_LEASE_SAFETY_MS, AITH_PUBLICATION_PROTOCOL, isAith, validAithLease } from '../../../src/shared/aithPublication';
 
 const MAX_BODY_BYTES = 160 * 1024;
@@ -388,6 +389,57 @@ export class ManagedListingsDO {
     });
   }
 
+  /** Only a future, unallocated DEMO may move. Immutable versions remain append-only. */
+  private reschedule(id: string, body: Record<string, unknown> | undefined, actor: string, now: number): Response {
+    if (!body || Object.keys(body).sort().join(',') !== 'activeVersion,days,draftRevision,operationKey'
+      || ![1, 2, 3].includes(Number(body.days)) || typeof body.days !== 'number'
+      || !Number.isSafeInteger(body.draftRevision) || Number(body.draftRevision) < 1
+      || !(body.activeVersion === null || (Number.isSafeInteger(body.activeVersion) && Number(body.activeVersion) > 0))
+      || typeof body.operationKey !== 'string' || !PUBLISH_KEY.test(body.operationKey)) return reply({ error: 'INVALID_RESCHEDULE_REQUEST' }, 400);
+    if (this.replacement()?.id === id) return reply({ error: 'replacement_in_progress' }, 409);
+    return this.state.storage.transactionSync(() => {
+      const receiptKey = `reschedule:${id}:${body.operationKey}`;
+      const previous = this.sql.exec('SELECT v FROM meta WHERE k = ?', receiptKey).toArray()[0];
+      const signature = JSON.stringify([body.days, body.draftRevision, body.activeVersion, actor]);
+      if (previous) {
+        const saved = JSON.parse(String(previous.v));
+        return saved.signature === signature ? reply({ ...saved.receipt, replayed: true }) : reply({ error: 'OPERATION_KEY_CONFLICT' }, 409);
+      }
+      const row = this.sql.exec('SELECT * FROM listing WHERE id = ?', id).toArray()[0];
+      if (!row) return reply({ error: 'not_found' }, 404);
+      const activeVersion = row.active_version === null ? null : Number(row.active_version);
+      if (Number(row.draft_revision) !== body.draftRevision || activeVersion !== body.activeVersion)
+        return reply({ error: 'revision_conflict', draftRevision: Number(row.draft_revision) }, 409);
+      const draft = parseListingConfig(JSON.parse(String(row.draft)));
+      const active = activeVersion === null ? null : parseListingConfig(JSON.parse(String(this.version(id, activeVersion)!.config)));
+      if (active && JSON.stringify(active) !== JSON.stringify(draft)) return reply({ error: 'DRAFT_DIFFERS_FROM_ACTIVE' }, 409);
+      const source = active ?? draft;
+      if (source.tradable || Number(source.ownerAllocation) !== 0 || source.privateTest || isAith(source.symbol))
+        return reply({ error: 'RESCHEDULE_DEMO_ONLY' }, 422);
+      // The old timestamp must still be future, even for a paused/staged timer.
+      // 60 seconds also drains all existing bounded public/config caches before the old opening.
+      if (Date.parse(source.listingAt) <= now + MIN_LEAD_MS) return reply({ error: 'HISTORY_LOCKED' }, 422);
+      const listingAt = shiftListingDate(source.listingAt, source.displayTimeZone, body.days as number);
+      if (!listingAt) return reply({ error: 'AMBIGUOUS_LISTING_TIME' }, 422);
+      const next = parseListingConfig({ ...source, listingAt });
+      try { checkPublishable(next, active, now); } catch (error) { return validationReply(error); }
+      let version = activeVersion;
+      if (version !== null) {
+        version = Number(this.sql.exec('SELECT MAX(version) AS v FROM listing_version WHERE listing_id = ?', id).toArray()[0].v) + 1;
+        this.sql.exec('INSERT INTO listing_version (listing_id, version, config, publish_key, published_at, published_by) VALUES (?, ?, ?, ?, ?, ?)',
+          id, version, JSON.stringify(next), `reschedule-${body.operationKey}`, now, actor);
+      }
+      const draftRevision = Number(row.draft_revision) + 1;
+      this.sql.exec('UPDATE listing SET draft = ?, draft_revision = ?, draft_updated_at = ?, draft_updated_by = ?, active_version = ? WHERE id = ?',
+        JSON.stringify(next), draftRevision, now, actor, version, id);
+      this.bumpCatalogueRevision();
+      const receipt = { id, draftRevision, activeVersion: version, previousListingAt: source.listingAt, listingAt,
+        operationKey: body.operationKey, replayed: false, countdown: this.countdownOf(id) };
+      this.setMeta(receiptKey, JSON.stringify({ signature, receipt, changedAt: now, changedBy: actor }));
+      return reply(receipt);
+    });
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     try {
@@ -406,11 +458,12 @@ export class ManagedListingsDO {
         return row ? reply({ id: history[1], version: Number(row.version), config: JSON.parse(String(row.config)),
           publishedAt: new Date(Number(row.published_at)).toISOString(), publishedBy: String(row.published_by) }) : reply({ error: 'not_found' }, 404);
       }
-      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting|countdown|delete)$/.exec(url.pathname);
+      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting|countdown|delete|reschedule)$/.exec(url.pathname);
       if (!match || !LISTING_ID_PATTERN.test(match[1])) return reply({ error: 'not_found' }, 404);
       if (!ACTOR.test(actor)) return reply({ error: 'actor_required' }, 400);
       const body = await readJson(request);
       if (body.error) return body.error;
+      if (match[2] === 'reschedule' && request.method === 'POST') return this.reschedule(match[1], body.value, actor, Date.now());
       if (match[2] === 'delete' && request.method === 'POST') return this.deleteListing(match[1], body.value);
       if (match[2] === 'replace-prelisting' && request.method === 'POST') {
         if (request.headers.get('X-Voltex-Listing-Protocol') !== AITH_PUBLICATION_PROTOCOL) return reply({ error: 'replacement_protocol_required' }, 428);

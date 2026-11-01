@@ -7593,3 +7593,10 @@ Fresh immutable Pages root and custom-domain root use index-wS4Z9N50.js, whereas
 ### #660 CI count correction
 
 Run41204666241 passed the expanded78 browser checks and failed only the old hard-coded70 count. Updated the required count to78 without removing assertions, and added the covered Banking component/API/CSS to workflow paths. No product behavior change in this follow-up.
+
+
+## 2026-11-01 — Codex — authorized NRYIA/AELRI launch preparation
+- Existing PR666 reconciled with fresh main e5e65f0d; PR667 remains stacked. Added atomic future-only DEMO date postponement in the existing Durable Object, authenticated API and admin dialog, preserving wall hour across DST, immutable versions, countdown state and all config fields except listingAt.
+- Real local workerd restart/CAS/idempotence test PASS; 47 focused Jest tests and API/frontend TypeScript PASS; Chromium 1440/390 22 checks PASS before final explicit DEMO provenance label. Current test-only Banking calendar correction from main retained.
+- Owner authorized publication and timer start of these two DEMO markets only. Before mutation, actual API still 3636cf80 (security hotfix 1b8d34c8 not deployed), actual Pages aca96cbc /13a1bc9b; Worker f3a02fb5. No private NRYIA/AELRI duplicates. Production gate remains closed until narrow safe release is proven.
+- Preserved Claude Copy Trading/Futures/Wallet UI, other listings and all financial data. Source SHA is the commit containing this entry; final release evidence tracked in PRs.

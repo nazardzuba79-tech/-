@@ -250,6 +250,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         const page=await newPage(A.origin,width,'user');await page.goto(A.origin+'/trade?pair='+encodeURIComponent(pair));
         if(width<600)await page.locator('#mobile-trade-chart').click({timeout:20000});
         const card=page.locator('.vta-prelisting[data-countdown="running"]');await card.waitFor({timeout:20000});
+        assert.equal(await card.locator('[data-demo-provenance]').innerText(),'DEMO · SIMULATED · NO REAL TRADING');
         assert.ok((await card.innerText()).includes(file.name));assert.equal(await card.locator('.vta-prelisting-mark img').getAttribute('src'),file.logo);
         const second=await card.locator('.vta-countdown-cell strong').nth(3).innerText();await page.waitForTimeout(2100);
         assert.notEqual(await card.locator('.vta-countdown-cell strong').nth(3).innerText(),second);
@@ -305,6 +306,31 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       for(const old of preserved)assert.deepEqual(all.find(l=>l.id===old.id),old);
       assert.deepEqual(report.pageErrors,[]);assert.equal(report.outbound,0);
       assert.deepEqual(report.renderCalls.filter(c=>/ (POST|PUT|DELETE) \/(orders|withdrawals|transfers|deposits|futures)(?:\/|$)/.test(c)),[]);
+    });
+    for(const width of [1440,390]) await step(`reschedule dialog ${width}: cancel, +1/+2/+3, double-click, server reload and countdown`,async()=>{
+      const page=await newPage(A.origin,width,'admin',{now:()=>QA_PRELISTING_NOW});
+      await page.goto(`${A.origin}/admin/listings`);
+      const open=page.locator(`[data-reschedule-listing="${file.symbol}"]`);await open.waitFor();
+      await open.click();await page.getByRole('button',{name:'Отмена',exact:true}).click();
+      assert.equal(await page.locator('[data-reschedule-dialog]').count(),0);
+      for(const days of [1,2,3]){
+        const before=(await A.api(prefix)).body.listings.find(x=>x.id===idA);
+        const writes=report.renderCalls.filter(x=>x.includes(`/admin/listings/${idA}/reschedule`)).length;
+        await open.click();const dialog=page.locator('[data-reschedule-dialog]');await dialog.waitFor();
+        await dialog.locator(`[data-reschedule-days="${days}"]`).click();
+        await fit(page);await shot(page,`reschedule-${width}-plus${days}.png`);
+        await dialog.locator('[data-confirm-reschedule]').evaluate(button=>{button.click();button.click();});
+        await dialog.waitFor({state:'hidden'});
+        assert.equal(report.renderCalls.filter(x=>x.includes(`/admin/listings/${idA}/reschedule`)).length,writes+1);
+        const after=(await A.api(prefix)).body.listings.find(x=>x.id===idA);
+        assert.equal(Date.parse(after.active.listingAt)-Date.parse(before.active.listingAt),days*DAY);
+        assert.deepEqual({...after.active,listingAt:before.active.listingAt},before.active);
+        assert.deepEqual(after.countdown,before.countdown);assert.equal(after.countdown.state,'running');
+        const publicAsset=await edgeJson(EDGE,`/market/test-assets/${file.symbol}-USDT`);
+        assert.equal(Date.parse(publicAsset.body.listingAt),Date.parse(after.active.listingAt));
+        await page.reload();await open.waitFor();
+      }
+      await page.context().close();
     });
   }finally{
     await browser?.close();A?.server.close();B?.server.close();await mfA?.dispose();await mfB?.dispose();

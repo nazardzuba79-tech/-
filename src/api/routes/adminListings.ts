@@ -19,7 +19,7 @@ import {
   ListingValidationError, LISTING_COUNTDOWN_ACTIONS, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingSimulationConfig, parseListingConfig,
   type ListingConfig, type ListingCountdownAction,
 } from '../../services/listings/listingConfig';
-import { ListingStoreError, type ListingStore } from '../../services/listings/store';
+import { ListingStoreError, rescheduleRequestSchema, type ListingStore } from '../../services/listings/store';
 import { managedListingRegistry, type ManagedListingRegistry } from '../../services/listings/registry';
 import { SIM_INTERVALS, simulationFor } from '../../services/testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
@@ -84,6 +84,19 @@ export function adminListingsRouter(
   router.get('/admin/listings', ...guard, async (_req, res) => {
     noStore(res);
     try { res.json(await store.list()); } catch (error) { failure(res, error); }
+  });
+
+  router.post('/admin/listings/:id/reschedule', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    const parsed = rescheduleRequestSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'INVALID_RESCHEDULE_REQUEST' });
+    try {
+      if (!store.reschedule) return res.status(503).json({ error: 'RESCHEDULE_UNAVAILABLE' });
+      const result = await store.reschedule(req.params.id, parsed.data, req.userId!);
+      registry.invalidate();
+      res.json(result);
+    } catch (error) { failure(res, error); }
   });
 
   router.get('/admin/listings/authority', ...guard, async (_req, res) => {
