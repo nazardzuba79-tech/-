@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { DemoFundsNotWithdrawableError, WithdrawalService, WithdrawalRequestError } from '../../services/WithdrawalService';
-import { FloorPriceSource, SyntheticProceedsLockedError } from '../../services/syntheticProceedsFloor';
+import { FloorPriceSource, provenanceStatus, SyntheticProceedsLockedError } from '../../services/syntheticProceedsFloor';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { PrivateTradingError, type OwnerSession } from '../../private-trading/serviceTypes';
@@ -66,6 +66,18 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
 
   // The account's own withdrawal-request history, scoped to the caller —
   // same pattern as GET /deposits/me.
+  /**
+   * The caller's own outflow restriction, truthfully: NONE for every ordinary account; UNDER_REVIEW while a
+   * provenance review holds the account (#630); FLOOR when part of the balance stays locked after review.
+   * A read only: never prices, locks or writes anything.
+   */
+  router.get('/withdrawals/restriction', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    let status;
+    try { status = await provenanceStatus(prisma, req.userId!); }
+    catch (err) { if (err instanceof SyntheticProceedsLockedError) status = 'UNVERIFIED'; else throw err; }
+    res.json({ restriction: status === 'CLEAR' ? 'NONE' : status === 'UNVERIFIED' ? 'UNDER_REVIEW' : 'FLOOR' });
+  }));
+
   router.get('/withdrawals/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
       where: { userId: req.userId },

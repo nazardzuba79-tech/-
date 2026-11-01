@@ -15,6 +15,7 @@ import { OrderService } from '../OrderService';
 import { WithdrawalService } from '../WithdrawalService';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { setManagedListingAssets } from '../listings/managedSnapshot';
+import { recordProvenanceDecision } from '../syntheticProceedsFloor';
 
 const url = process.env.VOLTEX_NRX_TEST_URL;
 if (url) {
@@ -51,6 +52,9 @@ pg('legacy simulated-sale proceeds cannot leave the account; genuine funds and o
     await db.trade.create({ data: { id: tradeId, pair: NEURIX.pair, takerOrderId: orderId, makerOrderId: 'simulation:NRX', takerUserId: userId, makerUserId: 'simulation:NRX', price, quantity, side: 'SELL' } });
     await db.auditLog.create({ data: { userId, action: 'NRX_SIMULATION_SOLD', metadata: { pair: NEURIX.pair, orderId, tradeId, quantity, price, proceeds, counterparty: 'simulation:NRX',
       ...(settlementLedger ? { settlementLedger, withdrawableProceeds: false } : {}) } } });
+    // These cases cover the floor rule, i.e. an account whose provenance review released it to the floor
+    // (the quarantine that applies before any review is covered by syntheticProvenanceQuarantine.pg.test.ts).
+    if (!settlementLedger) await recordProvenanceDecision(db, { userId, adminId: 'fixture-admin', decision: 'RELEASE_TO_FLOOR', reason: 'fixture: provenance adjudicated', requestId: 'rel-' + randomUUID() });
   };
   const request = (userId: string, asset: string, amount: string) => withdrawals.requestWithdrawal({ userId, asset, network: 'TRC20', toAddress: ADDRESS, amount });
   const limit = (userId: string, pair: string, side: 'BUY' | 'SELL', price: string, quantity: string) =>

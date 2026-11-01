@@ -7624,3 +7624,11 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - `syntheticFloorCrossLedger.pg.test.ts`: the former "POLICY BLOCKER evidence" test now asserts the refusal (withdrawal/OTC/Spot→Futures after a mark rise) and that realized market proceeds above S stay withdrawable. Workflow release-gate receipt records `unrealizedMarkCashout: CLOSED_FAIL_CLOSED`, still `releaseDecision: NO_GO`.
 - Local disposable PostgreSQL 16: 13 financial suites 205/205 PASS; negative control with the previous floor file: the new test FAILS (1/13); backend `tsc --noEmit` PASS. Exact-head CI: see PR.
 - Unresolved: owner policy for existing synthetic principal S; PR stays Draft, not merged, not deployed.
+
+## 2026-11-01 — Claude (session 01EmV3Pt) — #630 owner decision: provenance quarantine (code, NOT deployed)
+- `src/services/syntheticProceedsFloor.ts`: `provenanceStatus` (CLEAR / UNVERIFIED default / RELEASED_TO_FLOOR), `recordProvenanceDecision` (append-only `SYNTHETIC_PROVENANCE_DECISION` audit rows, floor lock, requestId idempotency), `assertFloor` hold for UNVERIFIED (all cash-out refused; Spot may not lower value). Floor rule from 4d863bc1 kept for released accounts.
+- Routes: `GET/POST /admin/synthetic-provenance[/:userId/decision]` (admin), `GET /withdrawals/restriction` (own account).
+- `scripts/synthetic-provenance-preflight.sql` read-only aggregates. Docs: `docs/SYNTHETIC_PROCEEDS_FLOOR_617.md`.
+- Tests: new `syntheticProvenanceQuarantine.pg.test.ts` 11/11; floor-mode suites record RELEASE_TO_FLOOR first (cross-ledger loads it untyped so the CI negative control on 23709c42 still compiles: locally 9 failed / 4 passed / 13). All 14 financial suites 220/220, `tsc` + `npm run build` PASS on local PostgreSQL 16. Mutation check: quarantine disabled → 6/11 fail.
+- Preserved: Codex #629/#630 fences and fingerprints, #620 demo withdrawal rule, OrderService/WithdrawalService/OTC/Banking/Transfer call sites unchanged.
+- Not done: route-level HTTP tests for the new admin/restriction endpoints; frontend display of `UNDER_REVIEW` (refusal message only); production deploy (no Hetzner access; API still 3636cf80).

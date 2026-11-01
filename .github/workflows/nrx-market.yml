@@ -10,6 +10,8 @@ on:
       - 'src/services/syntheticProceedsFloor.ts'
       - 'src/services/__tests__/syntheticProceedsFloor.test.ts'
       - 'src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts'
+      - 'src/services/__tests__/syntheticProvenanceQuarantine.pg.test.ts'
+      - 'scripts/synthetic-provenance-preflight.sql'
       - 'scripts/check-financial630-negative-control.cjs'
       - 'src/otc/**'
       - 'src/banking/**'
@@ -77,6 +79,7 @@ jobs:
           src/services/__tests__/syntheticProceedsFloor.test.ts
           src/services/__tests__/syntheticProceedsFloor.pg.test.ts
           src/services/__tests__/syntheticFloorCrossLedger.pg.test.ts
+          src/services/__tests__/syntheticProvenanceQuarantine.pg.test.ts
           src/services/__tests__/WithdrawalService.test.ts
           src/services/__tests__/OrderService.test.ts
           src/api/routes/__tests__/withdrawals.test.ts
@@ -92,7 +95,7 @@ jobs:
           node <<'NODE'
           const fs=require('node:fs'),cp=require('node:child_process');
           const source=cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-          fs.writeFileSync('output/financial630/release-gate.json',JSON.stringify({source,githubEventSha:process.env.GITHUB_SHA,releaseDecision:'NO_GO',legacyProvenance:'BLOCKED',unrealizedMarkCashout:'CLOSED_FAIL_CLOSED',reason:'Cash-out now counts realized stable cash only, so an unrealized mark rise cannot unlock old synthetic USDT (PG regression). Existing synthetic principal is untouched and its settlement/provenance policy still needs the owner; no merge/deploy authorized by green tests.'},null,2));
+          fs.writeFileSync('output/financial630/release-gate.json',JSON.stringify({source,githubEventSha:process.env.GITHUB_SHA,releaseDecision:'NO_GO',legacyProvenance:'BLOCKED',unrealizedMarkCashout:'CLOSED_FAIL_CLOSED',provenanceQuarantine:'IMPLEMENTED_NOT_DEPLOYED',reason:'Owner decision 2026-11-01: identified accounts are held (no outflow, no value-lowering Spot) until an audited admin decision; released accounts count realized stable cash only. Release still needs exact-head CI, independent financial review and operator deploy; green tests are not a release permission.'},null,2));
           console.log('Code test success does not approve legacy funds: releaseDecision=NO_GO');
           NODE
       - uses: actions/upload-artifact@v4

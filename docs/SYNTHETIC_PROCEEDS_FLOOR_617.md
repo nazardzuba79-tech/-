@@ -109,3 +109,38 @@ the remaining 40000 USDT became withdrawable) is closed in code:
 
 Still open (owner): the existing synthetic principal S itself — reconcile, settle or keep floor-bound
 indefinitely. Release stays NO-GO until the owner accepts this policy.
+
+## 1 Nov 2026 (owner decision) — temporary provenance quarantine, not confiscation
+
+Owner decision on PR #630 (comment 6554357792): identified unverified legacy synthetic USDT and its derived
+proceeds are held while origin is reconciled. Implemented server-side in `syntheticProceedsFloor.ts`:
+
+| Account | Status | Cash-out (withdrawal create/approve/SENT, OTC reserve/payout, Spot→Futures, Banking principal) | Spot order / fill |
+|---|---|---|---|
+| No simulation-sale receipt (every ordinary customer, admin `BALANCE_ADJUSTED` alone) | `CLEAR` | never priced or refused | unchanged |
+| Receipt(s) `NRX_SIMULATION_SOLD` / `TEAM_SPOT_SIMULATION_SOLD` (S > 0), no decision | `UNVERIFIED` (default hold) | **always refused** | refused if it lowers the account's worst-case value at the marks (overpaying, self-trade, old adverse resting order); value-neutral trades allowed |
+| After an admin `RELEASE_TO_FLOOR` decision | `RELEASED_TO_FLOOR` | only realized stable cash (USDT/USDC) above S | may not take the account below S |
+
+- Decisions: `POST /admin/synthetic-provenance/:userId/decision` (`requireAuth` + `requireAdmin`), body
+  `{decision: QUARANTINE | RELEASE_TO_FLOOR, reason (10–1000 chars), requestId}`. Each is one append-only
+  `AuditLog` row `SYNTHETIC_PROVENANCE_DECISION` {seq, decision, reason, adminId, requestId}; latest seq wins;
+  serialized with every outflow by the account's floor lock; requestId replay returns the recorded decision,
+  reuse for a different decision is refused. An unreadable decision row counts as QUARANTINE and wins.
+  `GET /admin/synthetic-provenance` lists identified accounts with status and history (no balances).
+- User status: `GET /withdrawals/restriction` → `NONE | UNDER_REVIEW | FLOOR`; refusals return code
+  `SYNTHETIC_PROCEEDS_LOCKED` with "under provenance review" message.
+- Never: debit, zero, relabel to DemoBalance, delete, cancel paid obligations. Reject of a held withdrawal and
+  order cancellation stay available. A decision writes only its audit row.
+- Operator preflight (read-only, aggregates only): `scripts/synthetic-provenance-preflight.sql` inside
+  `BEGIN TRANSACTION READ ONLY` — identified accounts, malformed receipts, accounts on hold, open/sent
+  withdrawals, trades with other accounts after the first synthetic sale, open orders, non-zero Futures balances.
+  Downstream accounts that received value from an identified account are NOT automatically held: the preflight
+  counts the trades; any further account needs its own evidence and owner review.
+- Tests (disposable PostgreSQL 16): `syntheticProvenanceQuarantine.pg.test.ts` 11/11 — owner counterexample at
+  marks 120000/30000/60000, cross-ledger paths, laundering via accomplice/market/old resting order, value-neutral
+  partial fills, pre-filed withdrawal approve/SENT refused + reject, genuine excess after release (reversible),
+  concurrent withdrawals, many accounts + innocent user, malformed receipt/decision/missing price, decision
+  idempotency, read-only preflight. Mutation (quarantine branch disabled) → 6/11 fail.
+- Not deployed. Live API `/health` still reports `3636cf80`. Operator step: compose over the actual running API
+  after the #668 security hotfix, backup, run the preflight read-only, deploy, then confirm with the preflight that
+  `accounts_on_hold` equals the identified count. Rollback: previous API image (no schema change, no data to undo).

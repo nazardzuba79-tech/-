@@ -136,23 +136,106 @@ export async function lockFloor(tx: Tx, userId: string): Promise<void> {
 export const FLOOR_CASH: readonly string[] = ['USDT', 'USDC'];
 
 /**
- * Cash-out valuation (#630 owner policy, fail-closed): for a withdrawal, OTC payout, Banking principal or
- * Spot→Futures transfer the floor S must be covered by realized stable cash. BTC/ETH held at an unrealized
- * mark count zero, so a mark rise alone can never unlock unreconciled synthetic USDT; selling at the market
- * (a real counterparty) realizes the value first. Nothing is debited, frozen or relabelled: the account keeps
- * every asset and may still trade it.
+ * Cash-out valuation for an account RELEASED_TO_FLOOR: the floor S must be covered by realized stable cash.
+ * BTC/ETH held at an unrealized mark count zero, so a mark rise alone never unlocks synthetic USDT.
  */
 export function cashOutMarks(marks: FloorMarks): FloorMarks {
   return new Map([...marks].filter(([asset]) => FLOOR_CASH.includes(asset)));
 }
 
 /**
+ * PROVENANCE QUARANTINE (owner decision 2026-11-01, PR #630) — temporary containment, not confiscation.
+ *
+ * An account identified by immutable simulation-sale receipts (S > 0) is UNVERIFIED by default: no value
+ * may leave it (withdrawal create/approve/SENT, OTC reserve/payout, Spot→Futures, Banking principal) and
+ * no Spot order or fill may lower its worst-case value at the marks (overpaying a counterparty, self-trade
+ * laundering). Value-neutral trades, views, cancellations and admin REJECT stay available. Nothing is
+ * debited, frozen in the ledger, relabelled or deleted.
+ *
+ * Only an authenticated admin decision, recorded as an append-only audit row with a reason, changes it:
+ * RELEASE_TO_FLOOR (provenance adjudicated: S stays locked, realized genuine cash above S is free) or
+ * QUARANTINE (back on hold). The latest decision (highest seq) wins; each is reversible by the next.
+ */
+export const PROVENANCE_DECISION = 'SYNTHETIC_PROVENANCE_DECISION';
+export type ProvenanceDecision = 'QUARANTINE' | 'RELEASE_TO_FLOOR';
+export type ProvenanceStatus = 'CLEAR' | 'UNVERIFIED' | 'RELEASED_TO_FLOOR';
+
+export class ProvenanceDecisionError extends Error {
+  constructor(readonly code: 'NOT_IDENTIFIED' | 'INVALID_DECISION' | 'REQUEST_ID_REUSED', message: string) { super(message); }
+}
+
+interface DecisionRow { seq: number; decision: ProvenanceDecision; reason: string; adminId: string; requestId: string; at: string }
+
+async function decisions(db: Db, userId: string): Promise<DecisionRow[]> {
+  const rows = await db.auditLog.findMany({ where: { userId, action: PROVENANCE_DECISION }, select: { metadata: true, createdAt: true } });
+  return rows.map(({ metadata, createdAt }): DecisionRow => {
+    const m = (metadata ?? {}) as Record<string, unknown>;
+    const seq = Number(m.seq), decision = m.decision, at = createdAt instanceof Date ? createdAt.toISOString() : '';
+    // An unreadable decision row can never release anything.
+    if (!Number.isSafeInteger(seq) || seq < 1 || (decision !== 'QUARANTINE' && decision !== 'RELEASE_TO_FLOOR')) {
+      return { seq: Number.MAX_SAFE_INTEGER, decision: 'QUARANTINE' as const, reason: 'unreadable decision row', adminId: '', requestId: '', at };
+    }
+    return { seq, decision, reason: String(m.reason ?? ''), adminId: String(m.adminId ?? ''), requestId: String(m.requestId ?? ''), at };
+  }).sort((a, b) => a.seq - b.seq);
+}
+
+/** CLEAR for every account without simulation-sale receipts; otherwise the latest admin decision, UNVERIFIED by default. */
+export async function provenanceStatus(db: Db, userId: string): Promise<ProvenanceStatus> {
+  if ((await syntheticProceeds(db, userId)).isZero()) return 'CLEAR';
+  const latest = (await decisions(db, userId)).at(-1);
+  return latest?.decision === 'RELEASE_TO_FLOOR' ? 'RELEASED_TO_FLOOR' : 'UNVERIFIED';
+}
+
+/** Admin view of one identified account: status and the full decision history (no balances, no personal data). */
+export async function provenanceRecord(db: Db, userId: string) {
+  return { status: await provenanceStatus(db, userId), decisions: await decisions(db, userId) };
+}
+
+/**
+ * Append one decision. Serialized with every outflow of the account by the floor lock; replaying the same
+ * requestId returns the recorded decision and writes nothing; reusing it for a different decision is refused.
+ * Only accounts identified by simulation-sale receipts can be decided on. Writes nothing but the audit row.
+ */
+export async function recordProvenanceDecision(db: PrismaClient, input: { userId: string; adminId: string; decision: ProvenanceDecision; reason: string; requestId: string }) {
+  const reason = input.reason.trim();
+  if (input.decision !== 'QUARANTINE' && input.decision !== 'RELEASE_TO_FLOOR') throw new ProvenanceDecisionError('INVALID_DECISION', 'Unknown decision');
+  if (reason.length < 10 || reason.length > 1000) throw new ProvenanceDecisionError('INVALID_DECISION', 'A review reason of 10-1000 characters is required');
+  if (!/^[A-Za-z0-9_-]{8,100}$/.test(input.requestId)) throw new ProvenanceDecisionError('INVALID_DECISION', 'Invalid requestId');
+  return db.$transaction(async tx => {
+    await lockFloor(tx, input.userId);
+    if ((await syntheticProceeds(tx, input.userId)).isZero()) throw new ProvenanceDecisionError('NOT_IDENTIFIED', 'Account has no simulation-sale receipts');
+    const history = await decisions(tx, input.userId);
+    const replay = history.find(d => d.requestId === input.requestId);
+    if (replay) {
+      if (replay.decision !== input.decision || replay.reason !== reason || replay.adminId !== input.adminId) throw new ProvenanceDecisionError('REQUEST_ID_REUSED', 'requestId already used for a different decision');
+      return { status: await provenanceStatus(tx, input.userId), replayed: true };
+    }
+    const seq = history.filter(d => d.seq !== Number.MAX_SAFE_INTEGER).length + 1;
+    await tx.auditLog.create({ data: { userId: input.userId, action: PROVENANCE_DECISION,
+      metadata: { seq, decision: input.decision, reason, adminId: input.adminId, requestId: input.requestId } } });
+    return { status: await provenanceStatus(tx, input.userId), replayed: false };
+  });
+}
+
+export class ProvenanceHoldError extends SyntheticProceedsLockedError {
+  constructor() { super('This account is under provenance review; value cannot leave it until the review is complete'); }
+}
+
+/**
  * Refuse when the account would end below its floor. `before` (the value at the start of the same
- * transaction) lets an order that does not lower the value through even when the account is already
- * under the floor — e.g. selling a listing allocation for real USDT; Spot orders are judged at the marks.
- * A cash-out passes no `before` and is judged on realized stable cash only (`cashOutMarks`).
+ * transaction) marks a Spot order, judged at the marks; a cash-out passes no `before`.
+ * UNVERIFIED (quarantine): every cash-out is refused, and a Spot change may not lower the value at all.
+ * RELEASED_TO_FLOOR: a cash-out is judged on realized stable cash only (`cashOutMarks`); a Spot order may
+ * not take the account below S unless it does not lower the value (e.g. selling a listing allocation).
  */
 export async function assertFloor(tx: Tx, userId: string, marks: FloorMarks, before?: BigNumber): Promise<void> {
+  const status = await provenanceStatus(tx, userId);
+  if (status === 'CLEAR') return;
+  if (status === 'UNVERIFIED') {
+    if (before === undefined) throw new ProvenanceHoldError();
+    if ((await floorValue(tx, userId, marks)).lt(before)) throw new ProvenanceHoldError();
+    return;
+  }
   const floor = await syntheticProceeds(tx, userId);
   const after = await floorValue(tx, userId, before === undefined ? cashOutMarks(marks) : marks);
   if (after.lt(floor) && (before === undefined || after.lt(before))) throw new SyntheticProceedsLockedError();

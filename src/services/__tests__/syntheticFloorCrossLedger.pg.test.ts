@@ -9,6 +9,11 @@ import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { OtcCashService } from '../../otc/OtcCashService';
 import { BankingService } from '../../banking/service';
 import { setManagedListingAssets } from '../listings/managedSnapshot';
+// Loaded untyped: the CI negative control runs this suite against the original #630 floor file, which has no
+// provenance decisions (and no quarantine), so the release step is skipped there.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const floorModule: Record<string, unknown> = require('../syntheticProceedsFloor');
+const recordProvenanceDecision = floorModule.recordProvenanceDecision as undefined | ((db: PrismaClient, input: Record<string, string>) => Promise<unknown>);
 
 const url = process.env.VOLTEX_NRX_TEST_URL;
 if (url) {
@@ -42,6 +47,8 @@ pg('floor is shared by every ordinary-ledger outflow (review #630)', () => {
     sessionId = (await db.session.create({ data: { userId } })).id;
     await db.balance.createMany({ data: [{ userId, asset: 'USDT', available: '110000' }, { userId: other, asset: 'USDT', available: '200000' }, { userId: other, asset: 'BTC', available: '2' }] });
     await db.auditLog.create({ data: { userId, action: 'TEAM_SPOT_SIMULATION_SOLD', metadata: { pair: 'QVTR/USDT', proceeds: '100000', counterparty: 'simulation:QVTR' } } });
+    // Floor-rule cases: provenance review already released this account to the floor (quarantine: separate suite).
+    if (recordProvenanceDecision) await recordProvenanceDecision(db, { userId, adminId: 'fixture-admin', decision: 'RELEASE_TO_FLOOR', reason: 'fixture: provenance adjudicated', requestId: 'rel-' + randomUUID() });
     service = new OrderService(db, new MatchingEngine(), prices);
     otc = new OtcCashService(db, prices, { version: 'isolated-fixture', enabled: true, approvedUserIds: [userId], maxActive: 3,
       routes: [{ country: 'RU', cityId: 'geonames-524901', asset: 'USDT', fiat: 'USD', cashPrecision: 2 }] });

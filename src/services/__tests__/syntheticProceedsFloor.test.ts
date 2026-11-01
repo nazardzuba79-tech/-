@@ -1,9 +1,11 @@
 import BigNumber from 'bignumber.js';
-import { assertFloor, floorValue, prepareFloor, syntheticProceeds } from '../syntheticProceedsFloor';
+import { assertFloor, floorValue, prepareFloor, provenanceStatus, syntheticProceeds } from '../syntheticProceedsFloor';
 
 const receipt = (metadata: unknown) => ({ metadata });
-const database = (rows: unknown[] = []) => ({
-  auditLog: { findMany: jest.fn(async () => rows) },
+// Floor-mode by default: the account's provenance was adjudicated (RELEASE_TO_FLOOR); quarantine cases pass their own decisions.
+const released = [{ metadata: { seq: 1, decision: 'RELEASE_TO_FLOOR', reason: 'fixture review', adminId: 'a', requestId: 'fixture-1' }, createdAt: new Date() }];
+const database = (rows: unknown[] = [], decided: unknown[] = released) => ({
+  auditLog: { findMany: jest.fn(async (q?: { where?: { action?: unknown } }) => q?.where?.action === 'SYNTHETIC_PROVENANCE_DECISION' ? decided : rows) },
   balance: { findMany: jest.fn(async () => [{ asset: 'USDT', available: '110', locked: '0' }]) },
   withdrawal: { findMany: jest.fn(async () => []) },
   otcCashReservation: { findMany: jest.fn(async () => []) },
@@ -48,5 +50,34 @@ describe('synthetic floor fail-closed accounting', () => {
     const db = database();
     db.order.findMany.mockResolvedValue([100000, 90000].map(price => ({ id: String(price), pair: 'BTC/USDT', side: 'BUY', price: String(price), remainingQuantity: '0.001', ocoGroupId: 'oco' })) as any);
     expect((await floorValue(db as any, 'fixture', marks)).toFixed()).toBe('70');
+  });
+
+  describe('provenance quarantine (owner decision 2026-11-01)', () => {
+    const synthetic = [receipt({ pair: 'QVTR/USDT', proceeds: '100' })];
+    test('an identified account is UNVERIFIED by default and every cash-out is refused, however much cash it holds', async () => {
+      const db = database(synthetic, []);
+      db.balance.findMany.mockResolvedValue([{ asset: 'USDT', available: '1000000', locked: '0' }] as any);
+      expect(await provenanceStatus(db as any, 'fixture')).toBe('UNVERIFIED');
+      await expect(assertFloor(db as any, 'fixture', marks)).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED', message: expect.stringMatching(/provenance review/) });
+    });
+    test('under quarantine a Spot change may not lower the value at all; a value-neutral one passes', async () => {
+      const db = database(synthetic, []);
+      await expect(assertFloor(db as any, 'fixture', marks, new BigNumber(110))).resolves.toBeUndefined();
+      await expect(assertFloor(db as any, 'fixture', marks, new BigNumber('110.000001'))).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED' });
+    });
+    test('the latest decision wins, and an unreadable decision row can never release', async () => {
+      const at = new Date();
+      const row = (seq: unknown, decision: unknown) => ({ metadata: { seq, decision, reason: 'fixture review', adminId: 'a', requestId: `r-${seq}` }, createdAt: at });
+      expect(await provenanceStatus(database(synthetic, [row(1, 'RELEASE_TO_FLOOR'), row(2, 'QUARANTINE')]) as any, 'f')).toBe('UNVERIFIED');
+      expect(await provenanceStatus(database(synthetic, [row(2, 'RELEASE_TO_FLOOR'), row(1, 'QUARANTINE')]) as any, 'f')).toBe('RELEASED_TO_FLOOR');
+      expect(await provenanceStatus(database(synthetic, [row(1, 'RELEASE_TO_FLOOR'), row('x', 'RELEASE_TO_FLOOR')]) as any, 'f')).toBe('UNVERIFIED');
+      expect(await provenanceStatus(database(synthetic, [row(1, 'RELEASE_TO_FLOOR'), row(2, 'UNLOCK_ALL')]) as any, 'f')).toBe('UNVERIFIED');
+    });
+    test('an ordinary account is CLEAR and never reads decisions or prices', async () => {
+      const db = database([], []);
+      expect(await provenanceStatus(db as any, 'fixture')).toBe('CLEAR');
+      await expect(assertFloor(db as any, 'fixture', marks)).resolves.toBeUndefined();
+      expect(db.balance.findMany).not.toHaveBeenCalled();
+    });
   });
 });
