@@ -13,9 +13,9 @@ dump() { pg_dump --schema-only --no-owner --no-privileges "$URL" | grep -v -E '^
 DATABASE_URL=$URL DIRECT_URL=$URL npx prisma migrate deploy --schema "$BASE/prisma/schema.prisma" >/dev/null
 dump > "$BASE/main.sql"
 DATABASE_URL=$URL DIRECT_URL=$URL npx prisma migrate deploy >/dev/null
-echo "copy tables after apply: $(psql "$URL" -Atc "select count(*) from pg_tables where tablename like 'Copy%Demo%'")"
-psql "$URL" -q -v ON_ERROR_STOP=1 -f prisma/rollback/copy-trading-658.sql
+echo "applied; rolling back with ${ROLLBACK_SQL:-prisma/rollback/copy-futures-delegation-20261101.sql}"
+psql "$URL" -q -v ON_ERROR_STOP=1 -f "${ROLLBACK_SQL:-prisma/rollback/copy-futures-delegation-20261101.sql}"
 dump > "$BASE/rolled.sql"
 diff -u "$BASE/main.sql" "$BASE/rolled.sql" && echo "rollback schema == ${BASE_REF:-origin/main} schema"
 DATABASE_URL=$URL DIRECT_URL=$URL npx prisma migrate deploy >/dev/null
-echo "re-apply OK: $(psql "$URL" -Atc "select count(*) from pg_tables where tablename like 'Copy%Demo%'") copy tables"
+echo "re-apply OK"

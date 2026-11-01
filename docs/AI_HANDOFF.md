@@ -7616,4 +7616,11 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Change: those two exact lines restored in `StrategySocials.css` and `copy-trading-bolt/components.tsx`; socials files now byte-equal to 13a1bc9b. No API, DB or other module touched.
 - Verified locally: Copy/socials Jest 250/250, frontend `tsc -b`.
 
+## 2026-11-01 — Claude (session 01EmV3Pt) — Copy Futures: automatic worker, exits, add-ons, several symbols (default OFF)
+- Base: main `811d47cc` (includes #662). Branch `claude/voltex-mobile-audit-7rpjni-copy-futures-auto`.
+- Executor: mirrors leader TAKE_PROFIT/STOP_LOSS/LIQUIDATION as a risk-reducing close of the attributed copied position (full close when the source position ended); add-ons go into the same copied position; several symbols at once; proportional partial closes with no dust. Mixing with the follower's own positions/orders is still refused (`FOLLOWER_POSITION_MIXED_WITH_OTHER_ACTIVITY`). Commit guard: `copiedPositionIds`, `riskReducingExit`, add-on target check.
+- Automatic: consent creates one revocable delegated `Session` (visible in the user's session list, no token issued, 7 days); stop revokes it. `FuturesCopyWorker` + `startFuturesCopyWorker` (3 s, 50 consents/pass), wired in `src/index.ts` only when `COPY_FUTURES_DEMO_AUTOMATIC=true` on top of every earlier gate (NODE_ENV=test + loopback copy_demo_* DB). Migration `20261101090000_copy_futures_demo_delegation` (2 nullable columns) + `prisma/rollback/copy-futures-delegation-20261101.sql`.
+- Page: automatic state and updated notice in 7 languages (exits are now copied).
+- Verified locally on PostgreSQL 16: `test-copy-futures-auto-postgres.cjs` 13/13, executor regression 12/12 (TP now mirrored), integration review 15/15 (HTTP), migration apply → rollback == origin/main → re-apply; backend `tsc`; futuresCopyText + plainLanguage 16/16; CI workflow extended.
+- Not production: the gate is code-level; turning on real users needs an owner decision and a server release.
 - Final local sealed AELRI acceptance: 22/22 Chromium checks, 28 screenshots, including +1/+2/+3/reload/double-click and disabled expired date dialog. Corrected the reschedule fixture to initialize its existing synthetic Date clock (no product-clock change). Source and release code unchanged by this test fix.

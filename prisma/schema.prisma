@@ -1559,6 +1559,9 @@ model CopyFuturesDemoConsent {
   maxTotalExposureUsdt Decimal @db.Decimal(36, 18)
   maxDeviationBps Decimal @db.Decimal(8, 2)
   startedAfterRevision Int
+  /// Revocable Session the automatic copy worker acts with; null = manual only.
+  delegatedSessionId String? @unique
+  delegationExpiresAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   mirrors CopyFuturesDemoMirror[]
