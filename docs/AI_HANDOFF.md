@@ -7586,3 +7586,8 @@ Fresh immutable Pages root and custom-domain root use index-wS4Z9N50.js, whereas
 ### #660 CI count correction
 
 Run41204666241 passed the expanded78 browser checks and failed only the old hard-coded70 count. Updated the required count to78 without removing assertions, and added the covered Banking component/API/CSS to workflow paths. No product behavior change in this follow-up.
+
+## 2026-11-01 — Claude (session 01EmV3Pt) — main socials parity with production Pages 13a1bc9b
+- Found: production Pages source `13a1bc9b` carries two Copy Trading socials details that `main` lost when #641 was merged from an earlier head: the blue Telegram link style (`21b10560`) and the social links on locked trader rows (`97bbfa04`). A future release of `main` would have removed both from the live site.
+- Change: those two exact lines restored in `StrategySocials.css` and `copy-trading-bolt/components.tsx`; socials files now byte-equal to 13a1bc9b. No API, DB or other module touched.
+- Verified locally: Copy/socials Jest 250/250, frontend `tsc -b`.
