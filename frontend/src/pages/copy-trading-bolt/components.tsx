@@ -932,7 +932,7 @@ function LockedTraderList({ traders }: { traders: Trader[] }) {
             <Avatar trader={trader} />
             <div>
               <div className="locked-trader-name"><span>{trader.name}</span><span className="locked-trader-lock" title="Только по приглашению"><LockKeyhole size={14} /></span></div>
-              <div className="locked-trader-subtitle">Master Trader · {trader.region}</div>
+              <div className="locked-trader-subtitle">Master Trader · {trader.region}</div><StrategySocialLinks traderId={trader.id} />
             </div>
           </div>
           <div className="locked-access"><LockKeyhole size={14} /><span>Только по приглашению</span></div>

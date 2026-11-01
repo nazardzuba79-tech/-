@@ -7603,3 +7603,8 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 
 - Release continuation: actual Pages entry reproduced byte-for-byte after using its three real build settings. Narrow Pages source 2467a86e is separate from main. Additive Worker/API builder preserves 10,080 live-model ticks and matches 10,080 new-model ticks. Twelve API modules only include four approved #668 security files and eight listing modules; no Prisma/client/financial/config replacement. Sealed production-byte Chromium acceptance passed 22/22 before adding the explicit UI-expiry assertion.
 - Initial CI failures diagnosed: exact required DEMO provenance sentence was rejected by plainLanguage; permitted only that sentence in testMarkets.ts with positive non-tradable/provenance tests. Existing admin operational fixture navigated from KYC before blob image decode; now waits for actual decoded fixture images, with console-error failures unchanged. See AI_LISTINGS_RELEASE_20261101.md for pinned order and secure rollback.
+
+## 2026-11-01 — Claude (session 01EmV3Pt) — main socials parity with production Pages 13a1bc9b
+- Found: production Pages source `13a1bc9b` carries two Copy Trading socials details that `main` lost when #641 was merged from an earlier head: the blue Telegram link style (`21b10560`) and the social links on locked trader rows (`97bbfa04`). A future release of `main` would have removed both from the live site.
+- Change: those two exact lines restored in `StrategySocials.css` and `copy-trading-bolt/components.tsx`; socials files now byte-equal to 13a1bc9b. No API, DB or other module touched.
+- Verified locally: Copy/socials Jest 250/250, frontend `tsc -b`.
