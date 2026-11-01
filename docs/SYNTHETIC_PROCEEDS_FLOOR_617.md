@@ -75,7 +75,7 @@ Every version of that sale wrote the audit row in the same transaction as the cr
 - **Legacy synthetic USDT.** Not debited, zeroed or relabelled: settlement needs your plan. The check below sizes it read-only.
 - **Admin `Balance` credits (`BALANCE_ADJUSTED`).** Unchanged. Earlier owner policy: old Balance accounts are left as they are; new tester credits go only through demo top-up. These credits cannot be told apart automatically from manual credits of genuine funds.
 - **OTC cash-out.** Already closed to ADMIN and simulation-only accounts (`role === 'USER'`, not simulation-only, on the approved list). It is not wired to the floor.
-- **Futures.** Not counted in real value (conservative). Futures settle against the house, not other users, so they are not a path to another account.
+- **Futures.** Not counted in real value (conservative). Correction (review 1 Nov): Futures fills ARE user-vs-user (FuturesPositionService matches other users' resting orders), so a held account places no Futures order and its legacy resting Futures orders never fill.
 - **Conservative counting.** A legacy house-bought sale of a real asset outside the valued set (e.g. SOL) counts towards S. This only ever restricts the owner and test accounts.
 
 ## Read-only production sizing (operator, aggregate output only)
@@ -192,3 +192,18 @@ non-zero, a bounded flow-trace and a recipient-hold policy are a **separate expl
 admin may place a specific, evidenced counterparty on the same audited hold with a reason; never automatic, never a
 blanket hold of ordinary customers). Not implemented here; #630 must not be described as containing all tainted
 proceeds until that is resolved.
+
+### Independent adversarial review 2026-11-01 (multi-agent, read-only) — confirmed findings fixed
+
+| Finding (head reviewed cf551870 / 2c8eb202) | Fix | PG test |
+|---|---|---|
+| Fair or near-zero-price Spot fills could move value (incl. unvalued alts like SOL) to a counterparty | held account takes part in no Spot execution (6eec3d6a) | innocent counterparty, byte-identical |
+| ADMIN / simulation-only MARKET SELL took the house-sale shortcut without any provenance check | `assertNotHeld` before the shortcut | ADMIN MARKET SELL → hold |
+| Futures fills are user-vs-user; no provenance check on the Futures path | held taker refused; held legacy maker never fills | held Futures order → hold |
+| Product purchases debited Balance with no check | `refuseFloorBound` (any S>0 account) | purchase refused; ordinary account buys |
+| Held account's resting order rolled back every ordinary taker crossing it | held users' resting orders are left out of the matching book (stay in DB, cancellable) | innocent taker not refused, never fills it; cancel + replay work |
+| Banking placement judged the floor on a SERIALIZABLE snapshot older than the floor lock | Banking principal refused for every S>0 account, released or not | released account → refused |
+
+Rejected by the skeptic pass (not real or out of scope): an admin releasing their own account (admins are the trusted
+role; decisions are audited), preflight malformed-receipt counting (diagnostic only; server fails closed), CI path
+coverage (extended anyway).

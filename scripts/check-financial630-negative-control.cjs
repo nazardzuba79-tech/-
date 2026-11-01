@@ -9,8 +9,10 @@ assert.equal(url.hostname, '127.0.0.1');
 assert.equal(url.pathname, '/voltex_nrx_test');
 assert.equal(process.env.GITHUB_ACTIONS, 'true', 'Only the disposable Actions checkout is supported');
 assert.equal(process.env.RUNNER_OS, 'Linux');
+// SpotBookTransaction.ts joins the swap: since the provenance hold it imports the floor module's held-user lookup,
+// which the original #630 floor file does not have. Restored with the rest in `finally`.
 const files = ['src/services/syntheticProceedsFloor.ts', 'src/services/OrderService.ts', 'src/services/WithdrawalService.ts',
-  'src/services/WalletTransferService.ts', 'src/otc/OtcCashService.ts', 'src/banking/service.ts'];
+  'src/services/WalletTransferService.ts', 'src/otc/OtcCashService.ts', 'src/banking/service.ts', 'src/services/SpotBookTransaction.ts'];
 const saved = new Map(files.map(file => [file, fs.readFileSync(file)]));
 const out = path.resolve('output/financial630');
 fs.mkdirSync(out, {recursive:true});

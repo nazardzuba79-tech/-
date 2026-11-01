@@ -271,3 +271,35 @@ export async function assertFloor(tx: Tx, userId: string, marks: FloorMarks, bef
   const after = await floorValue(tx, userId, before === undefined ? cashOutMarks(marks) : marks);
   if (after.lt(floor) && (before === undefined || after.lt(before))) throw new SyntheticProceedsLockedError();
 }
+
+/** Refuse when the account is on provenance hold (UNVERIFIED). Malformed receipts already fail closed. */
+export async function assertNotHeld(db: Db, userId: string): Promise<void> {
+  if ((await provenanceStatus(db, userId)) === 'UNVERIFIED') throw new ProvenanceHoldError();
+}
+
+/**
+ * Refuse for EVERY account with simulation-sale receipts, whatever its review status. Used by outflows that
+ * cannot take the floor lock before their snapshot (Banking principal runs SERIALIZABLE) or that have no
+ * price source (product purchases): fail closed instead of judging a floor on a stale or unpriced view.
+ */
+export async function refuseFloorBound(db: Db, userId: string): Promise<void> {
+  if (!(await syntheticProceeds(db, userId)).isZero()) throw new ProvenanceHoldError();
+}
+
+/**
+ * Of the given users, those on provenance hold. Their resting Spot orders are left out of the matching book
+ * (they stay in the database and stay cancellable), so a held account neither trades nor blocks ordinary
+ * takers. An account whose receipts cannot be read is treated as held.
+ */
+export async function heldUsers(db: Db, userIds: readonly string[]): Promise<Set<string>> {
+  const held = new Set<string>();
+  if (!userIds.length) return held;
+  const candidates = await db.auditLog.findMany({ where: { userId: { in: [...new Set(userIds)] }, action: { in: SIMULATION_ACTIONS } },
+    select: { userId: true }, distinct: ['userId'] });
+  for (const { userId } of candidates) {
+    if (!userId) continue;
+    try { if ((await provenanceStatus(db, userId)) === 'UNVERIFIED') held.add(userId); }
+    catch (error) { if (error instanceof SyntheticProceedsLockedError) held.add(userId); else throw error; }
+  }
+  return held;
+}

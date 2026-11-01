@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { BANKING_PROGRAMS, BANKING_REFERRAL_REWARD_PERCENT, VOLTEX_CARD_YIELD, bankingAsset, bankingProgram, minimumAssetQuantity, type BankingAsset } from './config';
 import { addCalendarMonthsClamped, calculateBankingProgram, completedCalendarMonths, placementTerms, rewardForMonth } from './math';
-import { assertFloor, lockFloor, prepareFloor } from '../services/syntheticProceedsFloor';
+import { assertFloor, lockFloor, prepareFloor, refuseFloorBound } from '../services/syntheticProceedsFloor';
 
 export class BankingError extends Error {
   constructor(readonly code: string, readonly status = 400) { super(code); }
@@ -125,6 +125,9 @@ export class BankingService {
         const price = prices[pair.split('/')[0] as BankingAsset];
         return price ? { lastPrice: price } : null;
       } });
+      // SERIALIZABLE: this snapshot predates the floor lock, so a floor cannot be judged here (#630 review).
+      // Any account with simulation-sale receipts places no new Banking principal, whatever its review status.
+      if (floor) await refuseFloorBound(tx, userId);
       if (floor) await lockFloor(tx, userId);
       const debited = await tx.$queryRaw<{available:string}[]>`
         UPDATE "Balance" SET "available"="available"-${amount.toFixed()}::numeric, "updatedAt"=NOW()

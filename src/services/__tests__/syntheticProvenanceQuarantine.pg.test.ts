@@ -16,6 +16,8 @@ import { transferWalletBalance } from '../WalletTransferService';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { OtcCashService } from '../../otc/OtcCashService';
 import { BankingService } from '../../banking/service';
+import { FuturesPositionService } from '../../futures/FuturesPositionService';
+import { PurchaseService } from '../PurchaseService';
 import { provenanceRecord, provenanceStatus, recordProvenanceDecision } from '../syntheticProceedsFloor';
 
 const url = process.env.VOLTEX_NRX_TEST_URL;
@@ -128,7 +130,9 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     expect(resting.order.status).toBe('OPEN');
     await identify(old);
     const seller = await user('0', '1');
-    await expect(limit(seller, 'SELL', '120000')).rejects.toMatchObject(HOLD);
+    // The seller is not refused; the held bid is simply not matchable, so the sale rests unfilled.
+    const sale = await limit(seller, 'SELL', '120000');
+    expect(sale.trades).toHaveLength(0);
     expect((await db.order.findUniqueOrThrow({ where: { id: resting.order.id } })).status).toBe('OPEN');
     expect(await db.trade.count({ where: { makerOrderId: resting.order.id } })).toBe(0);
   });
@@ -155,28 +159,30 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     await expect(withdraw(innocent, '1000')).resolves.toMatchObject({ status: 'PENDING' });
   });
 
-  test('a fair-price order the account left resting before identification cannot be filled by an innocent taker; it can be cancelled and replayed', async () => {
+  test('a held account\'s resting order is left out of the book: an innocent taker is NOT refused, never fills it, and the order can be cancelled and replayed', async () => {
     const legacy = await user('100000');
     const requestId = randomUUID();
     const resting = await service.placeOrder({ userId: legacy, pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('60000'), quantity: new BigNumber('1'), requestId });
     expect(resting.order.status).toBe('OPEN');
     await identify(legacy);
     const innocent = await user('0', '1');
-    const before = await digest([legacy, innocent]);
-    await expect(limit(innocent, 'SELL', '60000')).rejects.toMatchObject(HOLD);
-    await expect(market(innocent, 'SELL', '0.5')).rejects.toMatchObject(HOLD);
-    expect(await digest([legacy, innocent])).toBe(before);
+    const legacyBefore = await digest([legacy]);
+    // The innocent seller's order is accepted: it rests, because the held bid is not matchable.
+    const sold = await limit(innocent, 'SELL', '60000');
+    expect(sold.order.status).toBe('OPEN');
+    expect(sold.trades).toHaveLength(0);
     expect(await db.trade.count({ where: { makerOrderId: resting.order.id } })).toBe(0);
+    expect(await digest([legacy])).toBe(legacyBefore);
     // Replay of the committed order by its request ID still answers; cancelling returns the hold to the same account.
     const replay = await service.placeOrder({ userId: legacy, pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('60000'), quantity: new BigNumber('1'), requestId });
     expect(replay.order.id).toBe(resting.order.id);
     await service.cancelOrder(legacy, resting.order.id);
+    expect((await db.order.findUniqueOrThrow({ where: { id: resting.order.id } })).status).toBe('CANCELLED');
     expect(await bal(legacy)).toEqual(['100000', '0']);
     await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD);
-    // Once the quarantined order is gone, B sells to anyone else normally.
+    // The innocent seller's resting order then fills against an ordinary buyer.
     const buyer = await user('100000');
     await limit(buyer, 'BUY', '60000');
-    await limit(innocent, 'SELL', '60000');
     expect(await bal(innocent)).toEqual(['60000', '0']);
   });
 
@@ -367,5 +373,31 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     expect([d('counterparty_accounts_after_first_sale'), d('counterparties_paid_quote_by_identified'), d('counterparties_with_withdrawals_after_contact')]).toEqual([1, 1, 1]);
     // The counterparty is NOT held automatically: that needs its own evidence and an owner decision.
     expect(await provenanceStatus(db, seller)).toBe('CLEAR');
+  });
+
+  test('review findings: ADMIN house MARKET SELL, Futures orders and product purchases are refused for a held account; nothing moves', async () => {
+    const admin = await user('100000', '1');
+    await db.user.update({ where: { id: admin }, data: { role: 'ADMIN' } });
+    await identify(admin);
+    const before = await digest([admin]);
+    await expect(market(admin, 'SELL', '0.5')).rejects.toMatchObject(HOLD);       // the house-sale shortcut
+    const futures = new FuturesPositionService(db, new MatchingEngine(), { getMarkPrice: () => { throw new Error('mark must not be read'); } } as any);
+    await expect(futures.placeOrder({ userId: admin, symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('60000'), quantity: new BigNumber('0.01'), leverage: 2, marginType: 'ISOLATED' } as any)).rejects.toMatchObject(HOLD);
+    const product = await db.product.create({ data: { name: 'fixture', description: 'fixture', priceAmount: '100', priceAsset: 'USDT' } });
+    await expect(new PurchaseService(db).purchaseProduct(admin, product.id)).rejects.toThrow(/provenance review/);
+    expect(await digest([admin])).toBe(before);
+    expect(await db.purchase.count({ where: { userId: admin } })).toBe(0);
+    // An ordinary account still purchases normally.
+    const ordinary = await user('1000');
+    await expect(new PurchaseService(db).purchaseProduct(ordinary, product.id)).resolves.toBeTruthy();
+  });
+
+  test('review finding: Banking principal is refused for an identified account even after release (its SERIALIZABLE snapshot predates the floor lock)', async () => {
+    const legacy = await user('200000');
+    await identify(legacy);
+    await decide(legacy, 'RELEASE_TO_FLOOR');
+    const banking = new BankingService(db, { prices: async () => ({ USDT: '1', USDC: '1', BTC: '60000', ETH: '3000' }) } as any);
+    await expect(banking.createPlacement(legacy, { programId: 'MONTHLY_17_24M', asset: 'USDT', amount: '20000', idempotencyKey: randomUUID() })).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED' });
+    expect(await bal(legacy)).toEqual(['200000', '0']);
   });
 });

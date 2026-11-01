@@ -11,7 +11,7 @@ import { isSimulationSettled, SIMULATION_QUOTE, isTestAssetPairOrSymbol } from '
 import { privateTestAdmitted } from './listings/privateTest';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
-import { assertFloor, floorValue, isMintedListingAsset, lockFloor, prepareFloor } from './syntheticProceedsFloor';
+import { assertFloor, assertNotHeld, floorValue, heldUsers, isMintedListingAsset, lockFloor, prepareFloor } from './syntheticProceedsFloor';
 import { SpotBookTransaction } from './SpotBookTransaction';
 
 export type ExtendedOrderType = OrderType | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
@@ -127,6 +127,8 @@ export class OrderService {
         select: { role: true, blockedAt: true },
       });
       if (user && !user.blockedAt && (user.role === 'ADMIN' || isSimulationOnlyUser(params.userId))) {
+        // A held account takes part in no Spot execution, house sales included (#630).
+        await assertNotHeld(this.prisma, params.userId);
         return this.sellTeamSpotSimulation(params.userId, params.pair, params.quantity, params.requestId);
       }
     }
@@ -883,7 +885,8 @@ export class OrderService {
         return order;
       }
 
-      if (!staged!.cancelOrder(order.pair, order.id)) throw new Error('Active Spot order missing from committed book');
+      // A held account's order is left out of the matching book (#630): it is still cancelled from the database.
+      if (!staged!.cancelOrder(order.pair, order.id) && !(await heldUsers(tx, [userId])).has(userId)) throw new Error('Active Spot order missing from committed book');
       const [base, quote] = order.pair.split('/');
       const remaining = new BigNumber(order.remainingQuantity.toString());
       if (order.side === 'BUY') {
