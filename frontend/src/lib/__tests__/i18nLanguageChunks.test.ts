@@ -80,6 +80,9 @@ const APPROVED_AUTH_DESIGN_KEYS = [
 // PR #466: two additive auth promotional labels. Only these exact additions
 // are omitted from the historical digest; existing numeric/other copy is not changed.
 const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
+// Additive funded-wallet conversion/history vocabulary; do not rehash older copy.
+const WALLET_CONVERSION_KEYS = ['title','subtitle','subtitleTrading','tradingLedger','from','to','fiat','crypto','preview','pay','receive','rate','fee','priceNotice','success','quoteFailed','refreshQuote','insufficient','denied','limit','dailyLimit','capacity','places','unknown','check','retry']
+  .map(key => `wallet.conversion.${key}`).concat(['wallet.txAdjustments','wallet.txCredit','wallet.txDebit','wallet.txPartial']);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
@@ -364,6 +367,7 @@ describe('translation integrity', () => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
         if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
         if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
+        if (key && WALLET_CONVERSION_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has
@@ -431,7 +435,11 @@ describe('translation integrity', () => {
           // «Не удалось закрыть позицию», named in every language. `git diff
           // --numstat` over the locales reports `2 0` per language,
           // additions only; asserted by name below.
-          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch'];
+          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch',
+          // Wallet Funding (2026-10-31, Issue #85): the separate simulation Spot scope's title, its
+          // USDT note and the account selector's label were hard-coded Russian/English; now in every
+          // language. `git diff --numstat` over the locales reports `3 0` per language, additions only.
+          'wallet.vtaSpotTitle', 'wallet.vtaUsdtShared', 'wallet.accountSelect'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

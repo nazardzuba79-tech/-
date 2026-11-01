@@ -64,6 +64,10 @@ const state = {
   unpriced: false,
   /** Days of stored daily snapshots this review account has. 0 = a new account. */
   historyDays: 45,
+  /** The reader's language, set before the page loads (`?lang=`). */
+  lang: 'ru',
+  /** Whether the admin's separate simulation Spot account is open (`?vta=active`). */
+  vtaActive: false,
 };
 
 const market = {
@@ -153,10 +157,12 @@ app.get('/__mode/:value', asyncRoute(async (req, res) => {
     state.holdings.find((h) => h.asset === 'USDT').available = '5000000';
   }
   if (req.query.history !== undefined) state.historyDays = Number(req.query.history) || 0;
+  if (req.query.lang !== undefined) state.lang = ['ru', 'en', 'es', 'zh', 'hi', 'ja', 'ko'].includes(req.query.lang) ? req.query.lang : 'ru';
+  if (req.query.vta !== undefined) state.vtaActive = req.query.vta === 'active';
   if (req.query.opened === '1' && !state.row) {
     await service.initialize({ userId: 'review-owner', sessionId: 'review', expiresAt: now() + 3600000 }, 'review-open-account');
   }
-  res.json({ mode, unpriced: state.unpriced, opened: Boolean(state.row), historyDays: state.historyDays });
+  res.json({ mode, unpriced: state.unpriced, opened: Boolean(state.row), historyDays: state.historyDays, lang: state.lang, vtaActive: state.vtaActive });
 }));
 
 app.use('/api/v1/private-trading', (_req, res, next) => {
@@ -237,6 +243,17 @@ app.get('/api/v1/market/external/rankings', (_req, res) => res.json({ rankings: 
 app.get('/api/v1/deposits/me', (_req, res) => res.json([]));
 app.get('/api/v1/withdrawals/me', (_req, res) => res.json([]));
 app.get('/api/v1/trades/me', (_req, res) => res.json([]));
+/** The simulation Spot account an admin's Funding view resolves its scope from. Inactive by default (the real
+ *  ledger is shown); `?vta=active` opens the separate simulation scope, which never carries money-movement actions. */
+app.get('/api/v1/demo/vta', (_req, res) => res.json({
+  account: { id: 'review-vta', scope: 'SIMULATION_SPOT', cashPolicy: 'SHARED_DEMO_BALANCE', active: state.vtaActive },
+  asOf: now(), valuationSource: 'VOLTORA_SIMULATION', totalValueUsd: state.vtaActive ? '25' : '0',
+  balances: state.vtaActive ? [
+    { asset: 'USDT', available: '5', locked: '0', priceUsd: '1', valueUsd: '5' },
+    { asset: 'VTA', available: '10', locked: '0', priceUsd: '2', valueUsd: '20' },
+  ] : [],
+  sales: [],
+}));
 app.get('/api/v1/balances', (_req, res) => res.json([{ asset: 'USDT', available: '250', locked: '0' }]));
 app.get('/api/v1/futures/balances', (_req, res) => res.json([]));
 app.get('/api/v1/me', (_req, res) => res.json({
@@ -250,7 +267,7 @@ app.use(express.static(dist, { index: false, maxAge: 0 }));
 app.get('*', (_req, res) => {
   const html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8').replace(
     '<head>',
-    '<head><script>localStorage.setItem("exchange_token","review-token");localStorage.setItem("exchange_lang","ru");</script>',
+    `<head><script>localStorage.setItem("exchange_token","review-token");localStorage.setItem("exchange_lang","${state.lang}");</script>`,
   );
   res.type('html').send(html);
 });

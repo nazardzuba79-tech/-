@@ -287,7 +287,7 @@ export class BankingService {
    */
   async referralSummary(userId:string) {
     const [user,referredCount,byAsset,recent]=await Promise.all([
-      this.prisma.user.findUnique({where:{id:userId},select:{referralCode:true}}),
+      this.prisma.user.findUnique({where:{id:userId},select:{referralCode:true,referralShortCode:true}}),
       this.prisma.user.count({where:{referredById:userId}}),
       this.prisma.bankingReferralReward.groupBy({by:['asset'],where:{referrerId:userId},_sum:{amount:true}}),
       this.prisma.bankingReferralReward.findMany({where:{referrerId:userId},orderBy:{createdAt:'desc'},take:20,
@@ -295,7 +295,7 @@ export class BankingService {
     ]);
     if(!user) throw new BankingError('user_not_found',404);
     return {
-      referralCode:user.referralCode,
+      referralCode:user.referralShortCode??user.referralCode,
       referralPercent:BANKING_REFERRAL_REWARD_PERCENT,
       referredCount,
       rewardsByAsset:byAsset.map(row=>({asset:row.asset,amount:(row._sum.amount??'0').toString()})),

@@ -1,0 +1,200 @@
+/* Production-built React + REAL conversion/activity routes + disposable PostgreSQL.
+ * Only unrelated read endpoints are fixtures. Outbound network denied. No production. */
+const fs = require('fs'), path = require('path'), assert = require('node:assert/strict'), { createRequire } = require('module');
+const BigNumber = require('bignumber.js');
+exports.run = async ({ origin, token, prisma, user, out, thinBook = {}, fund }) => {
+  const qa = createRequire(path.resolve(__dirname, '..', process.env.WALLET_QA_DEPS || 'output/wallet-qa-deps/package.json'));
+  const { chromium } = process.env.WALLET_PLAYWRIGHT_PATH ? require(process.env.WALLET_PLAYWRIGHT_PATH) : qa('playwright');
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage(), errors = [], unexpected = [], requests = [], checks = [], screenshots = [];
+  page.on('pageerror', error => errors.push(String(error)));
+  // Status and refusal code of every conversion call, for the evidence report.
+  const responses = [];
+  page.on('response', async response => {
+    const url = new URL(response.url()); if (!url.pathname.startsWith('/api/v1/wallet/conversion/') || response.request().method() !== 'POST') return;
+    responses.push({ endpoint: url.pathname.replace('/api/v1', ''), status: response.status(), code: response.ok() ? null : await response.json().then(body => body.code, () => null) });
+  });
+  await context.addInitScript(({ token }) => { localStorage.setItem('exchange_token', token); localStorage.setItem('exchange_lang', 'ru'); }, { token });
+  let dropConfirm = false, activityFailed = false, assetsFailed = false;
+  await context.route('**/*', async route => {
+    const req = route.request(), url = new URL(req.url());
+    if (url.origin !== origin) return route.abort('blockedbyclient');
+    if (!url.pathname.startsWith('/api/')) return route.continue();
+    const endpoint = url.pathname.replace('/api/v1', ''); requests.push({ method: req.method(), endpoint });
+    if (endpoint.startsWith('/wallet/conversion') || endpoint === '/wallet/activity') {
+      if ((activityFailed && endpoint === '/wallet/activity') || (assetsFailed && endpoint === '/wallet/conversion/assets')) return route.fulfill({ status: 503, json: { code: 'FIXTURE_OUTAGE' } });
+      if (dropConfirm && endpoint === '/wallet/conversion/confirm') {
+        dropConfirm = false; await route.fetch(); return route.abort('failed'); // real DB commit, deliberately lost delivery
+      }
+      return route.continue();
+    }
+    if (req.method() !== 'GET' && endpoint !== '/wallet/portfolio-snapshot') { unexpected.push(req.method() + ' ' + endpoint); return route.fulfill({ status: 403, json: { code: 'FIXTURE_WRITE_DENIED' } }); }
+    let result;
+    const marks = { USD: 1, EUR: 1.25, BTC: 60000, USDT: 0.998 };
+    if (endpoint === '/me') result = { id: user, email: 'wallet@example.invalid', role: 'USER', kycStatus: 'APPROVED', displayName: 'Fixture Wallet', twoFactorEnabled: false };
+    else if (['/wallet/overview', '/balances'].includes(endpoint)) {
+      const spot = (await prisma.balance.findMany({ where: { userId: user } })).map(r => ({ asset: r.asset, available: r.available.toString(), locked: r.locked.toString(), priceUsd: marks[r.asset] ?? null, valueUsd: marks[r.asset] ? new BigNumber(r.available.toString()).plus(r.locked.toString()).times(marks[r.asset]).toNumber() : null }));
+      const total = spot.reduce((sum, r) => sum + (r.valueUsd ?? 0), 0);
+      result = endpoint === '/balances' ? spot : { real: { spot, futures: [], spotValueUsd: total, futuresValueUsd: 0, totalValueUsd: total }, presentation: null, displaySpotUsd: total, displayFuturesUsd: 0, displayTotalUsd: total, btcPriceUsd: 60000 };
+    }
+    else if (endpoint === '/wallet/performance') result = { ageDays: 0, startedOn: null, periods: Object.fromEntries(['7d', '30d', '90d', '1y', 'all'].map(period => [period, { period, available: false, points: [] }])) };
+    else if (endpoint === '/wallet/portfolio-history') result = { points: [] };
+    else if (endpoint === '/wallet/portfolio-snapshot') result = { recorded: false };
+    else if (endpoint === '/deposits/me') result = [{ id: 'fixture-credited', asset: 'USDT', amount: '500', chain: 'tron', txHash: null, confirmations: 20, status: 'CREDITED', createdAt: new Date().toISOString() }, { id: 'fixture-pending', asset: 'USDT', amount: '10', chain: 'tron', txHash: null, confirmations: 0, status: 'PENDING', createdAt: new Date().toISOString() }];
+    else if (['/withdrawals/me', '/trades/me', '/futures/balances', '/products', '/purchases/me'].includes(endpoint)) result = [];
+    else if (endpoint === '/market/external/rankings') result = { source: 'FIXTURE', rankings: Object.entries(marks).map(([symbol, price]) => ({ symbol, name: symbol, price, changePercent24h: 0 })) };
+    else if (endpoint === '/market/assets/icons') result = { icons: {} };
+    else if (endpoint === '/support/conversations/mine') result = { conversation: null, messages: [] };
+    else if (endpoint.startsWith('/private-trading/')) return route.fulfill({ status: 403, json: { code: 'NOT_ALLOWED' } });
+    else { unexpected.push(req.method() + ' ' + endpoint); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_FIXTURE_ROUTE' } }); }
+    return route.fulfill({ json: result });
+  });
+  const check = async (name, fn) => { await fn(); checks.push(name); console.log('PASS browser ' + name); };
+  const open = async (pending = false) => { await page.getByRole('button', { name: 'Конвертация', exact: true }).first().click(); await page.locator(pending ? '[role="dialog"]' : '#conversion-from').waitFor(); };
+  const select = async (id, symbol) => { await page.locator('#' + id).click(); await page.getByRole('option', { name: new RegExp('^' + symbol + ' ·') }).click(); };
+  const snapshot = async () => JSON.stringify(await prisma.balance.findMany({ where: { userId: user }, orderBy: { asset: 'asc' } }));
+  try {
+    if (process.env.WALLET_QA_EXPECT_OFF === '1') {
+      // A production-style build (no VITE_WALLET_CONVERSION_ENABLED): Convert is inert and asks the server nothing.
+      await check('default-OFF build: Convert inactive, no dialog, no conversion request, no «unavailable» note', async () => {
+        await page.goto(origin + '/wallet');
+        const buttons = page.getByRole('button', { name: 'Конвертация', exact: true });
+        await buttons.first().waitFor();
+        assert((await buttons.count()) >= 1);
+        for (let i = 0; i < await buttons.count(); i += 1) {
+          assert(await buttons.nth(i).isDisabled());
+          assert.equal(await buttons.nth(i).getAttribute('title'), null);
+          await buttons.nth(i).click({ force: true });
+        }
+        await page.waitForTimeout(500);
+        assert.equal(await page.locator('[role="dialog"]').count(), 0);
+        assert.deepEqual(requests.filter(r => r.endpoint.startsWith('/wallet/conversion')), []);
+        assert(!/недоступн|not available|unavailable/i.test(await page.locator('body').innerText()));
+        const file = path.join(out, 'conversion-off-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      });
+      assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
+      fs.writeFileSync(path.join(out, 'browser-off-results.json'), JSON.stringify({ build: 'production React bundle, conversion flag unset', checks, screenshots, errors, unexpected, requests, productionTouched: false }, null, 2));
+      return;
+    }
+    await page.goto(origin + '/wallet'); await page.getByRole('button', { name: 'Конвертация', exact: true }).first().waitFor();
+    await check('preview and invalid amount never mutate; zero-fee fiat confirmation reaches real PostgreSQL', async () => {
+      await open(); await select('conversion-from', 'USD'); await select('conversion-to', 'EUR');
+      await page.locator('#conversion-amount').fill('-1'); assert(await page.getByRole('button', { name: 'Рассчитать', exact: true }).isDisabled());
+      // A tenth of a cent is not an amount of USD: refused in the form, before any request.
+      const quotesSent = requests.filter(r => r.endpoint === '/wallet/conversion/quote').length;
+      await page.locator('#conversion-amount').fill('2.555'); assert(await page.getByRole('button', { name: 'Рассчитать', exact: true }).isDisabled());
+      await page.getByText('Для USD — не более 2 знаков после запятой', { exact: true }).waitFor();
+      assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/quote').length, quotesSent);
+      const before = await snapshot(); await page.locator('#conversion-amount').fill('2.5'); await page.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+      await page.locator('[data-conversion-quote]').waitFor(); assert.equal(await snapshot(), before);
+      const summary = await page.locator('[data-conversion-quote]').innerText();
+      // Both legs before confirmation: what leaves (2.5 USD) and what arrives (2 EUR at 1.25), the market rate, 0% fee.
+      for (const text of ['Спишется', '2.5 USD', 'Получите', '2 EUR', '1 USD = 0.8 EUR', '0%']) assert(summary.includes(text), `quote summary lacks «${text}»: ${summary}`);
+      const file = path.join(out, 'conversion-preview-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      const reads = () => requests.filter(r => r.endpoint === '/wallet/overview').length;
+      const readsBefore = reads();
+      await page.getByRole('dialog').getByRole('button', { name: 'Конвертация', exact: true }).click();
+      await page.getByText('Конвертация выполнена', { exact: true }).waitFor(); assert.notEqual(await snapshot(), before);
+      // Balances refresh by themselves after success: the wallet re-reads its overview, no manual reload.
+      for (let i = 0; i < 50 && reads() === readsBefore; i += 1) await page.waitForTimeout(100);
+      assert(reads() > readsBefore, 'the wallet did not re-read its balances after the conversion');
+      await page.getByRole('dialog').getByRole('button', { name: 'Закрыть', exact: true }).last().click();
+    });
+    await check('fiat to crypto, ambiguous delivery and page reload recover receipt without a second debit', async () => {
+      await open(); await select('conversion-from', 'EUR'); await select('conversion-to', 'BTC'); await page.locator('#conversion-amount').fill('1');
+      await page.getByRole('button', { name: 'Рассчитать', exact: true }).click(); await page.locator('[data-conversion-quote]').waitFor();
+      dropConfirm = true; await page.getByRole('dialog').getByRole('button', { name: 'Конвертация', exact: true }).click(); await page.getByRole('button', { name: 'Проверить результат' }).waitFor();
+      await page.locator('[role="dialog"] p.text-neg').waitFor(); // wait for delivery failure AFTER the commit
+      const before = await snapshot(); await page.reload(); await open(true);
+      assert.equal(await page.locator('#conversion-amount').count(), 0);
+      await page.getByRole('button', { name: 'Проверить результат' }).click(); await page.getByText('Конвертация выполнена', { exact: true }).waitFor(); assert.equal(await snapshot(), before);
+      await page.getByRole('dialog').getByRole('button', { name: 'Закрыть', exact: true }).last().click();
+    });
+    await check('responsive modal is usable at all widths; no page horizontal overflow', async () => {
+      for (const [width, height] of [[1920,1080],[1440,900],[1366,768],[430,900],[390,844],[360,800],[320,740]]) {
+        await page.setViewportSize({ width, height }); await open(); await select('conversion-from', 'USD'); await select('conversion-to', 'EUR'); await page.locator('#conversion-amount').fill('0.5');
+        await page.getByRole('button', { name: 'Рассчитать', exact: true }).click(); await page.locator('[data-conversion-quote]').waitFor();
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+        const button = page.getByRole('dialog').getByRole('button', { name: 'Конвертация', exact: true }); await button.scrollIntoViewIfNeeded(); assert(await button.isVisible());
+        const file = path.join(out, `conversion-${width}.png`); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+        await page.getByRole('dialog').getByRole('button', { name: 'Отмена', exact: true }).click();
+      }
+    });
+    await check('real audit history, confirmed deposit fixture, hidden amounts and partial outage', async () => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByRole('button', { name: 'Orders', exact: true }).click();
+      await page.getByRole('heading', { name: 'История операций', exact: true }).waitFor();
+      assert((await page.locator('tbody').last().innerText()).includes('USDT'));
+      assert(!(await page.locator('tbody').last().innerText()).includes('private fixture reason'));
+      const file = path.join(out, 'history-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      await page.evaluate(() => localStorage.setItem('exchange_hide_balance', '1')); await page.reload();
+      await page.getByRole('button', { name: 'Orders', exact: true }).click(); await page.locator('tbody').last().waitFor();
+      assert(!(await page.locator('tbody').last().innerText()).includes('500'));
+      await page.evaluate(() => localStorage.setItem('exchange_hide_balance', '0'));
+      activityFailed = true; await page.reload(); await page.getByRole('button', { name: 'Orders', exact: true }).click();
+      await page.getByText('Показаны не все операции: часть истории не загрузилась. Обновите страницу', { exact: true }).waitFor();
+      assert((await page.locator('tbody').last().innerText()).includes('USDT')); activityFailed = false;
+    });
+    await check('limit and capacity refusals explain themselves at preview and at confirm; nothing is debited, nothing stays pending', async () => {
+      await page.getByRole('button', { name: 'Обзор', exact: true }).click();
+      await fund(user, 'USD', '1500'); await page.reload(); await page.getByRole('button', { name: 'Конвертация', exact: true }).first().waitFor();
+      const before = await snapshot(), confirms = requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length;
+      await open(); await select('conversion-from', 'USD'); await select('conversion-to', 'EUR');
+      await page.locator('#conversion-amount').fill('1000.01'); await page.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+      await page.getByText('Сумма больше лимита одной конвертации. Введите меньшую сумму', { exact: true }).waitFor();
+      let file = path.join(out, 'conversion-limit-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      thinBook['EUR:ask'] = '1'; // the EUR book near the touch holds 1 EUR
+      await page.locator('#conversion-amount').fill('10'); await page.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+      const capacity = 'Сейчас эту сумму нельзя конвертировать в выбранный актив. Уменьшите сумму или выберите другой актив';
+      await page.getByText(capacity, { exact: true }).waitFor();
+      delete thinBook['EUR:ask'];
+      await page.getByRole('button', { name: 'Рассчитать', exact: true }).click(); await page.locator('[data-conversion-quote]').waitFor();
+      thinBook['EUR:ask'] = '1'; // the book thins between preview and confirm
+      await page.getByRole('dialog').getByRole('button', { name: 'Конвертация', exact: true }).click();
+      await page.getByText(capacity, { exact: true }).waitFor();
+      delete thinBook['EUR:ask'];
+      assert.equal(await page.getByRole('button', { name: 'Проверить результат' }).count(), 0);
+      assert.equal(await page.evaluate(() => sessionStorage.getItem('voltex:pending-wallet-conversion')), null);
+      assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length, confirms + 1);
+      assert(!/недоступн|not available|unavailable/i.test(await page.getByRole('dialog').innerText()));
+      await page.setViewportSize({ width: 390, height: 844 });
+      file = path.join(out, 'conversion-capacity-390.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByRole('dialog').getByRole('button', { name: 'Отмена', exact: true }).click();
+      assert.equal(await snapshot(), before);
+    });
+    await check('quote feed failure cannot cause financial request', async () => {
+      await page.getByRole('button', { name: 'Обзор', exact: true }).click(); assetsFailed = true;
+      const count = requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length;
+      await open(); await page.getByText('Не удалось рассчитать обмен. Попробуйте ещё раз', { exact: true }).waitFor();
+      assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length, count);
+    });
+    await check('a server that would refuse (account blocked) leaves Convert inactive: no dialog, no quote; unblocked it works again', async () => {
+      assetsFailed = false;
+      const answered = async () => { const r = page.waitForResponse(res => new URL(res.url()).pathname.endsWith('/wallet/conversion/availability')); await page.reload(); return (await r).json(); };
+      const buttons = page.getByRole('button', { name: 'Конвертация', exact: true });
+      await prisma.user.update({ where: { id: user }, data: { blockedAt: new Date() } });
+      try {
+        assert.deepEqual(await answered(), { convertible: false, ledger: 'spot' });
+        await buttons.first().waitFor();
+        const quotes = requests.filter(r => r.endpoint.startsWith('/wallet/conversion/') && !r.endpoint.endsWith('/availability')).length;
+        for (let i = 0; i < await buttons.count(); i += 1) { assert(await buttons.nth(i).isDisabled()); await buttons.nth(i).click({ force: true }); }
+        await page.waitForTimeout(300);
+        assert.equal(await page.locator('[role="dialog"]').count(), 0);
+        assert.equal(requests.filter(r => r.endpoint.startsWith('/wallet/conversion/') && !r.endpoint.endsWith('/availability')).length, quotes);
+        const file = path.join(out, 'conversion-refused-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      } finally { await prisma.user.update({ where: { id: user }, data: { blockedAt: null } }); }
+      assert.deepEqual(await answered(), { convertible: true, ledger: 'spot' });
+      await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Конвертация' && !b.disabled));
+      await open(); await page.getByRole('dialog').getByRole('button', { name: 'Отмена', exact: true }).click();
+    });
+    assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
+    const report = { build: 'production React bundle', conversionAndHistory: 'real routes / disposable PostgreSQL', unrelatedReads: 'fixtures', outboundNetwork: 'denied', checks, screenshots, errors, unexpected, requests, responses, productionTouched: false };
+    fs.writeFileSync(path.join(out, 'browser-results.json'), JSON.stringify(report, null, 2));
+  } catch (error) {
+    await page.screenshot({ path: path.join(out, 'browser-failure.png'), fullPage: true });
+    fs.writeFileSync(path.join(out, 'browser-failure.json'), JSON.stringify({ error: String(error), errors, unexpected, requests, responses, text: await page.locator('body').innerText() }, null, 2));
+    throw error;
+  } finally { await browser.close(); }
+};

@@ -36,7 +36,9 @@ test.each([0, -1, 9_999.99, 10_000, 10_000.01, 100_000, NaN, Infinity])('copy el
   // number, and a second copy of the number is a second thing to forget.
   expect(COPY_ELIGIBILITY_THRESHOLD_USD).toBe(10_000);
   for (const isAdmin of [false, true]) {
-    const node = CopyEligibilityProvider({ depositUsd: amount, isAdmin, children: null });
+    const node = CopyEligibilityProvider({ check: {
+      depositUsd: amount, status: 'ready', requestId: 1, retry: () => {}, isCurrent: () => true,
+    }, isAdmin, children: null });
     expect(node.props.value.eligible).toBe(Number.isFinite(amount) && amount >= COPY_ELIGIBILITY_THRESHOLD_USD);
     expect(node.props.value.depositUsd).toBe(amount);
   }

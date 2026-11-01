@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { restoreCopyCheckContext, restoreCopyCheckPage } from '../../../test-utils/copyDepositUx';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { routeElement } from '../../../test-utils/sourceContracts';
@@ -127,6 +128,19 @@ test('all approved masters and the two new presentation assets are byte-exact an
 test('unchanged collateral sources remain exact and the removed prelaunch wrapper stays absent', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     let text = source(file);
+    if (file === 'frontend/src/pages/copy-trading-bolt/useCopyLists.ts') {
+      // #644: reverse only the exact approved comment-only wording;
+      // the original whole-file SHA remains the release integrity check.
+      const current = "// Local browser-only favourites and watchlist. The historical \"following\"\n// storage key is retained so existing entries remain visible.\n// This is NOT an account-bound copy subscription and NEVER mirrors trades\n// or allocates capital. Server-authorized copy execution is separate.\n\n";
+      const old = "// The two per-user lists the marketplace tabs are built on: traders the\n// user starred, and traders the user is actually copying. Both live in\n// localStorage so they survive a reload and a navigation away from the\n// page — the same approach the trade pages already use for favourite\n// pairs (see lib/pairList.ts).\n//\n// Following is deliberately NOT a synonym for \"starred\": starring is a\n// bookmark anyone can use, while following means capital is being copied,\n// which is why only an eligible account can add to it (see CopyButton).\n\n";
+      const sync = "// Keep two open tabs in agreement — adding to the watchlist in one\n  // should appear in the other's watchlist tab\n  // the next time either one writes.";
+      const oldSync = "// Keep two open tabs in agreement — copying a trader in one should show\n  // up in the other's Following tab rather than being silently overwritten\n  // the next time either one writes.";
+      expect(text.split(current)).toHaveLength(2);
+      text = text.replace(current, old);
+      expect(text.split(sync)).toHaveLength(2);
+      text = text.replace(sync, oldSync);
+    }
+    if (file === 'frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx') text = restoreCopyCheckContext(text);
     if (file === 'frontend/src/pages/home/HomeCardSection.tsx') {
       // The existing homepage framing opt-in is the only normalized change here.
       expect(text.split('<WatchCardVisual framing="homepage" />')).toHaveLength(2);
@@ -191,8 +205,11 @@ test('CopyTradingPage preserves the approved base except the exact display-only 
   // avatar/content tree. Normalize those three required lines only, then
   // compare all remaining bytes with fresh base 2e7acf15. This protects
   // marketplace data, financial adapters, routing and eligibility unchanged.
-  let text = source('frontend/src/pages/CopyTradingPage.tsx');
+  let text = restoreCopyCheckPage(source('frontend/src/pages/CopyTradingPage.tsx'));
   const additions = [
+    "import { StrategySocialProvider } from './copy-trading-bolt/StrategySocials';\n",
+    '            <StrategySocialProvider identities={identities}>\n',
+    '            </StrategySocialProvider>\n',
     "import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';\n",
     '            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>\n',
     '            </DemoRoiProvider>\n',
@@ -202,6 +219,21 @@ test('CopyTradingPage preserves the approved base except the exact display-only 
     text = text.replace(addition, '');
   }
   expect(digest(text)).toBe('920963c23a9da98710f0c4805455ddb7ba97eb9e4cababc6043d5b350d45f112');
+});
+
+test('eligibility normalization refuses unrelated state changes and preserves the deposit threshold', () => {
+  const context = source('frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx');
+  const page = source('frontend/src/pages/CopyTradingPage.tsx');
+  // #644 removed the provider from this nonfinancial page. Mutate a live
+  // normalization anchor instead of replacing text that is no longer present.
+  const selection = 'useState<Trader>(nazarTrader)';
+  expect(page).toContain(selection);
+  expect(() => restoreCopyCheckPage(page.replace(selection, 'useState<Trader>(otherAccount)'))).toThrow();
+  expect(digest(restoreCopyCheckPage(page.replace("setView('profile')", "setView('marketplace')"))))
+    .not.toBe(digest(restoreCopyCheckPage(page)));
+  expect(() => restoreCopyCheckContext(context.replace('eligible: known &&', 'eligible: true ||'))).toThrow();
+  expect(digest(restoreCopyCheckContext(context.replace('= 10_000;', '= 9_000;'))))
+    .not.toBe(preservedMainSources['frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx']);
 });
 
 test('the released currency section uses its translated balance-yield copy and unchanged currency assets', () => {
