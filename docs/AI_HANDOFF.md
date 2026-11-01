@@ -7608,3 +7608,5 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Found: production Pages source `13a1bc9b` carries two Copy Trading socials details that `main` lost when #641 was merged from an earlier head: the blue Telegram link style (`21b10560`) and the social links on locked trader rows (`97bbfa04`). A future release of `main` would have removed both from the live site.
 - Change: those two exact lines restored in `StrategySocials.css` and `copy-trading-bolt/components.tsx`; socials files now byte-equal to 13a1bc9b. No API, DB or other module touched.
 - Verified locally: Copy/socials Jest 250/250, frontend `tsc -b`.
+
+- Final local sealed AELRI acceptance: 22/22 Chromium checks, 28 screenshots, including +1/+2/+3/reload/double-click and disabled expired date dialog. Corrected the reschedule fixture to initialize its existing synthetic Date clock (no product-clock change). Source and release code unchanged by this test fix.
