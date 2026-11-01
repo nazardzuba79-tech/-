@@ -132,13 +132,28 @@ export async function lockFloor(tx: Tx, userId: string): Promise<void> {
   await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`synthetic-floor:${userId}`}, 0))::text`;
 }
 
+/** Assets that count toward the floor when value LEAVES the account: realized stable cash only. */
+export const FLOOR_CASH: readonly string[] = ['USDT', 'USDC'];
+
+/**
+ * Cash-out valuation (#630 owner policy, fail-closed): for a withdrawal, OTC payout, Banking principal or
+ * Spot→Futures transfer the floor S must be covered by realized stable cash. BTC/ETH held at an unrealized
+ * mark count zero, so a mark rise alone can never unlock unreconciled synthetic USDT; selling at the market
+ * (a real counterparty) realizes the value first. Nothing is debited, frozen or relabelled: the account keeps
+ * every asset and may still trade it.
+ */
+export function cashOutMarks(marks: FloorMarks): FloorMarks {
+  return new Map([...marks].filter(([asset]) => FLOOR_CASH.includes(asset)));
+}
+
 /**
  * Refuse when the account would end below its floor. `before` (the value at the start of the same
  * transaction) lets an order that does not lower the value through even when the account is already
- * under the floor — e.g. selling a listing allocation for real USDT. A withdrawal passes no `before`.
+ * under the floor — e.g. selling a listing allocation for real USDT; Spot orders are judged at the marks.
+ * A cash-out passes no `before` and is judged on realized stable cash only (`cashOutMarks`).
  */
 export async function assertFloor(tx: Tx, userId: string, marks: FloorMarks, before?: BigNumber): Promise<void> {
   const floor = await syntheticProceeds(tx, userId);
-  const after = await floorValue(tx, userId, marks);
+  const after = await floorValue(tx, userId, before === undefined ? cashOutMarks(marks) : marks);
   if (after.lt(floor) && (before === undefined || after.lt(before))) throw new SyntheticProceedsLockedError();
 }

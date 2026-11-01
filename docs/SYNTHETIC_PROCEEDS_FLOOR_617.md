@@ -88,3 +88,24 @@ WHERE action IN ('NRX_SIMULATION_SOLD', 'TEAM_SPOT_SIMULATION_SOLD')
   AND NOT (split_part(metadata->>'pair', '/', 1) = ANY(ARRAY['USDT','USDC','BTC','ETH']))
   AND COALESCE(metadata->>'settlementLedger', 'Balance') <> 'DemoBalance';
 ```
+
+## 1 Nov 2026 — unrealized-mark cash-out closed (fail-closed, nothing debited)
+
+The counterexample from the 28 Oct review (100000 synthetic USDT → buy 1 BTC at 60000 → mark doubles →
+the remaining 40000 USDT became withdrawable) is closed in code:
+
+- **Cash-out** (withdrawal create/approve/SENT, OTC reservation/payout, new Banking principal, Spot→Futures
+  transfer — every `assertFloor` call without `before`) now values the account on **realized stable cash
+  only** (`FLOOR_CASH` = USDT, USDC; `cashOutMarks`). BTC/ETH at an unrealized mark count zero there.
+- **Spot trading** is unchanged: orders are still judged at venue marks, so the account can sell its BTC to a
+  real buyer at the market. Realized USDT above S is free; one unit more is refused.
+- Only accounts with S > 0 are affected (production read-only sizing on 28 Oct: 1 account). Ordinary
+  customers are never priced or refused by the floor.
+- Nothing is debited, frozen, relabelled or migrated. No schema, flag or balance change.
+- Regression (disposable PostgreSQL): `syntheticFloorCrossLedger.pg.test.ts` — mark rise → withdrawal 40000,
+  withdrawal 1, Spot→Futures 1 and OTC all refused; sell BTC at 120000 to a real counterparty → withdraw 60000
+  accepted, 60001 refused. RED on the previous rule (1 failed / 12 passed), GREEN now; all 13 financial suites
+  205/205.
+
+Still open (owner): the existing synthetic principal S itself — reconcile, settle or keep floor-bound
+indefinitely. Release stays NO-GO until the owner accepts this policy.

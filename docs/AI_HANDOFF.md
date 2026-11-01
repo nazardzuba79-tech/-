@@ -7617,3 +7617,10 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Found: production Pages source `13a1bc9b` carries two Copy Trading socials details that `main` lost when #641 was merged from an earlier head: the blue Telegram link style (`21b10560`) and the social links on locked trader rows (`97bbfa04`). A future release of `main` would have removed both from the live site.
 - Change: those two exact lines restored in `StrategySocials.css` and `copy-trading-bolt/components.tsx`; socials files now byte-equal to 13a1bc9b. No API, DB or other module touched.
 - Verified locally: Copy/socials Jest 250/250, frontend `tsc -b`.
+
+## 2026-11-01 — Claude (session 01EmV3Pt) — #630: unrealized-mark cash-out closed fail-closed
+- Merged main 811d47cc into the #630 review branch (only `docs/AI_HANDOFF.md` conflicted; both sides kept).
+- `src/services/syntheticProceedsFloor.ts`: cash-out checks (assertFloor without `before`) count realized stable cash only (`FLOOR_CASH`, `cashOutMarks`); Spot order checks unchanged (marks). No balance, schema, flag or migration change; Codex's #630 review fixes and fingerprints preserved.
+- `syntheticFloorCrossLedger.pg.test.ts`: the former "POLICY BLOCKER evidence" test now asserts the refusal (withdrawal/OTC/Spot→Futures after a mark rise) and that realized market proceeds above S stay withdrawable. Workflow release-gate receipt records `unrealizedMarkCashout: CLOSED_FAIL_CLOSED`, still `releaseDecision: NO_GO`.
+- Local disposable PostgreSQL 16: 13 financial suites 205/205 PASS; negative control with the previous floor file: the new test FAILS (1/13); backend `tsc --noEmit` PASS. Exact-head CI: see PR.
+- Unresolved: owner policy for existing synthetic principal S; PR stays Draft, not merged, not deployed.

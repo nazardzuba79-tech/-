@@ -92,7 +92,7 @@ jobs:
           node <<'NODE'
           const fs=require('node:fs'),cp=require('node:child_process');
           const source=cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-          fs.writeFileSync('output/financial630/release-gate.json',JSON.stringify({source,githubEventSha:process.env.GITHUB_SHA,releaseDecision:'NO_GO',legacyProvenance:'BLOCKED',reason:'Nominal S with unrealized venue marks can unlock old synthetic USDT. Existing funds and settlement policy are not approved; no merge/deploy authorized.'},null,2));
+          fs.writeFileSync('output/financial630/release-gate.json',JSON.stringify({source,githubEventSha:process.env.GITHUB_SHA,releaseDecision:'NO_GO',legacyProvenance:'BLOCKED',unrealizedMarkCashout:'CLOSED_FAIL_CLOSED',reason:'Cash-out now counts realized stable cash only, so an unrealized mark rise cannot unlock old synthetic USDT (PG regression). Existing synthetic principal is untouched and its settlement/provenance policy still needs the owner; no merge/deploy authorized by green tests.'},null,2));
           console.log('Code test success does not approve legacy funds: releaseDecision=NO_GO');
           NODE
       - uses: actions/upload-artifact@v4
