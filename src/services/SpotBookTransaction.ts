@@ -1,3 +1,4 @@
+import { heldUsers } from './syntheticProceedsFloor';
 import { Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
@@ -31,12 +32,15 @@ type FillRow = { makerOrderId: string; takerOrderId: string; quantity: { toStrin
  * serializes its state transitions. Two ledgers never share a lock or a row. */
 export interface SpotBookLedger {
   lock: string;
+  /** Users whose resting orders must not be matched (provenance hold, #630). Real ledger only. */
+  excludedMakers?(tx: Prisma.TransactionClient, userIds: string[]): Promise<Set<string>>;
   activeOrders(tx: Prisma.TransactionClient, pair: string): Promise<ActiveOrderRow[]>;
   fills(tx: Prisma.TransactionClient, pair: string, ids: string[]): Promise<FillRow[]>;
 }
 
 export const REAL_SPOT_LEDGER: SpotBookLedger = {
   lock: 'spot-book',
+  excludedMakers: (tx, userIds) => heldUsers(tx, userIds),
   activeOrders: (tx, pair) => tx.order.findMany({ where: { pair, status: { in: ['OPEN', 'PARTIALLY_FILLED'] } },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] }),
   fills: (tx, _pair, ids) => tx.trade.findMany({
@@ -78,7 +82,10 @@ export class SpotBookTransaction {
     for (const fill of fills) for (const id of [fill.makerOrderId, fill.takerOrderId]) {
       filled.set(id, (filled.get(id) ?? new BigNumber(0)).plus(fill.quantity.toString()));
     }
+    const excluded = this.ledger.excludedMakers ? await this.ledger.excludedMakers(this.tx, rows.map(row => row.userId)) : new Set<string>();
     for (const row of rows) {
+      // A held account's resting order stays in the database (and cancellable) but is never matched.
+      if (excluded.has(row.userId)) continue;
       const remaining = new BigNumber(row.remainingQuantity.toString());
       const original = new BigNumber(row.originalQuantity.toString());
       assertRestorableSpotOrder(row, filled.get(row.id) ?? new BigNumber(0));

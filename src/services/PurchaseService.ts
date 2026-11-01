@@ -1,3 +1,4 @@
+import { refuseFloorBound, SyntheticProceedsLockedError } from './syntheticProceedsFloor';
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
@@ -31,6 +32,11 @@ export class PurchaseService {
       if (isSimulationSettled(product.priceAsset)) throw new PurchaseError('This asset cannot be used for purchases');
 
       const price = new BigNumber(product.priceAmount.toString());
+      // An account with simulation-sale receipts pays for nothing real (#630 provenance hold).
+      try { await refuseFloorBound(tx, userId); } catch (error) {
+        if (error instanceof SyntheticProceedsLockedError) throw new PurchaseError(error.message);
+        throw error;
+      }
       try {
         await mutateSpotBalance(tx, userId, product.priceAsset, { available: price.negated() });
       } catch (error) {

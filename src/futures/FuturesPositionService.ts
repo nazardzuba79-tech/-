@@ -1,3 +1,4 @@
+import { assertNotHeld } from '../services/syntheticProceedsFloor';
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { mutateFuturesBalance } from '../services/WalletMutation';
@@ -88,6 +89,8 @@ export class FuturesPositionService {
 
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
+      // Futures fill against other users: a held account places no Futures order at all (#630).
+      await assertNotHeld(tx, params.userId);
 
       // ADMISSION: no NEW exposure into a bucket whose close is already
       // under way.
@@ -458,6 +461,8 @@ export class FuturesPositionService {
       // Two legs for the same user could invalidate the second leg's capacity
       // within one trade. Refuse self-matches atomically, without a trade print.
       if (maker.userId === taker.userId) throw new Error('Futures self-match is not allowed');
+      // A held account's legacy resting order never fills (#630).
+      await assertNotHeld(tx, maker.userId);
       const quantity = BigNumber.minimum(taker.remainingQuantity, maker.remainingQuantity, takerCap, makerCap);
       // Reuse the unchanged matching algorithm for exactly the executable
       // quantity, in an isolated book. Never generate then truncate a trade.

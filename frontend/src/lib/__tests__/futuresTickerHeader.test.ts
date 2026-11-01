@@ -399,7 +399,20 @@ test.each([
   // Restore that exact line for this fingerprint of all existing API behavior.
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
-  const source = path === 'frontend/src/lib/api.ts' ? normalizeApiTs(read(path)) : normalized;
+  let source = path === 'frontend/src/lib/api.ts' ? normalizeApiTs(read(path)) : normalized;
+  if (path === 'src/api/routes/futures.ts') {
+    // #630 deliberately supplies authoritative prices only to the existing
+    // wallet-transfer admission. Require that exact wiring once, then retain
+    // the ORIGINAL fingerprint of every other Futures/Spot route byte.
+    const guardedTransfer = `await transferWalletBalance(prisma, userId, asset, transferAmount, direction, {
+        getTicker: async pair => {
+          const price = await markPriceService.getIndexPrice(pair);
+          return price ? { lastPrice: price.toFixed() } : null;
+        },
+      });`;
+    expect(source.split(guardedTransfer)).toHaveLength(2);
+    source = source.replace(guardedTransfer, 'await transferWalletBalance(prisma, userId, asset, transferAmount, direction);');
+  }
   expect(hash(source)).toBe(expected);
 });
 

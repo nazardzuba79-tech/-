@@ -8,6 +8,7 @@ import { OtcError, createSchema, actionSchema } from '../../otc/policy';
 import { PriceSourceWithMeta } from '../../services/deposits/depositPolicy';
 import { InsufficientWalletBalance } from '../../services/WalletMutation';
 import { markWriteWithoutBackgroundWork } from '../../services/BackgroundWorkCoordinator';
+import { SyntheticProceedsLockedError } from '../../services/syntheticProceedsFloor';
 
 const pageSchema = z.coerce.number().int().min(0).max(10000).default(0);
 const idSchema = z.string().uuid();
@@ -21,6 +22,7 @@ export function otcCashRouter(db: PrismaClient, prices: PriceSourceWithMeta, ser
     catch (error) {
       if (error instanceof z.ZodError) return res.status(400).json({ error: 'INVALID_INPUT' });
       if (error instanceof OtcError) return res.status(error.status).json({ error: error.code });
+      if (error instanceof SyntheticProceedsLockedError) return res.status(403).json({ error: error.code });
       if (error instanceof InsufficientWalletBalance) return res.status(409).json({ error: 'INSUFFICIENT_BALANCE' });
       if ((error as { code?: string })?.code === 'P2002') return res.status(409).json({ error: 'DUPLICATE_REFERENCE_OR_KEY' });
       // Never log plain chat, addresses, tokens or raw Prisma request arguments.
