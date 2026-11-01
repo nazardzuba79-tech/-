@@ -159,3 +159,17 @@ proceeds are held while origin is reconciled. Implemented server-side in `synthe
 - OTC, Spot→Futures, Banking and non-stable withdrawals stay fully refused while UNVERIFIED.
 - `RELEASE_TO_FLOOR` remains an explicit audited admin decision after manual provenance resolution; nothing
   releases automatically.
+
+### Owner review 2026-11-01 (comment 6554472895): no Spot execution at all while UNVERIFIED
+
+A fair-price fill still hands unverified USDT (or base) to an unrestricted counterparty, who could withdraw it.
+While `UNVERIFIED`, every Spot path that reaches `assertFloor` with a `before` value is refused regardless of price:
+placement (LIMIT, MARKET, conditional, OCO), trigger amendment, conditional activation, and any fill where the
+account is maker or taker (an innocent taker hitting its legacy resting order is refused; nothing is written).
+Still available: reads, order cancellation (returns the hold to the same account), request-ID replay of an already
+committed order, admin REJECT of withdrawals. PG tests: fair-price buy/sell/market/resting with an innocent
+counterparty → Balance/Order/Trade/Withdrawal/audit rows byte-identical; the innocent account trades with others and
+withdraws normally; the legacy resting order is replayed and cancelled.
+Operational note: a legacy resting order of an identified account blocks takers at its price until it is cancelled
+(by the account itself or an admin; funds return to the same account). The preflight reports
+`open_orders_on_identified`; it should be 0 before deploy, or those orders cancelled right after.

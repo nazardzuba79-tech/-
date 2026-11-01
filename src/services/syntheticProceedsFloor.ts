@@ -147,9 +147,10 @@ export function cashOutMarks(marks: FloorMarks): FloorMarks {
  * PROVENANCE QUARANTINE (owner decision 2026-11-01, PR #630) — temporary containment, not confiscation.
  *
  * An account identified by immutable simulation-sale receipts (S > 0) is UNVERIFIED by default: no value
- * may leave it (withdrawal create/approve/SENT, OTC reserve/payout, Spot→Futures, Banking principal) and
- * no Spot order or fill may lower its worst-case value at the marks (overpaying a counterparty, self-trade
- * laundering). Value-neutral trades, views, cancellations and admin REJECT stay available. Nothing is
+ * may leave it (withdrawal create/approve/SENT, OTC reserve/payout, Spot→Futures, Banking principal) and it
+ * takes part in no Spot execution at all — not even at a fair price, which would still hand unverified value
+ * to an unrestricted counterparty. Views, order cancellation, committed-order replay and admin REJECT stay
+ * available; evidenced genuine deposits remain withdrawable (see assertFloor). Nothing is
  * debited, frozen in the ledger, relabelled or deleted.
  *
  * Only an authenticated admin decision, recorded as an append-only audit row with a reason, changes it:
@@ -244,7 +245,8 @@ async function stableWithdrawn(tx: Tx, userId: string): Promise<BigNumber> {
  * Refuse when the account would end below its floor. `before` (the value at the start of the same
  * transaction) marks a Spot order, judged at the marks; a cash-out passes no `before`.
  *
- * UNVERIFIED (quarantine): no Spot change may lower the value, and no value leaves — except a USDT/USDC
+ * UNVERIFIED (quarantine): no Spot order, trigger amendment or fill involving the account at all (at any price),
+ * and no value leaves — except a USDT/USDC
  * withdrawal of independently evidenced genuine deposits: all such withdrawals together stay within those
  * deposits, AND the stable cash left still covers S (a deposit spent in trading counts as consumed). The
  * synthetic principal and everything derived from it (realized or not) never leave.
@@ -255,10 +257,10 @@ export async function assertFloor(tx: Tx, userId: string, marks: FloorMarks, bef
   const status = await provenanceStatus(tx, userId);
   if (status === 'CLEAR') return;
   if (status === 'UNVERIFIED') {
-    if (before !== undefined) {
-      if ((await floorValue(tx, userId, marks)).lt(before)) throw new ProvenanceHoldError();
-      return;
-    }
+    // No Spot execution at all, even at a fair price: a fair fill still hands the unverified quote/base to an
+    // unrestricted counterparty (owner review 6554472895). Covers placement, OCO, trigger amendment, conditional
+    // activation and being a resting maker. Replay of an already-committed order and cancellation never get here.
+    if (before !== undefined) throw new ProvenanceHoldError();
     if (!outflow || !FLOOR_CASH.includes(outflow.withdrawalAsset)) throw new ProvenanceHoldError();
     const genuine = await evidencedDeposits(tx, userId);
     if (!genuine.isFinite() || (await stableWithdrawn(tx, userId)).gt(genuine)) throw new ProvenanceHoldError();

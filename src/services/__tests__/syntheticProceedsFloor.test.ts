@@ -60,10 +60,9 @@ describe('synthetic floor fail-closed accounting', () => {
       expect(await provenanceStatus(db as any, 'fixture')).toBe('UNVERIFIED');
       await expect(assertFloor(db as any, 'fixture', marks)).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED', message: expect.stringMatching(/provenance review/) });
     });
-    test('under quarantine a Spot change may not lower the value at all; a value-neutral one passes', async () => {
+    test('under quarantine no Spot change passes at all, not even a value-neutral or value-raising one', async () => {
       const db = database(synthetic, []);
-      await expect(assertFloor(db as any, 'fixture', marks, new BigNumber(110))).resolves.toBeUndefined();
-      await expect(assertFloor(db as any, 'fixture', marks, new BigNumber('110.000001'))).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED' });
+      for (const before of ['110', '0', '110.000001']) await expect(assertFloor(db as any, 'fixture', marks, new BigNumber(before))).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED' });
     });
     test('the latest decision wins, and an unreadable decision row can never release', async () => {
       const at = new Date();

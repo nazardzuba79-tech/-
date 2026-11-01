@@ -81,10 +81,11 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
 
   test('owner counterexample: 100000 synthetic USDT, buy 1 BTC at 60000, mark doubles — withdrawal of 40000 (and of 1) is still REFUSED', async () => {
     const legacy = await user('100000'), seller = await user('0', '1');
+    // The position was built before the account was identified (a quarantined account cannot trade at all).
+    await limit(seller, 'SELL', '60000');
+    await limit(legacy, 'BUY', '60000');
     await identify(legacy);
     expect(await provenanceStatus(db, legacy)).toBe('UNVERIFIED');
-    await limit(seller, 'SELL', '60000');
-    await limit(legacy, 'BUY', '60000'); // value-neutral at the mark: allowed, nothing leaves
     expect(await bal(legacy)).toEqual(['40000', '0']);
     expect(await bal(legacy, 'BTC')).toEqual(['1', '0']);
     for (const mark of ['120000', '30000', '60000']) {
@@ -132,14 +133,51 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     expect(await db.trade.count({ where: { makerOrderId: resting.order.id } })).toBe(0);
   });
 
-  test('value-neutral or value-raising trades and partial fills stay possible; nothing leaves', async () => {
-    const legacy = await user('0', '2'), buyer = await user('300000');
+  test('owner review 6554472895: no Spot execution with an innocent counterparty at a FAIR price — buy, sell, market, OCO-free resting maker — state byte-identical', async () => {
+    const legacy = await user('100000', '1'), innocent = await user('100000', '1'), other = await user('100000', '1');
     await identify(legacy);
-    await limit(legacy, 'SELL', '70000', '2'); // above the mark: cannot lower the account's value
-    await limit(buyer, 'BUY', '70000', '1');   // partial fill
-    expect(await bal(legacy)).toEqual(['70000', '0']);
-    expect(await bal(legacy, 'BTC')).toEqual(['0', '1']);
+    // Innocent B rests fair-price liquidity on both sides.
+    await limit(innocent, 'SELL', '60000', '0.5');
+    await limit(innocent, 'BUY', '59900', '0.5');
+    const before = await digest([legacy, innocent]);
+    const audits = await db.auditLog.count({ where: { userId: { in: [legacy, innocent] } } });
+    await expect(limit(legacy, 'BUY', '60000', '0.5')).rejects.toMatchObject(HOLD);   // taker, fair price
+    await expect(limit(legacy, 'SELL', '59900', '0.5')).rejects.toMatchObject(HOLD);  // taker, fair price
+    await expect(market(legacy, 'BUY', '0.1')).rejects.toMatchObject(HOLD);
+    await expect(market(legacy, 'SELL', '0.1')).rejects.toMatchObject(HOLD);
+    await expect(limit(legacy, 'BUY', '50000', '0.1')).rejects.toMatchObject(HOLD);   // would only rest
+    expect(await db.order.count({ where: { userId: legacy } })).toBe(0);
+    expect(await digest([legacy, innocent])).toBe(before);
+    expect(await db.auditLog.count({ where: { userId: { in: [legacy, innocent] } } })).toBe(audits);
+    // B's own funds stay fully usable: it trades with someone else and withdraws.
+    await limit(other, 'BUY', '60000', '0.5');
+    expect(await bal(innocent, 'BTC')).toEqual(['0.5', '0']);
+    await expect(withdraw(innocent, '1000')).resolves.toMatchObject({ status: 'PENDING' });
+  });
+
+  test('a fair-price order the account left resting before identification cannot be filled by an innocent taker; it can be cancelled and replayed', async () => {
+    const legacy = await user('100000');
+    const requestId = randomUUID();
+    const resting = await service.placeOrder({ userId: legacy, pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('60000'), quantity: new BigNumber('1'), requestId });
+    expect(resting.order.status).toBe('OPEN');
+    await identify(legacy);
+    const innocent = await user('0', '1');
+    const before = await digest([legacy, innocent]);
+    await expect(limit(innocent, 'SELL', '60000')).rejects.toMatchObject(HOLD);
+    await expect(market(innocent, 'SELL', '0.5')).rejects.toMatchObject(HOLD);
+    expect(await digest([legacy, innocent])).toBe(before);
+    expect(await db.trade.count({ where: { makerOrderId: resting.order.id } })).toBe(0);
+    // Replay of the committed order by its request ID still answers; cancelling returns the hold to the same account.
+    const replay = await service.placeOrder({ userId: legacy, pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('60000'), quantity: new BigNumber('1'), requestId });
+    expect(replay.order.id).toBe(resting.order.id);
+    await service.cancelOrder(legacy, resting.order.id);
+    expect(await bal(legacy)).toEqual(['100000', '0']);
     await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD);
+    // Once the quarantined order is gone, B sells to anyone else normally.
+    const buyer = await user('100000');
+    await limit(buyer, 'BUY', '60000');
+    await limit(innocent, 'SELL', '60000');
+    expect(await bal(innocent)).toEqual(['60000', '0']);
   });
 
   test('a withdrawal filed before identification cannot be approved or sent; it can still be rejected, funds returned', async () => {
@@ -234,12 +272,13 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
 
   test('owner mandatory regression: synthetic 100000, buy 1 BTC at 60000, SELL it for 120000 — principal AND the derived 60000 profit stay held', async () => {
     const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
-    await identify(legacy);
+    // The round trip happened before the account was identified (once on hold it cannot trade at all).
     await limit(seller, 'SELL', '60000');
     await limit(legacy, 'BUY', '60000');
     marks['BTC/USDT'] = '120000';
     await limit(buyer, 'BUY', '120000');
-    await limit(legacy, 'SELL', '120000'); // a real buyer at the market: allowed, nothing leaves the account
+    await limit(legacy, 'SELL', '120000');
+    await identify(legacy);
     expect(await bal(legacy)).toEqual(['160000', '0']);
     const before = await digest([legacy]);
     for (const amount of ['160000', '60000', '1']) await expect(withdraw(legacy, amount)).rejects.toMatchObject(HOLD);
@@ -264,13 +303,13 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
 
   test('genuine deposit next to synthetic profit: only the deposit leaves, never the profit', async () => {
     const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
-    await identify(legacy);
     await genuineDeposit(legacy, '10000');
     await limit(seller, 'SELL', '60000');
     await limit(legacy, 'BUY', '60000');
     marks['BTC/USDT'] = '120000';
     await limit(buyer, 'BUY', '120000');
     await limit(legacy, 'SELL', '120000');
+    await identify(legacy);
     expect(await bal(legacy)).toEqual(['170000', '0']);
     await expect(withdraw(legacy, '70000')).rejects.toMatchObject(HOLD);
     await expect(withdraw(legacy, '10000')).resolves.toMatchObject({ status: 'PENDING' });
@@ -279,10 +318,10 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
 
   test('a genuine deposit spent in trading counts as consumed; unproven, ignored and admin-credited funds are not evidence', async () => {
     const spent = await user('100000'), seller = await user('0', '1');
-    await identify(spent);
     await genuineDeposit(spent, '10000');
     await limit(seller, 'SELL', '60000');
     await limit(spent, 'BUY', '60000'); // cash 50000 < S: the deposit is treated as used
+    await identify(spent);
     await expect(withdraw(spent, '10000')).rejects.toMatchObject(HOLD);
     await expect(withdraw(spent, '1')).rejects.toMatchObject(HOLD);
     for (const proof of [{ verified: false }, { ignored: true }]) {
