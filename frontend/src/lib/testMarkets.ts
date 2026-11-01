@@ -51,6 +51,7 @@ export interface TestAsset {
   initialPrice: number;
   state: TestMarketState;
   /** Managed listings only (Admin → Listings). */
+  provenanceLabel?: string;
   managed?: boolean;
   logo?: string | null;
   displayTimeZone?: string;
@@ -165,6 +166,8 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       },
       ...(managed ? {
         managed: true,
+        ...(raw.isTradable === false && raw.provenance?.mode === 'DEMO_MODEL' && raw.provenance?.withdrawable === false
+          ? { provenanceLabel: 'DEMO · SIMULATED · NO REAL TRADING' } : {}),
         version: raw.version,
         ...(isAith(raw.pair) ? { readLease: raw.readLease } : {}),
         logo: typeof raw.logo === 'string' && /^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(raw.logo) ? raw.logo : null,

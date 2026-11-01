@@ -196,6 +196,7 @@ export const PairListSidebar = forwardRef<
     }, [tickers]);
 
     const filtered = filterAndSortPairs(tickersForSort, {
+      nameByPair: new Map(listedAssets.map(asset => [asset.pair, asset.name])),
       search,
       quoteFilter,
       favoritesOnly,

@@ -59,6 +59,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
       tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} chartSettings />;
     return <div className="managed-demo-chart">
       {error && <div className="managed-demo-status" role="alert">{t('listing.dataStale')}</div>}
+      {asset.provenanceLabel && <p role="status" data-demo-provenance>{asset.provenanceLabel}</p>}
       {chart}
     </div>;
   }
@@ -77,6 +78,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
     <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}
       data-countdown={asset?.managed ? asset.countdown ?? 'running' : undefined}>
       <div className="vta-prelisting-card">
+        {asset?.provenanceLabel && <p role="status" data-demo-provenance>{asset.provenanceLabel}</p>}
         <div className={`vta-prelisting-mark${pair === 'TYVN/USDT' ? ' vta-prelisting-mark--tyvn' : ''}`}>
           {pair === 'TYVN/USDT' ? (
             <svg className="vta-prelisting-tyvn-logo" viewBox="275 75 705 760" aria-hidden="true" focusable="false">

@@ -115,6 +115,11 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
   } else if (valid && path.endsWith('/countdown')) {
     valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/countdown`
       && object(body!.countdown) && countdownShape(body!.countdown) && typeof body!.changed === 'boolean';
+  } else if (valid && path.endsWith('/reschedule')) {
+    valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/reschedule`
+      && revision(body!.draftRevision) && (body!.activeVersion === null || revision(body!.activeVersion))
+      && instant(body!.listingAt) && instant(body!.previousListingAt) && typeof body!.replayed === 'boolean'
+      && typeof body!.operationKey === 'string' && countdownShape(body!.countdown);
   } else if (valid && (init.method === 'POST' || init.method === 'PUT')) {
     valid = typeof body!.id === 'string' && revision(body!.draftRevision) && configShape(body!.draft)
       && (init.method === 'POST' || path === `/admin/listings/${encodeURIComponent(body!.id)}/draft`);
@@ -134,6 +139,10 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
 }
 
 export const adminListingsApi = {
+  reschedule: (listing: Pick<AdminListing, 'id' | 'draftRevision' | 'activeVersion'>, days: 1 | 2 | 3, operationKey: string) =>
+    call<{ id: string; draftRevision: number; activeVersion: number | null; listingAt: string; previousListingAt: string; replayed: boolean; operationKey: string }>(
+      `/admin/listings/${encodeURIComponent(listing.id)}/reschedule`, { method: 'POST', body: { days, operationKey, draftRevision: listing.draftRevision, activeVersion: listing.activeVersion } }),
+
   list: (signal?: AbortSignal) => call<{ revision: string; serverTime: number; listings: AdminListing[] }>('/admin/listings', { signal }),
   create: (config: ListingForm) => call<{ id: string; draftRevision: number; draft: ListingConfig }>('/admin/listings', { method: 'POST', body: { config } }),
   saveDraft: (id: string, config: ListingForm, draftRevision: number) =>
@@ -160,4 +169,4 @@ export function newPublishKey(): string {
   return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
-export { LISTING_TIME_ZONES, utcOffsetLabel, utcToZonedWallTime, zonedWallTimeToUtc, zoneOffsetMs } from './adminListingsTime';
+export { LISTING_TIME_ZONES, utcOffsetLabel, utcToZonedWallTime, zonedWallTimeToUtc, zoneOffsetMs, shiftListingDate } from './adminListingsTime';

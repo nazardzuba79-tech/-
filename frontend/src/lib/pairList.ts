@@ -94,6 +94,8 @@ export function filterAndSortPairs(
   tickers: TickerRow[],
   opts: {
     search: string;
+    /** Existing managed-listing metadata; no additional requests. */
+    nameByPair?: ReadonlyMap<string, string>;
     quoteFilter: string | null;
     favoritesOnly: boolean;
     favorites: Set<string>;
@@ -134,7 +136,7 @@ export function filterAndSortPairs(
   // "only my favorites" choice a search should still respect.
   const quoteFilter = search ? null : opts.quoteFilter;
   return tickers
-    .filter((tk) => !search || tk.pair.toLowerCase().replace('/', '').includes(search.replace('/', '')))
+    .filter((tk) => !search || tk.pair.toLowerCase().replace('/', '').includes(search.replace('/', '')) || opts.nameByPair?.get(tk.pair)?.toLowerCase().includes(search))
     .filter((tk) => !quoteFilter || tk.pair.split('/')[1] === quoteFilter)
     .filter((tk) => !opts.favoritesOnly || opts.favorites.has(tk.pair))
     .filter((tk) => {

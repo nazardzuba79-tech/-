@@ -16,6 +16,7 @@ export const MOVEMENT_SCENARIOS = [
 export type MovementScenario = typeof MOVEMENT_SCENARIOS[number]['id'];
 export type MovementFrequency = 'rare' | 'moderate' | 'often';
 export interface ListingMovement {
+  terminalPeak?: 'bounded-v1';
   kind: 'scenario-controls-v2';
   scenario: MovementScenario | 'AUTO';
   first24hGainPercent: string;
@@ -111,7 +112,7 @@ export function validateListingMovement(initial: string, program: ListingMovemen
   for (const [index, stage] of program.stages.entries()) {
     if (!Number.isFinite(stage.durationHours) || stage.durationHours <= 0) return 'Продолжительность каждого этапа должна быть больше нуля.';
     elapsed += stage.durationHours;
-    const terminalPeak = program.scenario === 'DEEP_RECOVERY' && program.afterGrowth === 'range'
+    const terminalPeak = (program.terminalPeak === 'bounded-v1' && stage === program.stages[program.stages.length - 1] && decimal(stage.targetPrice).isEqualTo(decimal(program.maxPrice))) || program.scenario === 'DEEP_RECOVERY' && program.afterGrowth === 'range'
       && index === program.stages.length - 1 && stage.type === 'recovery'
       && decimal(stage.targetPrice).isEqualTo(decimal(program.maxPrice));
     if (!decimal(stage.targetPrice).isGreaterThan(0) || (!terminalPeak && decimal(stage.targetPrice).isGreaterThanOrEqualTo(decimal(program.maxPrice)))) return 'Цель этапа должна быть положительной и ниже максимальной цены — оставьте запас для теней.';
