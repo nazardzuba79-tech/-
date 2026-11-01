@@ -208,6 +208,9 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     // against this same vocabulary, in every language.
     if (rel === 'frontend/src/lib/customerError.ts') continue;
     for (const text of visibleStrings(readFileSync(path, 'utf8'))) {
+      // Owner-approved non-tradable NRYIA/AELRI models must disclose their origin.
+      // Exact file + exact sentence only; aiCandidateUi protects the server-provenance/false-tradable gate.
+      if (rel === 'frontend/src/lib/testMarkets.ts' && text === 'DEMO · SIMULATED · NO REAL TRADING') continue;
       if (allowed(text)) continue;
       if (PLUMBING.some((r) => r.test(text))) offenders.push(`${rel}: ${text.slice(0, 120)}`);
     }
@@ -243,6 +246,7 @@ test('no component copy, in any of the seven languages, is a practice / training
       for (const m of line.matchAll(/(['"`])((?:[^'"`\\\n]|\\.){2,300}?)\1/g)) candidates.push(m[2]);
     }
     for (const text of candidates.filter(isAnyCopy)) {
+      if (rel === 'frontend/src/lib/testMarkets.ts' && text === 'DEMO · SIMULATED · NO REAL TRADING') continue;
       // The dictionaries get the trading vocabulary in their own test above, where Stocks' keys are exempt.
       const trading = !rel.startsWith('frontend/src/lib/i18n/locales/') && saysTradingUnavailable(text);
       if (!allowed(text) && (PRACTICE_NOTICES.some((r) => r.test(text)) || trading)) offenders.push(`${rel}: ${text.slice(0, 120)}`);

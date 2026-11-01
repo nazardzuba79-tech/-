@@ -29,6 +29,8 @@ export function publicListingAsset(listing: PublishedListing, now: number) {
     ...(listing.readLease ? { readLease: listing.readLease } : {}),
     logo: listing.config.logo,
     displayTimeZone: listing.config.displayTimeZone,
+    ...(listing.config.simulationProgram?.kind === 'scenario-controls-v2' && listing.config.simulationProgram.terminalPeak === 'bounded-v1'
+      ? { provenance: { mode: 'DEMO_MODEL' as const, withdrawable: false, label: 'DEMO · SIMULATED · NO REAL TRADING' } } : {}),
     // The public timer: anything but `running` shows the date without a countdown (the market stays frozen).
     // A staged listing never reaches this edge; if one ever did, it would read as paused, never as counting.
     countdown: !listing.countdown || listing.countdown.state === 'running' ? 'running' as const : 'paused' as const,
