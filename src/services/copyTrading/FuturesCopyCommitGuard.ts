@@ -56,7 +56,10 @@ export function futuresCopyCommitGuard(limits: FuturesCopyCommitLimits): NativeC
     const notional = added.reduce((sum,e) => sum.plus(n(e.quantity).times(e.price!)), n('0'));
     if (!quantity.gt(0) || quantity.gt(limits.requestedQuantity))
       throw new FuturesCopyGuardError('COPY_FILL_QUANTITY_INVALID');
-    if (notional.gt(limits.maxFillUsdt)) throw new FuturesCopyGuardError('COPY_FILL_NOTIONAL_EXCEEDED');
+    // Only OPEN adds exposure. A CLOSE can be worth more than its original fill
+    // after a price move; refusing it at the entry notional cap would trap risk.
+    if (limits.action === 'OPEN' && notional.gt(limits.maxFillUsdt))
+      throw new FuturesCopyGuardError('COPY_FILL_NOTIONAL_EXCEEDED');
     const source = n(limits.sourcePrice);
     if (!limits.riskReducingExit) for (const fill of added) {
       if (!n(fill.price!).gt(0) || n(fill.price!).minus(source).abs().times(10000).div(source).gt(limits.maxDeviationBps))
@@ -69,15 +72,19 @@ export function futuresCopyCommitGuard(limits: FuturesCopyCommitLimits): NativeC
       before.snapshot.positions.some(p=>p.status==='OPEN' && !copied.has(p.id)) ||
       before.snapshot.orders.some(o=>o.status==='OPEN'||o.status==='PARTIALLY_FILLED')
     )) throw new FuturesCopyGuardError('COPY_FOLLOWER_POSITION_NOT_ISOLATED');
-    const totalExposure = after.snapshot.positions.filter(p=>p.status==='OPEN').reduce((sum,p) => {
-      if (n(p.leverage).gt(limits.maxLeverage)) throw new FuturesCopyGuardError('COPY_LEVERAGE_EXCEEDED');
-      const price = BigNumber.maximum(p.entryPrice, p.markPrice);
-      return sum.plus(n(p.quantity).times(price));
-    }, n('0'));
-    const pending = after.snapshot.orders.filter(o => o.status==='OPEN'||o.status==='PARTIALLY_FILLED')
-      .reduce((sum,o)=>sum.plus(n(o.remaining).times(n(o.price??'0'))),n('0'));
-    if (totalExposure.plus(pending).gt(limits.maxTotalExposureUsdt))
-      throw new FuturesCopyGuardError('COPY_TOTAL_EXPOSURE_EXCEEDED');
+    // Entry leverage/exposure caps cannot veto a verified risk-reducing CLOSE.
+    // CLOSE ownership and quantity are still checked below before commit.
+    if (limits.action === 'OPEN') {
+      const totalExposure = after.snapshot.positions.filter(p=>p.status==='OPEN').reduce((sum,p) => {
+        if (n(p.leverage).gt(limits.maxLeverage)) throw new FuturesCopyGuardError('COPY_LEVERAGE_EXCEEDED');
+        const price = BigNumber.maximum(p.entryPrice, p.markPrice);
+        return sum.plus(n(p.quantity).times(price));
+      }, n('0'));
+      const pending = after.snapshot.orders.filter(o => o.status==='OPEN'||o.status==='PARTIALLY_FILLED')
+        .reduce((sum,o)=>sum.plus(n(o.remaining).times(n(o.price??'0'))),n('0'));
+      if (totalExposure.plus(pending).gt(limits.maxTotalExposureUsdt))
+        throw new FuturesCopyGuardError('COPY_TOTAL_EXPOSURE_EXCEEDED');
+    }
     if (limits.action === 'OPEN') {
       const beforeIds = new Set(before.snapshot.positions.filter(p=>p.status==='OPEN').map(p=>p.id));
       const preexistingOrders = before.snapshot.orders.some(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED');
