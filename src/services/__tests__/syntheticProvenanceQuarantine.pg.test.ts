@@ -264,7 +264,9 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
       await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
       return tx.$queryRawUnsafe<Record<string, bigint>[]>(sql);
     });
-    expect(Object.keys(rows[0]).sort()).toEqual(['accounts_on_hold', 'accounts_with_malformed_receipts', 'identified_accounts', 'nonzero_futures_balances_on_identified',
+    expect(Object.keys(rows[0]).sort()).toEqual(['accounts_on_hold', 'accounts_with_malformed_receipts', 'banking_referral_rewards_from_identified',
+      'counterparties_paid_quote_by_identified', 'counterparties_with_withdrawals_after_contact', 'counterparty_accounts_after_first_sale',
+      'deposit_reattributions_touching_identified', 'identified_accounts', 'nonzero_futures_balances_on_identified',
       'open_orders_on_identified', 'open_withdrawals_on_identified', 'sent_withdrawals_after_first_sale', 'trades_with_other_accounts_after_first_sale']);
     expect(Number(rows[0].identified_accounts)).toBeGreaterThan(0);
     expect(await digest(made)).toBe(before);
@@ -348,5 +350,22 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     await genuineDeposit(other, '10000');
     await expect(withdraw(other, '0.1', 'BTC')).rejects.toMatchObject(HOLD);
     await expect(transfer(other, '100')).rejects.toMatchObject(HOLD);
+  });
+
+  test('preflight measures historical downstream exposure: a counterparty paid by an identified account before the hold, who then withdrew', async () => {
+    const sql = fs.readFileSync(path.join(__dirname, '../../../scripts/synthetic-provenance-preflight.sql'), 'utf8').replace(/^--.*$/gm, '').replace(/--[^\n]*/g, '').trim().replace(/;$/, '');
+    const run = () => db.$transaction(async tx => { await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY'); return (await tx.$queryRawUnsafe<Record<string, bigint>[]>(sql))[0]; });
+    const start = await run();
+    const legacy = await user('100000'), seller = await user('0', '1');
+    await identify(legacy);                                  // first sale recorded
+    await db.auditLog.updateMany({ where: { userId: legacy, action: 'TEAM_SPOT_SIMULATION_SOLD' }, data: { createdAt: new Date(Date.now() - 60_000) } });
+    // A pre-guard trade (written directly: today's code refuses it) paid the seller 60000 synthetic USDT.
+    await db.trade.create({ data: { pair: 'BTC/USDT', takerOrderId: randomUUID(), makerOrderId: randomUUID(), takerUserId: legacy, makerUserId: seller, price: '60000', quantity: '1', side: 'BUY' } });
+    await db.withdrawal.create({ data: { userId: seller, asset: 'USDT', network: 'FIXTURE', toAddress: 'NONE', amount: '100', status: 'SENT', balanceHeld: true } });
+    const after = await run();
+    const d = (k: string) => Number(after[k]) - Number(start[k]);
+    expect([d('counterparty_accounts_after_first_sale'), d('counterparties_paid_quote_by_identified'), d('counterparties_with_withdrawals_after_contact')]).toEqual([1, 1, 1]);
+    // The counterparty is NOT held automatically: that needs its own evidence and an owner decision.
+    expect(await provenanceStatus(db, seller)).toBe('CLEAR');
   });
 });

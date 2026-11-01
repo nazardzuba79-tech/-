@@ -173,3 +173,22 @@ withdraws normally; the legacy resting order is replayed and cancelled.
 Operational note: a legacy resting order of an identified account blocks takers at its price until it is cancelled
 (by the account itself or an admin; funds return to the same account). The preflight reports
 `open_orders_on_identified`; it should be 0 before deploy, or those orders cancelled right after.
+
+### Downstream exposure (finance gate 6554577049): NOT contained by code
+
+The hold covers only accounts with their own simulation-sale receipts. Value an identified account already moved to
+another account **before** the hold (a fair or overpriced Spot fill, a Banking referral reward, a deposit
+re-attribution) sits with that counterparty, whose status is `CLEAR`. Code cannot undo that retroactively; it must
+be measured and decided.
+
+The read-only preflight now reports, as aggregate counts only (no identifiers, no amounts):
+`counterparty_accounts_after_first_sale`, `counterparties_paid_quote_by_identified` (the identified account paid
+USDT/quote to them), `counterparties_with_withdrawals_after_contact`, `banking_referral_rewards_from_identified`,
+`deposit_reattributions_touching_identified`. PG test: a pre-hold trade paying a counterparty who then withdrew moves
+the three counterparty counters by exactly 1 each, and the counterparty stays `CLEAR`.
+
+Release condition: authenticated read-only production preflight shows these downstream counters at **0**. If any is
+non-zero, a bounded flow-trace and a recipient-hold policy are a **separate explicit owner decision** (proposal: an
+admin may place a specific, evidenced counterparty on the same audited hold with a reason; never automatic, never a
+blanket hold of ordinary customers). Not implemented here; #630 must not be described as containing all tainted
+proceeds until that is resolved.

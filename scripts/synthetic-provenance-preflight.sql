@@ -15,6 +15,15 @@ WITH receipts AS (
   WHERE split_part(metadata->>'pair', '/', 2) = 'USDT'
     AND NOT (split_part(metadata->>'pair', '/', 1) = ANY (ARRAY['USDT','USDC','BTC','ETH']))
   GROUP BY "userId"
+), contacts AS (
+  -- Every completed Spot trade between an identified account and another real account after its first synthetic sale.
+  SELECT CASE WHEN t."takerUserId" = i."userId" THEN t."makerUserId" ELSE t."takerUserId" END AS counterparty,
+         MIN(t."executedAt") AS first_contact,
+         bool_or((t."takerUserId" = i."userId" AND t.side = 'BUY') OR (t."makerUserId" = i."userId" AND t.side = 'SELL')) AS identified_paid_quote
+  FROM "Trade" t JOIN identified i ON i."userId" IN (t."takerUserId", t."makerUserId")
+  WHERE t."executedAt" >= i.first_sale AND t."takerUserId" NOT LIKE 'simulation:%' AND t."makerUserId" NOT LIKE 'simulation:%'
+    AND t."takerUserId" <> t."makerUserId"
+  GROUP BY 1
 ), latest AS (
   -- Same rule as the server: an unreadable decision row (seq or decision) wins and counts as QUARANTINE.
   SELECT DISTINCT ON ("userId") "userId",
@@ -40,4 +49,15 @@ SELECT
   (SELECT count(*) FROM "Order" o JOIN identified i USING ("userId")
      WHERE o.status IN ('OPEN','PARTIALLY_FILLED','PENDING_TRIGGER'))                      AS open_orders_on_identified,
   (SELECT count(*) FROM "FuturesBalance" f JOIN identified i USING ("userId")
-     WHERE f.available > 0 OR f.locked > 0)                                                AS nonzero_futures_balances_on_identified;
+     WHERE f.available > 0 OR f.locked > 0)                                                AS nonzero_futures_balances_on_identified,
+  -- Downstream (historical counterparty) exposure: aggregate counts only, never identifiers or amounts.
+  (SELECT count(*) FROM contacts WHERE counterparty NOT IN (SELECT "userId" FROM identified)) AS counterparty_accounts_after_first_sale,
+  (SELECT count(*) FROM contacts WHERE identified_paid_quote
+     AND counterparty NOT IN (SELECT "userId" FROM identified))                            AS counterparties_paid_quote_by_identified,
+  (SELECT count(DISTINCT c.counterparty) FROM contacts c JOIN "Withdrawal" w ON w."userId" = c.counterparty
+     WHERE w."createdAt" >= c.first_contact AND w.status IN ('PENDING','APPROVED','SENT')
+       AND c.counterparty NOT IN (SELECT "userId" FROM identified))                        AS counterparties_with_withdrawals_after_contact,
+  (SELECT count(*) FROM "BankingReferralReward" r JOIN identified i ON i."userId" = r."referredUserId") AS banking_referral_rewards_from_identified,
+  (SELECT count(*) FROM "AuditLog" a WHERE a.action = 'DEPOSIT_ATTRIBUTED'
+     AND (a.metadata->>'fromUserId' IN (SELECT "userId" FROM identified)
+       OR a.metadata->>'toUserId' IN (SELECT "userId" FROM identified)))                   AS deposit_reattributions_touching_identified;
