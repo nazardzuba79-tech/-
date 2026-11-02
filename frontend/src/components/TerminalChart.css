@@ -18,6 +18,9 @@
 .voltex-plot-title { position:absolute; top:10px; left:12px; z-index:3; color:#c9cdd7; font:500 11px Inter,Arial,sans-serif; pointer-events:none; }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail { background:#14151a; border-color:#232a34; }
 .trade-terminal .terminal-chart-shell .voltex-indicator-legend { top:32px !important; }
+/* Phone: no «pair · interval» caption above the legend (PriceChart compactLayout), so it starts at the top. */
+.trade-terminal .terminal-chart-shell .voltex-indicator-legend.is-compact { top:6px !important; }
+.voltex-plot-title.is-compact { top:6px; }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail { scrollbar-width:thin; scrollbar-color:#30333b transparent; }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail::-webkit-scrollbar { width:2px; height:2px; }
 /* Tool groups must wrap within the chart rather than intrude into the book. */

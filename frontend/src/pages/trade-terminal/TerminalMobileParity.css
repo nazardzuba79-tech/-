@@ -217,7 +217,7 @@
     min-height:0;
   }
   .trade-terminal.vx-terminal :is(.chart-area,.cfd-chart-area) {
-    height:clamp(360px,59dvh,600px);
+    height:clamp(360px,calc(100dvh - 300px - env(safe-area-inset-bottom,0px)),760px);
     min-height:360px;
     flex:none;
     border-right:0;
