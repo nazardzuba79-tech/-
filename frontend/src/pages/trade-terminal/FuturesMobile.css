@@ -63,7 +63,9 @@
   #archive-terminal-preview .terminal[data-mobile-tab=chart] .bottom-panel,
   #archive-terminal-preview .terminal[data-mobile-tab=chart][data-mobile-chart=book] .chart-area,
   #archive-terminal-preview .terminal[data-mobile-tab=chart][data-mobile-chart=chart] .orderbook-area { display:none; }
-  #archive-terminal-preview .chart-area { order:1; height:clamp(360px,59dvh,600px); min-height:360px; flex:none; }
+  /* Chart fills the phone screen down to the bottom menu (owner, 2026-11-02): 300px = header, pair row, tabs, the page's bottom padding
+     and the 56px bottom menu; it was 59dvh, which left an empty band above the menu on tall phones. */
+  #archive-terminal-preview .chart-area { order:1; height:clamp(360px,calc(100dvh - 300px - env(safe-area-inset-bottom,0px)),760px); min-height:360px; flex:none; }
   #archive-terminal-preview :is(.chart-surface,.terminal-chart-shell) { height:100%; min-height:0; }
   #archive-terminal-preview .terminal-chart-heading { height:44px; min-height:44px; padding-inline:12px; }
   #archive-terminal-preview .terminal-chart-heading button { min-height:44px; padding-inline:12px; }
