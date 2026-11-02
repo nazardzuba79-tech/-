@@ -1,0 +1,23 @@
+name: Pages token presence probe (no Cloudflare call)
+
+# Read-only probe: reports only whether the Pages secret is non-empty.
+# It never sends the token anywhere and performs no deployment.
+on:
+  push:
+    branches: [claude/voltex-mobile-audit-7rpjni-pages-token-probe]
+
+permissions:
+  contents: read
+
+jobs:
+  repo-level:
+    runs-on: ubuntu-24.04
+    steps:
+      - env: { T: "${{ secrets.CLOUDFLARE_PAGES_TOKEN }}" }
+        run: if [ -n "$T" ]; then echo "repo-level CLOUDFLARE_PAGES_TOKEN: PRESENT"; else echo "repo-level CLOUDFLARE_PAGES_TOKEN: MISSING"; fi
+  environment-level:
+    runs-on: ubuntu-24.04
+    environment: pages-production
+    steps:
+      - env: { T: "${{ secrets.CLOUDFLARE_PAGES_TOKEN }}" }
+        run: if [ -n "$T" ]; then echo "pages-production CLOUDFLARE_PAGES_TOKEN: PRESENT"; else echo "pages-production CLOUDFLARE_PAGES_TOKEN: MISSING"; fi
