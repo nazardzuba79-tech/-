@@ -13,11 +13,17 @@ jobs:
   repo-level:
     runs-on: ubuntu-24.04
     steps:
-      - env: { T: "${{ secrets.CLOUDFLARE_PAGES_TOKEN }}" }
-        run: if [ -n "$T" ]; then echo "repo-level CLOUDFLARE_PAGES_TOKEN: PRESENT"; else echo "repo-level CLOUDFLARE_PAGES_TOKEN: MISSING"; fi
+      - name: Repository-level secret present?
+        env:
+          T: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+        run: |
+          if [ -n "$T" ]; then echo "repo-level token PRESENT"; else echo "repo-level token MISSING"; fi
   environment-level:
     runs-on: ubuntu-24.04
     environment: pages-production
     steps:
-      - env: { T: "${{ secrets.CLOUDFLARE_PAGES_TOKEN }}" }
-        run: if [ -n "$T" ]; then echo "pages-production CLOUDFLARE_PAGES_TOKEN: PRESENT"; else echo "pages-production CLOUDFLARE_PAGES_TOKEN: MISSING"; fi
+      - name: pages-production environment secret present?
+        env:
+          T: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+        run: |
+          if [ -n "$T" ]; then echo "environment token PRESENT"; else echo "environment token MISSING"; fi
