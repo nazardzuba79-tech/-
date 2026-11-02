@@ -2338,7 +2338,10 @@ export function PriceChart({
         <div ref={chartAreaRef} style={styles.chartArea} data-chart-state={loadFailed ? 'error' : empty ? 'empty' : 'candles'} data-cw-view={workspaceOn ? workspace.view : undefined} data-cw-compare={compareOn ? compareEntries.length : undefined}>
           <div ref={containerRef} style={styles.chart} />
           {privateTrading?.enabled && chartReady && <PrivatePositionLines chart={chartRef.current} series={seriesRef.current} interaction={privateTrading} pair={pair}/>}
-          {terminal && <div className="voltex-plot-title">{pair} · {interval}{partialLast && <span className="voltex-plot-note" data-cw-tf-partial> · {t('chart.ws.tf.partial')}</span>}</div>}
+          {/* Phone (owner, 2026-11-02): the pair and interval already head the screen, so the plot does not repeat
+              them over the candles; only the partial-candle disclosure stays, and only while it applies. */}
+          {terminal && !compactLayout && <div className="voltex-plot-title">{pair} · {interval}{partialLast && <span className="voltex-plot-note" data-cw-tf-partial> · {t('chart.ws.tf.partial')}</span>}</div>}
+          {terminal && compactLayout && partialLast && <div className="voltex-plot-title is-compact"><span className="voltex-plot-note" data-cw-tf-partial>{t('chart.ws.tf.partial')}</span></div>}
 
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
@@ -2429,17 +2432,21 @@ export function PriceChart({
             </div>
           )}
 
-          {(viewSettings?.indicatorLegend ?? true) && !compareOn && !(workspaceOn && workspace.view === 'data') && indicatorInstances.some(i => i.visible) && (
-            <div className="voltex-indicator-legend" style={styles.legend}>
-              {indicatorInstances.filter(i => i.visible).map(i => {
-                // A short history under a long indicator says so instead of showing a label with no line behind it.
-                // CFD (owner, 2026-10-15): no such note on its chart — an indicator the loaded bars cannot draw is left out of the legend.
-                const need = indicatorMinBars(i), bars = candlesRef.current.length, short = bars > 0 && bars < need;
-                if (short && market === 'cfd') return null;
-                return <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} note={short ? t('chart.indicator.insufficient', { n: bars, need }) : undefined} />;
-              })}
-            </div>
-          )}
+          {(() => {
+            if (!(viewSettings?.indicatorLegend ?? true) || compareOn || (workspaceOn && workspace.view === 'data')) return null;
+            // A short history under a long indicator says so instead of showing a label with no line behind it.
+            // CFD (owner, 2026-10-15) and phones (owner, 2026-11-02: «якщо він доступний, то показується; якщо
+            // недоступний, не показується»): an indicator the loaded bars cannot draw is left out of the legend,
+            // and with nothing drawable there is no legend box at all.
+            const bars = candlesRef.current.length, hideShort = market === 'cfd' || compactLayout;
+            const items = indicatorInstances.filter(i => i.visible).flatMap(i => {
+              const need = indicatorMinBars(i), short = bars > 0 && bars < need;
+              if (short && hideShort) return [];
+              return [<LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} note={short ? t('chart.indicator.insufficient', { n: bars, need }) : undefined} />];
+            });
+            if (!items.length) return null;
+            return <div className={compactLayout ? 'voltex-indicator-legend is-compact' : 'voltex-indicator-legend'} style={styles.legend}>{items}</div>;
+          })()}
         </div>
       </div>
       {drawingToolsOn && drawDialog && createPortal(<DrawingDialog
