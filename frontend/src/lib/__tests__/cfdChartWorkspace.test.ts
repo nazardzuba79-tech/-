@@ -314,7 +314,10 @@ describe('the stats bar and the market list read only real figures', () => {
   it('carries no explanatory note under the order type and no «too few bars» note on the chart (owner, 2026-10-15)', () => {
     const raw = readFileSync(resolve(frontend, 'src/components/CfdOrderForm.tsx'), 'utf8');
     expect(raw).not.toContain('cfd-order-type-note');
-    expect(readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 'utf8')).toContain("if (short && market === 'cfd') return null;");
+    // CFD (and phones, owner 2026-11-02) leave an undrawable indicator out of the legend instead of noting it.
+    const chartSource = readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 'utf8');
+    expect(chartSource).toContain("hideShort = market === 'cfd' || compactLayout");
+    expect(chartSource).toContain('if (short && hideShort) return [];');
     const indicators = jest.requireActual('../chartIndicators') as typeof import('../chartIndicators');
     expect(indicators.defaultChartIndicators('cfd')).toEqual([]);
     expect(indicators.defaultChartIndicators('spot').map(i => i.id)).toEqual(['ma-200']);
