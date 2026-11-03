@@ -2172,6 +2172,8 @@ export const ES: Record<Key, string> = {
   'chart.ws.view.data': "Datos",
   'chart.ws.view.analytics': "Analítica",
   'chart.ws.view.tvOnly': "Disponible en el gráfico VOLTEX",
+  'chart.ws.view': "Vista",
+  'chart.ws.source': "Fuente del gráfico",
   'chart.ws.tf.menu': "Todos los intervalos",
   'chart.ws.tf.quick': "Añadir al acceso rápido",
   'chart.ws.tf.unquick': "Quitar del acceso rápido",

@@ -1,6 +1,6 @@
 /* The trading terminals' phone header (owner, 2026-10-04).
  *
- * One 52px row: menu, «Спот / Фьючерсы», Wallet and a labelled gold
+ * One 48px row (52px until 2026-11-03): menu, «Спот / Фьючерсы», Wallet and a labelled gold
  * «Депозит». The VOLTEX mark returns from 430px, where there is room; language and
  * profile live in the menu, as they already do on every phone page. Desktop is
  * untouched: the switch is hidden above 900px and nothing below that width
@@ -20,7 +20,7 @@
     /* One 52px row; when the row cannot hold its keys (OS text at 200%) it
        wraps onto a second line instead of the keys running over each other. */
     height:auto;
-    min-height:52px;
+    min-height:48px;
     flex-wrap:wrap;
     padding-inline:10px;
   }
@@ -100,6 +100,8 @@
     min-width:44px;
     min-height:44px;
     height:44px;
+    /* No desktop nav-item margins (8px above and below made the 48px row 61px). */
+    margin:0;
     padding:0 10px;
     border:1px solid var(--border, #2b2f37);
     border-radius:10px;

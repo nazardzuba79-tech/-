@@ -1295,16 +1295,17 @@ async function run() {
       check(`${id}.sheet`, sheet && sheet.inside && sheetItems.length >= 5, { sheet, sheetItems });
       if (w === 390 && h === 844) await shot(page, `after-${market}-mobile-390-sheet`);
       await page.keyboard.press('Escape'); await page.waitForTimeout(150);
-      // compare from the phone row
+      // compare from the phone «•••» sheet (2026-11-03: the pencil for the drawing strip took its row key, so
+      // the five quick timeframes fit at 390px; openFeatureOn finds it on the row or in the sheet either way)
       if (w === 390) {
-        await page.locator('[data-cw-feature="compare"]').first().click(); await page.waitForTimeout(250);
+        await openFeatureOn(page, 'compare'); await page.waitForTimeout(250);
         await page.locator('[data-cw-compare-search]').fill('ETH'); await page.waitForTimeout(150);
         await page.locator('[data-cw-compare-option="ETH/USDT"]').first().click(); await page.waitForTimeout(1200);
         const cmp = await page.evaluate(() => ({ entries: document.querySelectorAll('[data-cw-compare-entry]').length, box: (() => { const el = document.querySelector('[data-cw-menu]'); const r = el?.getBoundingClientRect(); return r ? { inside: r.left >= -1 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1 } : null; })() }));
         check(`${id}.compare-sheet`, cmp.entries === 1 && cmp.box && cmp.box.inside, cmp);
         await page.keyboard.press('Escape'); await page.waitForTimeout(200);
         await shot(page, `after-${market}-mobile-390-compare`);
-        await page.locator('[data-cw-feature="compare"]').first().click(); await page.waitForTimeout(250);
+        await openFeatureOn(page, 'compare'); await page.waitForTimeout(250);
         await page.locator('[data-cw-compare-exit]').click(); await page.waitForTimeout(300);
         // two charts on a phone: one active chart with tabs
         await page.locator('[data-cw-feature="phone-more"]').click(); await page.waitForTimeout(300);

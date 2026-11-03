@@ -2172,6 +2172,8 @@ export const HI: Record<Key, string> = {
   'chart.ws.view.data': "डेटा",
   'chart.ws.view.analytics': "विश्लेषण",
   'chart.ws.view.tvOnly': "VOLTEX चार्ट पर उपलब्ध",
+  'chart.ws.view': "दृश्य",
+  'chart.ws.source': "चार्ट स्रोत",
   'chart.ws.tf.menu': "सभी टाइमफ्रेम",
   'chart.ws.tf.quick': "त्वरित पहुँच में जोड़ें",
   'chart.ws.tf.unquick': "त्वरित पहुँच से हटाएँ",
