@@ -205,6 +205,9 @@ const TIME_PIXELS = SCALE_PIXELS('time');
     // The phone opens on the trading workspace; the chart is the first tab.
     await mobile.locator('.futures-mobile-tabs button').first().click();
     await mobile.locator('.chart-view canvas').first().waitFor(); await mobile.waitForTimeout(900);
+    // 2026-11-03: the strip starts folded on a phone (nothing of it is drawn); the pencil on the toolbar row brings it out.
+    const pencil = mobile.locator('[data-cw-feature="rail"]');
+    if (await pencil.count()) { await pencil.first().click(); await mobile.waitForTimeout(500); }
     const phoneRail = await mobile.locator('.drawing-rail').boundingBox();
     ok(`390: phone rail stays a horizontal strip (${phoneRail && phoneRail.width}×${phoneRail && phoneRail.height})`, phoneRail && phoneRail.width > 300 && phoneRail.height < 60);
     await mobile.screenshot({ path: path.join(out, `${LABEL}-390-initial.png`) });

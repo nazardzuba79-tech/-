@@ -40,6 +40,10 @@ export interface ChartWorkspaceControlsProps {
   fullscreen: { active: boolean; onToggle: () => void };
   settings?: ReactNode;
   end?: ReactNode;
+  /** The terminal's own entries for the phone sheet (2026-11-03): the view
+   *  tabs and the VOLTEX / TradingView switch, whose heading row a phone no
+   *  longer spends 38px on. Listed first in the sheet; never on the row. */
+  extraFeatures?: WorkspaceFeature[];
   openRequest?: { id: string | null; seq: number };
   onOpenChange?: (id: string | null) => void;
 }
@@ -165,9 +169,20 @@ const SHORTCUT_KEYS: Key[] = ['chart.ws.shortcuts.timeframes', 'chart.ws.shortcu
 export function ChartWorkspaceControls(props: ChartWorkspaceControlsProps) {
   const { t, compact, market, mainPair, compare, layout, tools, presets, goTo, quick, snapshot, fullscreen } = props;
   const instruments = useCompareInstruments(market, [mainPair]);
+  const extra = props.extraFeatures;
   const features = useMemo<WorkspaceFeature[]>(() => [
+    ...(extra ?? []),
+    // Phone (2026-11-03): the drawing strip starts folded and this pencil on
+    // the row brings it out, so the chart keeps the strip's 42px until the
+    // trader wants to draw. Desktop keeps the rail's own edge handle.
+    ...(compact ? [{
+      id: 'rail', label: t('chart.ws.tools.rail'), icon: ICONS.tools, priority: 1, phoneRow: true, iconOnly: true,
+      onAction: tools.onRail, active: !tools.railCollapsed, testId: 'rail',
+    } satisfies WorkspaceFeature] : []),
     {
-      id: 'compare', label: t('chart.ws.compare'), icon: ICONS.compare, priority: 2, phoneRow: true, menuWidth: 340, separator: true,
+      // Phone (2026-11-03): the pencil took this key's place on the row so the five quick timeframes
+      // still fit at 390px; «Сравнить» is the first section of the «•••» sheet instead.
+      id: 'compare', label: t('chart.ws.compare'), icon: ICONS.compare, priority: 2, phoneRow: false, menuWidth: 340, separator: true,
       active: compare.entries.length > 0, badge: compare.entries.length ? String(compare.entries.length) : undefined,
       body: close => <ChartComparePanel market={market} mainPair={mainPair} entries={compare.entries} period={compare.period} status={compare.status} last={compare.last} baseTime={compare.baseTime}
         instruments={instruments} onAdd={compare.onAdd} onRemove={compare.onRemove} onToggle={compare.onToggle} onPeriod={compare.onPeriod} onExit={compare.onExit} t={t} lang={props.lang} close={close} />,
@@ -248,7 +263,7 @@ export function ChartWorkspaceControls(props: ChartWorkspaceControlsProps) {
       id: 'fullscreen', label: t(fullscreen.active ? 'chart.ws.fullscreen.exit' : 'chart.ws.fullscreen'), icon: fullscreen.active ? ICONS.exitFullscreen : ICONS.fullscreen, priority: 3, iconOnly: true,
       onAction: fullscreen.onToggle, active: fullscreen.active,
     },
-  ], [t, compact, market, mainPair, compare, layout, tools, presets, goTo, quick, snapshot, fullscreen, instruments, props.lang]);
+  ], [t, compact, market, mainPair, compare, layout, tools, presets, goTo, quick, snapshot, fullscreen, instruments, props.lang, extra]);
 
   return (
     <ChartWorkspaceToolbar

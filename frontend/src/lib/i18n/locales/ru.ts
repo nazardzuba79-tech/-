@@ -2231,6 +2231,8 @@ export const RU = {
   'chart.ws.view.data': "Данные",
   'chart.ws.view.analytics': "Аналитика",
   'chart.ws.view.tvOnly': "Доступно на графике VOLTEX",
+  'chart.ws.view': "Вид",
+  'chart.ws.source': "Источник графика",
   'chart.ws.tf.menu': "Все таймфреймы",
   'chart.ws.tf.quick': "В быстрый доступ",
   'chart.ws.tf.unquick': "Убрать из быстрого доступа",

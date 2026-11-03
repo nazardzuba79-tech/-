@@ -63,6 +63,7 @@ import { canvasToBlob, composeChartSnapshot, copyBlobToClipboard, downloadBlob, 
 import type { ChartSyncBus } from '../lib/chartSyncBus';
 import type { CompareStatus } from './chart-workspace/ChartComparePanel';
 import { ChartWorkspaceControls } from './chart-workspace/ChartWorkspaceControls';
+import type { WorkspaceFeature } from './chart-workspace/ChartWorkspaceToolbar';
 import { ChartDataWindow } from './chart-workspace/ChartDataWindow';
 import { ChartAnalyticsPanel } from './chart-workspace/ChartAnalyticsPanel';
 import './chart-workspace/ChartWorkspace.css';
@@ -112,6 +113,8 @@ type IndicatorSeriesSet = {
 /** The drawing rail's open/closed state outlives the page in this browser. */
 const RAIL_COLLAPSED_KEY = 'voltex.drawingRail.collapsed';
 const readRailCollapsed = (): boolean => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(RAIL_COLLAPSED_KEY) === '1'; } catch { return false; } };
+/** The stored choice, or null where the trader never made one. */
+const readRailChoice = (): boolean | null => { try { const value = typeof localStorage !== 'undefined' ? localStorage.getItem(RAIL_COLLAPSED_KEY) : null; return value === null ? null : value === '1'; } catch { return null; } };
 const writeRailCollapsed = (collapsed: boolean): void => { try { localStorage.setItem(RAIL_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch { /* private mode: the choice lasts this visit */ } };
 /** The price currency of a pair: BTC/USDT → USDT, a CFD symbol (EURUSD, USDJPY) → its last three letters. */
 const quoteOf = (pair: string): string => (pair.includes('/') ? pair.split('/')[1] : pair.slice(-3));
@@ -193,6 +196,7 @@ export function PriceChart({
   priceFormatter,
   chartSettings = false,
   toolbarEnd,
+  sheetFeatures,
   candleSource,
   onSelectPair,
   syncBus,
@@ -235,6 +239,9 @@ export function PriceChart({
   /** Placed at the right end of the toolbar (the terminal's VOLTEX /
    *  TradingView switch, when the heading row is folded into the toolbar). */
   toolbarEnd?: ReactNode;
+  /** The terminal's entries for the phone «•••» sheet (the view tabs and the
+   *  chart source), where a phone has no heading row to carry them. */
+  sheetFeatures?: WorkspaceFeature[];
   /** What the candle loader serves natively (lib/chartTimeframes); derived from the market when absent. */
   candleSource?: CandleSourceKind;
   /** The terminal's own instrument switch, for «Торговать …» on a second pane. */
@@ -1801,7 +1808,14 @@ export function PriceChart({
   useEffect(() => { setCustomPresets(getWorkspacePresets(market)); return subscribeWorkspacePresets(market, setCustomPresets); }, [market]);
   const [appliedPreset, setAppliedPreset] = useState<string | null>(null);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('visible');
-  const [railCollapsed, setRailCollapsed] = useState<boolean>(() => (terminal && drawingTools ? readRailCollapsed() : false));
+  // Phone (2026-11-03): the drawing strip starts folded unless the trader
+  // chose otherwise; the pencil on the phone row brings it out. Decided at
+  // mount (no expanded first frame) and again when the layout crosses 900px
+  // either way; the choice is not written, so a desktop opens with the rail out.
+  const [railCollapsed, setRailCollapsed] = useState<boolean>(() => (terminal && drawingTools ? (readRailChoice() ?? compactLayout) : false));
+  useEffect(() => {
+    if (terminal && drawingTools && readRailChoice() === null) setRailCollapsed(compactLayout);
+  }, [compactLayout, terminal, drawingTools]);
   const [openRequest, setOpenRequest] = useState<{ id: string | null; seq: number }>({ id: null, seq: 0 });
   const [menusRequest, setMenusRequest] = useState<{ which: 'type' | 'indicators' | null; seq: number }>({ which: null, seq: 0 });
   const [autoScale, setAutoScale] = useState(true);
@@ -2227,7 +2241,9 @@ export function PriceChart({
               }}
               tools={{
                 ruler: tool === 'ruler', onRuler: () => setTool(tool === 'ruler' ? 'cursor' : 'ruler'),
-                railCollapsed, onRail: () => { setRailCollapsed(!railCollapsed); writeRailCollapsed(!railCollapsed); },
+                // Folding from the row or the sheet puts the cursor back, as the rail's own handle does: a
+                // strip that is gone must not leave a drawing tool armed (phone review, 2026-11-03).
+                railCollapsed, onRail: () => { if (!railCollapsed) { cancelGestureRef.current?.(); setTool('cursor'); } setRailCollapsed(!railCollapsed); writeRailCollapsed(!railCollapsed); },
                 crosshair: tool !== 'dot' && tool !== 'arrowcursor', onCrosshair: () => setTool(tool === 'arrowcursor' ? 'cursor' : 'arrowcursor'),
                 onClearDrawings: clearAll, drawingCount: drawings.length,
               }}
@@ -2255,6 +2271,7 @@ export function PriceChart({
               fullscreen={{ active: fullscreen, onToggle: () => onFullscreen?.() }}
               settings={settingsGear}
               end={<>{historyNow}{toolbarEnd}</>}
+              extraFeatures={sheetFeatures}
               openRequest={openRequest}
             />
           ) : (<>

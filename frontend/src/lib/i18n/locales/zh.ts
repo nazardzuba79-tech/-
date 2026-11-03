@@ -2195,6 +2195,8 @@ export const ZH: Record<Key, string> = {
   'chart.ws.view.data': "数据",
   'chart.ws.view.analytics': "分析",
   'chart.ws.view.tvOnly': "仅在 VOLTEX 图表可用",
+  'chart.ws.view': "视图",
+  'chart.ws.source': "图表来源",
   'chart.ws.tf.menu': "全部周期",
   'chart.ws.tf.quick': "加入快捷栏",
   'chart.ws.tf.unquick': "从快捷栏移除",

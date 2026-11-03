@@ -2172,6 +2172,8 @@ export const KO: Record<Key, string> = {
   'chart.ws.view.data': "데이터",
   'chart.ws.view.analytics': "분석",
   'chart.ws.view.tvOnly': "VOLTEX 차트에서 사용 가능",
+  'chart.ws.view': "보기",
+  'chart.ws.source': "차트 소스",
   'chart.ws.tf.menu': "모든 시간 간격",
   'chart.ws.tf.quick': "빠른 접근에 추가",
   'chart.ws.tf.unquick': "빠른 접근에서 제거",

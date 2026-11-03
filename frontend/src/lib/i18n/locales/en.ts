@@ -2201,6 +2201,8 @@ export const EN: Record<Key, string> = {
   'chart.ws.view.data': "Data",
   'chart.ws.view.analytics': "Analytics",
   'chart.ws.view.tvOnly': "Available on the VOLTEX chart",
+  'chart.ws.view': "View",
+  'chart.ws.source': "Chart source",
   'chart.ws.tf.menu': "All timeframes",
   'chart.ws.tf.quick': "Add to quick access",
   'chart.ws.tf.unquick': "Remove from quick access",
