@@ -830,9 +830,9 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
   const all = synthetic?.analytics.allTime;
   const totalFollowers = marketplaceTraders.reduce((sum, item) => sum + item.copiers, trader.copiers);
   const stats = [
-    ['Successful Trades', all ? `${numberLabel(all.winningTrades, 0)}+` : '—'],
-    ['Total Followers', Number.isFinite(totalFollowers) ? `${numberLabel(totalFollowers, 0)}+` : '—'],
-    ['Realized P&L', synthetic ? `${formatAccountSize(synthetic.economics?.periods.ALL.masterPnl ?? all?.pnl ?? NaN)}+` : '—'],
+    ['Успешных сделок', all ? `${numberLabel(all.winningTrades, 0)}+` : '—'],
+    ['Подписчиков', Number.isFinite(totalFollowers) ? `${numberLabel(totalFollowers, 0)}+` : '—'],
+    ['Реализованный P&L', synthetic ? `${formatAccountSize(synthetic.economics?.periods.ALL.masterPnl ?? all?.pnl ?? NaN)}+` : '—'],
   ];
   return (
     <section className="copy-hero">

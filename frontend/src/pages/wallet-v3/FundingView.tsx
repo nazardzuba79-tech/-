@@ -105,13 +105,13 @@ export function FundingView({
           />
         ) : (
           <div className="max-w-full overflow-x-auto">
-            <table className="w-full min-w-[640px] text-[13px]">
+            <table className="w-full text-[13px] sm:min-w-[640px]">
               <thead>
                 <tr className="border-b border-hair-soft text-[12px] text-ink-3">
                   <th scope="col" className="px-5 py-3 text-left font-medium">{t('wallet.colAsset')}</th>
                   <th scope="col" className="px-3 py-3 text-right font-medium">{t('wallet.colBalance')}</th>
-                  <th scope="col" className="px-3 py-3 text-right font-medium">{t('wallet.colAvailable')}</th>
-                  <th scope="col" className="px-3 py-3 text-right font-medium">{t('wallet.colInOrders')}</th>
+                  <th scope="col" className="hidden px-3 py-3 text-right font-medium sm:table-cell">{t('wallet.colAvailable')}</th>
+                  <th scope="col" className="hidden px-3 py-3 text-right font-medium sm:table-cell">{t('wallet.colInOrders')}</th>
                   <th scope="col" className="px-5 py-3 text-right font-medium">{t('wallet.colValue')}</th>
                 </tr>
               </thead>
@@ -129,8 +129,8 @@ export function FundingView({
                         </span>
                       </td>
                       <td className="num px-3 py-3 text-right font-semibold text-ink">{hidden ? MASK : formatAmount(available + locked, lang, dp)}</td>
-                      <td className="num px-3 py-3 text-right text-ink-2">{hidden ? MASK : formatAmount(available, lang, dp)}</td>
-                      <td className="num px-3 py-3 text-right text-ink-2">{hidden ? MASK : formatAmount(locked, lang, dp)}</td>
+                      <td className="num hidden px-3 py-3 text-right text-ink-2 sm:table-cell">{hidden ? MASK : formatAmount(available, lang, dp)}</td>
+                      <td className="num hidden px-3 py-3 text-right text-ink-2 sm:table-cell">{hidden ? MASK : formatAmount(locked, lang, dp)}</td>
                       <td className="num px-5 py-3 text-right font-semibold text-ink">
                         {hidden ? MASK : b.valueUsd === null || b.valueUsd === undefined ? EM_DASH : formatUsd(Number(b.valueUsd), lang)}
                       </td>

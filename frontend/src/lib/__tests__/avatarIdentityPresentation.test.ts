@@ -138,6 +138,13 @@ test('unchanged marketplace hero and demo performance retain their original fing
   let heroSource = hero.getText(ast);
   expect(heroSource.split(watchlistNotice)).toHaveLength(2);
   heroSource = heroSource.replace(watchlistNotice, historicalNotice);
+  // 2026-11-04 (owner: phone design): the three stat labels read in Russian
+  // on the Russian page; the historical fingerprint is compared with the
+  // original English labels put back, exactly as with the sentence above.
+  for (const [current, original] of [["['Успешных сделок', all", "['Successful Trades', all"], ["['Подписчиков', Number", "['Total Followers', Number"], ["['Реализованный P&L', synthetic", "['Realized P&L', synthetic"]]) {
+    expect(heroSource.split(current)).toHaveLength(2);
+    heroSource = heroSource.replace(current, original);
+  }
   expect(digest(heroSource)).toBe('6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258');
   const demo = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/demoPerformance.ts'), 'utf8').replace(/\r\n/g, '\n');
   expect(digest(demo)).toBe('1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead');

@@ -357,3 +357,19 @@
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar,
   .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-bar { padding-inline:8px; gap:4px 8px; }
 }
+
+/* 2026-11-04 (owner screenshot, phone «Рынки» pane): the pane was a fixed
+   clamp(380px, 60dvh, 620px) block with the list drawn at content height, so
+   the last pair sat under the panel edge with no way to scroll to it and a
+   black band followed. The pane now fills to the bottom menu like the chart
+   pane and the list scrolls inside it. The desktop «collapse panel» keys
+   mean nothing on a phone (the chips above choose the pane). */
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets],
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .main-grid { flex:1 1 auto; min-height:0; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .left-panel {
+    display:flex; flex-direction:column; flex:1 1 auto; height:auto; min-height:380px; max-height:none; overflow:hidden;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .pairs-list { flex:1 1 0; min-height:0; overflow-y:auto; }
+  .trade-terminal.vx-terminal :is(.pairs-header button, .orderbook-collapse) { display:none; }
+}

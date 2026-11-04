@@ -363,7 +363,7 @@ export function TradePage() {
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }, [accountPanel]);
 
-  const selectSpotPair = useCallback((nextPair: string) => {
+  const selectSpotPair = useCallback((nextPair: string, options?: { upcoming?: boolean }) => {
     setPair(nextPair);
     setSearchParams(current => {
       const params = new URLSearchParams(current);
@@ -375,7 +375,9 @@ export function TradePage() {
     }, { replace: true });
     if (window.matchMedia('(max-width: 900px)').matches) {
       setMobilePane('chart');
-      setMobileTab('trade');
+      // A listing still counting down has no ticket to fill: its chart tab
+      // carries the countdown (owner, 2026-11-04).
+      setMobileTab(options?.upcoming ? 'chart' : 'trade');
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     }
   }, [setSearchParams]);

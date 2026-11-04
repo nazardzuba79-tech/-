@@ -69,7 +69,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', display: 'flex', flexDirection: 'column' },
   bareHeader: { padding: '20px 32px' },
   main: { padding: '20px 32px 64px', maxWidth: 760, margin: '0 auto', width: '100%' },
-  title: { fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em', margin: '0 0 6px' },
+  title: { fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em', margin: '0 0 6px', overflowWrap: 'anywhere' },
   updated: { fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 20px' },
   intro: { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 32 },
   section: { marginBottom: 22 },

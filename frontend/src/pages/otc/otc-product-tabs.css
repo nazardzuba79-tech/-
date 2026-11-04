@@ -3,8 +3,8 @@
   align-items: center;
   gap: 6px;
   width: min(100%, 1180px);
-  margin: 16px auto 0;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
 }
 
 .otc-product-tabs a {
@@ -34,11 +34,15 @@
 
 @media (max-width: 640px) {
   .otc-product-tabs {
-    margin-top: 10px;
-    padding: 0 12px;
+    padding: 10px 12px 0;
   }
   .otc-product-tabs a {
     flex: 1;
     justify-content: center;
   }
 }
+
+/* The arbitrage page is light: dark-page pill borders vanished on it (2026-11-04). */
+.arbitrage-page .otc-product-tabs a { border-color: rgba(16, 32, 51, .14); background: #fff; color: #4e5b52; }
+.arbitrage-page .otc-product-tabs a:hover { color: #151719; border-color: rgba(240, 185, 11, .6); }
+.arbitrage-page .otc-product-tabs a[aria-current="page"] { color: #151719; background: #f0b90b; border-color: #f0b90b; }

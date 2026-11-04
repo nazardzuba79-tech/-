@@ -90,7 +90,11 @@
   }
   /* Margin mode and leverage share one 44px row. */
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow { display:flex; flex-wrap:nowrap; gap:6px; }
-  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTrigger { flex:1 1 0; width:auto; min-width:0; height:44px; min-height:44px; padding-inline:8px; gap:4px; font-size:12px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTrigger { flex:1 1 0; width:auto; min-width:0; height:44px; min-height:44px; padding-inline:6px; gap:2px; font-size:12px; }
+  /* 2026-11-04: «Изолированная» needs 94px; 6px paddings and a 2px chevron gap leave it 98 of the 128px trigger at 390. The mode popover opens to the trigger's right edge, 300px wide, so «Кросс» is never past a 360px screen. */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlPopover:not(.fo-mlPopoverRight) { left:auto; right:0; width:min(300px, calc(100vw - 24px)); max-width:none; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlModeRow { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlMode { min-width:0; padding-inline:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTriggerLevBtn { flex:0 0 auto; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlTriggerText { min-width:0; overflow-wrap:anywhere; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-availRow { min-height:0; font-size:12px; line-height:16px; gap:6px; flex-wrap:wrap; }
