@@ -12,6 +12,7 @@ import { MarketColumnSort, nextMarketColumnSort } from '../lib/marketColumnSort'
 import { useTestMarkets } from '../lib/testMarketStore';
 import { countdownParts, matchesTestAssetSearch, testMarketPresentation, type TestAsset } from '../lib/testMarkets';
 import { orderListings } from '../lib/listingsOrder';
+import { ListingReminder } from './ListingReminder';
 
 // Per-coin logos now come from the Market Data Gateway's asset registry,
 // resolved inside CryptoIcon itself (tier 1 of its fallback chain) via the
@@ -247,6 +248,7 @@ export const PairListSidebar = forwardRef<
     // A pair that is still counting down is never also a traded row, in any order.
     const upcomingPairs = new Set(upcoming.map(asset => asset.pair));
     const liveRows = upcomingOnly ? [] : filtered.filter(tk => !upcomingPairs.has(tk.pair));
+    const presentationShowsCountdown = (asset: TestAsset) => testMarketPresentation(asset, now).showCountdown;
     const listingCells = (asset: TestAsset): { date: string; title: string; eta: string } => {
       const presentation = testMarketPresentation(asset, now);
       const at = Date.parse(asset.listingAt);
@@ -358,6 +360,7 @@ export const PairListSidebar = forwardRef<
                   <span className="p-price p-listing-at" data-compact title={cells.title}>{cells.date}</span>
                   <span className="p-change p-listing-eta" data-compact={cells.eta.length > 7 || undefined} data-listing-eta>{cells.eta}</span>
                 </button>
+                {presentationShowsCountdown(asset) && <ListingReminder pair={asset.pair} name={asset.name} openAt={Date.parse(asset.listingAt)} compact />}
               </div>
             );
           })}

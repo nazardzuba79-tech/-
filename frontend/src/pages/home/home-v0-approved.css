@@ -65,6 +65,7 @@
   .v0-coin-symbol { font-size: 8px; }
   .v0-quote { font-size: 10px; flex-direction: column; gap: 0; top: 105%; padding: 2px 5px; }
 
-  .hs-root.v0-approved-hero .art { position: relative; inset: auto; width: 166%; height: auto; max-width: none; align-self: flex-end; order: 2; margin-top: -40px; margin-bottom: -10%; mask-image: linear-gradient(transparent,#000 14%); }
+  /* 2026-11-04 (round 3): the lowest orbit coin was drawn over the earth image (margin-top was -40px). */
+  .hs-root.v0-approved-hero .art { position: relative; inset: auto; width: 166%; height: auto; max-width: none; align-self: flex-end; order: 2; margin-top: 8px; margin-bottom: -10%; mask-image: linear-gradient(transparent,#000 14%); }
 }
 @media (max-width: 430px) { .hs-root.v0-approved-hero .copy { padding-inline: 18px; } }

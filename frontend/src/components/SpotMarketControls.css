@@ -131,3 +131,8 @@
 .trade-terminal .pairs-list .pair-row[data-phase="pre-listing"] .p-listing-at { color: var(--text-secondary); }
 .trade-terminal .pairs-list .pair-row[data-phase="pre-listing"] .p-listing-eta { color: var(--accent-yellow, #f0b90b); }
 .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row[data-phase="pre-listing"] :is(.p-listing-at, .p-listing-eta) { font-size: 10.5px; letter-spacing: -.1px; }
+/* A counting-down row carries the reminder bell in a third 36px column. */
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row[data-phase="pre-listing"] { grid-template-columns: var(--spot-mk-star) minmax(0, 1fr) 32px; }
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row[data-phase="pre-listing"] .pair-select { grid-column: 2 / 3; }
+.trade-terminal .pairs-list .pair-row[data-phase="pre-listing"] .listing-reminder-key { min-height: 32px; min-width: 32px; color: var(--text-secondary); }
+.trade-terminal .pairs-list .pair-row[data-phase="pre-listing"] .listing-reminder-menu { right: 0; width: min(248px, calc(100vw - 32px)); }

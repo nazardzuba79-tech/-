@@ -1,4 +1,7 @@
 import { useNativeDemo } from './private-trading/useNativeDemo';
+import { useSwipeTabs } from '../lib/useSwipeTabs';
+const FUTURES_TAB_ORDER = ['chart', 'trade', 'positions'] as const;
+const SWIPE_SKIP_CHART = { skipFrom: ['chart'] as const };
 import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -335,6 +338,9 @@ export function FuturesPage() {
       && isVerifiedEmptyAccountResource(visibleAccount.positions),
     `futures:${bottomTab}`,
   );
+  // A sideways swipe on the ticket or the positions tab moves to the neighbouring tab (2026-11-04); the chart keeps its own gestures.
+  const swipeTo = useCallback((next: 'chart' | 'trade' | 'positions') => { selectMobileTab(next); if (next === 'positions') accountPanel.reveal(); }, [selectMobileTab, accountPanel]);
+  useSwipeTabs(terminalRef, FUTURES_TAB_ORDER, mobileTab, swipeTo, SWIPE_SKIP_CHART);
   // `status` rides with the levels so the panel can tell "this is the book"
   // from "this WAS the book" from "we do not know" — three different things
   // that all used to render as an empty table.

@@ -268,7 +268,7 @@
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step::after { font-size:12px; font-weight:400; color:#6a6e73; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step:hover::after { color:#ffffff; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step[aria-pressed=true]::after { color:#f0b90b; }
-  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-labels span { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-labels :is(span, button) { font-size:12px; font-weight:400; color:#6a6e73; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-summary { margin:0; padding:0; border:0; background:transparent; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .available-balance { min-height:22px; padding:0; border:0; background:transparent; font-size:12px; line-height:18px; color:#6a6e73; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .available-balance .amount { font-size:12px; font-weight:500; color:#ffffff; }

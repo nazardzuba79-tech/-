@@ -1,0 +1,24 @@
+/* The reminder bell beside a counting-down listing (Markets strip, terminal rail). */
+.listing-reminder { position: relative; display: inline-flex; align-self: center; }
+.listing-reminder-key {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--border, #2a2e36); background: transparent; color: var(--text-secondary, #9199a1);
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.listing-reminder-key:hover { color: var(--accent, #f0b90b); border-color: var(--accent, #f0b90b); }
+.listing-reminder-key.is-armed { color: var(--accent, #f0b90b); border-color: rgba(240, 185, 11, .5); background: rgba(240, 185, 11, .1); }
+.listing-reminder.is-compact .listing-reminder-key { min-width: 36px; padding: 0; justify-content: center; border-color: transparent; }
+.listing-reminder-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; display: grid; gap: 2px; width: 248px; padding: 6px;
+  border: 1px solid var(--border, #2a2e36); border-radius: 10px; background: var(--bg-surface, #15181d); box-shadow: 0 14px 36px rgba(0, 0, 0, .35);
+  text-align: left;
+}
+.listing-reminder-menu > a, .listing-reminder-menu > button {
+  display: flex; align-items: center; gap: 9px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--text-heading, #f1f3f5); font: inherit; font-size: 13px; text-decoration: none; cursor: pointer; text-align: left;
+}
+.listing-reminder-menu > a:hover, .listing-reminder-menu > button:hover { background: var(--bg-hover, rgba(255, 255, 255, .06)); }
+.listing-reminder-menu > button[aria-pressed="true"] { color: var(--accent, #f0b90b); }
+.listing-reminder-menu > small { padding: 4px 10px 6px; font-size: 11px; line-height: 1.4; color: var(--text-muted, #7c8591); }
+/* Light pages (Markets) read their own tokens; the dark terminal falls back to the values above. */
+.markets-bolt-root .listing-reminder-menu { background: var(--bg-card-1, #fff); }
