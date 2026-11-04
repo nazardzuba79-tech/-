@@ -112,6 +112,8 @@ function restoreFormPresentation(source) {
   .replace('formatAmount(maxPositionNotional)', 'maxPositionNotional.toFixed(2)');
 }
 function restoreFuturesSwipe(source) {
+  // GitHub Actions Windows checks out sources as CRLF; compare LF-normalized audited bytes.
+  source = source.replace(/\r\n/g, '\n');
   // 2026-11-04 mobile gesture enhancement only. Undo exactly these additions
   // before enforcing the historic full-page semantic fingerprint: all order,
   // balance, account and trading callbacks must stay byte-equivalent.
