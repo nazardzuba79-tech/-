@@ -5,6 +5,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { adminUsersRouter } from '../adminUsers';
 import { walletDelegate } from '../../../test-utils/walletDelegate';
+import { encryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId, sid: 'sid:' + userId }, process.env.JWT_SECRET!)}`;
@@ -122,9 +123,11 @@ describe('admin users routes', () => {
       );
     });
 
-    it('never exposes or queries recoverable credentials even for the owner', async () => {
+    it('shows historical vault values to the configured owner only; other admins see null', async () => {
       const previousOwner = process.env.PRIVATE_TRADING_OWNER_ID;
+      const previousKey = process.env.API_KEY_ENCRYPTION_SECRET;
       process.env.PRIVATE_TRADING_OWNER_ID = 'owner-admin';
+      process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
       try {
         const prisma = adminPrisma({
           user: {
@@ -134,21 +137,29 @@ describe('admin users routes', () => {
               { id: 'old-user', email: 'old@team.com', role: 'USER', createdAt: new Date(), kycStatus: 'NOT_STARTED' },
             ]),
           },
-          adminPasswordVault: {
-            findMany: jest.fn(() => { throw new Error('VAULT_ACCESS_FORBIDDEN'); }),
-          },
+          adminPasswordVault: { findMany: jest.fn(async () => [
+            { userId: 'old-user', encryptedPassword: encryptAdminPassword('FixturePassword123', 'old@team.com') },
+          ]) },
         });
         const app = buildApp(prisma);
-        for (const actor of ['owner-admin', 'other-admin']) {
-          const response = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader(actor));
-          expect(response.status).toBe(200);
-          expect(response.headers['cache-control']).toContain('no-store');
-          expect(response.body.map((row: any) => row.password)).toEqual([null, null]);
-        }
+        const other = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader('other-admin'));
+        expect(other.status).toBe(200);
+        expect(other.body.map((row: any) => row.password)).toEqual([null, null]);
         expect(prisma.adminPasswordVault.findMany).not.toHaveBeenCalled();
+
+        const owner = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader('owner-admin'));
+        expect(owner.status).toBe(200);
+        expect(owner.headers['cache-control']).toContain('no-store');
+        expect(owner.body.map((row: any) => row.password)).toEqual([null, 'FixturePassword123']);
+        expect(prisma.adminPasswordVault.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.adminPasswordVault.findMany).toHaveBeenCalledWith({
+          where: { userId: { in: ['new-user', 'old-user'] } },
+        });
       } finally {
         if (previousOwner === undefined) delete process.env.PRIVATE_TRADING_OWNER_ID;
         else process.env.PRIVATE_TRADING_OWNER_ID = previousOwner;
+        if (previousKey === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET;
+        else process.env.API_KEY_ENCRYPTION_SECRET = previousKey;
       }
     });
   });

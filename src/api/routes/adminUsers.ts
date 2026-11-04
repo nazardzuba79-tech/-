@@ -2,12 +2,15 @@ import { asyncRoute } from '../asyncRoute';
 import { AdminUserDeletionService, UserDeletionError } from '../../services/AdminUserDeletionService';
 import { Router } from 'express';
 import { z } from 'zod';
+import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
+import { decryptAdminPassword, encryptAdminPassword } from '../../services/AdminPasswordVault';
+import { generateReferralCode } from '../../services/referralCode';
 import { adminPagedReadsRouter } from './adminPagedReads';
 import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
 import { ADMIN_USER_HIDDEN, ADMIN_USER_UNHIDDEN, hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
@@ -39,7 +42,20 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
 
     // One read for all returned customers; no per-row requests and no new timer.
     const copies = await latestDepositCopiesForUsers(prisma, users.map((u) => u.id));
-    // Do not decrypt or load customer passwords from the vault.
+    // Historical vault records are only retrieved for the exact configured owner.
+    // Password changes and registrations no longer create reversible copies.
+    const legacyPasswords = new Map<string, string>();
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    if (ownerId && req.userId === ownerId && users.length) {
+      const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: users.map(u => u.id) } } });
+      const emails = new Map(users.map(u => [u.id, u.email]));
+      for (const record of records) {
+        const email = emails.get(record.userId);
+        if (!email) continue;
+        try { legacyPasswords.set(record.userId, decryptAdminPassword(record.encryptedPassword, email)); }
+        catch { /* damaged vault item or key mismatch: do not reveal ciphertext */ }
+      }
+    }
     const balancesByUser = new Map<string, typeof balances>();
     for (const b of balances) {
       const list = balancesByUser.get(b.userId) ?? [];
@@ -57,7 +73,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       users.map((u) => ({
         id: u.id,
         email: u.email,
-        password: null, // deprecated compatibility field
+        password: legacyPasswords.get(u.id) ?? null, // historical owner-only entry
         role: u.role,
         isAdmin: u.role === 'ADMIN',
         kycStatus: u.kycStatus,
@@ -90,6 +106,79 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         blockedReason: null, balances: [], adminHidden: true, hiddenAt,
       }));
     res.set('Cache-Control', 'private, no-store').json(rows);
+  }));
+
+  router.get('/admin/test-accounts/access', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    return res.set('Cache-Control', 'private, no-store').json({ allowed: !!ownerId && req.userId === ownerId });
+  }));
+
+  // Only the configured owner can create a dedicated test account. The password
+  // is supplied for this new account by its creator; public registrations are unchanged.
+  const newTestAccountSchema = z.object({
+    email: z.string().trim().email().max(254),
+    password: z.string().min(10).max(128),
+  });
+  router.post('/admin/test-accounts', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    if (!ownerId || req.userId !== ownerId) return res.status(403).json({ error: 'Owner access required' });
+    const parsed = newTestAccountSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Недопустимые данные тестового аккаунта.' });
+    const email = parsed.data.email.toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existing) return res.status(409).json({ error: 'Email уже зарегистрирован.' });
+    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    const encryptedPassword = encryptAdminPassword(parsed.data.password, email);
+    // The new account has no deposit, financial balance or trading entitlement.
+    // The immutable audit marker establishes owner-managed test provenance.
+    const created = await prisma.$transaction(async tx => {
+      const user = await tx.user.create({
+        data: { email, role: 'USER', passwordHash, referralCode: generateReferralCode(),
+          adminPasswordVault: { create: { encryptedPassword } } },
+      });
+      await tx.auditLog.create({ data: { userId: user.id, action: 'OWNER_TEST_ACCOUNT_CREATED',
+        metadata: { performedByAdminId: req.userId } } });
+      return user.id;
+    });
+    return res.set('Cache-Control', 'private, no-store').status(201).json({ ok: true, id: created });
+  }));
+
+  // Explicit owner-managed TEST accounts only. This never captures a password
+  // from public registration or from a customer's password-change request.
+  const testPasswordSchema = z.object({ newPassword: z.string().min(10).max(128) });
+  router.post('/admin/users/:id/test-password', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    if (!ownerId || req.userId !== ownerId) return res.status(403).json({ error: 'Owner access required' });
+    const parsed = testPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Пароль должен содержать 10–128 символов.' });
+    const { id } = req.params;
+    const result = await prisma.$transaction(async tx => {
+      const user = await tx.user.findUnique({ where: { id }, select: { id: true, role: true, email: true, kycStatus: true } });
+      if (!user || user.role !== 'USER') return 'NOT_FOUND';
+      // Never change credentials for a real/verified/funded customer. Ownership
+      // of an account is not inferred from the admin's ability to list it.
+      if (user.kycStatus !== 'NOT_STARTED') return 'NOT_TEST';
+      const [deposits, withdrawals, orders] = await Promise.all([
+        tx.deposit.count({ where: { userId: id } }),
+        tx.withdrawal.count({ where: { userId: id } }),
+        tx.order.count({ where: { userId: id } }),
+      ]);
+      if (deposits || withdrawals || orders) return 'NOT_TEST';
+      const encryptedPassword = encryptAdminPassword(parsed.data.newPassword, user.email);
+      const passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
+      await tx.user.update({ where: { id }, data: { passwordHash } });
+      await tx.adminPasswordVault.upsert({
+        where: { userId: id },
+        create: { userId: id, encryptedPassword },
+        update: { encryptedPassword },
+      });
+      await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+      await tx.auditLog.create({ data: { userId: id, action: 'OWNER_TEST_PASSWORD_SET', metadata: { performedByAdminId: req.userId } } });
+      return 'UPDATED';
+    });
+    if (result === 'NOT_FOUND') return res.status(404).json({ error: 'Аккаунт не найден.' });
+    if (result === 'NOT_TEST') return res.status(409).json({ error: 'Пароль можно назначить только тестовому аккаунту без KYC, пополнений, выводов и ордеров.' });
+    return res.set('Cache-Control', 'private, no-store').json({ ok: true });
   }));
 
   router.post('/admin/users/:id/hide', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {

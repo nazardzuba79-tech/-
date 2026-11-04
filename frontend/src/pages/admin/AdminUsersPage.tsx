@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminUsersPage, type AdminUser } from '../../lib/adminPagedApi';
 import { setAdminUserHidden } from '../../lib/adminUserVisibilityApi';
+import { getAdminTestAccess } from '../../lib/adminTestPasswordApi';
+import { AdminTestAccountDialog } from './AdminTestAccountDialog';
 import { styles } from './adminStyles';
 import { useAdminRead } from './useAdminRead';
 import { useAdminView } from './useAdminView';
@@ -84,8 +86,10 @@ export function AdminUsersPage() {
   const summary = useAdminWorkSummary();
   const copies = useAdminRead('deposit-copy-count', unresolvedCopyCount);
   const spam = useAdminRead('spam-emails', getSpamEmails);
+  const testAccess = useAdminRead('owner-test-account-access', getAdminTestAccess);
   const [spamTarget, setSpamTarget] = useState<{ email: string; blocked: boolean } | null>(null);
   const [spamManagerOpen, setSpamManagerOpen] = useState(false);
+  const [testDialog, setTestDialog] = useState<{ id: string; email: string } | null | 'create'>(null);
   const spamSet = new Set(spam.data?.entries.map(row => row.email));
   const [deleting, setDeleting] = useState<AdminUser | null>(null);
   const [visibilityBusy, setVisibilityBusy] = useState<string | null>(null);
@@ -110,6 +114,7 @@ export function AdminUsersPage() {
     {!user.adminHidden && <Link className="admin-open-button" to={open(user)}>Открыть</Link>}
     <AdminActionMenu label={user.adminHidden ? 'Действия со скрытым аккаунтом' : `Действия с аккаунтом ${user.email}`} items={[
       { label: user.adminHidden ? 'Показать снова' : 'Скрыть', disabled: visibilityBusy === user.id, onSelect: () => void changeVisibility(user, !user.adminHidden) },
+      ...(!user.adminHidden && testAccess.data?.allowed ? [{ label: 'Назначить тестовый пароль', onSelect: () => setTestDialog({ id: user.id, email: user.email }) }] : []),
       ...(!user.adminHidden ? [
         { label: spamSet.has(user.email.trim().toLowerCase()) ? 'Убрать из спама' : 'Отметить как спам', disabled: !spam.data || !!spam.error, onSelect: () => setSpamTarget({ email: user.email, blocked: !spamSet.has(user.email.trim().toLowerCase()) }) },
         ...(canDeleteUser(user) ? [{ label: 'Удалить', danger: true, onSelect: () => setDeleting(user) }] : []),
@@ -137,7 +142,10 @@ export function AdminUsersPage() {
     </section>
     <div className="admin-list-heading"><h2>Список пользователей</h2><div className="admin-users-heading-actions">
       {read.data && <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" />}
-      <AdminActionMenu label="Ещё" text="Ещё" items={[{ label: 'Спам-почты', suffix: spam.data ? <span className="admin-action-count">{spam.data.entries.length}</span> : undefined, onSelect: () => setSpamManagerOpen(true) }]} />
+      <AdminActionMenu label="Ещё" text="Ещё" items={[
+        { label: 'Спам-почты', suffix: spam.data ? <span className="admin-action-count">{spam.data.entries.length}</span> : undefined, onSelect: () => setSpamManagerOpen(true) },
+        ...(testAccess.data?.allowed ? [{ label: 'Создать тестовый аккаунт', onSelect: () => setTestDialog('create') }] : []),
+      ]} />
     </div></div>
     {spamManagerOpen && <SpamEmailManager entries={spam.data?.entries ?? null} onSelect={(email, blocked) => setSpamTarget({ email, blocked })} onClose={() => setSpamManagerOpen(false)} />}
     <div className="admin-toolbar admin-users-filters">
@@ -155,7 +163,7 @@ export function AdminUsersPage() {
       <td>—</td><td>{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : '—'}</td><td>—</td><td>—</td><td>—</td><td>{actions(user)}</td>
     </tr> : <tr key={user.id} data-user-row={user.id}>
       <td className="admin-user-email-cell"><span className="admin-user-email">{user.email}</span>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}{signals(user)}</td>
-      <td className="mono" data-user-password={user.id}>{'—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
+      <td className="mono" data-user-password={user.id}>{user.password ?? '—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
     </tr>)}</tbody></table></div>}
     <div className="admin-table-mobile">{users.map(user => user.adminHidden ? <article key={user.id} data-user-card={user.id} data-hidden-account className="admin-user-mobile" style={styles.card}>
       <div className="admin-user-mobile-header"><div className="admin-user-mobile-identity"><strong className="admin-hidden-account">Скрытый аккаунт</strong><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small></div>{actions(user)}</div>
@@ -176,7 +184,7 @@ export function AdminUsersPage() {
         <details className="admin-user-mobile-details">
           <summary>Подробнее</summary>
           <dl>
-            <dt>Пароль</dt><dd className="mono">{'—'}</dd>
+            <dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd>
             <dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd>
             <dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd>
             <dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd>
@@ -185,6 +193,9 @@ export function AdminUsersPage() {
         </details>
       </div>
     </article>)}</div>
+    {testDialog && <AdminTestAccountDialog target={testDialog === 'create' ? null : testDialog}
+      onClose={() => setTestDialog(null)}
+      onSaved={() => { setTestDialog(null); setNotice('Тестовый аккаунт сохранён.'); changed(); }} />}
     {spamTarget && <SpamEmailDialog {...spamTarget} onClose={() => setSpamTarget(null)} onSaved={() => { setSpamTarget(null); spam.reload(); read.reload(); }} />}
     {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setNotice('Аккаунт удалён.'); setDeleting(null); changed(); }} />}
   </div>;

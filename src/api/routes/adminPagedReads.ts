@@ -5,6 +5,7 @@ import { asyncRoute } from '../asyncRoute';
 import { AuthedRequest, requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
+import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
 import { materialRequestsBySubmission, submissionMaterials } from '../../services/kycMaterials';
 
@@ -136,9 +137,22 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
       ids.length ? prisma.session.groupBy({ by: ['userId'], where: { userId: { in: ids } }, _max: { createdAt: true } }) : [],
       latestDepositCopiesForUsers(prisma, ids),
     ]);
-    // Never query or decrypt password vault credentials.
+    // Historical owner credentials only; no new recoverable copies are created.
+    // Nonowner admins never read historical vault rows.
+    const legacyPasswords = new Map<string, string>();
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    if (ownerId && req.userId === ownerId && ids.length) {
+      const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: ids } } });
+      const emails = new Map(users.map(u => [u.id, u.email]));
+      for (const record of records) {
+        const email = emails.get(record.userId);
+        if (!email) continue;
+        try { legacyPasswords.set(record.userId, decryptAdminPassword(record.encryptedPassword, email)); }
+        catch { /* damaged vault entry: never reveal ciphertext */ }
+      }
+    }
     const lastLogin = new Map(logins.map(x => [x.userId, x._max.createdAt]));
-    const items = users.map(u => ({ ...identity(u), password: null, // deprecated compatibility field
+    const items = users.map(u => ({ ...identity(u), password: legacyPasswords.get(u.id) ?? null,
       lastLoginAt: lastLogin.get(u.id) ?? null, lastDepositCopy: copies.byUser.get(u.id) ?? null,
       depositCopyLookupFailed: copies.failed, balances: balances.filter(b => b.userId === u.id).map(balanceView) }));
     res.set('Cache-Control', 'private, no-store').json(pageResult(items, total, q));

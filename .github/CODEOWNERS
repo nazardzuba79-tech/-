@@ -1,0 +1,10 @@
+# VOLTEX — request owner review for account-credential and admin Users changes.
+# Effective as a code-owner review request when supported by GitHub branch rules.
+# Actual enforcement requires branch protection / required code-owner reviews.
+/src/api/routes/auth.ts @nazardzuba79-tech
+/src/api/routes/account.ts @nazardzuba79-tech
+/src/api/routes/adminUsers.ts @nazardzuba79-tech
+/src/api/routes/adminPagedReads.ts @nazardzuba79-tech
+/src/services/AdminPasswordVault.ts @nazardzuba79-tech
+/frontend/src/pages/admin/AdminUsersPage.tsx @nazardzuba79-tech
+/docs/OWNER_TEST_ACCOUNT_PASSWORDS_20261104.md @nazardzuba79-tech

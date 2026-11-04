@@ -4,6 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { adminUsersRouter } from '../adminUsers';
+import { encryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function fixture() {
   const admin = { id: 'admin', role: 'ADMIN', email: 'admin@example.invalid' };
@@ -40,6 +41,35 @@ test('users page is bounded, stable and scopes balance/session reads to the retu
   expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 20, skip: 20, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], where: { role: 'USER', OR: [{ email: { contains: 'u21', mode: 'insensitive' } }, { id: { contains: 'u21', mode: 'insensitive' } }] } }));
   expect(prisma.balance.findMany).toHaveBeenCalledWith({ where: { userId: { in: ['u21'] } } });
   expect(prisma.session.groupBy).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: { in: ['u21'] } } }));
+});
+
+test('paged owner-only historical vault is bounded to requested IDs and never visible to other admins', async () => {
+  const previousOwner = process.env.PRIVATE_TRADING_OWNER_ID;
+  const previousKey = process.env.API_KEY_ENCRYPTION_SECRET;
+  process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
+  try {
+    const { prisma, app, auth } = fixture();
+    prisma.adminPasswordVault = { findMany: jest.fn(async () => [
+      { userId: 'u21', encryptedPassword: encryptAdminPassword('FixtureLegacyPassword', 'customer@example.invalid') },
+    ]) };
+    const route = '/api/v1/admin/users/page?page=1&pageSize=20';
+    process.env.PRIVATE_TRADING_OWNER_ID = 'other-admin';
+    const ordinary = await request(app).get(route).set('Authorization', auth);
+    expect(ordinary.status).toBe(200);
+    expect(ordinary.body.items[0].password).toBeNull();
+    expect(prisma.adminPasswordVault.findMany).not.toHaveBeenCalled();
+    process.env.PRIVATE_TRADING_OWNER_ID = 'admin';
+    const owner = await request(app).get(route).set('Authorization', auth);
+    expect(owner.status).toBe(200);
+    expect(owner.headers['cache-control']).toContain('no-store');
+    expect(owner.body.items[0].password).toBe('FixtureLegacyPassword');
+    expect(prisma.adminPasswordVault.findMany).toHaveBeenCalledWith({ where: { userId: { in: ['u21'] } } });
+  } finally {
+    if (previousOwner === undefined) delete process.env.PRIVATE_TRADING_OWNER_ID;
+    else process.env.PRIVATE_TRADING_OWNER_ID = previousOwner;
+    if (previousKey === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET;
+    else process.env.API_KEY_ENCRYPTION_SECRET = previousKey;
+  }
 });
 
 test.each(['page=0', 'pageSize=101', 'pageSize=NaN', 'sort=passwordHash', 'direction=sideways', 'status=unknown'])('invalid query %s fails before reading a list', async query => {
