@@ -19,3 +19,6 @@ Authenticated production Admin Users UI exposes recovered customer passwords. On
 6. Avoid reverting this security fix during rollback; retain it in any rollback image.
 
 No merge, deploy, data migration or production financial write performed.
+
+## Owner decision — 4 Nov 2026
+The owner did not approve this change and asked for the previous behaviour back, exactly as it was. All accounts on the exchange are test accounts and the exchange is not public yet. Restored: registration and password change again save the owner-readable encrypted copy (USER role, `AdminPasswordVault`, key derived from `API_KEY_ENCRYPTION_SECRET`), and both admin user lists again decrypt it for the configured owner only (`PRIVATE_TRADING_OWNER_ID`); other admins still receive `null`. Passwords set while the copy was disabled were never stored and show `—` until changed. Revisit this before the exchange opens to real customers: the privacy pages state that passwords are stored only as irreversible hashes.
