@@ -14,7 +14,7 @@ function once(s,a,b){if(s.split(a).length!==2)throw Error('Non-unique index anch
   if(cp.execFileSync('git',['diff',identity,'--','src','workers/market-edge/src'],{cwd:root,encoding:'utf8'}).trim())throw Error('Runtime source differs from reviewed identity');
   fs.mkdirSync(dir,{recursive:true});
   const archive=path.join(root,'scripts/qa/fixtures/history20-installed-api-41a755a9.tgz');
-  if(hash(fs.readFileSync(archive))!=='71d7c639aff759230d1fb57343786a8fb7aaf8e09e97baca37d0b8001177d04a')throw Error('API capture identity mismatch');
+  if(hash(fs.readFileSync(archive))!=='5049ca8fdb87181bd36c27219797b8486598673c806cab7e005aaf33fb9b3d8e')throw Error('API capture identity mismatch');
   const names=cp.execFileSync('tar',['-tzf',archive],{encoding:'utf8'}).trim().split(/\r?\n/);
   if(names.some(n=>n.startsWith('/')||n.split('/').includes('..')||!(/^(dist(?:\/|$)|package(?:-lock)?\.json$|prisma\/schema\.prisma$)/.test(n))))throw Error('Unsafe archive entry');
   cp.execFileSync('tar',['-xzf',archive,'-C',dir]);

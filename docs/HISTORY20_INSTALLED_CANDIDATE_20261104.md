@@ -1,13 +1,13 @@
 # History20: candidate over the installed API and Worker
 
-This is a local/CI release candidate, not a deployment or activation. PR #676 stays at its reviewed SHA and is not repurposed. No second History20 module, frontend edit, new financial ledger or duplicate PR is introduced.
+This is a local/CI release candidate, not a deployment or activation. PR #676 remains QA-only and is not repurposed; it was rebased separately after main advanced. No second History20 module, frontend edit, new financial ledger or duplicate PR is introduced.
 
 ## Identity and composition
 
 - Canonical runtime input: `20972f4e343ff4d3df3ab53fa0fb0e6af5285d75` (runtime identical to main `9d864a0dfa60391ee3a64d7b174cc90a038116fa`).
 - Installed API receipt: `41a755a9e163d278e786202be61627697149eb2a`; image `sha256:a5311f57832b0ba59eaf2db39324bb462e6ee71cff3083cd0d6e8402d8d20c35`.
 - Installed Worker version `f13215c0-4767-47df-a901-673770569570`, deployment `eee80eb4-d5b7-4ac0-adfe-27acb2cd0e5d`, script SHA256 `38de0f2aa96056df1a2ef2d4b9a741c29fa52fd139bcc64e75d4d8c9a9d0dede`.
-- Captured API archive SHA256 `71d7c639aff759230d1fb57343786a8fb7aaf8e09e97baca37d0b8001177d04a`. Application code/package/schema only: no environment, credentials or database rows.
+- Captured API archive SHA256 `5049ca8fdb87181bd36c27219797b8486598673c806cab7e005aaf33fb9b3d8e`. Application code/package/schema only: no environment, credentials or database rows.
 - `scripts/ops/build-history20-installed-candidate.cjs` verifies these inputs, builds a complete API filesystem from the installed baseline, and applies the reviewed dependency closure, public exclusion/financial exit guards and private route mount. The manifest records every before/after file hash; unrelated installed modules remain byte-identical.
 - The earlier 17-module comparison was insufficient: public API responses and outflow consumers must also be included. The reviewed roots/closure are pinned in `scripts/qa/fixtures/history20-installed-closure.json`.
 - Blind main replacement failed ECLV validation/trajectory parity. Installed parsing/model/market-data behavior is therefore retained for non-History20 listings; canonical historical helpers apply only to historical/private inputs. An ECLV regression is not accepted as an installation tradeoff.
@@ -52,3 +52,7 @@ Future authorized smoke: authentication/ownership; `/banking/config`, calculate 
 #630 `f7c61c96987f0a34838a1f9edb82bf4787b81b5d` independently rejects the previous synthetic USDT→BTC probe with no balance/receipt mutation and passes 24 PG checks including genuine BTC/ETH/USDT withdrawal/manual settlement. It is not silently bundled into this History20 candidate. Conversion stays OFF pending its release/reserves/limits gates.
 
 Stocks runtime #613 remains `ad833ee6d16c4c573809fdc14e6fa16a4e371271`; no new runtime fix was found, so the calibrated 50+2 failure (+18.227612%, limit +5%) is not rerun. The preserved #661 harness is ready for an actual runtime change. Beget remains untouched.
+
+## Same-image production drift reconciled
+
+The final read-only 299-module comparison detected four owner-authorized account/auth route changes after the initial capture (`account`, `adminPagedReads`, `adminUsers`, `auth`). The installed archive was recaptured and the candidate preserves all four byte-for-byte. Package/lockfile/Prisma schema are unchanged. Health SHA and image ID alone did not detect this drift; the all-module preflight does. No production file was written.
