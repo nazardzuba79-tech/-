@@ -454,6 +454,9 @@ describe('translation integrity', () => {
         // shortcuts, plus three more chart types. `git diff --numstat` over
         // the locales reports additions only for every language.
         if (key?.startsWith('chart.ws.') || key?.startsWith('chart.tf.')) return false;
+        // Markets listings strip (2026-11-04): its heading, the «Скоро / Торгуются» order and the «через N д»
+        // countdown line. `git diff --numstat` over the locales reports `8 0` per language, additions only.
+        if (key?.startsWith('listings.')) return false;
         if (key === 'chart.type.bars' || key === 'chart.type.hollow' || key === 'chart.type.heikin') return false;
         // Chart workspace follow-up (2026-10-14): the legend's honest "not enough bars" line
         // beside the `chart.ws.*` pane states; `git diff --numstat` over the locales reports
