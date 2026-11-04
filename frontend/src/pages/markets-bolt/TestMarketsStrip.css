@@ -10,9 +10,11 @@
 .markets-bolt-root .test-markets.is-top { margin: 0 0 28px; }
 @media (max-width: 720px) { .markets-bolt-root .test-markets-head h2 { font-size: 15px; } .markets-bolt-root .test-markets-order button { min-height: 36px; } }
 .markets-bolt-root .test-market-row {
-  display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center;
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center;
   border: 1px solid var(--border); border-radius: 9px; background: var(--bg-surface);
 }
+/* The reminder bell (2026-11-04) sits in the third column of a counting-down row. */
+.markets-bolt-root .test-market-row > .listing-reminder { margin-right: 8px; }
 .markets-bolt-root .test-market-star {
   width: 40px; height: 100%; min-height: 56px; border: 0; background: none; color: var(--text-dim);
   display: grid; place-items: center; cursor: pointer; border-radius: 9px 0 0 9px;

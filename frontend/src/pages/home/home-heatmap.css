@@ -79,8 +79,10 @@
   .vx-home .vx-heat-symbol { font-size: 16px; }
   .vx-home .vx-heat-percent { font-size: 11px; margin-top: 5px; }
   .vx-home .vx-heat-price { font-size: 9px; margin-top: 9px; }
-  .vx-home .vx-heat-small .vx-heat-symbol { font-size: 11px; }
-  .vx-home .vx-heat-small .vx-heat-percent { font-size: 9px; }
+  /* 2026-11-04 (round 3): a 21–35px tile cannot carry «DOGE −4.52%»; the colour is the signal, the detail card has the figures. */
+  /* A small phone tile (under 13% of a ~340px canvas) keeps its ticker only; the percent and price live in the detail card below. */
+  .vx-home .vx-heat-small .vx-heat-percent { display: none; }
+  .vx-home .vx-heat-small .vx-heat-tile-inner { padding: 4px; }
   .vx-home .vx-heatmap-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; padding: 20px; }
   .vx-home .vx-heatmap-detail-top { grid-column: 1; grid-row: 1 / 3; margin-bottom: 0; }
   .vx-home .vx-heatmap-select-label { grid-column: 2; align-self: end; }
