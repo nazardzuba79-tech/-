@@ -17,6 +17,10 @@ async function model(s){const b=await edge('esbuild').transform(s+'\nexport cons
   assert.equal(rejected.status,1);assert.match(rejected.stderr,/api\/api\/routes\/auth\.js/);
  }finally{fs.writeFileSync(protectedFile,protectedBytes);}
  for(const [p,h]of Object.entries(manifest.after))assert.equal(hash(fs.readFileSync(path.join(dir,'candidate',p))),h,p);
+ assert.equal(manifest.rollback['rollback-installed-api.tgz'],hash(fs.readFileSync(path.join(root,'scripts/qa/fixtures/history20-installed-api-41a755a9.tgz'))));
+ assert.equal(manifest.rollback['worker.rollback'],manifest.installedWorkerSha256);
+ for(const [p,h]of Object.entries(manifest.rollback))assert.equal(hash(fs.readFileSync(path.join(dir,'candidate',p))),h,'rollback '+p);
+ assert.equal(fs.readFileSync(path.join(dir,'candidate/Dockerfile.rollback'),'utf8'),`FROM ${manifest.installedImage}\nADD rollback-installed-api.tgz /app/\n`);
  const api=path.join(dir,'candidate/api');
  for(const p of Object.keys(manifest.after).filter(x=>x.startsWith('api/'))){
   const s=fs.readFileSync(path.join(dir,'candidate',p),'utf8');

@@ -64,6 +64,10 @@ function once(s,a,b){if(s.split(a).length!==2)throw Error('Non-unique index anch
   const before={};for(const p of Object.keys(entries)){if(!p.startsWith('api/'))continue;const f=path.join(dir,'dist',p.slice(4));before[p]=fs.existsSync(f)?hash(fs.readFileSync(f)):null;}
   const changed=Object.keys(entries).filter(p=>p==='worker.js'||before[p]!==entries[p]);
   const manifest={source:identity,installedApiCommit:'41a755a9e163d278e786202be61627697149eb2a',installedImage:'sha256:a5311f57832b0ba59eaf2db39324bb462e6ee71cff3083cd0d6e8402d8d20c35',installedWorkerVersion:'f13215c0-4767-47df-a901-673770569570',installedWorkerSha256:hash(baselineWorker),scope:'HISTORY20_PINNED_COMPOSITION_OFF',postgresMigrations:[],workerMigrations:[],activate:false,closure,changed,before,after:entries};
+  fs.copyFileSync(archive,path.join(out,'rollback-installed-api.tgz'));
+  put('worker.rollback',baselineWorker);
+  put('Dockerfile.rollback',`FROM ${manifest.installedImage}\nADD rollback-installed-api.tgz /app/\n`);
+  manifest.rollback=Object.fromEntries(['rollback-installed-api.tgz','worker.rollback','Dockerfile.rollback'].map(p=>[p,hash(fs.readFileSync(path.join(out,p)))]));
   put('manifest.json',JSON.stringify(manifest,null,2));
   put('Dockerfile',`FROM ${manifest.installedImage}\nCOPY api/ /app/dist/\n`);
   console.log(JSON.stringify({apiModules:Object.keys(entries).length-1,changed:changed.length,workerSha256:entries['worker.js'],manifestSha256:hash(fs.readFileSync(path.join(out,'manifest.json')))}));

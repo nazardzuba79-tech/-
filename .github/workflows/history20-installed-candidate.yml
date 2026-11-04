@@ -52,7 +52,7 @@ jobs:
       - name: Composed binaries, PG isolation, preserved models, restart and browser
         run: node scripts/ops/verify-history20-installed-candidate.cjs --postgres --browser
       - name: Package code only, excluding local dependency links and database
-        run: tar -czf output/history20-candidate.tgz -C output/history20-installed-candidate/candidate api worker.js manifest.json Dockerfile
+        run: tar -czf output/history20-candidate.tgz -C output/history20-installed-candidate/candidate api worker.js manifest.json Dockerfile rollback-installed-api.tgz worker.rollback Dockerfile.rollback
       - uses: actions/upload-artifact@v4
         if: always()
         with:
