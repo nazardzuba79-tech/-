@@ -7680,3 +7680,10 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Cause: round 3's `apple-mobile-web-app-status-bar-style: black-translucent` lets the page extend under the bar and no header pads for `env(safe-area-inset-top)`. Fix: the value becomes `black` (opaque bar, page starts below it). One line in `frontend/index.html`; Safari in-browser was never affected.
 - Verified: `vite build`, `seoIndexing`, `seoBuildOutput`, `mobile-review-ci-safety`. Not verified on a real iPhone (no device); the owner checks the installed app after Codex publishes. Release candidate: `claude/voltex-mobile-audit-7rpjni-phone-chart-compact-rc` head `7d303b347` (cherry-pick), rollback `1d96f2734`.
 - Preserved from Codex: nothing else touched.
+
+## 2026-11-04 — Claude — owner-only admin password column restored (owner decision)
+- Owner did not approve #664/#668 (merged 31.10) and asked to restore the Admin → Users «Пароль» column exactly as before; all accounts are test accounts and the exchange is not public. Do not change this without the owner's explicit approval in chat.
+- main `c477b313`: revert of #664's password changes only (auth/account vault write, adminUsers/adminPagedReads owner-only decrypt, desktop/mobile column, tests); Banking calendar fixtures kept. Jest 155/155, tsc PASS. Incident note updated with the decision.
+- Narrow Pages source `release/restore-admin-password-pages-20261104` (`ae2db955`) = live `a623744a` (reproduced `index-DRGXw-sR.js`) + the two AdminUsersPage lines; after hash normalisation 342/343 files identical, only `AdminUsersPage` differs. Zip for upload kept outside the repo.
+- API restore plan: put back the four pre-#668 route modules from the retained image `sha256:362eb750…` (health `3636cf80`) into the running container, backups of the current modules kept for rollback. Not executed by Claude (no server/Cloudflare access from this session); the owner runs it through a browser agent.
+- Parallel branch `review/owner-legacy-test-passwords-20261104` is a different design (historical rows only, no new copies); owner: not wanted, may be deleted. Not deleted here.
