@@ -873,6 +873,14 @@ body {
     display: none;
   }
 }
+/* The CFD terminal draws the generic header (no market switch): at 360px the
+   «X» of the wordmark sat under the deposit key. Same cut as the other
+   terminals (2026-11-04). */
+@media (max-width: 429px) {
+  .cfd-terminal .global-header .header-brand > span > span {
+    display: none;
+  }
+}
 /* The home header shows the mark alone below 430px, as the terminal header
    already does (owner, 2026-10-04): with the wordmark the row «VOLTEX ·
    Вход · Начать торговлю · menu» is 370px at 360 (the menu key loses 10px)
@@ -2103,6 +2111,12 @@ a:hover > .nav-card-icon {
      pushed under the bar. */
   .page-mesh {
     padding-bottom: 64px;
+  }
+  /* The shared footer is the last thing on most pages, and the 56px tab bar
+     sat on its risk line and copyright at the end of the scroll (2026-11-04:
+     measured 55px covered on Markets, Settings, Copy Trading, Card, Academy). */
+  .site-footer {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Trade/Futures: desktop is a fixed-viewport row of fixed-width columns

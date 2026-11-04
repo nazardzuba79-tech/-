@@ -96,8 +96,8 @@
 .markets-bolt-root .overview-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 22px; margin-bottom: 56px; }
 .markets-bolt-root .overview-card { min-height: 258px; padding: 26px; border: 1px solid var(--border); background: linear-gradient(145deg, var(--bg-card-1), var(--bg-card-2)); border-radius: 10px; box-shadow: var(--card-shadow); }
 .markets-bolt-root .card-heading, .markets-bolt-root .highlight-heading, .markets-bolt-root .score-label, .markets-bolt-root .long-short, .markets-bolt-root .volume-footer, .markets-bolt-root .sector-row { display: flex; justify-content: space-between; align-items: center; }
-.markets-bolt-root .card-heading { color: var(--text-heading); font-weight: 600; font-size: 18px; margin-bottom: 22px; }
-.markets-bolt-root .card-heading-tag { color: var(--text-muted); font-size: 12px; }
+.markets-bolt-root .card-heading { color: var(--text-heading); font-weight: 600; font-size: 18px; margin-bottom: 22px; gap: 10px 14px; flex-wrap: wrap; }
+.markets-bolt-root .card-heading-tag { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 /* Gauge on top, distribution beneath it — see the note in components.tsx.
    Stacking lets the gauge fill the card instead of leaving a void under a
    short two-column row. */
@@ -319,7 +319,13 @@
   /* One card per row on a phone. This was a horizontal swipe carousel,
      which left each card half off-screen and its figures cut mid-word —
      a market-analytics card is read, not swiped past. */
-  .markets-bolt-root .overview-grid { grid-template-columns: 1fr; gap: 16px; }
+  .markets-bolt-root .overview-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
+  /* 2026-11-04 (round 3): one 28px step between sections and 40px tap rows instead of 20px text tabs. */
+  .markets-bolt-root .highlights-grid { margin-bottom: 28px; }
+  .markets-bolt-root .type-tabs { padding: 12px 0 16px; gap: 22px; }
+  .markets-bolt-root .tab-row button { min-height: 40px; padding: 0 0 10px; }
+  .markets-bolt-root .category-tabs .tab-active:after { top: 10px; }
+  .markets-bolt-root .highlight-heading button { min-height: 36px; padding: 0 8px; margin-right: -8px; }
   .markets-bolt-root .overview-card { min-width: 0; min-height: 0; padding: 22px 20px; }
   .markets-bolt-root .sectors-card { grid-column: auto; }
   .markets-bolt-root .sector-row { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1fr); }

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PriceChart } from './PriceChart';
+import type { WorkspaceFeature } from './chart-workspace/ChartWorkspaceToolbar';
+import { ICONS } from './chart-workspace/chartWorkspaceIcons';
 import { TradingViewAdvancedChart } from './TradingViewAdvancedChart';
 import { TradingViewRulerLayer } from './TradingViewRulerLayer';
 import { ChartMultiLayout } from './chart-workspace/ChartMultiLayout';
@@ -110,11 +112,41 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
         {tradingView && <button type="button" aria-pressed={mode==='tradingview'} onClick={()=>{ if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); }}>TradingView</button>}
       </div>;
   const folded = foldHeading && voltexShown;
+  // Phone (owner, 2026-11-03): the heading row is not drawn over the VOLTEX
+  // chart — seven rows of keys sat above the candles. Its two controls move
+  // into the chart's own «•••» sheet: the view (chart / data / analytics) and
+  // the source. TradingView has no VOLTEX toolbar, so while it is shown the
+  // heading comes back with the switch, exactly as `foldHeading` does.
+  const phoneFolded = compact && voltexShown && !folded;
+  const selectTradingView = () => { if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); };
+  const sheetFeatures = useMemo<WorkspaceFeature[] | undefined>(() => {
+    if (!phoneFolded) return undefined;
+    const radio = (checked: boolean, label: string, testId: string, onPick: () => void, close: () => void) => (
+      <button key={testId} type="button" role="menuitemradio" aria-checked={checked} className={`cw-item${checked ? ' active' : ''}`} data-cw-option={testId}
+        onClick={() => { onPick(); close(); }}>
+        <span className="cw-item-label">{label}</span><span className="cw-item-tick" aria-hidden="true">{checked ? ICONS.check : null}</span>
+      </button>
+    );
+    const features: WorkspaceFeature[] = [{
+      id: 'view', label: t('chart.ws.view'), icon: ICONS.chart, priority: 0, menuWidth: 260, testId: 'view',
+      active: workspace.view !== 'chart', badge: workspace.view !== 'chart' ? t(`chart.ws.view.${workspace.view}`) : undefined,
+      body: close => <div data-cw-view-menu>{(['chart', 'data', 'analytics'] as const).map(view => radio(workspace.view === view, t(`chart.ws.view.${view}`), `view-${view}`, () => setView(view), close))}</div>,
+    }];
+    if (tradingView) features.push({
+      id: 'source', label: t('chart.ws.source'), priority: 0, menuWidth: 260, testId: 'source',
+      body: close => <div data-cw-source-menu>{[
+        radio(true, 'VOLTEX', 'source-voltex', () => setMode('voltex'), close),
+        radio(false, 'TradingView', 'source-tradingview', selectTradingView, close),
+      ]}</div>,
+    });
+    return features;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phoneFolded, workspace.view, tradingView, choosing, market, t]);
   const parked = compact && effectiveLayout > 1 && workspace.activePane !== 0;
   const main = <TradingViewRulerLayer>
     <PriceChart key={`${market}:${pair}`} pair={pair} chrome="terminal" drawingTools market={market} compactTools={compactTools}
       privateTrading={privateTrading} positionLines={positionLines} priceScaleMode={priceScaleMode} priceFormatter={priceFormatter}
-      chartSettings={chartSettings} toolbarEnd={folded ? <>{viewTabs}{switcher}</> : undefined}
+      chartSettings={chartSettings} toolbarEnd={folded ? <>{viewTabs}{switcher}</> : undefined} sheetFeatures={sheetFeatures}
       candleLoader={mainCaps.loader} candleSource={mainCaps.source} onSelectPair={onSelectPair} syncBus={syncBus} syncId="main"
       compactLayout={compact} fullscreen={fullscreen} onFullscreen={toggleFullscreen} paused={parked || (expanded !== null && expanded !== 0)} />
   </TradingViewRulerLayer>;
@@ -130,8 +162,8 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
       expanded={expanded === i + 1} onExpand={value => setExpanded(value ? i + 1 : null)} t={t}
       formatPrice={pairFormatter?.(pane.pair ?? paneDefaults[i] ?? pair) ?? priceFormatter} />
   )) : [];
-  return <div ref={shellRef} className={`terminal-chart-shell${folded ? ' is-heading-folded' : ''}${pseudoFullscreen ? ' is-pseudo-fullscreen' : ''}`} data-cw-fullscreen={fullscreen || undefined}>
-    {!folded && <div className="terminal-chart-heading">
+  return <div ref={shellRef} className={`terminal-chart-shell${folded ? ' is-heading-folded' : ''}${phoneFolded ? ' is-heading-phone' : ''}${pseudoFullscreen ? ' is-pseudo-fullscreen' : ''}`} data-cw-fullscreen={fullscreen || undefined}>
+    {!folded && !phoneFolded && <div className="terminal-chart-heading">
       {viewTabs}
       <div role="group" aria-label={t('futures.chart')}>
         {/* The "Сделка с графика" button used to sit here. It is gone from

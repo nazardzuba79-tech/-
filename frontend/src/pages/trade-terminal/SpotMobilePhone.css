@@ -80,7 +80,7 @@
    when their text no longer fits. */
 @media (max-width:900px) {
   /* The three workspace tabs may take two lines. */
-  .trade-terminal.vx-terminal .terminal-mobile-tabs button { height:auto !important; min-height:48px !important; padding-block:4px; white-space:normal; overflow-wrap:anywhere; line-height:1.15; }
+  .trade-terminal.vx-terminal .terminal-mobile-tabs button { height:auto !important; min-height:44px !important; padding-block:4px; white-space:normal; overflow-wrap:anywhere; line-height:1.15; }
   /* Instrument row: the pair never shrinks below its own name (PEPE/USDT
      ran over its menu chevron at 320–390), the price column gives and its
      figures wrap, «24h» sizes to its text. */

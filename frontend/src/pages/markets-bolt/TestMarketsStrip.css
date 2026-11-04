@@ -1,9 +1,20 @@
 /* New listings above the Markets catalogue. Reads the page's own tokens. */
 .markets-bolt-root .test-markets { display: grid; gap: 8px; margin: 0 0 24px; }
+/* Heading + the «Скоро / Торгуются» order (2026-11-04): the phone shows this strip at the top of the page. */
+.markets-bolt-root .test-markets-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 2px; }
+.markets-bolt-root .test-markets-head h2 { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-heading); }
+.markets-bolt-root .test-markets-order { display: inline-flex; padding: 2px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg-surface); }
+.markets-bolt-root .test-markets-order button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: none; color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.markets-bolt-root .test-markets-order button[aria-pressed="true"] { background: rgba(240, 185, 11, .14); color: var(--accent); }
+.markets-bolt-root .test-market-eta { font-size: 12px; font-weight: 600; color: var(--accent); }
+.markets-bolt-root .test-markets.is-top { margin: 0 0 28px; }
+@media (max-width: 720px) { .markets-bolt-root .test-markets-head h2 { font-size: 15px; } .markets-bolt-root .test-markets-order button { min-height: 36px; } }
 .markets-bolt-root .test-market-row {
-  display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center;
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center;
   border: 1px solid var(--border); border-radius: 9px; background: var(--bg-surface);
 }
+/* The reminder bell (2026-11-04) sits in the third column of a counting-down row. */
+.markets-bolt-root .test-market-row > .listing-reminder { margin-right: 8px; }
 .markets-bolt-root .test-market-star {
   width: 40px; height: 100%; min-height: 56px; border: 0; background: none; color: var(--text-dim);
   display: grid; place-items: center; cursor: pointer; border-radius: 9px 0 0 9px;
@@ -37,4 +48,11 @@
   .markets-bolt-root .test-market-open { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding-right: 12px; }
   .markets-bolt-root .test-market-figure:not(.test-market-volume) + .test-market-figure { grid-column: 2; }
   .markets-bolt-root .test-market-listing { grid-column: 1 / -1; grid-row: auto; text-align: left; }
+}
+/* A phone row of a listing still counting down: no empty «Цена — / 24ч —» pair, the date and the countdown take the row. */
+@media (max-width: 520px) {
+  .markets-bolt-root .test-market-row[data-phase="pre-listing"] .test-market-figure { display: none; }
+  .markets-bolt-root .test-market-row[data-phase="pre-listing"] .test-market-open { grid-template-columns: minmax(0, 1fr); padding-block: 10px; }
+  .markets-bolt-root .test-market-row[data-phase="pre-listing"] .test-market-listing { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .markets-bolt-root .test-market-star { min-height: 48px; }
 }

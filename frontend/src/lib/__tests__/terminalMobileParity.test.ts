@@ -31,8 +31,9 @@ describe('Spot/CFD mobile parity with Futures', () => {
     expect(page).toContain('data-mobile-market="spot"');
     expect(page).toContain("setMobilePane('book')");
     expect(page).toContain("setMobilePane('markets')");
-    expect(page).toContain("const selectSpotPair = useCallback((nextPair: string) => {");
-    expect(page).toContain("setMobileTab('trade')");
+    // 2026-11-04: the rail passes `upcoming` for a listing still counting down; its chart tab carries the countdown.
+    expect(page).toContain("const selectSpotPair = useCallback((nextPair: string, options?: { upcoming?: boolean }) => {");
+    expect(page).toContain("setMobileTab(options?.upcoming ? 'chart' : 'trade');");
     expect(page).toContain("params.set('pair', nextPair)");
     expect(page).toContain('onChange={selectSpotPair}');
     expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced}');
@@ -79,7 +80,10 @@ describe('Spot/CFD mobile parity with Futures', () => {
     expect(css).toContain('min-height:44px');
     expect(css).toContain('min-height:52px');
     expect(css).toContain('font-size:16px !important');
-    expect(css).toContain('height:clamp(360px,59dvh,600px)');
+    // 2026-11-03: no fixed chart height on a phone — the page is a column and the chart workspace its flexible row.
+    expect(css).toContain('.trade-terminal.vx-terminal { display:flex; flex-direction:column; }');
+    expect(css).toContain('.terminal[data-mobile-tab=chart][data-mobile-pane=chart] :is(.main-grid,.cfd-workspace) { flex:1 1 auto; }');
+    expect(css).not.toContain('100dvh - 300px');
     expect(css).toContain('display:none !important');
     expect(css).toContain('display:flex !important');
     expect(css).toContain('.cfd-market-state { display:none !important; }');

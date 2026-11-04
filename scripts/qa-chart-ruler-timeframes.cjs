@@ -148,7 +148,15 @@ const rulerBoxes = (page) => page.evaluate(() => [...document.querySelectorAll('
       }
       await page.waitForTimeout(1500);
       // On 1h every anchor is on a bar and the check would pass vacuously.
-      assert.match(await page.locator('.voltex-plot-title').first().textContent(), /· 4h/, `${width}: the chart is on 4h`);
+      // Phones (≤900px) show no «pair · interval» caption over the plot (owner, 2026-11-02): read the active timeframe there.
+      const shownTf = await page.evaluate(() => {
+        const title = document.querySelector('.voltex-plot-title:not(.is-compact)');
+        if (title) return title.textContent || '';
+        const pressed = document.querySelector('[data-cw-tf][aria-pressed="true"]');
+        if (pressed) return '· ' + pressed.getAttribute('data-cw-tf');
+        return '· ' + (document.querySelector('[data-cw-tf-strip] [aria-haspopup]')?.textContent || '').trim();
+      });
+      assert.match(shownTf, /· 4h/, `${width}: the chart is on 4h`);
 
       const plot = await page.locator('.chart-view').first().boundingBox();
       const boxes = await rulerBoxes(page);

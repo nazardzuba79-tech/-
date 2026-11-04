@@ -256,15 +256,20 @@
   .cw-row.is-compact .cw-feature { min-width:44px; justify-content:center; }
   .cw-row.is-compact .cw-feature-wrap.has-separator { margin-left:0; padding-left:0; border-left:0; }
   .cw-sheet-trigger { display:inline-flex; align-items:center; justify-content:center; }
-  /* One 48px row on a phone, whatever the terminal sheet says: timeframes scroll sideways, nothing wraps or stacks. */
+  /* One 44px row on a phone, whatever the terminal sheet says: timeframes scroll sideways, nothing wraps or stacks (48px until 2026-11-03). */
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal .terminal-chart-shell .chart-toolbar.cw-toolbar,
-  #archive-terminal-preview .terminal-chart-shell .chart-toolbar.cw-toolbar { display:flex; flex-wrap:nowrap; height:48px; min-height:48px; padding:0 6px; gap:0; overflow:hidden; align-items:center; }
+  #archive-terminal-preview .terminal-chart-shell .chart-toolbar.cw-toolbar { display:flex; flex-wrap:nowrap; height:44px; min-height:44px; padding:0 6px; gap:0; overflow:hidden; align-items:center; }
   .cw-row.is-compact .cw-tf-strip, #archive-terminal-preview .cw-row.is-compact .chart-tabs, .trade-terminal .cw-row.is-compact .chart-tabs { display:flex; flex:0 0 auto; flex-wrap:nowrap; flex-direction:row; width:auto; min-width:0; gap:0; overflow:visible; scrollbar-width:none; }
   .cw-row.is-compact .cw-tf-strip .chart-tab { flex:0 0 auto; min-height:44px; min-width:36px; padding-inline:6px; }
+  /* Futures sizes its keys 40px wide (FuturesMobile.css, id weight); on the phone row that was the 4px that cost «1м» and «4ч» at 390px. */
+  #archive-terminal-preview .cw-row.is-compact .cw-tf-strip .chart-tab { min-width:36px; }
   .cw-row.is-compact .cw-end { flex:none; margin-left:auto; }
   .cw-sheet-menus { display:flex; flex-wrap:wrap; gap:8px; padding-bottom:8px; }
   /* The heading on a phone: three view tabs and the source switch share one 44px row without touching. */
   .terminal-chart-heading .cw-views { gap:12px; }
+  /* A phone draws this heading only while TradingView is shown (TerminalChart, 2026-11-03), where «Данные» and
+     «Аналитика» are disabled keys: not drawn, so at 320px they no longer sit over the «VOLTEX» way back. */
+  .terminal-chart-heading .cw-view-tab:disabled { display:none; }
   .terminal-chart-heading .cw-view-tab { font-size:13px; padding-inline:2px; }
   .terminal-chart-heading > div[role="group"] { flex:none; gap:10px; }
   .cw-sheet-menus .chart-menus, .cw-sheet-menus .chart-tools { display:flex !important; flex-wrap:wrap; gap:8px; }

@@ -515,7 +515,7 @@ describe('spot and futures pair lists are unchanged', () => {
     // test-market store, so «Новые» cannot manufacture an executable pair.
     expect(spot).toContain('setTickers(Array.from(tickerMap.values()))');
     expect(spot).toContain('filterAndSortPairs(tickersForSort, {');
-    expect(spot).toContain('const { assets: listedAssets } = useTestMarkets();');
+    expect(spot).toContain('const { assets: listedAssets, clockOffsetMs } = useTestMarkets();');
     expect(spot).toContain('Date.parse(asset.listingAt)');
     expect(spot).not.toMatch(/catalogueStore|useCatalogue|getAssetCatalogue|tradingPairs|useChange7d|pairChange7d/);
     expect(pairs).not.toMatch(/catalogueStore|getAssetCatalogue|tradingPairs/);

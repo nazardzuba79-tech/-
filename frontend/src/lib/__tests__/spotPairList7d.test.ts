@@ -6,6 +6,8 @@ import * as pairHelpers from '../pairList';
 import * as columnSort from '../marketColumnSort';
 import * as changeHelpers from '../priceChange';
 import * as spotBookHelpers from '../spotOrderBook';
+import * as testMarkets from '../testMarkets';
+import * as listingsOrder from '../listingsOrder';
 
 /**
  * Spot terminal rail after the owner removed the 7d column (2026-10-04).
@@ -36,7 +38,7 @@ describe('source boundaries', () => {
 
   test('newest sorting reuses listing metadata, not another market request', () => {
     const sidebar = read('src/components/PairListSidebar.tsx');
-    expect(sidebar).toContain("const { assets: listedAssets } = useTestMarkets();");
+    expect(sidebar).toContain("const { assets: listedAssets, clockOffsetMs } = useTestMarkets();");
     expect(sidebar).toContain('Date.parse(asset.listingAt)');
     expect(sidebar).toContain('listingAtByPair.get(a.pair)');
     expect(sidebar).not.toMatch(/fetch\(|getAssetCatalogue|catalogueStore/);
@@ -73,6 +75,8 @@ describe('mounted compact Spot rail', () => {
       if (name === 'react') return React;
       if (name === '../lib/useMarketData') return { useMarketTickers: () => ({ tickers, loading: false, error: false, stale: false, refresh: () => {} }) };
       if (name === '../lib/testMarketStore') return { useTestMarkets: () => ({ assets: listedAssets, loaded: true, error: false }) };
+      if (name === '../lib/testMarkets') return testMarkets;
+      if (name === '../lib/listingsOrder') return listingsOrder;
       if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
       if (name === '../lib/pairList') return pairHelpers;
       if (name === '../lib/useFavorites') return { useFavorites: () => ({ favorites: new Set<string>(), toggle: () => {} }) };
@@ -80,6 +84,7 @@ describe('mounted compact Spot rail', () => {
       if (name === '../lib/spotOrderBook') return spotBookHelpers;
       if (name === '../lib/marketColumnSort') return columnSort;
       if (name === './CryptoIcon') return { CryptoIcon: ({ symbol }: any) => React.createElement('i', { 'data-icon': symbol }) };
+      if (name === './ListingReminder') return { ListingReminder: () => null };
       return req(name);
     });
     await act(async () => root.render(React.createElement(output.PairListSidebar, { pair: 'BTC/USDT', onChange: () => {} })));

@@ -17,8 +17,8 @@
   }
 
   .trade-terminal.vx-terminal .global-header {
-    height:52px;
-    min-height:52px;
+    height:48px;
+    min-height:48px;
     padding-inline:12px;
   }
   .trade-terminal.vx-terminal .global-header :is(button,a) { min-height:44px; }
@@ -63,8 +63,8 @@
   }
   .trade-terminal.vx-terminal .terminal-mobile-tabs button {
     min-width:0;
-    min-height:48px !important;
-    height:48px !important;
+    min-height:44px !important;
+    height:44px !important;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -80,29 +80,38 @@
     border-bottom-color:var(--accent);
   }
 
+  /* «График | Стакан | Рынки» as one 44px segmented control (owner,
+     2026-11-03: the chart's screen was mostly panels) — the same shape as
+     the header's Spot / Futures switch, 56px of loose chips before. */
   .trade-terminal.vx-terminal .terminal-mobile-chart-tabs {
     display:flex;
     order:0;
-    gap:6px;
-    padding:6px 12px;
-    background:var(--panel);
+    gap:2px;
+    margin:2px 10px;
+    padding:2px;
+    border-radius:10px;
+    background:var(--panel-alt);
+    box-shadow:inset 0 0 0 1px var(--border);
     overflow-x:auto;
   }
-  .trade-terminal.vx-terminal .terminal-mobile-chart-tabs button {
-    flex:0 0 auto;
-    min-height:44px;
-    padding:0 16px;
-    border:1px solid transparent;
+  /* Id weight: the preview sheet's blanket 44px key floor would otherwise win. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .terminal-mobile-chart-tabs button {
+    flex:1 1 0;
+    min-width:0;
+    min-height:36px;
+    padding:0 10px;
+    border:0;
     border-radius:8px;
     background:transparent;
     color:var(--text-secondary);
     font-size:13px;
+    font-weight:600;
     white-space:nowrap;
   }
-  .trade-terminal.vx-terminal .terminal-mobile-chart-tabs button[aria-pressed=true] {
-    background:var(--panel-alt);
-    border-color:var(--border);
-    color:var(--text-primary);
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .terminal-mobile-chart-tabs button[aria-pressed=true] {
+    background:rgba(240,196,63,.13);
+    box-shadow:inset 0 0 0 1px rgba(240,196,63,.42);
+    color:var(--accent);
   }
 
   /* Instrument rows: keep the pair, last price and change immediately
@@ -160,7 +169,7 @@
     gap:2px 10px !important;
     min-height:0 !important;
     height:auto;
-    padding:6px 12px !important;
+    padding:2px 12px !important;
     overflow:visible;
   }
   .trade-terminal.vx-terminal.cfd-terminal .cfd-selected-instrument { grid-column:1; min-width:0; }
@@ -216,14 +225,32 @@
     overflow:visible;
     min-height:0;
   }
+  /* The chart fills the phone screen down to the bottom menu (owner,
+     2026-11-03): no fixed chart height — the page is a column, the chart
+     workspace is its flexible row and the plot takes every pixel left
+     under the toolbar. The trade and account workspaces keep their own
+     heights and scroll as before. (Until now: a clamp() of 100dvh minus a
+     guessed 300px of chrome, which left a band or overflowed.) */
+  .trade-terminal.vx-terminal { display:flex; flex-direction:column; }
+  /* The chart workspace ends on the bottom menu itself (its 44px of icon and
+     padding plus one line of its label, which Android text scaling grows, and
+     the home indicator), not 20px above it as the other workspaces' breathing room. */
+  .trade-terminal.vx-terminal:has(.terminal[data-mobile-tab=chart][data-mobile-pane=chart]) { --mobile-nav-space:calc(40px + 1.35em + env(safe-area-inset-bottom, 0px)); }
+  /* TradingView on a phone: its container is a flex row of the shell, not 100% of a height the flex chain no longer gives (it fell to its 150px widget). */
+  .trade-terminal.vx-terminal .terminal-chart-shell .voltex-tradingview-chart { flex:1 1 0%; height:auto; min-height:0; }
+  .trade-terminal.vx-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart],
+  .trade-terminal.vx-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart] :is(.main-grid,.cfd-workspace) { flex:1 1 auto; }
   .trade-terminal.vx-terminal :is(.chart-area,.cfd-chart-area) {
-    height:clamp(360px,59dvh,600px);
-    min-height:360px;
-    flex:none;
+    display:flex;
+    flex-direction:column;
+    flex:1 1 auto;
+    height:auto;
+    min-height:320px;
     border-right:0;
   }
-  .trade-terminal.vx-terminal :is(.terminal-chart-shell,.cfd-chart) {
-    height:100%;
+  .trade-terminal.vx-terminal :is(.chart-area,.cfd-chart-area) > :is(.terminal-chart-shell,.cfd-chart,.chart-resolving,.managed-demo-chart,.vta-prelisting) {
+    flex:1 1 auto;
+    height:auto !important;
     min-height:0;
   }
   .trade-terminal.vx-terminal .orderbook-area {
@@ -252,7 +279,7 @@
 
   .trade-terminal.vx-terminal .chart-toolbar {
     overflow-x:auto;
-    min-height:48px;
+    min-height:44px;
   }
   .trade-terminal.vx-terminal .chart-tabs,
   .trade-terminal.vx-terminal .chart-tools { flex-shrink:0; }
@@ -286,13 +313,18 @@
      strip to one 43px row with a six-class selector. */
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal .bottom-tabs,
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal .cfd-tabs {
-    flex-wrap:wrap;
-    overflow:visible;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:none;
     min-height:44px;
     height:auto;
     gap:0 16px;
-    padding-inline:12px;
+    padding-inline:12px 28px;
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);
+    mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);
   }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal :is(.bottom-tabs,.cfd-tabs)::-webkit-scrollbar { display:none; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal .bottom-tab,
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal .cfd-tab {
     min-height:44px;
@@ -329,4 +361,31 @@
   .trade-terminal.vx-terminal .terminal-mobile-tabs button { font-size:13px; }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar,
   .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-bar { padding-inline:8px; gap:4px 8px; }
+}
+
+/* 2026-11-04 (owner screenshot, phone «Рынки» pane): the pane was a fixed
+   clamp(380px, 60dvh, 620px) block with the list drawn at content height, so
+   the last pair sat under the panel edge with no way to scroll to it and a
+   black band followed. The pane now fills to the bottom menu like the chart
+   pane and the list scrolls inside it. The desktop «collapse panel» keys
+   mean nothing on a phone (the chips above choose the pane). */
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets],
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .main-grid { flex:1 1 auto; min-height:0; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .left-panel {
+    display:flex; flex-direction:column; flex:1 1 auto; height:auto; min-height:380px; max-height:none; overflow:hidden;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .pairs-list { flex:1 1 0; min-height:0; overflow-y:auto; }
+  .trade-terminal.vx-terminal :is(.pairs-header button, .orderbook-collapse) { display:none; }
+}
+
+/* 2026-11-04 (owner round 3): the account strip wrapped onto 2–3 rows with
+   the collapse chevron stretched beside it, and the panel stopped 400px
+   above the bottom menu. One sideways strip with a fade at its edge, a
+   44px chevron, and the panel fills the screen like the chart does. */
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal .terminal-account-header { align-items:center; }
+  .trade-terminal.vx-terminal .terminal-account-toggle { flex:0 0 44px; height:44px; align-self:center; }
+  .trade-terminal.vx-terminal .terminal[data-mobile-tab=account] { flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
+  .trade-terminal.vx-terminal .terminal[data-mobile-tab=account] :is(.bottom-panel,.cfd-bottom-panel) { flex:1 1 auto; }
 }

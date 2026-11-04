@@ -7,6 +7,7 @@ import { HomeMarket, formatPriceValue } from './useHomeMarket';
 import { heatmapLayout } from './homeHeatmapLayout';
 import { WORLD_MARKET_COPY } from './worldMarketCopy';
 import { LiveValue } from './LiveValue';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 
 function percent(value: number): string { return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`; }
 
@@ -14,7 +15,9 @@ export function HomeHeatmap({ market }: { market: HomeMarket }) {
   const { lang, t } = useLanguage();
   const copy = WORLD_MARKET_COPY[lang];
   const id = useId().replace(/:/g, '');
-  const { tiles, volumeWeighted } = useMemo(() => heatmapLayout(market.tickers), [market.tickers]);
+  // A phone canvas is 340px wide: eight tiles stay readable, twelve were 21px slivers (2026-11-04).
+  const phone = useMediaQuery('(max-width: 767px)');
+  const { tiles, volumeWeighted } = useMemo(() => heatmapLayout(market.tickers, phone ? 8 : 12), [market.tickers, phone]);
   const [selectedPair, selectPair] = useState('');
   const selected = tiles.find(tile => tile.ticker.pair === selectedPair)?.ticker ?? tiles[0]?.ticker;
   const volume = (value: number) => Number.isFinite(value) && value > 0

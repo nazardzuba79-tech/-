@@ -21,6 +21,10 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
+import { useSwipeTabs } from '../lib/useSwipeTabs';
+
+const MOBILE_TAB_ORDER = ['chart', 'trade', 'account'] as const;
+const SWIPE_SKIP_CHART = { skipFrom: ['chart'] as const };
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
@@ -202,6 +206,8 @@ export function TradePage() {
   const prelisting = testPair && testMarket.asset?.state.phase !== 'live';
   const displayOnly = pair === 'AITH/USDT' || (testPair && testMarket.asset?.isTradable === false);
   const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');
+  // A sideways swipe on the ticket or the account tab moves to the neighbouring tab (2026-11-04); the chart keeps its own gestures.
+  const terminalSwipeRef = useRef<HTMLDivElement>(null);
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('spot'), []);
@@ -362,8 +368,9 @@ export function TradePage() {
     if (next === 'account') accountPanel.reveal();
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }, [accountPanel]);
+  useSwipeTabs(terminalSwipeRef, MOBILE_TAB_ORDER, mobileTab, selectMobileTab, SWIPE_SKIP_CHART);
 
-  const selectSpotPair = useCallback((nextPair: string) => {
+  const selectSpotPair = useCallback((nextPair: string, options?: { upcoming?: boolean }) => {
     setPair(nextPair);
     setSearchParams(current => {
       const params = new URLSearchParams(current);
@@ -375,7 +382,9 @@ export function TradePage() {
     }, { replace: true });
     if (window.matchMedia('(max-width: 900px)').matches) {
       setMobilePane('chart');
-      setMobileTab('trade');
+      // A listing still counting down has no ticket to fill: its chart tab
+      // carries the countdown (owner, 2026-11-04).
+      setMobileTab(options?.upcoming ? 'chart' : 'trade');
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     }
   }, [setSearchParams]);
@@ -415,7 +424,7 @@ export function TradePage() {
       <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner key={`cfd:${selectedCfdSymbol}`} connected={!cfdLoadError && cfdTicker?.price != null} />
-        <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="cfd">
+        <div className="terminal" ref={terminalSwipeRef} data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="cfd">
           <CfdTickerBar symbol={selectedCfdSymbol} ticker={cfdTicker} />
           {mobileTabs}
           <div className="terminal-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
@@ -456,7 +465,7 @@ export function TradePage() {
       {/* Each terminal reports its actual public feed, not an unused venue socket. */}
       <ConnectionBanner key={pair} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : bookFeed.pair === pair && bookFeed.healthy} />
 
-      <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
+      <div className="terminal" ref={terminalSwipeRef} data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
         <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />
         {mobileTabs}
         <div className="terminal-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
