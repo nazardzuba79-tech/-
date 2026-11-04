@@ -186,7 +186,10 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
       // undone here so the older card-design digest remains comparable; every
       // other byte keeps the original digest.
       const helpLinks: [string, string][] = file === 'frontend/src/components/Footer.tsx'
-        ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/academy/faq\" style={styles.link}>\n            {t('help.tab.faq')}\n          </Link>\n", '']]
+        ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/academy/faq\" style={styles.link}>\n            {t('help.tab.faq')}\n          </Link>\n", ''],
+          // 2026-11-04: the class that lets index.css keep the footer clear of
+          // the phone tab bar; the markup is otherwise the pinned one.
+          ['    <footer className="site-footer" style={styles.footer}>\n', '    <footer style={styles.footer}>\n']]
         : [["    links: [\n      { labelKey: 'home.footer.helpCenter', to: '/academy/faq' },\n      { labelKey: 'nav.academy', to: '/academy' },\n    ],", "    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],"]];
       for (const [current, original] of helpLinks) {
         expect(text.split(current)).toHaveLength(2);

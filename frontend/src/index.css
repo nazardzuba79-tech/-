@@ -2104,6 +2104,12 @@ a:hover > .nav-card-icon {
   .page-mesh {
     padding-bottom: 64px;
   }
+  /* The shared footer is the last thing on most pages, and the 56px tab bar
+     sat on its risk line and copyright at the end of the scroll (2026-11-04:
+     measured 55px covered on Markets, Settings, Copy Trading, Card, Academy). */
+  .site-footer {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
 
   /* Trade/Futures: desktop is a fixed-viewport row of fixed-width columns
      (pair list | chart | book | order form) that has no room on a phone —

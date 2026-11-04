@@ -81,7 +81,7 @@ export function ProfileSidebar({ active, onSelect }: { active: Tab; onSelect: (i
         <VoltexCardShortcut className="mt-3" />
       </div>
 
-      <div className="mt-12 flex items-start gap-2.5 border-t border-border pt-4 text-muted-foreground">
+      <div className="mt-6 flex items-start gap-2.5 border-t border-border pt-4 text-muted-foreground lg:mt-12">
         <HelpCircle className="mt-0.5 size-[17px] shrink-0" />
         <div className="text-[11px] leading-relaxed">
           <strong className="mb-0.5 block text-[11px] text-foreground/80">{t('settings.needHelp')}</strong>
