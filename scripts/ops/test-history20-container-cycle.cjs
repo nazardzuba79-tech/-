@@ -1,6 +1,6 @@
 'use strict';
 // CI-only Docker lifecycle. No SSH, production URLs, secrets or deployment commands.
-const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=require('assert/strict');
+const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=require('assert/strict'),crypto=require('crypto'),zlib=require('zlib'),{pipeline}=require('stream/promises');
 const root=process.cwd(),out=path.resolve('output/history20-container-cycle'),candidate=path.resolve('output/history20-installed-candidate/candidate');
 const m=JSON.parse(fs.readFileSync(candidate+'/manifest.json')),name='h20-qa-'+(process.env.GITHUB_RUN_ID||process.pid),db=name+'-pg';
 const run=(args,options={})=>{const {includeStderr,...spawnOptions}=options;const r=cp.spawnSync('docker',args,{encoding:'utf8',maxBuffer:20*1024*1024,timeout:240000,...spawnOptions});if(r.status!==0)throw Error('docker '+args.slice(0,4).join(' ')+'\n'+r.stdout+'\n'+r.stderr);return r.stdout+(includeStderr?r.stderr:'');};
@@ -37,6 +37,13 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   }
  }
  const receipt={baseImage:m.installedImage,installImage:JSON.parse(run(['image','inspect',name+'-install:tested']))[0].Id,rollbackImage:JSON.parse(run(['image','inspect',name+'-rollback:tested']))[0].Id,steps:['baseline','install','rollback'].map(p=>JSON.parse(fs.readFileSync(out+'/'+p+'.json'))),privateNetwork:true,productionTouched:false};
+ const key=Buffer.from(process.env.HISTORY20_ISOLATED_IMAGE_KEY||'','hex');assert.equal(key.length,32,'Missing CI-only image sealing key');
+ const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',key,iv),bundle=out+'/verified-images.aes';fs.writeFileSync(bundle,iv);
+ const exporter=cp.spawn('docker',['save',name+'-install:tested',name+'-rollback:tested'],{stdio:['ignore','pipe','inherit']});
+ const exited=new Promise(resolve=>exporter.once('close',resolve));
+ await pipeline(exporter.stdout,zlib.createGzip({level:1}),cipher,fs.createWriteStream(bundle,{flags:'a'}));assert.equal(await exited,0,'Image export failed');fs.appendFileSync(bundle,cipher.getAuthTag());
+ const sealedHash=crypto.createHash('sha256');for await(const b of fs.createReadStream(bundle))sealedHash.update(b);
+ receipt.encryptedImageBundle={file:'verified-images.aes',sha256:sealedHash.digest('hex'),bytes:fs.statSync(bundle).size,contents:'tested install and rollback images, shared exact base; no volumes or DB'};
  fs.writeFileSync(out+'/cycle-receipt.json',JSON.stringify(receipt,null,2));console.log(JSON.stringify(receipt));
 })().catch(e=>{console.error(e.stack);process.exitCode=1}).finally(()=>{
  for(const args of [['rm','-f',db],['volume','rm',name+'-worker'],['network','rm',name]])cp.spawnSync('docker',args,{stdio:'ignore'});

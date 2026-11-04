@@ -55,13 +55,6 @@ jobs:
       - run: node scripts/ops/build-history20-installed-candidate.cjs
       - name: Composed binaries, PG isolation, preserved models, restart and browser
         run: node scripts/ops/verify-history20-installed-candidate.cjs --postgres --browser
-      - name: Fetch encrypted exact installed base into the isolated runner
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          HISTORY20_ISOLATED_IMAGE_KEY: ${{ secrets.HISTORY20_ISOLATED_IMAGE_KEY }}
-        run: node scripts/ops/fetch-history20-container-base.cjs
-      - name: Container baseline, install, PostgreSQL, rollback and repeated smoke
-        run: node scripts/ops/test-history20-container-cycle.cjs
       - name: Package code only, excluding local dependency links and database
         run: tar -czf output/history20-candidate.tgz -C output/history20-installed-candidate/candidate api worker.js manifest.json Dockerfile rollback-installed-api.tgz worker.rollback Dockerfile.rollback
       - uses: actions/upload-artifact@v4
@@ -73,5 +66,38 @@ jobs:
             output/history20-installed-candidate/verification.json
             output/history20-installed-candidate/candidate/manifest.json
             output/history20-installed-candidate/browser/
+  container-cycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: node scripts/ops/build-history20-installed-candidate.cjs
+      - name: Fetch encrypted exact installed base into the isolated runner
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HISTORY20_ISOLATED_IMAGE_KEY: ${{ secrets.HISTORY20_ISOLATED_IMAGE_KEY }}
+        run: node scripts/ops/fetch-history20-container-base.cjs
+      - name: Container baseline, install, PostgreSQL, rollback and repeated smoke
+        env:
+          HISTORY20_ISOLATED_IMAGE_KEY: ${{ secrets.HISTORY20_ISOLATED_IMAGE_KEY }}
+        run: node scripts/ops/test-history20-container-cycle.cjs
+      - name: Retain encrypted tested images for local release-candidate custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: history20-verified-images-${{ github.sha }}
+          path: output/history20-container-cycle/verified-images.aes
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: history20-container-cycle-${{ github.sha }}
+          path: |
             output/history20-container-cycle/*.json
             output/history20-container-cycle/*.log
