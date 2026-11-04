@@ -50,6 +50,8 @@ function mount(file:string,options:any={}){
     if(name.endsWith('/cfdInfoStrip'))return infoStrip;
     if(name.endsWith('/useCfdDailySeries'))return{useCfdDailySeries:()=>options.daily??new Map()};
     if(name.endsWith('/useCfdPracticePositions'))return{useCfdPracticePositionLines:()=>[]};
+    // The static CFD harness does not dispatch DOM touch events; swipe gestures have separate browser coverage.
+    if(name.endsWith('/useSwipeTabs'))return{useSwipeTabs:()=>{}};
     return req(name);
   },output,{setInterval,clearInterval,setTimeout,clearTimeout,location:options.location},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
   return{components,render(props={}){index=0;const fn:any = file.endsWith('/TradePage.tsx') ? output.TradePage : Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};
