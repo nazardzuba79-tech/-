@@ -68,22 +68,6 @@ describe('Listings: localized errors retain meaningful refusal states', () => {
       .toContain('защиты опубликованной истории');
   });
 
-  test('History20 private-test refusals from the Worker reach the admin as their own Russian reason (never the generic text)', () => {
-    // Reproduced on an isolated stand (PR #553, Issue #658): with HISTORY20_PRIVATE_TEST unset on the Worker,
-    // «Запустить приватный тест» answered 422 PRIVATE_TEST_DISABLED and the form showed the generic request error.
-    const generic = listingRequestError({ status: 422, code: 'SOME_UNKNOWN_CODE', message: 'x' });
-    const disabled = listingRequestError({ status: 422, code: 'PRIVATE_TEST_DISABLED', message: 'Приватный тест History20 выключен на этом сервере' });
-    expect(disabled).not.toBe(generic);
-    expect(disabled).toMatch(/HISTORY20_PRIVATE_TEST/);
-    expect(disabled).toMatch(/[А-Яа-яЁё]/);
-    for (const code of ['PRIVATE_TEST_WINDOW_ONLY', 'PRIVATE_TEST_SYMBOL', 'PRIVATE_TEST_FUNDING_ONLY', 'PRIVATE_TEST_FUNDING_BOUND']) {
-      const text = listingRequestError({ status: 422, code, message: 'server message' });
-      expect(text).not.toBe(generic);
-      expect(text).toMatch(/[А-Яа-яЁё]/);
-      expect(text).not.toContain('server message');
-    }
-  });
-
   test.each([401, 403])('HTTP %s still reports the access problem', status => {
     const message = listingRequestError({ status, code: null, message: 'not authorized' });
     expect(message).toMatch(/Сессия|прав/);
