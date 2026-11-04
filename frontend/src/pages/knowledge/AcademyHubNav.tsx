@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../lib/i18n';
 
@@ -13,8 +14,18 @@ const TABS: { id: AcademyHubTab; to: string; label: 'academy.hub.home' | 'academ
 
 export function AcademyHubNav({ active }: { active: AcademyHubTab }) {
   const { t } = useLanguage();
+  const navRef = useRef<HTMLElement>(null);
+  // Phone: the strip scrolls sideways and opened at its start, so on /faq
+  // and /glossary the current tab was off-screen (2026-11-04).
+  useEffect(() => {
+    const nav = navRef.current;
+    const current = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !current) return;
+    const left = current.offsetLeft, right = left + current.offsetWidth;
+    if (right > nav.scrollLeft + nav.clientWidth || left < nav.scrollLeft) nav.scrollLeft = Math.max(0, left - 12);
+  }, [active]);
   return (
-    <nav className="vx-kb-tabs" aria-label={t('nav.academy')} data-academy-hub>
+    <nav ref={navRef} className="vx-kb-tabs" aria-label={t('nav.academy')} data-academy-hub>
       {TABS.map((tab) => (
         <Link key={tab.id} to={tab.to} aria-current={active === tab.id ? 'page' : undefined} data-academy-hub-tab={tab.id}>
           {t(tab.label)}

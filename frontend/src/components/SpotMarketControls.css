@@ -120,3 +120,14 @@
     letter-spacing: -.2px;
   }
 }
+
+/* Upcoming listings in the rail (2026-11-04): a row still counting down
+   shows its listing date where a price would be and the time left where
+   the 24h change would be, in the listing gold; «Скоро» carries a count. */
+.trade-terminal .pairs-tab .pairs-tab-count {
+  margin-left: 2px; padding: 0 5px; border-radius: 8px; font-size: 10px; line-height: 15px; font-weight: 600;
+  color: var(--accent-yellow, #f0b90b); background: rgba(240, 185, 11, .16);
+}
+.trade-terminal .pairs-list .pair-row[data-phase="pre-listing"] .p-listing-at { color: var(--text-secondary); }
+.trade-terminal .pairs-list .pair-row[data-phase="pre-listing"] .p-listing-eta { color: var(--accent-yellow, #f0b90b); }
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row[data-phase="pre-listing"] :is(.p-listing-at, .p-listing-eta) { font-size: 10.5px; letter-spacing: -.1px; }

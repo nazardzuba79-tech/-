@@ -1116,3 +1116,7 @@
   .copytrading-bolt-root.profile-view .follower-list > div { grid-template-columns: 30px minmax(0, 1fr); }
   .copytrading-bolt-root.profile-view .follower-list > div p:last-child { grid-column: 2; }
 }
+
+/* 2026-11-04: the shared footer sits outside .page-shell here and started at x=0 on phones. */
+.copytrading-bolt-root > .site-footer { padding-inline: 28px; }
+@media (max-width: 600px) { .copytrading-bolt-root > .site-footer { padding-inline: 16px; } }

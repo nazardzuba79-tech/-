@@ -547,6 +547,10 @@
   .vx-catalogue .vx-cat-action {
     width: auto;
   }
+  /* One chip height in the stacked phone controls (filters are 33px). */
+  .vx-catalogue .vx-cat-change-controls button {
+    min-height: 33px;
+  }
 }
 
 @media (max-width: 430px) {

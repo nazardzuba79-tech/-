@@ -5,6 +5,8 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as pairHelpers from '../pairList';
 import * as spotBookHelpers from '../spotOrderBook';
+import * as testMarkets from '../testMarkets';
+import * as listingsOrder from '../listingsOrder';
 import * as columnSort from '../marketColumnSort';
 import * as changeHelpers from '../priceChange';
 
@@ -99,6 +101,8 @@ test('actual controls keep native favourite separate from pair selection and res
     if (name === '../lib/pairList') return pairHelpers;
     if (name === '../lib/marketColumnSort') return columnSort;
     if (name === '../lib/testMarketStore') return { useTestMarkets: () => ({ assets: [], loaded: true, error: false }) };
+    if (name === '../lib/testMarkets') return testMarkets;
+    if (name === '../lib/listingsOrder') return listingsOrder;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/useFavorites') return { useFavorites: () => ({ favorites: new Set(['BTC/USDT']), toggle: favorite }) };
     if (name === '../lib/spotOrderBook') return spotBookHelpers;
