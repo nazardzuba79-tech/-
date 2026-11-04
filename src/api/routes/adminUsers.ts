@@ -10,6 +10,7 @@ import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
 import { decryptAdminPassword, encryptAdminPassword } from '../../services/AdminPasswordVault';
+import { generateReferralCode } from '../../services/referralCode';
 import { adminPagedReadsRouter } from './adminPagedReads';
 import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
 import { ADMIN_USER_HIDDEN, ADMIN_USER_UNHIDDEN, hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
@@ -105,6 +106,36 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         blockedReason: null, balances: [], adminHidden: true, hiddenAt,
       }));
     res.set('Cache-Control', 'private, no-store').json(rows);
+  }));
+
+  // Only the configured owner can create a dedicated test account. The password
+  // is supplied for this new account by its creator; public registrations are unchanged.
+  const newTestAccountSchema = z.object({
+    email: z.string().trim().email().max(254),
+    password: z.string().min(10).max(128),
+  });
+  router.post('/admin/test-accounts', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    if (!ownerId || req.userId !== ownerId) return res.status(403).json({ error: 'Owner access required' });
+    const parsed = newTestAccountSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Недопустимые данные тестового аккаунта.' });
+    const email = parsed.data.email.toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existing) return res.status(409).json({ error: 'Email уже зарегистрирован.' });
+    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    const encryptedPassword = encryptAdminPassword(parsed.data.password, email);
+    // The new account has no deposit, financial balance or trading entitlement.
+    // The immutable audit marker establishes owner-managed test provenance.
+    const created = await prisma.$transaction(async tx => {
+      const user = await tx.user.create({
+        data: { email, role: 'USER', passwordHash, referralCode: generateReferralCode(),
+          adminPasswordVault: { create: { encryptedPassword } } },
+      });
+      await tx.auditLog.create({ data: { userId: user.id, action: 'OWNER_TEST_ACCOUNT_CREATED',
+        metadata: { performedByAdminId: req.userId } } });
+      return user.id;
+    });
+    return res.set('Cache-Control', 'private, no-store').status(201).json({ ok: true, id: created });
   }));
 
   // Explicit owner-managed TEST accounts only. This never captures a password
