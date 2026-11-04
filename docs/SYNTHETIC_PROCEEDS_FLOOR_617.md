@@ -118,7 +118,7 @@ proceeds are held while origin is reconciled. Implemented server-side in `synthe
 | Account | Status | Cash-out (withdrawal create/approve/SENT, OTC reserve/payout, Spot→Futures, Banking principal) | Spot order / fill |
 |---|---|---|---|
 | No simulation-sale receipt (every ordinary customer, admin `BALANCE_ADJUSTED` alone) | `CLEAR` | never priced or refused | unchanged |
-| Receipt(s) `NRX_SIMULATION_SOLD` / `TEAM_SPOT_SIMULATION_SOLD` (S > 0), no decision | `UNVERIFIED` (default hold) | **always refused** | refused if it lowers the account's worst-case value at the marks (overpaying, self-trade, old adverse resting order); value-neutral trades allowed |
+| Receipt(s) `NRX_SIMULATION_SOLD` / `TEAM_SPOT_SIMULATION_SOLD` (S > 0), no decision | `UNVERIFIED` (default hold) | Only independently verified, still unspent genuine USDT/USDC deposits can be withdrawn within the evidence limit; OTC, Spot→Futures, Banking and other exits are refused | **No new Spot orders or fills, even at fair price; old resting orders are excluded from matching.** Read and cancel remain available |
 | After an admin `RELEASE_TO_FLOOR` decision | `RELEASED_TO_FLOOR` | only realized stable cash (USDT/USDC) above S | may not take the account below S |
 
 - Decisions: `POST /admin/synthetic-provenance/:userId/decision` (`requireAuth` + `requireAdmin`), body
@@ -134,6 +134,9 @@ proceeds are held while origin is reconciled. Implemented server-side in `synthe
 - Operator preflight (read-only, aggregates only): `scripts/synthetic-provenance-preflight.sql` inside
   `BEGIN TRANSACTION READ ONLY` — identified accounts, malformed receipts, accounts on hold, open/sent
   withdrawals, trades with other accounts after the first synthetic sale, open orders, non-zero Futures balances.
+  The 4 new non-demo simulation-receipt anomaly counters include unattributed rows, malformed pairs,
+  malformed numeric proceeds and unknown settlement-ledger labels **before** any pair filtering; any positive
+  anomaly is a manual provenance blocker, even if `identified_accounts=0`. They are aggregate-only.
   Downstream accounts that received value from an identified account are NOT automatically held: the preflight
   counts the trades; any further account needs its own evidence and owner review.
 - Tests (disposable PostgreSQL 16): `syntheticProvenanceQuarantine.pg.test.ts` 11/11 — owner counterexample at
@@ -141,9 +144,11 @@ proceeds are held while origin is reconciled. Implemented server-side in `synthe
   partial fills, pre-filed withdrawal approve/SENT refused + reject, genuine excess after release (reversible),
   concurrent withdrawals, many accounts + innocent user, malformed receipt/decision/missing price, decision
   idempotency, read-only preflight. Mutation (quarantine branch disabled) → 6/11 fail.
-- Not deployed. Live API `/health` still reports `3636cf80`. Operator step: compose over the actual running API
-  after the #668 security hotfix, backup, run the preflight read-only, deploy, then confirm with the preflight that
-  `accounts_on_hold` equals the identified count. Rollback: previous API image (no schema change, no data to undo).
+- **NOT DEPLOYED by this PR.** Older API source identifiers in this document are historical observations, not a
+  live deployment attestation. Operator must re-check the actual running API after #668, backup, run the preflight
+  read-only and establish historical downstream provenance before any approved deployment. No automatic release
+  based on `accounts_on_hold = identified_accounts`; all anomalies and counterparty exposure must be reviewed.
+  Rollback must preserve post-#668 security guards. No schema or balance migration is proposed.
 
 ### Owner correction 2026-11-01 (comment 6554371962): realized ≠ verified
 
@@ -205,5 +210,7 @@ proceeds until that is resolved.
 | Banking placement judged the floor on a SERIALIZABLE snapshot older than the floor lock | Banking principal refused for every S>0 account, released or not | released account → refused |
 
 Rejected by the skeptic pass (not real or out of scope): an admin releasing their own account (admins are the trusted
-role; decisions are audited), preflight malformed-receipt counting (diagnostic only; server fails closed), CI path
-coverage (extended anyway).
+role; decisions are audited), and CI path coverage (extended anyway). A later operator review identified a **real
+preflight observability gap**: malformed receipts with unparseable pair strings could be excluded before counting
+identified accounts. The aggregate-only anomaly CTE and disposable-PostgreSQL regression now surface such rows;
+this does **not** grant release approval or fix downstream historic contamination.
