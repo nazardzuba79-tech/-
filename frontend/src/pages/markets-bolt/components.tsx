@@ -11,6 +11,7 @@ import { CfdMarketsSection } from '../../components/CfdMarketsSection';
 import { CatalogueTable } from './CatalogueTable';
 import { TestMarketsStrip } from './TestMarketsStrip';
 import { withoutTestMarkets } from '../../lib/testMarkets';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 import { parseChangePercent } from '../../lib/priceChange';
 import { type CoinCategory } from '../../lib/pairList';
 import { useFavorites } from '../../lib/useFavorites';
@@ -227,6 +228,9 @@ export function MarketsBoltPage() {
 
   const breadth = useMemo(() => computeBreadth(tickers), [tickers]);
   const volumeSummary = useMemo(() => computeVolumeSummary(tickers), [tickers]);
+  // A phone (owner, 2026-11-04): the new and upcoming listings lead the page, with their own
+  // «Скоро / Торгуются» order, instead of sitting unsorted a long scroll down above the catalogue.
+  const phone = useMediaQuery('(max-width: 900px)');
   const sectorSummaries = useMemo(
     () => (rankByBase ? computeSectorSummaries(rankByBase, SECTOR_CARD_CATEGORIES) : []),
     [rankByBase]
@@ -259,6 +263,11 @@ export function MarketsBoltPage() {
         </div>
 
         {error && <div className="markets-error-banner">{error}</div>}
+
+        {phone && (
+          <TestMarketsStrip heading top search="" favoritesOnly={false} favorites={favorites}
+            onToggleFavorite={toggleFavorite} onOpen={goToTrade} />
+        )}
 
         <section className="overview-grid">
           <article className="overview-card sentiment-card">
@@ -442,8 +451,8 @@ export function MarketsBoltPage() {
                   listed futures contract: a real subset of the tradable
                   set, not an invented category. */}
               <div id="markets-table-anchor" />
-              {activeKind === 'Spot' && (
-                <TestMarketsStrip search={search} favoritesOnly={activeCategory === 'Favorites'} favorites={favorites}
+              {activeKind === 'Spot' && !phone && (
+                <TestMarketsStrip heading search={search} favoritesOnly={activeCategory === 'Favorites'} favorites={favorites}
                   onToggleFavorite={toggleFavorite} onOpen={goToTrade} />
               )}
               <CatalogueTable
