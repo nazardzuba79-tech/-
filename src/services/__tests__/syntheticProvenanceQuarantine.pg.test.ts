@@ -272,8 +272,11 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     });
     expect(Object.keys(rows[0]).sort()).toEqual(['accounts_on_hold', 'accounts_with_malformed_receipts', 'banking_referral_rewards_from_identified',
       'counterparties_paid_quote_by_identified', 'counterparties_with_withdrawals_after_contact', 'counterparty_accounts_after_first_sale',
-      'deposit_reattributions_touching_identified', 'identified_accounts', 'nonzero_futures_balances_on_identified',
-      'open_orders_on_identified', 'open_withdrawals_on_identified', 'sent_withdrawals_after_first_sale', 'trades_with_other_accounts_after_first_sale']);
+      'deposit_reattributions_touching_identified', 'identified_accounts',
+      'malformed_simulation_sale_pair_receipts', 'malformed_simulation_sale_proceeds_receipts',
+      'nonzero_futures_balances_on_identified', 'open_orders_on_identified', 'open_withdrawals_on_identified',
+      'sent_withdrawals_after_first_sale', 'trades_with_other_accounts_after_first_sale',
+      'unattributed_simulation_sale_receipts', 'unexpected_simulation_sale_ledger_receipts']);
     expect(Number(rows[0].identified_accounts)).toBeGreaterThan(0);
     expect(await digest(made)).toBe(before);
   });
