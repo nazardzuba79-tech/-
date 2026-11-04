@@ -32,6 +32,36 @@ describe('listing reminder', () => {
     expect(ics.split('\r\n')).toContain('END:VCALENDAR');
   });
 
+  test('the ECLAVO browser reminder fires once at the one-hour boundary and clears its saved state', () => {
+    const eclv = {
+      ...input, pair: 'ECLV/USDT', name: 'ECLAVO',
+      openAt: Date.parse('2026-11-06T13:00:00.000Z'),
+      title: 'Листинг ECLV/USDT на VOLTEX',
+    };
+    const notices: string[] = [];
+    const originalNotification = globalThis.Notification;
+    Object.assign(globalThis, {
+      Notification: class {
+        static permission = 'granted';
+        onclick: (() => void) | null = null;
+        constructor(title: string) { notices.push(title); }
+      },
+    });
+    try {
+      jest.setSystemTime(Date.parse('2026-11-06T11:59:59.000Z'));
+      scheduleLocalReminder(eclv);
+      expect(hasLocalReminder(eclv.pair, eclv.openAt)).toBe(true);
+      expect(notices).toEqual([]);
+      jest.advanceTimersByTime(1000);
+      expect(notices).toEqual([eclv.title]);
+      expect(hasLocalReminder(eclv.pair, eclv.openAt)).toBe(false);
+      jest.advanceTimersByTime(60 * 60 * 1000);
+      expect(notices).toHaveLength(1);
+    } finally {
+      Object.assign(globalThis, { Notification: originalNotification });
+    }
+  });
+
   test('a local reminder is stored, restored on the next visit, dropped once the listing opened, and can be cancelled', () => {
     jest.setSystemTime(Date.parse('2026-11-04T06:00:00.000Z'));
     scheduleLocalReminder(input);
