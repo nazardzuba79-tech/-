@@ -7680,3 +7680,10 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Cause: round 3's `apple-mobile-web-app-status-bar-style: black-translucent` lets the page extend under the bar and no header pads for `env(safe-area-inset-top)`. Fix: the value becomes `black` (opaque bar, page starts below it). One line in `frontend/index.html`; Safari in-browser was never affected.
 - Verified: `vite build`, `seoIndexing`, `seoBuildOutput`, `mobile-review-ci-safety`. Not verified on a real iPhone (no device); the owner checks the installed app after Codex publishes. Release candidate: `claude/voltex-mobile-audit-7rpjni-phone-chart-compact-rc` head `7d303b347` (cherry-pick), rollback `1d96f2734`.
 - Preserved from Codex: nothing else touched.
+
+## 2026-11-04 — Codex — #659 financial integration continuation
+
+- Base main `9d864a0dfa60391ee3a64d7b174cc90a038116fa`; candidate SHA is this entry's commit. QA only: Banking state/concurrency/interruption/rollback/HTTP ownership, Conversion crypto↔fiat/crypto browser settlement at1440/390, private History20 Worker restart equality. No Claude runtime or frontend edits.
+- Local: Banking17/17, Conversion29PG+8browser groups and default-OFF PASS, History20 Worker4/4, original owner pack6/6 plus51browser checks (all20×two viewports). Recovered97/97 source manifest hashes; restricted source data stays local. Backend TypeScript PASS. Exact-head CI pending at commit creation.
+- #630 exact `b021b8ed` provenance PG21/21 PASS. Separate current-main Conversion negative control accepted synthetic-origin10USDT→BTC; no withdrawal attempted. Activation stays OFF; canonical policy hook requested from Claude in #630 comment6636891345. Do not introduce a blanket ordinary-deposit withdrawal ban.
+- Contracts, precise limits and release/rollback gates: `docs/INTEGRATION659_CONTRACTS_20261104.md`. Stocks calibrated +18.227612% failure retained; runtime belongs to Claude. No production mutation, merge or Beget work.
