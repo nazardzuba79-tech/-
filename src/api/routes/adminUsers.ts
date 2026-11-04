@@ -8,6 +8,7 @@ import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
+import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { adminPagedReadsRouter } from './adminPagedReads';
 import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
 import { ADMIN_USER_HIDDEN, ADMIN_USER_UNHIDDEN, hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
@@ -39,7 +40,20 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
 
     // One read for all returned customers; no per-row requests and no new timer.
     const copies = await latestDepositCopiesForUsers(prisma, users.map((u) => u.id));
-    // Do not decrypt or load customer passwords from the vault.
+    // Historical vault records are only retrieved for the exact configured owner.
+    // Password changes and registrations no longer create reversible copies.
+    const legacyPasswords = new Map<string, string>();
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    if (ownerId && req.userId === ownerId && users.length) {
+      const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: users.map(u => u.id) } } });
+      const emails = new Map(users.map(u => [u.id, u.email]));
+      for (const record of records) {
+        const email = emails.get(record.userId);
+        if (!email) continue;
+        try { legacyPasswords.set(record.userId, decryptAdminPassword(record.encryptedPassword, email)); }
+        catch { /* damaged vault item or key mismatch: do not reveal ciphertext */ }
+      }
+    }
     const balancesByUser = new Map<string, typeof balances>();
     for (const b of balances) {
       const list = balancesByUser.get(b.userId) ?? [];
@@ -57,7 +71,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       users.map((u) => ({
         id: u.id,
         email: u.email,
-        password: null, // deprecated compatibility field
+        password: legacyPasswords.get(u.id) ?? null, // historical owner-only entry
         role: u.role,
         isAdmin: u.role === 'ADMIN',
         kycStatus: u.kycStatus,
