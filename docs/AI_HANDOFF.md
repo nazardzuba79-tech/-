@@ -7702,3 +7702,8 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Exact8c8e56e5 and7/7SUCCESS rechecked; owner-authorized code-only merge2be09357c244db7635fd8d22137305126460c56a. No other merge/deployment.
 - Continue installed candidate586d5509; #679 backend handoff accepted in comment6639280567. Reproduced staged/paused false-live phase on disposable PostgreSQL; private reads reuse publishedListingAsset. Four RED-to-GREEN cases; no Claude frontend/scenario/timer/balance mutation.
 - Isolated Docker lifecycle uses read-only exported exact base, encrypted one-use draft CI input, no production env/volumes/database. Verify real API/workerd install, persisted drafts, default-OFF guards, rollback and financial invariants. Final exact-head container result pending; no success claimed yet.
+## 2026-11-04 — Codex — History20 container rollback compatibility
+
+- #676 alone merged with expected HEAD 8c8e56e5, merge 2be09357c244db7635fd8d22137305126460c56a; no deploy.
+- Isolated real-image container baseline succeeds. Install test corrected its expected disabled-publication HTTP status to actual 422, still requiring PRIVATE_TEST_DISABLED.
+- Found a real rollback schema incompatibility: captured API cannot read an unpublished historical private draft. Added strict read-only rollback compatibility, leaving old writes/public parsing and auth/financial modules unchanged; seven unsafe variants are rejected. Container cycle on this commit is the release gate. No production install, flag, balance, timer or Beget change.

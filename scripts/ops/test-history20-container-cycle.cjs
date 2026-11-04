@@ -21,8 +21,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  const forbidden=(image.Config.Env||[]).filter(v=>/^(DATABASE_URL|DIRECT_URL|JWT_SECRET|.*TOKEN|.*PASSWORD|.*API_KEY|.*SECRET)=.+/.test(v));
  assert.equal(forbidden.length,0,'Base image contains credential-like ENV entries; do not start it');
  const base=name+'-base:pinned';run(['tag',pin.configDigest,base]);
- for(const kind of ['install','rollback']){
-  const source=fs.readFileSync(candidate+'/'+(kind==='install'?'Dockerfile':'Dockerfile.rollback'),'utf8');assert(source.startsWith('FROM '+m.installedImage+'\n'));
+ for(const kind of ['baseline','install','rollback']){
+  const source=fs.readFileSync(candidate+'/'+(kind==='install'?'Dockerfile':kind==='baseline'?'Dockerfile.captured':'Dockerfile.rollback'),'utf8');assert(source.startsWith('FROM '+m.installedImage+'\n'));
   const dockerfile=out+'/Dockerfile.'+kind;fs.writeFileSync(dockerfile,source.replace('FROM '+m.installedImage,'FROM '+base));
   run(['build','--network=none','-f',dockerfile,'-t',name+'-'+kind+':tested',candidate]);
  }
@@ -31,14 +31,14 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  assert(identity.uid!==0,'Acceptance must retain the installed non-root runtime user');
  run(['run','--rm','--network','none','--user','0','-v',name+'-worker:/worker-state','--entrypoint','node',base,'-e',`const fs=require('fs');fs.chownSync('/worker-state',${identity.uid},${identity.gid});fs.chmodSync('/worker-state',0o700);`]);
  run(['run','-d','--name',db,'--network',name,'--tmpfs','/var/lib/postgresql:rw,size=1g','-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:18.6']);
- for(let i=0;i<40;i++){const r=cp.spawnSync('docker',['exec',db,'pg_isready','-U','postgres'],{encoding:'utf8'});if(!r.status)break;if(i===39)throw Error('fixture PG timeout');await sleep(500);}
+ for(let i=0;i<40;i++){const r=cp.spawnSync('docker',['exec',db,'pg_isready','-h','127.0.0.1','-U','postgres'],{encoding:'utf8'});if(!r.status)break;if(i===39)throw Error('fixture PG timeout');await sleep(500);}
  for(const database of ['voltex_container_smoke','voltex_listing_test']){
   run(['exec',db,'createdb','-U','postgres',database]);
   for(const n of fs.readdirSync('prisma/migrations').sort()){const f=path.join('prisma/migrations',n,'migration.sql');if(fs.existsSync(f))run(['exec','-i',db,'psql','-X','-U','postgres','-d',database,'-v','ON_ERROR_STOP=1'],{input:fs.readFileSync(f,'utf8')});}
  }
  const common=['--rm','--network','container:'+db,'--group-add',String(fs.statSync(out).gid),'-v',root+':/qa/repo:ro','-v',candidate+':/qa/candidate:ro','-v',out+':/qa/report','-v',name+'-worker:/worker-state','--entrypoint','node'];
  for(const phase of ['baseline','install','rollback']){
-  const imageTag=name+'-'+(phase==='install'?'install':'rollback')+':tested';
+  const imageTag=name+'-'+phase+':tested';
   console.log(run(['run',...common,'-e','DATABASE_URL=postgresql://postgres@127.0.0.1:5432/voltex_container_smoke',imageTag,'/qa/repo/scripts/ops/history20-container-phase.cjs',phase]));
   if(phase==='install'){
    const resolver=out+'/candidate-resolver.cjs';fs.writeFileSync(resolver,`const fs=require('fs');module.exports=(r,o)=>{const v=o.defaultResolver(r,o);if(v.startsWith('/qa/repo/src/')&&!v.includes('/__tests__/')&&v.endsWith('.ts')){const f='/app/dist/'+v.slice('/qa/repo/src/'.length).replace(/\\.ts$/,'.js');if(!fs.existsSync(f))throw Error('Missing installed module '+f);return f;}return v;};`);

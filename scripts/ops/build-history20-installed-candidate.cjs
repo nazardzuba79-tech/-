@@ -63,14 +63,16 @@ function once(s,a,b){if(s.split(a).length!==2)throw Error('Non-unique index anch
   let worker=fs.readFileSync(path.join(dir,'main-worker.js'),'utf8');
   worker+='\n'+installedWorker+'\n'+historical+`\nconst installedModel=InstalledHistory20Baseline.__installed;\nconst currentParse=parseListingConfig,currentSimulation=listingSimulationConfig,currentHour=controlledScenarioHour,currentValidate=validateScenarioControls,currentPublic=publicListingAsset;\nparseListingConfig=(c)=>{if(history20(c))return currentParse(c);try{return installedModel.parseListingConfig(c);}catch(e){if(e instanceof installedModel.ListingValidationError)throw new ListingValidationError(e.code,e.message);throw e;}};\nlistingSimulationConfig=(c)=>history20(c)?currentSimulation(c):installedModel.listingSimulationConfig(c);\ncontrolledScenarioHour=(c,...a)=>history20(c)?currentHour(c,...a):installedModel.controlledScenarioHour(c,...a);\nvalidateScenarioControls=(c,...a)=>history20(c)?currentValidate(c,...a):installedModel.validateScenarioControls(c,...a);\npublicListingAsset=(l,...a)=>history20(l.config)?currentPublic(l,...a):installedModel.publicListingAsset(l,...a);\n// Keep the installed non-listing market-data router (Spot/CFD/other feeds).\nindex_default=installedModel.index_default;\n`;
   put('worker.js',worker);
-  const entries={};function walk(base,p=''){for(const f of fs.readdirSync(path.join(base,p),{withFileTypes:true})){const n=path.posix.join(p,f.name);if(f.isDirectory())walk(base,n);else if(f.name.endsWith('.js'))entries[n]=hash(fs.readFileSync(path.join(base,n)));}}walk(out);
+  const entries={};function walk(base,p=''){for(const f of fs.readdirSync(path.join(base,p),{withFileTypes:true})){const n=path.posix.join(p,f.name);if(f.isDirectory())walk(base,n);else if(f.name.endsWith('.js')&&(n.startsWith('api/')||n==='worker.js'))entries[n]=hash(fs.readFileSync(path.join(base,n)));}}walk(out);
   const before={};for(const p of Object.keys(entries)){if(!p.startsWith('api/'))continue;const f=path.join(dir,'dist',p.slice(4));before[p]=fs.existsSync(f)?hash(fs.readFileSync(f)):null;}
   const changed=Object.keys(entries).filter(p=>p==='worker.js'||before[p]!==entries[p]);
   const manifest={source:identity,sourceOverrides:overrides,installedApiCommit:'41a755a9e163d278e786202be61627697149eb2a',installedImage:'sha256:a5311f57832b0ba59eaf2db39324bb462e6ee71cff3083cd0d6e8402d8d20c35',installedWorkerVersion:'f13215c0-4767-47df-a901-673770569570',installedWorkerSha256:hash(baselineWorker),scope:'HISTORY20_PINNED_COMPOSITION_OFF',postgresMigrations:[],workerMigrations:[],activate:false,closure,changed,before,after:entries};
   fs.copyFileSync(archive,path.join(out,'rollback-installed-api.tgz'));
   put('worker.rollback',baselineWorker);
-  put('Dockerfile.rollback',`FROM ${manifest.installedImage}\nADD rollback-installed-api.tgz /app/\n`);
-  manifest.rollback=Object.fromEntries(['rollback-installed-api.tgz','worker.rollback','Dockerfile.rollback'].map(p=>[p,hash(fs.readFileSync(path.join(out,p)))]));
+  const rollbackFiles=await require('./build-history20-rollback-read.cjs')({root,dir,out,build,put,hash,manifest});
+  put('Dockerfile.captured',`FROM ${manifest.installedImage}\nADD rollback-installed-api.tgz /app/\n`);
+  put('Dockerfile.rollback',`FROM ${manifest.installedImage}\nADD rollback-installed-api.tgz /app/\nCOPY rollback-api/ /app/dist/\n`);
+  manifest.rollback=Object.fromEntries(['rollback-installed-api.tgz','worker.rollback','Dockerfile.rollback','Dockerfile.captured',...rollbackFiles].map(p=>[p,hash(fs.readFileSync(path.join(out,p)))]));
   put('manifest.json',JSON.stringify(manifest,null,2));
   put('Dockerfile',`FROM ${manifest.installedImage}\nCOPY api/ /app/dist/\n`);
   console.log(JSON.stringify({apiModules:Object.keys(entries).length-1,changed:changed.length,workerSha256:entries['worker.js'],manifestSha256:hash(fs.readFileSync(path.join(out,'manifest.json')))}));

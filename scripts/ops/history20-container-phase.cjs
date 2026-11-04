@@ -13,7 +13,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  assert(['baseline','install','rollback'].includes(phase));
  for(const f of ['/app/.env','/app/.env.production','/app/.env.local'])assert(!fs.existsSync(f),'Refuse baked environment file before API startup');
  const u=new URL(process.env.DATABASE_URL);assert.equal(u.hostname,'127.0.0.1');assert.equal(u.pathname,'/voltex_container_smoke');
- const expected=phase==='install'?manifest.after:manifest.before;
+ const expected=phase==='install'?manifest.after:phase==='rollback'?manifest.rollbackAfter:manifest.before;
  for(const [p,h]of Object.entries(expected))if(p.startsWith('api/')){const f='/app/dist/'+p.slice(4);assert.equal(fs.existsSync(f)?hash(fs.readFileSync(f)):null,h,p);}
  ok('every installed API module matches the sealed phase identity');
  const worker=phase==='install'?'/qa/candidate/worker.js':'/qa/candidate/worker.rollback';
@@ -38,7 +38,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const growth=buildHistoricalGrowthProgram({scenarioId:'VHX-07-SOL',targetPeakGrowthPercent:'9348',rows,source:{provider:'Binance Vision',asset:'SOL',quote:'USDT',metric:'spot daily OHLCV',dataKind:'exchange_ohlcv',timeframe:'1d',sliceSha256:'b'.repeat(64),license:'CC-BY-NC-SA-4.0 plus Binance Vision Dataset Terms'}});
   const config={schemaVersion:1,symbol:'VHX07',name:'Isolated private fixture',logo:null,initialPrice:'2',listingAt:'2030-01-01T00:00:00Z',displayTimeZone:'UTC',ownerAllocation:'0',seedMode:'manual',seed:'isolated-private-cycle',tradable:false,simulationProgram:{...defaultScenarioControls('2','CALM'),stages:[],first24hGainPercent:'0',afterGrowth:'range',growth:'historical-window',historicalGrowth:growth,maxPrice:historicalGrowthMaxPrice('2',growth.targetPeakGrowthPercent)},privateTest:{settlement:'SIMUSDT',funding:{base:'100',quote:'1000'}}};
   const draft=await admin('/qa-cycle-private/draft','PUT',{config});assert.equal(draft.status,200,JSON.stringify(draft.body));
-  const publish=await admin('/qa-cycle-private/publish','POST',{draftRevision:draft.body.draftRevision,publishKey:'qa-cycle-refused-publish-0001',countdown:'staged'});assert.equal(publish.status,409);assert.equal(publish.body.error,'PRIVATE_TEST_DISABLED');
+  const publish=await admin('/qa-cycle-private/publish','POST',{draftRevision:draft.body.draftRevision,publishKey:'qa-cycle-refused-publish-0001',countdown:'staged'});assert.equal(publish.status,422,JSON.stringify(publish.body));assert.equal(publish.body.error,'PRIVATE_TEST_DISABLED');
   ok('private fixture draft saves but default-OFF publication refuses');
  }
  const current=await admin('');assert.equal(current.status,200);fs.writeFileSync(previousPath,JSON.stringify(storedState(current.body)));
@@ -56,6 +56,16 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  const auth=jwt.sign({sub:'qa-h20-admin'},'isolated-h20-container-secret');
  const listed=await api('/admin/listings',auth);assert.equal(listed.status,200,listed.text);
  assert.equal(JSON.parse(listed.text).listings.length,current.body.listings.length);
+ if(phase==='rollback'){
+  const {CloudflareListingStore}=require('/app/dist/services/listings/store.js');
+  const privateDraft=current.body.listings.find(l=>l.symbol==='VHX07');assert(privateDraft);
+  const read=async(record)=>new CloudflareListingStore('http://127.0.0.1:8787',token,async()=>new Response(JSON.stringify({revision:'qa',serverTime:0,listings:[record]})),false).list();
+  assert.deepEqual((await read(privateDraft)).listings[0],privateDraft);
+  for(const change of [l=>{l.activeVersion=1;l.active=l.draft;},l=>{l.versions=[{version:1,publishedAt:'2030-01-01',publishedBy:'qa'}];},l=>{l.countdown={state:'running'};},l=>{l.draft.tradable=true;},l=>{l.draft.ownerAllocation='1';},l=>{l.draft.privateTest.settlement='USDT';},l=>{l.symbol=l.draft.symbol='QVTR';}]){
+   const invalid=structuredClone(privateDraft);change(invalid);await assert.rejects(read(invalid),e=>e.code==='STORE_INVALID_RESPONSE');
+  }
+  ok('rollback reads unchanged private draft and rejects published, running, tradable or real-settlement variants');
+ }
  assert.equal((await api('/private-test/markets')).status,phase==='install'?401:404);
  assert.equal((await api('/private-test/markets',auth)).status,404);
  ok('real API starts, authorizes admin reads and keeps private feature OFF');
