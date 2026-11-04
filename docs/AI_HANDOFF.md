@@ -7696,3 +7696,9 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Banking installed six-module closure equals tested source; three existing migrations/indexes/triggers verified via READ ONLY metadata; no new migration/runtime needed. Plan: docs/HISTORY20_INSTALLED_CANDIDATE_20261104.md.
 - Claude #630 f7c61c9: old counterexample refused ACCOUNT_RESTRICTED, balances unchanged, no receipt; 24 PG checks pass. Stocks runtime unchanged: no duplicate benchmark; OFF.
 - No merge/deploy/production migration/funding/flag/timer change; Beget untouched.
+
+### 2026-11-04 — Codex — #676 authorized merge and isolated History20 container cycle
+
+- Exact8c8e56e5 and7/7SUCCESS rechecked; owner-authorized code-only merge2be09357c244db7635fd8d22137305126460c56a. No other merge/deployment.
+- Continue installed candidate586d5509; #679 backend handoff accepted in comment6639280567. Reproduced staged/paused false-live phase on disposable PostgreSQL; private reads reuse publishedListingAsset. Four RED-to-GREEN cases; no Claude frontend/scenario/timer/balance mutation.
+- Isolated Docker lifecycle uses read-only exported exact base, encrypted one-use draft CI input, no production env/volumes/database. Verify real API/workerd install, persisted drafts, default-OFF guards, rollback and financial invariants. Final exact-head container result pending; no success claimed yet.

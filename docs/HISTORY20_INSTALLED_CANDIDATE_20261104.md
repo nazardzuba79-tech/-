@@ -56,3 +56,9 @@ Stocks runtime #613 remains `ad833ee6d16c4c573809fdc14e6fa16a4e371271`; no new r
 ## Same-image production drift reconciled
 
 The final read-only 299-module comparison detected four owner-authorized account/auth route changes after the initial capture (`account`, `adminPagedReads`, `adminUsers`, `auth`). The installed archive was recaptured and the candidate preserves all four byte-for-byte. Package/lockfile/Prisma schema are unchanged. Health SHA and image ID alone did not detect this drift; the all-module preflight does. No production file was written.
+
+## Isolated container acceptance continuation
+
+The owner authorized code-only merge676 (completed as2be09357) and isolated container verification. Candidate586d5509 is extended only for the private countdown read-contract handoff from Claude679. The runtime override file seals the one changed API source; other runtime changes are rejected. Staged/paused dates never become live automatically.
+
+The workflow loads the exact installed base through AES-GCM encrypted temporary draft transport, builds install and auth-preserving rollback images, and uses an internal Docker network with disposable PostgreSQL18.6. It switches baseline to install to rollback, starts the real API and Worker for each phase, preserves DO records and checks default-OFF authorization and unchanged financial row counts. Images/transport keys/production environment/databases are excluded from QA artifacts. Temporary transport is removed after verification.

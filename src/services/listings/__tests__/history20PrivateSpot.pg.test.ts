@@ -447,6 +447,36 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
   // Many HTTP reads with model candles: ~4 s alone, at Jest's default limit under a full run.
   }, 30_000);
 
+  test.each(['staged', 'paused', 'running', 'legacy'] as const)('private read contract preserves %s countdown across the scheduled date without writes', async (state) => {
+    const current: PublishedListing = { ...published, ...(state === 'legacy' ? {} : { countdown: { state, updatedAt: START - MINUTE, updatedBy: owner } }) };
+    const original = JSON.stringify(current);
+    const registry = { ensureFresh: async () => {}, snapshot: () => [current] };
+    const before = await db.balance.findMany({ where: { userId: { in: [owner, tester] } }, orderBy: [{ userId: 'asc' }, { asset: 'asc' }] });
+    const auditCount = await db.auditLog.count();
+    const auth = 'Bearer ' + jwt.sign({ sub: owner }, process.env.JWT_SECRET!);
+    for (const now of [AT, START - 1, START]) {
+      const app = express();
+      app.use(privateTestMarketsRouter(db, new MatchingEngine(), registry, () => now));
+      const armed = state === 'running' || state === 'legacy';
+      const live = armed && now >= START;
+      const markets = await request(app).get('/private-test/markets').set('Authorization', auth);
+      expect(markets.status).toBe(200);
+      expect(markets.body.assets[0].state.phase).toBe(live ? 'live' : 'pre-listing');
+      expect(markets.body.assets[0]).toMatchObject({ listingArmed: armed, countdown: armed ? 'running' : 'paused' });
+      const ticker = await request(app).get('/private-test/markets/' + slug + '/ticker').set('Authorization', auth);
+      expect(ticker.status).toBe(live ? 200 : 404);
+      if (!live) expect(ticker.body.error).toBe('not_listed');
+      const candles = await request(app).get('/private-test/markets/' + slug + '/candles?interval=5m&limit=2').set('Authorization', auth);
+      expect(candles.status).toBe(200);
+      if (!live) expect(candles.body.candles).toEqual([]);
+      else expect(candles.body.candles.length).toBeGreaterThan(0);
+      expect(JSON.stringify(current)).toBe(original);
+    }
+    expect(await db.balance.findMany({ where: { userId: { in: [owner, tester] } }, orderBy: [{ userId: 'asc' }, { asset: 'asc' }] })).toEqual(before);
+    expect(await db.auditLog.count()).toBe(auditCount);
+    expect(venue.getTicker).not.toHaveBeenCalled();
+  }, 30_000);
+
   test('legacy unchanged: a USDT managed listing, a public History20 window, VTA, NRX and AITH keep their gate and guard results', async () => {
     const orders = new OrderService(db, new MatchingEngine(), venue), legacyPair = `${legacy.symbol}/USDT`;
     // The tradable USDT listing trades as before, for an ordinary user and the owner.

@@ -11,7 +11,10 @@ const historical=`function history20(c){const p=c?.simulationProgram||c?.control
 function put(p,s){const f=path.join(out,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,typeof s==='string'?s.replace(/\r\n/g,'\n'):s);}
 function once(s,a,b){if(s.split(a).length!==2)throw Error('Non-unique index anchor');return s.replace(a,b);}
 (async()=>{
-  if(cp.execFileSync('git',['diff',identity,'--','src','workers/market-edge/src'],{cwd:root,encoding:'utf8'}).trim())throw Error('Runtime source differs from reviewed identity');
+  const overrides=JSON.parse(fs.readFileSync(path.join(root,'scripts/qa/fixtures/history20-runtime-overrides.json')));
+  const changedSource=cp.execFileSync('git',['diff','--name-only',identity,'--','src','workers/market-edge/src'],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/).filter(p=>p&&!p.includes('/__tests__/'));
+  for(const p of changedSource)if(!overrides[p]||hash(fs.readFileSync(path.join(root,p),'utf8').replace(/\r\n/g,'\n'))!==overrides[p])throw Error('Unreviewed runtime source '+p);
+  for(const [p,h]of Object.entries(overrides))if(hash(fs.readFileSync(path.join(root,p),'utf8').replace(/\r\n/g,'\n'))!==h)throw Error('Runtime override drift '+p);
   fs.mkdirSync(dir,{recursive:true});
   const archive=path.join(root,'scripts/qa/fixtures/history20-installed-api-41a755a9.tgz');
   if(hash(fs.readFileSync(archive))!=='5049ca8fdb87181bd36c27219797b8486598673c806cab7e005aaf33fb9b3d8e')throw Error('API capture identity mismatch');
@@ -63,7 +66,7 @@ function once(s,a,b){if(s.split(a).length!==2)throw Error('Non-unique index anch
   const entries={};function walk(base,p=''){for(const f of fs.readdirSync(path.join(base,p),{withFileTypes:true})){const n=path.posix.join(p,f.name);if(f.isDirectory())walk(base,n);else if(f.name.endsWith('.js'))entries[n]=hash(fs.readFileSync(path.join(base,n)));}}walk(out);
   const before={};for(const p of Object.keys(entries)){if(!p.startsWith('api/'))continue;const f=path.join(dir,'dist',p.slice(4));before[p]=fs.existsSync(f)?hash(fs.readFileSync(f)):null;}
   const changed=Object.keys(entries).filter(p=>p==='worker.js'||before[p]!==entries[p]);
-  const manifest={source:identity,installedApiCommit:'41a755a9e163d278e786202be61627697149eb2a',installedImage:'sha256:a5311f57832b0ba59eaf2db39324bb462e6ee71cff3083cd0d6e8402d8d20c35',installedWorkerVersion:'f13215c0-4767-47df-a901-673770569570',installedWorkerSha256:hash(baselineWorker),scope:'HISTORY20_PINNED_COMPOSITION_OFF',postgresMigrations:[],workerMigrations:[],activate:false,closure,changed,before,after:entries};
+  const manifest={source:identity,sourceOverrides:overrides,installedApiCommit:'41a755a9e163d278e786202be61627697149eb2a',installedImage:'sha256:a5311f57832b0ba59eaf2db39324bb462e6ee71cff3083cd0d6e8402d8d20c35',installedWorkerVersion:'f13215c0-4767-47df-a901-673770569570',installedWorkerSha256:hash(baselineWorker),scope:'HISTORY20_PINNED_COMPOSITION_OFF',postgresMigrations:[],workerMigrations:[],activate:false,closure,changed,before,after:entries};
   fs.copyFileSync(archive,path.join(out,'rollback-installed-api.tgz'));
   put('worker.rollback',baselineWorker);
   put('Dockerfile.rollback',`FROM ${manifest.installedImage}\nADD rollback-installed-api.tgz /app/\n`);
