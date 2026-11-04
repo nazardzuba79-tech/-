@@ -7,6 +7,7 @@ const run=(args,options={})=>{const {includeStderr,...spawnOptions}=options;cons
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
+ fs.chmodSync(out,0o775);
  const pin=require('../qa/fixtures/history20-container-base-pin.json');assert.equal(pin.indexDigest,m.installedImage);
  const meta=out+'/base-metadata';fs.mkdirSync(meta,{recursive:true});
  const entries=['index.json',...['indexDigest','platformManifestDigest','configDigest'].map(k=>'blobs/sha256/'+pin[k].slice(7))];
@@ -26,13 +27,16 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   run(['build','--network=none','-f',dockerfile,'-t',name+'-'+kind+':tested',candidate]);
  }
  run(['network','create','--internal',name]);run(['volume','create',name+'-worker']);
+ const identity=JSON.parse(run(['run','--rm','--network','none','--entrypoint','node',base,'-p','JSON.stringify({uid:process.getuid(),gid:process.getgid()})']));
+ assert(identity.uid!==0,'Acceptance must retain the installed non-root runtime user');
+ run(['run','--rm','--network','none','--user','0','-v',name+'-worker:/worker-state','--entrypoint','node',base,'-e',`const fs=require('fs');fs.chownSync('/worker-state',${identity.uid},${identity.gid});fs.chmodSync('/worker-state',0o700);`]);
  run(['run','-d','--name',db,'--network',name,'--tmpfs','/var/lib/postgresql:rw,size=1g','-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:18.6']);
  for(let i=0;i<40;i++){const r=cp.spawnSync('docker',['exec',db,'pg_isready','-U','postgres'],{encoding:'utf8'});if(!r.status)break;if(i===39)throw Error('fixture PG timeout');await sleep(500);}
  for(const database of ['voltex_container_smoke','voltex_listing_test']){
   run(['exec',db,'createdb','-U','postgres',database]);
   for(const n of fs.readdirSync('prisma/migrations').sort()){const f=path.join('prisma/migrations',n,'migration.sql');if(fs.existsSync(f))run(['exec','-i',db,'psql','-X','-U','postgres','-d',database,'-v','ON_ERROR_STOP=1'],{input:fs.readFileSync(f,'utf8')});}
  }
- const common=['--rm','--network','container:'+db,'-v',root+':/qa/repo:ro','-v',candidate+':/qa/candidate:ro','-v',out+':/qa/report','-v',name+'-worker:/worker-state','--entrypoint','node'];
+ const common=['--rm','--network','container:'+db,'--group-add',String(fs.statSync(out).gid),'-v',root+':/qa/repo:ro','-v',candidate+':/qa/candidate:ro','-v',out+':/qa/report','-v',name+'-worker:/worker-state','--entrypoint','node'];
  for(const phase of ['baseline','install','rollback']){
   const imageTag=name+'-'+(phase==='install'?'install':'rollback')+':tested';
   console.log(run(['run',...common,'-e','DATABASE_URL=postgresql://postgres@127.0.0.1:5432/voltex_container_smoke',imageTag,'/qa/repo/scripts/ops/history20-container-phase.cjs',phase]));

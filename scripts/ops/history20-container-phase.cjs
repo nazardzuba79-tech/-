@@ -28,7 +28,8 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  }
  const previousPath='/qa/report/worker-state.json';
  const before=await admin('');assert.equal(before.status,200);
- if(phase!=='baseline')assert.deepEqual(before.body,JSON.parse(fs.readFileSync(previousPath)),'persistent DO records changed across code switch');
+ const storedState=body=>{assert.equal(typeof body.serverTime,'number');const {serverTime,...persisted}=body;return persisted;};
+ if(phase!=='baseline')assert.deepEqual(storedState(before.body),JSON.parse(fs.readFileSync(previousPath)),'persistent DO records changed across code switch');
  ok('legacy draft, revisions and timer state preserved across Worker code switch');
  if(phase==='install'){
   const {defaultScenarioControls}=require('/app/dist/shared/listingScenarioControls');
@@ -40,7 +41,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const publish=await admin('/qa-cycle-private/publish','POST',{draftRevision:draft.body.draftRevision,publishKey:'qa-cycle-refused-publish-0001',countdown:'staged'});assert.equal(publish.status,409);assert.equal(publish.body.error,'PRIVATE_TEST_DISABLED');
   ok('private fixture draft saves but default-OFF publication refuses');
  }
- const current=await admin('');assert.equal(current.status,200);fs.writeFileSync(previousPath,JSON.stringify(current.body));
+ const current=await admin('');assert.equal(current.status,200);fs.writeFileSync(previousPath,JSON.stringify(storedState(current.body)));
  for(const l of current.body.listings){assert.equal(l.activeVersion,null);assert.equal(l.countdown,null);}
  assert(!(await (await mf.dispatchFetch('http://market.local/market/listings')).text()).includes('VHX07'));
  ok('no publication, timer start or public private-pair exposure');
