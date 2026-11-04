@@ -150,6 +150,10 @@ const readStamp = (page) => page.evaluate(() =>
       });
       await page.goto(`http://127.0.0.1:${PORT}/futures`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(2600);
+      // 2026-11-03: on a phone the strip starts folded and nothing of it is drawn; the pencil on the
+      // toolbar row is its toggle there (the rail's own handle only exists while the strip is out).
+      const toggle = !desktop && (await page.locator('[data-cw-feature="rail"]').count()) ? '[data-cw-feature="rail"]' : TOGGLE;
+      if (toggle !== TOGGLE) { await page.locator(toggle).first().click(); await page.waitForTimeout(400); }
 
       const view = report[width] = {};
       view.open = await measure(page);
@@ -162,7 +166,7 @@ const readStamp = (page) => page.evaluate(() =>
       if (MEASURE_ONLY) {
         // The "before" half still needs the collapsed state on record, so the
         // two halves can be compared in both states. Nothing is asserted here.
-        await page.locator(TOGGLE).first().click().catch(() => {});
+        await page.locator(toggle).first().click().catch(() => {});
         await page.waitForTimeout(260);
         view.collapsed = await measure(page);
         await page.screenshot({ path: path.join(OUT, `${LABEL}-${width}-collapsed.png`) });
@@ -194,13 +198,13 @@ const readStamp = (page) => page.evaluate(() =>
 
       const beforeToggle = apiLog.length;
       const t0 = Date.now();
-      await page.locator(TOGGLE).first().click();
+      await page.locator(toggle).first().click();
       await page.waitForTimeout(220);
       view.msToCollapse = Date.now() - t0;
       view.collapsed = await measure(page);
       await page.screenshot({ path: path.join(OUT, `${LABEL}-${width}-collapsed.png`) });
 
-      await page.locator(TOGGLE).first().click();
+      await page.locator(toggle).first().click();
       await page.waitForTimeout(220);
       view.reopened = await measure(page);
       view.toggleWindowCalls = apiLog.length - beforeToggle;
@@ -246,9 +250,9 @@ const readStamp = (page) => page.evaluate(() =>
       // ── twenty cycles ──────────────────────────────────────────────────
       const hammerStart = apiLog.length;
       for (let i = 0; i < 20; i += 1) {
-        await page.locator(TOGGLE).first().click();
+        await page.locator(toggle).first().click();
         await page.waitForTimeout(24);
-        await page.locator(TOGGLE).first().click();
+        await page.locator(toggle).first().click();
         await page.waitForTimeout(24);
       }
       await page.waitForTimeout(350);
@@ -258,10 +262,10 @@ const readStamp = (page) => page.evaluate(() =>
       view.drawingsAfterHammer = await page.evaluate(() =>
         document.querySelectorAll('.chart-view svg path, .chart-view svg line').length);
       // Still opens on the very next click.
-      await page.locator(TOGGLE).first().click();
+      await page.locator(toggle).first().click();
       await page.waitForTimeout(200);
       view.stillCollapses = (await measure(page)).railHidden;
-      await page.locator(TOGGLE).first().click();
+      await page.locator(toggle).first().click();
       await page.waitForTimeout(200);
 
       view.pageErrors = pageErrors;

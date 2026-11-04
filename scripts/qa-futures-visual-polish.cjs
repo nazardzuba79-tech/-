@@ -317,6 +317,10 @@ async function showOnMobile(page, which) {
         const chartPane = page.locator('.futures-mobile-chart-tabs button').first();
         if (await chartPane.count()) await chartPane.click();
         await page.waitForTimeout(300);
+        // 2026-11-03: the drawing strip starts folded on a phone (nothing of it is drawn); the pencil on
+        // the toolbar row brings it out, and only then does the trend group's split target exist.
+        const pencil = page.locator('[data-cw-feature="rail"]');
+        if (await pencil.count()) { await pencil.first().click(); await page.waitForTimeout(500); }
         drawingChevron = await page.locator('.tool-group-chevron').first().boundingBox().catch(() => null);
       }
       const shoot = SHOT_WIDTHS.has(key);

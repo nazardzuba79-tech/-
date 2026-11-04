@@ -2172,6 +2172,8 @@ export const JA: Record<Key, string> = {
   'chart.ws.view.data': "データ",
   'chart.ws.view.analytics': "分析",
   'chart.ws.view.tvOnly': "VOLTEXチャートで利用可能",
+  'chart.ws.view': "表示",
+  'chart.ws.source': "チャートのソース",
   'chart.ws.tf.menu': "すべての時間足",
   'chart.ws.tf.quick': "クイックアクセスに追加",
   'chart.ws.tf.unquick': "クイックアクセスから削除",
