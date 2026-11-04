@@ -325,7 +325,12 @@ describe('Spot orders truthful dense presentation', () => {
     expect(shared).toContain('transform-origin: 100% 50%;');
     expect(shared).toMatch(/\.trade-terminal \.ob-depth-bar \{[^}]*transition: transform/);
     expect(shared).not.toMatch(/\.trade-terminal \.ob-depth-bar \{[^}]*transition:[^;]*width/);
-    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('9003cd0a58895662b1e49323372c21f4c9640585348252c11e4b135e43f758ae');
+    // Phone order percentage markers became real buttons. Pin the ONE new
+    // neutral presentation rule and continue comparing every older CSS byte
+    // against its audited digest, rather than accepting a new blanket hash.
+    const phonePercentKey = '.trade-terminal .slider-labels button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }\n';
+    expect(shared.split(phonePercentKey)).toHaveLength(2);
+    expect(createHash('sha256').update(shared.replace(phonePercentKey, '').trimEnd()).digest('hex')).toBe('9003cd0a58895662b1e49323372c21f4c9640585348252c11e4b135e43f758ae');
     const postcss = req('postcss');
     const rules: string[] = [];
     postcss.parse('/* Final Spot-only reconciliation.' + spot).walkRules((rule: { selectors: string[] }) => rules.push(...rule.selectors));
