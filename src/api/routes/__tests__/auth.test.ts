@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
 import { authRouter } from '../auth';
 import { generateBackupCodes } from '../../../services/TwoFactorService';
+import { decryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function makePrismaMock(overrides: Partial<any> = {}) {
   const base: any = {
@@ -125,6 +126,20 @@ describe('auth routes', () => {
     expect(payload.sub).toBe('user-1');
     expect(payload.sid).toBe('session-1');
     expect(payload.purpose).toBeUndefined();
+  });
+
+  it('only in explicit owner test mode records a recoverable vault copy for a newly registered tester', async () => {
+    process.env.VOLTEX_OWNER_TEST_PASSWORD_VAULT = 'enabled';
+    const prisma = makePrismaMock();
+    const response = await request(buildApp(prisma)).post('/api/v1/auth/register')
+      .send({ email: 'tester@example.invalid', password: 'FixtureOnlyPassword123' });
+    expect(response.status).toBe(201);
+    const row = prisma.user.create.mock.calls[0][0].data;
+    const ciphertext = row.adminPasswordVault?.create?.encryptedPassword;
+    expect(typeof ciphertext).toBe('string');
+    expect(ciphertext).not.toContain('FixtureOnlyPassword123');
+    expect(decryptAdminPassword(ciphertext, 'tester@example.invalid')).toBe('FixtureOnlyPassword123');
+    expect(JSON.stringify(response.body)).not.toContain('FixtureOnlyPassword123');
   });
 
   it('creates a real Session row for the new account', async () => {
