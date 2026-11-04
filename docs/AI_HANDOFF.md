@@ -7687,3 +7687,10 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Narrow Pages source `release/restore-admin-password-pages-20261104` (`ae2db955`) = live `a623744a` (reproduced `index-DRGXw-sR.js`) + the two AdminUsersPage lines; after hash normalisation 342/343 files identical, only `AdminUsersPage` differs. Zip for upload kept outside the repo.
 - API restore plan: put back the four pre-#668 route modules from the retained image `sha256:362eb750…` (health `3636cf80`) into the running container, backups of the current modules kept for rollback. Not executed by Claude (no server/Cloudflare access from this session); the owner runs it through a browser agent.
 - Parallel branch `review/owner-legacy-test-passwords-20261104` is a different design (historical rows only, no new copies); owner: not wanted, may be deleted. Not deleted here.
+
+## 2026-11-04 — Codex — #659 financial integration continuation
+
+- Base main `9d864a0dfa60391ee3a64d7b174cc90a038116fa`; candidate SHA is this entry's commit. QA only: Banking state/concurrency/interruption/rollback/HTTP ownership, Conversion crypto↔fiat/crypto browser settlement at1440/390, private History20 Worker restart equality. No Claude runtime or frontend edits.
+- Local: Banking17/17, Conversion29PG+8browser groups and default-OFF PASS, History20 Worker4/4, original owner pack6/6 plus51browser checks (all20×two viewports). Recovered97/97 source manifest hashes; restricted source data stays local. Backend TypeScript PASS. Exact-head CI pending at commit creation.
+- #630 exact `b021b8ed` provenance PG21/21 PASS. Separate current-main Conversion negative control accepted synthetic-origin10USDT→BTC; no withdrawal attempted. Activation stays OFF; canonical policy hook requested from Claude in #630 comment6636891345. Do not introduce a blanket ordinary-deposit withdrawal ban.
+- Contracts, precise limits and release/rollback gates: `docs/INTEGRATION659_CONTRACTS_20261104.md`. Stocks calibrated +18.227612% failure retained; runtime belongs to Claude. No production mutation, merge or Beget work.

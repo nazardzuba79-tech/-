@@ -12,7 +12,7 @@ import { join } from 'node:path';
 
 const token = 'synthetic-local-only-listings-secret-0002';
 const base = 'https://market.local';
-let mf, script, path, core, outbound = 0;
+let mf, script, path, core, loadCore, outbound = 0;
 
 const at = (msFromNow) => new Date(Math.ceil((Date.now() + msFromNow) / 10_000) * 10_000).toISOString().replace('.000Z', 'Z');
 const listingAt = at(3_600_000);
@@ -61,12 +61,16 @@ before(async () => {
   script = bundle.outputFiles[0].text;
   const shared = await build({ stdin: {
     contents: `export { defaultScenarioControls } from './src/shared/listingScenarioControls';
-      export { buildHistoricalGrowthProgram, historicalGrowthMaxPrice } from './src/shared/listingHistoricalGrowth';`,
+      export { buildHistoricalGrowthProgram, historicalGrowthMaxPrice } from './src/shared/listingHistoricalGrowth';
+      export { listingScenarioPreview } from './src/services/listings/listingPreview';`,
     resolveDir: new URL('../../', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'), loader: 'ts',
   }, bundle: true, write: false, format: 'cjs', platform: 'browser', target: 'es2022' });
-  const module = { exports: {} };
-  new Function('module', 'exports', shared.outputFiles[0].text)(module, module.exports);
-  core = module.exports;
+  loadCore = () => {
+    const module = { exports: {} };
+    new Function('module', 'exports', shared.outputFiles[0].text)(module, module.exports);
+    return module.exports;
+  };
+  core = loadCore();
   path = await mkdtemp(join(tmpdir(), 'voltex-private-listings-sqlite-'));
   mf = start(null);
 });
@@ -115,13 +119,24 @@ test('never public: the catalogue and pair paths do not know it; Render\'s Beare
 });
 
 test('the mode is fixed once published: the private window cannot become public, nor change its funding', async () => {
+  const beforeOutbound = outbound;
   const { privateTest: _p, ...asPublic } = windowConfig('VHX07', 'vhx07-private-synthetic');
   const toPublic = await saveDraft('vhx07-private', asPublic, await draftRevision('vhx07-private'));
   assert.equal(toPublic.status, 422);
   const funding = await saveDraft('vhx07-private', windowConfig('VHX07', 'vhx07-private-synthetic', { privateTest: { settlement: 'SIMUSDT', funding: { base: '100', quote: '9000' } } }), await draftRevision('vhx07-private'));
   assert.equal(funding.status, 422);
   assert.equal((await funding.json()).error, 'HISTORY_LOCKED');
-  // A whole-runtime restart keeps it private.
+  const active = (await (await admin('/internal/listings/published')).json()).listings.find(l => l.id === 'vhx07-private');
+  const before = core.listingScenarioPreview(active.config, '5m', 'first24h');
+  assert.ok(before.candles.length > 0);
+  const revision = await draftRevision('vhx07-private');
+  // A whole-runtime restart keeps it private and reproduces the persisted path,
+  // seed and time anchor without relying on the old model's in-memory caches.
   await mf.dispose(); mf = start('enabled');
   assert.deepEqual((await (await pub('/market/listings')).json()).assets.map((a) => a.pair), ['QAX/USDT']);
+  const restored = (await (await admin('/internal/listings/published')).json()).listings.find(l => l.id === 'vhx07-private');
+  assert.deepEqual(restored, active);
+  assert.equal(await draftRevision('vhx07-private'), revision);
+  assert.deepEqual(loadCore().listingScenarioPreview(restored.config, '5m', 'first24h'), before);
+  assert.equal(outbound, beforeOutbound, 'persistence/replay must not request external market data');
 });
