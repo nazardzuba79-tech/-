@@ -8,6 +8,14 @@ function run(args){const r=cp.spawnSync(process.execPath,args,{cwd:root,stdio:'i
 async function model(s){const b=await edge('esbuild').transform(s+'\nexport const __rc={parseListingConfig,listingSimulationConfig,publicListingAsset,controlledScenarioHour};',{format:'cjs',target:'es2022'});const m={exports:{}};new Function('module','exports',b.code)(m,m.exports);return m.exports.__rc;}
 (async()=>{
  const manifest=JSON.parse(fs.readFileSync(path.join(dir,'candidate/manifest.json')));
+ const baseArgs=['scripts/ops/check-history20-install-base.cjs','--manifest',path.join(dir,'candidate/manifest.json'),'--dist',path.join(dir,'dist'),'--worker',path.join(dir,'rebuilt-baseline/worker.js'),'--image',manifest.installedImage];
+ run(baseArgs);
+ const protectedFile=path.join(dir,'dist/api/routes/auth.js'),protectedBytes=fs.readFileSync(protectedFile);
+ try{
+  fs.appendFileSync(protectedFile,'\n// isolated drift fixture\n');
+  const rejected=cp.spawnSync(process.execPath,baseArgs,{cwd:root,encoding:'utf8',windowsHide:true});
+  assert.equal(rejected.status,1);assert.match(rejected.stderr,/api\/api\/routes\/auth\.js/);
+ }finally{fs.writeFileSync(protectedFile,protectedBytes);}
  for(const [p,h]of Object.entries(manifest.after))assert.equal(hash(fs.readFileSync(path.join(dir,'candidate',p))),h,p);
  const api=path.join(dir,'candidate/api');
  for(const p of Object.keys(manifest.after).filter(x=>x.startsWith('api/'))){

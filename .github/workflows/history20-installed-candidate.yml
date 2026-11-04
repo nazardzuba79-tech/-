@@ -4,6 +4,7 @@ on:
     branches: ['review/history20-installed-rc-20261104']
     paths:
       - 'scripts/ops/*history20-installed-candidate.cjs'
+      - 'scripts/ops/check-history20-install-base.cjs'
       - 'scripts/qa/fixtures/history20-installed-*'
       - '.github/workflows/history20-installed-candidate.yml'
   workflow_dispatch: {}
@@ -11,7 +12,7 @@ permissions:
   contents: read
 jobs:
   composed-candidate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
