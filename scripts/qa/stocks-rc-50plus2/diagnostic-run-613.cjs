@@ -150,7 +150,8 @@ function hostMetrics(){
  }catch{postgres=null;}
  return{driver,postgres};
 }
-// --pg-profile only: cluster WAL counters (incl. sync time) and this arm's database counters, read with psql.
+// Outside measured windows: cluster WAL counters and this arm's database counters.
+// A/A also records these to distinguish noisy durable storage from CPU saturation.
 function pgStats(arm){
  const db='stocks_disposable_rc50_'+report.nonce+'_'+arm;
  const q="SELECT json_build_object('at',clock_timestamp(),'wal',(SELECT row_to_json(w) FROM pg_stat_wal w),'database',(SELECT row_to_json(d) FROM (SELECT xact_commit,xact_rollback,blks_read,blks_hit,blk_read_time,blk_write_time,deadlocks,conflicts FROM pg_stat_database WHERE datname='"+db+"') d),'bgwriter',(SELECT row_to_json(b) FROM pg_stat_bgwriter b))";
@@ -202,7 +203,7 @@ function provenance(){
   report.postgresBinarySha256=sha(fs.readFileSync(cfg.executable('postgres')));
   report.postgresVersion=pg('postgres',['--version'],'pg-version');
   report.pgPort=await port();pg('initdb',['-D',data,'-U','stocks_fixture','-A','trust','--encoding=UTF8','--no-locale'],'pg-init');
-  const options='-h 127.0.0.1 -p '+report.pgPort+' -c fsync=on -c full_page_writes=on -c synchronous_commit=on -c shared_buffers=32MB -c max_connections=64 -c statement_timeout=5000'+(PG_PROFILE?PG_PROFILE_OPTIONS:'');
+  const options='-h 127.0.0.1 -p '+report.pgPort+' -c fsync=on -c full_page_writes=on -c synchronous_commit=on -c track_wal_io_timing=on -c track_io_timing=on -c shared_buffers=32MB -c max_connections=64 -c statement_timeout=5000'+(PG_PROFILE?PG_PROFILE_OPTIONS:'');
   pg('pg_ctl',['start','-w','-t','15','-D',data,'-l',path.join(privateDir,'postgres.log'),'-o',options],'pg-start');started=true;
   report.ownPids.push({role:'postgres',pid:Number(fs.readFileSync(path.join(data,'postmaster.pid'),'utf8').split('\n')[0])});
   const durability=pg('psql',['-X','-A','-t','-h','127.0.0.1','-p',String(report.pgPort),'-U','stocks_fixture','-d','postgres','-v','ON_ERROR_STOP=1','-c',"SELECT current_setting('fsync'),current_setting('full_page_writes'),current_setting('synchronous_commit')"],'pg-durability');
@@ -240,7 +241,7 @@ function provenance(){
    if(market)metricsBefore.market=await market.rpc('snapshot');
    const cpuBefore=ISOLATED?placement.cpuTimes(fs.readFileSync('/proc/stat','utf8'),ticks()):null;
    if(SPANS)await active.rpc('spans-start');
-   const pgBefore=PG_PROFILE?pgStats(name):null;
+   const pgBefore=(PG_PROFILE||NULL_ARM)?pgStats(name):null;
    const result=await window(info,{arm:name,mixed:name==='mixed'&&!NULL_ARM,sustained:SUSTAIN,signal:controller.signal});
    if(activePush){result.push=activePush.snapshot();await activePush.close();activePush=null;
      if(result.push.opened!==50||result.push.staleViewers>0||result.push.errors.length||result.push.revoked>0)result.unexpectedErrors++;}
@@ -250,6 +251,12 @@ function provenance(){
    // Backends publish their statistics within about a second; read after that, still before any other work.
    if(PG_PROFILE){await new Promise(resolve=>setTimeout(resolve,1500));json(name+'-pg-stats.json',{before:pgBefore,after:pgStats(name),windowStartedAt:result.startedAt,windowFinishedAt:result.finishedAt});}
    const hostAfter=hostMetrics(),after=await active.rpc('snapshot'),metricsAfter=await active.rpc('metrics'),serverTimings=await active.rpc('timings');
+   if(NULL_ARM&&!PG_PROFILE){
+    // Let backends publish stats only AFTER latency/CPU/host snapshots; this
+    // wait is not workload time and must not dilute reported utilization.
+    await new Promise(resolve=>setTimeout(resolve,1500));
+    json(name+'-pg-stats.json',{before:pgBefore,after:pgStats(name),windowStartedAt:result.startedAt,windowFinishedAt:result.finishedAt});
+   }
    if(market)metricsAfter.market=await market.rpc('snapshot');
    // --push-viewers: the authority's private requests too (identity batches vs commands, the busiest minute against 240).
    if(SUSTAIN||PUSH)json(name+'-private-requests.json',await active.rpc('private-requests'));

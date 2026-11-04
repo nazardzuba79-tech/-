@@ -40,6 +40,16 @@ test('a null that by itself moves p95 more than 5 % does not calibrate (exit 1)'
   assert.equal(cp.spawnSync(process.execPath, [SCRIPT, runs(t, [[1, 1], [1, 1]]), '--runs', '2', '--pin', PIN]).status, 0);
 });
 
+test('opposite noisy runs cannot cancel into a calibrated method', t => {
+  const dir = runs(t, [[1, 2], [2, 1], [1, 2], [2, 1], [1, 2], [2, 1]]);
+  const c = calibrate(dir, {runs: 6, pin: PIN});
+  assert.equal(c.collection.status, 'COMPLETE');
+  assert.equal(c.pooledDeltaPercent, 0);
+  assert.equal(c.uncertaintyWithinMargin, false);
+  assert.equal(c.verdict, 'METHOD_NOT_CALIBRATED');
+  assert.equal(cp.spawnSync(process.execPath, [SCRIPT, dir, '--runs', '6', '--pin', PIN]).status, 1);
+});
+
 test('fail-closed: missing runs, wrong pin, a placement, headroom or cleanup gap, a loaded second arm or a stale stored delta', t => {
   const cases = [
     [dir => fs.rmSync(path.join(dir, 'aa-2'), {recursive: true}), 'aa-2:RUN_MISSING'],
@@ -50,6 +60,8 @@ test('fail-closed: missing runs, wrong pin, a placement, headroom or cleanup gap
     [dir => edit(dir, 'aa-1', 'result.json', j => { j.postgresStatusExit = 0; }), 'aa-1:CLEANUP_UNCONFIRMED'],
     [dir => edit(dir, 'aa-1', 'mixed-result.json', j => { j.viewerCount = 50; }), 'aa-1:MIXED_NOT_A_BASELINE_LOAD'],
     [dir => edit(dir, 'aa-1', 'result.json', j => { j.calibration.deltaPercent += 1; }), 'aa-1:CALIBRATION_INCONSISTENT'],
+    [dir => edit(dir, 'aa-1', 'result.json', j => { delete j.calibration.deltaPercent; }), 'aa-1:CALIBRATION_INCONSISTENT'],
+    [dir => edit(dir, 'aa-1', 'result.json', j => { j.calibration.deltaPercent = null; }), 'aa-1:CALIBRATION_INCONSISTENT'],
     [dir => edit(dir, 'aa-1', 'result.json', j => { j.status = 'PASS_LOCAL_DIAGNOSTIC'; }), 'aa-1:NOT_A_CALIBRATION_RUN'],
     [dir => fs.mkdirSync(path.join(dir, 'aa-9')), 'UNEXPECTED_RUN:aa-9'],
   ];

@@ -8176,3 +8176,15 @@ Final market review follow-up: unchanged frontend plain-language CI identified t
 - **Fix:** the message is removed (7 languages); the ticket of an indicative row shows the existing indicative/delay label (Solana pool or MOEX) instead of the order form; the source panel keeps that label only. Orders stay refused server-side (`INDICATIVE_ONLY`). Localization count 182 → 181 (one message fewer, the guard itself unchanged). The manual QA script and `docs/STOCKS_613_DEMO_INDICATIVE.md` now expect no demo wording.
 - **Tests run:** `plainLanguage` + `stockLocalization` + `customerFacingErrors` 81/81; Stocks frontend Jest 28 suites / 300; frontend `tsc`. The live browser QA script was not re-run for this text change.
 - **Separate:** Server idle / idle failed on b67c8d71 in `serverWatcherSleep.pg.test.ts` (CFD loop scan seen within 600 ms after sleep) — code this PR does not touch; passed on 22e82239; re-run once, see the PR comment.
+
+## 2026-10-31 — Codex — #659 isolated Stocks infrastructure measurement
+- Retargeted only the PUSH_DIAGNOSTIC runtime pin to actual PR613 HEAD ad833ee6. Original polling baseline, 5% threshold, placement proof, A/A calibration, six measured runs and financial/no-mutation assertions unchanged. Existing workflow now notices pin changes; commit request still required.
+- Runtime source unchanged. No production load, Stocks activation, paid rescale, merge or deploy. This run is diagnostic, never production capacity acceptance; latest prior current-head workflow skipped all workload jobs.
+
+## 2026-11-04 — Codex — #659/#661 measurement admission and storage evidence
+- Base c3ddcce7088a4fd9d55d67da6888665f55f26f9f; follow-up commit is the commit containing this entry.
+- Fixed a reproducible false PASS: opposite noisy A/A runs can have pooled delta 0 while their whole-run bootstrap interval extends far outside +/-5%. Both point estimate and interval must now fit the unchanged margin. Missing/null stored deltas also fail closed.
+- All original runs/outliers remain included. Six runs, CPU placement, 50+2 workload, durability and financial invariants unchanged. Added WAL/I/O timing snapshots outside A/A measurement windows; this is diagnosis, not proof that storage is the cause or that the runner is calibrated.
+- Existing artifact 13044351147: write operations carry the large latency tails; server iowait varies 50–1800 ms/window while CPU utilization is approximately 5–6%. No evidence for buying more CPU. No production workload or paid infrastructure change.
+- Targeted local tests: 11 PASS, 1 Linux-only placement test SKIP on Windows. Exact-head CI still required; runtime pin and all Claude-owned files preserved.
+- Beget explicitly deferred by owner on Nov 4. No merge/deploy/activation.
