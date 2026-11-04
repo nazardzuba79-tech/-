@@ -131,10 +131,16 @@ test('unchanged marketplace hero and demo performance retain their original fing
   // behavioral presentation suites, not obsolete pre-feature hashes.
   const digest = (value: string) => createHash('sha256').update(value).digest('hex');
   const hero = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'MarketplaceHero')!;
+  // #644: only the reviewed hero sentence may vary. Retain the immutable
+  // historical fingerprint for all other hero markup and behavior.
+  const watchlistNotice = "<p>Изучайте риск-метрики трейдеров. Список наблюдения не запускает копирование сделок.</p>";
+  const historicalNotice = "<p>Выберите трейдера, изучите риск-метрики и подключите копирование.</p>";
+  let heroSource = hero.getText(ast);
+  expect(heroSource.split(watchlistNotice)).toHaveLength(2);
+  heroSource = heroSource.replace(watchlistNotice, historicalNotice);
   // 2026-11-04 (owner: phone design): the three stat labels read in Russian
   // on the Russian page; the historical fingerprint is compared with the
-  // original English labels put back.
-  let heroSource = hero.getText(ast);
+  // original English labels put back, exactly as with the sentence above.
   for (const [current, original] of [["['Успешных сделок', all", "['Successful Trades', all"], ["['Подписчиков', Number", "['Total Followers', Number"], ["['Реализованный P&L', synthetic", "['Realized P&L', synthetic"]]) {
     expect(heroSource.split(current)).toHaveLength(2);
     heroSource = heroSource.replace(current, original);

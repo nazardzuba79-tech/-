@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
-// The two per-user lists the marketplace tabs are built on: traders the
-// user starred, and traders the user is actually copying. Both live in
-// localStorage so they survive a reload and a navigation away from the
-// page — the same approach the trade pages already use for favourite
-// pairs (see lib/pairList.ts).
-//
-// Following is deliberately NOT a synonym for "starred": starring is a
-// bookmark anyone can use, while following means capital is being copied,
-// which is why only an eligible account can add to it (see CopyButton).
+// Local browser-only favourites and watchlist. The historical "following"
+// storage key is retained so existing entries remain visible.
+// This is NOT an account-bound copy subscription and NEVER mirrors trades
+// or allocates capital. Server-authorized copy execution is separate.
 
 const FAVORITES_KEY = 'voltex_copy_favorites';
 const FOLLOWING_KEY = 'voltex_copy_following';
@@ -43,8 +38,8 @@ function save(key: string, value: Set<string>) {
 function useIdSet(key: string) {
   const [ids, setIds] = useState<Set<string>>(() => load(key));
 
-  // Keep two open tabs in agreement — copying a trader in one should show
-  // up in the other's Following tab rather than being silently overwritten
+  // Keep two open tabs in agreement — adding to the watchlist in one
+  // should appear in the other's watchlist tab
   // the next time either one writes.
   useEffect(() => {
     function onStorage(e: StorageEvent) {
