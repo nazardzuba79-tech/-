@@ -561,3 +561,12 @@
     mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
   }
 }
+
+/* 2026-11-04: the fee tables were 421–455px wide inside a 348px card and lost
+   their «Минимум» column with nothing to say they scroll. Wrapping headers
+   and tighter cells fit the four columns on a phone. */
+@media (max-width: 760px) {
+  .vx-md-table table, .vx-kb-table { font-size: 13.5px; table-layout: fixed; }
+  .vx-md-table th, .vx-md-table td, .vx-kb-table th, .vx-kb-table td { padding: 10px 8px; overflow-wrap: anywhere; }
+  .vx-md-table th, .vx-kb-table th { white-space: normal; font-size: 10.5px; letter-spacing: 0.02em; }
+}

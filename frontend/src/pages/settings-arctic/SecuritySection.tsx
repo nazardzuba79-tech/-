@@ -76,7 +76,7 @@ export function SecuritySection({
                   {twoFactorEnabled ? t('settings.enabled') : t('settings.disabled')}
                 </StatusBadge>
               </div>
-              <p className="mt-1 truncate text-[13px] text-muted-foreground">{t('settings.twoFaLead')}</p>
+              <p className="mt-1 text-[13px] leading-5 text-muted-foreground">{t('settings.twoFaLead')}</p>
             </div>
             <button
               onClick={() => setTwoFaOpen(true)}
@@ -99,7 +99,7 @@ export function SecuritySection({
                 <p className="text-[14.5px] font-medium text-foreground">{t('settings.changePassword')}</p>
                 <StatusBadge tone="neutral">{t('settings.secure')}</StatusBadge>
               </div>
-              <p className="mt-1 truncate text-[13px] text-muted-foreground">
+              <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
                 {lastPasswordChange ? t('settings.lastChanged', { date: lastPasswordChange }) : t('settings.neverChanged')}
               </p>
             </div>
@@ -122,7 +122,7 @@ export function SecuritySection({
                 <p className="text-[14.5px] font-medium text-foreground">{t('settings.activeSessions')}</p>
                 <StatusBadge tone="neutral">{t('settings.sessionsCount', { count: sessions ? String(sessions.length) : '…' })}</StatusBadge>
               </div>
-              <p className="mt-1 truncate text-[13px] text-muted-foreground">{t('settings.activeSessionsDesc')}</p>
+              <p className="mt-1 text-[13px] leading-5 text-muted-foreground">{t('settings.activeSessionsDesc')}</p>
             </div>
             <button
               onClick={() => setSessionsOpen((v) => !v)}

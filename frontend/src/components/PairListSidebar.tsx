@@ -10,6 +10,8 @@ import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'luci
 import './SpotMarketControls.css';
 import { MarketColumnSort, nextMarketColumnSort } from '../lib/marketColumnSort';
 import { useTestMarkets } from '../lib/testMarketStore';
+import { countdownParts, matchesTestAssetSearch, testMarketPresentation, type TestAsset } from '../lib/testMarkets';
+import { orderListings } from '../lib/listingsOrder';
 
 // Per-coin logos now come from the Market Data Gateway's asset registry,
 // resolved inside CryptoIcon itself (tier 1 of its fallback chain) via the
@@ -62,7 +64,8 @@ export const PairListSidebar = forwardRef<
   PairListHandle,
   {
     pair: string;
-    onChange: (pair: string) => void;
+    /** `upcoming`: a listing still counting down — the phone opens its countdown, not the ticket. */
+    onChange: (pair: string, options?: { upcoming?: boolean }) => void;
     onCollapse?: () => void;
     onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
     onResizeBy?: (delta: number) => void;
@@ -77,6 +80,9 @@ export const PairListSidebar = forwardRef<
     // Real 24h turnover, descending, until the trader picks otherwise.
     const [columnSort, setColumnSort] = useState<MarketColumnSort<ColumnField>>(null);
     const [newestFirst, setNewestFirst] = useState(false);
+    // «Скоро»: only the listings still counting down (owner, 2026-11-04 —
+    // the phone rail had no way to see or sort what is about to trade).
+    const [upcomingOnly, setUpcomingOnly] = useState(false);
     const sortId = columnSort ? `${columnSort.field}_${columnSort.dir === -1 ? 'desc' : 'asc'}` : 'volume_desc';
     const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];
     const { field: sortField, dir: sortDir } = sortMode;
@@ -111,7 +117,11 @@ export const PairListSidebar = forwardRef<
     // Reuses the same shared test-market store that useMarketTickers already
     // subscribes to, so this adds no second network poll. Listing timestamps
     // are used only when the trader explicitly asks for «Новые».
-    const { assets: listedAssets } = useTestMarkets();
+    const { assets: listedAssets, clockOffsetMs } = useTestMarkets();
+    const now = Date.now() + (clockOffsetMs ?? 0);
+    // Listings that have not opened yet are not tickers, so the feed never
+    // lists them; they come from the same listings store as the dates.
+    const upcoming = useMemo(() => listedAssets.filter(asset => asset.state?.phase === 'pre-listing' && !asset.privateTest), [listedAssets]);
     const listingAtByPair = useMemo(() => new Map(listedAssets.flatMap(asset => {
       const at = Date.parse(asset.listingAt);
       return Number.isFinite(at) ? [[asset.pair, at] as const] : [];
@@ -227,6 +237,36 @@ export const PairListSidebar = forwardRef<
     // results on screen actually span every quote asset.
     const isSearching = search.trim().length > 0;
     const effectiveQuoteFilter = isSearching ? null : quoteFilter;
+    // Upcoming rows lead the list under «Скоро», «Новые» and any search; the
+    // default volume ranking stays a list of markets that actually trade.
+    const upcomingRows = (upcomingOnly || newestFirst || isSearching)
+      ? orderListings(upcoming.filter(asset => matchesTestAssetSearch(asset, search)
+          && (!favoritesOnly || favorites.has(asset.pair))
+          && (!effectiveQuoteFilter || asset.pair.split('/')[1] === effectiveQuoteFilter)), 'soon')
+      : [];
+    // A pair that is still counting down is never also a traded row, in any order.
+    const upcomingPairs = new Set(upcoming.map(asset => asset.pair));
+    const liveRows = upcomingOnly ? [] : filtered.filter(tk => !upcomingPairs.has(tk.pair));
+    const listingCells = (asset: TestAsset): { date: string; title: string; eta: string } => {
+      const presentation = testMarketPresentation(asset, now);
+      const at = Date.parse(asset.listingAt);
+      let date = '—', title = t(presentation.scheduleKey ?? 'listing.scheduledAt');
+      if (presentation.showDate && Number.isFinite(at)) {
+        const zone = asset.managed ? asset.displayTimeZone ?? 'UTC' : 'UTC';
+        try {
+          date = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone }).format(new Date(at)).replace(',', '');
+          title = `${t('listing.scheduledAt')}: ${new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone, timeZoneName: 'short' }).format(new Date(at))}`;
+        } catch { date = '—'; }
+      }
+      let eta = t('listings.sortSoon');
+      if (presentation.showCountdown) {
+        const parts = countdownParts(at - now);
+        eta = parts.days > 0 ? `${parts.days} ${t('listings.unitDay')} ${parts.hours} ${t('listings.unitHour')}`
+          : parts.hours > 0 ? `${parts.hours} ${t('listings.unitHour')} ${parts.minutes} ${t('listings.unitMinute')}`
+            : `${Math.max(1, parts.minutes)} ${t('listings.unitMinute')}`;
+      }
+      return { date, title, eta };
+    };
 
     return (
       <div className="pairs-section">
@@ -254,23 +294,35 @@ export const PairListSidebar = forwardRef<
           <button
             className={`pairs-tab ${favoritesOnly ? 'active' : ''}`}
             aria-pressed={favoritesOnly}
-            onClick={() => setFavoritesOnly((v) => !v)}
+            onClick={() => { setFavoritesOnly((v) => !v); setUpcomingOnly(false); }}
           >
             <Star size={12} fill={favoritesOnly ? 'currentColor' : 'none'} /> {t('trade.favorites')}
           </button>
           {quoteChips.map((q) => (
             <button
               key={q}
-              className={`pairs-tab ${!favoritesOnly && effectiveQuoteFilter === q ? 'active' : ''}`}
-              aria-pressed={!favoritesOnly && effectiveQuoteFilter === q}
+              className={`pairs-tab ${!favoritesOnly && !upcomingOnly && effectiveQuoteFilter === q ? 'active' : ''}`}
+              aria-pressed={!favoritesOnly && !upcomingOnly && effectiveQuoteFilter === q}
               onClick={() => {
                 setFavoritesOnly(false);
+                setUpcomingOnly(false);
                 setQuoteFilter(q);
               }}
             >
               {q}
             </button>
           ))}
+          {upcoming.length > 0 && (
+            <button
+              type="button"
+              className={`pairs-tab pairs-tab-soon ${upcomingOnly ? 'active' : ''}`}
+              aria-pressed={upcomingOnly}
+              data-pairs-tab="soon"
+              onClick={() => { setUpcomingOnly((v) => !v); setFavoritesOnly(false); if (listRef.current) listRef.current.scrollTop = 0; }}
+            >
+              {t('listings.sortSoon')} <span className="pairs-tab-count">{upcoming.length}</span>
+            </button>
+          )}
         </div>
 
         <div className="pairs-sort">
@@ -287,7 +339,29 @@ export const PairListSidebar = forwardRef<
         </div>
 
         <div className="pairs-list" ref={listRef}>
-          {filtered.map((tk) => {
+          {upcomingRows.map((asset) => {
+            const cells = listingCells(asset);
+            const quote = asset.pair.split('/')[1];
+            return (
+              <div key={asset.pair} data-pair={asset.pair} data-phase="pre-listing" role="group" aria-label={asset.pair}
+                className={`pair-row pair-row-upcoming ${asset.pair === pair ? 'active' : ''}`}>
+                <button type="button" className={`p-star${favorites.has(asset.pair) ? ' on' : ''}`} onClick={(e) => toggleFavorite(asset.pair, e)}
+                  title={t('trade.favorites')} aria-label={`${t('trade.favorites')}: ${asset.pair}`} aria-pressed={favorites.has(asset.pair)}>
+                  <Star size={12} fill={favorites.has(asset.pair) ? 'currentColor' : 'none'} />
+                </button>
+                <button type="button" className="pair-select" aria-label={`${asset.name} ${asset.pair}`} aria-pressed={asset.pair === pair} onClick={() => onChange(asset.pair, { upcoming: true })}>
+                  <span className="p-icon"><CryptoIcon symbol={asset.symbol} size={20} /></span>
+                  <span className="p-name">
+                    <b className="p-base">{asset.symbol}</b>
+                    {(!effectiveQuoteFilter || quote !== effectiveQuoteFilter) && <span className="p-quote">/{quote}</span>}
+                  </span>
+                  <span className="p-price p-listing-at" data-compact title={cells.title}>{cells.date}</span>
+                  <span className="p-change p-listing-eta" data-compact={cells.eta.length > 7 || undefined} data-listing-eta>{cells.eta}</span>
+                </button>
+              </div>
+            );
+          })}
+          {liveRows.map((tk) => {
             // Rounded before the direction is picked from it, not after: a
             // change of -0.001% otherwise printed as a red, downward
             // "▼ -0.00%" — an arrow and a sign pointing at nothing.
