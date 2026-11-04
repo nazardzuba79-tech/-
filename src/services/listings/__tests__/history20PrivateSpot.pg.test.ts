@@ -466,6 +466,9 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
       const ticker = await request(app).get('/private-test/markets/' + slug + '/ticker').set('Authorization', auth);
       expect(ticker.status).toBe(live ? 200 : 404);
       if (!live) expect(ticker.body.error).toBe('not_listed');
+      const book = await request(app).get('/private-test/markets/' + slug + '/orderbook').set('Authorization', auth);
+      expect(book.status).toBe(armed ? 200 : 404);
+      if (!armed) expect(book.body.error).toBe('not_listed');
       const candles = await request(app).get('/private-test/markets/' + slug + '/candles?interval=5m&limit=2').set('Authorization', auth);
       expect(candles.status).toBe(200);
       if (!live) expect(candles.body.candles).toEqual([]);
