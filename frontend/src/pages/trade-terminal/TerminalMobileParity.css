@@ -364,7 +364,7 @@
    black band followed. The pane now fills to the bottom menu like the chart
    pane and the list scrolls inside it. The desktop «collapse panel» keys
    mean nothing on a phone (the chips above choose the pane). */
-@media (max-width: 900px) {
+@media (max-width:900px) {
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets],
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .main-grid { flex:1 1 auto; min-height:0; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .left-panel {
