@@ -281,6 +281,10 @@ dbDescribe('Banking referral commission', () => {
     const { bankingRouter } = require('../../api/routes/banking');
     const owner = await user(), other = await user();
     const id = await placement(owner, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
+    // The real HTTP route deliberately uses wall time, not the injected service
+    // clock used by the calendar matrix (which also exercises future years).
+    const opened = monthsBefore(new Date(), 1);
+    await prisma.$executeRaw`UPDATE banking_placements SET opened_at=${opened}, matures_at=${monthsAfter(opened, 12)} WHERE id=${id}`;
     const session = await prisma.session.create({ data: { userId: owner, lastSeenAt: new Date() } });
     const otherSession = await prisma.session.create({ data: { userId: other, lastSeenAt: new Date() } });
     const token = (sub: string, sid: string) => jwt.sign({ sub, sid }, process.env.JWT_SECRET!, { expiresIn: '1h' });
