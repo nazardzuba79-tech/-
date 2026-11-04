@@ -214,3 +214,47 @@ role; decisions are audited), and CI path coverage (extended anyway). A later op
 preflight observability gap**: malformed receipts with unparseable pair strings could be excluded before counting
 identified accounts. The aggregate-only anomaly CTE and disposable-PostgreSQL regression now surface such rows;
 this does **not** grant release approval or fix downstream historic contamination.
+
+## 4 Nov 2026 (OWNER PRODUCT RULE, PR #630 top) — a verified, admin-credited deposit is always requestable
+
+Owner decision (04.11, PR #630 description + comment 6635249530): a deposit that was confirmed on-chain and
+credited by an admin into the ordinary `Balance` must remain requestable for withdrawal — including BTC, ETH and
+other supported assets, and on an account with a mixed legacy history — and the admin must be able to review it
+under the existing manual process. Demo listings or the exchange being in development are never a reason to
+refuse. Synthetic, unbacked value must still never become withdrawable. No blanket ban, no debit, no new
+customer-facing technical labels.
+
+What changed in `src/services/syntheticProceedsFloor.ts` (`withinGenuineDeposits`):
+
+- Evidence is per asset: `Deposit` rows of that asset with `status = CREDITED`, `verifiedAt` set and `ignoredAt`
+  null (the admin verify-and-credit path). Admin balance adjustments, trades, transfers and sale proceeds are not
+  evidence (unchanged).
+- A withdrawal passes, in **both** review statuses (UNVERIFIED and RELEASED_TO_FLOOR), when every non-rejected
+  withdrawal of that asset — the one being judged included — stays within the evidenced deposits of that asset.
+  Admin approve and SENT re-judge the same rule, so a request filed within the budget is also payable.
+- Everything else is unchanged: no Spot execution while UNVERIFIED, nothing else leaves a held account, the floor
+  on realized cash after an audited release, fail-closed on malformed receipts or unreadable decisions.
+- Dropped: the previous extra condition that a USDT/USDC cash-out also leaves stable cash ≥ S. It trapped a
+  genuine deposit whenever the account had earlier turned synthetic USDT into BTC/ETH (the common mixed case).
+  Safety does not depend on it: with the per-asset net bound, the total that leaves in any asset never exceeds
+  what genuinely arrived in that asset, so synthetic value cannot leave in any asset and cannot be moved across
+  assets to widen a budget.
+
+Wallet Conversion (#591, merged in main, default OFF) — Codex's counterexample (comment 6636891345) showed
+`WalletConversionService.quote/confirm` converting synthetic-origin USDT into BTC. The canonical admission
+contract is `assertConvertible(tx, userId)` (floor lock + refusal for every account with simulation-sale
+receipts, any status); `quote` reads it early, `confirm` re-checks it under the account lock before any shared
+lock (lock order account → floor → reserves/demo book), `availability` reports `convertible:false`. The refusal
+code is `ACCOUNT_RESTRICTED` (HTTP 403; the modal shows the existing "denied" message). Ordinary accounts are
+untouched.
+
+Evidence: `syntheticProvenanceQuarantine.pg.test.ts` — mixed account with evidenced 0.5 BTC and 2 ETH deposits
+beside 1 synthetic-bought BTC/ETH: 0.6 BTC refused, 0.5 BTC PENDING → APPROVED → SENT, 0.00000001 BTC more
+refused, 2.5 ETH refused, 2 ETH PENDING, USDT (no evidence) refused; after release USDT below S still refused.
+Ordinary account with DemoBalance history: BTC/ETH/USDT deposits requested, approved and sent, demo rows
+untouched. Conversion: identified account refused at quote in both statuses, a quote taken before identification
+refused at confirm, state byte-identical; ordinary account converts with fee 0. The earlier "deposit spent in
+trading counts as consumed" case now asserts the owner rule (10000 USDT requestable, 10001 refused, no BTC).
+
+Still NO-GO for release (unchanged): historical downstream exposure (read-only preflight 04.11: identified 1,
+all downstream counters 0, scope limited), human financial review, separate owner approval; nothing deployed.

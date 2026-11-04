@@ -47,7 +47,7 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
       res.setHeader('Cache-Control', 'private, no-store');
       try { res.json(await fn(req)); }
       catch (error) {
-        if (error instanceof ConversionError) return res.status(error.code === 'PRICE_UNAVAILABLE' ? 503 : error.code === 'ACCOUNT_BLOCKED' ? 403 : error.code === 'SESSION_REVOKED' ? 401 : 409).json({ code: error.code });
+        if (error instanceof ConversionError) return res.status(error.code === 'PRICE_UNAVAILABLE' ? 503 : error.code === 'ACCOUNT_BLOCKED' || error.code === 'ACCOUNT_RESTRICTED' ? 403 : error.code === 'SESSION_REVOKED' ? 401 : 409).json({ code: error.code });
         throw error;
       }
     });
