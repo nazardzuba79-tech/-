@@ -226,7 +226,7 @@ export function matchesTestAssetSearch(asset: Pick<TestAsset, 'pair' | 'symbol' 
   if (isRetiredMarketPair(asset.pair)) return false;
   const q = query.trim().toLowerCase().replace(/[\s/_-]/g, '');
   if (!q) return true;
-  return [asset.pair.replace('/', ''), asset.symbol, asset.name].some((field) => field.toLowerCase().includes(q));
+  return [asset.pair, asset.symbol, asset.name].some((field) => field.toLowerCase().replace(/[\s/_-]/g, '').includes(q));
 }
 
 // ── Formatting ──────────────────────────────────────────────────────────
