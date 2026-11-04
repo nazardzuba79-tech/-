@@ -36,7 +36,7 @@ jobs:
       QA_OUTPUT: output/history20-installed-candidate/browser
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: npm ci --ignore-scripts --no-audit --no-fund
@@ -71,7 +71,7 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: npm ci --ignore-scripts --no-audit --no-fund
@@ -81,7 +81,7 @@ jobs:
       - run: node scripts/ops/build-history20-installed-candidate.cjs
       - name: Fetch encrypted exact installed base into the isolated runner
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          HISTORY20_ISOLATED_IMAGE_URL: ${{ secrets.HISTORY20_ISOLATED_IMAGE_URL }}
           HISTORY20_ISOLATED_IMAGE_KEY: ${{ secrets.HISTORY20_ISOLATED_IMAGE_KEY }}
         run: node scripts/ops/fetch-history20-container-base.cjs
       - name: Container baseline, install, PostgreSQL, rollback and repeated smoke
