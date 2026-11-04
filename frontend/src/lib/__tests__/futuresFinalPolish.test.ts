@@ -254,6 +254,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return { [label]: component };
     }
     if (name.endsWith('/balanceInvalidation')) return { onSpendableBalancesChanged: () => () => {} };
+    if (name.endsWith('/useSwipeTabs')) return { useSwipeTabs: () => {} }; // phone swipe between tabs (2026-11-04): touch-only, no part of these handoffs
     return req(name);
   }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false),
     scrollY: overrides.scrollY ?? 0, scrollTo: overrides.scrollTo ?? jest.fn(),
