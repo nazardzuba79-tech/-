@@ -27,6 +27,9 @@ on:
     paths:
       - '.github/workflows/stocks-613-50plus2-diagnostic.yml'
       - 'scripts/qa/stocks-rc-50plus2/policy-613-after.cjs'
+      - 'scripts/qa/stocks-rc-50plus2/calibration-613.cjs'
+      - 'scripts/qa/stocks-rc-50plus2/calibration-613.test.cjs'
+      - 'scripts/qa/stocks-rc-50plus2/diagnostic-run-613.cjs'
   workflow_dispatch: {}
 
 permissions:

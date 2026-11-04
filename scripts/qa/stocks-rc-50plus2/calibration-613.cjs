@@ -54,7 +54,7 @@ function calibrate(runsDir, {runs, pin = require('./policy-613-after.cjs').RC} =
       if (r.qualification?.placement?.ok !== true || r.isolation?.admission?.length !== 0) problems.push('QUALIFICATION_PLACEMENT_UNPROVEN');
       if (r.allRecordedPidsStopped !== true || r.postgresStopped !== true || r.postgresStatusExit !== PG_NOT_RUNNING || Object.hasOwn(r, 'cleanupError')) problems.push('CLEANUP_UNCONFIRMED');
       first = readArm(out, 'baseline', problems); second = readArm(out, 'mixed', problems);
-      if (first && second && Math.abs((r.calibration?.deltaPercent ?? NaN) - delta(first.latencies, second.latencies)) > 1e-9) problems.push('CALIBRATION_INCONSISTENT');
+      if (first && second && (!finite(r.calibration?.deltaPercent) || Math.abs(r.calibration.deltaPercent - delta(first.latencies, second.latencies)) > 1e-9)) problems.push('CALIBRATION_INCONSISTENT');
     }
     for (const p of problems) fail(name + ':' + p);
     const row = {name, complete: problems.length === 0, problems, deltaPercent: first && second ? delta(first.latencies, second.latencies) : null, first, second};
@@ -67,11 +67,18 @@ function calibrate(runsDir, {runs, pin = require('./policy-613-after.cjs').RC} =
   if (done.length > 1) for (let b = 0; b < 2000; b++) { const pick = Array.from({length: done.length}, () => done[Math.floor(random() * done.length)]); boot.push(delta(pick.flatMap(r => r.first.latencies), pick.flatMap(r => r.second.latencies))); }
   const arms = done.flatMap(r => [r.first, r.second]), of = k => arms.map(x => x[k]).filter(finite);
   const evaluated = collection.status === 'COMPLETE';
+  // Opposite noisy arms can cancel in the pooled percentile. The existing
+  // whole-run bootstrap must also fit the SAME +/-5% equivalence margin.
+  // Keep every measured run; never trim outliers or retry until green.
+  const interval = boot.length ? [percentile(boot, .025), percentile(boot, .975)] : null;
+  const uncertaintyWithinMargin = interval !== null && interval.every(finite)
+    && interval[0] >= -THRESHOLD_PERCENT && interval[1] <= THRESHOLD_PERCENT;
   return {collection, scope: 'METHOD_CALIBRATION_NOT_A_VERDICT', thresholdPercent: THRESHOLD_PERCENT,
-    verdict: !evaluated ? 'NOT_EVALUATED_INCOMPLETE_COLLECTION' : Math.abs(pooled) <= THRESHOLD_PERCENT ? 'METHOD_CALIBRATED' : 'METHOD_NOT_CALIBRATED',
+    verdict: !evaluated ? 'NOT_EVALUATED_INCOMPLETE_COLLECTION' : finite(pooled) && Math.abs(pooled) <= THRESHOLD_PERCENT && uncertaintyWithinMargin ? 'METHOD_CALIBRATED' : 'METHOD_NOT_CALIBRATED',
+    uncertaintyWithinMargin,
     pooledFirstP95Ms: percentile(done.flatMap(r => r.first.latencies), .95), pooledSecondP95Ms: percentile(done.flatMap(r => r.second.latencies), .95), pooledDeltaPercent: pooled,
     runDeltaPercent: done.map(r => r.deltaPercent), meanRunDeltaPercent: mean(done.map(r => r.deltaPercent)), sdRunDeltaPercent: sd(done.map(r => r.deltaPercent)),
-    bootstrapPooledDeltaPercent95: boot.length ? [percentile(boot, .025), percentile(boot, .975)] : null,
+    bootstrapPooledDeltaPercent95: interval,
     serverUtilization: {mean: mean(of('serverUtilization')), max: of('serverUtilization').length ? Math.max(...of('serverUtilization')) : null},
     clientUtilization: {mean: mean(of('clientUtilization')), max: of('clientUtilization').length ? Math.max(...of('clientUtilization')) : null},
     stealMs: {serverMean: mean(of('serverStealMs')), clientMean: mean(of('clientStealMs'))}, driverEluMax: of('driverElu').length ? Math.max(...of('driverElu')) : null,
@@ -87,7 +94,7 @@ function markdown(c) {
   for (const r of c.runs) lines.push(`| ${r.name} | ${r.complete ? 'yes' : 'no'} | ${f(r.firstP95Ms)} | ${f(r.secondP95Ms)} | ${f(r.deltaPercent)} |`);
   lines.push('', `Pooled A/A: ${f(c.pooledFirstP95Ms)} → ${f(c.pooledSecondP95Ms)} ms, Δp95 **${f(c.pooledDeltaPercent)} %** (per run ${f(c.meanRunDeltaPercent, 1)} ± ${f(c.sdRunDeltaPercent, 1)} %; bootstrap 95 % ${c.bootstrapPooledDeltaPercent95 ? f(c.bootstrapPooledDeltaPercent95[0], 1) + ' … ' + f(c.bootstrapPooledDeltaPercent95[1], 1) : '—'} %).`,
     `Server CPU set utilisation mean/max ${f(c.serverUtilization.mean, 3)}/${f(c.serverUtilization.max, 3)}; client set ${f(c.clientUtilization.mean, 3)}/${f(c.clientUtilization.max, 3)}; driver ELU max ${f(c.driverEluMax, 3)}; steal per window server ${f(c.stealMs.serverMean, 0)} ms, client ${f(c.stealMs.clientMean, 0)} ms; server memory max ${f(c.serverMemoryMbMax, 0)} MB.`,
-    '', `Verdict: **${c.verdict}** (|pooled A/A Δp95| ≤ ${c.thresholdPercent} %).`);
+    '', `Verdict: **${c.verdict}** (pooled A/A and its whole-run bootstrap 95% interval must both stay within ±${c.thresholdPercent} %).`);
   return lines.join('\n');
 }
 
