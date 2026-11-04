@@ -418,6 +418,7 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     const listPath = '/private-test/markets';
     const candlesPath = `/private-test/markets/${slug}/candles?interval=5m&limit=5`;
     const tickerPath = `/private-test/markets/${slug}/ticker`;
+    const bookPath = `/private-test/markets/${slug}/orderbook`;
 
     for (const state of ['staged', 'paused'] as const) {
       active = { ...published, countdown: { state, updatedAt: START - MINUTE, updatedBy: 'owner' } };
@@ -433,6 +434,9 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
       const ticker = await request(app).get(tickerPath).set('Authorization', token);
       expect(ticker.status).toBe(404);
       expect(ticker.body.error).toBe('not_listed');
+      const book = await request(app).get(bookPath).set('Authorization', token);
+      expect(book.status).toBe(404);
+      expect(book.body.error).toBe('not_listed');
     }
 
     active = { ...published, countdown: { state: 'running', updatedAt: START - MINUTE, updatedBy: 'owner' } };
@@ -445,6 +449,9 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     const liveTicker = await request(app).get(tickerPath).set('Authorization', token);
     expect(liveTicker.status).toBe(200);
     expect(liveTicker.body.ticker.pair).toBe(pair);
+    const liveBook = await request(app).get(bookPath).set('Authorization', token);
+    expect(liveBook.status).toBe(200);
+    expect(liveBook.body.pair).toBe(pair);
 
     // Legacy listings without the countdown field preserve old running behavior.
     active = published;
