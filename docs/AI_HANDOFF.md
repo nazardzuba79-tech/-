@@ -7687,3 +7687,12 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Local: Banking17/17, Conversion29PG+8browser groups and default-OFF PASS, History20 Worker4/4, original owner pack6/6 plus51browser checks (all20×two viewports). Recovered97/97 source manifest hashes; restricted source data stays local. Backend TypeScript PASS. Exact-head CI pending at commit creation.
 - #630 exact `b021b8ed` provenance PG21/21 PASS. Separate current-main Conversion negative control accepted synthetic-origin10USDT→BTC; no withdrawal attempted. Activation stays OFF; canonical policy hook requested from Claude in #630 comment6636891345. Do not introduce a blanket ordinary-deposit withdrawal ban.
 - Contracts, precise limits and release/rollback gates: `docs/INTEGRATION659_CONTRACTS_20261104.md`. Stocks calibrated +18.227612% failure retained; runtime belongs to Claude. No production mutation, merge or Beget work.
+
+### 2026-11-04 — Codex — installed History20 release candidate / Banking contracts
+
+- Separate candidate branch preserves green QA PR #676 HEAD 20972f4e; no duplicate PR or Claude runtime/frontend edits.
+- Pinned installed API 41a755a9 and Worker f13215c0 code-only inputs; full dependency/outflow closure, private route mount, legacy-model compatibility. Builder/verifier and isolated PostgreSQL 18.6 CI only; no release job.
+- Candidate PG 42/42, Worker 4/4, owner-pack browser 51/51 at 1440/390 and five installed models / 20,160 points passed locally. Final source/artifact identities belong to this commit/CI receipt.
+- Banking installed six-module closure equals tested source; three existing migrations/indexes/triggers verified via READ ONLY metadata; no new migration/runtime needed. Plan: docs/HISTORY20_INSTALLED_CANDIDATE_20261104.md.
+- Claude #630 f7c61c9: old counterexample refused ACCOUNT_RESTRICTED, balances unchanged, no receipt; 24 PG checks pass. Stocks runtime unchanged: no duplicate benchmark; OFF.
+- No merge/deploy/production migration/funding/flag/timer change; Beget untouched.
