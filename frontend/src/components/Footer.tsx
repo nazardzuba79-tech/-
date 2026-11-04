@@ -14,7 +14,7 @@ export function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer style={styles.footer}>
+    <footer className="site-footer" style={styles.footer}>
       <div style={styles.top}>
         <Logo />
         <nav style={styles.links}>

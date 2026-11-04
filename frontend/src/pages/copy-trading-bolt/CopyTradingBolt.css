@@ -869,7 +869,7 @@
   .copytrading-bolt-root .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); }
   .copytrading-bolt-root .hero-stats > div { min-width: 0; padding: 0 10px; }
   .copytrading-bolt-root .hero-stats strong { font-size: 17px; }
-  .copytrading-bolt-root .hero-stats span { font-size: 8px; }
+  .copytrading-bolt-root .hero-stats span { font-size: 10px; letter-spacing: 0; }
   .copytrading-bolt-root .hero-guide { min-height: 200px; padding: 22px 18px; }
   .copytrading-bolt-root .hero-guide-copy { width: 70%; }
   .copytrading-bolt-root .hero-guide-art { width: 92px; }

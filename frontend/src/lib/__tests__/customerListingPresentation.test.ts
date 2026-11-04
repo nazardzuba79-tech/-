@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as markets from '../testMarkets';
+import * as listingsOrder from '../listingsOrder';
 import { customerErrorText } from '../customerError';
 import { positionStatus, spotOrderStatus, spotOrderType, type SpotOrderRow } from '../../components/spotOrderPresentation';
 import * as orderPresentation from '../../components/spotOrderPresentation';
@@ -49,6 +50,7 @@ function component(file: string, lang: typeof LOCALES[number], assets = [fixture
     '../../lib/testMarketStore': { useTestMarkets: () => ({ assets, error, clockOffsetMs: 0 }) },
     '../../lib/testMarkets': markets,
     '../../lib/nrxMarket': { nrxListingTime: (s: string) => s },
+    '../../lib/listingsOrder': listingsOrder,
     '../../components/CryptoIcon': { CryptoIcon: () => null },
   };
   const source = readFileSync(resolve(frontend, 'src', file), 'utf8');

@@ -584,4 +584,19 @@
   .vx-catalogue .vx-cat-star {
     width: 28px;
   }
+  /* 2026-11-04: at 390px the row was still 375px wide inside a 332px
+     viewport-width scroller, so the last column («Только данные» / Trade)
+     was cut off without any cue. The rank column goes (the catalogue is
+     already sorted; the number adds nothing a phone user acts on) and the
+     data-only label may wrap onto two lines. */
+  .vx-catalogue .vx-cat-rank {
+    display: none;
+  }
+  .vx-catalogue .vx-cat-dataonly {
+    display: inline-block;
+    max-width: 62px;
+    white-space: normal;
+    line-height: 1.2;
+    text-align: right;
+  }
 }
