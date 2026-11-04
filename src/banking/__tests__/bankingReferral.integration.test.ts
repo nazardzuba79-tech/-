@@ -4,7 +4,10 @@ import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
 import { REFERRAL_REWARD_PERCENT } from '../../config/limits';
 import { BANKING_REFERRAL_REWARD_PERCENT } from '../config';
-import { BankingService } from '../service';
+import { BankingService, BankingPriceService } from '../service';
+import express from 'express';
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { bankingFixtureNow, monthsAfter, monthsBefore } from '../testing/calendarFixture';
 
 const enabled = process.env.BANKING_DB_TESTS === '1';
@@ -198,6 +201,116 @@ dbDescribe('Banking referral commission', () => {
     const paid = await prisma.$queryRawUnsafe<{ n: bigint }[]>(
       `SELECT count(*) AS n FROM banking_ledger_entries WHERE placement_id=$1 AND entry_type='REWARD_PAID'`, id);
     expect(Number(paid[0].n)).toBe(0);
+  });
+
+  test('concurrent state calls and a fresh service accrue each month once without crediting either ledger', async () => {
+    const owner = await user(), other = await user();
+    const id = await placement(owner, { principal: '1000', rate: '0.12', openedMonthsAgo: 3 });
+    const foreign = await placement(other, { principal: '9000', rate: '0.12', openedMonthsAgo: 3 });
+    await prisma.balance.create({ data: { userId: owner, asset: 'USDT', available: '75', locked: '5' } });
+    await prisma.demoBalance.create({ data: { userId: owner, asset: 'USDT', available: '91', locked: '7' } });
+    const balances = async () => JSON.stringify({
+      real: await prisma.balance.findMany({ where: { userId: owner } }),
+      demo: await prisma.demoBalance.findMany({ where: { userId: owner } }),
+    });
+    const before = await balances();
+    await Promise.all(Array.from({ length: 6 }, () => service.state(owner, NOW)));
+    const fresh = new BankingService(prisma, { prices: async () => ({ USDT: '1' }) } as any);
+    const result = await fresh.state(owner, NOW);
+    expect(result.placements.map(row => row.id)).toEqual([id]);
+    expect(result.ledger).toHaveLength(3);
+    expect(result.ledger.map(row => row.period_index).sort()).toEqual([1, 2, 3]);
+    expect(result.ledger.every(row => row.entry_type === 'REWARD_ACCRUED' && new BigNumber(row.amount).eq(120))).toBe(true);
+    expect(await balances()).toBe(before);
+    const rows = await prisma.$queryRawUnsafe<{ n: bigint }[]>(
+      'SELECT count(*) AS n FROM banking_ledger_entries WHERE placement_id=$1', foreign);
+    expect(Number(rows[0].n)).toBe(0);
+  });
+
+  test('an interrupted accrual resumes missing periods without duplicating already committed accruals', async () => {
+    const owner = await user();
+    const id = await placement(owner, { principal: '1000', rate: '0.12', openedMonthsAgo: 2 });
+    let inserts = 0;
+    const interrupted = new Proxy(prisma, { get(target, key) {
+      if (key === '$executeRaw') return (...args: any[]) => {
+        if (++inserts === 2) throw new Error('fixture interrupted accrual');
+        return (target.$executeRaw as any)(...args);
+      };
+      const value = Reflect.get(target, key);
+      return typeof value === 'function' ? value.bind(target) : value;
+    } });
+    await expect(new BankingService(interrupted, { prices: async () => ({ USDT: '1' }) } as any).state(owner, NOW))
+      .rejects.toThrow('fixture interrupted accrual');
+    const count = async () => Number((await prisma.$queryRawUnsafe<{ n: bigint }[]>(
+      'SELECT count(*) AS n FROM banking_ledger_entries WHERE placement_id=$1', id))[0].n);
+    expect(await count()).toBe(1); // Per-period atomic inserts, not an all-or-nothing GET.
+    await service.state(owner, NOW);
+    expect(await count()).toBe(2);
+    expect(await balance(owner)).toBe('0');
+    expect(await prisma.bankingReferralReward.count({ where: { placementId: id } })).toBe(0);
+  });
+
+  test('settlement rollback removes the paid marker and both credits when the audit insert fails', async () => {
+    const referrer = await user(), owner = await user(referrer);
+    const id = await placement(owner, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
+    const failing = new Proxy(prisma, { get(target, key) {
+      if (key === '$transaction') return (fn: any, options: any) => target.$transaction(async tx => {
+        const guarded = new Proxy(tx, { get(transaction, field) {
+          if (field === 'auditLog') return { ...transaction.auditLog, create: async () => { throw new Error('fixture audit unavailable'); } };
+          return Reflect.get(transaction, field);
+        } });
+        return fn(guarded);
+      }, options);
+      const value = Reflect.get(target, key);
+      return typeof value === 'function' ? value.bind(target) : value;
+    } });
+    await expect(new BankingService(failing).settlePlacement(owner, id, NOW)).rejects.toThrow('fixture audit unavailable');
+    expect(await balance(owner)).toBe('0');
+    expect(await balance(referrer)).toBe('0');
+    expect(await prisma.bankingReferralReward.count({ where: { placementId: id } })).toBe(0);
+    const paid = await prisma.$queryRawUnsafe<{ n: bigint }[]>(
+      "SELECT count(*) AS n FROM banking_ledger_entries WHERE placement_id=$1 AND entry_type='REWARD_PAID'", id);
+    expect(Number(paid[0].n)).toBe(0);
+    expect((await service.settlePlacement(owner, id, NOW)).settledCount).toBe(1);
+    expect(await balance(owner)).toBe('120');
+    expect(await balance(referrer)).toBe('24');
+  });
+
+  test('HTTP state uses session ownership; anonymous, revoked and foreign settlement requests cannot accrue or pay', async () => {
+    process.env.JWT_SECRET = 'isolated-banking-state-fixture';
+    const { bankingRouter } = require('../../api/routes/banking');
+    const owner = await user(), other = await user();
+    const id = await placement(owner, { principal: '1000', rate: '0.12', openedMonthsAgo: 1 });
+    // The real HTTP route deliberately uses wall time, not the injected service
+    // clock used by the calendar matrix (which also exercises future years).
+    const opened = monthsBefore(new Date(), 1);
+    await prisma.$executeRaw`UPDATE banking_placements SET opened_at=${opened}, matures_at=${monthsAfter(opened, 12)} WHERE id=${id}`;
+    const session = await prisma.session.create({ data: { userId: owner, lastSeenAt: new Date() } });
+    const otherSession = await prisma.session.create({ data: { userId: other, lastSeenAt: new Date() } });
+    const token = (sub: string, sid: string) => jwt.sign({ sub, sid }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+    const app = express(); app.use(express.json()); app.use(bankingRouter(prisma));
+    const prices = jest.spyOn(BankingPriceService.prototype, 'prices').mockResolvedValue({ USDT: '1' });
+    try {
+      await request(app).get('/banking/state').expect(401);
+      const foreign = await request(app).get(`/banking/state?userId=${owner}`)
+        .set('Authorization', 'Bearer ' + token(other, otherSession.id)).expect(200);
+      expect(foreign.body.placements).toEqual([]);
+      expect(foreign.body.ledger).toEqual([]);
+      await request(app).post(`/banking/placements/${id}/settle`)
+        .set('Authorization', 'Bearer ' + token(other, otherSession.id)).send({ userId: owner }).expect(404);
+      const count = async () => Number((await prisma.$queryRawUnsafe<{ n: bigint }[]>(
+        'SELECT count(*) AS n FROM banking_ledger_entries WHERE placement_id=$1', id))[0].n);
+      expect(await count()).toBe(0);
+      const own = await request(app).get(`/banking/state?userId=${other}`)
+        .set('Authorization', 'Bearer ' + token(owner, session.id)).expect(200);
+      expect(own.body.placements.map((row: { id: string }) => row.id)).toEqual([id]);
+      const accrued = await count();
+      await prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+      await request(app).get('/banking/state').set('Authorization', 'Bearer ' + token(owner, session.id)).expect(401);
+      expect(await count()).toBe(accrued);
+      expect(await balance(owner)).toBe('0');
+      expect(await balance(other)).toBe('0');
+    } finally { prices.mockRestore(); }
   });
 
   // K + L.
