@@ -85,6 +85,15 @@ describe('upcoming listings in the Spot market rail', () => {
   const rows = () => Array.from(host.querySelectorAll('.pairs-list .pair-row')).map(node => `${node.getAttribute('data-pair')}${node.getAttribute('data-phase') ? ':soon' : ''}`);
   const click = async (element: Element | null) => { expect(element).not.toBeNull(); await act(async () => (element as HTMLElement).click()); };
 
+  test('finds the full scheduled listing name with spaces, underscores or dashes', () => {
+    const item = { pair: 'NRYIA/USDT', symbol: 'NRYIA', name: 'Neuryvia AI' };
+    expect(testMarkets.matchesTestAssetSearch(item, 'NRYIA')).toBe(true);
+    expect(testMarkets.matchesTestAssetSearch(item, 'Neuryvia AI')).toBe(true);
+    expect(testMarkets.matchesTestAssetSearch(item, 'Neuryvia-AI')).toBe(true);
+    expect(testMarkets.matchesTestAssetSearch(item, 'neuryvia_ai')).toBe(true);
+    expect(testMarkets.matchesTestAssetSearch(item, 'unrelated')).toBe(false);
+  });
+
   test('the default ranking lists traded markets only; a counting-down pair is never a traded row', () => {
     expect(rows()).toEqual(['BTC/USDT', 'ETH/USDT', 'VTA/USDT']);
     expect(host.querySelector('.pairs-tab[data-pairs-tab="soon"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('listings.sortSoon 3');
