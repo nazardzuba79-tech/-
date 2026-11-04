@@ -7,11 +7,19 @@ const run=(args,options={})=>{const {includeStderr,...spawnOptions}=options;cons
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
- run(['load','-i',out+'/base.tar.gz']);fs.unlinkSync(out+'/base.tar.gz');
- const image=JSON.parse(run(['image','inspect',m.installedImage]))[0];assert.equal(image.Id,m.installedImage);
+ const pin=require('../qa/fixtures/history20-container-base-pin.json');assert.equal(pin.indexDigest,m.installedImage);
+ const meta=out+'/base-metadata';fs.mkdirSync(meta,{recursive:true});
+ const entries=['index.json',...['indexDigest','platformManifestDigest','configDigest'].map(k=>'blobs/sha256/'+pin[k].slice(7))];
+ cp.execFileSync('tar',['-xzf',out+'/base.tar.gz','-C',meta,...entries],{timeout:120000});
+ const blob=d=>{const bytes=fs.readFileSync(meta+'/blobs/sha256/'+d.slice(7));assert.equal('sha256:'+crypto.createHash('sha256').update(bytes).digest('hex'),d);return JSON.parse(bytes);};
+ assert(JSON.parse(fs.readFileSync(meta+'/index.json')).manifests.some(x=>x.digest===pin.indexDigest));
+ const descriptor=blob(pin.indexDigest).manifests.find(x=>x.platform?.os==='linux'&&x.platform?.architecture==='amd64');assert.equal(descriptor.digest,pin.platformManifestDigest);
+ assert.equal(blob(pin.platformManifestDigest).config.digest,pin.configDigest);assert.deepEqual(blob(pin.configDigest).rootfs.diff_ids,pin.diffIds);
+ fs.writeFileSync(out+'/image-load.log',run(['load','-i',out+'/base.tar.gz']));fs.unlinkSync(out+'/base.tar.gz');
+ const image=JSON.parse(run(['image','inspect',pin.configDigest]))[0];assert.equal(image.Id,pin.configDigest);assert.deepEqual(image.RootFS.Layers,pin.diffIds);
  const forbidden=(image.Config.Env||[]).filter(v=>/^(DATABASE_URL|DIRECT_URL|JWT_SECRET|.*TOKEN|.*PASSWORD|.*API_KEY|.*SECRET)=.+/.test(v));
  assert.equal(forbidden.length,0,'Base image contains credential-like ENV entries; do not start it');
- const base=name+'-base:pinned';run(['tag',m.installedImage,base]);
+ const base=name+'-base:pinned';run(['tag',pin.configDigest,base]);
  for(const kind of ['install','rollback']){
   const source=fs.readFileSync(candidate+'/'+(kind==='install'?'Dockerfile':'Dockerfile.rollback'),'utf8');assert(source.startsWith('FROM '+m.installedImage+'\n'));
   const dockerfile=out+'/Dockerfile.'+kind;fs.writeFileSync(dockerfile,source.replace('FROM '+m.installedImage,'FROM '+base));
@@ -36,7 +44,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    fs.writeFileSync(out+'/container-pg.log',result);console.log(result);
   }
  }
- const receipt={baseImage:m.installedImage,installImage:JSON.parse(run(['image','inspect',name+'-install:tested']))[0].Id,rollbackImage:JSON.parse(run(['image','inspect',name+'-rollback:tested']))[0].Id,steps:['baseline','install','rollback'].map(p=>JSON.parse(fs.readFileSync(out+'/'+p+'.json'))),privateNetwork:true,productionTouched:false};
+ const receipt={baseImage:m.installedImage,basePlatformManifest:pin.platformManifestDigest,baseConfigImage:pin.configDigest,installImage:JSON.parse(run(['image','inspect',name+'-install:tested']))[0].Id,rollbackImage:JSON.parse(run(['image','inspect',name+'-rollback:tested']))[0].Id,steps:['baseline','install','rollback'].map(p=>JSON.parse(fs.readFileSync(out+'/'+p+'.json'))),privateNetwork:true,productionTouched:false};
  const key=Buffer.from(process.env.HISTORY20_ISOLATED_IMAGE_KEY||'','hex');assert.equal(key.length,32,'Missing CI-only image sealing key');
  const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',key,iv),bundle=out+'/verified-images.aes';fs.writeFileSync(bundle,iv);
  const exporter=cp.spawn('docker',['save',name+'-install:tested',name+'-rollback:tested'],{stdio:['ignore','pipe','inherit']});
