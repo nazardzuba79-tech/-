@@ -101,7 +101,7 @@
   #archive-terminal-preview .terminal[data-mobile-tab=trade] :is(.fo-priceInputRow,.fo-qtyInputRow) { min-height:44px; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-field .fo-input { min-height:0; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-lastPriceBtn { min-height:44px; padding-inline:6px; font-size:12px; white-space:normal; line-height:13px; max-width:70px; }
-  #archive-terminal-preview .terminal[data-mobile-tab=trade] .percent-slider-presets button { min-height:32px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .percent-slider-presets button { min-height:40px; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .percent-slider-track { min-height:32px; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-optionsRow { flex-wrap:wrap; gap:4px 12px; }
   #archive-terminal-preview .terminal[data-mobile-tab=trade] :is(.fo-tpslToggle,.fo-reduceOnlyRow) { min-height:44px; font-size:13px; }
