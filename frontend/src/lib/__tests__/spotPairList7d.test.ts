@@ -84,6 +84,7 @@ describe('mounted compact Spot rail', () => {
       if (name === '../lib/spotOrderBook') return spotBookHelpers;
       if (name === '../lib/marketColumnSort') return columnSort;
       if (name === './CryptoIcon') return { CryptoIcon: ({ symbol }: any) => React.createElement('i', { 'data-icon': symbol }) };
+      if (name === './ListingReminder') return { ListingReminder: () => null };
       return req(name);
     });
     await act(async () => root.render(React.createElement(output.PairListSidebar, { pair: 'BTC/USDT', onChange: () => {} })));

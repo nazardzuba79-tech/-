@@ -112,6 +112,7 @@ test('actual controls keep native favourite separate from pair selection and res
       return { useMarketTickers: () => ({ tickers: new Map(), loading: false, error: false, stale: false, refresh: () => {} }) };
     }
     if (name === './CryptoIcon') return { CryptoIcon: () => null };
+    if (name === './ListingReminder') return { ListingReminder: () => null };
     return req(name);
   }, output);
   const tree = output.PairListSidebar({ pair: 'ETH/USDT', onChange: changed, onResizeBy: resized, marketWidth: 258 }, null);

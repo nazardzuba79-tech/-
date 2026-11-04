@@ -44,6 +44,7 @@ function component(file: string, lang: typeof LOCALES[number], assets = [fixture
     '../lib/testMarketCandles': {},
     '../lib/nrxMarket': { nrxListingTime: (s: string) => s },
     './CryptoIcon': { CryptoIcon: () => null },
+    '../../components/ListingReminder': { ListingReminder: () => null },
     './TerminalChart': { TerminalChart: () => React.createElement('div', { 'data-chart': true }) },
     './spotOrderPresentation': orderPresentation,
     '../../lib/i18n': { useLanguage: () => ({ t: translate(lang), lang }), localeOf: () => lang },

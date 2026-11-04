@@ -105,7 +105,9 @@
   #archive-terminal-preview .fo-form { display:contents; }
   #archive-terminal-preview .fo-form > * { order:0; }
   #archive-terminal-preview .fo-form > .fo-mlWrap { grid-row:1; position:relative; inset:auto; }
-  #archive-terminal-preview .percent-slider-presets button { min-height:44px; }
+  #archive-terminal-preview .percent-slider-presets { gap:4px; }
+  #archive-terminal-preview .percent-slider-presets button { flex:1 1 0; min-height:40px; border:1px solid #2a2a30; border-radius:8px; font-size:12px; }
+  #archive-terminal-preview .percent-slider-presets button[aria-pressed="true"] { border-color:var(--accent-yellow); }
   #archive-terminal-preview .percent-slider-track { min-height:44px; }
   #archive-terminal-preview .fo-reduceOnlyRow { min-height:44px; }
   #archive-terminal-preview .fo-form { gap:12px; }
@@ -123,7 +125,11 @@
   #archive-terminal-preview .terminal-account-header { display:flex; flex-wrap:wrap; height:auto; padding:8px 12px; gap:8px; }
   /* All five account tabs in sight: the strip wraps instead of scrolling
      sideways with «История позиций» and «Активы» hidden past the edge. */
-  #archive-terminal-preview .bottom-tabs { width:100%; flex:none; flex-wrap:wrap; overflow:visible; min-height:44px; height:auto; padding:0; gap:0 16px; }
+  #archive-terminal-preview .bottom-tabs { width:auto; flex:1 1 0; min-width:0; flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; min-height:44px; height:auto; padding:0 28px 0 0; gap:0 16px; -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent); }
+  #archive-terminal-preview .bottom-tabs::-webkit-scrollbar { display:none; }
+  #archive-terminal-preview .terminal-account-header { flex-wrap:nowrap; align-items:center; }
+  #archive-terminal-preview .terminal[data-mobile-tab=positions] { flex:1 1 auto; }
+  #archive-terminal-preview .terminal[data-mobile-tab=positions] .bottom-panel { flex:1 1 auto; }
   #archive-terminal-preview .bottom-tab { min-height:44px; flex:none; }
   #archive-terminal-preview .bottom-content { height:auto; max-height:none; overflow-x:auto; }
   /* Open orders and order history become cards too: the price, the status

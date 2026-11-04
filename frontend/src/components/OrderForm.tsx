@@ -617,9 +617,10 @@ export function OrderForm({
               />
             ))}
           </div>
+          {/* On a phone these are the tappable keys (SpotMobileCompact.css); on desktop they stay the scale under the dots. */}
           <div className="slider-labels">
             {SLIDER_STEPS.map((step) => (
-              <span key={step}>{step}%</span>
+              <button key={step} type="button" aria-pressed={percent === step} disabled={!balanceReady || balanceError || vtaLocked} onClick={() => applyPercent(step)}>{step}%</button>
             ))}
           </div>
         </div>
