@@ -121,7 +121,7 @@ export const PairListSidebar = forwardRef<
     const now = Date.now() + (clockOffsetMs ?? 0);
     // Listings that have not opened yet are not tickers, so the feed never
     // lists them; they come from the same listings store as the dates.
-    const upcoming = useMemo(() => listedAssets.filter(asset => asset.state?.phase === 'pre-listing' && !asset.privateTest), [listedAssets]);
+    const upcoming = useMemo(() => listedAssets.filter(asset => asset.state?.phase === 'pre-listing' && !(asset as { privateTest?: boolean }).privateTest), [listedAssets]);
     const listingAtByPair = useMemo(() => new Map(listedAssets.flatMap(asset => {
       const at = Date.parse(asset.listingAt);
       return Number.isFinite(at) ? [[asset.pair, at] as const] : [];
