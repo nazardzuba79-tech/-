@@ -770,6 +770,22 @@
     justify-content: flex-end;
   }
 }
+/* 2026-11-04 (round 3): on a phone the four actions wrapped 3 + 1 with a
+   lone «Конвертация»; a 2×2 grid reads as one block. */
+@media (max-width: 639px) {
+  .vx-wallet .wallet-overview-actions,
+  .vx-wallet .wallet-account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .vx-wallet .wallet-overview-actions > button,
+  .vx-wallet .wallet-account-actions > button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+}
 /* The decorative V from the approved header: gold, faint, clipped. */
 .vx-wallet .wallet-overview-body {
   display: grid;

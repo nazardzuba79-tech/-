@@ -319,7 +319,13 @@
   /* One card per row on a phone. This was a horizontal swipe carousel,
      which left each card half off-screen and its figures cut mid-word —
      a market-analytics card is read, not swiped past. */
-  .markets-bolt-root .overview-grid { grid-template-columns: 1fr; gap: 16px; }
+  .markets-bolt-root .overview-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
+  /* 2026-11-04 (round 3): one 28px step between sections and 40px tap rows instead of 20px text tabs. */
+  .markets-bolt-root .highlights-grid { margin-bottom: 28px; }
+  .markets-bolt-root .type-tabs { padding: 12px 0 16px; gap: 22px; }
+  .markets-bolt-root .tab-row button { min-height: 40px; padding: 0 0 10px; }
+  .markets-bolt-root .category-tabs .tab-active:after { top: 10px; }
+  .markets-bolt-root .highlight-heading button { min-height: 36px; padding: 0 8px; margin-right: -8px; }
   .markets-bolt-root .overview-card { min-width: 0; min-height: 0; padding: 22px 20px; }
   .markets-bolt-root .sectors-card { grid-column: auto; }
   .markets-bolt-root .sector-row { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1fr); }

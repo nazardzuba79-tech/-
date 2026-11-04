@@ -78,6 +78,8 @@ beforeEach(() => {
       if (name.endsWith('/useCfdPracticePositions')) return { useCfdPracticePositionLines: () => [] };
       if (name.endsWith('/tradingMode')) return { rememberTradingMode: () => {} };
       if (name.endsWith('/useCompactAccountPanel')) return evaluate('lib/useCompactAccountPanel.ts');
+      // No touch input is dispatched by this synthetic feed harness. Swipe behaviour is browser-tested separately.
+      if (name.endsWith('/useSwipeTabs')) return { useSwipeTabs: () => {} };
       if (name.endsWith('/krakenSocket')) return { krakenSocket: { getStatus: () => 'disconnected', subscribeStatus: krakenSubscribe } };
       if (name === 'react-router-dom') return { useSearchParams: () => [query, () => {}] };
       // Phone header switch (rendered through the stubbed Nav) and its pure helpers.

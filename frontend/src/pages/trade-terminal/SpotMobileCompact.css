@@ -335,3 +335,18 @@
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-selector > :first-child:not(.pair-identity) { display:none !important; }
 }
 
+
+/* 2026-11-04 (round 3): the Spot percent scale was five 10px labels under 12px dots; on a phone the labels are five equal 40px keys and the dots keep only their position. */
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels { display:flex; gap:4px; padding:6px 0 0; font-size:12px; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button { flex:1 1 0; min-width:0; min-height:40px; padding:0 2px; overflow:hidden; border:1px solid #2a2a30; border-radius:8px; background:transparent; color:#9199a1; font:inherit; font-size:12px; font-variant-numeric:tabular-nums; cursor:pointer; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button[aria-pressed="true"] { border-color:#f0b90b; color:#f0b90b; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button:disabled { opacity:.4; cursor:not-allowed; }
+  /* The dots' 40px track carried the scale on desktop; on a phone the keys below are the scale, so the empty track goes. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-track { display:none !important; }
+}
+/* 320–359px: the ticket column is ~170px wide, so the five keys drop to 11px and a 3px gap; `min-width:0` above lets them shrink instead of pushing the page sideways (CI runner fonts are a few px wider than a phone's). */
+@media (max-width:359px) {
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels { gap:3px; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button { padding:0; font-size:11px; letter-spacing:-.2px; }
+}

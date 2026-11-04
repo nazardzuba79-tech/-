@@ -74,6 +74,7 @@ describe('upcoming listings in the Spot market rail', () => {
       if (name === '../lib/spotOrderBook') return spotBookHelpers;
       if (name === '../lib/marketColumnSort') return columnSort;
       if (name === './CryptoIcon') return { CryptoIcon: ({ symbol }: any) => React.createElement('i', { 'data-icon': symbol }) };
+      if (name === './ListingReminder') return { ListingReminder: ({ pair }: any) => React.createElement('button', { type: 'button', 'data-listing-reminder': pair }) };
       return req(name);
     });
     selected.length = 0;
@@ -108,6 +109,8 @@ describe('upcoming listings in the Spot market rail', () => {
     expect(cell('QVTR/USDT', '.p-listing-at')).toBe('06.11 11:00');
     expect(cell('ECLV/USDT', '[data-listing-eta]')).toBe('listings.sortSoon');
     expect(cell('ECLV/USDT', '.p-listing-at')).toBe('13.11 08:00');
+    // The reminder bell (2026-11-04) belongs to a running countdown; a paused timer has no date to remind about.
+    expect(Array.from(host.querySelectorAll('[data-listing-reminder]')).map(node => node.getAttribute('data-listing-reminder'))).toEqual(['TYVN/USDT', 'QVTR/USDT']);
     expect(host.querySelector('.pairs-tab[data-pairs-tab="soon"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(host.querySelector('.pairs-tab[aria-pressed="true"]:not([data-pairs-tab])')).toBeNull();
   });

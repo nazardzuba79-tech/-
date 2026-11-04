@@ -48,7 +48,13 @@ async function shot(page, name) {
     // Verify normal production bundle does not include or enable mobile clients.
     const production = path.resolve(__dirname, '../frontend/dist');
     assert(!fs.existsSync(path.join(production, 'mobile')), 'Mobile assets leaked into normal build');
-    assert(!fs.readFileSync(path.join(production,'index.html'),'utf8').includes('manifest.webmanifest'));
+    // The normal build carries its own install manifest since 2026-11-04 (phone round 3); what must never
+    // reach it is the review client's manifest or its /pwa entry.
+    const productionIndex = fs.readFileSync(path.join(production,'index.html'),'utf8');
+    assert(!productionIndex.includes('/mobile/manifest.webmanifest'), 'Mobile review manifest leaked into normal build');
+    assert(!productionIndex.includes('href="/pwa'), 'Mobile review entry leaked into normal build');
+    const productionManifest = JSON.parse(fs.readFileSync(path.join(production,'manifest.webmanifest'),'utf8'));
+    assert.notEqual(productionManifest.start_url.split('?')[0], '/pwa', 'Normal build manifest must not start the review client');
     for (const host of ['voltextech.net', 'localhost.evil.test', '127.0.0.1.evil.test', '[2001:db8::1]', 'user@localhost']) {
       const deniedStatus = await new Promise((resolve,reject)=>require('node:http').get(origin+'/pwa',{headers:{host}},response=>{response.resume();resolve(response.statusCode);}).on('error',reject));
       assert.equal(deniedStatus,403,`Unexpected accepted Host: ${host}`);

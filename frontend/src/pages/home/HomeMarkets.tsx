@@ -146,15 +146,15 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px]">
+          <table className="w-full sm:min-w-[560px]">
             <thead>
               <tr className="border-b border-white/6 text-left text-[11px] text-faint">
-                <th scope="col" className="px-4 py-2 font-normal">{t('markets.pair')}</th>
+                <th scope="col" className="px-3 py-2 font-normal sm:px-4">{t('markets.pair')}</th>
                 <th scope="col" className="px-2 py-2 text-right font-normal">{t('markets.price')}</th>
                 <th scope="col" className="px-2 py-2 text-right font-normal">{t('trade.change24h')}</th>
                 <th scope="col" className="hidden px-2 py-2 text-center font-normal sm:table-cell">{t('home.markets.chart')}</th>
                 <th scope="col" className="hidden px-2 py-2 text-right font-normal sm:table-cell">{t('trade.volume24h')}</th>
-                <th scope="col" className="px-4 py-2 text-right font-normal">{t('trade.action')}</th>
+                <th scope="col" className="px-3 py-2 text-right font-normal sm:px-4"><span className="sr-only sm:not-sr-only">{t('trade.action')}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -176,7 +176,7 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
                       key={r.key}
                       className="border-b border-white/5 transition-colors duration-150 ease-out last:border-b-0 hover:bg-white/[0.03]"
                     >
-                      <td className="px-4 py-[11px]">
+                      <td className="px-3 py-[11px] sm:px-4">
                         <div className="flex items-center gap-2.5">
                           <CryptoIcon symbol={r.base} size={24} imageUrl={market.logoOf(r.base)} />
                           <span className="leading-tight">
@@ -205,12 +205,15 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
                             ? `$${(r.quoteVolume / 1e9).toFixed(2)}B`
                             : `$${(r.quoteVolume / 1e6).toFixed(1)}M`}
                       </td>
-                      <td className="px-4 py-[11px] text-right">
+                      <td className="px-3 py-[11px] text-right sm:px-4">
+                        {/* On a phone the four visible columns only fit when this is an arrow key (2026-11-04); the label stays for assistive technology. */}
                         <Link
                           to={r.to}
-                          className="inline-block rounded-[6px] border border-white/10 bg-white/[0.04] px-3 py-[6px] text-[11.5px] font-medium text-white transition-colors duration-150 ease-out hover:border-gold-500/50 hover:text-gold-400 active:translate-y-[1px]"
+                          aria-label={`${t('home.markets.trade')} ${r.symbol}`}
+                          className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-[6px] border border-white/10 bg-white/[0.04] px-2 py-[6px] text-[11.5px] font-medium text-white transition-colors duration-150 ease-out hover:border-gold-500/50 hover:text-gold-400 active:translate-y-[1px] sm:min-h-0 sm:min-w-0 sm:px-3"
                         >
-                          {t('home.markets.trade')}
+                          <span className="hidden sm:inline">{t('home.markets.trade')}</span>
+                          <span className="sm:hidden" aria-hidden="true">→</span>
                         </Link>
                       </td>
                     </tr>

@@ -6,6 +6,7 @@ import { useTestMarkets } from '../../lib/testMarketStore';
 import { nrxListingTime } from '../../lib/nrxMarket';
 import { countdownParts, formatListingMoment, formatTestCompact, formatTestPercent, formatTestPrice, managedListingTime, matchesTestAssetSearch, testMarketPresentation, type TestAsset } from '../../lib/testMarkets';
 import { orderListings, type ListingOrder } from '../../lib/listingsOrder';
+import { ListingReminder } from '../../components/ListingReminder';
 import './TestMarketsStrip.css';
 
 /**
@@ -98,6 +99,7 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
                 {remaining && <span className="test-market-eta" data-listing-eta>{remaining}</span>}
               </span>
             </button>
+            {remaining && <ListingReminder pair={asset.pair} name={asset.name} openAt={Date.parse(asset.listingAt)} compact />}
           </div>
         );
       })}

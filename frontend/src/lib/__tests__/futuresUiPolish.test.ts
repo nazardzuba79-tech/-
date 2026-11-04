@@ -111,6 +111,22 @@ function restoreFormPresentation(source) {
   .replace('formatAmount(orderCosting.feeReserve, 4)', 'orderCosting.feeReserve.toFixed(4)')
   .replace('formatAmount(maxPositionNotional)', 'maxPositionNotional.toFixed(2)');
 }
+function restoreFuturesSwipe(source) {
+  // GitHub Actions Windows checks out sources as CRLF; compare LF-normalized audited bytes.
+  source = source.replace(/\r\n/g, '\n');
+  // 2026-11-04 mobile gesture enhancement only. Undo exactly these additions
+  // before enforcing the historic full-page semantic fingerprint: all order,
+  // balance, account and trading callbacks must stay byte-equivalent.
+  const imports = "import { useSwipeTabs } from '../lib/useSwipeTabs';\n" +
+    "const FUTURES_TAB_ORDER = ['chart', 'trade', 'positions'] as const;\n" +
+    "const SWIPE_SKIP_CHART = { skipFrom: ['chart'] as const };\n";
+  const listener = "  // A sideways swipe on the ticket or the positions tab moves to the neighbouring tab (2026-11-04); the chart keeps its own gestures.\n" +
+    "  const swipeTo = useCallback((next: 'chart' | 'trade' | 'positions') => { selectMobileTab(next); if (next === 'positions') accountPanel.reveal(); }, [selectMobileTab, accountPanel]);\n" +
+    "  useSwipeTabs(terminalRef, FUTURES_TAB_ORDER, mobileTab, swipeTo, SWIPE_SKIP_CHART);\n";
+  expect(source.split(imports)).toHaveLength(2);
+  expect(source.split(listener)).toHaveLength(2);
+  return source.replace(imports, '').replace(listener, '');
+}
 describe('Futures UI-only reconciliation',()=>{
 // Frozen from main 00c6dc3; exclude only CSS imports, style declarations and visual attributes.
 // All render conditions, labels, callbacks, effects, API payloads and calculations are included.
@@ -520,7 +536,7 @@ test.each([
     // before, and no other function in this module changed.
     "698c91b891d7e62f5e8c526983687499b1fa1cc4e77532760747a9b182673519"
   ]
-])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : name === 'components/FuturesAccountSummary.tsx' ? restoreAccountActions(read(name)) : read(name))).toBe(hash));
+])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : name === 'components/FuturesAccountSummary.tsx' ? restoreAccountActions(read(name)) : name === 'pages/FuturesPage.tsx' ? restoreFuturesSwipe(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{
  const css=read('pages/trade-terminal/FuturesTerminal.css');
  const selectors=[]; require('postcss').parse(css).walkRules(rule=>selectors.push(...rule.selectors));
