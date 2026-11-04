@@ -240,7 +240,7 @@ export const PairListSidebar = forwardRef<
     // Upcoming rows lead the list under «Скоро», «Новые» and any search; the
     // default volume ranking stays a list of markets that actually trade.
     const upcomingRows = (upcomingOnly || newestFirst || isSearching)
-      ? orderListings(upcoming.filter(asset => matchesTestAssetSearch(asset, search)
+      ? orderListings(upcoming.filter(asset => (matchesTestAssetSearch(asset, search) || asset.name.toLowerCase().includes(search.trim().toLowerCase()))
           && (!favoritesOnly || favorites.has(asset.pair))
           && (!effectiveQuoteFilter || asset.pair.split('/')[1] === effectiveQuoteFilter)), 'soon')
       : [];

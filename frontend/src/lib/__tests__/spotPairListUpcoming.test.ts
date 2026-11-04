@@ -46,7 +46,7 @@ const listedAssets = [
   listing('VTA', 'VOLTORA', '2026-09-28T14:00:00.000Z', 'live'),
   listing('ECLV', 'ECLAVO', '2026-11-13T08:00:00.000Z', 'pre-listing', { countdown: 'paused', listingArmed: false }),
   listing('QVTR', 'QAVENTRA', '2026-11-06T11:00:00.000Z', 'pre-listing'),
-  listing('TYVN', 'TYVN', '2026-11-04T06:40:00.000Z', 'pre-listing'),
+  listing('TYVN', 'TYVN Network', '2026-11-04T06:40:00.000Z', 'pre-listing'),
 ];
 
 describe('upcoming listings in the Spot market rail', () => {
@@ -113,6 +113,13 @@ describe('upcoming listings in the Spot market rail', () => {
       input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     });
     expect(rows()).toEqual(['QVTR/USDT:soon']);
+    // The full name with its space, as the Markets search and qa-ai-candidate.cjs type it.
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(input, 'TYVN Network');
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    });
+    expect(rows()).toEqual(['TYVN/USDT:soon']);
   });
 
   test('opening a countdown tells the page it is upcoming', async () => {
