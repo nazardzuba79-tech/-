@@ -85,6 +85,8 @@ export function privateTestMarketsRouter(
   router.get('/private-test/markets/:pair/orderbook', authenticate, admitted, asyncRoute(async (req, res) => {
     const listing = await forPair(req.params.pair);
     if (!listing) return notFound(res);
+    // A staged/paused private market is not open, even past listingAt.
+    if (!publishedListingAsset(listing).listingArmed) return res.status(404).json({ error: 'not_listed' });
     const snapshot = engine.getBook(listingSimulationConfig(listing.config).pair).snapshot();
     res.json({
       pair: snapshot.pair,
