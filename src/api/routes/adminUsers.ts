@@ -108,6 +108,11 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     res.set('Cache-Control', 'private, no-store').json(rows);
   }));
 
+  router.get('/admin/test-accounts/access', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    return res.set('Cache-Control', 'private, no-store').json({ allowed: !!ownerId && req.userId === ownerId });
+  }));
+
   // Only the configured owner can create a dedicated test account. The password
   // is supplied for this new account by its creator; public registrations are unchanged.
   const newTestAccountSchema = z.object({
