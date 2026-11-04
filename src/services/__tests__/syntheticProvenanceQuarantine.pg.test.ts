@@ -375,6 +375,38 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     expect(await provenanceStatus(db, seller)).toBe('CLEAR');
   });
 
+  test('read-only preflight reports unclassifiable historical receipts rather than hiding them behind zero identified accounts', async () => {
+    const sql = fs.readFileSync(path.join(__dirname, '../../../scripts/synthetic-provenance-preflight.sql'), 'utf8')
+      .replace(/^--.*$/gm, '').replace(/--[^\n]*/g, '').trim().replace(/;$/, '');
+    const run = () => db.$transaction(async tx => {
+      await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
+      return (await tx.$queryRawUnsafe<Record<string, bigint>[]>(sql))[0];
+    });
+    const before = await run();
+    const malformedPair = await user('0'), malformedAmount = await user('0'), unrecognizedLedger = await user('0');
+    // The runtime rejects the invalid pair; without this check the original
+    // SQL silently excluded it from identified_accounts altogether.
+    await db.auditLog.create({ data: { userId: malformedPair, action: 'TEAM_SPOT_SIMULATION_SOLD',
+      metadata: { pair: 'NOT_A_PAIR', proceeds: '100000' } } });
+    await db.auditLog.create({ data: { userId: malformedAmount, action: 'TEAM_SPOT_SIMULATION_SOLD',
+      metadata: { pair: 'QVTR/USDT', proceeds: 'not-a-number' } } });
+    await db.auditLog.create({ data: { userId: unrecognizedLedger, action: 'TEAM_SPOT_SIMULATION_SOLD',
+      metadata: { pair: 'QVTR/USDT', proceeds: '1', settlementLedger: 'UNKNOWN' } } });
+    await db.auditLog.create({ data: { userId: null, action: 'TEAM_SPOT_SIMULATION_SOLD',
+      metadata: { pair: 'QVTR/USDT', proceeds: '5' } } });
+    const after = await run();
+    const increase = (field: string) => Number(after[field]) - Number(before[field]);
+    expect(increase('unattributed_simulation_sale_receipts')).toBe(1);
+    expect(increase('malformed_simulation_sale_pair_receipts')).toBe(1);
+    expect(increase('malformed_simulation_sale_proceeds_receipts')).toBe(1);
+    expect(increase('unexpected_simulation_sale_ledger_receipts')).toBe(1);
+    expect(increase('identified_accounts')).toBe(2); // malformed pair and NULL user are not classified
+    expect(increase('accounts_with_malformed_receipts')).toBe(1);
+    // Production query is aggregate-only; never include individual IDs or amounts in the report.
+    expect(Object.keys(after)).not.toContain('userId');
+    expect(Object.keys(after)).not.toContain('amount');
+  });
+
   test('review findings: ADMIN house MARKET SELL, Futures orders and product purchases are refused for a held account; nothing moves', async () => {
     const admin = await user('100000', '1');
     await db.user.update({ where: { id: admin }, data: { role: 'ADMIN' } });
