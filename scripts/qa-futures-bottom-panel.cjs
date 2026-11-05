@@ -378,16 +378,22 @@ const measure = (page) => page.evaluate(() => {
             `${key}: rows have ${view.rowHeights.length} different heights: ${view.rowHeights.join(', ')}`);
           assert.ok(view.rowHeights[0] >= 40 && view.rowHeights[0] <= 72,
             `${key}: row height ${view.rowHeights[0]}px is outside a readable band`);
+          // #148: on ALL four owner-requested desktop viewports, every
+          // position column and action is visible without sideways scrolling.
+          // Prior correct-height QA measured +92px at 1440 and +158px at 1366.
+          assert.equal(view.tableScrollX, 0,
+            `${key}: the positions table scrolls sideways by ${view.tableScrollX}px`);
           if (view.archive) {
-            // The approved archive design deliberately keeps readable columns
-            // and a horizontal scrollbar INSIDE the positions panel. The trading
-            // rail must remain independent; page overflow is still forbidden.
-            assert.ok(['auto', 'scroll'].includes(view.tableScrollMode), `${key}: columns are clipped without a scrollbar`);
-            assert.ok(view.orderRail && view.panel.left + view.panel.width <= view.orderRail.left + 1,
-              `${key}: positions overlap the trading rail`);
-          } else {
-            assert.equal(view.tableScrollX, 0,
-              `${key}: the table scrolls sideways by ${view.tableScrollX}px inside its panel`);
+            assert.ok(['auto', 'scroll'].includes(view.tableScrollMode),
+              `${key}: positions region loses its accessible scroll behaviour`);
+            // The wide layout puts the ticket to the right of the table;
+            // the 1025–1599px layout puts the ticket ABOVE the full-width
+            // account panel. Neither may overlap the other.
+            const separated = view.orderRail && (
+              view.panel.left + view.panel.width <= view.orderRail.left + 1 ||
+              view.panel.top >= view.orderRail.bottom - 1);
+            assert.ok(separated,
+              `${key}: positions account panel overlaps the order-entry ticket`);
           }
         }
       }
