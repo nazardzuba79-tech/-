@@ -236,9 +236,9 @@ async function evidencedDeposits(tx: Tx, userId: string, asset: string): Promise
   return rows.reduce((sum, r) => sum.plus(num(r.amount)), new BigNumber(0));
 }
 
-/** Every withdrawal of `asset` by the account that was not rejected, including the one being judged. */
+/** Count pending, sent and historical COMPLETED withdrawals against genuine deposits. A legacy paid withdrawal must not let the same evidenced deposit be paid out twice. */
 async function withdrawnOf(tx: Tx, userId: string, asset: string): Promise<BigNumber> {
-  const rows = await tx.withdrawal.findMany({ where: { userId, asset, status: { in: ['PENDING', 'APPROVED', 'SENT'] } }, select: { amount: true } });
+  const rows = await tx.withdrawal.findMany({ where: { userId, asset, status: { in: ['PENDING', 'APPROVED', 'SENT', 'COMPLETED'] } }, select: { amount: true } });
   return rows.reduce((sum, r) => sum.plus(num(r.amount)), new BigNumber(0));
 }
 
