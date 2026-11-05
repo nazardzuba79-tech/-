@@ -255,6 +255,11 @@ export class WalletConversionService {
   }
   /** Available funds of one ledger only: a demo account sees its DemoBalance, never Balance, and the reverse. */
   private async available(ledger: ConversionLedger, userId: string) {
+    if (ledger === 'cross') {
+      const account = await nativeCrossAccount(this.prisma, userId, this.env);
+      const available = account ? nativeCrossFreeUSDT(account) : null;
+      return [{ asset: 'USDT', available: available ?? '0' }];
+    }
     const where = { where: { userId }, select: { asset: true, available: true } };
     return ledger === 'demo' ? this.prisma.demoBalance.findMany(where) : this.prisma.balance.findMany(where);
   }
@@ -270,6 +275,11 @@ export class WalletConversionService {
     if (ledger === 'spot') return { convertible: [...this.limits.reserves.keys()].some(asset => this.supported(asset)), ledger };
     const { config } = demoLiquidityConfig(this.env);
     if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) return { convertible: false, ledger };
+    if (ledger === 'cross') {
+      const account = await nativeCrossAccount(this.prisma, userId, this.env);
+      const free = account && nativeCrossFreeUSDT(account);
+      if (!free || !new Decimal(free).gt(0)) return { convertible: false, ledger };
+    }
     return { convertible: !(await liquidityAccountRefusal(this.prisma, config.accountId, false, this.env)), ledger };
   }
   async assets(userId: string) {
@@ -294,13 +304,16 @@ export class WalletConversionService {
     if (!AMOUNT.test(toAmount) || !new Decimal(toAmount).isGreaterThan(0)) throw new ConversionError('INVALID_CONVERSION');
     const ledger = await this.ledger(this.prisma, userId);
     const key = { where: { userId_asset: { userId, asset: fromAsset } } };
-    const balance = ledger === 'demo' ? await this.prisma.demoBalance.findUnique(key) : await this.prisma.balance.findUnique(key);
+    const balance = ledger === 'cross'
+      ? (await this.available('cross', userId))[0]
+      : ledger === 'demo' ? await this.prisma.demoBalance.findUnique(key) : await this.prisma.balance.findUnique(key);
+    if (ledger === 'cross' && fromAsset !== 'USDT') throw new ConversionError('UNSUPPORTED_ASSET');
     if (!balance || new Decimal(balance.available.toString()).lt(fromAmount)) throw new ConversionError('INSUFFICIENT_BALANCE');
     const quote: ConversionQuote = { quoteId: randomUUID(), fromAsset, toAsset, fromAmount, toAmount,
       fromPriceUsd, toPriceUsd, fee: '0', source: 'kraken', pricing: 'bid-ask', fetchedAt: feed.fetchedAt, expiresAt: feed.fetchedAt + MAX_AGE, ledger };
     // Refuse early what cannot be confirmed; the confirm re-checks all of it under its locks.
     await this.admit(quote);
-    if (ledger === 'demo') {
+    if (ledger === 'demo' || ledger === 'cross') {
       const accountId = await this.demoBacking(this.prisma, userId, quote, false);
       const inventory = await this.prisma.demoBalance.findUnique({ where: { userId_asset: { userId: accountId, asset: toAsset } } });
       if (!inventory || new Decimal(inventory.available.toString()).lt(toAmount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
@@ -340,7 +353,7 @@ export class WalletConversionService {
       // The final shared lock — over every account's Balance conversions (reserve check), or the demo book — is
       // taken BEFORE the checks below, so a quote that expires, a block or a ledger change set while this waits
       // for it cannot pass. Taken after the account lock, in this order everywhere, so the two cannot deadlock.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${quote.ledger === 'demo' ? DEMO_SPOT_LEDGER.lock : 'wallet-conversion:reserves'}, 0))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${(quote.ledger === 'demo' || quote.ledger === 'cross') ? DEMO_SPOT_LEDGER.lock : 'wallet-conversion:reserves'}, 0))`;
       // The HTTP route supplies the already-verified Session identity. Recheck it
       // *inside this fund-moving transaction*, after any shared lock wait.
       // A logout/block committed while the command was waiting must not execute.
