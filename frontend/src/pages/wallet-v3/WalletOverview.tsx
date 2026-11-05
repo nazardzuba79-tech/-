@@ -10,6 +10,7 @@ import {
   EyeOffIcon,
   HistoryIcon,
   RepeatIcon,
+  SearchIcon,
   WalletIcon,
 } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
@@ -124,6 +125,7 @@ export function WalletOverview({
 }) {
   const { t, lang } = useLanguage();
   const [tab, setTab] = useState<Tab>('account');
+  const [assetQuery, setAssetQuery] = useState('');
 
   const cross = account?.mode === 'CROSS';
   const known = (v: number | null | undefined): number | null => (unavailable || v === null || v === undefined ? null : v);
@@ -169,6 +171,13 @@ export function WalletOverview({
     }
     return list.sort((a, b) => (b.valueUsd ?? -1) - (a.valueUsd ?? -1));
   }, [rows, overview, cross, t]);
+
+  // The Overview Asset tab is a separate, short cross-account list. Search
+  // only filters displayed rows; it cannot change totals, valuations or ledgers.
+  const visibleAssets = useMemo(() => {
+    const query = assetQuery.trim().toLowerCase();
+    return query ? assets.filter(a => a.symbol.toLowerCase().includes(query) || a.account.toLowerCase().includes(query)) : assets;
+  }, [assets, assetQuery]);
 
   const holdings = useMemo(() => {
     const bySymbol = new Map<string, number>();
@@ -284,9 +293,23 @@ export function WalletOverview({
                 </AccountRow>
               </>
             ) : (
-              <ul className="wallet-asset-tab">
+              <>
+                <div className="wallet-overview-asset-controls">
+                  <div className="wallet-ledger-search">
+                    <SearchIcon className="h-4 w-4 shrink-0 text-ink-4" strokeWidth={1.7} aria-hidden="true" />
+                    <input
+                      type="search"
+                      value={assetQuery}
+                      onChange={(event) => setAssetQuery(event.target.value)}
+                      placeholder={t('wallet.searchAsset')}
+                      aria-label={t('wallet.searchAsset')}
+                    />
+                  </div>
+                </div>
+                <ul className="wallet-asset-tab">
                 {assets.length === 0 && <li className="px-5 py-8 text-center text-[13px] text-ink-4">{loading ? t('wallet.loading') : t('wallet.noAssets')}</li>}
-                {assets.map((a) => (
+                {assets.length > 0 && visibleAssets.length === 0 && <li className="px-5 py-8 text-center text-[13px] text-ink-4">{t('wallet.noSearchResults')}</li>}
+                {visibleAssets.map((a) => (
                   <li key={a.account + (a.instrumentId ?? a.symbol)} className="wallet-asset-tab-row" data-symbol={a.symbol}>
                     <CryptoIcon symbol={a.symbol} size={30} />
                     <span className="min-w-0">
@@ -301,7 +324,8 @@ export function WalletOverview({
                     </span>
                   </li>
                 ))}
-              </ul>
+                </ul>
+              </>
             )}
           </section>
 
