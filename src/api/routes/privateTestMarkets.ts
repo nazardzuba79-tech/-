@@ -5,7 +5,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { managedListingRegistry, type ManagedListingRegistry } from '../../services/listings/registry';
 import { privateTestAdmitted, SIMULATION_QUOTE } from '../../services/listings/privateTest';
-import { listingSimulationConfig, type PublishedListing } from '../../services/listings/listingConfig';
+import { listingSimulationConfig, publishedListingAsset, type PublishedListing } from '../../services/listings/listingConfig';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
 
 /**
@@ -52,7 +52,7 @@ export function privateTestMarketsRouter(
   router.get('/private-test/markets/:pair/candles', authenticate, admitted, asyncRoute(async (req, res) => {
     const listing = await forPair(req.params.pair);
     if (!listing) return notFound(res);
-    const asset = listingSimulationConfig(listing.config);
+    const asset = publishedListingAsset(listing);
     const interval = typeof req.query.interval === 'string' ? req.query.interval : '5m';
     const now = clock();
     try {
@@ -68,7 +68,7 @@ export function privateTestMarketsRouter(
     const listing = await forPair(req.params.pair);
     if (!listing) return notFound(res);
     const now = clock();
-    const asset = listingSimulationConfig(listing.config);
+    const asset = publishedListingAsset(listing);
     const { state } = publicTestAsset(asset, now);
     if (state.phase !== 'live' || state.lastPrice === null) return res.status(404).json({ error: 'not_listed', listingAt: new Date(asset.listingAt).toISOString() });
     const book = engine.getBook(asset.pair);
@@ -85,6 +85,8 @@ export function privateTestMarketsRouter(
   router.get('/private-test/markets/:pair/orderbook', authenticate, admitted, asyncRoute(async (req, res) => {
     const listing = await forPair(req.params.pair);
     if (!listing) return notFound(res);
+    // A staged/paused private market is not open, even past listingAt.
+    if (!publishedListingAsset(listing).listingArmed) return res.status(404).json({ error: 'not_listed' });
     const snapshot = engine.getBook(listingSimulationConfig(listing.config).pair).snapshot();
     res.json({
       pair: snapshot.pair,
@@ -118,7 +120,7 @@ function provenance(listing: PublishedListing) {
 
 function privateAsset(listing: PublishedListing, now: number) {
   return {
-    ...publicTestAsset(listingSimulationConfig(listing.config), now),
+    ...publicTestAsset(publishedListingAsset(listing), now),
     listingId: listing.id, version: listing.version, logo: listing.config.logo,
     displayTimeZone: listing.config.displayTimeZone, provenance: provenance(listing),
   };

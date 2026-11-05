@@ -404,6 +404,62 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     await usdtUntouched();
   });
 
+  test('private read-only listing respects staged/paused clocks after listingAt; only running produces candles and ticker', async () => {
+    // Regression: previously privateTestMarketsRouter used listingSimulationConfig
+    // (always listingArmed:true), so a staged window looked LIVE after its date
+    // even while OrderService correctly rejected its synthetic price source.
+    let active: PublishedListing = { ...published,
+      countdown: { state: 'staged', updatedAt: START - MINUTE, updatedBy: 'owner' },
+    };
+    const registry = { ensureFresh: async () => {}, snapshot: () => [active] };
+    const app = express();
+    app.use(privateTestMarketsRouter(db, new MatchingEngine(), registry, () => AT));
+    const token = `Bearer ${jwt.sign({ sub: owner }, process.env.JWT_SECRET!)}`;
+    const listPath = '/private-test/markets';
+    const candlesPath = `/private-test/markets/${slug}/candles?interval=5m&limit=5`;
+    const tickerPath = `/private-test/markets/${slug}/ticker`;
+    const bookPath = `/private-test/markets/${slug}/orderbook`;
+
+    for (const state of ['staged', 'paused'] as const) {
+      active = { ...published, countdown: { state, updatedAt: START - MINUTE, updatedBy: 'owner' } };
+      const list = await request(app).get(listPath).set('Authorization', token);
+      expect(list.status).toBe(200);
+      expect(list.body.assets).toHaveLength(1);
+      expect(list.body.assets[0]).toMatchObject({
+        pair, listingArmed: false, state: { phase: 'pre-listing', lastPrice: null },
+      });
+      const candles = await request(app).get(candlesPath).set('Authorization', token);
+      expect(candles.status).toBe(200);
+      expect(candles.body.candles).toEqual([]);
+      const ticker = await request(app).get(tickerPath).set('Authorization', token);
+      expect(ticker.status).toBe(404);
+      expect(ticker.body.error).toBe('not_listed');
+      const book = await request(app).get(bookPath).set('Authorization', token);
+      expect(book.status).toBe(404);
+      expect(book.body.error).toBe('not_listed');
+    }
+
+    active = { ...published, countdown: { state: 'running', updatedAt: START - MINUTE, updatedBy: 'owner' } };
+    const opened = await request(app).get(listPath).set('Authorization', token);
+    expect(opened.status).toBe(200);
+    expect(opened.body.assets[0]).toMatchObject({ pair, listingArmed: true, state: { phase: 'live' } });
+    const liveCandles = await request(app).get(candlesPath).set('Authorization', token);
+    expect(liveCandles.status).toBe(200);
+    expect(liveCandles.body.candles.length).toBeGreaterThan(0);
+    const liveTicker = await request(app).get(tickerPath).set('Authorization', token);
+    expect(liveTicker.status).toBe(200);
+    expect(liveTicker.body.ticker.pair).toBe(pair);
+    const liveBook = await request(app).get(bookPath).set('Authorization', token);
+    expect(liveBook.status).toBe(200);
+    expect(liveBook.body.pair).toBe(pair);
+
+    // Legacy listings without the countdown field preserve old running behavior.
+    active = published;
+    const legacy = await request(app).get(listPath).set('Authorization', token);
+    expect(legacy.status).toBe(200);
+    expect(legacy.body.assets[0].state.phase).toBe('live');
+  }, 30_000);
+
   test('public reads never answer for the private pair; the private reads serve the owner and the tester only, at the server clock', async () => {
     await fundPrivateTestAccount(db, published, tester);
     const engine = new MatchingEngine();
