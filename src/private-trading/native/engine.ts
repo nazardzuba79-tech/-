@@ -323,7 +323,7 @@ export function applyNativeWalletConversion(s: DemoState, id: string, value: str
   const debit = decimal(value, 'conversion_amount', true);
   if (!debit.isFinite() || !debit.gt(0)) throw new DemoEngineError('INVALID_CONVERSION_AMOUNT');
   if (s.positions.some(p => p.status === 'OPEN')
-    || s.orders.some(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED' || o.status === 'PENDING_TRIGGER')) {
+    || s.orders.some(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED')) {
     throw new DemoEngineError('CROSS_CONVERSION_ACTIVE_EXPOSURE');
   }
   const cash = n(s.walletBalance);
