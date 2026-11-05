@@ -259,6 +259,18 @@ describe('4. two accounts, two ledgers', () => {
   });
 });
 
+describe('4a. customer-facing stock item localization (#144)', () => {
+  it('uses the translated instrument type in the Wallet Asset tab, not hardcoded Russian', () => {
+    const source = read(wallet + 'WalletOverview.tsx');
+    expect(source).toContain("r.stockPosition ? t('stocks.typeStock') : t('wallet.navUnified')");
+    expect(source).not.toContain("r.stockPosition ? 'Акции'");
+    for (const locale of ['ru', 'en', 'es', 'zh', 'hi', 'ja', 'ko']) {
+      const dictionary = read('frontend/src/lib/i18n/locales/' + locale + '.ts');
+      expect(dictionary).toContain("'stocks.typeStock':");
+    }
+  });
+});
+
 describe('5. profit by period is the server’s own answer', () => {
   function dynamics(performance: any, extra: Record<string, unknown> = {}) {
     const hk = hooks();
