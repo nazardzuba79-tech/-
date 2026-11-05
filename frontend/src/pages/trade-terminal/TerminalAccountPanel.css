@@ -1269,12 +1269,14 @@
    the existing mobile view. No trade/price/account state is changed. */
 @media (min-width: 1025px) and (max-width: 1599px) {
   /* The archive sheet uses an ID selector plus grid-area shorthand. A
-     class-only grid-column rule cannot override that ID specificity. */
+     class-only grid-column rule cannot override that ID specificity.
+     The order-form is nested under display:contents .main-grid, not a
+     direct child of .terminal, so its selector must match that DOM. */
   #archive-terminal-preview.futures-terminal .terminal > .bottom-panel {
     grid-area: 3 / 1 / 4 / -1;
     min-width: 0;
   }
-  #archive-terminal-preview.futures-terminal .terminal > .order-form-area {
+  #archive-terminal-preview.futures-terminal .main-grid > .order-form-area {
     grid-area: 2 / 3 / 3 / 4;
     min-height: 0;
     overflow-y: auto;
