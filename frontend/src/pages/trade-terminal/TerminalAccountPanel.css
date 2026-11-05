@@ -1257,3 +1257,27 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector:focus-visible .pair-arrow {
   color: #fff;
 }
+
+
+/* #148: At 1366 and 1440 the positions row needs 158px/92px more room
+   than the chart+book columns provide. Let the account panel span the full
+   terminal width on short desktop screens rather than shrink numbers, hide
+   the realized-P&L column, or require a horizontal scroll.
+   Keep the order ticket in row 2 with its own vertical scroll, not underneath
+   the panel in row 3. The terminal still uses the existing grid tracks.
+   >1599px stays on the owner's original two-column layout. Phones stay in
+   the existing mobile view. No trade/price/account state is changed. */
+@media (min-width: 1025px) and (max-width: 1599px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    min-width: 0;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
+    grid-column: 3;
+    grid-row: 2 / 3;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
