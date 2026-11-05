@@ -372,6 +372,42 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     expect(await bal(mixed)).toEqual(['100000', '0']);
   });
 
+  test('a price-provider outage cannot block a verified BTC deposit on a mixed-history account; synthetic USDT stays held', async () => {
+    const mixed = await user('100000');
+    await identify(mixed);
+    await genuineDeposit(mixed, '0.25', {}, 'BTC');
+    const offline = { getTicker: async (_pair: string): Promise<null> => { throw new Error('Fixture provider offline'); } };
+    const withdrawals = new WithdrawalService(db, offline);
+    const request = await withdrawals.requestWithdrawal({
+      userId: mixed, asset: 'BTC', network: 'BTC',
+      toAddress: 'FIXTURE_BTC_NOT_A_REAL_ADDRESS', amount: '0.25',
+    });
+    expect(request).toMatchObject({ status: 'PENDING' });
+    await expect(withdrawals.approveWithdrawal({ withdrawalId: request.id, performedByAdminId: 'fixture-admin' }))
+      .resolves.toMatchObject({ status: 'APPROVED' });
+    await expect(withdrawals.markSent({ withdrawalId: request.id, performedByAdminId: 'fixture-admin', txHash: 'FIXTURE_NO_CHAIN' }))
+      .resolves.toMatchObject({ status: 'SENT' });
+    expect(await bal(mixed, 'BTC')).toEqual(['0', '0']);
+
+    // Missing independent evidence must still fail closed during the outage:
+    // none of the model-created 100000 USDT may be requested.
+    const unchanged = await digest([mixed]);
+    await expect(withdrawals.requestWithdrawal({
+      userId: mixed, asset: 'USDT', network: 'TRC20',
+      toAddress: 'FIXTURE_NOT_A_REAL_ADDRESS', amount: '1',
+    })).rejects.toMatchObject(HOLD);
+    expect(await digest([mixed])).toBe(unchanged);
+    // Even an audited release never makes an unsupported 1 USDT withdrawable
+    // by valuing unpriced synthetic collateral at a fictitious market price.
+    await decide(mixed, 'RELEASE_TO_FLOOR');
+    const released = await digest([mixed]);
+    await expect(withdrawals.requestWithdrawal({
+      userId: mixed, asset: 'USDT', network: 'TRC20',
+      toAddress: 'FIXTURE_NOT_A_REAL_ADDRESS', amount: '1',
+    })).rejects.toMatchObject({ code: 'SYNTHETIC_PROCEEDS_LOCKED' });
+    expect(await digest([mixed])).toBe(released);
+  });
+
   test('genuine deposit next to synthetic profit: only the deposit leaves, never the profit', async () => {
     const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
     await genuineDeposit(legacy, '10000');
