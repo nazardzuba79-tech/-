@@ -117,6 +117,29 @@ pg('Cross wallet conversion: one native debit + two demo asset legs in one DB tr
     expect((activity.metadata as Record<string, unknown>).toAsset).toBe('EUR');
   }, 30_000);
 
+  test('liquidity disappears after quote: no native debit, no demo EUR or USDT credit, quote remains uncommitted', async () => {
+    const q = await service.quote(owner, 'USDT', 'EUR', '100000');
+    const before = await native();
+    const initialInventory = await bal(inventory, 'EUR');
+    expect(await bal(owner, 'EUR')).toBe('0');
+    await db.demoBalance.update({ where: { userId_asset: { userId: inventory, asset: 'EUR' } },
+      data: { available: '0' } });
+    await expect(service.confirm(owner, q.quoteId, { sessionId: session, expiresAt: Date.now() + 60_000 }))
+      .rejects.toMatchObject({ code: 'INSUFFICIENT_LIQUIDITY' });
+    const after = await native();
+    expect(after.revision).toBe(before.revision);
+    expect(after.snapshot.walletBalance).toBe(before.snapshot.walletBalance);
+    expect(after.commands).toEqual(before.commands);
+    expect(await bal(owner, 'EUR')).toBe('0');
+    expect(await bal(inventory, 'USDT')).toBe('0');
+    expect(await bal(inventory, 'EUR')).toBe('0');
+    expect(await db.auditLog.count({ where: { userId: owner, action: 'WALLET_CROSS_CONVERTED' } })).toBe(0);
+    expect(await db.nativeDemoRevision.count({ where: { userId: owner, revision: 2 } })).toBe(0);
+    // Return the fixture inventory for repeatability (no production ledger touched).
+    await db.demoBalance.update({ where: { userId_asset: { userId: inventory, asset: 'EUR' } },
+      data: { available: initialInventory } });
+  });
+
   test('off switch and other users cannot spend native demo capital; live position refuses safely', async () => {
     expect((await service.availability(other)).ledger).not.toBe('cross');
     await expect(service.confirm(other, randomUUID(), { sessionId: session, expiresAt: Date.now() + 60_000 }))
