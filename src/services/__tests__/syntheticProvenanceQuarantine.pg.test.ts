@@ -501,10 +501,18 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     await db.auditLog.updateMany({ where: { userId: legacy, action: 'TEAM_SPOT_SIMULATION_SOLD' }, data: { createdAt: new Date(Date.now() - 60_000) } });
     // A pre-guard trade (written directly: today's code refuses it) paid the seller 60000 synthetic USDT.
     await db.trade.create({ data: { pair: 'BTC/USDT', takerOrderId: randomUUID(), makerOrderId: randomUUID(), takerUserId: legacy, makerUserId: seller, price: '60000', quantity: '1', side: 'BUY' } });
-    await db.withdrawal.create({ data: { userId: seller, asset: 'USDT', network: 'FIXTURE', toAddress: 'NONE', amount: '100', status: 'SENT', balanceHeld: true } });
+    const former = await db.withdrawal.create({ data: { userId: seller, asset: 'USDT', network: 'FIXTURE', toAddress: 'NONE', amount: '100', status: 'SENT', balanceHeld: true } });
     const after = await run();
     const d = (k: string) => Number(after[k]) - Number(start[k]);
     expect([d('counterparty_accounts_after_first_sale'), d('counterparties_paid_quote_by_identified'), d('counterparties_with_withdrawals_after_contact')]).toEqual([1, 1, 1]);
+    // Legacy COMPLETED is also a paid withdrawal, not an invisible status:
+    // changing the same counterparty from SENT to COMPLETED must retain the exposure count.
+    await db.withdrawal.update({ where: { id: former.id }, data: { status: 'COMPLETED' } });
+    await db.withdrawal.create({ data: { userId: legacy, asset: 'USDT', network: 'FIXTURE',
+      toAddress: 'HISTORICAL_COMPLETED', amount: '1', status: 'COMPLETED', balanceHeld: true } });
+    const historical = await run();
+    expect(Number(historical.counterparties_with_withdrawals_after_contact) - Number(start.counterparties_with_withdrawals_after_contact)).toBe(1);
+    expect(Number(historical.sent_withdrawals_after_first_sale) - Number(start.sent_withdrawals_after_first_sale)).toBe(1);
     // The counterparty is NOT held automatically: that needs its own evidence and an owner decision.
     expect(await provenanceStatus(db, seller)).toBe('CLEAR');
   });
