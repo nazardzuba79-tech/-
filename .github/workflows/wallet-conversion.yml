@@ -7,6 +7,10 @@ on:
       - 'claude/voltex-mobile-audit-7rpjni-wallet-conversion'
     paths:
       - 'src/services/WalletConversionService.ts'
+      - 'src/services/WalletCrossDemoConversion.ts'
+      - 'src/services/__tests__/WalletCrossDemoConversion.pg.test.ts'
+      - 'src/private-trading/native/**'
+      - 'src/private-trading/__tests__/nativeWalletCrossConversion.test.ts'
       - 'src/api/routes/walletActivity.ts'
       - 'scripts/test-wallet-conversion-demo-postgres.cjs'
       - 'scripts/test-wallet-conversion-postgres.cjs'
@@ -66,6 +70,7 @@ jobs:
           npm test -- --runInBand --json --outputFile=wallet-conversion-tests.json
           --runTestsByPath
           src/services/__tests__/WalletConversionService.test.ts
+          src/private-trading/__tests__/nativeWalletCrossConversion.test.ts
           src/services/__tests__/WalletPortfolioService.test.ts
           src/services/__tests__/BalanceAdjustmentService.test.ts
           src/services/__tests__/DepositService.test.ts
@@ -113,3 +118,37 @@ jobs:
             output/wallet-conversion/*.log
             output/wallet-conversion-demo/*.json
             output/wallet-conversion-demo/*.log
+
+
+  # The native USDT source and the demo inventory MUST settle atomically;
+  # test on a fresh loopback PostgreSQL, not the production database.
+  cross-native-demo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cross_qa
+          POSTGRES_PASSWORD: ephemeral_fixture_only
+          POSTGRES_DB: voltex_cross_conversion_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://cross_qa:ephemeral_fixture_only@127.0.0.1:5432/voltex_cross_conversion_test
+      DIRECT_URL: postgresql://cross_qa:ephemeral_fixture_only@127.0.0.1:5432/voltex_cross_conversion_test
+      VOLTEX_CROSS_CONVERSION_TEST_URL: postgresql://cross_qa:ephemeral_fixture_only@127.0.0.1:5432/voltex_cross_conversion_test
+      JWT_SECRET: cross-conversion-ci-fixture-not-a-secret
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - name: Atomic native Cross/USDT to EUR with real disposable PostgreSQL and replay
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/__tests__/WalletCrossDemoConversion.pg.test.ts
+          src/private-trading/__tests__/nativeWalletCrossConversion.test.ts
