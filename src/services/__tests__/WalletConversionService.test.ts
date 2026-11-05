@@ -132,7 +132,7 @@ describe('wallet conversion pricing and admission', () => {
     prisma.auditLog.create.mockClear();
     await expect(service.quote('customer', 'USD', 'EUR', '10.01')).rejects.toMatchObject({ code: 'DAILY_LIMIT_EXCEEDED' });
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
-    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({ where: { userId: 'customer', action: { in: ['WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED'] }, createdAt: { gt: new Date(NOW - 86_400_000) } }, select: { metadata: true } });
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({ where: { userId: 'customer', action: { in: ['WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED', 'WALLET_CROSS_CONVERTED'] }, createdAt: { gt: new Date(NOW - 86_400_000) } }, select: { metadata: true } });
   });
   test('no reserve, no credit: an asset without an operator-verified reserve is never a destination', async () => {
     const { service, prisma } = fixture('100', NOW, null, limits('EUR:1000'));
