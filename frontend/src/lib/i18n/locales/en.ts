@@ -15,6 +15,7 @@ export const EN: Record<Key, string> = {
   'wallet.conversion.title': "Convert",
   'wallet.conversion.subtitle': "Available Funding funds · 0% fee",
   'wallet.conversion.subtitleTrading': "Spot trading balance · for trading only, not withdrawable · 0% fee",
+  'wallet.conversion.subtitleCross': "Available test USDT in Unified Trading (Cross) · non-withdrawable · 0% VOLTEX fee",
   'wallet.conversion.tradingLedger': "Spot trading balance · not withdrawable",
   'wallet.conversion.from': "From",
   'wallet.conversion.to': "To",
