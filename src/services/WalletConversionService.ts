@@ -386,6 +386,30 @@ export class WalletConversionService {
       this.fresh(feed);
       if (feed.bid.get(quote.fromAsset) !== quote.fromPriceUsd || feed.ask.get(quote.toAsset) !== quote.toPriceUsd) throw new ConversionError('QUOTE_CHANGED');
       if (admitError) throw admitError;
+      if (quote.ledger === 'cross') {
+        // A Cross wallet's original USDT lives in the immutable native account
+        // after initialization. A plain DemoBalance debit would do nothing.
+        // Exact owner/tester session, demo-book lock, quote and inventory have
+        // already been checked; settlement locks the native account row too.
+        if (!authority) throw new ConversionError('SESSION_REVOKED');
+        const accountId = await this.demoBacking(tx, userId, quote, true);
+        await this.withinTotals(tx, userId, quote);
+        try {
+          await settleCrossDemoUSDT(tx, { userId, sessionId: authority.sessionId, expiresAt: authority.expiresAt },
+            quote, accountId, this.now());
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'CROSS_DEMO_INSUFFICIENT_BALANCE') throw new ConversionError('INSUFFICIENT_BALANCE');
+            if (error.message === 'CROSS_DEMO_LIQUIDITY_SHORT') throw new ConversionError('INSUFFICIENT_LIQUIDITY');
+            if (error.message === 'CROSS_DEMO_ACTIVE_EXPOSURE') throw new ConversionError('ACCOUNT_RESTRICTED');
+            if (error.message === 'CROSS_DEMO_REVISION_CHANGED' || error.message === 'CROSS_DEMO_CLOCK') throw new ConversionError('QUOTE_CHANGED');
+          }
+          throw error;
+        }
+        const receipt = await tx.auditLog.create({ data: { id: `conversion:${quoteId}`, userId,
+          action: 'WALLET_CROSS_CONVERTED', metadata: { ...quote } } });
+        return this.receipt(receipt);
+      }
       if (quote.ledger === 'demo') return this.settleDemo(tx, userId, quoteId, quote);
       // Under the reserve lock taken above: the reserve check and this receipt commit together, so concurrent
       // conversions into one asset can never jointly exceed its reserve.
