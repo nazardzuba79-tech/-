@@ -151,6 +151,37 @@ async function run() {
         }
         await page.screenshot({ path: `${OUT}/overview-${tag}.png`, fullPage: true });
 
+        // #85: exercise the actual Asset-tab search (not just its source or
+        // the default Account-tab screenshot) on desktop/mobile and both accounts.
+        await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
+        const assetSearch = page.locator('.wallet-overview-asset-controls input[type="search"]');
+        check(`${tag}: Asset tab has a visible translated search`, await assetSearch.isVisible());
+        const originalAssets = await page.locator('.wallet-asset-tab-row').count();
+        check(`${tag}: Asset tab starts with real holdings`, originalAssets > 0, String(originalAssets));
+        // The asset name is searchable too: 'eth' matches both ETH and Tether.
+        await assetSearch.fill('NO-EXISTING-ASSET-9999');
+        const noMatchText = await page.locator('.wallet-asset-tab').textContent();
+        check(`${tag}: unmatched search is not an empty-wallet claim`,
+          await page.locator('.wallet-asset-tab-row').count() === 0 &&
+          /По запросу ничего не найдено/.test(noMatchText || ''), String(noMatchText || '').slice(0, 100));
+        await assetSearch.fill('btc');
+        const filtered = await page.locator('.wallet-asset-tab-row').evaluateAll(
+          (els) => els.map((el) => el.getAttribute('data-symbol')));
+        check(`${tag}: BTC ticker filters actual rows`,
+          filtered.length > 0 && filtered.every((symbol) => symbol === 'BTC'), JSON.stringify(filtered));
+        await assetSearch.fill('bitcoin');
+        const byName = await page.locator('.wallet-asset-tab-row').evaluateAll(
+          (els) => els.map((el) => el.getAttribute('data-symbol')));
+        check(`${tag}: Bitcoin name maps to BTC`,
+          byName.length > 0 && byName.every((symbol) => symbol === 'BTC'), JSON.stringify(byName));
+        await assetSearch.fill('btc');
+        const assetTotal = await page.locator('.wallet-overview-amount').textContent();
+        check(`${tag}: searching does not change account totals`, assetTotal?.trim() === ov.total);
+        const searchOverflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+        check(`${tag}: filtered Asset tab does not overflow the viewport`, !searchOverflow);
+        await page.screenshot({ path: `${OUT}/overview-assets-${tag}.png`, fullPage: true });
+
         // The same figure in the Unified Trading section.
         await openSection(page, 'Unified Trading');
         await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });

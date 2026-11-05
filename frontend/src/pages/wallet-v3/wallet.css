@@ -896,6 +896,16 @@
 .vx-wallet .wallet-account-icon-button:hover {
   background: var(--w-panel-3);
 }
+/* The Overview's cross-account Asset tab uses the existing Wallet search
+   control, sized to the card rather than the wider Unified ledger. */
+.vx-wallet .wallet-overview-asset-controls {
+  padding: 12px 20px;
+}
+.vx-wallet .wallet-overview-asset-controls .wallet-ledger-search {
+  width: 100%;
+  max-width: none;
+  flex: none;
+}
 .vx-wallet .wallet-asset-tab-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
