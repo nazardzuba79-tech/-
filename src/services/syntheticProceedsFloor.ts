@@ -80,6 +80,28 @@ export async function prepareFloor(db: Db, userId: string, prices?: FloorPriceSo
   return marks;
 }
 
+/**
+ * Withdrawal-only floor preparation. When exchange price data is unavailable,
+ * a genuine, independently verified deposit must still be requestable.
+ *
+ * The fallback recognizes USD cash at parity only. All other collateral is
+ * deliberately valued at zero: this can restrict a discretionary
+ * RELEASED_TO_FLOOR cash-out, never increase it. assertFloor runs inside the
+ * same withdrawal transaction under the floor lock and checks each asset's
+ * deposit/withdrawal evidence including the newly requested amount. Nothing
+ * about Spot, OTC, Banking or Conversion uses this fallback.
+ */
+export async function prepareWithdrawalFloor(db: Db, userId: string, prices?: FloorPriceSource): Promise<FloorMarks | null> {
+  try { return await prepareFloor(db, userId, prices); }
+  catch (error) {
+    if (error instanceof SyntheticProceedsLockedError
+      && error.message === 'Prices are unavailable; this account cannot move value now') {
+      return new Map([['USDT', new BigNumber(1)]]);
+    }
+    throw error;
+  }
+}
+
 /** Worst-case real value of the account (USDT). Call inside the transaction, after `lockFloor`. */
 export async function floorValue(tx: Tx, userId: string, marks: FloorMarks, ignoreOrders: ReadonlySet<string> = new Set()): Promise<BigNumber> {
   let value = new BigNumber(0);
