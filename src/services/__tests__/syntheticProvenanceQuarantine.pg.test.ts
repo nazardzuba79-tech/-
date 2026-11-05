@@ -350,6 +350,28 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD);
   });
 
+  test('unheld historical Cross/demo requests do not consume an actual admin-credited deposit budget', async () => {
+    const mixed = await user('100000');
+    await identify(mixed);
+    await genuineDeposit(mixed, '250');
+    // Older demo/Cross withdrawal requests held no real Balance. Their status
+    // must not make verified real deposits unavailable under the new provenance gate.
+    await db.withdrawal.createMany({ data: [
+      { userId: mixed, asset: 'USDT', network: 'FIXTURE', toAddress: 'DEMO_PENDING', amount: '100', status: 'PENDING', balanceHeld: false },
+      { userId: mixed, asset: 'USDT', network: 'FIXTURE', toAddress: 'DEMO_SENT', amount: '150', status: 'SENT', balanceHeld: false },
+    ] });
+    const real = await withdraw(mixed, '250');
+    expect(real).toMatchObject({ status: 'PENDING' });
+    expect(await bal(mixed)).toEqual(['100000', '250']);
+    await expect(withdraw(mixed, '1')).rejects.toMatchObject(HOLD);
+    const withdrawals = new WithdrawalService(db, prices);
+    await expect(withdrawals.approveWithdrawal({ withdrawalId: real.id, performedByAdminId: 'fixture-admin' }))
+      .resolves.toMatchObject({ status: 'APPROVED' });
+    await expect(withdrawals.markSent({ withdrawalId: real.id, performedByAdminId: 'fixture-admin', txHash: 'FIXTURE_NO_CHAIN' }))
+      .resolves.toMatchObject({ status: 'SENT' });
+    expect(await bal(mixed)).toEqual(['100000', '0']);
+  });
+
   test('genuine deposit next to synthetic profit: only the deposit leaves, never the profit', async () => {
     const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
     await genuineDeposit(legacy, '10000');
