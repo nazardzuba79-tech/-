@@ -15,6 +15,7 @@ export const HI: Record<Key, string> = {
   'wallet.conversion.title': "कन्वर्ट करें",
   'wallet.conversion.subtitle': "फंडिंग खाते की उपलब्ध राशि · शुल्क 0%",
   'wallet.conversion.subtitleTrading': "स्पॉट ट्रेडिंग बैलेंस · केवल ट्रेडिंग के लिए, निकासी योग्य नहीं · शुल्क 0%",
+  'wallet.conversion.subtitleCross': "Unified Trading (Cross) में उपलब्ध टेस्ट USDT · निकासी उपलब्ध नहीं · VOLTEX शुल्क 0%",
   'wallet.conversion.tradingLedger': "स्पॉट ट्रेडिंग बैलेंस · निकासी योग्य नहीं",
   'wallet.conversion.from': "से",
   'wallet.conversion.to': "में",
