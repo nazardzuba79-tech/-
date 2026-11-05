@@ -15,6 +15,7 @@ export const ES: Record<Key, string> = {
   'wallet.conversion.title': "Convertir",
   'wallet.conversion.subtitle': "Fondos disponibles en Financiación · comisión 0%",
   'wallet.conversion.subtitleTrading': "Saldo de trading spot · solo para operar, no retirable · comisión 0%",
+  'wallet.conversion.subtitleCross': "USDT de prueba disponibles en Unified Trading (Cross) · sin retiros · comisión VOLTEX 0%",
   'wallet.conversion.tradingLedger': "Saldo de trading spot · no retirable",
   'wallet.conversion.from': "De",
   'wallet.conversion.to': "A",

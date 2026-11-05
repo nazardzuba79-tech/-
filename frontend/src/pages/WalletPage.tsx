@@ -111,11 +111,11 @@ export function WalletPage() {
   // switch is on (otherwise 404), the account is unblocked, and its ledger has a verified reserve or usable
   // liquidity. Any error or refusal keeps the action inactive instead of opening a form the server will reject.
   const [convertible, setConvertible] = useState(false);
-  const [conversionLedger, setConversionLedger] = useState<'spot' | 'demo'>('spot');
+  const [conversionLedger, setConversionLedger] = useState<'spot' | 'demo' | 'cross'>('spot');
   useEffect(() => {
     if (!WALLET_CONVERSION_ENABLED) return;
     let live = true;
-    api.getConversionAvailability().then(r => { if (live) { setConvertible(r.convertible === true); setConversionLedger(r.ledger === 'demo' ? 'demo' : 'spot'); } }, () => { if (live) setConvertible(false); });
+    api.getConversionAvailability().then(r => { if (live) { setConvertible(r.convertible === true); setConversionLedger(r.ledger === 'cross' ? 'cross' : r.ledger === 'demo' ? 'demo' : 'spot'); } }, () => { if (live) setConvertible(false); });
     return () => { live = false; };
   }, [activityVersion]);
 

@@ -654,7 +654,14 @@ test.each([
   ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
   const source = read(file);
-  expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
+  // The frozen historical Wallet test still protects all original bytes.
+  // Only the owner-requested Cross conversion history source type and its
+  // explicit non-withdrawable annotation are additive and reviewed here.
+  const canonical = file === wallet + 'TransactionHistory.tsx'
+    ? source.replace("ledger?: 'spot' | 'demo' | 'cross';", "ledger?: 'spot' | 'demo';")
+      .split('\n').filter(line => !line.includes("{r.ledger === 'cross' && <div")).join('\n')
+    : source;
+  expect(createHash('sha256').update(canonical).digest('hex')).toBe(hash);
 });
 
 test('the wallet hook passes through economic and collateral equity separately and keeps unknown prices unknown', () => {

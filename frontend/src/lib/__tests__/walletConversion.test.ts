@@ -56,11 +56,13 @@ describe('wallet conversion UI safety boundaries', () => {
   });
   test('a DemoBalance conversion is shown as the non-withdrawable Spot trading balance, never as Funding', () => {
     const page = read('frontend/src/pages/WalletPage.tsx');
-    expect(page).toContain("setConversionLedger(r.ledger === 'demo' ? 'demo' : 'spot')");
+    expect(page).toContain("setConversionLedger(r.ledger === 'cross' ? 'cross' : r.ledger === 'demo' ? 'demo' : 'spot')");
     expect(page).toContain('<ConversionModal ledger={conversionLedger}');
-    expect(modal).toContain("t(ledger === 'demo' ? 'wallet.conversion.subtitleTrading' : 'wallet.conversion.subtitle')");
+    expect(modal).toContain("t(ledger === 'cross' ? 'wallet.conversion.subtitleCross' : ledger === 'demo' ? 'wallet.conversion.subtitleTrading' : 'wallet.conversion.subtitle')");
     expect(history).toContain("ledger: a.ledger");
     expect(history).toContain("{r.ledger === 'demo' && <div");
+    expect(history).toContain("{r.ledger === 'cross' && <div");
+    expect(history).toContain("t('wallet.conversion.subtitleCross')");
     for (const [lang, dictionary] of Object.entries(readDictionaries())) {
       for (const key of ['wallet.conversion.subtitleTrading', 'wallet.conversion.tradingLedger']) {
         expect([lang, typeof dictionary[key] === 'string' && dictionary[key].length > 0]).toEqual([lang, true]);

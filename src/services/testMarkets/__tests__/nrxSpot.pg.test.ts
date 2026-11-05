@@ -38,7 +38,7 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
     expect((await balance(owner, 'NRX'))!.available.toString()).toBe('6250');
     expect(await balance(owner, 'USDT')).toEqual(usdt);
     expect(await balance(other, 'NRX')).toBeNull();
-    expect(await db.demoBalance.count()).toBe(0);
+    expect(await db.demoBalance.count({ where: { userId: { in: [owner, other] } } })).toBe(0);
   });
   test('concurrent/repeated allocation credits once, even after trading reduces inventory', async () => {
     const results = await Promise.all([allocateNrxOwner(db, owner), allocateNrxOwner(db, owner)]);

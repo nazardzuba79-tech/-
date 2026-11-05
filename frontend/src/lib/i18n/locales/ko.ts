@@ -15,6 +15,7 @@ export const KO: Record<Key, string> = {
   'wallet.conversion.title': "전환",
   'wallet.conversion.subtitle': "자금 계정의 사용 가능 잔액 · 수수료 0%",
   'wallet.conversion.subtitleTrading': "현물 거래 잔액 · 거래 전용, 출금 불가 · 수수료 0%",
+  'wallet.conversion.subtitleCross': "Unified Trading (Cross)의 사용 가능한 테스트 USDT · 출금 불가 · VOLTEX 수수료 0%",
   'wallet.conversion.tradingLedger': "현물 거래 잔액 · 출금 불가",
   'wallet.conversion.from': "보내는 자산",
   'wallet.conversion.to': "받는 자산",

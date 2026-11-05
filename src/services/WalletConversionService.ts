@@ -7,6 +7,7 @@ import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
 import { demoSpotEnabled, demoSpotLedger, demoWithdrawalGuardEnabled } from './demoSpotAccess';
 import { demoLiquidityConfig, liquidityAccountRefusal } from './DemoLiquidity';
 import { DEMO_SPOT_LEDGER } from './SpotBookTransaction';
+import { nativeCrossAccount, nativeCrossFreeUSDT, settleCrossDemoUSDT } from './WalletCrossDemoConversion';
 
 // Isolated decimal context: never change the arithmetic of other services.
 const Decimal = BigNumber.clone({ DECIMAL_PLACES: 80, ROUNDING_MODE: BigNumber.ROUND_DOWN });
@@ -153,11 +154,11 @@ export class KrakenConversionPrices implements ConversionPrices {
  *   forces the withdrawal guard on (demoWithdrawalGuardEnabled), and withdrawals hold `Balance` only.
  * An account with neither (no ordinary funds, not admitted to demo) stays on 'spot', where it holds nothing.
  */
-export type ConversionLedger = 'spot' | 'demo';
+export type ConversionLedger = 'spot' | 'demo' | 'cross';
 /** Committed receipts, one action per ledger; the reserve exposure counts the 'spot' one only. */
-const RECEIPT_ACTIONS = ['WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED'];
+const RECEIPT_ACTIONS = ['WALLET_CONVERTED', 'WALLET_DEMO_CONVERTED', 'WALLET_CROSS_CONVERTED'];
 /** Quotes stored before the demo ledger existed carry no `ledger`; they were Balance quotes. */
-const ledgerOf = (quote: { ledger?: unknown }): ConversionLedger => quote.ledger === 'demo' ? 'demo' : 'spot';
+const ledgerOf = (quote: { ledger?: unknown }): ConversionLedger => quote.ledger === 'cross' ? 'cross' : quote.ledger === 'demo' ? 'demo' : 'spot';
 
 /** `fromPriceUsd` is the market's bid for the source, `toPriceUsd` its ask for the destination (USD per unit). */
 export interface ConversionQuote {
@@ -184,7 +185,7 @@ export class WalletConversionService {
   private usd(quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd'>) { return new Decimal(quote.fromAmount).times(quote.fromPriceUsd); }
   /** Size and backing that do not depend on other conversions: the single limit, a configured reserve ('spot'), market depth. */
   private async admit(quote: Pick<ConversionQuote, 'fromAsset' | 'toAsset' | 'fromAmount' | 'toAmount' | 'fromPriceUsd' | 'ledger'>) {
-    if (this.usd(quote).gt(this.limits.maxUsd)) throw new ConversionError('LIMIT_EXCEEDED');
+    if (quote.ledger !== 'cross' && this.usd(quote).gt(this.limits.maxUsd)) throw new ConversionError('LIMIT_EXCEEDED');
     // A demo conversion is backed by the liquidity account's DemoBalance instead (demoBacking).
     if (quote.ledger === 'spot' && !this.limits.reserves.has(quote.toAsset)) throw new ConversionError('RESERVE_UNVERIFIED');
     for (const [asset, amount, side] of [[quote.fromAsset, quote.fromAmount, 'bid'], [quote.toAsset, quote.toAmount, 'ask']] as const) {
@@ -195,6 +196,9 @@ export class WalletConversionService {
     }
   }
   private async ledger(db: Reader, userId: string): Promise<ConversionLedger> {
+    // Opt-in only; only the configured owner/native testers with an actual
+    // opened native account use the Cross DEMO source, never ordinary clients.
+    if (await nativeCrossAccount(db, userId, this.env)) return 'cross';
     return await demoSpotLedger(db, userId, demoSpotEnabled(this.env)) === 'demo' ? 'demo' : 'spot';
   }
   /**
@@ -203,10 +207,13 @@ export class WalletConversionService {
    * back quotes (blocked, not a USER, a native trading account, holding ordinary Balance). Its per-order
    * cap applies on top of the conversion limits. `lockRows` inside the demo book transaction, as a demo fill.
    */
-  private async demoBacking(db: Reader, userId: string, quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd'>, lockRows: boolean) {
+  private async demoBacking(db: Reader, userId: string, quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd' | 'ledger'>, lockRows: boolean) {
     const { config } = demoLiquidityConfig(this.env);
     if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
-    if (this.usd(quote).gt(config.maxOrderQuote)) throw new ConversionError('LIMIT_EXCEEDED');
+    if (quote.ledger === 'cross') {
+      const raw = this.env.WALLET_CROSS_DEMO_MAX_USD ?? '1000000';
+      if (!LIMIT.test(raw) || this.usd(quote).gt(raw)) throw new ConversionError('LIMIT_EXCEEDED');
+    } else if (this.usd(quote).gt(config.maxOrderQuote)) throw new ConversionError('LIMIT_EXCEEDED');
     if (await liquidityAccountRefusal(db, config.accountId, lockRows, this.env)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
     return config.accountId;
   }
@@ -227,7 +234,7 @@ export class WalletConversionService {
   }
   /** Daily limit, and for Balance the reserve, against everything already committed (authoritative only under the confirm locks). */
   private async withinTotals(db: Pick<Prisma.TransactionClient, 'auditLog' | '$queryRaw'>, userId: string, quote: ConversionQuote) {
-    if ((await this.dailyUsed(db, userId)).plus(this.usd(quote)).gt(this.limits.dailyUsd)) throw new ConversionError('DAILY_LIMIT_EXCEEDED');
+    if (quote.ledger !== 'cross' && (await this.dailyUsed(db, userId)).plus(this.usd(quote)).gt(this.limits.dailyUsd)) throw new ConversionError('DAILY_LIMIT_EXCEEDED');
     if (quote.ledger === 'spot' && (await this.exposure(db, quote.toAsset)).plus(quote.toAmount).gt(this.limits.reserves.get(quote.toAsset)!)) throw new ConversionError('RESERVE_EXHAUSTED');
   }
   /** The provider's feed. Any provider failure is a definite PRICE_UNAVAILABLE refusal: nothing has been written. */
@@ -248,6 +255,11 @@ export class WalletConversionService {
   }
   /** Available funds of one ledger only: a demo account sees its DemoBalance, never Balance, and the reverse. */
   private async available(ledger: ConversionLedger, userId: string) {
+    if (ledger === 'cross') {
+      const account = await nativeCrossAccount(this.prisma, userId, this.env);
+      const available = account ? nativeCrossFreeUSDT(account) : null;
+      return [{ asset: 'USDT', available: available ?? '0' }];
+    }
     const where = { where: { userId }, select: { asset: true, available: true } };
     return ledger === 'demo' ? this.prisma.demoBalance.findMany(where) : this.prisma.balance.findMany(where);
   }
@@ -263,6 +275,11 @@ export class WalletConversionService {
     if (ledger === 'spot') return { convertible: [...this.limits.reserves.keys()].some(asset => this.supported(asset)), ledger };
     const { config } = demoLiquidityConfig(this.env);
     if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) return { convertible: false, ledger };
+    if (ledger === 'cross') {
+      const account = await nativeCrossAccount(this.prisma, userId, this.env);
+      const free = account && nativeCrossFreeUSDT(account);
+      if (!free || !new Decimal(free).gt(0)) return { convertible: false, ledger };
+    }
     return { convertible: !(await liquidityAccountRefusal(this.prisma, config.accountId, false, this.env)), ledger };
   }
   async assets(userId: string) {
@@ -287,13 +304,16 @@ export class WalletConversionService {
     if (!AMOUNT.test(toAmount) || !new Decimal(toAmount).isGreaterThan(0)) throw new ConversionError('INVALID_CONVERSION');
     const ledger = await this.ledger(this.prisma, userId);
     const key = { where: { userId_asset: { userId, asset: fromAsset } } };
-    const balance = ledger === 'demo' ? await this.prisma.demoBalance.findUnique(key) : await this.prisma.balance.findUnique(key);
+    const balance = ledger === 'cross'
+      ? (await this.available('cross', userId))[0]
+      : ledger === 'demo' ? await this.prisma.demoBalance.findUnique(key) : await this.prisma.balance.findUnique(key);
+    if (ledger === 'cross' && fromAsset !== 'USDT') throw new ConversionError('UNSUPPORTED_ASSET');
     if (!balance || new Decimal(balance.available.toString()).lt(fromAmount)) throw new ConversionError('INSUFFICIENT_BALANCE');
     const quote: ConversionQuote = { quoteId: randomUUID(), fromAsset, toAsset, fromAmount, toAmount,
       fromPriceUsd, toPriceUsd, fee: '0', source: 'kraken', pricing: 'bid-ask', fetchedAt: feed.fetchedAt, expiresAt: feed.fetchedAt + MAX_AGE, ledger };
     // Refuse early what cannot be confirmed; the confirm re-checks all of it under its locks.
     await this.admit(quote);
-    if (ledger === 'demo') {
+    if (ledger === 'demo' || ledger === 'cross') {
       const accountId = await this.demoBacking(this.prisma, userId, quote, false);
       const inventory = await this.prisma.demoBalance.findUnique({ where: { userId_asset: { userId: accountId, asset: toAsset } } });
       if (!inventory || new Decimal(inventory.available.toString()).lt(toAmount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
@@ -333,7 +353,7 @@ export class WalletConversionService {
       // The final shared lock — over every account's Balance conversions (reserve check), or the demo book — is
       // taken BEFORE the checks below, so a quote that expires, a block or a ledger change set while this waits
       // for it cannot pass. Taken after the account lock, in this order everywhere, so the two cannot deadlock.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${quote.ledger === 'demo' ? DEMO_SPOT_LEDGER.lock : 'wallet-conversion:reserves'}, 0))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${(quote.ledger === 'demo' || quote.ledger === 'cross') ? DEMO_SPOT_LEDGER.lock : 'wallet-conversion:reserves'}, 0))`;
       // The HTTP route supplies the already-verified Session identity. Recheck it
       // *inside this fund-moving transaction*, after any shared lock wait.
       // A logout/block committed while the command was waiting must not execute.
@@ -366,6 +386,30 @@ export class WalletConversionService {
       this.fresh(feed);
       if (feed.bid.get(quote.fromAsset) !== quote.fromPriceUsd || feed.ask.get(quote.toAsset) !== quote.toPriceUsd) throw new ConversionError('QUOTE_CHANGED');
       if (admitError) throw admitError;
+      if (quote.ledger === 'cross') {
+        // A Cross wallet's original USDT lives in the immutable native account
+        // after initialization. A plain DemoBalance debit would do nothing.
+        // Exact owner/tester session, demo-book lock, quote and inventory have
+        // already been checked; settlement locks the native account row too.
+        if (!authority) throw new ConversionError('SESSION_REVOKED');
+        const accountId = await this.demoBacking(tx, userId, quote, true);
+        await this.withinTotals(tx, userId, quote);
+        try {
+          await settleCrossDemoUSDT(tx, { userId, sessionId: authority.sessionId, expiresAt: authority.expiresAt },
+            quote, accountId, this.now());
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'CROSS_DEMO_INSUFFICIENT_BALANCE') throw new ConversionError('INSUFFICIENT_BALANCE');
+            if (error.message === 'CROSS_DEMO_LIQUIDITY_SHORT') throw new ConversionError('INSUFFICIENT_LIQUIDITY');
+            if (error.message === 'CROSS_DEMO_ACTIVE_EXPOSURE') throw new ConversionError('ACCOUNT_RESTRICTED');
+            if (error.message === 'CROSS_DEMO_REVISION_CHANGED' || error.message === 'CROSS_DEMO_CLOCK') throw new ConversionError('QUOTE_CHANGED');
+          }
+          throw error;
+        }
+        const receipt = await tx.auditLog.create({ data: { id: `conversion:${quoteId}`, userId,
+          action: 'WALLET_CROSS_CONVERTED', metadata: { ...quote } } });
+        return this.receipt(receipt);
+      }
       if (quote.ledger === 'demo') return this.settleDemo(tx, userId, quoteId, quote);
       // Under the reserve lock taken above: the reserve check and this receipt commit together, so concurrent
       // conversions into one asset can never jointly exceed its reserve.
