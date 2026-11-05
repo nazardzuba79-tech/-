@@ -290,12 +290,15 @@ describe('4a. cross-account Asset tab search (#85)', () => {
   it('reuses the translated Wallet search without changing the overview total', () => {
     const all = renderAssetSearch('');
     const filtered = renderAssetSearch('btc');
+    const named = renderAssetSearch('bitcoin');
     expect(all).toContain('type="search"');
     expect(all).toContain('wallet.searchAsset');
     expect(all).toContain('data-symbol="BTC"');
     expect(all).toContain('data-symbol="USDT"');
     expect(filtered).toContain('data-symbol="BTC"');
     expect(filtered).not.toContain('data-symbol="USDT"');
+    expect(named).toContain('data-symbol="BTC"');
+    expect(named).not.toContain('data-symbol="USDT"');
     expect(headline(filtered)).toBe(headline(all));
     expect(filtered).toContain('data-stub="AllocationCard"');
     expect(filtered).toContain('data-stub="DynamicsCard"');
