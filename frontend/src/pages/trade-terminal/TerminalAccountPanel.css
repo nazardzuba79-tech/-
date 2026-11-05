@@ -1268,14 +1268,14 @@
    >1599px stays on the owner's original two-column layout. Phones stay in
    the existing mobile view. No trade/price/account state is changed. */
 @media (min-width: 1025px) and (max-width: 1599px) {
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel {
-    grid-column: 1 / -1;
-    grid-row: 3;
+  /* The archive sheet uses an ID selector plus grid-area shorthand. A
+     class-only grid-column rule cannot override that ID specificity. */
+  #archive-terminal-preview.futures-terminal .terminal > .bottom-panel {
+    grid-area: 3 / 1 / 4 / -1;
     min-width: 0;
   }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
-    grid-column: 3;
-    grid-row: 2 / 3;
+  #archive-terminal-preview.futures-terminal .terminal > .order-form-area {
+    grid-area: 2 / 3 / 3 / 4;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
