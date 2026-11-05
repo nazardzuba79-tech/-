@@ -207,7 +207,7 @@ export class WalletConversionService {
    * back quotes (blocked, not a USER, a native trading account, holding ordinary Balance). Its per-order
    * cap applies on top of the conversion limits. `lockRows` inside the demo book transaction, as a demo fill.
    */
-  private async demoBacking(db: Reader, userId: string, quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd'>, lockRows: boolean) {
+  private async demoBacking(db: Reader, userId: string, quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd' | 'ledger'>, lockRows: boolean) {
     const { config } = demoLiquidityConfig(this.env);
     if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
     if (quote.ledger === 'cross') {
