@@ -18,6 +18,7 @@ export const RU = {
   'wallet.conversion.title': "Конвертация",
   'wallet.conversion.subtitle': "Доступные средства счёта «Финансирование» · комиссия 0%",
   'wallet.conversion.subtitleTrading': "Средства спотового торгового баланса · только для торговли, без вывода · комиссия 0%",
+  'wallet.conversion.subtitleCross': "Доступные тестовые USDT счёта Unified Trading (Cross) · вывод недоступен · комиссия VOLTEX 0%",
   'wallet.conversion.tradingLedger': "Спотовый торговый баланс · без вывода",
   'wallet.conversion.from': "Из",
   'wallet.conversion.to': "В",
