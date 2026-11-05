@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
-import { assertFloor, FloorPriceSource, isMintedListingAsset, lockFloor, prepareFloor } from './syntheticProceedsFloor';
+import { assertFloor, FloorPriceSource, isMintedListingAsset, lockFloor, prepareWithdrawalFloor } from './syntheticProceedsFloor';
 
 export class WithdrawalRequestError extends Error {}
 
@@ -46,14 +46,13 @@ export interface WithdrawalResult {
  * exists can only be rejected.
  */
 export class WithdrawalService {
-  /** `prices` values an account that holds legacy simulated-sale proceeds (syntheticProceedsFloor); without it such
-   * an account withdraws nothing. No other account is priced. */
+  /** Withdrawal floor prefers market prices, but an offline quote service never bars a verified real deposit. Other account operations keep their own strict quote requirements. */
   constructor(private prisma: PrismaClient, private prices?: FloorPriceSource) {}
 
   /** The floor marks of the withdrawal's owner, read before its transaction; null for an ordinary account. */
   private async floorOf(withdrawalId: string) {
     const row = await this.prisma.withdrawal.findUnique({ where: { id: withdrawalId }, select: { userId: true } });
-    return row?.userId ? prepareFloor(this.prisma, row.userId, this.prices) : null;
+    return row?.userId ? prepareWithdrawalFloor(this.prisma, row.userId, this.prices) : null;
   }
 
   /**
@@ -84,7 +83,7 @@ export class WithdrawalService {
       throw new WithdrawalRequestError('Amount must be greater than zero');
     }
 
-    const floor = await prepareFloor(this.prisma, params.userId, this.prices);
+    const floor = await prepareWithdrawalFloor(this.prisma, params.userId, this.prices);
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (floor) await lockFloor(tx, params.userId);
       try {
