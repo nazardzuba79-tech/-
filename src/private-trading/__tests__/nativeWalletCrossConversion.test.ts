@@ -56,6 +56,7 @@ test('only actual free, uncommitted native USDT can be converted', () => {
   const base = { revision: 1, deposit: '1000000', createdAt: NOW,
     source: 'DEMO_BALANCE', commands: [], snapshot: state } as NativeAccount;
   expect(nativeCrossFreeUSDT(base)).toBe('1000000');
+  expect(nativeCrossFreeUSDT({ ...base, source: 'PREVIEW_FIXTURE' })).toBeNull();
   expect(() => applyNativeWalletConversion(state, 'overdraw', '1000001', NOW + 1_000))
     .toThrow('CROSS_CONVERSION_INSUFFICIENT_CASH');
   expect(state.walletBalance).toBe('1000000');
