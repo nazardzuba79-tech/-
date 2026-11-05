@@ -5,7 +5,7 @@ import type { Candle } from '../types';
 import type { NativeFundingSchedule } from './fundingModel';
 import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState, ExternalCollateral,
   emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, executeObservedBook, fillDemoOrder, markDemoAccount, setDemoCollateral,
-  NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
+  NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder, applyNativeWalletConversion } from './engine';
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
 const n=(v:string)=>decimal(v), f=(v:BigNumber)=>amount(v);
 const MINUTE=60_000, DAY=86_400_000;
@@ -78,6 +78,8 @@ export type NativeInstruction = {id:string;at:number;seq?:number;
    * so a later replay does exactly the same from the same snapshot.
    */
   | {kind:'BOOK';symbol:string;book:NativeBook}
+  /** Off-ledger demo asset received under the same atomic Cross conversion. */
+  | {kind:'WALLET_CONVERSION';quoteId:string;fromAmount:string;toAsset:string;toAmount:string}
 );
 /** Canonical state after every event strictly before `time`; `digest` pins which instructions it contains. */
 export interface NativeCheckpoint { time:number; digest:string; state:DemoState; /** Sealed live-only journal prefix, including same-millisecond instructions. */ commandCount?:number }
@@ -298,6 +300,7 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
     else {markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
   }
   else if(c.kind==='BOOK')executeObservedBook(s,c.symbol,c.book,time);
+  else if(c.kind==='WALLET_CONVERSION')applyNativeWalletConversion(s,c.id,c.fromAmount,time);
 }
 /** Explicit sampled demo settlement; never called by the live observed-book path. */
 export function applyHistoricalDemoPrices(s:DemoState,marks:Record<string,{mark:string;last:string}>,time:number){
