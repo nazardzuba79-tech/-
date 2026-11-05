@@ -130,7 +130,7 @@ export interface DemoPosition {
   pendingClose?: PendingClose | null;
 }
 export interface DemoEvent {
-  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION' | 'SHORTFALL' | 'TRIGGER';
+  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION' | 'SHORTFALL' | 'TRIGGER' | 'WALLET_CONVERSION';
   time: number; positionId: string | null; orderId: string | null; symbol: string;
   quantity: string; price: string | null; fee: string; cashflow: string;
   /**
@@ -311,6 +311,30 @@ function requireTime(s: DemoState, time: number) {
   if (!Number.isSafeInteger(time) || time < s.time) throw new DemoEngineError('NON_CHRONOLOGICAL_EVENT');
 }
 function emit(s: DemoState, e: Omit<DemoEvent, 'id'>) { s.events.push({ ...e, id: `e${s.nextEvent++}` }); }
+/**
+ * Cross demo-wallet conversion: only free USDT from a FLAT native account.
+ * The exchange commits this instruction, its opposite DemoBalance transfer,
+ * a native immutable revision and an audit receipt in ONE database transaction.
+ * Replay must recreate the exact native debit without changing initialDeposit
+ * or any historical fill/PnL; neither real Balance nor FuturesBalance is touched.
+ */
+export function applyNativeWalletConversion(s: DemoState, id: string, value: string, time: number): void {
+  requireTime(s, time);
+  const debit = decimal(value, 'conversion_amount', true);
+  if (!debit.isFinite() || !debit.gt(0)) throw new DemoEngineError('INVALID_CONVERSION_AMOUNT');
+  if (s.positions.some(p => p.status === 'OPEN')
+    || s.orders.some(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED' || o.status === 'PENDING_TRIGGER')) {
+    throw new DemoEngineError('CROSS_CONVERSION_ACTIVE_EXPOSURE');
+  }
+  const cash = n(s.walletBalance);
+  if (cash.lt(debit)) throw new DemoEngineError('CROSS_CONVERSION_INSUFFICIENT_CASH');
+  s.walletBalance = out(cash.minus(debit));
+  s.time = time;
+  emit(s, { kind: 'WALLET_CONVERSION', time, positionId: null, orderId: null,
+    symbol: 'USDT', quantity: out(debit), price: null, fee: '0', cashflow: out(debit.negated()),
+    pricing: 'COMMAND', actionId: id });
+}
+
 function instrument(s: DemoState, symbol: string): DemoInstrument {
   const value = s.instruments[symbol]; if (!value) throw new DemoEngineError('INSTRUMENT_MISSING'); return value;
 }
