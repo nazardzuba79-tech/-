@@ -906,8 +906,8 @@ export const api = {
       `/deposit-address/${chain}`
     ),
 
-  getWalletActivity: () => request<{ id: string; kind: 'adjustment' | 'conversion'; asset: string; amount: string; toAsset?: string; toAmount?: string; ledger?: 'spot' | 'demo'; createdAt: string }[]>('/wallet/activity'),
-  getConversionAvailability: () => request<{ convertible: boolean; ledger: 'spot' | 'demo' }>('/wallet/conversion/availability'),
+  getWalletActivity: () => request<{ id: string; kind: 'adjustment' | 'conversion'; asset: string; amount: string; toAsset?: string; toAmount?: string; ledger?: 'spot' | 'demo' | 'cross'; createdAt: string }[]>('/wallet/activity'),
+  getConversionAvailability: () => request<{ convertible: boolean; ledger: 'spot' | 'demo' | 'cross' }>('/wallet/conversion/availability'),
   getConversionAssets: () => request<{ asset: string; kind: 'fiat' | 'crypto'; scale: number; available: string }[]>('/wallet/conversion/assets'),
   quoteConversion: (params: { fromAsset: string; toAsset: string; amount: string }) => request<WalletConversionQuote>('/wallet/conversion/quote', { method: 'POST', body: JSON.stringify(params) }),
   confirmConversion: (quoteId: string) => request<WalletConversionReceipt>('/wallet/conversion/confirm', { method: 'POST', body: JSON.stringify({ quoteId }) }),
