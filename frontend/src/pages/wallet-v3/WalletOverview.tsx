@@ -161,12 +161,12 @@ export function WalletOverview({
 
   /** Every held asset across both accounts, tagged with the account it sits in. */
   const assets = useMemo(() => {
-    const list: { symbol: string; account: string; quantity: number; valueUsd: number | null; priced: boolean; stockValueUSDT?: number | null; instrumentId?: string }[] = [];
-    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, account: r.stockPosition ? 'Акции' : t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced, stockValueUSDT: r.stockPosition?.valueUSDT, instrumentId: r.stockPosition?.instrumentId });
+    const list: { symbol: string; name: string; account: string; quantity: number; valueUsd: number | null; priced: boolean; stockValueUSDT?: number | null; instrumentId?: string }[] = [];
+    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, name: r.name, account: r.stockPosition ? 'Акции' : t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced, stockValueUSDT: r.stockPosition?.valueUSDT, instrumentId: r.stockPosition?.instrumentId });
     if (cross && overview) {
       for (const b of overview.real.spot) {
         const q = Number(b.available) + Number(b.locked);
-        if (q > 0) list.push({ symbol: b.asset, account: t('wallet.navFunding'), quantity: q, valueUsd: b.valueUsd, priced: b.valueUsd !== null });
+        if (q > 0) list.push({ symbol: b.asset, name: rows.find(r => r.symbol === b.asset)?.name ?? b.asset, account: t('wallet.navFunding'), quantity: q, valueUsd: b.valueUsd, priced: b.valueUsd !== null });
       }
     }
     return list.sort((a, b) => (b.valueUsd ?? -1) - (a.valueUsd ?? -1));
@@ -176,7 +176,7 @@ export function WalletOverview({
   // only filters displayed rows; it cannot change totals, valuations or ledgers.
   const visibleAssets = useMemo(() => {
     const query = assetQuery.trim().toLowerCase();
-    return query ? assets.filter(a => a.symbol.toLowerCase().includes(query) || a.account.toLowerCase().includes(query)) : assets;
+    return query ? assets.filter(a => a.symbol.toLowerCase().includes(query) || a.name.toLowerCase().includes(query) || a.account.toLowerCase().includes(query)) : assets;
   }, [assets, assetQuery]);
 
   const holdings = useMemo(() => {
