@@ -160,7 +160,7 @@ export function WalletOverview({
   /** Every held asset across both accounts, tagged with the account it sits in. */
   const assets = useMemo(() => {
     const list: { symbol: string; account: string; quantity: number; valueUsd: number | null; priced: boolean; stockValueUSDT?: number | null; instrumentId?: string }[] = [];
-    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, account: r.stockPosition ? 'Акции' : t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced, stockValueUSDT: r.stockPosition?.valueUSDT, instrumentId: r.stockPosition?.instrumentId });
+    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, account: r.stockPosition ? t('stocks.typeStock') : t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced, stockValueUSDT: r.stockPosition?.valueUSDT, instrumentId: r.stockPosition?.instrumentId });
     if (cross && overview) {
       for (const b of overview.real.spot) {
         const q = Number(b.available) + Number(b.locked);
