@@ -31,6 +31,9 @@ export function crossDemoConversionEnabled(userId: string, env: NodeJS.ProcessEn
 }
 
 export function nativeCrossFreeUSDT(account: NativeAccount): string | null {
+  // PREVIEW_FIXTURE is not an actual funded demo ledger: converting it into
+  // spendable demo inventory would create an unexplained obligation.
+  if (account.source !== 'DEMO_BALANCE') return null;
   const state = migrateDemoState(account.snapshot);
   if (state.positions.some(p => p.status === 'OPEN') || state.orders.some(o => ACTIVE_ORDER.has(o.status))) return null;
   const available = new BigNumber(state.walletBalance);
