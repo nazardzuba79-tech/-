@@ -33,7 +33,7 @@ interface Row {
   toAsset?: string;
   toAmount?: string;
   /** 'demo': a conversion inside the non-withdrawable Spot trading balance, never Funding. */
-  ledger?: 'spot' | 'demo';
+  ledger?: 'spot' | 'demo' | 'cross';
   status: Status;
   at: number;
   chain?: string;
