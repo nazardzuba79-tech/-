@@ -65,7 +65,7 @@ SELECT
   (SELECT count(*) FROM "Withdrawal" w JOIN identified i USING ("userId")
      WHERE w.status IN ('PENDING','APPROVED'))                                             AS open_withdrawals_on_identified,
   (SELECT count(*) FROM "Withdrawal" w JOIN identified i USING ("userId")
-     WHERE w.status = 'SENT' AND w."createdAt" >= i.first_sale)                            AS sent_withdrawals_after_first_sale,
+     WHERE w.status IN ('SENT','COMPLETED') AND w."createdAt" >= i.first_sale)                            AS sent_withdrawals_after_first_sale,
   (SELECT count(*) FROM "Trade" t JOIN identified i ON i."userId" IN (t."takerUserId", t."makerUserId")
      WHERE t."executedAt" >= i.first_sale AND t."takerUserId" NOT LIKE 'simulation:%' AND t."makerUserId" NOT LIKE 'simulation:%'
        AND t."takerUserId" <> t."makerUserId")                                              AS trades_with_other_accounts_after_first_sale,
@@ -78,7 +78,7 @@ SELECT
   (SELECT count(*) FROM contacts WHERE identified_paid_quote
      AND counterparty NOT IN (SELECT "userId" FROM identified))                            AS counterparties_paid_quote_by_identified,
   (SELECT count(DISTINCT c.counterparty) FROM contacts c JOIN "Withdrawal" w ON w."userId" = c.counterparty
-     WHERE w."createdAt" >= c.first_contact AND w.status IN ('PENDING','APPROVED','SENT')
+     WHERE w."createdAt" >= c.first_contact AND w.status IN ('PENDING','APPROVED','SENT','COMPLETED')
        AND c.counterparty NOT IN (SELECT "userId" FROM identified))                        AS counterparties_with_withdrawals_after_contact,
   (SELECT count(*) FROM "BankingReferralReward" r JOIN identified i ON i."userId" = r."referredUserId") AS banking_referral_rewards_from_identified,
   (SELECT count(*) FROM "AuditLog" a WHERE a.action = 'DEPOSIT_ATTRIBUTED'
