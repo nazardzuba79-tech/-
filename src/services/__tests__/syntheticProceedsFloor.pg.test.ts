@@ -168,9 +168,12 @@ pg('legacy simulated-sale proceeds cannot leave the account; genuine funds and o
     expect(await db.withdrawal.count({ where: { userId: owner } })).toBe(1);
   });
 
-  test('prices down: the floor-bound account moves nothing; an ordinary account is never priced', async () => {
+  test('prices down: a released account cashes out only its stable cash above S (as with prices); Spot moves nothing; an ordinary account is never priced', async () => {
     pricesDown = true;
-    await expect(request(owner, 'USDT', '1')).rejects.toMatchObject(LOCKED);
+    // Withdrawal-only fallback (prepareWithdrawalFloor): a cash-out is judged on stable cash alone either way
+    // (cashOutMarks), so an outage changes nothing for it — the 1000 genuine USDT above S may leave, never more.
+    await expect(request(owner, 'USDT', '1')).resolves.toMatchObject({ status: 'PENDING' });
+    await expect(request(owner, 'USDT', '1000')).rejects.toMatchObject(LOCKED);
     await expect(limit(owner, 'BTC/USDT', 'BUY', '1', '1')).rejects.toMatchObject(LOCKED);
     source.getTicker.mockClear();
     await give(honest, 'USDT', '200'); await give(accomplice, 'BTC', '1');
