@@ -2,11 +2,11 @@
  * Opt-in, owner/tester-only Cross DEMO re-denomination. No real Balance,
  * FuturesBalance, withdrawal, venue order or new minted inventory.
  *
- * NativeDemoAccount is the source of the Cross USDT already moved from
+ * NativeDemoAccount is the source of the Cross test USDT already moved from
  * DemoBalance at initialization. It must NEVER be debited by directly editing
  * DemoBalance. Its journal and immutable revision must move atomically with
- * the opposite, inventory-backed DemoBalance legs, so replay cannot resurrect
- * USDT or double count collateral.
+ * the test destination credited to the SAME user's DemoBalance, so replay
+ * cannot resurrect USDT or double-count collateral.
  */
 import { Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
@@ -47,8 +47,9 @@ export async function nativeCrossAccount(db: Db, userId: string, env: NodeJS.Pro
 }
 
 /**
- * Called ONLY after the session, quote, book depth, and liquidity-account
- * guards succeeded and after BOTH the per-user and demo-book advisory locks.
+ * Called ONLY after user/session authorization, a fresh bid/ask quote,
+ * the per-user lock and demo-book advisory lock. Internal test-only mode
+ * needs no external order-book depth or liquidity account.
  * Caller must also check the aggregate receipt's idempotency and live flag.
  *
  * Flat native accounts only in v1; opening-position margin or a working order
@@ -72,11 +73,10 @@ export async function settleCrossDemoUSDT(
   if (!amount.isFinite() || !amount.gt(0) || amount.gt(available)) throw new Error('CROSS_DEMO_INSUFFICIENT_BALANCE');
   if (!Number.isSafeInteger(now) || now < account.snapshot.time) throw new Error('CROSS_DEMO_CLOCK');
 
-  // In the DEMO-ONLY internal mode, the debit of native Cross test USDT
-  // and credit of test EUR/BTC are the two sides of one same-user swap.
-  // No issuer, real treasury, exchange order or external reserves exist.
-  // Previous inventory-backed fixtures can still pass an accountId, but the
-  // main Cross path passes null and leaves all other accounts unchanged.
+  // DEMO-ONLY: native Cross USDT debit and EUR/BTC DemoBalance credit
+  // are the same-user accounting swap; no external cash or reserves.
+  // The optional liquidity argument supports legacy isolated fixtures,
+  // but the new Cross internal path always passes null.
   if (liquidityAccountId !== null) {
     const debited = await tx.demoBalance.updateMany({
       where: { userId: liquidityAccountId, asset: quote.toAsset, available: { gte: quote.toAmount } },
