@@ -259,6 +259,57 @@ describe('4. two accounts, two ledgers', () => {
   });
 });
 
+describe('4a. cross-account Asset tab search (#85)', () => {
+  const renderAssetSearch = (query: string) => {
+    let stateSlot = 0;
+    const mod = evaluate(wallet + 'WalletOverview.tsx', {
+      react: {
+        ...React,
+        useState: (initial: any) => {
+          const slot = stateSlot++;
+          return [slot === 0 ? 'asset' : slot === 1 ? query : initial, noop];
+        },
+        useMemo: (factory: () => any) => factory(),
+      },
+      'lucide-react': icons, '../../lib/i18n': i18n, './format': fmt,
+      './TierBadge': { TierBadge: () => null },
+      './AllocationCard': { AllocationCard: stub('AllocationCard') },
+      './DynamicsCard': { DynamicsCard: stub('DynamicsCard') },
+      './RecentActivity': { RecentActivity: stub('RecentActivity') },
+      '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
+    });
+    const rows = [
+      { symbol: 'BTC', name: 'Bitcoin', total: 2, valueUsd: 200000, priced: true },
+      { symbol: 'USDT', name: 'Tether', total: 5, valueUsd: 5, priced: true },
+    ];
+    return plain(renderToStaticMarkup(mod.WalletOverview({
+      ...base, account: CROSS, overview: EMPTY_OVERVIEW, rows, performance: noHistory, btcEquivalent: 10,
+    } as any)));
+  };
+
+  it('reuses the translated Wallet search without changing the overview total', () => {
+    const all = renderAssetSearch('');
+    const filtered = renderAssetSearch('btc');
+    expect(all).toContain('type="search"');
+    expect(all).toContain('wallet.searchAsset');
+    expect(all).toContain('data-symbol="BTC"');
+    expect(all).toContain('data-symbol="USDT"');
+    expect(filtered).toContain('data-symbol="BTC"');
+    expect(filtered).not.toContain('data-symbol="USDT"');
+    expect(headline(filtered)).toBe(headline(all));
+    expect(filtered).toContain('data-stub="AllocationCard"');
+    expect(filtered).toContain('data-stub="DynamicsCard"');
+  });
+
+  it('shows an honest no-match message rather than an empty-account claim', () => {
+    const out = renderAssetSearch('SOL-not-held');
+    expect(out).toContain('wallet.noSearchResults');
+    expect(out).not.toContain('wallet.noAssets<');
+    expect(out).not.toContain('data-symbol="BTC"');
+    expect(out).not.toContain('data-symbol="USDT"');
+  });
+});
+
 describe('5. profit by period is the server’s own answer', () => {
   function dynamics(performance: any, extra: Record<string, unknown> = {}) {
     const hk = hooks();
