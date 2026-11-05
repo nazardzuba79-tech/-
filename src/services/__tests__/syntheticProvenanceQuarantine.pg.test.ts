@@ -321,6 +321,35 @@ pg('provenance quarantine of identified legacy synthetic accounts (#630 owner de
     await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD); // the SENT 10000 used the whole evidence
   });
 
+  test('historical COMPLETED withdrawal consumes its verified deposit budget but leaves the genuine remainder requestable', async () => {
+    // Before the current SENT status existed, fulfilled withdrawals used COMPLETED.
+    // The prior budget omitted those historical rows, allowing already-paid
+    // verified funds to be requested again from a mixed synthetic balance.
+    const legacy = await user('100000');
+    await identify(legacy);
+    await genuineDeposit(legacy, '10000');
+    await db.withdrawal.create({ data: { userId: legacy, asset: 'USDT', network: 'FIXTURE',
+      toAddress: 'HISTORICAL_PAID_ADDRESS', amount: '6000', status: 'COMPLETED',
+      balanceHeld: true, txHash: 'HISTORICAL_FIXTURE_ONLY' } });
+    await db.balance.update({ where: { userId_asset: { userId: legacy, asset: 'USDT' } },
+      data: { available: { decrement: '6000' } } });
+    expect(await bal(legacy)).toEqual(['104000', '0']);
+    const before = await digest([legacy]);
+    await expect(withdraw(legacy, '4000.000001')).rejects.toMatchObject(HOLD);
+    expect(await digest([legacy])).toBe(before);
+    const pending = await withdraw(legacy, '4000');
+    expect(pending).toMatchObject({ status: 'PENDING' });
+    expect(await bal(legacy)).toEqual(['100000', '4000']);
+    await expect(withdraw(legacy, '0.000001')).rejects.toMatchObject(HOLD);
+    const withdrawals = new WithdrawalService(db, prices);
+    await expect(withdrawals.approveWithdrawal({ withdrawalId: pending.id, performedByAdminId: 'fixture-admin' }))
+      .resolves.toMatchObject({ status: 'APPROVED' });
+    await expect(withdrawals.markSent({ withdrawalId: pending.id, performedByAdminId: 'fixture-admin', txHash: 'FIXTURE_NO_CHAIN' }))
+      .resolves.toMatchObject({ status: 'SENT' });
+    expect(await bal(legacy)).toEqual(['100000', '0']);
+    await expect(withdraw(legacy, '1')).rejects.toMatchObject(HOLD);
+  });
+
   test('genuine deposit next to synthetic profit: only the deposit leaves, never the profit', async () => {
     const legacy = await user('100000'), seller = await user('0', '1'), buyer = await user('500000');
     await genuineDeposit(legacy, '10000');
