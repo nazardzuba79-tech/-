@@ -42,7 +42,9 @@ export type LedgerSource =
   /** The funding cash-flow of one 8h settlement, debited or credited, priced by the schedule version in force then. */
   | 'FUNDING'
   /** A loss (fees included) an isolated settlement realised beyond its post, covered by the simulation insurance model. */
-  | 'SHORTFALL_COVER';
+  | 'SHORTFALL_COVER'
+  /** Demo USDT converted into another asset, never trading PnL or a real withdrawal. */
+  | 'WALLET_CONVERSION';
 
 export interface LedgerEntry {
   /** Stable across reads: the journal event it came from, plus which component of it. */
@@ -123,6 +125,13 @@ export function accountLedger(state: DemoState): AccountLedger {
 
   for (const event of state.events) {
     const fee = n(event.fee), cashflow = n(event.cashflow);
+
+    if (event.kind === 'WALLET_CONVERSION') {
+      // A transfer from the native settle ledger into demo asset inventory;
+      // exclude it from realized PnL and fees while preserving cash reconciliation.
+      push(event, 'WALLET_CONVERSION', cashflow);
+      continue;
+    }
 
     if (event.kind === 'OPEN') {
       // Opening charges a fee and nothing else: `cashflow` IS the negated fee.
