@@ -368,6 +368,9 @@ describe('translation integrity', () => {
         if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
         if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
         if (key && WALLET_CONVERSION_KEYS.includes(key)) return false;
+        // Cross test conversion adds one new label in each locale; preserve
+        // the frozen digest for every previously published dictionary byte.
+        if (key === 'wallet.conversion.subtitleCross') return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has
@@ -512,6 +515,8 @@ describe('translation integrity', () => {
         expect({ code, key, text: dicts[code][key]?.trim() !== '' }).toEqual({ code, key, text: true });
         if (code !== 'ru') expect({ code, key, translated: dicts[code][key] !== dicts.ru[key] }).toEqual({ code, key, translated: true });
       }
+      expect(dicts[code]['wallet.conversion.subtitleCross']?.trim().length).toBeGreaterThan(15);
+      expect(dicts[code]['wallet.conversion.subtitleCross']).not.toBe(dicts[code]['wallet.conversion.subtitle']);
       expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
       expect(dicts[code]['wallet.superVip']).toBe(approvedVipCopy[code].label);
       expect(dicts[code]['wallet.superVipTitle']).toBe(approvedVipCopy[code].title);
