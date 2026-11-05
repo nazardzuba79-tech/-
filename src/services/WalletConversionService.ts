@@ -185,8 +185,16 @@ export class WalletConversionService {
   private usd(quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd'>) { return new Decimal(quote.fromAmount).times(quote.fromPriceUsd); }
   /** Size and backing that do not depend on other conversions: the single limit, a configured reserve ('spot'), market depth. */
   private async admit(quote: Pick<ConversionQuote, 'fromAsset' | 'toAsset' | 'fromAmount' | 'toAmount' | 'fromPriceUsd' | 'ledger'>) {
-    if (quote.ledger !== 'cross' && this.usd(quote).gt(this.limits.maxUsd)) throw new ConversionError('LIMIT_EXCEEDED');
-    // A demo conversion is backed by the liquidity account's DemoBalance instead (demoBacking).
+    if (quote.ledger === 'cross') {
+      // Owner/tester demo only. This is an INTERNAL synthetic asset swap,
+      // not a Kraken execution; live bid/ask sets the rate, but venue depth
+      // and treasury inventory cannot cap a simulated exchange of own USDT.
+      const cap = this.env.WALLET_CROSS_DEMO_MAX_USD ?? '1000000';
+      if (!LIMIT.test(cap) || this.usd(quote).gt(cap)) throw new ConversionError('LIMIT_EXCEEDED');
+      return;
+    }
+    if (this.usd(quote).gt(this.limits.maxUsd)) throw new ConversionError('LIMIT_EXCEEDED');
+    // A standard demo conversion is backed by an existing DemoLiquidity inventory.
     if (quote.ledger === 'spot' && !this.limits.reserves.has(quote.toAsset)) throw new ConversionError('RESERVE_UNVERIFIED');
     for (const [asset, amount, side] of [[quote.fromAsset, quote.fromAmount, 'bid'], [quote.toAsset, quote.toAmount, 'ask']] as const) {
       if (asset === 'USD') continue;
@@ -210,10 +218,7 @@ export class WalletConversionService {
   private async demoBacking(db: Reader, userId: string, quote: Pick<ConversionQuote, 'fromAmount' | 'fromPriceUsd' | 'ledger'>, lockRows: boolean) {
     const { config } = demoLiquidityConfig(this.env);
     if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
-    if (quote.ledger === 'cross') {
-      const raw = this.env.WALLET_CROSS_DEMO_MAX_USD ?? '1000000';
-      if (!LIMIT.test(raw) || this.usd(quote).gt(raw)) throw new ConversionError('LIMIT_EXCEEDED');
-    } else if (this.usd(quote).gt(config.maxOrderQuote)) throw new ConversionError('LIMIT_EXCEEDED');
+    if (this.usd(quote).gt(config.maxOrderQuote)) throw new ConversionError('LIMIT_EXCEEDED');
     if (await liquidityAccountRefusal(db, config.accountId, lockRows, this.env)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
     return config.accountId;
   }
@@ -273,13 +278,13 @@ export class WalletConversionService {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { blockedAt: true } });
     if (!user || user.blockedAt) return { convertible: false, ledger };
     if (ledger === 'spot') return { convertible: [...this.limits.reserves.keys()].some(asset => this.supported(asset)), ledger };
-    const { config } = demoLiquidityConfig(this.env);
-    if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) return { convertible: false, ledger };
     if (ledger === 'cross') {
       const account = await nativeCrossAccount(this.prisma, userId, this.env);
       const free = account && nativeCrossFreeUSDT(account);
-      if (!free || !new Decimal(free).gt(0)) return { convertible: false, ledger };
+      return { convertible: !!free && new Decimal(free).gt(0), ledger };
     }
+    const { config } = demoLiquidityConfig(this.env);
+    if (!config || !demoWithdrawalGuardEnabled(this.env) || config.accountId.toLowerCase() === userId.toLowerCase()) return { convertible: false, ledger };
     return { convertible: !(await liquidityAccountRefusal(this.prisma, config.accountId, false, this.env)), ledger };
   }
   async assets(userId: string) {
@@ -313,7 +318,7 @@ export class WalletConversionService {
       fromPriceUsd, toPriceUsd, fee: '0', source: 'kraken', pricing: 'bid-ask', fetchedAt: feed.fetchedAt, expiresAt: feed.fetchedAt + MAX_AGE, ledger };
     // Refuse early what cannot be confirmed; the confirm re-checks all of it under its locks.
     await this.admit(quote);
-    if (ledger === 'demo' || ledger === 'cross') {
+    if (ledger === 'demo') {
       const accountId = await this.demoBacking(this.prisma, userId, quote, false);
       const inventory = await this.prisma.demoBalance.findUnique({ where: { userId_asset: { userId: accountId, asset: toAsset } } });
       if (!inventory || new Decimal(inventory.available.toString()).lt(toAmount)) throw new ConversionError('INSUFFICIENT_LIQUIDITY');
@@ -392,11 +397,13 @@ export class WalletConversionService {
         // Exact owner/tester session, demo-book lock, quote and inventory have
         // already been checked; settlement locks the native account row too.
         if (!authority) throw new ConversionError('SESSION_REVOKED');
-        const accountId = await this.demoBacking(tx, userId, quote, true);
+        // The Cross test-only path is an internal re-denomination: the
+        // account's own native USDT decreases atomically as its DemoBalance
+        // destination increases. No liquidity account/real reserve is used.
         await this.withinTotals(tx, userId, quote);
         try {
           await settleCrossDemoUSDT(tx, { userId, sessionId: authority.sessionId, expiresAt: authority.expiresAt },
-            quote, accountId, this.now());
+            quote, null, this.now());
         } catch (error) {
           if (error instanceof Error) {
             if (error.message === 'CROSS_DEMO_INSUFFICIENT_BALANCE') throw new ConversionError('INSUFFICIENT_BALANCE');
