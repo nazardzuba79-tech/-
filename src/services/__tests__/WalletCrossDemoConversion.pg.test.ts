@@ -63,7 +63,7 @@ pg('Cross wallet conversion: one native debit + two demo asset legs in one DB tr
     env = { PRIVATE_TRADING_ENABLED: 'true', PRIVATE_TRADING_OWNER_ID: owner,
       PRIVATE_TRADING_TEST_USER_IDS: '', WALLET_CONVERSION_ENABLED: 'true',
       WALLET_CROSS_DEMO_CONVERSION_ENABLED: 'true', WALLET_CROSS_DEMO_MAX_USD: '1000000',
-      DEMO_LIQUIDITY_ENABLED: 'true', DEMO_LIQUIDITY_ACCOUNT_ID: inventory,
+      DEMO_LIQUIDITY_ENABLED: 'false', DEMO_LIQUIDITY_ACCOUNT_ID: inventory,
       DEMO_LIQUIDITY_PAIRS: 'BTC/USDT,EUR/USDT',
       DEMO_LIQUIDITY_MAX_ORDER_QUOTE: '1000',
       DEMO_WITHDRAWAL_GUARD_ENABLED: 'true',
@@ -108,8 +108,10 @@ pg('Cross wallet conversion: one native debit + two demo asset legs in one DB tr
       asOf: after.snapshot.time }, async () => []);
     expect(full.snapshot.walletBalance).toBe('900000');
     expect(await bal(owner, 'EUR')).toBe(q.toAmount);
-    expect(await bal(inventory, 'EUR')).toBe(new BigNumber('1000000').minus(q.toAmount).toFixed());
-    expect(await bal(inventory, 'USDT')).toBe('100000');
+    // The simulated conversion creates the destination denomination inside
+    // this same user only. The separately funded liquidity account is untouched.
+    expect(await bal(inventory, 'EUR')).toBe('1000000');
+    expect(await bal(inventory, 'USDT')).toBe('0');
     expect((await db.balance.findUniqueOrThrow({ where: { userId_asset: { userId: owner, asset: 'USDT' } } })).available.toString()).toBe('7');
     expect(await db.auditLog.count({ where: { userId: owner, action: 'WALLET_CROSS_CONVERTED' } })).toBe(1);
     expect(await db.nativeDemoRevision.count({ where: { userId: owner, revision: 2 } })).toBe(1);
@@ -117,24 +119,23 @@ pg('Cross wallet conversion: one native debit + two demo asset legs in one DB tr
     expect((activity.metadata as Record<string, unknown>).toAsset).toBe('EUR');
   }, 30_000);
 
-  test('liquidity disappears after quote: no native debit, no demo EUR or USDT credit, quote remains uncommitted', async () => {
+  test('demo-only native USDT swap is independent of unrelated demo liquidity or external reserves', async () => {
     const q = await service.quote(owner, 'USDT', 'EUR', '100000');
     const before = await native();
     const initialInventory = await bal(inventory, 'EUR');
     expect(await bal(owner, 'EUR')).toBe('0');
     await db.demoBalance.update({ where: { userId_asset: { userId: inventory, asset: 'EUR' } },
       data: { available: '0' } });
-    await expect(service.confirm(owner, q.quoteId, { sessionId: session, expiresAt: Date.now() + 60_000 }))
-      .rejects.toMatchObject({ code: 'INSUFFICIENT_LIQUIDITY' });
+    const receipt = await service.confirm(owner, q.quoteId, { sessionId: session, expiresAt: Date.now() + 60_000 });
+    expect(receipt).toMatchObject({ status: 'APPLIED', ledger: 'cross' });
     const after = await native();
-    expect(after.revision).toBe(before.revision);
-    expect(after.snapshot.walletBalance).toBe(before.snapshot.walletBalance);
-    expect(after.commands).toEqual(before.commands);
-    expect(await bal(owner, 'EUR')).toBe('0');
+    expect(after.revision).toBe(before.revision + 1);
+    expect(after.snapshot.walletBalance).toBe(new BigNumber(before.snapshot.walletBalance).minus('100000').toFixed());
+    expect(await bal(owner, 'EUR')).toBe(q.toAmount);
     expect(await bal(inventory, 'USDT')).toBe('0');
     expect(await bal(inventory, 'EUR')).toBe('0');
-    expect(await db.auditLog.count({ where: { userId: owner, action: 'WALLET_CROSS_CONVERTED' } })).toBe(0);
-    expect(await db.nativeDemoRevision.count({ where: { userId: owner, revision: 2 } })).toBe(0);
+    expect(await db.auditLog.count({ where: { userId: owner, action: 'WALLET_CROSS_CONVERTED' } })).toBe(1);
+    expect(await db.nativeDemoRevision.count({ where: { userId: owner, revision: 2 } })).toBe(1);
     // Return the fixture inventory for repeatability (no production ledger touched).
     await db.demoBalance.update({ where: { userId_asset: { userId: inventory, asset: 'EUR' } },
       data: { available: initialInventory } });
