@@ -68,7 +68,8 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
       .then((next) => {
         if (!alive) return;
         setOptions(next);
-        setAsset((current) => (next.assets.some((a) => a.asset === current) ? current : next.assets[0]?.asset ?? ''));
+        const list = next.source === 'TRADING' ? (next.reviewAssets ?? []) : next.assets;
+        setAsset((current) => (list.some((a) => a.asset === current) ? current : list[0]?.asset ?? ''));
       })
       .catch(() => { if (alive) setLoadFailed(true); });
     return () => { alive = false; };
@@ -80,7 +81,9 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
   useEffect(() => { setNetworkCode(networks[0]?.code ?? ''); }, [networks]);
   const network = networks.find((n) => n.code === networkCode) ?? networks[0];
 
-  const row = options?.assets.find((a) => a.asset === asset) ?? null;
+  const reviewOnly = options?.source === 'TRADING';
+  const optionAssets = reviewOnly ? (options?.reviewAssets ?? []) : (options?.assets ?? []);
+  const row = optionAssets.find((a) => a.asset === asset) ?? null;
   const available = row ? Number(row.available) : 0;
   const decimals = decimalsFor(asset);
   const shown = (value: number) => formatAmount(value, lang, decimals);
@@ -106,7 +109,8 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
     setServerError(null);
     const request = { asset, network: network.code, toAddress: address.trim(), amount: plain };
     try {
-      await api.requestWithdrawal(request);
+      if (reviewOnly) await api.requestWithdrawalReview(request);
+      else await api.requestWithdrawal(request);
       setSubmitted({ ...request, network: network.label });
       setAddress('');
       setAmount('');
@@ -132,7 +136,7 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
     <div className="flex items-center gap-2">
       <SecondaryButton onClick={onClose} full>{t('withdraw.cancel')}</SecondaryButton>
       <PrimaryButton disabled={!canSubmit} onClick={submit} full>
-        {submitting ? t('auth.wait') : t('withdraw.submit')}
+        {submitting ? t('auth.wait') : reviewOnly ? t('withdraw.reviewSubmit') : t('withdraw.submit')}
       </PrimaryButton>
     </div>
   ) : (
@@ -140,13 +144,13 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
   );
 
   return (
-    <Modal open={open} onClose={onClose} title={t('withdraw.title')} subtitle={options ? subtitle : undefined} footer={footer}>
+    <Modal open={open} onClose={onClose} title={reviewOnly ? t('withdraw.reviewTitle') : t('withdraw.title')} subtitle={options ? subtitle : undefined} footer={footer}>
       {submitted ? (
         <div className="space-y-4" role="status">
           <div className="flex flex-col items-center gap-2 pt-1 text-center">
             <CheckCircle2Icon className="h-10 w-10 text-pos" strokeWidth={1.6} aria-hidden="true" />
-            <p className="text-[15px] font-semibold text-ink">{t('withdraw.doneTitle')}</p>
-            <p className="max-w-[340px] text-[12.5px] leading-[18px] text-ink-3">{t('withdraw.doneEta')}</p>
+            <p className="text-[15px] font-semibold text-ink">{reviewOnly ? t('withdraw.reviewDoneTitle') : t('withdraw.doneTitle')}</p>
+            <p className="max-w-[340px] text-[12.5px] leading-[18px] text-ink-3">{reviewOnly ? t('withdraw.reviewWarning') : t('withdraw.doneEta')}</p>
           </div>
           <div className="rounded-w border border-hair bg-surface-1 px-3.5 py-2">
             <SummaryRow label={t('withdraw.youWithdraw')} value={`${shown(Number(submitted.amount))} ${submitted.asset}`} strong />
@@ -162,16 +166,17 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
       ) : !options ? (
         <p className="text-[12.5px] leading-[18px] text-ink-3">{t('withdraw.loading')}</p>
       ) : !row ? (
-        <p className="text-[12.5px] leading-[18px] text-ink-3">{futuresOnly ? t('withdraw.onFutures') : t('withdraw.nothing')}</p>
+        <p className="text-[12.5px] leading-[18px] text-ink-3">{reviewOnly ? t('withdraw.reviewNothing') : futuresOnly ? t('withdraw.onFutures') : t('withdraw.nothing')}</p>
       ) : (
         <div className="space-y-4">
+          {reviewOnly && <p role="note" className="rounded-w border border-hair bg-surface-1 p-3 text-[12px] leading-[18px] text-ink-2">{t('withdraw.reviewWarning')}</p>}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <FieldLabel>{t('withdraw.asset')}</FieldLabel>
               <Select
                 value={asset}
                 onChange={(v) => { setAsset(v); setAmount(''); }}
-                options={options.assets.map((a) => ({ value: a.asset, label: a.asset }))}
+                options={optionAssets.map((a) => ({ value: a.asset, label: a.asset }))}
               />
             </div>
             <div>
@@ -237,7 +242,7 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
             </p>
             <p className="flex items-start gap-2">
               <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0 text-ink-4" strokeWidth={1.8} aria-hidden="true" />
-              <span>{options.source === 'SPOT' ? `${t('withdraw.spotHold')} ` : ''}{t('withdraw.checkAddress')}</span>
+              <span>{reviewOnly ? t('withdraw.reviewWarning') : <>{options.source === 'SPOT' ? `${t('withdraw.spotHold')} ` : ''}{t('withdraw.checkAddress')}</>}</span>
             </p>
           </div>
         </div>
