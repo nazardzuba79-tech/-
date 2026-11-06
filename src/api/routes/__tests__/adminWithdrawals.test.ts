@@ -88,6 +88,48 @@ describe('admin withdrawals routes', () => {
     });
   });
 
+
+  describe('GET /admin/withdrawals/review-requests', () => {
+    it('denies a non-admin and never reveals a customer email', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) },
+        auditLog: { findMany: jest.fn() } });
+      const res = await request(buildApp(prisma)).get('/api/v1/admin/withdrawals/review-requests')
+        .set('Authorization', authHeader('member'));
+      expect(res.status).toBe(403);
+      expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
+    });
+
+    it('lists nonpayable audit requests with server-resolved emails separate from the payout queue', async () => {
+      const prisma = adminPrisma({
+        auditLog: { findMany: jest.fn().mockResolvedValue([{
+          id: 'review-1', userId: 'reviewer-1', createdAt: new Date('2026-11-06T08:00:00Z'),
+          metadata: { asset: 'USDT', network: 'TRC20', amount: '25', toAddress: 'TsyntheticReviewAddress',
+            reviewOnly: true, payable: false },
+        }]) },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
+          findMany: jest.fn().mockResolvedValue([{ id: 'reviewer-1', email: 'reviewer@example.invalid' }]),
+        },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).get('/api/v1/admin/withdrawals/review-requests')
+        .set('Authorization', authHeader('admin'));
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe('private, no-store');
+      expect(res.body.items).toEqual([expect.objectContaining({
+        id: 'review-1', userEmail: 'reviewer@example.invalid', amount: '25',
+        status: 'REVIEW_ONLY', payable: false, balanceHeld: false,
+      })]);
+      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { action: 'WITHDRAWAL_REVIEW_REQUESTED' },
+      }));
+      const payouts = await request(app).get('/api/v1/admin/withdrawals')
+        .set('Authorization', authHeader('admin'));
+      expect(payouts.status).toBe(200);
+      expect(payouts.body).toEqual([]);
+    });
+  });
+
   describe('POST /admin/withdrawals/:id/approve', () => {
     it('requires an admin account', async () => {
       const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
