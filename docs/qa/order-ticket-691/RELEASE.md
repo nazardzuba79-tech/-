@@ -117,3 +117,13 @@ Legacy browser executor fixtures now explicitly supply their synthetic admission
 capability. These fixture capabilities are not production allowlist evidence.
 The dedicated CI SQL check now also supports disposable native PostgreSQL via
 Prisma; its next CI result must be checked before claiming native validation.
+
+Native CI confirmation: review head `724c8de4db3a585c05920d5a0f67b84b802b6e56`,
+[run 42289519383](https://github.com/nazardzuba79-tech/-/actions/runs/42289519383):
+7 suites / 152 tests PASS and Chromium 6/6 PASS, all financial-request counts 0.
+Runner logs confirm native PostgreSQL 18.6. Prisma executes the actual session
+SQL against disposable fixture tables; no production database or financial-engine
+settlement is implied by this admission test. This closes the local native-SQL
+availability gap; production runtime/bindings/browser gates remain unchanged.
+The #688 nonpayable `reviewAssets` field is also asserted in the legacy disposable
+ledger QA without relaxing empty withdrawable assets or withdrawal rejection.

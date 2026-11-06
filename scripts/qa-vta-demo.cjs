@@ -465,14 +465,15 @@ async function panelStates(page, width, expected) {
  await page.locator('.order-form-area .order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
  await page.locator('.order-form-area .order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
  await page.locator('.order-form-area input[inputmode="decimal"][aria-label="Количество"]').fill('100');
- // Owner, 2026-10-22: a non-admin on VTA gets a disabled submit — no refusal line.
+ // #691: a non-admitted viewer gets an active, strictly silent no-op.
  const ordinaryWrites=saleRequests;
- if(!await page.locator('.order-form-area button[type="submit"]').isDisabled())throw Error('non-admin VTA submit is not disabled');
+ if(await page.locator('.order-form-area button[type="submit"]').isDisabled())throw Error('viewer VTA submit must stay clickable');
  await page.locator('.order-form-area button[type="submit"]').click({force:true});await page.waitForTimeout(300);
  if(await page.locator('.order-form-area [role="alert"]').count())throw Error('non-admin VTA shows a refusal line');
  if(saleRequests!==ordinaryWrites)throw Error('non-admin private sale submitted');
  if(privateReads!==before)throw Error('non-admin private read');
- rows.push({ordinarySpot:'all controls enabled, zero private reads',nonAdmin:'blocked, zero private reads'});
+ if(await page.locator('.order-form-area input[aria-label="Количество"]:not([type="range"])').inputValue()!=='100')throw Error('viewer draft was reset');
+ rows.push({ordinarySpot:'all controls enabled, zero private reads',nonAdmin:'active silent no-op, draft preserved, zero private reads or sales'});
  await ctx.close();
  } finally {
   fs.writeFileSync(OUT+'/vta-browser.json',JSON.stringify({rows,saleRequests,uniqueSales:keys.size,lookupRequests,nativeReads},null,2));

@@ -42,6 +42,7 @@ const enabled = !!nativeUrl || !!process.env.QA_PGLITE_MODULE;
       CREATE TABLE "Order" (id text, "userId" text, quantity numeric, status text);
       CREATE TABLE "DemoOrder" (LIKE "Order");
       CREATE TABLE "FuturesOrder" (LIKE "Order");
+      CREATE TABLE "FuturesPosition" (LIKE "Order");
       CREATE TABLE "Trade" (id text, "userId" text, quantity numeric);
       CREATE TABLE "DemoTrade" (LIKE "Trade");`);
     for (const id of [owner,tester,viewer]) {
@@ -53,7 +54,7 @@ const enabled = !!nativeUrl || !!process.env.QA_PGLITE_MODULE;
   afterAll(async () => { await pg?.close(); process.env=previous; });
   const snapshot=async()=>{
     const rows: any={};
-    for(const table of ['Balance','DemoBalance','Order','DemoOrder','FuturesOrder','Trade','DemoTrade']) rows[table]=(await pg.query(`SELECT * FROM "${table}" ORDER BY "userId"`)).rows;
+    for(const table of ['Balance','DemoBalance','Order','DemoOrder','FuturesOrder','FuturesPosition','Trade','DemoTrade']) rows[table]=(await pg.query(`SELECT * FROM "${table}" ORDER BY "userId"`)).rows;
     return rows;
   };
   test('viewer/forgery/revocation fail without changing any financial row; two identities pass the gate',async()=>{
