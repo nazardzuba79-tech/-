@@ -9,7 +9,7 @@ const PENDING_KEY = 'voltex:pending-wallet-conversion';
 const DECIMAL = /^(?:0|[1-9]\d{0,17})(?:\.\d{1,18})?$/;
 // Definite server refusals (nothing was debited) with a message of their own; every other code keeps the generic one.
 const REFUSAL: Record<string, Key> = {
-  INSUFFICIENT_BALANCE: 'wallet.conversion.insufficient', ACCOUNT_BLOCKED: 'wallet.conversion.denied',
+  INSUFFICIENT_BALANCE: 'wallet.conversion.insufficient', ACCOUNT_BLOCKED: 'wallet.conversion.denied', ACCOUNT_RESTRICTED: 'wallet.conversion.denied',
   LIMIT_EXCEEDED: 'wallet.conversion.limit', DAILY_LIMIT_EXCEEDED: 'wallet.conversion.dailyLimit',
   RESERVE_UNVERIFIED: 'wallet.conversion.capacity', RESERVE_EXHAUSTED: 'wallet.conversion.capacity', INSUFFICIENT_LIQUIDITY: 'wallet.conversion.capacity',
 };

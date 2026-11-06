@@ -79,6 +79,8 @@ function makeFakePrisma(available: string) {
   const orders = new Map<string, any>();
   const positions = new Map<string, any>();
   const tx = {
+    // No account here has simulation-sale receipts: the #630 provenance hold reads none.
+    auditLog: { findMany: jest.fn(async () => []) },
     $queryRaw: jest.fn(async (q: any) =>
       q.strings.join('').includes('pg_current_xact_id') ? [{ id: '1' }] : [{ locked: null }]),
     user: { findUnique: jest.fn(async () => ({ id: 'u', createdAt: new Date(Date.now() - 365 * 864e5) })) },

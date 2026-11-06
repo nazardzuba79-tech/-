@@ -14,7 +14,7 @@ function makePrisma(opts: {
     update: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ ...opts.withdrawal, ...data })),
     aggregate: jest.fn().mockResolvedValue({ _sum: { amount: opts.claimed ?? null } }),
   };
-  const auditLog = { create: jest.fn() };
+  const auditLog = { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) };
   const $queryRaw = jest.fn().mockResolvedValue([]);
 
   const tx = { balance, withdrawal, auditLog, $queryRaw };
