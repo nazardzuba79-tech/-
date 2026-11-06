@@ -1,3 +1,4 @@
+import { orderTicketBoundary } from './api/routes/orderTicketBoundary';
 import { contactPolicyRouter } from './api/routes/contactPolicy';
 import { supportRequestRouter } from './api/routes/supportRequest';
 import { AccountDeletionGate } from './services/AccountDeletionGate';
@@ -266,6 +267,8 @@ app.get('/notifications/public-key', (_req, res) => {
 });
 // Test markets first: they answer the shared Spot endpoints for test pairs
 // only (simulated, never tradable) and pass every other pair through.
+// Session-bound admission precedes every interactive order router.
+app.use('/api/v1', orderTicketBoundary(prisma));
 app.use('/api/v1', testMarketsRouter());
 app.use('/api/v1', stocksTestCashRouter(prisma));
 app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));

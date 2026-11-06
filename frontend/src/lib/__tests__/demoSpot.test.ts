@@ -1,3 +1,4 @@
+import { orderDecimal } from '../orderTicketNumbers';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import ts from 'typescript';
@@ -54,15 +55,15 @@ test('an account without an admin credit: Buy/Sell stay clickable, nothing is se
   // Before any request, toast, error line or validation message.
   for (const later of ['setError(t(', 'toast.', 'api.', 'submittingRef.current = true']) expect(submit.indexOf(later)).toBeGreaterThan(silent);
   // The button is not disabled for it: only the existing orderBlocked rule disables it.
-  expect(form).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+  expect(form).toContain('<button type="submit" disabled={!viewer && (submitting || orderBlocked)}');
   // Its balance reads as zero without a request.
   expect(form).toContain("await (demoLedger ? (demo === 'trader' ? api.getDemoBalances() : Promise.resolve([])) : api.getBalances())");
 });
 
 test('an admitted account: LIMIT and MARKET on the demo ledger only, with the ordinary feedback', () => {
   const form = read('components/OrderForm.tsx');
-  expect(form).toContain(".filter(f => !demoLedger || f.id === 'LIMIT' || f.id === 'MARKET')");
-  expect(form).toContain("if (demoLedger && family !== 'LIMIT' && family !== 'MARKET') setFamily('LIMIT');");
+  expect(form).toContain(".filter(f => viewer || !demoLedger || f.id === 'LIMIT' || f.id === 'MARKET')");
+  expect(form).toContain("if (!viewer && demoLedger && family !== 'LIMIT' && family !== 'MARKET') setFamily('LIMIT');");
   const branch = form.slice(form.indexOf('} else if (demoLedger) {'), form.indexOf("} else if (family === 'OCO') {"));
   expect(branch).toContain('feedback = spotOrderFeedback(await withRequestId(terms, requestId => api.placeDemoSpotOrder({ ...terms, requestId })));');
   // Same terms after an unknown outcome reuse the request ID; a definite 4xx answer releases it.
@@ -100,7 +101,7 @@ function submitFixture(overrides: Record<string, unknown> = {}) {
   class ApiError extends Error { constructor(message: string, public status: number, public body: Record<string, unknown> = {}) { super(message); } }
   const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
   const bindings: Record<string, unknown> = {
-    privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', toast, ApiError,
+    ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', toast, ApiError,
     api: { placeOrder: jest.fn().mockResolvedValue({ order: { status: 'OPEN' }, trades: [] }), placeOcoOrder: jest.fn().mockResolvedValue({}),
       placeDemoSpotOrder: jest.fn().mockResolvedValue({ order: { status: 'OPEN' }, trades: [] }) },
     t: (key: string) => key, spotOrderFeedback: (r: any) => (r?.order ? { kind: 'placed' } : { kind: 'unknown' }),

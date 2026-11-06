@@ -1,0 +1,27 @@
+{
+  "environment": "isolated built application; synthetic fixtures; no production requests",
+  "baseline": true,
+  "cases": [
+    {
+      "width": 1440,
+      "target": "ECLV",
+      "writes": [],
+      "errors": [],
+      "afterTyping2": "2.00",
+      "submitDisabled": false,
+      "totalInputType": "number",
+      "defectReproduced": true
+    },
+    {
+      "width": 390,
+      "target": "ECLV",
+      "writes": [],
+      "errors": [],
+      "afterTyping2": "2.00",
+      "submitDisabled": false,
+      "totalInputType": "number",
+      "defectReproduced": true
+    }
+  ],
+  "status": "PASS"
+}

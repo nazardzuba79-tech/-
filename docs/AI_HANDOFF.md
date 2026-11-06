@@ -6941,3 +6941,12 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Actual installed API preserved; two approved #688 routes composed over all captured modules and installed as a dedicated image. Disposable composed PostgreSQL: 26/26 PASS with UTC matching the server; initial Windows-local timestamp assertion mismatch is recorded outside the repository. No migration, ledger mutation or payout activation.
 - Production user flow accepted exactly one informational 1-USDT ERC20 review in the owner's explicitly authorized open session; admin showed authenticated email/address/time/nonpayable state. Full Balance/DemoBalance/Withdrawal fingerprints unchanged across submission.
 - Added the missing visible durable request ID to the existing #689 candidate; strengthened the existing four-width admin fixture assertion. All other runtime files, translations and financial clients preserved. Exact CI/production follow-up and restart/dedupe checks remain required for the commit containing this entry.
+
+## 2026-11-06 — Codex, Issue #691 order ticket
+
+- Owner requested editable Spot/ECLV/Futures drafts plus strict viewer no-op and two-identity server admission.
+- Work based on observed Pages source `03d5467bf9e8451eddade12e1c528c211350a1b1`; fresh main `6260ae7731652831480824d4c1eb911c0bef2b87` contains unrelated work and is not a release artifact.
+- Changed ticket presentation/draft parsing, ephemeral session capability, outer API order boundary and focused tests. Existing accounting/engines, Copy Trading, Wallet, listings, timers and deposits preserved.
+- Legacy ADMIN/admin-credit exceptions were reported before implementing the outer two-identity guard. No private account identifiers are in evidence.
+- Local targeted regressions: 45 suites/887 PASS; isolated baseline and fixed 1440/390 browser matrix. See `docs/qa/order-ticket-691/RELEASE.md` for precise test scope and limitations.
+- No production changes: authorized browser/Windows/Hetzner OS connection unavailable. Runtime API compatibility, actual pinned identities, native PostgreSQL release validation and authenticated production acceptance remain blocked. Do not release main or the loopback QA bundle.
