@@ -2159,6 +2159,7 @@ export const RU = {
   'withdraw.reviewSubmit': 'Отправить на проверку',
   'withdraw.reviewDoneTitle': 'Запрос передан администратору',
   'withdraw.reviewWarning': 'Это только запрос на проверку. Средства не резервируются и не отправляются. Запрос не подтверждает возможность выплаты.',
+  'withdraw.reviewBalance': 'На торговом счёте',
   'withdraw.reviewNothing': 'Нет активов для подачи запроса.',
   'withdraw.doneTitle': 'Заявка на вывод принята',
   'withdraw.doneEta': 'Вывод может занимать до 60 минут. Статус заявки — в истории кошелька.',
