@@ -7710,3 +7710,13 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Preserved all existing real held-withdrawal, no-demo-payout, rejection and concurrency checks. The runner still ignores DATABASE_URL, blocks outbound fetches, uses only synthetic identities, and never starts the application entrypoint.
 - Validation before publication: Node syntax check PASS. Real PostgreSQL/91 existing unit tests will run in the existing withdrawal-demo-fence workflow on the resulting exact head; their outcome is pending here, not assumed. This is isolated API/database QA, not a live user-session or Wallet-form browser test.
 - Remaining: inspect exact-head results; after authorized Hetzner access, verify the real API release and authenticated user/admin flow before frontend promotion. No merge, production deployment or money movement performed.
+
+
+## Codex — 2026-11-06 — Withdrawal review API fingerprint repair (#690)
+
+- Parent: `9e3e23fad94c5c97589669a234234bd3bb29297b`; this commit changes only `frontend/src/lib/__tests__/futuresTickerHeader.test.ts` and this append-only handoff.
+- Corrected CI attribution: main before #688 (`cf8e934525096f07e9c891f5f2f069df52bc9534`) and production `35f6bcf7d74429b173ea8df0d8db41dd0868d048` both pass the existing API fingerprint. The #688 review client additions caused the two new digest failures; they were not pre-existing baseline failures.
+- Exact normalisation removes only the two review client methods and optional `reviewAssets` line before the existing withdrawal-options strip. The original expected digest `e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce`, runtime code, workflows and release gates remain unchanged.
+- Malformed or duplicate review blocks are not stripped. New mutation controls cover endpoint/type/payability/duplication and the ordinary payout call; existing KYC, financial-read and Authorization controls remain intact. Both known blank-line spellings are exact literals; there is no general whitespace trimming.
+- Local Node execution of the existing and new pin assertion bodies: 37 assertions PASS against both source and production-pinned API bytes, restoring the original digest. Complete Jest/CI results for this commit are pending; this is not a full-suite waiver.
+- No merge or deployment. The separate narrow Hetzner API release and authenticated user/admin acceptance remain prerequisites for frontend production promotion.
