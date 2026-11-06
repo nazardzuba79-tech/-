@@ -947,6 +947,18 @@ export const api = {
       { method: 'POST', body: JSON.stringify(params) }
     ),
 
+  /** Nonpayable Cross-account review notice; not a Withdrawal and cannot be approved. */
+  requestWithdrawalReview: (params: { asset: string; network: string; toAddress: string; amount: string }) =>
+    request<{ id: string; status: 'REVIEW_ONLY'; balanceHeld: false; payable: false; duplicate: boolean }>(
+      '/withdrawals/review-request',
+      { method: 'POST', body: JSON.stringify(params) }
+    ),
+
+  getAdminWithdrawalReviews: (signal?: AbortSignal) =>
+    request<{ items: Array<{ id: string; userId: string | null; userEmail: string; asset: string; network: string; amount: string; toAddress: string; createdAt: string; status: 'REVIEW_ONLY'; payable: false; balanceHeld: false }> }>(
+      '/admin/withdrawals/review-requests', { signal }
+    ),
+
   /** What the caller can withdraw, per asset, exactly as the server checks it.
    * TRADING = the Cross trading account; SPOT = the spot ledger, with
    * `futures` naming what would have to be transferred first. */
@@ -954,6 +966,7 @@ export const api = {
     request<{
       source: 'TRADING' | 'SPOT';
       assets: { asset: string; available: string }[];
+      reviewAssets?: { asset: string; available: string }[];
       futures: { asset: string; available: string }[];
     }>('/withdrawals/options'),
 
