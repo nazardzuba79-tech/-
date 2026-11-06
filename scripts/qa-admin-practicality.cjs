@@ -164,6 +164,8 @@ async function main() {
         if (variant === 'after' && slug === 'withdrawals') {
           const review = page.locator('[data-review-withdrawal-row="qa-review-1"]');
           await review.waitFor({ state: 'visible' });
+          assert.ok((await review.innerText()).includes('ID запроса: qa-review-1'),
+            'The durable review request ID must be visible separately from the user ID');
           assert.ok((await review.innerText()).includes('reviewer@example.invalid'),
             'A review request must show the user email inside admin Withdrawals');
           assert.ok((await review.innerText()).includes('К выплате не допускается'),

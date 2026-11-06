@@ -132,7 +132,7 @@ export function AdminWithdrawalsPage() {
           <div className="admin-withdrawal-header" aria-hidden="true"><span>Пользователь</span><span>Актив / сеть</span><span>Адрес</span><span>Сумма</span><span>Статус</span><span>Создан</span><span>Действия</span></div>
           {(reviews.data?.items ?? []).map(r => <article className="admin-withdrawal-row" key={r.id} data-review-withdrawal-row={r.id}>
             <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Пользователь</span><strong>{r.userEmail}</strong>
-              <small>ID: {r.userId ?? '—'}</small>{r.userId && <Link to={`/admin/users/${encodeURIComponent(r.userId)}`}>Открыть пользователя</Link>}</div>
+              <small>ID: {r.userId ?? '—'}</small><small>ID запроса: {r.id}</small>{r.userId && <Link to={`/admin/users/${encodeURIComponent(r.userId)}`}>Открыть пользователя</Link>}</div>
             <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Актив / сеть</span><RailLabel asset={r.asset} chain={r.network} /></div>
             <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Адрес</span><CopyValue value={r.toAddress} label="запрошенный адрес" full /></div>
             <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Сумма</span><strong className="mono">{r.amount} {r.asset}</strong><small>Не зарезервирована</small></div>
