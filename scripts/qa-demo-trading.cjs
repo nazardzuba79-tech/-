@@ -20,6 +20,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
   async function open(who, width, { dropFirstDemoOrder = false, dropFirstOrder = false, pair = 'BTC/USDT' } = {}) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'ru-RU' });
     const bearer = await token(who);
+    const ticketAdmitted = ['tester', 'legacy', 'funded', 'legacySeller', 'demoSeller', 'demoFunded', 'spotFunded'].includes(who);
     await context.addInitScript(([value]) => { localStorage.setItem('exchange_token', value); localStorage.setItem('exchange_lang', 'ru'); }, [bearer]);
     const page = await context.newPage();
     const calls = [], errors = [], accessAnswers = [], demoOrderBodies = [], orderBodies = [], balanceAnswers = [];
@@ -33,6 +34,8 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
     await page.route('**/*', async route => {
       const request = route.request(), url = new URL(request.url()), p = url.pathname;
       if (url.origin === origin && !p.startsWith('/api/v1/')) return route.continue();
+      // These legacy ledger fixtures inject admission; real two-identity policy is tested in #691.
+      if (url.origin === origin && p === '/api/v1/orders/access' && request.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ allowed: ticketAdmitted }) });
       if (url.origin === origin && REAL.some(rx => rx.test(p))) {
         calls.push(`${request.method()} ${p}`);
         if (request.method() === 'POST' && p === '/api/v1/demo/orders') demoOrderBodies.push(request.postDataJSON());
@@ -60,11 +63,14 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
       if (p.includes('tickers')) return reply({ tickers: PAIRS.map(pair => ({ pair, lastPrice: 100000, high24h: 100200, low24h: 99000, changePercent: 1, quoteVolume24h: 1e6, volume24h: 100 })) });
       return reply([]);
     });
+    const ticketAnswer = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/orders/access');
     await page.goto(origin + '/trade?pair=' + pair, { waitUntil: 'domcontentloaded' });
     await page.locator('.spot-terminal').waitFor();
     const mobile = width < 900;
     if (mobile) await page.locator('#mobile-trade-trade').click();
     await page.locator('form.order-form-content').waitFor();
+    assert.deepEqual(await (await ticketAnswer).json(), { allowed: ticketAdmitted });
+    await page.waitForFunction(admitted => document.querySelector('form.order-form-content')?.noValidate === !admitted, ticketAdmitted);
     return { page, context, calls, errors, mobile, accessAnswers, demoOrderBodies, orderBodies, balanceAnswers };
   }
   const form = page => page.locator('form.order-form-content');
@@ -72,7 +78,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
     const select = page.locator('.order-type-select select');
     if (await select.count()) await select.selectOption('LIMIT');
     else await page.locator('.order-type-tab', { hasText: 'Лимит' }).first().click();
-    await form(page).locator('input[aria-label="Цена"][type="number"]').fill(String(price));
+    await form(page).locator('input[aria-label="Цена"][inputmode="decimal"]').fill(String(price));
     await form(page).locator('input[aria-label="Количество"]:not([type="range"])').fill(String(quantity));
     await form(page).locator('button[type="submit"]').click();
   }
@@ -89,8 +95,8 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
   const familyCount = async (page, mobile) => mobile
     ? page.locator('.order-type-select select option').count()
     : page.locator('.order-type-tabs').first().locator('.order-type-tab').count();
-  // Until the server's access answer arrives the terminal stays fail-closed
-  // (LIMIT/MARKET, nothing sent): wait for the settled state before acting.
+  // Admission starts denied with interactive viewer controls. Wait for the
+  // independent ledger answer before asserting an executor's supported families.
   const settledFamilies = async (page, mobile, expected) => {
     for (let i = 0; i < 150 && await familyCount(page, mobile) !== expected; i++) await page.waitForTimeout(100);
     return familyCount(page, mobile);
@@ -146,7 +152,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
       // 1. No admin credit: Buy is clickable, nothing is sent, nothing is shown.
       {
         const { page, context, calls, errors, mobile } = await open('unfunded', width);
-        assert.equal(await familyCount(page, mobile), 2, 'LIMIT and MARKET only on the demo ledger');
+        assert.equal(await familyCount(page, mobile), 5, 'viewer can edit all families without execution');
         await limitOrder(page, 100000, 0.0001); await settle(page);
         assert.deepEqual(posts(calls), [], 'a silent account sends no order of any kind');
         assert.equal(await form(page).locator('button[type="submit"]').isDisabled(), false, 'Buy stays clickable');
@@ -161,7 +167,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
       // 2. Admitted tester: LIMIT reserve and cancel through the ordinary panels.
       {
         const { page, context, calls, errors, mobile } = await open('tester', width);
-        assert.equal(await familyCount(page, mobile), 2);
+        assert.equal(await settledFamilies(page, mobile, 2), 2);
         await traderReady(page);
         const before = await demoBal('tester', 'USDT');
         await limitOrder(page, 90000, 0.0001); await settle(page);

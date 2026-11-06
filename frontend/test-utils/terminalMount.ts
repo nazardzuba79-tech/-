@@ -1,3 +1,4 @@
+import * as orderTicketNumbers from '../src/lib/orderTicketNumbers';
 import { readFileSync } from 'fs';
 import { browserReadModules } from './browserReadModules';
 import { resolve } from 'path';
@@ -123,6 +124,9 @@ export function mountComponent(file: string, options: MountOptions = {}): Mounte
   new Function('require', 'exports', 'window', 'document', compiled)(
     (name: string) => {
       if (options.modules && name in options.modules) return options.modules[name];
+      // Existing trader-engine tests; viewer boundary has separate real DOM/network coverage.
+      if (name === '../lib/useOrderTicketAccess') return { useOrderTicketAccess: () => ({ allowed: true, canSubmit: () => true }) };
+      if (name === '../lib/orderTicketNumbers') return orderTicketNumbers;
       if (name === 'react') return react;
       if (name === '../lib/api') return { api, ApiError: Error };
       if (name === '../lib/useFuturesMark') return readModules.mark;

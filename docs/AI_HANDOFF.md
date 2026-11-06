@@ -7695,3 +7695,12 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - #630 exact `b021b8ed` provenance PG21/21 PASS. Separate current-main Conversion negative control accepted synthetic-origin10USDT→BTC; no withdrawal attempted. Activation stays OFF; canonical policy hook requested from Claude in #630 comment6636891345. Do not introduce a blanket ordinary-deposit withdrawal ban.
 - Contracts, precise limits and release/rollback gates: `docs/INTEGRATION659_CONTRACTS_20261104.md`. Stocks calibrated +18.227612% failure retained; runtime belongs to Claude. No production mutation, merge or Beget work.
 - Deployed 2026-11-04 (owner-authorized): API — the four pre-#668 route modules put back into `voltex-cutover-api-production-1` by `scripts/ops/restore-admin-password-vault-20261104.sh` (release branch `194d388`), health ok at 18:31:35Z, backups in `/opt/voltex-releases/password-restore-20261104-183131` with the rollback command printed by the script; the change lives in the container layer, so a future API image must be built from main (which has the restore). Pages — production deployment `5f99c9ea` from `release/restore-admin-password-pages-20261104` @ `194d388`, live entry `index-DaqT1G8f.js` identical to the local build, `AdminUsersPage-Kg-X7i35.js` shows the password again; production branch set back to `main`, automatic deployments still disabled.
+
+## 2026-11-06 — Codex, Issue #691 order ticket
+
+- Owner requested editable Spot/ECLV/Futures drafts plus strict viewer no-op and two-identity server admission.
+- Work based on observed Pages source `03d5467bf9e8451eddade12e1c528c211350a1b1`; fresh main `6260ae7731652831480824d4c1eb911c0bef2b87` contains unrelated work and is not a release artifact.
+- Changed ticket presentation/draft parsing, ephemeral session capability, outer API order boundary and focused tests. Existing accounting/engines, Copy Trading, Wallet, listings, timers and deposits preserved.
+- Legacy ADMIN/admin-credit exceptions were reported before implementing the outer two-identity guard. No private account identifiers are in evidence.
+- Local targeted regressions: 45 suites/887 PASS; isolated baseline and fixed 1440/390 browser matrix. See `docs/qa/order-ticket-691/RELEASE.md` for precise test scope and limitations.
+- No production changes: authorized browser/Windows/Hetzner OS connection unavailable. Runtime API compatibility, actual pinned identities, native PostgreSQL release validation and authenticated production acceptance remain blocked. Do not release main or the loopback QA bundle.

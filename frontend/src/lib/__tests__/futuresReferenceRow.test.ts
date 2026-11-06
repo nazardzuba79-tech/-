@@ -23,14 +23,14 @@ const ROW_PARITY_CSS = source('components/FuturesPositionParity.css');
 
 describe('1. price and quantity are one field shape, used twice', () => {
   test('both are the same class, with the caption and the extra INSIDE', () => {
-    // Two `fo-field` labels: price (or mark price) and quantity.
-    expect(FORM.match(/className="fo-label fo-field/g)!.length).toBe(3); // LIMIT price, MARKET price, quantity
+    // Price (or mark price), quantity and the Issue #691 editable total share the field shape.
+    expect(FORM.match(/className="fo-label fo-field/g)!.length).toBe(4); // LIMIT price, MARKET price, quantity, total
     // Each carries its caption as the same element, inside the field.
-    expect(FORM.match(/className="fo-fieldCaption"/g)!.length).toBe(3);
+    expect(FORM.match(/className="fo-fieldCaption"/g)!.length).toBe(4);
     // Each row is the same element, and the differing trailing content is
     // in the same slot inside it.
-    expect(FORM.match(/className="fo-fieldRow/g)!.length).toBe(3);
-    expect(FORM.match(/className="fo-fieldTrailing"/g)!.length).toBe(3);
+    expect(FORM.match(/className="fo-fieldRow/g)!.length).toBe(4);
+    expect(FORM.match(/className="fo-fieldTrailing"/g)!.length).toBe(4);
     // "Последняя" and the unit live in that slot, not beside the field.
     const priceTrailing = FORM.match(/className="fo-fieldTrailing">([\s\S]*?)<\/span>/)?.[1];
     expect(priceTrailing).toContain('fo-lastPriceBtn');
