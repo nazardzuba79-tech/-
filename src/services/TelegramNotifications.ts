@@ -91,26 +91,3 @@ export function notifyDepositAddressCopied(copy: CopiedAddressNotice, fetchImpl:
     asset: copy.asset, network: copy.network, networkLabel: copy.networkLabel, email: copy.email,
   }), fetchImpl);
 }
-
-/** A committed withdrawal/request-for-review event, never an instruction to pay.
- * The address and all credentials stay in the authenticated admin journal, not Telegram.
- * The same signed/deduplicated Worker handles both categories.
- */
-export interface WithdrawalNotice {
-  id: string;
-  requestedAt: Date;
-  asset: string;
-  network: string;
-  amount: string;
-  email?: string;
-  reviewOnly: boolean;
-}
-export function notifyWithdrawalNotice(notice: WithdrawalNotice, fetchImpl: typeof fetch = fetch): Promise<void> {
-  const type = notice.reviewOnly ? 'WITHDRAWAL_REVIEW_REQUESTED' : 'WITHDRAWAL_REQUESTED';
-  const path = notice.reviewOnly ? '/v1/withdrawal-review' : '/v1/withdrawal';
-  return sendSignedEvent(path, () => ({
-    eventId: notice.id, eventType: type, timestamp: notice.requestedAt.getTime(),
-    asset: notice.asset, network: notice.network, amount: notice.amount,
-    ...(notice.email ? { email: notice.email } : {}),
-  }), fetchImpl);
-}
