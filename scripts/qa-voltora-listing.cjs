@@ -92,6 +92,7 @@ function testAssets(now) {
         if (p === '/api/v1/market/live') return route.fulfill({ status: 204, body: '' });
         if (p === '/api/v1/market/snapshot') return json({ pairs: [], fetchedAt: Date.now() });
         if (p === '/api/v1/futures/config') return json({ symbols: [] });
+        if (p === '/api/v1/orders/access') return json({ allowed: false });
         if (p.startsWith('/api/v1/')) return json([]);
         return route.abort();
       });
@@ -116,28 +117,31 @@ function testAssets(now) {
       assert.doesNotMatch(await page.locator('body').innerText(), TECHNICAL, `technical wording on the page @${width}`);
       await page.screenshot({ path: path.join(out, `voltora-${width}-chart.png`) });
 
-      // Standard tabs stay interactive. Before the listing every order is a disabled
-      // button — no refusal line, no toast — and nothing reaches a matching engine.
+      // #691: viewer tabs and CTA stay interactive before listing, but submission
+      // is a synchronous no-op — no refusal line, toast or financial request.
       if (mobile) await page.locator('#mobile-trade-trade').click();
       const form = page.locator('.order-form-area');
-      const submitQuietlyDisabled = async (state) => {
-        assert.equal(await form.locator('button[type="submit"]').isDisabled(), true, `${state}: submit disabled @${width}`);
-        await form.locator('button[type="submit"]').click({ force: true });
+      const submitQuietlyNoOp = async (state) => {
+        assert.equal(await form.locator('button[type="submit"]').isDisabled(), false, `${state}: viewer submit clickable @${width}`);
+        const quantity = await form.getByLabel('Количество', { exact: true }).first().inputValue();
+        await form.locator('button[type="submit"]').click();
+        await form.getByLabel('Количество', { exact: true }).first().press('Enter');
+        assert.equal(await form.getByLabel('Количество', { exact: true }).first().inputValue(), quantity, 'viewer draft is preserved');
         await page.waitForTimeout(300);
         assert.doesNotMatch(await page.locator('body').innerText(), FORMER_REFUSALS, `${state}: refusal line @${width}`);
       };
       assert.equal(await form.locator('.order-form-tab.buy').isEnabled(), true);
       await form.getByLabel('Количество', { exact: true }).first().fill('100');
-      await submitQuietlyDisabled('buy limit');
+      await submitQuietlyNoOp('buy limit');
       await form.locator('.order-form-tab.sell').click();
-      await submitQuietlyDisabled('sell limit');
+      await submitQuietlyNoOp('sell limit');
       // owner, 2026-10-04: order type is one select on a phone — the same «Рынок» family, chosen through it.
       if (mobile) {
         await form.locator('.order-type-select select').selectOption('MARKET');
         assert.equal((await form.locator('.order-type-select select option:checked').textContent()).trim(), 'Рынок', `market order type @${width}`);
       } else
       await form.getByRole('button', { name: 'Рынок', exact: true }).click();
-      await submitQuietlyDisabled('sell market');
+      await submitQuietlyNoOp('sell market');
       assert.equal(writes, 0, `unexpected write requests @${width}`);
 
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

@@ -100,3 +100,30 @@ Changes:
   captured predecessor. Do not remove protections by changing financial flags.
 - Acceptance remains BLOCKED until actual voltextech.net verification. No deployed
   SHA, production PASS, merge or release completion is claimed by this document.
+
+## First CI follow-up
+
+Review PR #692 initial head `c6f7e01f31fd1d7386abaf17494d52d178dea4c2`:
+focused Node 22 / Ubuntu 24.04 Chromium + PostgreSQL-WASM workflow
+[42288219604](https://github.com/nazardzuba79-tech/-/actions/runs/42288219604)
+passed. The full frontend run had 307 passing suites / 4 failing suites.
+Three failures were legacy disabled-button assertions or a component harness
+missing the new imports; these are corrected without changing runtime.
+The fourth was a pre-existing main/API pin mismatch: main lacked the exact
+#688 withdrawal-review normalizer and its negative controls already present in
+observed production source 03d5467b. Restore that tested normalizer, keeping
+its ORIGINAL pin and mutation-refusal assertions; api.ts remains unchanged.
+Legacy browser executor fixtures now explicitly supply their synthetic admission
+capability. These fixture capabilities are not production allowlist evidence.
+The dedicated CI SQL check now also supports disposable native PostgreSQL via
+Prisma; its next CI result must be checked before claiming native validation.
+
+Native CI confirmation: review head `724c8de4db3a585c05920d5a0f67b84b802b6e56`,
+[run 42289519383](https://github.com/nazardzuba79-tech/-/actions/runs/42289519383):
+7 suites / 152 tests PASS and Chromium 6/6 PASS, all financial-request counts 0.
+Runner logs confirm native PostgreSQL 18.6. Prisma executes the actual session
+SQL against disposable fixture tables; no production database or financial-engine
+settlement is implied by this admission test. This closes the local native-SQL
+availability gap; production runtime/bindings/browser gates remain unchanged.
+The #688 nonpayable `reviewAssets` field is also asserted in the legacy disposable
+ledger QA without relaxing empty withdrawable assets or withdrawal rejection.

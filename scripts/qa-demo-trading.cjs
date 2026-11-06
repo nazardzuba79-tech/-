@@ -33,6 +33,8 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
     await page.route('**/*', async route => {
       const request = route.request(), url = new URL(request.url()), p = url.pathname;
       if (url.origin === origin && !p.startsWith('/api/v1/')) return route.continue();
+      // These legacy ledger fixtures inject admission; real two-identity policy is tested in #691.
+      if (url.origin === origin && p === '/api/v1/orders/access' && request.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ allowed: ['tester', 'legacy', 'funded', 'legacySeller', 'demoSeller', 'demoFunded', 'spotFunded'].includes(who) }) });
       if (url.origin === origin && REAL.some(rx => rx.test(p))) {
         calls.push(`${request.method()} ${p}`);
         if (request.method() === 'POST' && p === '/api/v1/demo/orders') demoOrderBodies.push(request.postDataJSON());
@@ -72,7 +74,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
     const select = page.locator('.order-type-select select');
     if (await select.count()) await select.selectOption('LIMIT');
     else await page.locator('.order-type-tab', { hasText: 'Лимит' }).first().click();
-    await form(page).locator('input[aria-label="Цена"][type="number"]').fill(String(price));
+    await form(page).locator('input[aria-label="Цена"][inputmode="decimal"]').fill(String(price));
     await form(page).locator('input[aria-label="Количество"]:not([type="range"])').fill(String(quantity));
     await form(page).locator('button[type="submit"]').click();
   }

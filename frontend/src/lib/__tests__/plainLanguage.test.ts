@@ -275,12 +275,12 @@ test('the «trading unavailable / coming soon» vocabulary catches the former CF
     expect({ text, hit: saysTradingUnavailable(text) }).toEqual({ text, hit: false });
 });
 
-// Owner, 2026-10-22: the order forms say nothing when an order cannot be placed — the button is disabled.
+// #691: admitted traders retain disabled safety gates; viewers have an active silent no-op CTA.
 test('the Spot and Futures order forms have no «not trading yet» / «Недоступно» line', () => {
   const spot = readFileSync(resolve(root, 'frontend/src/components/OrderForm.tsx'), 'utf8');
   const futures = readFileSync(resolve(root, 'frontend/src/components/FuturesOrderForm.tsx'), 'utf8');
   expect(spot).not.toMatch(/assetNotTradingYet|assetPurchaseUnavailable|assetOrderTypeUnavailable/);
-  expect(spot).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+  expect(spot).toContain('<button type="submit" disabled={!viewer && (submitting || orderBlocked)}');
   expect(futures).not.toContain("t('analytics.unavailable')");
-  expect(futures).toContain('disabled={!canSubmit || protectionBreachFor(\'BUY\') || !reducible(\'BUY\')}');
+  expect(futures).toContain('disabled={!viewer && (!canSubmit || protectionBreachFor(\'BUY\') || !reducible(\'BUY\'))}');
 });
