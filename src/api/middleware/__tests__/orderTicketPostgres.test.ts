@@ -1,5 +1,5 @@
-/** Disposable PostgreSQL 18.6 (PGlite WASM), not production or native Prisma/TLS
- * validation. Actual SQL verifies session admission and unchanged financial
+/** Disposable native PostgreSQL via Prisma in CI, or PostgreSQL 18.6 via
+ * PGlite locally. No production connection or TLS claim. Actual SQL verifies session admission and unchanged financial
  * fixture rows. Services are tripwires: a rejected request must never call them. */
 import express from 'express';
 import request from 'supertest';
@@ -7,7 +7,8 @@ import jwt from 'jsonwebtoken';
 import { requireAuth } from '../auth';
 import { requireOrderTicketTrader } from '../orderTicketAccess';
 
-const enabled = !!process.env.QA_PGLITE_MODULE;
+const nativeUrl = process.env.QA_ORDER_TICKET_PG_URL;
+const enabled = !!nativeUrl || !!process.env.QA_PGLITE_MODULE;
 (enabled ? describe : describe.skip)('PostgreSQL isolated viewer mutation boundary', () => {
   let pg: any;
   let previous: NodeJS.ProcessEnv;
@@ -18,8 +19,22 @@ const enabled = !!process.env.QA_PGLITE_MODULE;
   beforeAll(async () => {
     previous = { ...process.env };
     Object.assign(process.env, { PRIVATE_TRADING_ENABLED: 'true', PRIVATE_TRADING_OWNER_ID: owner, PRIVATE_TRADING_TEST_USER_IDS: tester });
-    const { PGlite } = require(process.env.QA_PGLITE_MODULE!);
-    pg = new PGlite();
+    if (nativeUrl) {
+      const url = new URL(nativeUrl);
+      if (!['127.0.0.1', 'localhost'].includes(url.hostname) || url.pathname !== '/order_ticket_qa') {
+        throw new Error('Only the disposable loopback order_ticket_qa database is allowed');
+      }
+      const { PrismaClient } = require('@prisma/client');
+      const client = new PrismaClient({ datasources: { db: { url: nativeUrl } } });
+      pg = {
+        query: async (sql: string, values: unknown[] = []) => ({ rows: await client.$queryRawUnsafe(sql, ...values) }),
+        exec: async (sql: string) => { for (const statement of sql.split(';').filter(s => s.trim())) await client.$executeRawUnsafe(statement); },
+        close: () => client.$disconnect(),
+      };
+    } else {
+      const { PGlite } = require(process.env.QA_PGLITE_MODULE!);
+      pg = new PGlite();
+    }
     await pg.exec(`CREATE TABLE "User" (id text PRIMARY KEY, role text, "blockedAt" timestamptz);
       CREATE TABLE "Session" (id text PRIMARY KEY, "userId" text, "revokedAt" timestamptz, "lastSeenAt" timestamptz);
       CREATE TABLE "Balance" ("userId" text, asset text, available numeric(36,18), locked numeric(36,18));
@@ -43,7 +58,7 @@ const enabled = !!process.env.QA_PGLITE_MODULE;
   };
   test('viewer/forgery/revocation fail without changing any financial row; two identities pass the gate',async()=>{
     const version=(await pg.query('select version()')).rows[0].version;
-    expect(version).toContain('PostgreSQL 18.6');
+    expect(version).toContain(nativeUrl ? 'PostgreSQL 18.' : 'PostgreSQL 18.6');
     const db={
       session:{findUnique:async({where}:any)=>(await pg.query('SELECT *,false AS remembered FROM "Session" WHERE id=$1',[where.id])).rows[0]},
       $queryRaw:async(strings:TemplateStringsArray,...values:unknown[])=>(await pg.query(strings.reduce((sql,part,i)=>sql+(i?'$'+i:'')+part,''),values)).rows,

@@ -186,18 +186,19 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   });
   test('prelisting and non-admin orders remain blocked; only the private live sale is admitted', () => {
     const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
-    // Blocked orders are a disabled button, never a «not trading yet» sentence (owner, 2026-10-22).
+    // #691: admitted trades retain listing gates; viewers are active synchronous no-ops.
+    expect(submit).toContain('if (!ticketAccess.canSubmit()) return;');
     expect(submit).toContain('if (orderBlocked) return;');
-    expect(form).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+    expect(form).toContain('<button type="submit" disabled={!viewer && (submitting || orderBlocked)}');
     expect(form).not.toMatch(/assetNotTradingYet|assetPurchaseUnavailable|assetOrderTypeUnavailable/);
     // VTA is still gated exactly as before; NRX and a TRADABLE managed listing
     // (Admin → Listings) use the ordinary Spot path, refused server-side before listing.
     expect(form).toContain("const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;");
     expect(form).toContain('await withVtaSaleLock(accountId, async () => {');
-    expect(form).toContain('const pending = prepareVtaIntent(accountId, quantity);');
+    expect(form).toContain('const pending = prepareVtaIntent(accountId, numeric(quantity));');
     expect(form).toContain('await api.sellVtaDemo(pending.requestId, pending.quantity)');
     expect(form).toContain("const orderBlocked = notTradingYet || (privateVta && (side === 'BUY' || family !== 'MARKET'));");
-    expect(form).toContain('noValidate={notTradingYet || privateVta}');
+    expect(form).toContain('noValidate={viewer || notTradingYet || privateVta}');
   });
   test('no technical wording on the listing card or the Markets row', () => {
     const strip = src('pages/markets-bolt/TestMarketsStrip.tsx');

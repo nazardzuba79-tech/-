@@ -9,7 +9,9 @@ on:
       - 'frontend/src/lib/useOrderTicketAccess.ts'
       - 'frontend/src/components/OrderForm.tsx'
       - 'frontend/src/components/FuturesOrderForm.tsx'
-      - 'scripts/qa-order-ticket-691.cjs'
+      - 'frontend/src/lib/__tests__/**'
+      - 'scripts/qa-*.cjs'
+      - 'scripts/serve-native-demo-review.cjs'
       - '.github/workflows/order-ticket-691.yml'
 permissions:
   contents: read
@@ -20,6 +22,18 @@ jobs:
   isolated-qa:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-ticket-fixture
+          POSTGRES_DB: order_ticket_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d order_ticket_qa"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +53,7 @@ jobs:
       - name: Session policy, forged writes and PostgreSQL unchanged rows
         env:
           NODE_OPTIONS: --experimental-vm-modules
-          QA_PGLITE_MODULE: /tmp/order-ticket-qa/node_modules/@electric-sql/pglite
+          QA_ORDER_TICKET_PG_URL: postgresql://postgres:isolated-ticket-fixture@127.0.0.1:5432/order_ticket_qa
         run: >-
           npm test -- --runInBand
           src/api/middleware/__tests__/orderTicketAccess.test.ts
