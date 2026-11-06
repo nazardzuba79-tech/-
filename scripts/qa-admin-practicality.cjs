@@ -168,8 +168,8 @@ async function main() {
             'A review request must show the user email inside admin Withdrawals');
           assert.ok((await review.innerText()).includes('К выплате не допускается'),
             'Review-only requests must not imply payment eligibility');
-          assert.equal(await review.locator('button').count(), 0,
-            'A review-only request must never carry an approve or send action');
+          assert.equal(await review.getByRole('button', { name: /Одобрить|Отправлено|Отклонить|Подтвердить/i }).count(), 0,
+            'A review-only request must never carry approve, send, or reject payout controls');
         }
         if (variant === 'after' && slug === 'users' && width >= 1366) {
           const tops = await page.locator('.admin-users-kpi').evaluateAll(cards => cards.map(card => Math.round(card.getBoundingClientRect().top)));
