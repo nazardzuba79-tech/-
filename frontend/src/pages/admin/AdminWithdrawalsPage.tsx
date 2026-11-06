@@ -52,6 +52,7 @@ export function AdminWithdrawalsPage() {
   useEffect(() => setSearchDraft(search), [search]);
   const query = new URLSearchParams({ page: String(view.page), pageSize: '20', status, ...(search ? { search } : {}) }).toString();
   const read = useAdminRead(`withdrawals:${query}`, signal => getAdminWithdrawalsPage(query, signal));
+  const reviews = useAdminRead('withdrawal-review-requests', signal => api.getAdminWithdrawalReviews(signal));
   const withdrawals = read.data?.items ?? null;
   const [busyId, setBusyId] = useState<string | null>(null);
   const mutationInFlight = useRef(false);
@@ -121,6 +122,27 @@ export function AdminWithdrawalsPage() {
     <div className="admin-queue-page">
       <h1 style={styles.title}>Вывод криптовалюты</h1>
       <p style={styles.subtitle}>Одобрение заявки не отправляет средства. TXID фиксирует действие оператора и не подтверждает транзакцию в сети. Время — Europe/Kyiv.</p>
+      <section className="admin-queue-section" data-withdrawal-reviews aria-label="Запросы на проверку вывода">
+        <h2 style={{ margin: '18px 0 8px', fontSize: 17 }}>Запросы на проверку вывода {reviews.data ? `(${reviews.data.items.length})` : ''}</h2>
+        <p style={styles.subtitle}>Эти запросы не являются заявками на выплату: средства не зарезервированы. Одобрить перевод или отметить отправку здесь невозможно.</p>
+        <AdminReadStatus loading={reviews.loading} updatedAt={reviews.updatedAt} hasData={reviews.data !== null}
+          error={reviews.error ? 'Не удалось загрузить запросы на проверку.' : null} reload={reviews.reload} />
+        <button type="button" style={styles.neutralBtn} onClick={reviews.reload} disabled={reviews.loading}>Обновить запросы</button>
+        <div className="admin-withdrawal-list">
+          <div className="admin-withdrawal-header" aria-hidden="true"><span>Пользователь</span><span>Актив / сеть</span><span>Адрес</span><span>Сумма</span><span>Статус</span><span>Создан</span><span>Действия</span></div>
+          {(reviews.data?.items ?? []).map(r => <article className="admin-withdrawal-row" key={r.id} data-review-withdrawal-row={r.id}>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Пользователь</span><strong>{r.userEmail}</strong>
+              <small>ID: {r.userId ?? '—'}</small>{r.userId && <Link to={`/admin/users/${encodeURIComponent(r.userId)}`}>Открыть пользователя</Link>}</div>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Актив / сеть</span><RailLabel asset={r.asset} chain={r.network} /></div>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Адрес</span><CopyValue value={r.toAddress} label="запрошенный адрес" full /></div>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Сумма</span><strong className="mono">{r.amount} {r.asset}</strong><small>Не зарезервирована</small></div>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Статус</span><strong>Только проверка</strong><small>К выплате не допускается</small></div>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Создан</span><time dateTime={r.createdAt}>{adminDate(r.createdAt)}</time></div>
+            <div className="admin-withdrawal-field"><span className="admin-withdrawal-field-label">Действия</span><small>Нет действий по выплате</small></div>
+          </article>)}
+          {reviews.data?.items.length === 0 && <p className="admin-empty">Запросов на проверку пока нет.</p>}
+        </div>
+      </section>
       <AdminReadStatus loading={read.loading} updatedAt={read.updatedAt} hasData={read.data !== null}
         error={read.error ? `Не удалось загрузить выводы. ${read.error}${read.data ? ' Показан последний загруженный список. Данные устарели.' : ''}` : null} reload={read.reload} />
       <nav className="admin-queue-tabs" aria-label="Очереди выводов">

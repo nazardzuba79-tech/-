@@ -35,7 +35,12 @@ function makePrisma(opts: {
       create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'w-new', ...data })),
       aggregate: jest.fn().mockResolvedValue({ _sum: { amount: opts.claimed ?? null } }),
     },
-    auditLog: { create: jest.fn() },
+    auditLog: {
+      create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({
+        id: 'review-fixture-1', createdAt: new Date('2026-11-06T08:00:00Z'), ...data,
+      })),
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
     $queryRaw: jest.fn().mockResolvedValue([]),
   };
   return {
@@ -191,7 +196,67 @@ describe('withdrawals routes', () => {
         .get('/api/v1/withdrawals/options')
         .set('Authorization', authHeader(TRADER));
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ source: 'TRADING', assets: [], futures: [] });
+      expect(res.body).toEqual({
+        source: 'TRADING', assets: [], futures: [],
+        reviewAssets: [{ asset: 'USDT', available: '5000' }],
+      });
+    });
+
+    it('creates a nonpayable review-only admin audit event with no Withdrawal or balance movement', async () => {
+      const prisma = makePrisma({ userId: TRADER, balance: { available: '0', locked: '0' } });
+      const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
+        .post('/api/v1/withdrawals/review-request').set('Authorization', authHeader(TRADER))
+        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ id: 'review-fixture-1', status: 'REVIEW_ONLY', payable: false, balanceHeld: false });
+      expect(prisma.tx.auditLog.create).toHaveBeenCalledWith({ data: {
+        userId: TRADER, action: 'WITHDRAWAL_REVIEW_REQUESTED',
+        metadata: { asset: 'USDT', amount: '1200', network: 'TRC20', toAddress: 'TsyntheticReviewAddress',
+          reviewOnly: true, payable: false },
+      } });
+      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
+      expect(prisma.tx.balance.updateMany).not.toHaveBeenCalled();
+      expect(prisma.tx.balance.update).not.toHaveBeenCalled();
+      expect(prisma.rows.get(`${TRADER}:USDT`)).toEqual({ available: '0', locked: '0' });
+    });
+
+    it('does not open a review for an ordinary account, an excess amount, or a test asset', async () => {
+      const body = { asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '50' };
+      const normal = makePrisma({ balance: { available: '100', locked: '0' } });
+      const outsider = await request(buildApp(normal)).post('/api/v1/withdrawals/review-request')
+        .set('Authorization', authHeader('u1')).send(body);
+      expect(outsider.status).toBe(403);
+      expect(normal.tx.auditLog.create).not.toHaveBeenCalled();
+      const trader = makePrisma();
+      const app = buildApp(trader, wallet([{ asset: 'USDT', available: '20' }]));
+      const tooMuch = await request(app).post('/api/v1/withdrawals/review-request')
+        .set('Authorization', authHeader(TRADER)).send(body);
+      expect(tooMuch.status).toBe(400);
+      expect(trader.tx.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('returns the existing request within the cooldown without a second audit row', async () => {
+      const prisma = makePrisma();
+      prisma.tx.auditLog.findFirst.mockResolvedValue({ id: 'older-review', createdAt: new Date('2026-11-06T08:30:00Z'), metadata: { asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' } });
+      const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
+        .post('/api/v1/withdrawals/review-request').set('Authorization', authHeader(TRADER))
+        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: 'older-review', duplicate: true, status: 'REVIEW_ONLY', payable: false });
+      expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
+      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
+    });
+
+    it('does not claim a different request was accepted while another review is on cooldown', async () => {
+      const prisma = makePrisma();
+      prisma.tx.auditLog.findFirst.mockResolvedValue({ id: 'first', createdAt: new Date(),
+        metadata: { asset: 'USDT', network: 'TRC20', toAddress: 'AnotherAddress', amount: '10' } });
+      const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
+        .post('/api/v1/withdrawals/review-request').set('Authorization', authHeader(TRADER))
+        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' });
+      expect(res.status).toBe(429);
+      expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
+      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
     });
 
     it('falls back to the spot ledger while the trading account is not opened', async () => {
@@ -273,7 +338,10 @@ describe('demo-valued withdrawal fence, independent of every demo switch', () =>
     expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
     expect(prisma.tx.balance.updateMany).not.toHaveBeenCalled();
     const options = await request(buildApp(prisma, wallet())).get('/api/v1/withdrawals/options').set('Authorization', authHeader(TRADER));
-    expect(options.body).toEqual({ source: 'TRADING', assets: [], futures: [] });
+    expect(options.body).toEqual({
+      source: 'TRADING', assets: [], futures: [],
+      reviewAssets: [{ asset: 'USDT', available: '5000' }],
+    });
   });
 
   it.each(ENVS)('%s: an ordinary Balance-funded request is held exactly as before', async (_label, env) => {
