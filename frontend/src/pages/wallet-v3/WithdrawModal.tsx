@@ -199,7 +199,7 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
           </div>
 
           <div>
-            <InputLabel htmlFor={amountId} hint={`${t('withdraw.available')}: ${shown(available)} ${asset}`}>{t('withdraw.amount')}</InputLabel>
+            <InputLabel htmlFor={amountId} hint={`${t(reviewOnly ? 'withdraw.reviewBalance' : 'withdraw.available')}: ${shown(available)} ${asset}`}>{t('withdraw.amount')}</InputLabel>
             <TextInput
               id={amountId}
               value={amount}
@@ -225,7 +225,7 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
           </div>
 
           <div className="rounded-w border border-hair bg-surface-1 px-3.5 py-2">
-            <SummaryRow label={t('withdraw.available')} value={`${shown(available)} ${asset}`} />
+            <SummaryRow label={t(reviewOnly ? 'withdraw.reviewBalance' : 'withdraw.available')} value={`${shown(available)} ${asset}`} />
             <SummaryRow
               label={t('withdraw.youWithdraw')}
               value={plain !== null && !amountError ? `${shown(Number(plain))} ${asset}` : '—'}
