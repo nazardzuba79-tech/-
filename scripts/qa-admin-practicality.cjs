@@ -119,6 +119,11 @@ app.get('/api/v1/admin/user-activity', (_, res) => res.json(activity()));
 app.get('/api/v1/admin/alerts-summary', (_, res) => res.json({ asOf: now, pendingKyc: 4, pendingWithdrawals: 4, readyDeposits: 1, readyDepositUsers: 1, unattributedTransfers: 1 }));
 app.get('/api/v1/admin/spam-emails', (_, res) => res.json({ entries: [] }));
 app.get('/api/v1/admin/work-summary', (_, res) => { const spec = { readyPackages: [1, 'packages', '/admin/deposits?state=READY'], pendingPackages: [2, 'packages', '/admin/deposits'], unlinkedTransfers: [1, 'transfers', '/admin/deposits?state=UNATTRIBUTED'], activeWithdrawals: [6, 'withdrawals', '/admin/withdrawals?status=active'], pendingKyc: [4, 'users', '/admin/kyc?status=PENDING'], openOtc: [otc.length, 'requests', '/admin/otc?status=active'], totalUsers: [users.length, 'users', '/admin/users'], newUsers24h: [3, 'users', '/admin/users?status=new'] }; res.json({ asOf: now, alerts:{depositId:'qa-transfer-3',withdrawalId:'qa-withdrawal-8',kycId:'qa-kyc-4'}, widgets: Object.fromEntries(Object.entries(spec).map(([key, [value, unit, href]]) => [key, { value, unit, href, status: 'ready', asOf: now }])) }); });
+app.get('/api/v1/admin/withdrawals/review-requests', (_, res) => res.json({ items: [{
+  id: 'qa-review-1', userId: users[0].id, userEmail: 'reviewer@example.invalid',
+  asset: 'USDT', network: 'tron', toAddress: wallets[0].address,
+  amount: '250.00', createdAt: now, status: 'REVIEW_ONLY', payable: false, balanceHeld: false,
+}] }));
 app.get('/api/v1/admin/withdrawals/page', (req,res)=>{const search=String(req.query.search||'').toLowerCase(),status=req.query.status;res.json(paged(withdrawals.filter(w=>(!search||`${w.id} ${w.userId} ${w.userEmail}`.toLowerCase().includes(search))&&(!status||status==='all'||status==='active'&&['PENDING','APPROVED'].includes(w.status)||status==='processed'&&['SENT','REJECTED','COMPLETED'].includes(w.status)||w.status===status)),req.query));});
 app.get('/api/v1/admin/withdrawals', (_, res) => res.json(withdrawals));
 app.get('/api/v1/admin/audit-log/page', (req, res) => res.json(paged(audit.filter(a => (!req.query.action || a.action === req.query.action)&&(!req.query.userId||a.userId===req.query.userId)&&(!req.query.search||`${a.id} ${a.userId} ${a.userEmail} ${a.performedByAdminEmail} ${a.action}`.toLowerCase().includes(String(req.query.search).toLowerCase()))), req.query)));
@@ -156,6 +161,16 @@ async function main() {
         await page.locator('.admin-main').waitFor();
         await page.screenshot({ path: path.join(out, `${slug.replaceAll('/', '-')}-${width}.png`), fullPage: false });
         report.layouts.push(await page.evaluate(({ slug, width, height }) => ({ route: slug, width, height, documentWidth: document.documentElement.scrollWidth, overflow: document.documentElement.scrollWidth > innerWidth + 1, rows: document.querySelectorAll('[data-user-row], [data-user-card], tbody tr, .otc-cash-list-item, .admin-history-grid').length, bodyText: document.querySelector('.admin-main')?.textContent?.slice(0, 280) }), { slug, width, height }));
+        if (variant === 'after' && slug === 'withdrawals') {
+          const review = page.locator('[data-review-withdrawal-row="qa-review-1"]');
+          await review.waitFor({ state: 'visible' });
+          assert.ok((await review.innerText()).includes('reviewer@example.invalid'),
+            'A review request must show the user email inside admin Withdrawals');
+          assert.ok((await review.innerText()).includes('К выплате не допускается'),
+            'Review-only requests must not imply payment eligibility');
+          assert.equal(await review.locator('button').count(), 0,
+            'A review-only request must never carry an approve or send action');
+        }
         if (variant === 'after' && slug === 'users' && width >= 1366) {
           const tops = await page.locator('.admin-users-kpi').evaluateAll(cards => cards.map(card => Math.round(card.getBoundingClientRect().top)));
           assert.equal(tops.length, 3, 'Users keeps three compact supporting indicators');
