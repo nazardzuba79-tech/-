@@ -2100,6 +2100,7 @@ export const JA: Record<Key, string> = {
   'withdraw.reviewSubmit': '審査を依頼',
   'withdraw.reviewDoneTitle': '審査リクエストを受け付けました',
   'withdraw.reviewWarning': 'これは審査依頼のみです。資金の確保や送金は行われません。出金が可能であることを保証するものではありません。',
+  'withdraw.reviewBalance': '取引口座の残高',
   'withdraw.reviewNothing': '審査を依頼できる資産がありません。',
   'withdraw.doneTitle': '出金申請を受け付けました',
   'withdraw.doneEta': '出金には最大60分かかる場合があります。状況はウォレット履歴で確認できます。',
