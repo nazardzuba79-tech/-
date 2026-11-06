@@ -2129,6 +2129,7 @@ export const EN: Record<Key, string> = {
   'withdraw.reviewSubmit': 'Submit for review',
   'withdraw.reviewDoneTitle': 'Review request received',
   'withdraw.reviewWarning': 'This is a review request only. No funds are reserved or sent. It does not confirm eligibility for payout.',
+  'withdraw.reviewBalance': 'In trading account',
   'withdraw.reviewNothing': 'No assets available for a review request.',
   'withdraw.doneTitle': 'Withdrawal request received',
   'withdraw.doneEta': 'A withdrawal can take up to 60 minutes. You can follow its status in the wallet history.',
