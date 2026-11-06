@@ -567,7 +567,7 @@ describe('translation integrity', () => {
 
   it('carries the withdrawal panel in every language, with its placeholders and the 60-minute promise', () => {
     const keys = Object.keys(dicts.ru).filter(key => key.startsWith('withdraw.'));
-    expect(keys.length).toBe(31);
+    expect(keys.length).toBe(37); // 31 existing withdrawal labels + 6 nonpayable review labels
     for (const code of LOCALES) {
       for (const key of keys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
       expect(dicts[code]['withdraw.amountTooMuch']).toContain('{amount}');
