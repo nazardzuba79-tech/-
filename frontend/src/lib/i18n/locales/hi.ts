@@ -2100,6 +2100,7 @@ export const HI: Record<Key, string> = {
   'withdraw.reviewSubmit': 'समीक्षा के लिए भेजें',
   'withdraw.reviewDoneTitle': 'समीक्षा अनुरोध प्राप्त हुआ',
   'withdraw.reviewWarning': 'यह केवल समीक्षा का अनुरोध है। कोई धन आरक्षित या भेजा नहीं जाता। यह भुगतान की पात्रता की पुष्टि नहीं करता।',
+  'withdraw.reviewBalance': 'ट्रेडिंग खाते में',
   'withdraw.reviewNothing': 'समीक्षा अनुरोध के लिए कोई परिसंपत्ति उपलब्ध नहीं है।',
   'withdraw.doneTitle': 'निकासी अनुरोध प्राप्त हुआ',
   'withdraw.doneEta': 'निकासी में 60 मिनट तक लग सकते हैं। स्थिति वॉलेट इतिहास में देखें।',
