@@ -338,7 +338,10 @@ describe('demo-valued withdrawal fence, independent of every demo switch', () =>
     expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
     expect(prisma.tx.balance.updateMany).not.toHaveBeenCalled();
     const options = await request(buildApp(prisma, wallet())).get('/api/v1/withdrawals/options').set('Authorization', authHeader(TRADER));
-    expect(options.body).toEqual({ source: 'TRADING', assets: [], futures: [] });
+    expect(options.body).toEqual({
+      source: 'TRADING', assets: [], futures: [],
+      reviewAssets: [{ asset: 'USDT', available: '5000' }],
+    });
   });
 
   it.each(ENVS)('%s: an ordinary Balance-funded request is held exactly as before', async (_label, env) => {
