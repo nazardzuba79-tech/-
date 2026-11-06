@@ -179,6 +179,87 @@ async function main() {
       assert(approvals.every(r => r.status === 403), JSON.stringify(approvals.map(r => r.status)));
       assert.equal((await prisma.withdrawal.findUnique({ where: { id } })).status, 'PENDING');
     });
+
+    // Snapshot committed application rows through the independent pg connection.
+    // Authentication may touch Session; a review request may add only AuditLog.
+    // Comparing every other table also catches accidental money/order mutations.
+    const reviewState = async () => {
+      const { rows: tables } = await sql.query(`SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+          AND table_name NOT IN ('AuditLog', 'Session') ORDER BY table_name`);
+      const result = {};
+      for (const { table_name: table } of tables) {
+        const identifier = '"' + table.replace(/"/g, '""') + '"';
+        const { rows } = await sql.query(`SELECT to_jsonb(t)::text AS row FROM ${identifier} AS t ORDER BY to_jsonb(t)::text`);
+        result[table] = rows.map(r => r.row);
+      }
+      return result;
+    };
+    const reviewBody = { asset: 'USDT', network: 'TRC20', toAddress: 'T' + 'Q'.repeat(33), amount: '25' };
+    const requestReview = (who, body = reviewBody) => api('POST', '/withdrawals/review-request', who, body);
+    const reviewRows = who => sql.query('SELECT id, "userId", action, metadata, "createdAt" FROM "AuditLog" WHERE action = $1 AND "userId" = $2 ORDER BY id', ['WITHDRAWAL_REVIEW_REQUESTED', who]);
+
+    await check('review-only: real POST commits one AuditLog, identical retry reuses it, admin sees the authenticated email, no financial/application rows change', async () => {
+      setSwitches([]);
+      const before = await reviewState(), auditCount = await prisma.auditLog.count();
+      const options = await api('GET', '/withdrawals/options', OWNER);
+      assert.equal(options.status, 200); assert.deepEqual(options.body.assets, []);
+      assert.deepEqual(options.body.reviewAssets, [{ asset: 'USDT', available: '1000' }]);
+      const filed = await requestReview(OWNER);
+      assert.equal(filed.status, 201, JSON.stringify(filed.body));
+      assert.equal(filed.body.status, 'REVIEW_ONLY'); assert.equal(filed.body.duplicate, false);
+      assert.equal(filed.body.payable, false); assert.equal(filed.body.balanceHeld, false);
+      const committed = (await reviewRows(OWNER)).rows;
+      assert.equal(committed.length, 1, 'independent SQL connection sees one committed review');
+      assert.equal(committed[0].id, filed.body.id); assert.equal(committed[0].userId, OWNER);
+      assert.equal(committed[0].action, 'WITHDRAWAL_REVIEW_REQUESTED');
+      assert.deepEqual(committed[0].metadata, { ...reviewBody, reviewOnly: true, payable: false });
+      const retry = await requestReview(OWNER);
+      assert.equal(retry.status, 200, JSON.stringify(retry.body)); assert.equal(retry.body.id, filed.body.id);
+      assert.equal(retry.body.duplicate, true);
+      assert.equal((await reviewRows(OWNER)).rows.length, 1);
+      const admin = await api('GET', '/admin/withdrawals/review-requests', 'qa-admin');
+      assert.equal(admin.status, 200);
+      const email = (await sql.query('SELECT email FROM "User" WHERE id = $1', [OWNER])).rows[0].email;
+      assert.deepEqual(admin.body.items.find(r => r.id === filed.body.id), {
+        id: filed.body.id, userId: OWNER, userEmail: email, ...reviewBody,
+        createdAt: committed[0].createdAt.toISOString(), status: 'REVIEW_ONLY', payable: false, balanceHeld: false,
+      });
+      const payouts = await api('GET', '/admin/withdrawals', 'qa-admin');
+      assert.equal(payouts.status, 200); assert(!payouts.body.some(r => r.id === filed.body.id), 'review is absent from the payable queue');
+      assert.equal(await prisma.auditLog.count(), auditCount + 1, 'only one audit row added');
+      assert.deepEqual(await reviewState(), before, 'all non-audit/non-session rows unchanged');
+    });
+
+    await check('review-only concurrency: eight identical submissions commit one audit row with one 201 and seven deduplicated 200 responses', async () => {
+      setSwitches([]);
+      const before = await reviewState(), auditCount = await prisma.auditLog.count();
+      await token(NATIVE); // one established synthetic session before concurrent requests
+      const results = await Promise.all(Array.from({ length: 8 }, () => requestReview(NATIVE)));
+      assert.equal(results.filter(r => r.status === 201).length, 1, JSON.stringify(results));
+      assert.equal(results.filter(r => r.status === 200 && r.body.duplicate === true).length, 7, JSON.stringify(results));
+      assert.equal(new Set(results.map(r => r.body.id)).size, 1);
+      assert(results.every(r => r.body.status === 'REVIEW_ONLY' && r.body.payable === false && r.body.balanceHeld === false));
+      const committed = (await reviewRows(NATIVE)).rows;
+      assert.equal(committed.length, 1); assert.equal(committed[0].id, results[0].body.id);
+      assert.equal(committed[0].userId, NATIVE); assert.deepEqual(committed[0].metadata, { ...reviewBody, reviewOnly: true, payable: false });
+      assert.equal(await prisma.auditLog.count(), auditCount + 1);
+      assert.deepEqual(await reviewState(), before, 'concurrent reviews never mutate balances, orders, positions or other application rows');
+    });
+
+    await check('review-only access: members cannot read admin emails, forged identities and different requests during cooldown write nothing', async () => {
+      const before = await reviewState(), auditCount = await prisma.auditLog.count();
+      const denied = await api('GET', '/admin/withdrawals/review-requests', 'qa-plain');
+      assert.equal(denied.status, 403, JSON.stringify(denied.body));
+      assert.equal(JSON.stringify(denied.body).includes('@example.invalid'), false);
+      const spoofed = await requestReview(OWNER, { ...reviewBody, userId: 'qa-plain', userEmail: 'spoof@example.invalid' });
+      assert.equal(spoofed.status, 400, JSON.stringify(spoofed.body));
+      const changed = await requestReview(NATIVE, { ...reviewBody, amount: '26' });
+      assert.equal(changed.status, 429, JSON.stringify(changed.body));
+      assert.equal(await prisma.auditLog.count(), auditCount);
+      assert.deepEqual(await reviewState(), before);
+    });
+
     for (const combo of [[], SWITCHES]) {
       await check(`${label(combo)}: a mixed account (real Balance + demo top-up + demo conversion history + DemoBalance) withdraws its real Balance exactly as before: held, APPROVED, SENT; DemoBalance untouched`, async () => {
         setSwitches(combo);
