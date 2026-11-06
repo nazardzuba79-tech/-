@@ -153,8 +153,16 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
           },
           orderBy: { createdAt: 'desc' },
         });
-        // Within a short cooldown return the existing request, not a new admin alert.
-        if (recent) return { id: recent.id, createdAt: recent.createdAt, duplicate: true };
+        // Identical HTTP retries return the existing record; different requests
+        // are rate-limited, not falsely acknowledged as if newly submitted.
+        if (recent) {
+          const prior = recent.metadata && typeof recent.metadata === 'object' && !Array.isArray(recent.metadata)
+            ? recent.metadata as Record<string, unknown> : {};
+          if (prior.asset === fields.asset && prior.network === fields.network
+            && prior.toAddress === fields.toAddress && prior.amount === fields.amount)
+            return { id: recent.id, createdAt: recent.createdAt, duplicate: true };
+          return null;
+        }
         const created = await tx.auditLog.create({
           data: {
             userId: req.userId!, action: 'WITHDRAWAL_REVIEW_REQUESTED',
@@ -167,6 +175,7 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
         return { id: created.id, createdAt: created.createdAt, duplicate: false };
       });
       res.set('Cache-Control', 'no-store');
+      if (log === null) return res.status(429).json({ error: 'A review request already exists. Try again later.' });
       return res.status(log.duplicate ? 200 : 201).json({
         ...log, status: 'REVIEW_ONLY', balanceHeld: false, payable: false,
       });
