@@ -237,12 +237,24 @@ describe('withdrawals routes', () => {
 
     it('returns the existing request within the cooldown without a second audit row', async () => {
       const prisma = makePrisma();
-      prisma.tx.auditLog.findFirst.mockResolvedValue({ id: 'older-review', createdAt: new Date('2026-11-06T08:30:00Z') });
+      prisma.tx.auditLog.findFirst.mockResolvedValue({ id: 'older-review', createdAt: new Date('2026-11-06T08:30:00Z'), metadata: { asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' } });
       const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
         .post('/api/v1/withdrawals/review-request').set('Authorization', authHeader(TRADER))
         .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' });
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ id: 'older-review', duplicate: true, status: 'REVIEW_ONLY', payable: false });
+      expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
+      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
+    });
+
+    it('does not claim a different request was accepted while another review is on cooldown', async () => {
+      const prisma = makePrisma();
+      prisma.tx.auditLog.findFirst.mockResolvedValue({ id: 'first', createdAt: new Date(),
+        metadata: { asset: 'USDT', network: 'TRC20', toAddress: 'AnotherAddress', amount: '10' } });
+      const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
+        .post('/api/v1/withdrawals/review-request').set('Authorization', authHeader(TRADER))
+        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TsyntheticReviewAddress', amount: '1200' });
+      expect(res.status).toBe(429);
       expect(prisma.tx.auditLog.create).not.toHaveBeenCalled();
       expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
     });
