@@ -1,3 +1,4 @@
+import * as orderTicketNumbers from '../orderTicketNumbers';
 import * as positionActions from '../futuresPositionActions';
 import { readFileSync } from 'fs';
 import { browserReadModules } from '../../../test-utils/browserReadModules';
@@ -130,6 +131,10 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   } }).outputText;
   new Function('require', 'exports', 'window', compiled)((name: string) => {
     if (name === '../lib/futuresPositionActions') return positionActions;
+    // These existing engine/presentation tests exercise an admitted trader.
+    // Viewer admission is covered by the real browser matrix and boundary tests.
+    if (name === '../lib/useOrderTicketAccess') return { useOrderTicketAccess: () => ({ allowed: true, canSubmit: () => true }) };
+    if (name === '../lib/orderTicketNumbers') return orderTicketNumbers;
     if (name === 'react') return react;
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn() };
     if (name === '../lib/api') return { api, ApiError: Error };

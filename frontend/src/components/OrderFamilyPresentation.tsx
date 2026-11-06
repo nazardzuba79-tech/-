@@ -45,7 +45,7 @@ export function OrderFamilyFields({ family, quote, includeLimit = false }: { fam
         onClick={() => setExecution(kind)}>{t(kind === 'LIMIT' ? 'trade.limitOrder' : 'trade.marketOrder')}</button>)}
     </div>}
     {fields.map(label => <label key={`${family}-${label}`} className="order-family-label">
-      {t(label)}<span className="order-family-input"><input type="number" min="0" step="any" inputMode="decimal" placeholder="0.00" /><span>{quote}</span></span>
+      {t(label)}<span className="order-family-input"><input type="text" inputMode="decimal" autoComplete="off" placeholder="0.00" /><span>{quote}</span></span>
     </label>)}
   </div>;
 }

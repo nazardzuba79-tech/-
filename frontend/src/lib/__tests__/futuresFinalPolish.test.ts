@@ -1,3 +1,4 @@
+import * as orderTicketNumbers from '../orderTicketNumbers';
 import * as positionActions from '../futuresPositionActions';
 import * as terminalPresentation from '../terminalPresentation';
 import { readFileSync } from 'fs';
@@ -136,6 +137,10 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   new Function('require', 'exports', 'window', compiled)((name: string) => {
     if (name === '../lib/terminalWarmCache') return { readFuturesSymbolCache: () => null, writeFuturesSymbolCache: () => {} };
     if (name === '../lib/futuresPositionActions') return positionActions;
+    // These existing engine/presentation tests exercise an admitted trader.
+    // Viewer admission is covered by the real browser matrix and boundary tests.
+    if (name === '../lib/useOrderTicketAccess') return { useOrderTicketAccess: () => ({ allowed: true, canSubmit: () => true }) };
+    if (name === '../lib/orderTicketNumbers') return orderTicketNumbers;
     if (name === 'react') return react;
     if (name === '../lib/terminalAccountPanel') return accountPanelState;
     if (name === '../lib/useCompactAccountPanel') {

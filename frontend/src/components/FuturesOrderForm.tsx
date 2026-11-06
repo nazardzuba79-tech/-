@@ -1,3 +1,5 @@
+import { useOrderTicketAccess } from '../lib/useOrderTicketAccess';
+import { ticketTotal, ticketQuantity } from '../lib/orderTicketNumbers';
 import { useState, useEffect, useId, useRef, FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { api, ApiError } from '../lib/api';
@@ -24,7 +26,7 @@ import {
 } from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { formatAmount, formatPrice } from '../lib/formatNumber';
-import { OrderFamilyTabs, type OrderFamily } from './OrderFamilyPresentation';
+import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
 import {
   decimalFromNumber, decimalUnreadable, plainDecimal, readDecimalInput,
   type DecimalInput, type DecimalRefusal,
@@ -36,13 +38,12 @@ import {
  * A `type="number"` field is drawn by the browser in the page's language, so
  * under `<html lang="ru">` it showed «12,91» beside a book printing 12.91,
  * and a level typed with a comma («270,5») reached `parseFloat` as 270. Both
- * separators are accepted as typed; the field keeps one.
+ * separators are kept as typed until the admitted trader commits the field.
  */
 function decimalText(raw: string): string {
-  // Normalize only a syntactically valid decimal draft. Unsupported input is
-  // kept verbatim so the UI can mark/refuse it instead of silently turning it
-  // into a different tradable number (e.g. 1e-8 -> 18 or -1 -> 1).
-  return readDecimalInput(raw).status === 'invalid' ? raw : raw.replace(',', '.');
+  // Keep draft text verbatim; readDecimalInput separately validates and
+  // normalizes complete values for the existing execution adapter.
+  return raw;
 }
 
 function decimalNumber(raw: string): number | null {
@@ -135,6 +136,8 @@ export function FuturesOrderForm({
   const [protectionEnabled, setBracketExpanded] = useState(false);
   const protectionPanelId = useId();
   const toast = useToast();
+  const ticketAccess = useOrderTicketAccess();
+  const viewer = !ticketAccess.allowed;
   const [baseAsset, quoteAsset] = symbol.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
@@ -163,7 +166,9 @@ export function FuturesOrderForm({
       setPrice(decimalFromNumber(lastPrice));
     }
   }, [family, lastPrice, price, priceEdited]);
-  const [quantity, setQuantity] = useState('');
+  const [quantity, writeQuantity] = useState('');
+  const [totalDraft, setTotalDraft] = useState<string | null>(null);
+  function setQuantity(value: string) { setTotalDraft(null); writeQuantity(value); }
   const [closeTarget, setCloseTarget] = useState<FuturesCloseTicket | null>(null);
   /** A close requested from the positions table fills the ticket in, in
    *  reduce-only LIMIT, sized at the position. The trader still types the
@@ -355,6 +360,9 @@ export function FuturesOrderForm({
   const stopLossInput = readDecimalInput(entryStopLoss);
   const effectivePrice = historicalEntryPrice !== null ? historicalEntryPrice : !connectedFamily ? 0 : type === 'LIMIT' ? (decimalNumber(price) ?? 0) : referencePrice ?? 0;
   const quantityNumber = decimalNumber(quantity) ?? Number.NaN;
+  useEffect(() => {
+    if (totalDraft !== null) writeQuantity(ticketQuantity(totalDraft, effectivePrice ?? 0));
+  }, [totalDraft, effectivePrice]);
   const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;
   /**
    * Whether Order Value and Required Margin describe a real order.
@@ -621,6 +629,7 @@ export function FuturesOrderForm({
    */
   function applyPercent(pct: number, atLeverage: number = requestedLeverage) {
     setPercent(pct);
+    if (pct === 0) { setQuantity('0'); return; }
     if (!effectivePrice || effectivePrice <= 0) return;
     if (reduceOnly) {
       // A reduce-only order locks no margin and can never be larger than
@@ -700,6 +709,7 @@ export function FuturesOrderForm({
    *  it as a parameter is what makes "the direction is the button" true
    *  rather than one render out of date. */
   async function submitOrder(orderSide: 'BUY' | 'SELL') {
+    if (!ticketAccess.canSubmit()) return;
     const orderQuantity = quantityInput.value;
     // The selected candle is authoritative even before the read-only field's
     // effect has repainted it. Keep its decimal source digits intact.
@@ -802,6 +812,7 @@ export function FuturesOrderForm({
   /** Same guard, same confirmation, same order of checks as before — only
    *  the direction now arrives from the caller. */
   function place(orderSide: 'BUY' | 'SELL') {
+    if (!ticketAccess.canSubmit()) return;
     if (!canSubmit) return;
     const blocked = reduceBlockedReason(orderSide);
     if (blocked) { setError(blocked); return; }
@@ -872,7 +883,7 @@ export function FuturesOrderForm({
     ? { 'aria-invalid': true as const, 'aria-describedby': id }
     : {};
   const tidyOnBlur = (input: DecimalInput, raw: string, set: (value: string) => void) => () => {
-    if (input.status === 'valid' && input.value !== raw) set(input.value);
+    if (!viewer && input.status === 'valid' && input.value !== raw) set(input.value);
   };
   const priceRefusalId = `${protectionPanelId}-price-refusal`;
   const quantityRefusalId = `${protectionPanelId}-quantity-refusal`;
@@ -894,7 +905,7 @@ export function FuturesOrderForm({
           reference the order will submit stays on the form as data for the
           browser checks. Only the armed-but-empty picker still says what
           the disabled buttons are waiting for. */}
-      <form onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}
+      <form noValidate={viewer} onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}
         data-entry-reference={execution.engine === 'NATIVE' && !reduceOnly && execution.candle ? JSON.stringify(execution.candle) : undefined}>
         {execution.engine === 'NATIVE' && !reduceOnly && !execution.candle && execution.historicalEntryPending && <div className="fo-infoRow" role="status" aria-label="Точка входа">
           <span>Вход</span><strong>Выберите свечу на графике</strong>
@@ -922,6 +933,7 @@ export function FuturesOrderForm({
           warningThreshold={config?.highLeverageWarningThreshold ?? Infinity}
         />
 
+        {viewer && !connectedFamily && <OrderFamilyFields family={family} quote={quoteAsset} />}
         {!connectedFamily && <p className="fo-tpslNote" role="status">{t('futures.tpslReduceOnlyOff')}</p>}
         {/* PRICE AND QUANTITY ARE ONE FIELD SHAPE, TWICE.
             Both are `fo-field`: the same outer box, the same caption inside
@@ -1011,6 +1023,16 @@ export function FuturesOrderForm({
             <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
           </div>
           {refusalNote(quantityInput, quantityRefusalId)}
+        </label>
+
+        <label className="fo-label fo-field">
+          <span className="fo-fieldCaption">{t('trade.total')}</span>
+          <div className="fo-fieldRow">
+            <input className="mono fo-input" type="text" inputMode="decimal" autoComplete="off"
+              aria-label={t('trade.total')} value={totalDraft ?? ticketTotal(quantity, effectivePrice ?? 0)}
+              onChange={event => { setTotalDraft(event.target.value); writeQuantity(ticketQuantity(event.target.value, effectivePrice ?? 0)); setPercent(0); }} />
+            <span className="fo-fieldTrailing"><span className="fo-unit">{quoteAsset}</span></span>
+          </div>
         </label>
 
         {/* The ONLY persistent slider in this panel. */}
@@ -1223,7 +1245,7 @@ export function FuturesOrderForm({
         <div className="fo-submitPair">
           <button
             type="button"
-            disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}
+            disabled={!viewer && (!canSubmit || protectionBreachFor('BUY') || !reducible('BUY'))}
             title={!connectedFamily ? undefined : reduceBlockedReason('BUY')}
             data-reduce-blocked={reducible('BUY') ? undefined : 'true'}
             onClick={() => place('BUY')}
@@ -1233,7 +1255,7 @@ export function FuturesOrderForm({
           </button>
           <button
             type="button"
-            disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}
+            disabled={!viewer && (!canSubmit || protectionBreachFor('SELL') || !reducible('SELL'))}
             title={!connectedFamily ? undefined : reduceBlockedReason('SELL')}
             data-reduce-blocked={reducible('SELL') ? undefined : 'true'}
             onClick={() => place('SELL')}
