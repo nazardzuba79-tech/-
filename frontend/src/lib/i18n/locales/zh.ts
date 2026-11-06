@@ -2123,6 +2123,7 @@ export const ZH: Record<Key, string> = {
   'withdraw.reviewSubmit': '提交审核',
   'withdraw.reviewDoneTitle': '审核申请已收到',
   'withdraw.reviewWarning': '这仅是审核申请。资金不会被冻结或转出，也不代表可以实际提现。',
+  'withdraw.reviewBalance': '交易账户余额',
   'withdraw.reviewNothing': '没有可用于提交审核申请的资产。',
   'withdraw.doneTitle': '提现申请已受理',
   'withdraw.doneEta': '提现最多可能需要 60 分钟。可在钱包记录中查看状态。',
