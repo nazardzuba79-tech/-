@@ -102,7 +102,12 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
     const positive = (list: { asset: string; available: string }[]) =>
       list.filter((b) => !isTestAssetPairOrSymbol(b.asset) && new BigNumber(b.available).isGreaterThan(0));
 
-    if (rows) return res.json({ source: 'TRADING', assets: [], futures: [] });
+    if (rows) return res.json({
+      source: 'TRADING', assets: [], futures: [],
+      // Review-only amounts from the account's own displayed holdings.
+      // Never interpret these as withdrawable funds or offer an ordinary payout.
+      reviewAssets: positive(rows),
+    });
 
     const [spot, futures] = await Promise.all([
       prisma.balance.findMany({ where: { userId: req.userId } }),
@@ -114,6 +119,62 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
       futures: positive(futures.map((b) => ({ asset: b.asset, available: b.available.toString() }))),
     });
   }));
+
+  /**
+   * An informational request from a Cross trading account. It is deliberately NOT
+   * a Withdrawal, never locks Balance, and has no approve/mark-sent API.
+   * It lets the owner see the account email and requested amount in a separate
+   * admin queue without weakening the permanent #617 no-cash-out fence.
+   */
+  router.post('/withdrawals/review-request', requireAuth(prisma), async (req: AuthedRequest, res) => {
+    const parsed = requestSchema.strict().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid review request' });
+    const fields = parsed.data;
+    if (isTestAssetPairOrSymbol(fields.asset)) return res.status(400).json({ error: 'Unsupported asset' });
+
+    let rows: { asset: string; available: string }[] | null;
+    try { rows = await tradingRows(req); }
+    catch (err) { return tradingFailure(res, err); }
+    if (!rows) return res.status(403).json({ error: 'Review request is not available for this account' });
+
+    const holding = rows.find(r => r.asset === fields.asset);
+    if (!holding || !new BigNumber(holding.available).isFinite()
+      || new BigNumber(fields.amount).isGreaterThan(holding.available))
+      return res.status(400).json({ error: 'Requested amount exceeds the account balance' });
+
+    try {
+      const log = await prisma.$transaction(async tx => {
+        // One durable user lock serializes clicks and multi-instance requests.
+        await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${req.userId!} FOR UPDATE`;
+        const recent = await tx.auditLog.findFirst({
+          where: {
+            userId: req.userId!, action: 'WITHDRAWAL_REVIEW_REQUESTED',
+            createdAt: { gte: new Date(Date.now() - 10 * 60_000) },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        // Within a short cooldown return the existing request, not a new admin alert.
+        if (recent) return { id: recent.id, createdAt: recent.createdAt, duplicate: true };
+        const created = await tx.auditLog.create({
+          data: {
+            userId: req.userId!, action: 'WITHDRAWAL_REVIEW_REQUESTED',
+            metadata: {
+              asset: fields.asset, amount: fields.amount, network: fields.network,
+              toAddress: fields.toAddress, reviewOnly: true, payable: false,
+            },
+          },
+        });
+        return { id: created.id, createdAt: created.createdAt, duplicate: false };
+      });
+      res.set('Cache-Control', 'no-store');
+      return res.status(log.duplicate ? 200 : 201).json({
+        ...log, status: 'REVIEW_ONLY', balanceHeld: false, payable: false,
+      });
+    } catch (err) {
+      console.error('[withdrawals] review request unavailable');
+      return res.status(503).json({ error: 'Could not record review request' });
+    }
+  });
 
   router.post('/withdrawals', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = requestSchema.safeParse(req.body);
