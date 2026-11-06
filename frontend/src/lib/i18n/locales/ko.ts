@@ -2100,6 +2100,7 @@ export const KO: Record<Key, string> = {
   'withdraw.reviewSubmit': '검토 요청 제출',
   'withdraw.reviewDoneTitle': '검토 요청이 접수되었습니다',
   'withdraw.reviewWarning': '이는 검토 요청일 뿐입니다. 자금이 예약되거나 송금되지 않으며 출금 가능 여부를 보장하지 않습니다.',
+  'withdraw.reviewBalance': '거래 계정 잔액',
   'withdraw.reviewNothing': '검토 요청에 사용할 자산이 없습니다.',
   'withdraw.doneTitle': '출금 요청이 접수되었습니다',
   'withdraw.doneEta': '출금에는 최대 60분이 걸릴 수 있습니다. 상태는 지갑 내역에서 확인할 수 있습니다.',
