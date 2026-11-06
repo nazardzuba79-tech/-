@@ -236,10 +236,10 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
           {serverError && <FieldError>{serverError}</FieldError>}
 
           <div className="space-y-1.5 rounded-w border border-hair bg-panel-2 px-3 py-2.5 text-[11.5px] leading-[17px] text-ink-3">
-            <p className="flex items-start gap-2 font-medium text-ink-2">
+            {!reviewOnly && <p className="flex items-start gap-2 font-medium text-ink-2">
               <ClockIcon className="mt-px h-3.5 w-3.5 shrink-0 text-gold-deep" strokeWidth={1.8} aria-hidden="true" />
               <span>{t('withdraw.eta')}</span>
-            </p>
+            </p>}
             <p className="flex items-start gap-2">
               <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0 text-ink-4" strokeWidth={1.8} aria-hidden="true" />
               <span>{reviewOnly ? t('withdraw.reviewWarning') : <>{options.source === 'SPOT' ? `${t('withdraw.spotHold')} ` : ''}{t('withdraw.checkAddress')}</>}</span>
