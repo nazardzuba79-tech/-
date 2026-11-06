@@ -6926,3 +6926,13 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Validation actually run before publication: `node --check` for the updated fixture PASS; exact replacement/scope checks PASS. Candidate build and browser CI are pending on the resulting head; source #688's successful checks are not claimed as candidate checks.
 - Preserved all other Claude/Codex production-lineage code, seven locales, ordinary withdrawals, API routes, #617 demo-funds fence, balances, Copy Trading, listings, timers, flags, schema and deployment settings. No merge, deployment, real withdrawal or production data write.
 - Remaining: confirm candidate CI; narrowly deploy and verify #688 API on Hetzner with rollback before any frontend promotion. Source branch needs the same small ETA condition to prevent a later regression; do not broaden this candidate with unrelated main changes.
+
+
+## Codex — 2026-11-06 — Withdrawal review API fingerprint repair (#689)
+
+- Parent: `0dc887d47bc14c5c85d7bbf25b22c44703f095a9`; this commit changes only `frontend/src/lib/__tests__/futuresTickerHeader.test.ts` and this append-only handoff.
+- Corrected CI attribution: main before #688 (`cf8e934525096f07e9c891f5f2f069df52bc9534`) and production `35f6bcf7d74429b173ea8df0d8db41dd0868d048` both pass the existing API fingerprint. The #688 review client additions caused the two new digest failures; they were not pre-existing baseline failures.
+- Exact normalisation removes only the two review client methods and optional `reviewAssets` line before the existing withdrawal-options strip. The original expected digest `e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce`, runtime code, workflows and release gates remain unchanged.
+- Malformed or duplicate review blocks are not stripped. New mutation controls cover endpoint/type/payability/duplication and the ordinary payout call; existing KYC, financial-read and Authorization controls remain intact. Both known blank-line spellings are exact literals; there is no general whitespace trimming.
+- Local Node execution of the existing and new pin assertion bodies: 37 assertions PASS against both source and production-pinned API bytes, restoring the original digest. Complete Jest/CI results for this commit are pending; this is not a full-suite waiver.
+- No merge or deployment. The separate narrow Hetzner API release and authenticated user/admin acceptance remain prerequisites for frontend production promotion.
