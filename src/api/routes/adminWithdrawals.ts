@@ -20,6 +20,37 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
   // An unheld (demo-valued) request is never approved or sent, whatever the demo switches; it can be rejected.
   const service = new WithdrawalService(prisma);
 
+  /**
+   * A separate read-only review queue. Rows come from AuditLog, not Withdrawal,
+   * and can NEVER be approved, marked SENT, or paid by any admin payout action.
+   * Email is resolved server-side from the authenticated event's User.id.
+   */
+  router.get('/admin/withdrawals/review-requests', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    const events = await prisma.auditLog.findMany({
+      where: { action: 'WITHDRAWAL_REVIEW_REQUESTED' },
+      orderBy: { createdAt: 'desc' }, take: 100,
+      select: { id: true, userId: true, createdAt: true, metadata: true },
+    });
+    const ids = [...new Set(events.map(e => e.userId).filter((id): id is string => typeof id === 'string'))];
+    const people = ids.length ? await prisma.user.findMany({
+      where: { id: { in: ids } }, select: { id: true, email: true },
+    }) : [];
+    const emailById = new Map(people.map(p => [p.id, p.email]));
+    const items = events.map(e => {
+      const data = e.metadata && typeof e.metadata === 'object' && !Array.isArray(e.metadata)
+        ? e.metadata as Record<string, unknown> : {};
+      const read = (k: string) => typeof data[k] === 'string' ? String(data[k]) : '';
+      return {
+        id: e.id, userId: e.userId, userEmail: e.userId ? emailById.get(e.userId) ?? 'Аккаунт удалён' : 'Аккаунт удалён',
+        asset: read('asset'), network: read('network'), amount: read('amount'),
+        toAddress: read('toAddress'), createdAt: e.createdAt,
+        status: 'REVIEW_ONLY' as const, payable: false as const, balanceHeld: false as const,
+      };
+    });
+    res.set('Cache-Control', 'private, no-store');
+    res.json({ items });
+  }));
+
   router.get('/admin/withdrawals', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
       orderBy: { createdAt: 'desc' },
