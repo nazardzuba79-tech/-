@@ -31,6 +31,19 @@ remain the only route to credit. Copying an address is never a deposit.
   also checked in the built admin at both widths with financial calls blocked.
 - Worker real workerd/SQLite restart integration plus unit cases: 34 PASS.
   Exact-head GitHub results must be read after push, not inferred from local QA.
+- Live provider gate: production has no TronGrid API key; an initial bounded
+  scan received HTTP 429 and correctly retained its cursor without a deposit
+  or notification. Anonymous page/head/proof reads now share one paced
+  transport (one-second spacing), retaining the same 40-call/60-second budget
+  and provider backoff. Configured-key behavior is unchanged. Local fixtures
+  disable the wait only; fake-time tests prove spacing and the unchanged cap.
+- First exact-head CI (`fe30b1ba`): 7/8 workflows SUCCESS. Full frontend has
+  two hash assertions failing in the unchanged `futuresTickerHeader.test.ts`.
+  Both that test blob `e98f0c0e3358c69ef050dfb229a1bca1be5d4f41`
+  and `api.ts` blob `6de3f1e75ec3f366352370ffcaa1f79ba8efec03`
+  equal fresh main. A single narrow local run reproduced those same two
+  failures (38 other cases PASS). Neither file nor any pin/guard is changed.
+  The narrow deposit/API/Worker release contains no frontend bundle.
 
 ## Incident and controlled recipient gate
 

@@ -46,6 +46,10 @@ export const WATCH = {
   initialBackfillMs: 7 * 24 * 60 * 60_000,
   maxPagesPerRun: 10,
   maxProviderCallsPerRun: 40,
+  // Anonymous TronGrid traffic is IP-limited. Serial reads also need spacing:
+  // a bounded scan must not burst all its requests and repeatedly hit 429.
+  // Configured API keys retain their existing provider policy.
+  anonymousRequestIntervalMs: 1_000,
   maxVerificationsPerRun: 20,
   maxRunMs: 60_000,
   leaseMs: 120_000,
@@ -212,7 +216,8 @@ export class DepositWatchService {
       let config: ChainConfig;
       try { config = await this.resolveChain(WATCH.chain); }
       catch { summary.skipped = 'NOT_CONFIGURED'; summary.ok = true; providerStatus = 'NOT_CONFIGURED'; return summary; }
-      const verifier = new TronDepositVerifier(config, this.counted(summary));
+      const fetchProvider = this.counted(summary, config.apiKey ? 0 : this.cfg.anonymousRequestIntervalMs);
+      const verifier = new TronDepositVerifier(config, fetchProvider);
       const proofs: ProofBudget = { used: 0 };
       await rememberTreasuryAddress(this.prisma, WATCH.chain, config.treasuryAddress);
       const addresses = await treasuryAddresses(this.prisma, config);
@@ -229,7 +234,7 @@ export class DepositWatchService {
           const nativeCursors = await this.prisma.depositWatchCursor.findMany({ where: { chain: WATCH.chain, contract: TRX_NATIVE_CURSOR } });
           const last = (address: string) => nativeCursors.find(c => tronAddressHex(c.address) === tronAddressHex(address))?.lastPageAt?.getTime() ?? 0;
           for (const address of [...addresses].sort((a, b) => last(a) - last(b))) {
-            await bounded(() => this.scanCursor(config, address, 'TRX', TRX_NATIVE_CURSOR, 6, summary, startedAt, verifier, proofs));
+            await bounded(() => this.scanCursor(config, address, 'TRX', TRX_NATIVE_CURSOR, 6, summary, startedAt, fetchProvider, verifier, proofs));
           }
         }
         await bounded(async () => {
@@ -237,7 +242,7 @@ export class DepositWatchService {
             for (const [asset, token] of Object.entries(config.tokens)) {
               const allowed = ALLOWLISTED_TOKENS.tron[asset];
               if (!allowed || tronAddressHex(token.contractAddress) !== tronAddressHex(allowed.contract) || token.decimals !== allowed.decimals) continue;
-              await this.scanCursor(config, address, asset, allowed.contract, allowed.decimals, summary, startedAt);
+              await this.scanCursor(config, address, asset, allowed.contract, allowed.decimals, summary, startedAt, fetchProvider);
             }
           }
         });
@@ -274,9 +279,13 @@ export class DepositWatchService {
   }
 
   /** fetch wrapper: counts calls/bytes and enforces the per-run budget. */
-  private counted(summary: WatchRunSummary): typeof fetch {
+  private counted(summary: WatchRunSummary, intervalMs: number): typeof fetch {
+    let nextRequestAt = 0;
     return (async (input: any, init?: any) => {
       if (summary.providerCalls >= this.cfg.maxProviderCallsPerRun) throw new BudgetExceeded('provider call budget reached');
+      const waitMs = nextRequestAt - Date.now();
+      if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+      nextRequestAt = Date.now() + intervalMs;
       summary.providerCalls++;
       const res = await this.fetchFn(input, init);
       const text = await res.text();
@@ -285,7 +294,7 @@ export class DepositWatchService {
     }) as typeof fetch;
   }
 
-  private async scanCursor(config: ChainConfig, address: string, asset: string, contract: string, decimals: number, summary: WatchRunSummary, startedAt: number, verifier?: TronDepositVerifier, proofs?: ProofBudget) {
+  private async scanCursor(config: ChainConfig, address: string, asset: string, contract: string, decimals: number, summary: WatchRunSummary, startedAt: number, fetchPage: typeof fetch, verifier?: TronDepositVerifier, proofs?: ProofBudget) {
     const native = asset === 'TRX' && contract === TRX_NATIVE_CURSOR;
     const key = { chain_address_contract: { chain: WATCH.chain, address, contract } };
     let cursor = await this.prisma.depositWatchCursor.findUnique({ where: key });
@@ -296,7 +305,6 @@ export class DepositWatchService {
       }], skipDuplicates: true });
       cursor = await this.prisma.depositWatchCursor.findUniqueOrThrow({ where: key });
     }
-    const fetchPage = this.counted(summary);
     const base = config.apiUrl ?? 'https://api.trongrid.io';
     const headers: Record<string, string> = config.apiKey ? { 'TRON-PRO-API-KEY': config.apiKey } : {};
 

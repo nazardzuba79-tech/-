@@ -49,7 +49,7 @@ const encode=x=>JSON.stringify(x,(_k,v)=>typeof v==='bigint'?v.toString():v);
   const auditProxy=new Proxy(prisma.auditLog,{get(target,key){if(key==='upsert')return async args=>{if(failAudit&&args.create?.action==='DEPOSIT_NOTIFICATION_DELIVERY'){failAudit=false;throw Error('fixture crash after durable Worker delivery');}return target.upsert(args);};const v=Reflect.get(target,key);return typeof v==='function'?v.bind(target):v;}});
   const client=new Proxy(prisma,{get(target,key){if(key==='auditLog')return auditProxy;const v=Reflect.get(target,key);return typeof v==='function'?v.bind(target):v;}});
   const fetchLocal=(url,init)=>{assert.equal(new URL(String(url)).origin,origin,'external network forbidden');return fetch(url,init);};
-  const limits={pageSize:2,initialBackfillMs:60*60_000,maxPagesPerRun:10};
+  const limits={pageSize:2,initialBackfillMs:60*60_000,maxPagesPerRun:10,anonymousRequestIntervalMs:0}; // local fixture, no shared public-provider limit
   const makeWatch=()=>new DepositWatchService(client,async()=>config,fetchLocal,()=>clock,limits,notify);
   let watch=makeWatch();
   await test('native page commit: injected cursor failure rolls back both proved rows and progress',async()=>{

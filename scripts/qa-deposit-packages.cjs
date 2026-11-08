@@ -170,7 +170,7 @@ async function main() {
 
     const treasury = new TreasuryWalletService(prisma);
     const resolveChain = async (c) => ({ ...await treasury.resolve(c), nativeAsset: 'LEGACY_USDT_FIXTURE_ONLY' });
-    const limits = { pageSize: 10, maxPagesPerRun: 3, initialBackfillMs: 2 * 60 * 60_000, maxWindowMs: 24 * 60 * 60_000 };
+    const limits = { pageSize: 10, maxPagesPerRun: 3, initialBackfillMs: 2 * 60 * 60_000, maxWindowMs: 24 * 60 * 60_000, anonymousRequestIntervalMs: 0 }; // local provider only; pacing has its own fake-time regression
     // Synthetic notifications only: no production Worker or Telegram network.
     const notificationIds = [];
     const notificationTasks = [];
@@ -613,7 +613,7 @@ async function main() {
       const day0 = localTime(clock.t + 2 * 86_400_000, TZ).day;
       const day1 = localTime(instantOf(day0, 12 * 60, TZ) + 86_400_000, TZ).day;
       const at = (day, h, m = 0) => { clock.t = instantOf(day, h * 60 + m, TZ); };
-      const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, {}, notifyFixture);
+      const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, { anonymousRequestIntervalMs: 0 }, notifyFixture);
       await prodWatch.setEnabled(true, ADMIN);
       const measure = async (fn) => {
         const c = fixture.state.calls.length, q = sqlLog.length, t = Date.now(), batches = await prisma.depositBatch.count();
