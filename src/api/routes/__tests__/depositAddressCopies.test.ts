@@ -88,6 +88,7 @@ describe('POST /deposit-address-copies', () => {
 
   it.each([
     ['an unknown rail', { asset: 'DOGE', network: 'tron' }],
+    ['an unknown token on the legacy treasury destination', { asset: 'DOGE', network: 'tron', destinationId: 'tron' }],
     ['an address of another network', { address: EVM }],
     ['a rail that does not match', { destinationId: 'usd-coin:solana' }],
     ['a memo where the network has none', { memo: '123' }],

@@ -37,9 +37,9 @@ function node({ solidity, full, head = 1018 }: { solidity?: any; full?: any; hea
 }
 
 describe('TronDepositVerifier (node-level proof)', () => {
-  it('rejects an asset with no configured TRC-20 contract (including the native asset)', async () => {
+  it('rejects an asset with no configured TRC-20 contract', async () => {
     const verifier = new TronDepositVerifier(chainConfig, jest.fn());
-    await expect(verifier.verify(TX, 'TRX')).rejects.toThrow('Unsupported asset on Tron');
+    await expect(verifier.verify(TX, 'FAKE')).rejects.toThrow('Unsupported asset on Tron');
   });
 
   it('refuses a configured "USDT" whose contract is not the allowlisted mainnet contract', async () => {
@@ -113,7 +113,7 @@ describe('TronDepositVerifier (node-level proof)', () => {
 
   describe('listIncoming (display feed only)', () => {
     it('lists recent transfers without inventing a confirmation count', async () => {
-      const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse({
+      const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse({ data: [] })).mockResolvedValueOnce(jsonResponse({
         data: [
           { transaction_id: 'tx-a', to: TREASURY, value: '5000000', block_timestamp: 1700000000000 },
           { transaction_id: 'tx-b', to: TREASURY, value: '1250000', block_timestamp: 1700000100000 },
@@ -129,5 +129,61 @@ describe('TronDepositVerifier (node-level proof)', () => {
     it('a malformed list is a provider error, not an empty success', async () => {
       await expect(new TronDepositVerifier(chainConfig, jest.fn().mockResolvedValue(jsonResponse({ nope: true }))).listIncoming()).rejects.toBeInstanceOf(ProviderUnavailableError);
     });
+  });
+});
+
+describe('native TRX proof (#693)', () => {
+  const body = (overrides: any = {}) => ({ txID: TX, ret: [{ contractRet: 'SUCCESS' }], raw_data: { contract: [{
+    type: 'TransferContract', parameter: { type_url: 'type.googleapis.com/protocol.TransferContract', value: {
+      owner_address: '41' + '55'.repeat(20), to_address: TREASURY, amount: '12345678',
+    } },
+  }] }, ...overrides });
+  const receipt = (extra: any = {}) => ({ id: TX, blockNumber: 1000, blockTimeStamp: 1_700_000_000_000, receipt: { net_usage: 268 }, ...extra });
+  function nativeNode(solid: any = body(), solidInfo: any = receipt(), full: any = {}, fullInfo: any = {}, head = 1018) {
+    return jest.fn(async (url: any) => {
+      const p = new URL(String(url)).pathname;
+      if (p === '/walletsolidity/gettransactionbyid') return jsonResponse(solid);
+      if (p === '/wallet/gettransactionbyid') return jsonResponse(full);
+      if (p === '/walletsolidity/gettransactioninfobyid') return jsonResponse(solidInfo);
+      if (p === '/wallet/gettransactioninfobyid') return jsonResponse(fullInfo);
+      if (p === '/wallet/getnowblock') return jsonResponse({ block_header: { raw_data: { number: head } } });
+      throw Error('Unexpected native fixture endpoint ' + p);
+    }) as any;
+  }
+  it('proves native TransferContract sun exactly, without requiring a smart-contract receipt.result', async () => {
+    const proof = await new TronDepositVerifier(chainConfig, nativeNode()).prove(TX, 'TRX');
+    expect(proof.amount.toFixed()).toBe('12.345678');expect(proof.confirmations).toBe(19);expect(proof.finalized).toBe(true);
+    expect(proof.recipient).toBe(TREASURY);expect(proof.blockNumber).toBe(1000);
+  });
+  it('reports a mined/full-node proof as unfinalized, never as a solidified receipt', async () => {
+    const proof = await new TronDepositVerifier(chainConfig, nativeNode({}, {}, body(), receipt(), 1002)).prove(TX, 'TRX');
+    expect(proof.finalized).toBe(false);expect(proof.confirmations).toBe(3);
+  });
+  it('requires both solidified body and solidified inclusion info before finality', async () => {
+    const proof = await new TronDepositVerifier(chainConfig, nativeNode(body(), {}, {}, receipt())).prove(TX, 'TRX');
+    expect(proof.finalized).toBe(false);
+  });
+  it.each(['TriggerSmartContract', 'TransferAssetContract'])('never calls %s native TRX', async type => {
+    const b = body();b.raw_data.contract[0].type = type;
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(b)).prove(TX, 'TRX')).rejects.toThrow('not a native TRX');
+  });
+  it('refuses wrong recipient and failed native execution', async () => {
+    const b = body();b.raw_data.contract[0].parameter.value.to_address = '41' + '22'.repeat(20);
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(b)).prove(TX, 'TRX')).rejects.toThrow('does not pay');
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(body({ ret: [{ contractRet: 'REVERT' }] }))).prove(TX, 'TRX')).rejects.toThrow('failed on chain');
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(body(), receipt({ result: 'FAILED' }))).prove(TX, 'TRX')).rejects.toThrow('failed on chain');
+  });
+  it.each([0, -1, '1.5', Number.MAX_SAFE_INTEGER + 1, '9223372036854775808'])('refuses invalid or rounded amount %s', async amount => {
+    const b = body();b.raw_data.contract[0].parameter.value.amount = amount as any;
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(b)).prove(TX, 'TRX')).rejects.toBeInstanceOf(DepositVerificationError);
+  });
+  it('refuses a different transaction body/receipt and an impossible head', async () => {
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(body({ txID: 'cd'.repeat(32) }))).prove(TX, 'TRX')).rejects.toBeInstanceOf(ProviderUnavailableError);
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(body(), receipt({ id: 'cd'.repeat(32) }))).prove(TX, 'TRX')).rejects.toBeInstanceOf(ProviderUnavailableError);
+    await expect(new TronDepositVerifier(chainConfig, nativeNode(body(), receipt(), {}, {}, 999)).prove(TX, 'TRX')).rejects.toBeInstanceOf(ProviderUnavailableError);
+  });
+  it('unknown is not a confirmed deposit, and USDT still requires token logs', async () => {
+    await expect(new TronDepositVerifier(chainConfig, nativeNode({}, {})).prove(TX, 'TRX')).rejects.toBeInstanceOf(TransferNotFoundError);
+    await expect(new TronDepositVerifier(chainConfig, node({ solidity: receipt({ receipt: { result: 'SUCCESS' } }) })).prove(TX, 'USDT')).rejects.toThrow('no allowlisted token transfer');
   });
 });

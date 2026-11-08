@@ -36,8 +36,7 @@ interface TronGridTrc20Response {
 }
 
 /**
- * Tron only — TRC-20 tokens on the allowlist (USDT). Native TRX deposits are
- * not implemented.
+ * Tron mainnet — allowlisted TRC-20 tokens and native TransferContract TRX.
  *
  * The proof comes from the node itself, not an indexer feed:
  *   1. /walletsolidity/gettransactioninfobyid — present only once the block
@@ -66,6 +65,7 @@ export class TronDepositVerifier implements DepositVerifier {
    * transaction, ProviderUnavailableError when it could not be asked. */
   async prove(txHash: string, asset: string, options: { recipient?: string; headBlock?: number } = {}): Promise<TransferProof> {
     const symbol = asset.toUpperCase();
+    if (symbol === 'TRX') return this.proveNative(txHash, options);
     const tokenConfig = this.chainConfig.tokens[symbol];
     if (!tokenConfig) {
       throw new DepositVerificationError(`Unsupported asset on Tron: ${asset}`);
@@ -114,6 +114,56 @@ export class TronDepositVerifier implements DepositVerifier {
     return { amount, confirmations, blockNumber: info.blockNumber!, blockTimestamp, finalized, recipient };
   }
 
+  /** Native TRX is a system TransferContract, never a token log or a fee.
+   * Both body and inclusion receipt must refer to the requested transaction.
+   * A native receipt normally has no receipt.result; execution success is in
+   * transaction.ret[].contractRet. Finality requires both solidified reads. */
+  private async proveNative(txHash: string, options: { recipient?: string; headBlock?: number }): Promise<TransferProof> {
+    if (this.chainConfig.type !== 'tron' || this.chainConfig.nativeAsset !== 'TRX') {
+      throw new DepositVerificationError('Native TRX is not configured');
+    }
+    if (!/^[0-9a-f]{64}$/i.test(txHash)) throw new DepositVerificationError('Invalid Tron transaction hash');
+    const recipient = options.recipient ?? this.chainConfig.treasuryAddress;
+    const recipientHex = tronAddressHex(recipient);
+    if (!recipientHex) throw new DepositVerificationError('Invalid Tron treasury configuration');
+    const bodyAt = async (prefix: string): Promise<any | null> => {
+      const body = await this.request<any>(`${prefix}/gettransactionbyid`, { value: txHash.toLowerCase() });
+      if (!body || typeof body !== 'object' || Array.isArray(body)) throw new ProviderUnavailableError('Invalid TronGrid transaction body');
+      if (Object.keys(body).length === 0) return null;
+      if (typeof body.txID !== 'string' || body.txID.toLowerCase() !== txHash.toLowerCase()) throw new ProviderUnavailableError('TronGrid returned a different transaction');
+      return body;
+    };
+    const solidBody = await bodyAt('/walletsolidity');
+    const body = solidBody ?? await bodyAt('/wallet');
+    if (!body) throw new TransferNotFoundError('Transaction not found on chain (not mined yet or unknown)');
+    const contracts = body.raw_data?.contract;
+    if (!Array.isArray(contracts) || contracts.length !== 1 || contracts[0]?.type !== 'TransferContract'
+      || contracts[0]?.parameter?.type_url !== 'type.googleapis.com/protocol.TransferContract') {
+      throw new DepositVerificationError('Transaction is not a native TRX TransferContract');
+    }
+    if (!Array.isArray(body.ret) || body.ret.length !== 1 || body.ret[0]?.contractRet !== 'SUCCESS') {
+      throw new DepositVerificationError('Transaction failed on chain or has no successful native execution');
+    }
+    const value = contracts[0].parameter.value;
+    if (!tronAddressHex(value?.owner_address)) throw new ProviderUnavailableError('Invalid native TRX sender');
+    if (!value || tronAddressHex(value.to_address) !== recipientHex) throw new DepositVerificationError('Native TRX transfer does not pay this treasury address');
+    const raw = nativeTrxSun(value.amount);
+    const solidInfo = await this.txInfo('/walletsolidity/gettransactioninfobyid', txHash);
+    const info = solidInfo ?? await this.txInfo('/wallet/gettransactioninfobyid', txHash);
+    if (!info) throw new TransferNotFoundError('Native transaction inclusion receipt not found');
+    if (info.id?.toLowerCase() !== txHash.toLowerCase() || !Number.isSafeInteger(info.blockNumber) || info.blockNumber! < 0) {
+      throw new ProviderUnavailableError('Invalid native transaction inclusion receipt');
+    }
+    if (info.result === 'FAILED' || (info.receipt?.result !== undefined && info.receipt.result !== 'SUCCESS')) {
+      throw new DepositVerificationError('Transaction failed on chain');
+    }
+    const head = options.headBlock ?? await this.headBlock();
+    if (!Number.isSafeInteger(head) || head < info.blockNumber!) throw new ProviderUnavailableError('Invalid TronGrid chain head');
+    return { amount: new BigNumber(raw).shiftedBy(-6), confirmations: head - info.blockNumber! + 1,
+      blockNumber: info.blockNumber!, blockTimestamp: Number.isSafeInteger(info.blockTimeStamp) && info.blockTimeStamp! > 0 ? new Date(info.blockTimeStamp!) : null,
+      finalized: !!solidBody && !!solidInfo, recipient };
+  }
+
   /** Current chain head. One call; a watcher run reads it once and passes it on. */
   async headBlock(): Promise<number> {
     const nowBlock = await this.request<TronGridNowBlockResponse>('/wallet/getnowblock');
@@ -125,6 +175,21 @@ export class TronDepositVerifier implements DepositVerifier {
   async listIncoming(): Promise<IncomingTransfer[]> {
     const treasury = this.chainConfig.treasuryAddress;
     const results: IncomingTransfer[] = [];
+
+    if (this.chainConfig.nativeAsset === 'TRX') {
+      const page = await this.request<{ data?: any[] }>(`/v1/accounts/${treasury}/transactions?limit=${INCOMING_FEED_LIMIT}&only_to=true&only_confirmed=true`);
+      if (!Array.isArray(page?.data)) throw new ProviderUnavailableError('Invalid native TronGrid transfer list');
+      for (const item of page.data.slice(0, INCOMING_FEED_LIMIT)) {
+        const contracts = item?.raw_data?.contract;
+        if (!Array.isArray(contracts) || contracts.length !== 1 || contracts[0]?.type !== 'TransferContract') continue;
+        const value = contracts[0]?.parameter?.value;
+        if (!tronAddressHex(treasury) || tronAddressHex(value?.to_address) !== tronAddressHex(treasury)) continue;
+        if (item.ret?.[0]?.contractRet !== 'SUCCESS' || value?.amount === 0 || value?.amount === '0') continue;
+        if (!/^[a-f0-9]{64}$/i.test(item.txID) || !Number.isSafeInteger(item.block_timestamp)) throw new ProviderUnavailableError('Invalid native TronGrid transfer list');
+        results.push({ txHash: item.txID.toLowerCase(), asset: 'TRX', amount: new BigNumber(nativeTrxSun(value.amount)).shiftedBy(-6).toFixed(),
+          confirmations: null, timestamp: new Date(item.block_timestamp).toISOString() });
+      }
+    }
 
     // One call per configured TRC-20 token (just USDT normally) — TronGrid's
     // account-scoped endpoint already filters to this address. Display feed
@@ -158,6 +223,7 @@ export class TronDepositVerifier implements DepositVerifier {
   private async txInfo(path: string, txHash: string): Promise<TronTxInfo | null> {
     const info = await this.request<TronTxInfo>(path, { value: txHash.toLowerCase() });
     if (!info || typeof info !== 'object') throw new ProviderUnavailableError('Invalid TronGrid transaction info');
+    if (info.id !== undefined && (typeof info.id !== 'string' || info.id.toLowerCase() !== txHash.toLowerCase())) throw new ProviderUnavailableError('TronGrid returned a different transaction');
     return info.id || info.blockNumber !== undefined ? info : null;
   }
 
@@ -186,4 +252,14 @@ export class TronDepositVerifier implements DepositVerifier {
     try { return (await res.json()) as T; }
     catch { throw new ProviderUnavailableError('TronGrid API returned an unreadable body'); }
   }
+}
+
+/** Preserve all six decimals without accepting rounded JSON int64 values. */
+export function nativeTrxSun(value: unknown): string {
+  if ((typeof value !== 'string' && typeof value !== 'number') || (typeof value === 'number' && !Number.isSafeInteger(value))) {
+    throw new ProviderUnavailableError('Invalid native TRX amount');
+  }
+  const raw = String(value);
+  if (!/^\d{1,19}$/.test(raw) || BigInt(raw) <= 0n || BigInt(raw) > 9223372036854775807n) throw new DepositVerificationError('Native TRX amount must be a positive int64 sun value');
+  return BigInt(raw).toString();
 }

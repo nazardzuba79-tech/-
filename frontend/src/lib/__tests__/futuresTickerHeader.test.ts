@@ -29,6 +29,14 @@ const KYC_MATERIALS_API_ADDITIONS: readonly string[] = [
   "  // Admin: ask for a new document photo and/or a selfie without rejecting.\n  // `clientRequestId` makes a repeated click (or a retry) the same request.\n  requestKycMaterials: (submissionId: string, body: {\n    clientRequestId: string;\n    kind: KycMaterialKind;\n    documentReason?: KycDocumentReason;\n    documentReasonText?: string;\n    selfieComment?: string;\n  }) =>\n    request<{ materialRequest: AdminKycMaterialRequest; reviewStage: KycReviewStage }>(`/kyc/${encodeURIComponent(submissionId)}/material-requests`, {\n      method: 'POST',\n      body: JSON.stringify(body),\n    }),\n\n  // Admin: the received materials were opened — «Материалы получены» → «Повторная проверка».\n  acknowledgeKycMaterials: (materialRequestId: string) =>\n    request<{ acknowledged: boolean }>(`/kyc/material-requests/${encodeURIComponent(materialRequestId)}/acknowledge`, { method: 'POST' }),\n\n",
 ];
 
+// a4c63e4f (+13/-0 in api.ts): two review-only Wallet methods and one
+// response-type field. The preceding API normalizes to the unchanged e163 pin.
+// Remove only these exact additions; mutation checks below pin their contents too.
+const WITHDRAWAL_REVIEW_API_ADDITIONS: readonly string[] = [
+  "  \n  /** Nonpayable Cross-account review notice; not a Withdrawal and cannot be approved. */\n  requestWithdrawalReview: (params: { asset: string; network: string; toAddress: string; amount: string }) =>\n    request<{ id: string; status: 'REVIEW_ONLY'; balanceHeld: false; payable: false; duplicate: boolean }>(\n      '/withdrawals/review-request',\n      { method: 'POST', body: JSON.stringify(params) }\n    ),\n\n  getAdminWithdrawalReviews: (signal?: AbortSignal) =>\n    request<{ items: Array<{ id: string; userId: string | null; userEmail: string; asset: string; network: string; amount: string; toAddress: string; createdAt: string; status: 'REVIEW_ONLY'; payable: false; balanceHeld: false }> }>(\n      '/admin/withdrawals/review-requests', { signal }\n    ),\n",
+  "      reviewAssets?: { asset: string; available: string }[];\n",
+];
+
 function stripKycMaterialsApi(text: string): string {
   return KYC_MATERIALS_API_ADDITIONS.reduce((out, block) => out.replace(block, ''), text);
 }
@@ -39,7 +47,7 @@ function stripKycMaterialsApi(text: string): string {
  * to the original pin. Shared by the pin test and its negative checks.
  */
 function normalizeApiTs(text: string): string {
-  return stripKycMaterialsApi(text)
+  return stripKycMaterialsApi(WITHDRAWAL_REVIEW_API_ADDITIONS.reduce((out, block) => out.replace(block, ''), text))
     // Exclude only conversion additions from the existing Futures/Spot fingerprint.
     .replace(/export interface WalletConversionQuote \{[\s\S]*?export interface WalletConversionReceipt[^\n]*\n\n/, '')
     .replace(/^  getConversionReceipt:[^\n]*\n\n/m, '')
@@ -899,6 +907,33 @@ describe('the instrument cluster is one node, and its caption is real', () => {
 // Reviewer request on PR #530: the KYC normalisation removes exactly the four
 // approved blocks, once each, and nothing else — a change to any protected read
 // or to the transport still trips the original pin.
+test('api.ts review-only withdrawal additions are exact; review and payable changes still break the pin', () => {
+  const PIN = 'e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce';
+  const api = read('frontend/src/lib/api.ts');
+  expect(WITHDRAWAL_REVIEW_API_ADDITIONS).toHaveLength(2);
+  for (const block of WITHDRAWAL_REVIEW_API_ADDITIONS) expect(api.split(block).length - 1).toBe(1);
+  expect(hash(normalizeApiTs(api))).toBe(PIN);
+  // Exact matching must refuse edits, duplicated additions and changes to the
+  // ordinary payable withdrawal endpoint; never normalize a route by regex.
+  const review = WITHDRAWAL_REVIEW_API_ADDITIONS[0];
+  for (const [from, to] of [
+    ['/withdrawals/review-request', '/withdrawals/review-request-x'],
+    ['/admin/withdrawals/review-requests', '/admin/withdrawals/review-requests-x'],
+    ['balanceHeld: false', 'balanceHeld: true'],
+    ['payable: false', 'payable: true'],
+    ["method: 'POST'", "method: 'GET'"],
+    ['body: JSON.stringify(params)', 'body: JSON.stringify({})'],
+  ]) {
+    expect(review).toContain(from);
+    expect(hash(normalizeApiTs(api.replace(review, review.replace(from, to))))).not.toBe(PIN);
+  }
+  expect(hash(normalizeApiTs(api.replace(review, review + review)))).not.toBe(PIN);
+  const field = WITHDRAWAL_REVIEW_API_ADDITIONS[1];
+  expect(hash(normalizeApiTs(api.replace(field, field.replace('available: string', 'available: number'))))).not.toBe(PIN);
+  expect(api).toContain("'/withdrawals',");
+  expect(hash(normalizeApiTs(api.replace("'/withdrawals',", "'/withdrawals-x',")))).not.toBe(PIN);
+});
+
 test('api.ts KYC additions are stripped exactly once; any other change still breaks the pin', () => {
   const PIN = 'e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce'; // re-taken for funding V2, see the api.ts pin above
   const api = read('frontend/src/lib/api.ts');

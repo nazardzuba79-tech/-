@@ -19,6 +19,7 @@ export function validEvent(e, type, now = Date.now()) {
   }
   if (type === 'DEPOSIT_ADDRESS_COPIED') {
     return text(e.asset, 15) && /^[A-Z0-9]{1,15}$/.test(e.asset)
+      && (e.network !== 'tron' || ['TRX', 'USDT'].includes(e.asset))
       && (e.email === undefined || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
       && text(e.network, 40) && /^[a-z0-9-]{2,40}$/.test(e.network)
       && text(e.networkLabel, 80) && /^[A-Za-z0-9][A-Za-z0-9 .()_\/+\-]{0,79}$/.test(e.networkLabel);
@@ -32,10 +33,12 @@ export function validEvent(e, type, now = Date.now()) {
       && (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
       && (!e.fullName || text(e.fullName, 200));
   }
-  return amount(e.amount) && e.asset === 'USDT' && e.network === 'TRC20'
-    && (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
-    && (e.accumulated === undefined || amount(e.accumulated))
-    && (e.remaining === undefined || amount(e.remaining));
+  return amount(e.amount) && BigInt(e.amount.replace('.', '')) > 0n
+    && ((e.asset === 'USDT' && e.network === 'TRC20') || (e.asset === 'TRX' && e.network === 'TRON_NATIVE'))
+    && typeof e.txHash === 'string' && /^[a-f0-9]{64}$/.test(e.txHash)
+    && e.proofStatus === 'VERIFIED' && e.finalized === true
+    && Number.isSafeInteger(e.requiredConfirmations) && e.requiredConfirmations > 0
+    && Number.isSafeInteger(e.confirmations) && e.confirmations >= e.requiredConfirmations;
 }
 
 // The owner reads these in Kyiv: «28.09.2026, 14:56».
@@ -51,8 +54,8 @@ export function message(e) {
     `Дата і час: ${kyivTime(e.timestamp)} (Київ)`,
   ].join('\n');
   if (e.eventType === 'DEPOSIT_ADDRESS_COPIED') return [
-    'Скопійовано депозитну адресу VOLTEX', '',
-    `Монета: ${e.asset}`, `Мережа: ${e.networkLabel}`,
+    '📋 Скопійовано депозитну адресу — це НЕ поповнення', '',
+    `Обраний актив: ${e.asset}`, `Мережа: ${e.network === 'tron' ? (e.asset === 'TRX' ? 'TRON (Native)' : 'TRON (TRC-20)') : e.networkLabel}`,
     e.email && `Email: ${e.email}`,
   ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
   if (e.eventType === 'KYC_SUBMITTED') return [
@@ -67,14 +70,12 @@ export function message(e) {
     `Материал: ${e.part === 'SELFIE' ? 'селфи для подтверждения личности' : 'новое фото документа'}`,
     `Статус: ${e.complete === false ? 'ожидается остальная часть запроса' : 'повторная проверка'}`,
   ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
-  // These are discovery facts, not proof of finality, attribution or credit.
-  const total = e.accumulated ?? e.amount;
-  const ready = BigInt(total.split('.')[0]) >= 300n;
-  return ['💰 Новое пополнение', '', `Сумма: ${e.amount} ${e.asset}`, `Сеть: ${e.network}`,
-    `Статус: ${ready ? 'Готов к проверке' : e.email ? 'Накопление' : 'Непривязанный'}`,
-    e.email && `Email: ${e.email}`, e.accumulated !== undefined && `Накоплено: ${e.accumulated} USDT`,
-    e.remaining !== undefined && `Осталось до минимума: ${e.remaining} USDT`,
-  ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
+  // Chain proof is not attribution, USD valuation, a package threshold or credit.
+  return [`Нове надходження: ${e.amount} ${e.asset}`, '',
+    `Мережа: ${e.asset === 'TRX' ? 'TRON (Native)' : 'TRON (TRC-20)'}`,
+    `TXID: ${e.txHash}`, `Підтвердження: ${e.confirmations} (мінімум ${e.requiredConfirmations})`,
+    'Статус: підтверджено в блокчейні; очікує ручної перевірки',
+  ].join('\n');
 }
 
 export async function acceptEvent(event, type, env) {
@@ -89,7 +90,7 @@ export async function acceptEvent(event, type, env) {
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'documentType']
     : type === 'KYC_MATERIALS_RECEIVED'
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'part', 'complete']
-    : ['eventId', 'eventType', 'timestamp', 'amount', 'asset', 'network', 'email', 'accumulated', 'remaining'];
+    : ['eventId', 'eventType', 'timestamp', 'amount', 'asset', 'network', 'txHash', 'confirmations', 'requiredConfirmations', 'finalized', 'proofStatus'];
   if (Object.keys(event).some(key => !allowed.includes(key))) return reply(400, 'INVALID_EVENT');
   const id = env.EVENTS.idFromName(`${type}:${event.eventId}`);
   return env.EVENTS.get(id).fetch(new Request('https://internal/event', { method: 'POST', body: JSON.stringify(event) }));

@@ -40,7 +40,8 @@ test('real workerd + SQLite DO: signed deposit/registration, private KYC binding
       outboundService: () => { throw new Error('unexpected outbound call'); },
     }],
   };
-  const e = { eventId: 'integration-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: Date.now(), amount: '15', asset: 'USDT', network: 'TRC20' };
+  const e = { eventId: 'integration-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: Date.now(), amount: '15', asset: 'USDT', network: 'TRC20',
+    txHash: 'ab'.repeat(32), confirmations: 19, requiredConfirmations: 19, finalized: true, proofStatus: 'VERIFIED' };
   const signed = (data = e, endpoint = '/v1/deposit') => {
     const body = JSON.stringify(data), ts = String(Date.now());
     return { method: 'POST', body, headers: { 'x-voltex-timestamp': ts,
@@ -69,7 +70,7 @@ test('real workerd + SQLite DO: signed deposit/registration, private KYC binding
     const copies = await Promise.all(Array.from({ length: 12 }, () => mf.dispatchFetch('https://local/v1/copy', signed(copy, '/v1/copy')).then(r => r.json())));
     assert.equal(copies.filter(r => r.status === 'SENT').length, 1);
     assert.equal(calls.length, 4, 'only one Telegram message per recorded copy event');
-    assert.equal(calls[3].text, 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)\nEmail: copier@example.invalid');
+    assert.equal(calls[3].text, '📋 Скопійовано депозитну адресу — це НЕ поповнення\n\nОбраний актив: USDT\nМережа: TRON (TRC-20)\nEmail: copier@example.invalid');
     assert.ok(!calls[3].text.includes(registration.email), 'copy uses its own account email');
     const wrongBinding = await kyc.fetch('https://local/', { method: 'POST', body: JSON.stringify(registration) });
     assert.equal((await wrongBinding.json()).status, 'INVALID_EVENT', 'KYC authority not broadened');

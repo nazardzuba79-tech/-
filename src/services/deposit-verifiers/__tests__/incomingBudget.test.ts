@@ -14,13 +14,21 @@ const response = (body: unknown) => ({ ok: true, status: 200, json: async () => 
 const many = (item: (i: number) => unknown) => Array.from({ length: 100 }, (_, i) => item(i));
 
 describe('bounded incoming provider windows: no pagination/retry expansion', () => {
-  it('TRON: one page per token, at most 20 observations even if provider returns 100 + next link', async () => {
-    const fetchFn = jest.fn(async () => response({ data: many(i => ({ transaction_id: `${i}`, to: treasury,
-      value: '10000000', block_timestamp: 1700000000000 })), meta: { links: { next: 'https://fixture.invalid/next' } } }));
+  it('TRON: exactly one bounded 20-item native page and one per token, never follow next links', async () => {
+    const fetchFn = jest.fn(async (url: string | URL | Request) => response({ data: many(i => String(url).includes('/trc20')
+      ? { transaction_id: `${i}`, to: treasury, value: '10000000', block_timestamp: 1700000000000 }
+      : { txID: i.toString(16).padStart(64, '0'), block_timestamp: 1700000000000, ret: [{ contractRet: 'SUCCESS' }],
+        raw_data: { contract: [{ type: 'TransferContract', parameter: { value: { to_address: treasury, amount: '10000000' } } }] } }),
+      meta: { links: { next: 'https://fixture.invalid/next' } } }));
     const result = await new TronDepositVerifier(config, fetchFn).listIncoming();
-    expect(result).toHaveLength(20); expect(result.every(row => row.amount === '10')).toBe(true);
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-    expect(new URL((fetchFn.mock.calls as unknown[][])[0][0] as string).searchParams.get('limit')).toBe('20');
+    expect(result).toHaveLength(40); expect(result.every(row => row.amount === '10')).toBe(true);
+    expect(result.filter(row => row.asset === 'TRX')).toHaveLength(20);
+    expect(result.filter(row => row.asset === 'USDT')).toHaveLength(20);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    for (const [url] of fetchFn.mock.calls as unknown[][]) {
+      expect(new URL(url as string).searchParams.get('limit')).toBe('20');
+      expect(new URL(url as string).pathname).not.toContain('next');
+    }
   });
 
   it('EVM: one 20-item page for native and each token; never follow next page', async () => {

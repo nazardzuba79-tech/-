@@ -3,8 +3,8 @@ import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
 import { notifyDeposit } from '../TelegramNotifications';
 import { ChainConfig } from '../../config/chains';
-import { DepositVerificationError, ProviderUnavailableError } from '../deposit-verifiers';
-import { TronDepositVerifier } from '../deposit-verifiers/TronDepositVerifier';
+import { DepositVerificationError, ProviderUnavailableError, TransferNotFoundError } from '../deposit-verifiers';
+import { nativeTrxSun, TronDepositVerifier } from '../deposit-verifiers/TronDepositVerifier';
 import { ALLOWLISTED_TOKENS } from '../deposit-verifiers/proof';
 import { tronAddressHex } from '../deposit-verifiers/tronAddress';
 import { applyProof, recordProofFailure } from '../DepositService';
@@ -14,7 +14,7 @@ import { adminOpenAllowed, dueSlot, isDaytime, localTime, nextSlotAt, slotKeyAt,
 const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 /**
- * PRODUCTION DEPOSIT WATCHER — USDT/TRC20 only.
+ * PRODUCTION DEPOSIT WATCHER — USDT/TRC20 and native TRX, known treasuries only.
  *
  * It can: read the chain (TronGrid), store newly observed transfers, prove
  * and refresh their confirmations, and report scan progress.
@@ -46,6 +46,10 @@ export const WATCH = {
   initialBackfillMs: 7 * 24 * 60 * 60_000,
   maxPagesPerRun: 10,
   maxProviderCallsPerRun: 40,
+  // Anonymous TronGrid traffic is IP-limited. Serial reads also need spacing:
+  // a bounded scan must not burst all its requests and repeatedly hit 429.
+  // Configured API keys retain their existing provider policy.
+  anonymousRequestIntervalMs: 1_000,
   maxVerificationsPerRun: 20,
   maxRunMs: 60_000,
   leaseMs: 120_000,
@@ -92,6 +96,8 @@ interface Trc20ListItem {
 }
 
 class BudgetExceeded extends Error {}
+export const TRX_NATIVE_CURSOR = 'native:TRX';
+interface ProofBudget { headBlock?: number; used: number }
 
 export type WatchLimits = { -readonly [K in keyof typeof WATCH]: (typeof WATCH)[K] };
 
@@ -210,7 +216,9 @@ export class DepositWatchService {
       let config: ChainConfig;
       try { config = await this.resolveChain(WATCH.chain); }
       catch { summary.skipped = 'NOT_CONFIGURED'; summary.ok = true; providerStatus = 'NOT_CONFIGURED'; return summary; }
-      const verifier = new TronDepositVerifier(config, this.counted(summary));
+      const fetchProvider = this.counted(summary, config.apiKey ? 0 : this.cfg.anonymousRequestIntervalMs);
+      const verifier = new TronDepositVerifier(config, fetchProvider);
+      const proofs: ProofBudget = { used: 0 };
       await rememberTreasuryAddress(this.prisma, WATCH.chain, config.treasuryAddress);
       const addresses = await treasuryAddresses(this.prisma, config);
       summary.addresses = addresses;
@@ -220,16 +228,26 @@ export class DepositWatchService {
         try { await phase(); } catch (error) { if (error instanceof BudgetExceeded) summary.backlog = true; else throw error; }
       };
       try {
+        // Native proofs reserve at most half the verification budget, so a
+        // native backlog cannot starve the existing USDT proof queue.
+        if (config.nativeAsset === 'TRX') {
+          const nativeCursors = await this.prisma.depositWatchCursor.findMany({ where: { chain: WATCH.chain, contract: TRX_NATIVE_CURSOR } });
+          const last = (address: string) => nativeCursors.find(c => tronAddressHex(c.address) === tronAddressHex(address))?.lastPageAt?.getTime() ?? 0;
+          for (const address of [...addresses].sort((a, b) => last(a) - last(b))) {
+            await bounded(() => this.scanCursor(config, address, 'TRX', TRX_NATIVE_CURSOR, 6, summary, startedAt, fetchProvider, verifier, proofs));
+          }
+        }
         await bounded(async () => {
           for (const address of addresses) {
             for (const [asset, token] of Object.entries(config.tokens)) {
               const allowed = ALLOWLISTED_TOKENS.tron[asset];
               if (!allowed || tronAddressHex(token.contractAddress) !== tronAddressHex(allowed.contract) || token.decimals !== allowed.decimals) continue;
-              await this.scanCursor(config, address, asset, allowed.contract, allowed.decimals, summary, startedAt);
+              await this.scanCursor(config, address, asset, allowed.contract, allowed.decimals, summary, startedAt, fetchProvider);
             }
           }
         });
-        await bounded(() => this.verifyPending(config, verifier, summary, startedAt));
+        await bounded(() => this.verifyPending(config, verifier, summary, startedAt, proofs));
+        await bounded(() => this.notifyVerified(config, summary, startedAt));
         summary.ok = true;
       } catch (error) {
         {
@@ -261,9 +279,13 @@ export class DepositWatchService {
   }
 
   /** fetch wrapper: counts calls/bytes and enforces the per-run budget. */
-  private counted(summary: WatchRunSummary): typeof fetch {
+  private counted(summary: WatchRunSummary, intervalMs: number): typeof fetch {
+    let nextRequestAt = 0;
     return (async (input: any, init?: any) => {
       if (summary.providerCalls >= this.cfg.maxProviderCallsPerRun) throw new BudgetExceeded('provider call budget reached');
+      const waitMs = nextRequestAt - Date.now();
+      if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+      nextRequestAt = Date.now() + intervalMs;
       summary.providerCalls++;
       const res = await this.fetchFn(input, init);
       const text = await res.text();
@@ -272,7 +294,8 @@ export class DepositWatchService {
     }) as typeof fetch;
   }
 
-  private async scanCursor(config: ChainConfig, address: string, asset: string, contract: string, decimals: number, summary: WatchRunSummary, startedAt: number) {
+  private async scanCursor(config: ChainConfig, address: string, asset: string, contract: string, decimals: number, summary: WatchRunSummary, startedAt: number, fetchPage: typeof fetch, verifier?: TronDepositVerifier, proofs?: ProofBudget) {
+    const native = asset === 'TRX' && contract === TRX_NATIVE_CURSOR;
     const key = { chain_address_contract: { chain: WATCH.chain, address, contract } };
     let cursor = await this.prisma.depositWatchCursor.findUnique({ where: key });
     if (!cursor) {
@@ -282,7 +305,6 @@ export class DepositWatchService {
       }], skipDuplicates: true });
       cursor = await this.prisma.depositWatchCursor.findUniqueOrThrow({ where: key });
     }
-    const fetchPage = this.counted(summary);
     const base = config.apiUrl ?? 'https://api.trongrid.io';
     const headers: Record<string, string> = config.apiKey ? { 'TRON-PRO-API-KEY': config.apiKey } : {};
 
@@ -298,13 +320,16 @@ export class DepositWatchService {
           windowStartMs: BigInt(Math.max(0, through - this.cfg.overlapMs)), windowEndMs: BigInt(end), pageCursor: null, pagesInWindow: 0,
         } });
       }
-      const qs = new URLSearchParams({ only_to: 'true', limit: String(this.cfg.pageSize), contract_address: contract,
+      const nativeBudget = Math.max(1, Math.floor(this.cfg.maxVerificationsPerRun / 2));
+      const pageSize = native ? Math.min(this.cfg.pageSize, 5, nativeBudget) : this.cfg.pageSize;
+      const qs = new URLSearchParams({ only_to: 'true', limit: String(pageSize),
         order_by: 'block_timestamp,asc', min_timestamp: String(cursor.windowStartMs), max_timestamp: String(cursor.windowEndMs) });
+      if (native) qs.set('only_confirmed', 'true'); else qs.set('contract_address', contract);
       if (cursor.pageCursor) qs.set('fingerprint', cursor.pageCursor);
-      let body: { success?: boolean; data?: Trc20ListItem[]; meta?: { fingerprint?: string } };
+      let body: { success?: boolean; data?: any[]; meta?: { fingerprint?: string } };
       try {
         let res: Response;
-        try { res = await fetchPage(`${base}/v1/accounts/${address}/transactions/trc20?${qs}`, { headers }); }
+        try { res = await fetchPage(`${base}/v1/accounts/${address}/transactions${native ? '' : '/trc20'}?${qs}`, { headers, signal: AbortSignal.timeout(10_000) }); }
         catch (error) {
           if (error instanceof BudgetExceeded) throw error;
           throw new ProviderUnavailableError(`Failed to reach TronGrid API: ${(error as Error).message}`);
@@ -329,15 +354,39 @@ export class DepositWatchService {
       const contractHex = tronAddressHex(contract);
       const rows = new Map<string, Prisma.DepositCreateManyInput>();
       for (const item of body.data!) {
-        const txHash = String(item?.transaction_id ?? '').toLowerCase();
-        const value = String(item?.value ?? '');
+        const nativeContracts = item?.raw_data?.contract;
+        if (native && (!Array.isArray(nativeContracts) || nativeContracts.length !== 1 || nativeContracts[0]?.type !== 'TransferContract')) continue;
+        const nativeValue = native ? nativeContracts[0]?.parameter?.value : null;
+        if (native && (nativeValue?.amount === 0 || nativeValue?.amount === '0')) continue;
+        const txHash = String(native ? item?.txID : item?.transaction_id ?? '').toLowerCase();
+        const value = native ? nativeTrxSun(nativeValue?.amount) : String(item?.value ?? '');
         if (!/^[0-9a-f]{64}$/.test(txHash) || !/^\d+$/.test(value) || !Number.isSafeInteger(item?.block_timestamp)) {
           const message = 'TronGrid page contains a malformed transfer';
           await this.prisma.depositWatchCursor.update({ where: key, data: { lastError: message, lastErrorAt: new Date(this.now()) } });
           throw new ProviderUnavailableError(message);
         }
-        if (tronAddressHex(item.to) !== recipientHex) continue; // not to this address: not ours
-        if (item.token_info?.address && tronAddressHex(item.token_info.address) !== contractHex) continue;
+        if (tronAddressHex(native ? nativeValue?.to_address : item.to) !== recipientHex) continue; // not ours
+        if (!native && item.token_info?.address && tronAddressHex(item.token_info.address) !== contractHex) continue;
+        if (native) {
+          if (!verifier || !proofs) throw new Error('Native proof context missing');
+          if (proofs.used >= nativeBudget) throw new BudgetExceeded('native proof budget reached');
+          proofs.headBlock ??= await verifier.headBlock();
+          proofs.used++;
+          try {
+            const proof = await verifier.prove(txHash, 'TRX', { recipient: address, headBlock: proofs.headBlock });
+            rows.set(txHash, { chain: WATCH.chain, txHash, asset: 'TRX', status: 'PENDING', source: 'watcher', recipientAddress: address,
+              amount: proof.amount.toFixed(), confirmations: proof.confirmations, finalized: proof.finalized,
+              blockNumber: proof.blockNumber === null ? null : BigInt(proof.blockNumber), blockTimestamp: proof.blockTimestamp,
+              verifiedAt: new Date(this.now()), lastVerifyAttemptAt: new Date(this.now()) });
+            summary.verified++;
+          } catch (error) {
+            if (error instanceof BudgetExceeded || error instanceof ProviderUnavailableError) throw error;
+            if (error instanceof TransferNotFoundError) throw new ProviderUnavailableError('Indexed native transaction is not yet available from the node');
+            if (!(error instanceof DepositVerificationError)) throw error;
+            summary.flagged++; // definitive wrong asset/recipient/execution: no row or notification
+          }
+          continue;
+        }
         const listed = new BigNumber(value).shiftedBy(-decimals);
         const prior = rows.get(txHash);
         rows.set(txHash, {
@@ -366,19 +415,14 @@ export class DepositWatchService {
       summary.observed += rows.size;
       summary.newTransfers += inserted.length;
       cursor = updated;
-      // AFTER commit, fire-and-forget with bounded HTTP timeout. A notification
-      // never extends the scan lease, changes progress or makes discovery fail.
-      for (const transfer of inserted) {
-        // Promise boundary also isolates an injected notifier throwing synchronously.
-        void Promise.resolve().then(() => this.notifyTransfer(transfer))
-          .catch(() => console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'));
-      }
+      // Discovery alone is never a Telegram deposit. Only notifyVerified()
+      // may send, after authoritative proof and configured finality checks.
     }
   }
 
   /** Prove new/unfinalized TRON rows, oldest first, with one head-block read
    * per run. Finalized, proven rows are never re-checked. */
-  private async verifyPending(config: ChainConfig, verifier: TronDepositVerifier, summary: WatchRunSummary, startedAt: number) {
+  private async verifyPending(config: ChainConfig, verifier: TronDepositVerifier, summary: WatchRunSummary, startedAt: number, proofs: ProofBudget) {
     const candidates = await this.prisma.deposit.findMany({
       where: { chain: WATCH.chain, status: { not: 'CREDITED' }, batchId: null, ignoredAt: null, verifyError: null,
         OR: [{ verifiedAt: null }, { finalized: false }, { confirmations: { lt: config.minConfirmations } }] },
@@ -389,17 +433,18 @@ export class DepositWatchService {
     const due = candidates.filter((r) => {
       const waitMs = r.verifyAttempts === 0 ? 0 : Math.min(60, 2 ** (r.verifyAttempts - 1)) * 60_000;
       return !r.lastVerifyAttemptAt || now - r.lastVerifyAttemptAt.getTime() >= waitMs;
-    }).slice(0, this.cfg.maxVerificationsPerRun);
+    }).slice(0, Math.max(0, this.cfg.maxVerificationsPerRun - proofs.used));
     if (due.length === 0) return;
-    const head = await verifier.headBlock();
+    const head = proofs.headBlock ??= await verifier.headBlock();
     for (const row of due) {
       if (this.now() - startedAt > this.cfg.maxRunMs) throw new BudgetExceeded('time budget reached');
-      if (!config.tokens[row.asset]) {
+      if (!config.tokens[row.asset] && !(row.asset === 'TRX' && config.nativeAsset === 'TRX')) {
         await recordProofFailure(this.prisma, row, new DepositVerificationError(`Unsupported asset on Tron: ${row.asset}`));
         summary.flagged++;
         continue;
       }
       try {
+        proofs.used++;
         const recipient = await recipientFor(this.prisma, config, row.recipientAddress);
         const proof = await verifier.prove(row.txHash, row.asset, { recipient, headBlock: head });
         const after = await applyProof(this.prisma, row as Deposit, proof, new Date(this.now()));
@@ -410,6 +455,35 @@ export class DepositWatchService {
         if (outcome === 'provider') throw error;
         if (outcome === 'flagged') summary.flagged++;
       }
+    }
+  }
+
+  /** Existing AuditLog is the nonfinancial delivery acknowledgement journal.
+   * No schema/ledger change. Worker event IDs remain the deposit ID: a crash
+   * after Telegram but before this insert replays the SAME durable event,
+   * never a second sendMessage. Unacknowledged network outcomes remain due. */
+  private async notifyVerified(config: ChainConfig, summary: WatchRunSummary, startedAt: number) {
+    const since = new Date(this.now() - 7 * 24 * 60 * 60_000);
+    const rows = await this.prisma.$queryRaw<Deposit[]>`
+      SELECT d.* FROM "Deposit" d WHERE d.chain = ${WATCH.chain}
+        AND d.asset IN ('USDT', 'TRX') AND d.status <> 'CREDITED'
+        AND d."verifiedAt" IS NOT NULL AND d.finalized = true AND d."verifyError" IS NULL
+        AND d.confirmations >= ${config.minConfirmations} AND d."ignoredAt" IS NULL
+        AND d."createdAt" > ${since}
+        AND NOT EXISTS (SELECT 1 FROM "AuditLog" a WHERE a.id = ('deposit-notice:' || d.id))
+      ORDER BY d."createdAt", d.id LIMIT ${this.cfg.maxVerificationsPerRun}`;
+    for (const row of rows) {
+      if (this.now() - startedAt > this.cfg.maxRunMs) throw new BudgetExceeded('notification time budget reached');
+      try {
+        // Recheck the row's recorded recipient against approved current/past
+        // treasuries; a public copy-event or catalogue entry grants no trust.
+        await recipientFor(this.prisma, config, row.recipientAddress);
+        const status = await this.notifyTransfer({ ...row, requiredConfirmations: config.minConfirmations });
+        if (!status) continue;
+        await this.prisma.auditLog.upsert({ where: { id: `deposit-notice:${row.id}` }, update: {},
+          create: { id: `deposit-notice:${row.id}`, userId: null, action: 'DEPOSIT_NOTIFICATION_DELIVERY',
+            metadata: { depositId: row.id, asset: row.asset, chain: row.chain, deliveryStatus: status } } });
+      } catch { console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'); }
     }
   }
 }

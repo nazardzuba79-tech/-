@@ -1,5 +1,44 @@
 # AI Handoff Log
 
+## 2026-11-08 — Codex — #693 / #695 code-only integration follow-up
+- Starting HEAD `0ab4c0fcdc95bcd2a6225a924acb399efdc1bef5`; owner authorizes
+  only #695 merge after successful checks, with no production redeployment.
+- Two failures reproduced on unchanged main: a4c63e4f added 13 review-only
+  withdrawal API lines absent from the test normalizer. Its predecessor gives
+  the exact original protected hash. Add finite exact test exceptions and
+  negative mutations; retain the original pin and all other financial guards.
+- Material file: `frontend/src/lib/__tests__/futuresTickerHeader.test.ts`.
+  Runtime, frontend implementation and Claude's trading/Wallet work preserved.
+  Local focused suite 41/41 PASS. Exact final HEAD/merge CI receipts follow
+  in #695; evidence/reproduction is in `docs/qa/deposit693/INTEGRATION.md`.
+- Production read-only precheck: API 0ab4c0fc / 46b20611 healthy, same start
+  time/config/bootstrap; notification Worker f01f8fe1 / version 24043dd8 and
+  Pages 5f4615ba unchanged. No production data, flags, scans or deploy changed.
+
+## 2026-11-08 — Codex — #693 native TRX proof and asset-correct Telegram
+- This commit: branch `work/693-trx-native-proof`, fresh main `6260ae77`.
+- Four API modules + existing notification Worker; TransferContract proof,
+  persisted bounded native cursors, finality-gated messages, durable event-ID
+  retry/ack journal. Copy explicitly says it is NOT a deposit. Existing manual
+  credit, thresholds, addresses, balances and #691 order access are preserved.
+- Local PostgreSQL 18.6 native fault/restart and legacy package QA PASS;
+  admin native TRX/USDT and legacy browser at 1440/390 PASS; Worker 34 tests
+  including real workerd/SQLite restart PASS. Exact-head CI/release identities
+  are recorded after push/deployment; not claimed by this pre-release entry.
+- Real incident chain proof: 1684.353669 TRX at 2026-11-07 19:54 UTC, same
+  unchanged catalogue USDT/TRON recipient; owner attribution NOT_VERIFIED.
+  No credit/attribution performed. Full transaction evidence is protected on
+  the server; public notes omit account IDs, wallet address and credentials.
+- Production preparation found that recipient missing from approved treasury
+  history and watcher OFF. Reconcile only the owner's confirmed exact address;
+  do not grant trust from arbitrary catalogue/copy data. Release gates and
+  component rollback are in `docs/qa/deposit693/RELEASE.md`. No merge requested.
+- Follow-up: initial bounded live scan hit anonymous TronGrid HTTP 429, safely
+  without observations/notifications. Share paced anonymous-provider reads
+  across account pages and proof/head calls, preserve limits/backoff, test fake
+  time and repeat isolated PG. First-head CI 7/8; two unchanged main frontend
+  hash-pin failures are recorded in the release document, never disabled.
+
 ## 2026-10-30 — Codex — #644 isolated server demo-copy vertical slice
 - Commit: this handoff commit; branch `feature/copy-demo644-20261030`, stacked on repaired #645 `f3755365` / #643 `74140acd`. No merge/deploy, production migration, live account creation or credit. #645 now has 8/8 exact-head workflow SUCCESS; #643 9/9.
 - Reused DemoTradingService/SpotBookTransaction and existing DemoBalance/Order/Trade. Additive metadata migration, transaction-coupled outbox and fill provenance, server subscriptions, limits, deterministic retry, cancel/stop recovery, actual-fill PnL, strict own-session API and separate seven-language flagged review page. Runtime only enables for explicit test flags and loopback `copy_demo_...` PostgreSQL, never production.

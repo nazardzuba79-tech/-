@@ -94,6 +94,9 @@ function tronFixture() {
     if (state.rateLimited) return res.set('Retry-After', '120').status(429).json({ error: 'rate limited' });
     next();
   });
+  // This legacy fixture contains only TRC-20 transfers. Native + mixed-asset
+  // proof/notification/cursor coverage lives in qa-trx693.cjs.
+  app.get('/v1/accounts/:address/transactions', (_req, res) => res.json({ success: true, data: [], meta: {} }));
   app.get('/v1/accounts/:address/transactions/trc20', (req, res) => {
     if (state.malformedList) return res.json({ success: true, data: [{ transaction_id: 'not-a-hash', to: req.params.address, value: '1', block_timestamp: 1 }] });
     const q = req.query; const limit = Number(q.limit ?? 20);
@@ -166,8 +169,8 @@ async function main() {
     const { TreasuryWalletService } = require('../dist/services/TreasuryWalletService');
 
     const treasury = new TreasuryWalletService(prisma);
-    const resolveChain = (c) => treasury.resolve(c);
-    const limits = { pageSize: 10, maxPagesPerRun: 3, initialBackfillMs: 2 * 60 * 60_000, maxWindowMs: 24 * 60 * 60_000 };
+    const resolveChain = async (c) => ({ ...await treasury.resolve(c), nativeAsset: 'LEGACY_USDT_FIXTURE_ONLY' });
+    const limits = { pageSize: 10, maxPagesPerRun: 3, initialBackfillMs: 2 * 60 * 60_000, maxWindowMs: 24 * 60 * 60_000, anonymousRequestIntervalMs: 0 }; // local provider only; pacing has its own fake-time regression
     // Synthetic notifications only: no production Worker or Telegram network.
     const notificationIds = [];
     const notificationTasks = [];
@@ -176,9 +179,12 @@ async function main() {
     const notifyFixture = (transfer) => {
       if (notificationOutage) return Promise.reject(new Error('synthetic notification failure'));
       const task = (async () => {
-      const stored = await database.db.query('SELECT id FROM "Deposit" WHERE id=$1', [transfer.id]);
-      assert.equal(stored.rowCount, 1, 'notification only after committed discovery');
+      const stored = await database.db.query('SELECT id, "verifiedAt", finalized, confirmations FROM "Deposit" WHERE id=$1', [transfer.id]);
+      assert.equal(stored.rowCount, 1, 'notification only after committed proof');
+      assert.ok(stored.rows[0].verifiedAt); assert.equal(stored.rows[0].finalized, true);
+      assert.ok(stored.rows[0].confirmations >= transfer.requiredConfirmations);
       notificationIds.push(transfer.id);
+      return 'SENT';
       })().catch(error => notificationErrors.push(error));
       notificationTasks.push(task);
       return task;
@@ -607,7 +613,7 @@ async function main() {
       const day0 = localTime(clock.t + 2 * 86_400_000, TZ).day;
       const day1 = localTime(instantOf(day0, 12 * 60, TZ) + 86_400_000, TZ).day;
       const at = (day, h, m = 0) => { clock.t = instantOf(day, h * 60 + m, TZ); };
-      const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, {}, notifyFixture);
+      const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, { anonymousRequestIntervalMs: 0 }, notifyFixture);
       await prodWatch.setEnabled(true, ADMIN);
       const measure = async (fn) => {
         const c = fixture.state.calls.length, q = sqlLog.length, t = Date.now(), batches = await prisma.depositBatch.count();
@@ -710,7 +716,8 @@ async function main() {
     await test('Notifications: real publisher performs zero Prisma queries; delivery outage cannot roll back discovery', async () => {
       const { notifyDeposit } = require('../dist/services/TelegramNotifications');
       const before = sqlLog.length; let sends = 0;
-      await notifyDeposit({ id: 'synthetic-only', amount: new BigNumber(15), createdAt: new Date() }, async () => {
+      await notifyDeposit({ id: 'synthetic-only', amount: new BigNumber(15), createdAt: new Date(), asset: 'USDT', chain: 'tron',
+        txHash: hash(99000), verifiedAt: new Date(), finalized: true, confirmations: 19, requiredConfirmations: 19 }, async () => {
         sends++; return Response.json({ status: 'SENT' });
       });
       assert.equal(sends, 1); assert.equal(sqlLog.length, before, 'notification adds zero Neon reads/writes');
@@ -869,4 +876,5 @@ async function browserQa(ctx) {
   } finally { await browser.close(); await new Promise((r) => server.close(r)); }
 }
 
-main().catch((error) => { console.error(error); process.exitCode = 1; });
+module.exports = { startDatabase };
+if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });
