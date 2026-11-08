@@ -234,6 +234,7 @@ export const RU = {
   'nav.settings': 'Настройки',
   'nav.profile': 'Профиль',
   'nav.otc': 'OTC',
+  'nav.exchangers': 'Обменники',
   'nav.admin': 'Админка',
   'nav.analytics': 'Аналитика',
   'analytics.title': 'Аналитика',

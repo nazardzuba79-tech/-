@@ -231,6 +231,7 @@ export const JA: Record<Key, string> = {
   'nav.settings': '設定',
   'nav.profile': 'プロフィール',
   'nav.otc': 'OTC',
+  'nav.exchangers': '両替所',
   'nav.admin': '管理',
   'nav.analytics': '分析',
   'analytics.title': '分析',

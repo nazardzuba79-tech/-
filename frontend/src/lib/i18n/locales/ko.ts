@@ -231,6 +231,7 @@ export const KO: Record<Key, string> = {
   'nav.settings': '설정',
   'nav.profile': '프로필',
   'nav.otc': 'OTC',
+  'nav.exchangers': '환전소',
   'nav.admin': '관리자',
   'nav.analytics': '애널리틱스',
   'analytics.title': '애널리틱스',

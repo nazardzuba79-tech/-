@@ -36,6 +36,13 @@ export const LEGACY_HELP: Readonly<Record<string, string>> = {
   '/help/rules': '/academy/knowledge',
 };
 export const LEGAL_DOCS = ['terms', 'privacy', 'risk', 'about', 'support'] as const;
+/** Public tool pages that are their own canonical (Issue #694: «Обменники»). */
+export const PUBLIC_TOOL_PAGES = ['/exchangers'] as const;
+/** Title and description of /exchangers: the static head (pages.ts) and the page itself (usePageMeta) share them. */
+export const EXCHANGERS_META = {
+  title: 'Обменники — купить криптовалюту за рубли | VOLTEX',
+  description: 'Сравните курсы, резервы и лимиты обменников по данным BestChange и перейдите на сайт выбранного обменника. VOLTEX не принимает рубли и не проводит обмен.',
+} as const;
 
 export const ROBOTS_PRIVATE = 'noindex, nofollow';
 export const ROBOTS_UNLISTED = 'noindex, follow';
@@ -64,6 +71,7 @@ export function canonicalFor(pathname: string): string | null {
   if (LEGACY_HELP[path]) return SITE_ORIGIN + LEGACY_HELP[path];
   if (path.startsWith('/help/')) return SITE_ORIGIN + (path === '/help/status' ? path : '/academy/faq');
   if (within(path, '/academy')) return SITE_ORIGIN + path;
+  if ((PUBLIC_TOOL_PAGES as readonly string[]).includes(path)) return SITE_ORIGIN + path;
   const legal = /^\/legal\/([a-z-]+)$/.exec(path);
   if (legal && (LEGAL_DOCS as readonly string[]).includes(legal[1])) return SITE_ORIGIN + path;
   return null;

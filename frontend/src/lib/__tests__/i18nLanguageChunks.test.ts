@@ -442,7 +442,10 @@ describe('translation integrity', () => {
           // Wallet Funding (2026-10-31, Issue #85): the separate simulation Spot scope's title, its
           // USDT note and the account selector's label were hard-coded Russian/English; now in every
           // language. `git diff --numstat` over the locales reports `3 0` per language, additions only.
-          'wallet.vtaSpotTitle', 'wallet.vtaUsdtShared', 'wallet.accountSelect'];
+          'wallet.vtaSpotTitle', 'wallet.vtaUsdtShared', 'wallet.accountSelect',
+          // «Обменники» header link (2026-11-08, Issue #694): one new navigation label per language.
+          // `git diff --numstat` over the locales reports `1 0` per language, additions only.
+          'nav.exchangers'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

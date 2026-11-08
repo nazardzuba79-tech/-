@@ -231,6 +231,7 @@ export const HI: Record<Key, string> = {
   'nav.settings': 'सेटिंग्स',
   'nav.profile': 'प्रोफ़ाइल',
   'nav.otc': 'OTC',
+  'nav.exchangers': 'एक्सचेंजर',
   'nav.admin': 'एडमिन',
   'nav.analytics': 'एनालिटिक्स',
   'analytics.title': 'एनालिटिक्स',

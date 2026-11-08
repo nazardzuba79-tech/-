@@ -1,0 +1,114 @@
+name: Exchangers (BestChange, #694)
+# Read-only «Обменники» comparison: shared contract, BestChange client/service,
+# the public /api/v1/exchangers router and the /exchangers page. Every upstream
+# call in these tests goes to an injected fake fetch with an obviously fake key;
+# no BestChange key or network access is used here.
+on:
+  pull_request:
+    paths:
+      - 'src/shared/exchangers/**'
+      - 'src/services/exchangers/**'
+      - 'src/api/routes/exchangers.ts'
+      - 'src/api/routes/__tests__/exchangers*'
+      - 'src/index.ts'
+      - 'frontend/src/pages/exchangers/**'
+      - 'frontend/src/lib/exchangers*'
+      - 'frontend/src/lib/exchangers/**'
+      - 'frontend/src/lib/__tests__/exchangers*'
+      - 'frontend/src/App.tsx'
+      - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/pages/home/HomeHeader.tsx'
+      - 'frontend/src/lib/seo/**'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'scripts/qa-exchangers.cjs'
+      - '.github/workflows/exchangers.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+  push:
+    paths:
+      - 'src/shared/exchangers/**'
+      - 'src/services/exchangers/**'
+      - 'src/api/routes/exchangers.ts'
+      - 'src/api/routes/__tests__/exchangers*'
+      - 'src/index.ts'
+      - 'frontend/src/pages/exchangers/**'
+      - 'frontend/src/lib/exchangers*'
+      - 'frontend/src/lib/exchangers/**'
+      - 'frontend/src/lib/__tests__/exchangers*'
+      - 'frontend/src/App.tsx'
+      - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/pages/home/HomeHeader.tsx'
+      - 'frontend/src/lib/seo/**'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'scripts/qa-exchangers.cjs'
+      - '.github/workflows/exchangers.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: exchangers-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  exchangers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record tested commit and parents
+        run: git show -s --format='%H %P'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript
+        run: npx tsc --noEmit -p tsconfig.json
+      - name: Shared contract, BestChange client/parsers/service and the public router
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/shared/exchangers/__tests__/types.test.ts
+          src/shared/exchangers/__tests__/catalog.test.ts
+          src/shared/exchangers/__tests__/amount.test.ts
+          src/shared/exchangers/__tests__/links.test.ts
+          src/shared/exchangers/__tests__/normalize.test.ts
+          src/services/exchangers/__tests__/BestChangeClient.test.ts
+          src/services/exchangers/__tests__/parse.test.ts
+          src/services/exchangers/__tests__/BestChangeService.test.ts
+          src/api/routes/__tests__/exchangers.test.ts
+      - name: Route audit and src/index.ts wiring guards
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/api/routes/__tests__/asyncRouteAudit.test.ts
+          src/__tests__/serverIdleWakeWiring.test.ts
+          src/services/copyTrading/__tests__/CopyPerformanceIsolation.test.ts
+          src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts
+          src/services/analytics/__tests__/AnalyticsSeparation.test.ts
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Frontend exchangers tests
+        run: |
+          mapfile -t files < <(git ls-files \
+            ':(glob)frontend/src/pages/exchangers/**/*.test.ts' ':(glob)frontend/src/pages/exchangers/**/*.test.tsx' \
+            ':(glob)frontend/src/lib/__tests__/exchangers*.test.ts' ':(glob)frontend/src/lib/__tests__/exchangers*.test.tsx' \
+            ':(glob)frontend/src/lib/exchangers/**/*.test.ts' ':(glob)frontend/src/lib/exchangers/**/*.test.tsx')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No frontend exchangers tests found; the /exchangers page must ship with tests." >&2
+            exit 1
+          fi
+          printf '%s\n' "${files[@]}"
+          # Router + service bodies through the page validators (end-to-end contract).
+          npx jest --runInBand --runTestsByPath "${files[@]}" src/api/routes/__tests__/exchangersContract.test.ts
+      - name: Frontend production build
+        run: cd frontend && npm run build
+        env:
+          VITE_API_URL: /api/v1

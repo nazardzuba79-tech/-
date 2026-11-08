@@ -231,6 +231,7 @@ export const EN: Record<Key, string> = {
   'nav.settings': 'Settings',
   'nav.profile': 'Profile',
   'nav.otc': 'OTC',
+  'nav.exchangers': 'Exchangers',
   'nav.admin': 'Admin',
   'nav.analytics': 'Analytics',
   'analytics.title': 'Analytics',
