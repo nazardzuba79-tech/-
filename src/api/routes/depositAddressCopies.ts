@@ -60,6 +60,7 @@ type CopyEvent = z.infer<typeof eventSchema>;
 function destinationProblem(event: CopyEvent): string | null {
   const rail = DEPOSIT_RAILS.find(r => r.asset === event.asset && r.networkId === event.network);
   const legacy = KNOWN_CHAINS.includes(event.network);
+  if (event.network === 'tron' && !rail) return 'Unknown TRON asset/network';
   if (!rail && !legacy) return 'Unknown asset/network';
   // The catalogue dialog names a rail (`tether:tron`), the treasury one a chain.
   const destinations = rail ? [railKey(rail), event.network] : [event.network];

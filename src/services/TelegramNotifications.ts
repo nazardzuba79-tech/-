@@ -26,14 +26,24 @@ export interface DiscoveredTransfer {
   id: string;
   amount: { toString(): string };
   createdAt: Date;
+  asset: string;
+  chain: string;
+  txHash: string;
+  confirmations: number;
+  requiredConfirmations: number;
+  finalized: boolean;
+  verifiedAt: Date | null;
+  verifyError?: string | null;
 }
+
+export type DepositDeliveryStatus = 'SENT' | 'FAILED' | 'UNKNOWN' | 'ATTEMPTED';
 
 // Both server event types use the existing pinned key. Keep the derivation's
 // historical deposit-event-signing label so deployments need no key rotation.
-async function sendSignedEvent(path: string, event: () => object, fetchImpl: typeof fetch): Promise<void> {
+async function sendSignedEvent(path: string, event: () => object, fetchImpl: typeof fetch, receipt = false): Promise<DepositDeliveryStatus | null> {
   try {
     const key = signingKey();
-    if (!key) { console.warn('[notifications]', 'NOT_CONFIGURED'); return; }
+    if (!key) { console.warn('[notifications]', 'NOT_CONFIGURED'); return null; }
     const timestamp = String(Date.now());
     const body = JSON.stringify(event());
     const signature = sign(null, Buffer.from(`${DOMAIN}\n${timestamp}\n${path}\n${body}`), key).toString('base64url');
@@ -43,16 +53,32 @@ async function sendSignedEvent(path: string, event: () => object, fetchImpl: typ
     });
     // Do not print response bodies, URLs, transfer details or exception messages.
     if (!response.ok) console.warn('[notifications]', 'DELIVERY_UNAVAILABLE');
+    if (receipt) {
+      const result = await response.json() as { status?: string; deliveryStatus?: string } | null;
+      const status = result?.status === 'DUPLICATE' ? result.deliveryStatus : result?.status;
+      if (typeof status === 'string' && ['SENT', 'FAILED', 'UNKNOWN', 'ATTEMPTED'].includes(status)
+        && (response.ok || response.status === 502)) return status as DepositDeliveryStatus;
+      return null;
+    }
     await response.body?.cancel();
+    return null;
   } catch { console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'); }
+  return null;
 }
 
-export function notifyDeposit(transfer: DiscoveredTransfer, fetchImpl: typeof fetch = fetch): Promise<void> {
+export function notifyDeposit(transfer: DiscoveredTransfer, fetchImpl: typeof fetch = fetch): Promise<DepositDeliveryStatus | null> {
+  if (transfer.chain !== 'tron' || !['TRX', 'USDT'].includes(transfer.asset)
+    || !transfer.verifiedAt || transfer.verifyError || !transfer.finalized
+    || !Number.isSafeInteger(transfer.requiredConfirmations) || transfer.requiredConfirmations < 1
+    || !Number.isSafeInteger(transfer.confirmations) || transfer.confirmations < transfer.requiredConfirmations
+    || !/^[a-f0-9]{64}$/i.test(transfer.txHash)) return Promise.resolve(null);
   return sendSignedEvent('/v1/deposit', () => ({
     eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(),
-    amount: transfer.amount.toString(), asset: 'USDT', network: 'TRC20',
+    amount: transfer.amount.toString(), asset: transfer.asset, network: transfer.asset === 'TRX' ? 'TRON_NATIVE' : 'TRC20',
+    txHash: transfer.txHash.toLowerCase(), confirmations: transfer.confirmations,
+    requiredConfirmations: transfer.requiredConfirmations, finalized: true, proofStatus: 'VERIFIED',
     // Discovery has no owner or accumulation aggregate. Do not query or invent them.
-  }), fetchImpl);
+  }), fetchImpl, true);
 }
 
 export interface RegisteredUser {
@@ -89,5 +115,5 @@ export function notifyDepositAddressCopied(copy: CopiedAddressNotice, fetchImpl:
   return sendSignedEvent('/v1/copy', () => ({
     eventId: copy.id, eventType: 'DEPOSIT_ADDRESS_COPIED', timestamp: copy.receivedAt.getTime(),
     asset: copy.asset, network: copy.network, networkLabel: copy.networkLabel, email: copy.email,
-  }), fetchImpl);
+  }), fetchImpl).then(() => undefined);
 }

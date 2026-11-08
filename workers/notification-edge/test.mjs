@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs';
 import { acceptEvent, Delivery, handle, kyivTime, message, RETENTION_MS, validEvent } from './src/core.js';
 
 const now = Date.now();
-const event = (extra = {}) => ({ eventId: 'synthetic-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: now, amount: '15', asset: 'USDT', network: 'TRC20', ...extra });
+const event = (extra = {}) => ({ eventId: 'synthetic-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: now, amount: '15', asset: 'USDT', network: 'TRC20',
+  txHash: 'ab'.repeat(32), confirmations: 19, requiredConfirmations: 19, finalized: true, proofStatus: 'VERIFIED', ...extra });
 const env = { TELEGRAM_BOT_TOKEN: 'synthetic-only', TELEGRAM_CHAT_ID: 'synthetic-only' };
 function storage() {
   let record; let alarm; let lock = Promise.resolve();
@@ -17,11 +18,13 @@ function storage() {
   }; return s;
 }
 const req = e => new Request('https://internal/event', { method: 'POST', body: JSON.stringify(e) });
-test('15 USDT and KYC text, optional known accumulation, no invented identity', () => {
-  assert.match(message(event()), /Сумма: 15 USDT\nСеть: TRC20\nСтатус: Непривязанный/);
-  assert.doesNotMatch(message(event()), /Email|Накоплено/);
-  assert.match(message(event({ accumulated: '115', remaining: '185' })), /Накоплено: 115 USDT\nОсталось до минимума: 185 USDT/);
-  assert.match(message(event({ amount: '300' })), /Готов к проверке/);
+test('verified USDT discovery is distinct from copy, credit and USD package valuation', () => {
+  assert.match(message(event()), /Нове надходження: 15 USDT/);
+  assert.match(message(event()), /Мережа: TRON \(TRC-20\)/);
+  assert.match(message(event()), /TXID: ab/);
+  assert.match(message(event()), /Підтвердження: 19/);
+  assert.match(message(event()), /очікує ручної перевірки/);
+  assert.doesNotMatch(message(event()), /Email|Накоплено|зараховано|Готов к проверке|TRX/);
   assert.match(message(event({ eventType: 'KYC_SUBMITTED', email: 'synthetic@example.test' })), /Новая KYC заявка/);
 });
 test('concurrent duplicates and restart make ONE Telegram call; storage has exactly four fields', async () => {
@@ -155,12 +158,12 @@ const copy = (extra = {}) => ({ eventId: 'synthetic-copy', eventType: 'DEPOSIT_A
   timestamp: now, asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', ...extra });
 test('legacy copy notification without email remains compatible; no timestamp, address or amount', () => {
   const text = message(copy());
-  assert.equal(text, 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)');
+  assert.equal(text, '📋 Скопійовано депозитну адресу — це НЕ поповнення\n\nОбраний актив: USDT\nМережа: TRON (TRC-20)');
   for (const hidden of ['Email:', 'Дата', 'Час', 'Адреса:', 'Сума:', 'synthetic-copy']) assert.ok(!text.includes(hidden));
 });
 test('copy notification includes valid account email and rejects malformed email and unapproved fields', async () => {
   assert.equal(validEvent(copy({ email: 'copier@example.invalid' }), 'DEPOSIT_ADDRESS_COPIED', now), true);
-  assert.equal(message(copy({ email: 'copier@example.invalid' })), 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)\nEmail: copier@example.invalid');
+  assert.equal(message(copy({ email: 'copier@example.invalid' })), '📋 Скопійовано депозитну адресу — це НЕ поповнення\n\nОбраний актив: USDT\nМережа: TRON (TRC-20)\nEmail: copier@example.invalid');
   for (const extra of [{ email: 'not-an-email' }, { email: 'copier@example.invalid\nINJECTED' }, { email: '' }, { email: null }, { address: 'secret' }, { userId: 'secret' },
     { amount: '1000' }, { timestamp: now - RETENTION_MS }, { asset: 'bad' }, { network: '../tron' },
     { networkLabel: 'TRON\\nINJECTED' }]) {
@@ -189,7 +192,7 @@ test('copy notification includes valid account email and rejects malformed email
 });
 test('duplicate signed copy notification makes at most one Telegram call', async () => {
   const s = storage(); let count = 0;
-  const send = async (_, init) => { count++; assert.match(JSON.parse(init.body).text, /Монета: USDT/);
+  const send = async (_, init) => { count++; assert.match(JSON.parse(init.body).text, /Обраний актив: USDT/);
     return Response.json({ ok: true, result: { message_id: 10 } }); };
   const d = new Delivery({ storage: s }, env, send, () => now);
   const responses = await Promise.all(Array.from({ length: 10 }, () => d.fetch(req(copy({ email: 'copier@example.invalid' }))).then(r => r.json())));

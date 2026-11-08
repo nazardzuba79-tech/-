@@ -1,7 +1,8 @@
 import { createPublicKey, verify } from 'crypto';
 import { notificationPublicKey, notifyDeposit, notifyUserRegistered, notifyDepositAddressCopied } from '../TelegramNotifications';
 
-const transfer = { id: 'synthetic-deposit', amount: { toString: () => '15' }, createdAt: new Date() };
+const transfer = { id: 'synthetic-deposit', amount: { toString: () => '15' }, createdAt: new Date(),
+  asset: 'USDT', chain: 'tron', txHash: 'ab'.repeat(32), confirmations: 19, requiredConfirmations: 19, finalized: true, verifiedAt: new Date() };
 const original = process.env.JWT_SECRET;
 beforeEach(() => { process.env.JWT_SECRET = 'synthetic-notification-key-not-production-123'; });
 afterEach(() => { if (original === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = original; jest.restoreAllMocks(); });
@@ -12,7 +13,8 @@ test('one signed call from existing transfer; no DB dependency, no user lookup, 
     const headers = init.headers;
     const key = createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: notificationPublicKey()! }, format: 'jwk' });
     expect(verify(null, Buffer.from(`voltex-notifications-v1\n${headers['x-voltex-timestamp']}\n/v1/deposit\n${init.body}`), key, Buffer.from(headers['x-voltex-signature'], 'base64url'))).toBe(true);
-    expect(JSON.parse(init.body)).toEqual({ eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(), amount: '15', asset: 'USDT', network: 'TRC20' });
+    expect(JSON.parse(init.body)).toEqual({ eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(), amount: '15', asset: 'USDT', network: 'TRC20',
+      txHash: transfer.txHash, confirmations: 19, requiredConfirmations: 19, finalized: true, proofStatus: 'VERIFIED' });
     return Response.json({ status: 'SENT' });
   });
   await notifyDeposit(transfer, mock as typeof fetch);
@@ -21,8 +23,22 @@ test('one signed call from existing transfer; no DB dependency, no user lookup, 
 test.each(['timeout', 'http'])('%s never rejects or retries; logs contain no payload/secret', async mode => {
   const log = jest.spyOn(console, 'warn').mockImplementation(() => {});
   const mock = jest.fn(async () => { if (mode === 'timeout') throw new Error('secret-token private@email.test'); return new Response('secret-token', { status: 503 }); });
-  await expect(notifyDeposit(transfer, mock)).resolves.toBeUndefined();
+  await expect(notifyDeposit(transfer, mock)).resolves.toBeNull();
   expect(mock).toHaveBeenCalledTimes(1); expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret-token|private@|synthetic-deposit/);
+});
+
+test('native proof sends TRX / native network with its real transaction facts', async () => {
+  const mock = jest.fn(async () => Response.json({ status: 'SENT' }));
+  await expect(notifyDeposit({ ...transfer, asset: 'TRX' }, mock)).resolves.toBe('SENT');
+  expect(JSON.parse((mock.mock.calls[0] as any)[1].body)).toMatchObject({ asset: 'TRX', network: 'TRON_NATIVE', txHash: transfer.txHash, confirmations: 19 });
+});
+test.each([{ verifiedAt: null }, { finalized: false }, { confirmations: 18 }, { verifyError: 'wrong recipient' }, { txHash: 'spoofed' }, { asset: 'BTC' }])('unverified discovery %j never sends', async patch => {
+  const mock = jest.fn();await expect(notifyDeposit({ ...transfer, ...patch }, mock)).resolves.toBeNull();expect(mock).not.toHaveBeenCalled();
+});
+test('durable duplicate acknowledges the original outcome without a new event identity', async () => {
+  const mock = jest.fn(async () => Response.json({ status: 'DUPLICATE', deliveryStatus: 'SENT' }));
+  await expect(notifyDeposit(transfer, mock)).resolves.toBe('SENT');
+  expect(JSON.parse((mock.mock.calls[0] as any)[1].body).eventId).toBe(transfer.id);
 });
 test('missing configuration cannot send, no timer or polling starts on import', async () => {
   delete process.env.JWT_SECRET;

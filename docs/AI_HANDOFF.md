@@ -1,5 +1,24 @@
 # AI Handoff Log
 
+## 2026-11-08 — Codex — #693 native TRX proof and asset-correct Telegram
+- This commit: branch `work/693-trx-native-proof`, fresh main `6260ae77`.
+- Four API modules + existing notification Worker; TransferContract proof,
+  persisted bounded native cursors, finality-gated messages, durable event-ID
+  retry/ack journal. Copy explicitly says it is NOT a deposit. Existing manual
+  credit, thresholds, addresses, balances and #691 order access are preserved.
+- Local PostgreSQL 18.6 native fault/restart and legacy package QA PASS;
+  admin native TRX/USDT and legacy browser at 1440/390 PASS; Worker 34 tests
+  including real workerd/SQLite restart PASS. Exact-head CI/release identities
+  are recorded after push/deployment; not claimed by this pre-release entry.
+- Real incident chain proof: 1684.353669 TRX at 2026-11-07 19:54 UTC, same
+  unchanged catalogue USDT/TRON recipient; owner attribution NOT_VERIFIED.
+  No credit/attribution performed. Full transaction evidence is protected on
+  the server; public notes omit account IDs, wallet address and credentials.
+- Production preparation found that recipient missing from approved treasury
+  history and watcher OFF. Reconcile only the owner's confirmed exact address;
+  do not grant trust from arbitrary catalogue/copy data. Release gates and
+  component rollback are in `docs/qa/deposit693/RELEASE.md`. No merge requested.
+
 ## 2026-10-30 — Codex — #644 isolated server demo-copy vertical slice
 - Commit: this handoff commit; branch `feature/copy-demo644-20261030`, stacked on repaired #645 `f3755365` / #643 `74140acd`. No merge/deploy, production migration, live account creation or credit. #645 now has 8/8 exact-head workflow SUCCESS; #643 9/9.
 - Reused DemoTradingService/SpotBookTransaction and existing DemoBalance/Order/Trade. Additive metadata migration, transaction-coupled outbox and fill provenance, server subscriptions, limits, deterministic retry, cancel/stop recovery, actual-fill PnL, strict own-session API and separate seven-language flagged review page. Runtime only enables for explicit test flags and loopback `copy_demo_...` PostgreSQL, never production.
