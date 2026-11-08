@@ -37,6 +37,21 @@ beforeEach(()=>{
 });
 afterEach(async()=>{await act(async()=>root.unmount());dom.window.close();jest.useRealTimers();});
 test('exact preview preserves all 18 decimals beyond Number precision',()=>{const {adjustmentPreview}=load(resolve(frontend,'src/lib/adminBalanceApi.ts'));expect(adjustmentPreview(profile.balances[0].available,'0.000000000000000002')).toBe('9007199254740993.000000000000000003');expect(adjustmentPreview('10','-3.25')).toBe('6.75');expect(adjustmentPreview('1','NaN')).toBeNull();expect(adjustmentPreview('1','1e3')).toBeNull();});
+test.each(['TRC', 'trc', ' TRC '])('TRON network abbreviation %s never reaches confirmation or the API', async asset => {
+  await render(); await input(0, asset); await input(1, '1684'); await input(2, 'Native TRON deposit');
+  await click(/^Проверить корректировку$/);
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Для нативного TRON выберите TRX');
+  expect(host.querySelector('form')).not.toBeNull(); expect(post).not.toHaveBeenCalled();
+});
+test('native TRX is selectable and distinct from USDT; exact asset is confirmed', async () => {
+  await render();
+  expect(host.querySelector('datalist option[value="TRX"]')?.textContent).toBe('TRON (Native)');
+  expect(host.querySelector('datalist option[value="USDT"]')).not.toBeNull();
+  expect(host.querySelector('datalist option[value="TRC"]')).toBeNull();
+  await input(0, 'TRX'); await input(1, '1684'); await input(2, 'Native TRON deposit');
+  await click(/^Проверить корректировку$/); expect(host.textContent).toContain('TRX · Спот');
+  expect(post).not.toHaveBeenCalled();
+});
 test.each([
   ['0.000000000000000002', '9007199254740993.000000000000000003'],
   ['-1', '9007199254740992.000000000000000001'],

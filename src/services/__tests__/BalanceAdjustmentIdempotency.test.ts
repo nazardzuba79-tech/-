@@ -1,4 +1,11 @@
 import { BalanceAdjustmentService, BalanceAdjustmentConflict, BalanceAdjustmentError } from '../BalanceAdjustmentService';
+
+test.each(['TRC', 'trc', ' TRC '])('idempotent credit rejects ambiguous ticker %s before any DB write', async asset => {
+  const prisma = { $transaction: jest.fn() } as any;
+  const service = new BalanceAdjustmentService(prisma);
+  await expect(service.adjustOnce({ userId: 'user-1', performedByAdminId: 'admin-1', asset, amount: '1684', reason: 'Native TRON deposit', idempotencyKey: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow('For native TRON use TRX');
+  expect(prisma.$transaction).not.toHaveBeenCalled();
+});
 import { walletDelegate } from '../../test-utils/walletDelegate';
 
 const KEY = '7f30c36e-3c3c-4c21-8d59-d3b53895b39f';

@@ -13,6 +13,19 @@ function makePrisma(opts: { balance?: { available: string; locked: string } | nu
 }
 
 describe('BalanceAdjustmentService', () => {
+  it.each(['TRC', 'trc', ' TRC '])('rejects ambiguous %s before opening a financial transaction', async asset => {
+    const prisma = makePrisma({ balance: null });
+    await expect(new BalanceAdjustmentService(prisma).adjust({ userId: 'u1', asset, amount: '1684', reason: 'Native TRON deposit', performedByAdminId: 'admin-1' })).rejects.toThrow('For native TRON use TRX');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('preserves the exact native TRX ticker and quantity', async () => {
+    const prisma = makePrisma({ balance: null });
+    const result = await new BalanceAdjustmentService(prisma).adjust({ userId: 'u1', asset: 'TRX', amount: '1684', reason: 'Native TRON deposit', performedByAdminId: 'admin-1' });
+    expect(result).toMatchObject({ asset: 'TRX', available: '1684' });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ metadata: expect.objectContaining({ asset: 'TRX', delta: '1684' }) }) }));
+  });
   it('credits available and logs the delta, reason, and acting admin', async () => {
     const prisma = makePrisma({ balance: { available: '100', locked: '0' } });
     const service = new BalanceAdjustmentService(prisma);

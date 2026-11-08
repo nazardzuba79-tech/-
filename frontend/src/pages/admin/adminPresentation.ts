@@ -28,7 +28,7 @@ export const ADMIN_ACTIONS: Record<string, string> = {
   KYC_MATERIALS_VIEWED: 'Начата повторная проверка KYC',
   WITHDRAWAL_APPROVED: 'Вывод одобрен', WITHDRAWAL_SENT: 'Вывод отмечен отправленным', WITHDRAWAL_REJECTED: 'Вывод отклонён',
   TREASURY_WALLET_UPDATED: 'Адрес пополнения изменён', TREASURY_WALLET_RESET: 'Адрес пополнения сброшен',
-  BALANCE_ADJUSTED: 'Баланс скорректирован', DEMO_TOP_UP: 'Тестовый баланс пополнен', DEMO_BALANCE_ADJUSTED: 'Тестовый баланс скорректирован',
+  BALANCE_ADJUSTED: 'Баланс скорректирован', ASSET_CREDIT_TICKER_CORRECTED: 'Исправлен тикер ранее зачисленного актива', DEMO_TOP_UP: 'Тестовый баланс пополнен', DEMO_BALANCE_ADJUSTED: 'Тестовый баланс скорректирован',
   USER_REGISTERED: 'Пользователь зарегистрирован', USER_BLOCKED: 'Пользователь заблокирован', USER_UNBLOCKED: 'Пользователь разблокирован', USER_DELETED: 'Пользователь удалён',
   DEPOSIT_CREDITED: 'Пополнение зачислено', DEPOSIT_PACKAGE_CREDITED: 'Пакет пополнений зачислен',
   DEPOSIT_COPY_IGNORED: 'Сигнал копирования просмотрен',
