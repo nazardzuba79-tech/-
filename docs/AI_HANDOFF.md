@@ -1,5 +1,20 @@
 # AI Handoff Log
 
+## 2026-11-08 — Codex — #693 / #695 code-only integration follow-up
+- Starting HEAD `0ab4c0fcdc95bcd2a6225a924acb399efdc1bef5`; owner authorizes
+  only #695 merge after successful checks, with no production redeployment.
+- Two failures reproduced on unchanged main: a4c63e4f added 13 review-only
+  withdrawal API lines absent from the test normalizer. Its predecessor gives
+  the exact original protected hash. Add finite exact test exceptions and
+  negative mutations; retain the original pin and all other financial guards.
+- Material file: `frontend/src/lib/__tests__/futuresTickerHeader.test.ts`.
+  Runtime, frontend implementation and Claude's trading/Wallet work preserved.
+  Local focused suite 41/41 PASS. Exact final HEAD/merge CI receipts follow
+  in #695; evidence/reproduction is in `docs/qa/deposit693/INTEGRATION.md`.
+- Production read-only precheck: API 0ab4c0fc / 46b20611 healthy, same start
+  time/config/bootstrap; notification Worker f01f8fe1 / version 24043dd8 and
+  Pages 5f4615ba unchanged. No production data, flags, scans or deploy changed.
+
 ## 2026-11-08 — Codex — #693 native TRX proof and asset-correct Telegram
 - This commit: branch `work/693-trx-native-proof`, fresh main `6260ae77`.
 - Four API modules + existing notification Worker; TransferContract proof,
