@@ -89,9 +89,29 @@ async function main() {
       assert.equal(digest(await walletState(prisma, spec.userId)), before);
     });
     await test('concurrent attempts never duplicate; retry reads unique receipt', async () => {
-      const spec = await fixture(); const results = await Promise.allSettled([1, 2].map(() => apply(prisma, spec, mutateFuturesBalance)));
+      const spec = await fixture();
+      // Both SERIALIZABLE transactions must take their snapshot before either
+      // attempts the account lock, so this exercises the actual conflict path.
+      let arrivals = 0;
+      let release;
+      const snapshotsReady = new Promise(resolve => { release = resolve; });
+      const concurrent = { $transaction: (callback, options) => prisma.$transaction(async tx => {
+        await tx.$queryRawUnsafe('SELECT count(*)::int FROM "FuturesBalance"');
+        if (++arrivals === 2) release();
+        await snapshotsReady;
+        return callback(tx);
+      }, options) };
+      const results = await Promise.allSettled([1, 2].map(() => apply(concurrent, spec, mutateFuturesBalance)));
       assert.equal(results.filter(r => r.status === 'fulfilled' && r.value.status === 'APPLIED').length, 1);
-      for (const r of results) if (r.status === 'rejected') assert.equal(r.reason.code, 'P2034');
+      assert.equal(results.filter(r => r.status === 'rejected').length, 1);
+      for (const result of results) if (result.status === 'rejected') {
+        // Prisma wraps a raw SELECT ... FOR UPDATE serialization failure as
+        // P2010 + SQLSTATE 40001; model writes expose the same conflict as P2034.
+        const error = result.reason;
+        const serializationFailure = error.code === 'P2034'
+          || (error.code === 'P2010' && error.meta?.code === '40001');
+        assert.ok(serializationFailure, JSON.stringify({ code: error.code, meta: error.meta }));
+      }
       assert.equal((await apply(prisma, spec, mutateFuturesBalance)).status, 'ALREADY_APPLIED');
       assert.equal(await prisma.auditLog.count({ where: { id: operationKey(spec.originalAuditId) } }), 1);
       assert.equal((await walletState(prisma, spec.userId)).CROSS.find(r => r.asset === 'TRX').available, '1684');
