@@ -361,7 +361,10 @@ async function acceptance() {
 async function run() {
   try {
     await setup();
-    await acceptance();
+    if (process.env.HISTORY20_PRIVATE_REGIME_DIR) {
+      report.data = 'Pinned private Binance Vision 1m packs; SHA checked by the admin API';
+      await require('./history20/browser.cjs')({ newPage, api, origin, output, check });
+    } else await acceptance();
     assert.equal(report.outbound, 0);
     assert.deepEqual(report.financialWrites, []);
     assert.deepEqual(report.errors, []);

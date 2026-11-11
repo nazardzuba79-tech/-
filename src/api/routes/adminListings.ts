@@ -25,6 +25,7 @@ import { SIM_INTERVALS, simulationFor } from '../../services/testMarkets/testMar
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
 import { AITH_PUBLICATION_PROTOCOL, isAith } from '../../shared/aithPublication';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
+import { privateRegimes, regimeCandles, regimeOptions } from '../../services/listings/history20RegimePack';
 import { listingScenarioPreview } from '../../services/listings/listingPreview';
 
 /** Venue spot pairs a managed ticker must not shadow (e.g. a real `QAX/USDT`). */
@@ -83,7 +84,37 @@ export function adminListingsRouter(
 
   router.get('/admin/listings', ...guard, async (_req, res) => {
     noStore(res);
-    try { res.json(await store.list()); } catch (error) { failure(res, error); }
+    try {
+      const list = await store.list();
+      res.json(privateRegimes() ? { ...list, history20Regimes: regimeOptions } : list);
+    } catch (error) { failure(res, error); }
+  });
+
+  // Authorised local draft previews only. No market, order book or ticker is registered.
+  router.get('/admin/listings/regimes/:regimeId', ...guard, async (req, res) => {
+    noStore(res);
+    try {
+      const meta = regimeOptions.find(r=>r.id===req.params.regimeId);
+      if (!meta) return res.status(404).json({error:'not_found'});
+      const phase = req.query.phase ?? 'middle';
+      if (!['start','middle','end'].includes(String(phase))) return res.status(400).json({error:'invalid_phase'});
+      const draftId = req.query.draft;
+      if (draftId && (typeof draftId !== 'string' || !ID.test(draftId))) return res.status(400).json({error:'invalid_draft'});
+      const draft = draftId ? (await store.list()).listings.find(r=>r.id===draftId)?.draft : null;
+      if (draftId && (!draft || draft.history20Regime?.sha256 !== meta.sha256 || draft.history20Regime.id !== meta.id))
+        return res.status(409).json({error:'REGIME_MISMATCH'});
+      const price = Number(req.query.price ?? 1);
+      if (!draft && (!Number.isFinite(price) || price <= 0 || price > 1e12)) return res.status(400).json({error:'invalid_preview_price'});
+      const interval = typeof req.query.interval==='string' ? req.query.interval : '1h';
+      const asset = draft ? listingSimulationConfig(draft) : {
+        symbol:'PREVIEW',name:'History20',pair:'PREVIEW/SIMUSDT',quote:'SIMUSDT' as const,isTestAsset:true as const,
+        isTradable:false, listingArmed:true, listingAt:Date.parse(meta.start), initialPrice:price,seed:meta.sha256, history20Regime:meta.id, history20RegimeSha256:meta.sha256,
+      };
+      const offset = phase==='end' ? meta.rows : phase==='middle' ? Math.floor(meta.rows/2) : Math.min(meta.rows,1440);
+      const at = asset.listingAt + offset*60000 - 1;
+      const candles = regimeCandles(asset, interval, at);
+      return res.json({id:meta.id, sha256:meta.sha256, interval, phase, candles});
+    } catch(error) { return failure(res,error); }
   });
 
   router.post('/admin/listings/:id/reschedule', ...guard, async (req: AuthedRequest, res) => {
@@ -137,7 +168,11 @@ export function adminListingsRouter(
   router.post('/admin/listings', ...guard, async (req: AuthedRequest, res) => {
     noStore(res);
     try {
-      const config = configFromBody(req.body, null);
+      let config = configFromBody(req.body, null);
+      if (config.history20Regime && !privateRegimes())
+        throw new ListingValidationError('REGIME_PACK_UNAVAILABLE','Проверенный приватный набор не подключён');
+      if (!config.history20Regime && !config.simulationProgram && !config.tradable && Number(config.ownerAllocation)===0 && privateRegimes())
+        config = parseListingConfig({...config,history20Regime:{version:2,id:'AUTO'}});
       ensureNotOnVenue(config, venue);
       const id = `${config.symbol.toLowerCase()}-${randomUUID().slice(0, 8)}`;
       res.status(201).json(await store.saveDraft(id, config, 0, req.userId!));
@@ -168,6 +203,17 @@ export function adminListingsRouter(
       const listing = (await store.list()).listings.find((item) => item.id === req.params.id);
       if (!listing) return res.status(404).json({ error: 'not_found' });
       const asset = listingSimulationConfig(listing.draft);
+      if (listing.draft.history20Regime) {
+        const at = typeof req.query.at==='string' ? Date.parse(req.query.at) : asset.listingAt+7200000;
+        if (!Number.isFinite(at)) return res.status(400).json({error:'invalid_time'});
+        const interval = String(req.query.interval ?? '5m');
+        const candles = regimeCandles(asset,interval,at);
+        return res.json({listingId:listing.id,draftRevision:listing.draftRevision,previewAt:at,serverTime:clock(),candles,
+          asset:{pair:asset.symbol+'/SIMUSDT',name:asset.name,listingAt:listing.draft.listingAt,initialPrice:asset.initialPrice,
+            logo:listing.draft.logo,displayTimeZone:listing.draft.displayTimeZone,state:{phase:at<asset.listingAt?'pre-listing':'live',
+            lastPrice:candles[candles.length-1]?.close??null,change24hPercent:null,high24h:null,low24h:null,quoteVolume24h:null}},
+          book:{available:false,bids:[],asks:[]},trades:[]});
+      }
       const horizon = typeof req.query.horizon === 'string' ? req.query.horizon : null;
       const requested = typeof req.query.at === 'string' ? Date.parse(req.query.at) : NaN;
       const interval = typeof req.query.interval === 'string' ? req.query.interval : '5m';

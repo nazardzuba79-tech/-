@@ -14,6 +14,9 @@ on:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
       - 'src/shared/listingHistoricalReplay.ts'
+      - 'src/shared/history20MinuteReplay.ts'
+      - 'src/shared/history20Regimes.json'
+      - 'scripts/history20/**'
       - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
       - 'src/shared/history20PrivateSymbol.ts'
@@ -100,6 +103,7 @@ jobs:
         run: >-
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
+          src/services/listings/__tests__/history20MinuteReplay.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
           src/services/listings/__tests__/listingCountdown.test.ts
           src/services/listings/__tests__/tyvnDraft.test.ts

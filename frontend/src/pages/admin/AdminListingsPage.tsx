@@ -8,6 +8,8 @@ import {
 } from './adminListingsApi';
 import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, listingTimeZoneLabel } from './adminListingsCopy';
 import { ListingScenarioLab } from './ListingScenarioLab';
+import { ListingRegimePreview } from './ListingRegimePreview';
+import type { RegimeOption } from './adminListingsApi';
 import { ListingMovementEditor } from './ListingMovementEditor';
 import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, historicalModelLabel, isHistoricalWindow, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
@@ -31,6 +33,7 @@ interface FormState {
   simulationProfile: ListingConfig['simulationProfile'] | null;
   simulationProgram?: ListingProgram;
   wickModel?: 'NATURAL_V1';
+  history20Regime?: ListingConfig['history20Regime'];
   privateTest?: PrivateTestSettings;
 }
 
@@ -54,7 +57,7 @@ const fromConfig = (config: ListingConfig): FormState => ({
   wallTime: utcToZonedWallTime(config.listingAt, config.displayTimeZone), timeZone: config.displayTimeZone,
   ownerAllocation: config.ownerAllocation, seedMode: config.seedMode, seed: config.seed, tradable: config.tradable,
   simulationProfile: config.simulationProfile ?? null,
-  simulationProgram: config.simulationProgram, wickModel: config.wickModel,
+  simulationProgram: config.simulationProgram, wickModel: config.wickModel, history20Regime:config.history20Regime,
   ...(config.privateTest ? { privateTest: config.privateTest } : {}),
 });
 
@@ -63,7 +66,7 @@ const fromConfig = (config: ListingConfig): FormState => ({
 const formSignature = (form: FormState): string => JSON.stringify([
   form.name, form.symbol, form.logo, form.initialPrice, form.wallTime, form.timeZone,
   form.ownerAllocation, form.seedMode, form.seedMode === 'manual' ? form.seed : null, form.tradable,
-  form.simulationProgram, form.wickModel, form.privateTest ?? null,
+  form.simulationProgram, form.wickModel, form.history20Regime, form.privateTest ?? null,
 ]);
 
 /** The instant in UTC, Kyiv and Moscow (the owner reads both UTC and МСК), plus the listing's own zone when it is another one. */
@@ -146,6 +149,7 @@ export function AdminListingsPage() {
   // A configuration fault, not an outage: nothing can be created until the rollout is finished.
   const [notConnected, setNotConnected] = useState(false);
   const [editing, setEditing] = useState<{ id: string | null; revision: number; locked: boolean } | null>(null);
+  const [regimes,setRegimes] = useState<RegimeOption[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -196,6 +200,7 @@ export function AdminListingsPage() {
       const body = await adminListingsApi.list(controller.signal);
       if (controller.signal.aborted) return;
       setListings(body.listings);
+      setRegimes(body.history20Regimes ?? []);
       setClockOffsetMs(body.serverTime - Date.now());
       setLoadError(null);
       setNotConnected(false);
@@ -261,7 +266,7 @@ export function AdminListingsPage() {
     initialPriceAnchor.current = null;
     cancelLogoRead(); setWindowPending(false); setAutoChoose(undefined); stagesProgram.current = null;
     setEditing({ id: null, revision: 0, locked: false });
-    changeForm(emptyForm()); setFormError(null); setNotice(null);
+    changeForm(regimes.length ? {...emptyForm(),simulationProgram:undefined,history20Regime:{version:2,id:'AUTO'}} : emptyForm()); setFormError(null); setNotice(null);
   }
   /** BotLab 01 from the owner's proposal file: a new, unsaved form in growth-window mode. */
   function openBotLab() {
@@ -341,6 +346,7 @@ export function AdminListingsPage() {
       listingAt: listingAtUtc, displayTimeZone: form.timeZone, ownerAllocation: form.ownerAllocation.trim() || '0',
       seedMode: form.seedMode, ...(form.seedMode === 'manual' ? { seed: form.seed.trim() } : {}), tradable: form.tradable,
       ...(form.simulationProgram ? { simulationProgram: form.simulationProgram } : {}),
+      ...(form.history20Regime ? {history20Regime:form.history20Regime} : {}),
       ...(form.wickModel ? { wickModel: form.wickModel } : {}),
       ...(windowMode && form.privateTest ? { privateTest: { settlement: 'SIMUSDT' as const, funding: { base: form.privateTest.funding.base.trim() || '0', quote: form.privateTest.funding.quote.trim() || '0' } } } : {}),
     };
@@ -547,7 +553,7 @@ export function AdminListingsPage() {
               const anchor = initialPriceAnchor.current;
               changeForm({ ...form, initialPrice, ...(anchor ? { simulationProgram: rebaseListingMovement(anchor.program, anchor.initial, initialPrice) } : {}) });
             }} data-field="initialPrice" required /></label>
-            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={noLedger || privateMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={noLedger || privateMode} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={noLedger || privateMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={noLedger || privateMode || Boolean(form.history20Regime)} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
               <small>{noLedger ? 'Историческая симуляция не выдаёт актив: всегда 0.' : privateMode ? 'Приватный тест пополняется только разовым тестовым финансированием: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
             <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
             <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
@@ -562,7 +568,7 @@ export function AdminListingsPage() {
               {form.seedMode === 'auto' && form.seed && <small>Сохранён: <code data-saved-seed>{form.seed}</code> — не меняется при правках.</small>}
               <small>Код сохраняет повторяемость симуляции; это не пароль и не ключ доступа.</small>
             </fieldset>
-            {!form.simulationProgram && <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
+            {!form.simulationProgram && !form.history20Regime && <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
               <span>Характер свечей (симуляция)</span>
               <b>{form.simulationProfile ? listingProfileLabel(form.simulationProfile) : editing.id ? 'Исходный' : 'Назначится при создании'}</b>
               <small>По очереди для новых листингов: спокойный тренд → импульсный → с откатами → сжатие и пробой. Меняет только вид свечей, не траекторию и не итоговую цену; после создания не меняется.</small>
@@ -577,9 +583,16 @@ export function AdminListingsPage() {
               <small>PNG, JPEG, WebP или SVG, до 64 КБ.</small>
               {logoReading && <small role="status" data-logo-reading>Загрузка логотипа…</small>}
             </div>
-            <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
-              <small>{form.simulationProgram ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small></label>
+            <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram || form.history20Regime)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
+              <small>{form.simulationProgram || form.history20Regime ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small></label>
           </div>
+          {regimes.length > 0 && (!editing.id || form.history20Regime) && <ListingRegimePreview options={regimes}
+            id={form.history20Regime?.id} draft={editing.id} price={form.initialPrice} onSelect={id=>{
+              setWindowPending(false);
+              changeForm({...form, history20Regime:id==='legacy' ? undefined : {version:2,id},
+                simulationProgram:id==='legacy' ? newListingMovement(form.initialPrice || '1') : undefined,
+                tradable:false, ownerAllocation:'0', privateTest:undefined});
+            }} />}
           {form.simulationProgram?.kind === 'scenario-controls-v2' && !editing.locked && <fieldset className="listing-growth-mode" data-growth-mode={windowMode || windowPending ? 'historical-window' : 'stages'}>
             <legend>Источник роста</legend>
             <label><input type="radio" name="growthMode" checked={!windowMode && !windowPending} onChange={() => { if (windowMode) returnToStages(); else setWindowPending(false); }} data-growth-mode-stages /> Запрограммированные этапы (прежний режим; можно продолжить часовой историей после отката)</label>
@@ -610,7 +623,7 @@ export function AdminListingsPage() {
           {form.simulationProgram?.kind === 'scenario-controls-v2' && !windowMode && !windowPending && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} savedModels={savedModels} onChange={simulationProgram => changeForm({ ...form, simulationProgram,
             ...(simulationProgram.afterGrowth === 'historical' ? { ownerAllocation: '0' } : {}) })} /></div>}
           {form.simulationProgram?.kind === 'capped-growth-range-v1' && <p className="listing-hint" data-legacy-movement>Сохранён прежний ограниченный сценарий. Его параметры и история не заменяются новым алгоритмом.</p>}
-          {!form.simulationProgram && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
+          {!form.simulationProgram && !form.history20Regime && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
           {/* The error and the unsaved-draft note travel with the actions, so a refused
               save is shown next to the button that was pressed. */}
           <div className="listing-actions-dock">
@@ -622,8 +635,8 @@ export function AdminListingsPage() {
             {windowPending && !windowMode && <p className="listing-hint" role="status" data-window-pending>Выберите окно в библиотеке: до этого черновик сохраняется с этапами.</p>}
             <div className="listing-buttons">
               <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
-              {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-              {current && <button type="button" disabled={busy || !draftIsSaved || (historicalMode && !privateMode) || publicationBlocked} onClick={openPublish} data-publish>{privateMode ? 'Запустить приватный тест' : 'Опубликовать'}</button>}
+              {editing.id && !form.history20Regime && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
+              {current && <button type="button" disabled={busy || !draftIsSaved || Boolean(form.history20Regime) || (historicalMode && !privateMode) || publicationBlocked} onClick={openPublish} data-publish>{privateMode ? 'Запустить приватный тест' : 'Опубликовать'}</button>}
               {editing.id && windowMode && <button type="button" disabled={busy} onClick={cloneWindow} data-clone-window>Клонировать в новый листинг</button>}
               <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
             </div>
@@ -638,7 +651,7 @@ export function AdminListingsPage() {
             <label>Отрезок предпросмотра<select value={previewHorizon} data-field="previewHorizon" onChange={e => { invalidatePreview(); setPreviewHorizon(e.target.value as typeof previewHorizon); setPreviewInterval(e.target.value === 'first24h' ? '5m' : e.target.value === 'history' ? (Math.min(historicalHours + 24, 720) < 359 ? '1h' : '4h') : '1h'); }}><option value="first24h">Первые 24 часа</option><option value="growth">Весь этап роста</option><option value="afterGrowth">Поведение после роста</option>{historicalMode && historicalHours > 0 && <option value="history">{historicalHours + 24 <= 720 ? `Весь исторический отрезок (${historicalHours} ч)` : 'Исторический отрезок: первые 30 дней'}</option>}</select></label>
             <label>Интервал свечей<select value={previewInterval} data-field="previewInterval" onChange={e => { invalidatePreview(); setPreviewInterval(e.target.value); }}><option value="5m">5 минут</option><option value="15m">15 минут</option><option value="1h">1 час</option><option value="4h">4 часа</option><option value="1d">1 день</option></select><small>До 360 свечей за запрос. Для длинного отрезка выберите более крупный интервал.</small></label>
           </div>}
-          {editing.id && form.simulationProgram?.kind !== 'scenario-controls-v2' && (
+          {editing.id && !form.history20Regime && form.simulationProgram?.kind !== 'scenario-controls-v2' && (
             <div className="listing-preview-controls" id="listing-section-preview">
               <label>Момент предпросмотра ({listingTimeZoneLabel(form.timeZone)})<input type="datetime-local" value={previewAt} onChange={(e) => { invalidatePreview(); setPreviewAt(e.target.value); }} data-field="previewAt" /></label>
               <small>Пусто = через 2 часа после листинга. Предпросмотр виден только администратору.</small>

@@ -5,6 +5,7 @@
  * not-tradable flags. All numbers are read off the one simulation, so the
  * chart, the ticker and the 24h statistics can never disagree.
  */
+import type { History20MinuteReplay, RegimeInterval } from '../../shared/history20MinuteReplay';
 import type { TestAssetConfig } from './testAssetConfig';
 import {
   MINUTE_MS, SIM_INTERVALS, SIM_INTERVAL_OFFSETS, aggregateCandles, getCurrentTestMarketState, simulationFor,
@@ -57,12 +58,16 @@ export class UnsupportedTestIntervalError extends Error {}
  * The last `limit` candles of `interval` at `now`, oldest first. Before the
  * listing there are none; nothing after `now` is ever included.
  */
-export function testMarketCandles(asset: TestAssetConfig, interval: string, now: number, limit = 300): ChartCandle[] {
+export function testMarketCandles(asset: TestAssetConfig, interval: string, now: number, limit = 300, privateReplay?: History20MinuteReplay): ChartCandle[] {
   const marketNow = effectiveTestMarketNow(asset, now);
   const size = SIM_INTERVALS[interval];
   if (!size) throw new UnsupportedTestIntervalError(`Unsupported interval: ${interval}`);
   const offset = SIM_INTERVAL_OFFSETS[interval] ?? 0;
   const count = Math.max(1, Math.min(Math.floor(limit) || 300, 1000));
+  if (asset.history20Regime) {
+    if (!privateReplay || asset.isTradable) throw new Error('HISTORICAL_RIGHTS_UNVERIFIED');
+    return privateReplay.candles(asset.listingAt, asset.initialPrice, asset.seed + ':' + asset.history20RegimeSha256, interval as RegimeInterval, marketNow, count);
+  }
   const currentBucket = Math.floor((marketNow - offset) / size) * size + offset;
   const from = Math.max(asset.listingAt, currentBucket - (count - 1) * size);
   const simulation = simulationFor(asset);

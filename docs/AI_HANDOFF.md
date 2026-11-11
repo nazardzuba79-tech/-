@@ -7785,3 +7785,9 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Shared CI helper checks the exact package version, executable presence and actual headless launch/render before the existing acceptance tests. Missing runtime libraries remain a hard failure. Workflow YAML and step comparison confirm every test command, PostgreSQL setting and assertion is retained.
 - Files changed are the 22 failing workflow definitions and .github/scripts/verify-ci-browser.cjs. Application source, Claude changes and financial protections are preserved. Final-head CI and code-only merge remain pending. Production deployment is outside this CI change.
 - Container QA exposed Git's workspace ownership check in mobile-review evidence collection. Container jobs now trust only the exact GITHUB_WORKSPACE checkout before running tools. No wildcard safe-directory exception is used.
+
+## 2026-11-11 — Codex — #705 private History20 regime candidates
+
+- Branch `feat/history20-regimes-705`, pinned baseline `0feb58bd856028dbc79cb8cc13bf68a9db907a61`. See docs/HISTORY20_REGIMES.md for the twenty verified source windows, storage boundary and replay/QA commands.
+- Future draft INSERT selects and pins an ID/digest. Existing markets retain their generators. Private admin browser QA and replay parity use locally acquired, checksum-verified data. The repository contains source coordinates and aggregate evidence only.
+- Public/commercial rights and production release approval remain outstanding. No production deploy, financial action or existing listing edit.

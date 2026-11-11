@@ -19,6 +19,9 @@ import type { MarketStructureConfig } from './simulationWaves';
 import type { ScheduledScenarioConfig } from './simulationSchedule';
 
 export interface TestAssetConfig {
+  /** Offline History20 draft reference; never eligible for public execution. */
+  history20Regime?: string;
+  history20RegimeSha256?: string;
   /** Base asset ticker, e.g. VTA. */
   symbol: string;
   /** Display name, e.g. VOLTORA. */

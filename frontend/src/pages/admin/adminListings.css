@@ -171,6 +171,10 @@
 
 /* Historical growth window (History20): the mode switch, 20 metadata cards, the chosen window. */
 .listing-growth-mode { display: grid; gap: 6px; margin: 4px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: #fbfcfe; }
+.listing-growth-mode.listing-regime { min-inline-size: 0; grid-template-columns: minmax(0, 1fr); }
+.listing-regime [data-regime-result] { min-width: 0; }
+.listing-regime select { max-width: 100%; }
+.listing-regime > label, .listing-regime .listing-grid label { flex-direction: column; }
 .listing-growth-mode legend { padding: 0 4px; font-weight: 700; }
 .listing-growth-mode label { display: flex; align-items: start; gap: 8px; font-size: 13px; }
 .listing-growth-mode small { color: var(--text-secondary); font-size: 11.5px; }

@@ -17,6 +17,7 @@ import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import { isHistory20PrivateSymbol, SIMULATION_QUOTE } from '../../shared/history20PrivateSymbol';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
+import regimeCatalog from '../../shared/history20Regimes.json';
 import { historicalSerializedBytes, freezeHistoricalMoveProgram } from '../../shared/listingHistoricalReplay';
 import { HISTORICAL_GROWTH_LICENSES, HISTORICAL_GROWTH_PROVIDERS, validateHistoricalGrowthProgram } from '../../shared/listingHistoricalGrowth';
 import { HISTORICAL_DEMO_NO_LEDGER, isHistoricalDemoConfig } from './simulationContour';
@@ -146,6 +147,10 @@ export const listingConfigSchema = z.object({
   simulationProfile: z.enum(SIMULATION_PROFILES).optional(),
   /** Persisted range model assigned on new INSERT; absent means the original shadows. */
   wickModel: z.literal('NATURAL_V1').optional(),
+  history20Regime: z.object({
+    version: z.literal(2), id: z.string().regex(/^(AUTO|R(0[1-9]|1[0-9]|20))$/),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  }).strict().optional(),
   /**
    * History20 private test (owner decision 2026-10-19): only a History20
    * growth window with a reserved ticker (VHX01…VHX99) may carry it. It is
@@ -202,6 +207,14 @@ export function parseListingConfig(input: unknown): ListingConfig {
     throw new ListingValidationError('INVALID_CONFIG', `${issue.path.join('.') || 'config'}: ${issue.message}`);
   }
   const config = parsed.data;
+  if (config.history20Regime) {
+    if (config.tradable || Number(config.ownerAllocation) !== 0 || config.privateTest || config.simulationProgram)
+      throw new ListingValidationError('DEMO_ONLY','Режим OHLCV доступен только в отдельном демонстрационном черновике без торговли и начислений');
+    if (Date.parse(config.listingAt) % 60000)
+      throw new ListingValidationError('INVALID_SCENARIO','Время запуска должно совпадать с границей минуты');
+    if (config.history20Regime.sha256 && regimeCatalog.records.find(r => r.id === config.history20Regime!.id)?.sha256 !== config.history20Regime.sha256)
+      throw new ListingValidationError('REGIME_HASH_MISMATCH','Контрольная сумма сценария не совпадает');
+  }
   if (config.simulationProgram?.kind === 'scenario-controls-v2') {
     if (config.simulationProgram.terminalPeak && (config.tradable || Number(config.ownerAllocation) !== 0))
       throw new ListingValidationError('INVALID_SCENARIO', 'Terminal peak models require tradable:false and zero owner allocation');
@@ -265,6 +278,20 @@ export function withStableSeed(next: ListingConfig, previous: ListingConfig | nu
  * stored without either field keeps that absence and its original candles.
  */
 export function withStableProfile(next: ListingConfig, previous: ListingConfig | null, creationOrdinal: number | null): ListingConfig {
+  if (previous?.history20Regime || next.history20Regime) {
+    const stored = previous?.history20Regime;
+    const requested = next.history20Regime;
+    if (previous && (!stored || requested && (requested.id !== stored.id || requested.sha256 && requested.sha256 !== stored.sha256)))
+      throw new ListingValidationError('HISTORY_LOCKED','Исторический режим назначается только новому черновику');
+    if (!previous && creationOrdinal === null) throw new ListingValidationError('HISTORY_LOCKED','Требуется новый черновик');
+    const chosen = stored ?? requested!;
+    const record = chosen.id === 'AUTO' ? regimeCatalog.records[creationOrdinal! % regimeCatalog.records.length]
+      : regimeCatalog.records.find(r=>r.id===chosen.id);
+    if (!record || chosen.sha256 && chosen.sha256 !== record.sha256)
+      throw new ListingValidationError('REGIME_HASH_MISMATCH','Сохранённый набор недоступен');
+    const {simulationProfile,wickModel,...clean}=next;
+    return parseListingConfig({...clean,history20Regime:{version:2,id:record.id,sha256:record.sha256}});
+  }
   const { simulationProfile: _requested, wickModel: _requestedWicks, simulationProgram: requestedProgram, ...rest } = next;
   if (previous?.simulationProgram && next.tradable) throw new ListingValidationError('DEMO_ONLY', 'A bounded demo cannot enable real trading');
   if (previous?.simulationProgram?.kind === 'scenario-controls-v2' && requestedProgram?.kind !== 'scenario-controls-v2') throw new ListingValidationError('HISTORY_LOCKED', 'Нельзя удалить сохранённые настройки движения цены');
@@ -323,6 +350,8 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
   opened: boolean = active !== null && Date.parse(active.listingAt) <= now): void {
   // The one exception to the rights gate below: a History20 window run as a
   // private test (SIMUSDT, owner and allowlisted testers, never public).
+  if (next.history20Regime || active?.history20Regime)
+    throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED','Исторический режим доступен только в приватном предпросмотре');
   if (next.privateTest) return checkPrivateTestable(next, active, now, minLeadMs, opened);
   // Administrative draft+private preview are functional, but a user-provided
   // historical dataset has no independently verified redistribution rights.
@@ -373,6 +402,7 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
     pair: listingPair(config.symbol, listingQuote(config)),
     isTestAsset: true,
     isTradable: config.tradable,
+    ...(config.history20Regime ? {history20Regime: config.history20Regime.id, history20RegimeSha256:config.history20Regime.sha256} : {}),
     ...(config.privateTest ? { privateTest: true as const } : {}),
     listingArmed: true,
     listingAt: Date.parse(config.listingAt),
