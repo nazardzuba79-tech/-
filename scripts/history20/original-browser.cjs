@@ -156,6 +156,13 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
       const exact = await api('/admin/listings/original-regimes/G20?draft=' + saved.id + '&interval=1d');
       assert.equal(exact.body.seed, saved.draft.seed);
       assert(exact.body.candles.length > 0);
+      await page.locator('[data-preview]').click();
+      const savedPreviewPanel = page.locator('[data-listing-preview]');
+      await savedPreviewPanel.waitFor();
+      assert.doesNotMatch(await savedPreviewPanel.innerText(), forbidden);
+      assert.equal(await savedPreviewPanel.getAttribute('aria-label'), 'Предпросмотр');
+      await savedPreviewPanel.screenshot({ path: path.join(output, 'saved-preview-1440.png') });
+      screenshots.push('saved-preview-1440.png');
       check('Normal browser save persists the chosen original mode and automatic seed; saved selection is immutable');
     }
     await context.close();

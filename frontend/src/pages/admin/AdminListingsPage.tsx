@@ -669,14 +669,14 @@ export function AdminListingsPage() {
             </div>
           )}
           {preview && draftIsSaved && (
-            <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label="Предпросмотр симуляции">
+            <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label={form.originalRegime ? 'Предпросмотр' : 'Предпросмотр симуляции'}>
               <header>
                 {/* A growth window is priced in the preview's own accounting unit, never a deposit currency. */}
                 <b>{preview.scenarioSummary?.historicalGrowth ? preview.asset.pair.replace(/\/USDT$/, `/${HISTORICAL_GROWTH_PREVIEW_UNIT}`) : preview.asset.pair}</b>
-                <span>{preview.asset.state.phase === 'live' ? 'Симуляция после листинга' : 'До листинга'} · {new Date(preview.previewAt).toISOString().replace('.000Z', 'Z')}</span>
+                <span>{preview.asset.state.phase === 'live' ? (form.originalRegime ? 'После листинга' : 'Симуляция после листинга') : 'До листинга'} · {new Date(preview.previewAt).toISOString().replace('.000Z', 'Z')}</span>
                 {preview.asset.state.lastPrice !== null && <span data-preview-price>{preview.asset.state.lastPrice} {preview.scenarioSummary?.historicalGrowth ? HISTORICAL_GROWTH_PREVIEW_UNIT : 'USDT'} ({preview.asset.state.change24hPercent?.toFixed(2)}%)</span>}
               </header>
-              <p className="listing-hint">Цены, объёмы, стакан и сделки в этом предпросмотре сгенерированы. Это симуляция, а не реальные рыночные данные.</p>
+              {!form.originalRegime && <p className="listing-hint">Цены, объёмы, стакан и сделки в этом предпросмотре сгенерированы. Это симуляция, а не реальные рыночные данные.</p>}
               {preview.scenarioSummary && (() => {
                 const summary = preview.scenarioSummary, window = summary.historicalGrowth, unit = window ? window.unit : 'USDT';
                 return <dl className="listing-preview-metrics" data-preview-summary>
@@ -689,7 +689,7 @@ export function AdminListingsPage() {
                 </dl>;
               })()}
               <ListingCandlePreview candles={preview.candles} />
-              <small className="listing-hint">{preview.candles.length} свечей · время на графике: Всемирное время (UTC). Объём — модельная активность.</small>
+              <small className="listing-hint">{preview.candles.length} свечей · время на графике: Всемирное время (UTC).{!form.originalRegime && ' Объём — модельная активность.'}</small>
               {preview.scenarioSummary?.historicalGrowth && (() => {
                 const window = preview.scenarioSummary.historicalGrowth;
                 const provenance = historicalGrowthProvenance({ intrabar: window.intrabar, source: { dataKind: window.dataKind, provider: window.provider, metric: window.metric } });
@@ -699,9 +699,9 @@ export function AdminListingsPage() {
                 </p>;
               })()}
               <div className="listing-preview-grid">
-                <div><h3>Стакан (симуляция)</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
+                <div><h3>{form.originalRegime ? 'Стакан' : 'Стакан (симуляция)'}</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
                   <div key={i} className={i < 5 ? 'ask' : 'bid'}><span>{level.price}</span><span>{level.quantity}</span></div>) : <p className="listing-muted">—</p>}</div>
-                <div><h3>Сделки (симуляция)</h3>{preview.trades.slice(0, 10).map((trade) => <div key={trade.id} className={trade.side === 'BUY' ? 'bid' : 'ask'}><span>{trade.price}</span><span>{trade.quantity}</span></div>)}
+                <div><h3>{form.originalRegime ? 'Сделки' : 'Сделки (симуляция)'}</h3>{preview.trades.slice(0, 10).map((trade) => <div key={trade.id} className={trade.side === 'BUY' ? 'bid' : 'ask'}><span>{trade.price}</span><span>{trade.quantity}</span></div>)}
                   {!preview.trades.length && <p className="listing-muted">—</p>}</div>
               </div>
             </section>
