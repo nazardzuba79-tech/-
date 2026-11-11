@@ -101,7 +101,7 @@ function submitFixture(overrides: Record<string, unknown> = {}) {
   class ApiError extends Error { constructor(message: string, public status: number, public body: Record<string, unknown> = {}) { super(message); } }
   const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
   const bindings: Record<string, unknown> = {
-    ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', toast, ApiError,
+    presentationOnly: false, ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', toast, ApiError,
     api: { placeOrder: jest.fn().mockResolvedValue({ order: { status: 'OPEN' }, trades: [] }), placeOcoOrder: jest.fn().mockResolvedValue({}),
       placeDemoSpotOrder: jest.fn().mockResolvedValue({ order: { status: 'OPEN' }, trades: [] }) },
     t: (key: string) => key, spotOrderFeedback: (r: any) => (r?.order ? { kind: 'placed' } : { kind: 'unknown' }),

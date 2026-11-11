@@ -4,6 +4,7 @@ const path = require('node:path');
 const { ORIGINAL_REGIMES, ORIGINAL_MODEL_VERSION } = require('../../src/shared/originalSimulationRegimes');
 
 module.exports = async function verify({ newPage, api, origin, output, check, restart, edge }) {
+  const ticketsOnly = process.env.QA_ORIGINAL_TICKETS === '1';
   const date = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) + 'T00:00:00Z';
   const records = [], screenshots = [];
   for (const [i, regime] of ORIGINAL_REGIMES.entries()) {
@@ -52,11 +53,6 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
       .filter(el => el.getClientRects().length).map(el => (el.getAttribute('title') || '') + ' ' + (el.getAttribute('aria-label') || '')).join('\n'));
     assert.doesNotMatch(labels, forbidden);
     assert.equal(await page.locator('[data-private-provenance], [data-demo-provenance]').count(), 0);
-    await page.waitForFunction(() => Array.from(document.querySelectorAll('button.submit-btn')).every(button => button.disabled));
-    for (const button of await page.locator('button.submit-btn').all()) {
-      assert(await button.isDisabled(), 'Original regime order submission must stay disabled');
-      await button.evaluate(element => element.click());
-    }
     assert(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1);
   }
   async function terminalChecks(phase) {
@@ -107,7 +103,7 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
       check(width + 'px: all 20 ' + phase + ' terminals have no warning copy, including reload/timeframes');
     }
   }
-  await terminalChecks('countdown');
+  if (!ticketsOnly) await terminalChecks('countdown');
   const liveAt = Date.parse(date) + 48 * 3600000;
   await restart(liveAt);
   const pub = await (await edge('/market/test-assets/OG01-USDT/candles?interval=1h')).json();
@@ -116,7 +112,7 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
   const overlap = new Map(preview.body.candles.map(candle => [candle.time, candle]));
   for (const candle of pub.candles) assert.deepEqual(candle, overlap.get(candle.time));
   check('Real Worker staged/start/future-clock lifecycle; public candles equal saved preview; explicit original provenance');
-  for (const width of [1440, 390]) {
+  for (const width of ticketsOnly ? [] : [1440, 390]) {
     const { page, context } = await newPage(width, width === 390 ? 844 : 1000);
     await page.goto(origin + '/admin/listings');
     await page.locator('[data-create-listing]').click();
@@ -168,7 +164,12 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
     await context.close();
     check(width + 'px: 20 modes × 6 intervals, neutral controls, disabled execution/inventory, no overflow');
   }
-  await terminalChecks('live');
+  if (ticketsOnly) {
+    const ticketReport = await require('./original-ticket-browser.cjs')({ newPage, origin, edge, output, noNotice });
+    financialAttempts += ticketReport.mutations;
+    screenshots.push(...ticketReport.screenshots);
+    check('20 live regimes × 1440/390 × guest/ordinary/two admitted identities × Buy/Sell × seven order variants: interactive drafts and silent submit');
+  } else await terminalChecks('live');
   assert.equal(financialAttempts, 0);
   check('All presentation terminal states: provenance retained, public reads available, zero financial requests');
   fs.writeFileSync(path.join(output, 'original-results.json'), JSON.stringify({ records: records.map(r => ({ id: r.id, regime: r.draft.originalRegime })), screenshots,
