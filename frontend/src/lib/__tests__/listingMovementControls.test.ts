@@ -104,7 +104,7 @@ describe('Server-backed listing movement form', () => {
     expect(chart).not.toMatch(/Math\.random|simulate|generate/);
     expect(page).toContain('Настройки изменены — обновите предпросмотр');
     expect(page).toContain('result.draftRevision !== editing.revision');
-    expect(page).toContain('disabled={Boolean(form.simulationProgram || form.history20Regime)}');
+    expect(page).toContain('disabled={Boolean(form.simulationProgram || form.history20Regime || form.originalRegime)}');
     expect(page).toContain('simulationProgram: config.simulationProgram, wickModel: config.wickModel');
     expect(editor).toContain('Точная настройка свечей');
     expect(editor).toContain('Боковик без дальнейшего направленного роста');

@@ -31,6 +31,9 @@ describe('20 original models, no historical source dependency', () => {
     const asset = listingSimulationConfig(cfg);
     const now = FROM + regime.hours * HOUR - 1;
     const bars = testMarketCandles(asset, '5m', now, 1000);
+    const hourly = testMarketCandles(asset, '1h', now, 1000);
+    expect(hourly.filter(bar => bar.close > bar.open).length).toBeGreaterThan(5);
+    expect(hourly.filter(bar => bar.close < bar.open).length).toBeGreaterThan(5);
     const fresh = new TestMarketSimulation(asset);
     const bodies = bars.map(bar => Math.abs(bar.close - bar.open) / (bar.high - bar.low));
     expect(bars.length).toBeGreaterThan(500);

@@ -29,9 +29,16 @@ export function originalModelHour(config: OriginalRegimeConfig, seed: string, in
     const amplitude = .65 + random() * .7;
     const shape = regime.levels[phase] + (regime.levels[phase + 1] - regime.levels[phase]) * blend(progress);
     const slow = (block: number) => block === 0 ? 0 : .09 * normal(seededRandom(namespace, 'slow', block));
+    // Short-memory deviations also move hourly closes. Intrahour noise alone
+    // would leave higher intervals tracing an overly smooth phase curve.
+    let roughness = 0;
+    for (let lag = 0; lag < 8; lag++) {
+      roughness += Math.pow(.72, lag) * normal(seededRandom(namespace, 'hour-deviation', at - lag));
+    }
+    roughness *= regime.noise * 1.8 * (1 - Math.exp(-at / 3));
     // Bounded long-horizon drift prevents overflow and imposes no promised target return.
     const trend = 1.6 * Math.tanh(regime.drift * at / cycleHours / 1.6);
-    return trend + shape * amplitude + slow(cycle) * (1 - blend(fraction)) + slow(cycle + 1) * blend(fraction);
+    return trend + shape * amplitude + slow(cycle) * (1 - blend(fraction)) + slow(cycle + 1) * blend(fraction) + roughness;
   };
   const openLog = anchor(hour), closeLog = anchor(hour + 1);
   const random = seededRandom(namespace, 'ticks', hour);
