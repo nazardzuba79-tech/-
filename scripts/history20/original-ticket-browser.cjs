@@ -28,10 +28,14 @@ async function draft(page) {
 async function edit(input, value) {
   assert(await input.isEnabled());
   assert(!(await input.getAttribute('readonly')));
+  // The preceding price/family edit can schedule a passive linked-quantity
+  // calculation. Finish that render before selecting the next field.
+  await input.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   // Use native select-and-type as one edit, without a separate intermediate
   // empty-value edit of the linked quantity/total fields.
   await input.press('ControlOrMeta+A');
   await input.pressSequentially(value);
+  await input.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(await input.inputValue(), value, await input.getAttribute('aria-label'));
   assert.equal(await input.evaluate(el => el.selectionStart), value.length);
 }
@@ -148,11 +152,9 @@ module.exports = async function verify({ newPage, origin, edge, output, noNotice
     console.log('PASS interactive tickets ' + width + ' / ' + identity + ': 20 regimes, both sides, seven variants');
   }
   const jobs = [1440, 390].flatMap(width => testedIdentities.map(identity => ({ width, identity })));
-  for (let i = 0; i < jobs.length; i += 4) {
-    const results = await Promise.allSettled(jobs.slice(i, i + 4).map(runIdentity));
-    const failure = results.find(result => result.status === 'rejected');
-    if (failure) throw failure.reason;
-  }
+  // One native keyboard stream per browser. CI distributes identities across
+  // separate runners, rather than interleaving focus/selection in two pages.
+  for (const job of jobs) await runIdentity(job);
   const expected = 20 * 2 * testedIdentities.length * 2 * variants.length;
   assert.equal(report.cases.length, expected);
   assert.equal(new Set(report.cases.map(row => [row.id, row.width, row.identity, row.side, row.family, row.execution].join('/'))).size, expected);
