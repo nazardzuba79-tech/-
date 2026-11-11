@@ -16,7 +16,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth, type AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import {
-  ListingValidationError, LISTING_COUNTDOWN_ACTIONS, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingSimulationConfig, parseListingConfig,
+  ListingValidationError, LISTING_COUNTDOWN_ACTIONS, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingPreviewAssetConfig, parseListingConfig,
   type ListingConfig, type ListingCountdownAction,
 } from '../../services/listings/listingConfig';
 import { ListingStoreError, rescheduleRequestSchema, type ListingStore } from '../../services/listings/store';
@@ -106,7 +106,7 @@ export function adminListingsRouter(
       const price = Number(req.query.price ?? 1);
       if (!draft && (!Number.isFinite(price) || price <= 0 || price > 1e12)) return res.status(400).json({error:'invalid_preview_price'});
       const interval = typeof req.query.interval==='string' ? req.query.interval : '1h';
-      const asset = draft ? listingSimulationConfig(draft, 'private-regime-preview') : {
+      const asset = draft ? listingPreviewAssetConfig(draft) : {
         symbol:'PREVIEW',name:'History20',pair:'PREVIEW/SIMUSDT',quote:'SIMUSDT' as const,isTestAsset:true as const,
         isTradable:false, listingArmed:true, listingAt:Date.parse(meta.start), initialPrice:price,seed:meta.sha256, history20Regime:meta.id, history20RegimeSha256:meta.sha256,
       };
@@ -202,7 +202,7 @@ export function adminListingsRouter(
     try {
       const listing = (await store.list()).listings.find((item) => item.id === req.params.id);
       if (!listing) return res.status(404).json({ error: 'not_found' });
-      const asset = listingSimulationConfig(listing.draft, 'private-regime-preview');
+      const asset = listingPreviewAssetConfig(listing.draft);
       if (listing.draft.history20Regime) {
         const at = typeof req.query.at==='string' ? Date.parse(req.query.at) : asset.listingAt+7200000;
         if (!Number.isFinite(at)) return res.status(400).json({error:'invalid_time'});

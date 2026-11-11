@@ -16,7 +16,7 @@ assert.equal(
 );
 const { testMarketCandles } = require(path.join(baseline, 'dist/services/testMarkets/testMarketService'));
 const {
-  listingSimulationConfig,
+  listingPreviewAssetConfig,
   parseListingConfig,
   withStableProfile,
 } = require('../../dist/services/listings/listingConfig');
@@ -29,7 +29,7 @@ const report = [];
 for (const [index, record] of catalog.records.entries()) {
   const start = Date.parse(record.start),
     end = Date.parse(record.endExclusive);
-  const asset = listingSimulationConfig(
+  const asset = listingPreviewAssetConfig(
     withStableProfile(
       parseListingConfig({
         schemaVersion: 1,
@@ -48,7 +48,6 @@ for (const [index, record] of catalog.records.entries()) {
       null,
       index,
     ),
-    'private-regime-preview',
   );
   const source = [];
   for (const archive of record.sources.filter((s) => s.url.includes('/1m/'))) {

@@ -394,9 +394,14 @@ function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, no
 }
 
 /** The simulation input for a configuration. Same seed, time and price → same market, everywhere. */
-export function listingSimulationConfig(config: ListingConfig, scope?: 'private-regime-preview'): TestAssetConfig {
-  if (config.history20Regime && scope !== 'private-regime-preview')
+export function listingSimulationConfig(config: ListingConfig): TestAssetConfig {
+  if (config.history20Regime)
     throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED', 'Исторический режим доступен только для приватного предпросмотра');
+  return listingPreviewAssetConfig(config);
+}
+
+/** The guarded admin preview can also map private draft coordinates; this does not register a market. */
+export function listingPreviewAssetConfig(config: ListingConfig): TestAssetConfig {
   return {
     symbol: config.symbol,
     name: config.name,

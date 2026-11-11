@@ -7,6 +7,7 @@ import {
 import {
   checkPublishable,
   listingSimulationConfig,
+  listingPreviewAssetConfig,
   parseListingConfig,
   withStableProfile,
 } from '../listingConfig';
@@ -49,7 +50,7 @@ test('20 checksum-pinned minute sources; ordinal selection never modifies an exi
       expect.objectContaining({ code: 'HISTORICAL_RIGHTS_UNVERIFIED' }),
     );
     expect(() => listingSimulationConfig(draft)).toThrow(expect.objectContaining({ code: 'HISTORICAL_RIGHTS_UNVERIFIED' }));
-    expect(() => testMarketCandles(listingSimulationConfig(draft, 'private-regime-preview'), '1m', start)).toThrow('HISTORICAL_RIGHTS_UNVERIFIED');
+    expect(() => testMarketCandles(listingPreviewAssetConfig(draft), '1m', start)).toThrow('HISTORICAL_RIGHTS_UNVERIFIED');
   }
 });
 test('gaps between source close and next open, zero wicks, relative volume and endpoint survive mapping', () => {

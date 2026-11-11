@@ -36,7 +36,7 @@ async function serve(dir, candidate) {
       {},
     ),
   );
-  const { withStableProfile, listingSimulationConfig, parseListingConfig } = inc(
+  const { withStableProfile, listingSimulationConfig, listingPreviewAssetConfig, parseListingConfig } = inc(
     'services/listings/listingConfig',
   );
   const assets = Array.from({ length: 20 }, (_, i) => {
@@ -54,7 +54,8 @@ async function serve(dir, candidate) {
       listingAt: new Date(start).toISOString(),
       ...(candidate ? { history20Regime: { version: 2, id: 'AUTO' } } : {}),
     });
-    return listingSimulationConfig(withStableProfile(cfg, null, i), candidate ? 'private-regime-preview' : undefined);
+    const config = withStableProfile(cfg, null, i);
+    return candidate ? listingPreviewAssetConfig(config) : listingSimulationConfig(config);
   });
   app.get('/view/:index/:step', (req, res) => {
     const asset = assets[Number(req.params.index) % 20],
