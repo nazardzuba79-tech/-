@@ -32,11 +32,18 @@ on:
       - 'scripts/export-deposit-catalogue-baseline*'
       - 'workers/deposit-catalogue/**'
       - '.github/workflows/deposit-catalogue.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 jobs:
   catalogue:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +86,7 @@ jobs:
           VITE_API_URL: /api/v1
         run: npx vite build --outDir ../output/deposit-catalogue-frontend
       - run: npm install --prefix output/qa-tools --no-save --package-lock=false playwright@1.63.0 jsqr@1.4.0 pngjs@7.0.0
-      - run: node output/qa-tools/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node .github/scripts/verify-ci-browser.cjs output/qa-tools/node_modules/playwright 1.63.0 preinstalled
       - name: Desktop, mobile and one-minute idle measurement
         env:
           QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright

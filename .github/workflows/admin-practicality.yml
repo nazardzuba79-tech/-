@@ -14,6 +14,7 @@ on:
       - 'scripts/qa-admin-sort-deposits.cjs'
       - 'scripts/qa-admin-mobile-audit.cjs'
       - '.github/workflows/admin-practicality.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -21,7 +22,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fixtures:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +48,7 @@ jobs:
       - name: Disposable browser
         run: |
           npm install --prefix /tmp/admin-practicality-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/admin-practicality-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/admin-practicality-qa/node_modules/playwright 1.63.0 preinstalled
       - name: Four-width screenshot and overflow checks
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright

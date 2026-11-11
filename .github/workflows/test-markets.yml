@@ -33,13 +33,20 @@ on:
       - 'frontend/src/lib/__tests__/marketTickerIdentity.test.ts'
       - 'frontend/src/lib/__tests__/spotOrdersPresentation.test.ts'
       - '.github/workflows/test-markets.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 
 permissions:
   contents: read
 
 jobs:
   test-markets:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +82,7 @@ jobs:
       - name: Disposable Chromium
         run: |
           npm install --prefix /tmp/voltora-preview-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltora-preview-browser/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltora-preview-browser/node_modules/playwright 1.63.0 preinstalled
       - name: VOLTORA listing browser QA
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltora-preview-browser/node_modules/playwright

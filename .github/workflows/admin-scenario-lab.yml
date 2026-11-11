@@ -7,6 +7,7 @@ on:
       - 'frontend/src/lib/__tests__/adminListingsRussianCopy.test.ts'
       - 'scripts/qa-listing-scenario-lab.cjs'
       - '.github/workflows/admin-scenario-lab.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -14,7 +15,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +42,7 @@ jobs:
       - name: Install isolated Chromium tooling
         run: |
           npm install --prefix /tmp/scenario-lab-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/scenario-lab-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/scenario-lab-qa/node_modules/playwright 1.63.0 preinstalled
       - name: Actual admin page, desktop and mobile, every network write refused
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/scenario-lab-qa/node_modules/playwright

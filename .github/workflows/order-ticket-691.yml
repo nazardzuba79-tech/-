@@ -13,6 +13,7 @@ on:
       - 'scripts/qa-*.cjs'
       - 'scripts/serve-native-demo-review.cjs'
       - '.github/workflows/order-ticket-691.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -49,7 +50,7 @@ jobs:
       - name: Install isolated test tools
         run: |
           npm install --prefix /tmp/order-ticket-qa --no-audit --no-fund --ignore-scripts playwright@1.63.0 @electric-sql/pglite@0.5.15
-          node /tmp/order-ticket-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/order-ticket-qa/node_modules/playwright 1.63.0 download
       - name: Session policy, forged writes and PostgreSQL unchanged rows
         env:
           NODE_OPTIONS: --experimental-vm-modules

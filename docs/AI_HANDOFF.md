@@ -7776,3 +7776,11 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - All nine frontend runtime files are byte-equivalent in Git to deployed Pages source ad8a4a56fda233a7880bc6b30f3923302a3a749f. Three compiled API modules match installed SHA256 exactly. Existing deployments already contain these fixes. The local frontend build contains loopback QA parameters and MUST NOT be published.
 - Actual production viewer GET orders/access returned HTTP 200 allowed:false. Live acceptance is in progress. Exact-head CI must complete before integration. No financial operations, migrations, timers, listings or Worker changes.
 - CI exposed a previously nondeterministic concurrency fixture: raw SELECT FOR UPDATE reports PostgreSQL SQLSTATE 40001 inside Prisma P2010. Reproduced on disposable PostgreSQL. The fixture now forces both serializable snapshots before locking and requires exactly one conflict; only P2034 or P2010 with 40001 is accepted. Conservation, unique receipt and restart assertions remain enforced.
+
+## 2026-11-11 — Codex — PR #704 browser CI provisioning
+
+- Continues integration HEAD b06c3f2d1f2d3b1faff3de72fe3a44233b8703ea on the owner-authorized PR branch.
+- Read all 22 failed job logs. Every failure occurred during Ubuntu apt browser dependency installation with DNS resolution errors and exit 100.
+- Twelve browser jobs use the official Playwright 1.63.0 Noble image pinned to registry digest eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27. Ten PostgreSQL jobs retain Ubuntu 24.04 runner database tools and download their existing pinned Chromium revision without apt.
+- Shared CI helper checks the exact package version, executable presence and actual headless launch/render before the existing acceptance tests. Missing runtime libraries remain a hard failure. Workflow YAML and step comparison confirm every test command, PostgreSQL setting and assertion is retained.
+- Files changed are the 22 failing workflow definitions and .github/scripts/verify-ci-browser.cjs. Application source, Claude changes and financial protections are preserved. Final-head CI and code-only merge remain pending. Production deployment is outside this CI change.
