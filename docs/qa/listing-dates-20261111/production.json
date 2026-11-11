@@ -1,0 +1,46 @@
+{
+  "scope": "Actual persistent production listing store; no fixture",
+  "revisionBefore": "17",
+  "revisionAfter": "19",
+  "mutationCalls": 2,
+  "checks": {
+    "onlyListingAtConfigChanged": true,
+    "otherListingsUnchanged": true,
+    "sameListingIds": true,
+    "countdownStateAndStartedAtUnchanged": true,
+    "published": true,
+    "noNewListings": true
+  },
+  "targets": [
+    {
+      "symbol": "NRYIA",
+      "id": "nryia-ai-20261101",
+      "previousListingAt": "2026-11-15T13:00:00Z",
+      "listingAt": "2026-11-17T13:00:00Z",
+      "elapsedShiftHours": 48,
+      "publishedBefore": true,
+      "publishedAfter": true,
+      "activeVersionBefore": 1,
+      "activeVersionAfter": 2,
+      "countdown": "running",
+      "countdownUnchanged": true,
+      "originalTimerStartedAtRetained": true,
+      "configExceptDateSHA256": "c0d7fe398948f40f54f8f7960c307f522a0a4a0daf5d9383eb4779eab81309eb"
+    },
+    {
+      "symbol": "AELRI",
+      "id": "aelri-ai-20261101",
+      "previousListingAt": "2026-11-25T13:00:00Z",
+      "listingAt": "2026-11-27T13:00:00Z",
+      "elapsedShiftHours": 48,
+      "publishedBefore": true,
+      "publishedAfter": true,
+      "activeVersionBefore": 1,
+      "activeVersionAfter": 2,
+      "countdown": "running",
+      "countdownUnchanged": true,
+      "originalTimerStartedAtRetained": true,
+      "configExceptDateSHA256": "03e52401db9d76f22f7bc99fe74e0ea707034c289014103e5e0c438ece655d09"
+    }
+  ]
+}

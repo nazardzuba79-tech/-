@@ -1,0 +1,96 @@
+{
+  "scope": "LIVE voltextech.net; no fixture API, no trades submitted",
+  "checks": [
+    {
+      "symbol": "NRYIA",
+      "width": 1440,
+      "reloaded": true,
+      "listingAt": "2026-11-17T13:00:00Z",
+      "displayedDate": "17.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 528195,
+      "expectedRemaining": 528195,
+      "clientNow": 1794392204266,
+      "status": "PASS"
+    },
+    {
+      "symbol": "NRYIA",
+      "width": 390,
+      "reloaded": false,
+      "listingAt": "2026-11-17T13:00:00Z",
+      "displayedDate": "17.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 528195,
+      "expectedRemaining": 528195,
+      "clientNow": 1794392204394,
+      "status": "PASS"
+    },
+    {
+      "symbol": "NRYIA",
+      "width": 390,
+      "reloaded": true,
+      "listingAt": "2026-11-17T13:00:00Z",
+      "displayedDate": "17.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 528184,
+      "expectedRemaining": 528185,
+      "clientNow": 1794392214962,
+      "status": "PASS"
+    },
+    {
+      "symbol": "AELRI",
+      "width": 1440,
+      "reloaded": false,
+      "listingAt": "2026-11-27T13:00:00Z",
+      "displayedDate": "27.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 1392154,
+      "expectedRemaining": 1392154,
+      "clientNow": 1794392245100,
+      "status": "PASS"
+    },
+    {
+      "symbol": "AELRI",
+      "width": 1440,
+      "reloaded": true,
+      "listingAt": "2026-11-27T13:00:00Z",
+      "displayedDate": "27.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 1392105,
+      "expectedRemaining": 1392105,
+      "clientNow": 1794392294131,
+      "status": "PASS"
+    },
+    {
+      "symbol": "AELRI",
+      "width": 390,
+      "reloaded": false,
+      "listingAt": "2026-11-27T13:00:00Z",
+      "displayedDate": "27.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 1392104,
+      "expectedRemaining": 1392105,
+      "clientNow": 1794392294274,
+      "status": "PASS"
+    },
+    {
+      "symbol": "AELRI",
+      "width": 390,
+      "reloaded": true,
+      "listingAt": "2026-11-27T13:00:00Z",
+      "displayedDate": "27.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC",
+      "countdown": "running",
+      "state": "pre-listing",
+      "remaining": 1392015,
+      "expectedRemaining": 1392016,
+      "clientNow": 1794392383193,
+      "status": "PASS"
+    }
+  ]
+}

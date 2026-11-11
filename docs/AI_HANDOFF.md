@@ -7735,6 +7735,14 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Contracts, precise limits and release/rollback gates: `docs/INTEGRATION659_CONTRACTS_20261104.md`. Stocks calibrated +18.227612% failure retained; runtime belongs to Claude. No production mutation, merge or Beget work.
 - Deployed 2026-11-04 (owner-authorized): API — the four pre-#668 route modules put back into `voltex-cutover-api-production-1` by `scripts/ops/restore-admin-password-vault-20261104.sh` (release branch `194d388`), health ok at 18:31:35Z, backups in `/opt/voltex-releases/password-restore-20261104-183131` with the rollback command printed by the script; the change lives in the container layer, so a future API image must be built from main (which has the restore). Pages — production deployment `5f99c9ea` from `release/restore-admin-password-pages-20261104` @ `194d388`, live entry `index-DaqT1G8f.js` identical to the local build, `AdminUsersPage-Kg-X7i35.js` shows the password again; production branch set back to `main`, automatic deployments still disabled.
 
+## 2026-11-11 — Codex — two published listing dates +48 hours
+
+- This entry belongs to the date-sync commit; see its GitHub SHA. Existing NRYIA and AELRI records rescheduled through the installed API/store mechanism to 2026-11-17T13:00:00Z and 2026-11-27T13:00:00Z. Only listingAt business fields changed; published versions append, original running timer objects/startedAt and all other listings remain unchanged.
+- Material source edits: config/test-markets/nryia-20261115.draft.json and aelri-20261125.draft.json (one date line each). Historical filenames/seeds retained. Pure calendar tests 6/6; actual live 1440/390 date/countdown/reload checks PASS for both. Evidence: docs/qa/listing-dates-20261111.
+- No importer, timer restart/stop, new listing, DB/financial operation, image/Pages/Worker/DNS deployment, or Claude module edit. Durable store is authoritative across restarts/releases; include these source dates in the next approved integration. Shared integration branch no longer exists remotely; isolated worktree based on fresh main 0a5eef345fa42c9773b97a03b7ec18439c65e7a9.
+
+- PR #700 CI follow-up: two candidate contracts still expected old absolute peak dates. Updated only their expected calendar dates by +48h (NRYIA 27 Nov, AELRI 5 Dec); 240/192h durations, growth values and all shared safety/history assertions unchanged. No additional production mutation. Exact new-head CI required before the owner-authorized code-only merge.
+
 ## 2026-11-11 — Claude — Issue #699: «Нове надходження» by chain time; dust and history summarised
 
 - Agent: Claude, branch `claude/voltex-mobile-audit-7rpjni-deposit-notice-699` from main `0a5eef345`; commit is this entry's commit. One isolated PR. **Not merged, not deployed**; release only on the owner's separate permission.
