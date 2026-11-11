@@ -17,6 +17,7 @@ on:
       - 'scripts/qa-referral-short-codes.cjs'
       - 'scripts/qa-referral-regions.cjs'
       - '.github/workflows/referral-regions.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -24,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   referral:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -70,7 +71,7 @@ jobs:
       - name: Disposable browser tools
         run: |
           npm install --prefix /tmp/referral-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/referral-browser/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/referral-browser/node_modules/playwright 1.63.0 download
       - name: Both guest links, real registration/referrer statistics, copy and persistence at 1440/390
         run: node scripts/qa-referral-regions.cjs
         env: { QA_PLAYWRIGHT_MODULE: '/tmp/referral-browser/node_modules/playwright' }

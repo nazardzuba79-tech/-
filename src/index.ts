@@ -37,6 +37,8 @@ import { CoinGeckoService } from './services/CoinGeckoService';
 import { FearGreedService } from './services/FearGreedService';
 import { ArbitrageService } from './services/ArbitrageService';
 import { arbitrageRouter } from './api/routes/arbitrage';
+import { exchangersRouter } from './api/routes/exchangers';
+import { BestChangeService } from './services/exchangers/BestChangeService';
 import { cfdRouter } from './api/routes/cfd';
 import { referralRouter } from './api/routes/referral';
 import { accountRouter } from './api/routes/account';
@@ -330,6 +332,8 @@ if (walletConversion.problem) console.warn(`[wallet-conversion] ${walletConversi
 app.use('/api/v1', walletActivityRouter(prisma, new WalletConversionService(prisma, new KrakenConversionPrices(marketDataService), Date.now, walletConversion.assets, walletConversion.limits), walletConversion.enabled));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
+// «Обменники» (#694): public read-only BestChange comparison. The key stays server-side; unset ⇒ not_configured.
+app.use('/api/v1', exchangersRouter(new BestChangeService({ apiKey: process.env.BESTCHANGE_API_KEY?.trim(), partnerId: process.env.BESTCHANGE_PARTNER_ID, cacheTtlSeconds: process.env.BESTCHANGE_CACHE_TTL_SECONDS })));
 app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));

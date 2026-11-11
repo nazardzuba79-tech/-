@@ -22,6 +22,7 @@ on:
       - 'frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts'
       - 'scripts/qa-futures-cold-open.cjs'
       - '.github/workflows/app-shell-recovery.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   push:
     branches: [main]
     paths:
@@ -38,6 +39,7 @@ on:
       - 'frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts'
       - 'scripts/qa-futures-cold-open.cjs'
       - '.github/workflows/app-shell-recovery.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 
 permissions:
   contents: read
@@ -47,7 +49,7 @@ concurrency:
 
 jobs:
   cold-open:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +104,7 @@ jobs:
       - name: Install disposable browser
         run: |
           npm install --prefix /tmp/voltex-shell-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-shell-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-shell-qa/node_modules/playwright 1.63.0 download
       # The host in the script is modelled on what Cloudflare Pages actually
       # answers (measured on voltextech.net): a missing /assets file is 200
       # text/html with `immutable`, so a chunk fetched in the deploy window is

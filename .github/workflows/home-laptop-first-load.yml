@@ -10,6 +10,7 @@ on:
       - 'scripts/qa-home-laptop-first-load.cjs'
       - 'scripts/qa-home-snapshot-reload.cjs'
       - '.github/workflows/home-laptop-first-load.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -17,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +42,7 @@ jobs:
       - name: Install disposable browser
         run: |
           npm install --prefix /tmp/voltex-home-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-home-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-home-qa/node_modules/playwright 1.63.0 download
       - name: Browser QA — laptop data does not wait for ticker universe
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright

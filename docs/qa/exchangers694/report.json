@@ -1,0 +1,2821 @@
+{
+  "issue": 694,
+  "fixtureOnly": true,
+  "productionCalls": 0,
+  "startedAt": "2026-11-11T15:41:04.043Z",
+  "servers": {
+    "ok": "http://127.0.0.1:4460",
+    "notConfigured": "http://127.0.0.1:4461"
+  },
+  "checks": [
+    {
+      "name": "fixture: crypto codes cover all 12 catalogue asset/network pairs",
+      "result": "PASS",
+      "detail": [
+        "USDT:tron",
+        "USDT:ethereum",
+        "USDT:bsc",
+        "USDT:ton",
+        "BTC:bitcoin",
+        "ETH:ethereum",
+        "TRX:tron",
+        "TON:ton",
+        "USDC:ethereum",
+        "USDC:solana",
+        "LTC:litecoin",
+        "SOL:solana"
+      ]
+    },
+    {
+      "name": "api: directory lists every catalogue pair; only pairs with usable rows are available",
+      "result": "PASS",
+      "detail": [
+        {
+          "assetId": "USDT",
+          "networkId": "tron",
+          "available": true
+        },
+        {
+          "assetId": "USDT",
+          "networkId": "ethereum",
+          "available": true
+        },
+        {
+          "assetId": "USDT",
+          "networkId": "bsc",
+          "available": false
+        },
+        {
+          "assetId": "USDT",
+          "networkId": "ton",
+          "available": true
+        },
+        {
+          "assetId": "BTC",
+          "networkId": "bitcoin",
+          "available": true
+        },
+        {
+          "assetId": "ETH",
+          "networkId": "ethereum",
+          "available": false
+        },
+        {
+          "assetId": "TRX",
+          "networkId": "tron",
+          "available": true
+        },
+        {
+          "assetId": "TON",
+          "networkId": "ton",
+          "available": true
+        },
+        {
+          "assetId": "USDC",
+          "networkId": "ethereum",
+          "available": false
+        },
+        {
+          "assetId": "USDC",
+          "networkId": "solana",
+          "available": false
+        },
+        {
+          "assetId": "LTC",
+          "networkId": "litecoin",
+          "available": false
+        },
+        {
+          "assetId": "SOL",
+          "networkId": "solana",
+          "available": false
+        }
+      ]
+    },
+    {
+      "name": "api: amount 0 → 400 {status:\"invalid\"}",
+      "result": "PASS"
+    },
+    {
+      "name": "api: TRX on bsc (not a catalogue pair) → 400",
+      "result": "PASS"
+    },
+    {
+      "name": "api: not_configured offers → 200 {status:\"not_configured\"}",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: page loads and runs the default search (HTTP 200)",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: content root is lang=\"ru\"",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: guest header rendered",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: fixed RUB methods + dynamic «Озон Банк RUB» listed; cash/non-RUB hidden",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "sbp",
+          "text": "Карта и СБП без P2P · платёжная система",
+          "disabled": false
+        },
+        {
+          "value": "sberbank",
+          "text": "Сбербанк · банк",
+          "disabled": false
+        },
+        {
+          "value": "tbank",
+          "text": "Т-Банк · банк",
+          "disabled": false
+        },
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "vtb",
+          "text": "ВТБ · банк",
+          "disabled": false
+        },
+        {
+          "value": "card",
+          "text": "Карта банка и СБП · карта",
+          "disabled": false
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "bc-ozon-bank",
+          "text": "Озон Банк RUB · банк",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: methods without rate rows are disabled (Альфа-Банк, Карта Мир)",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: USDT network label is «TRON (TRC-20)»",
+      "result": "PASS",
+      "detail": "TRON (TRC-20)"
+    },
+    {
+      "name": "desktop-1440 guest: USDT networks are the 4 catalogue networks",
+      "result": "PASS",
+      "detail": [
+        "TRON (TRC-20)",
+        "Ethereum (ERC-20)",
+        "BNB Smart Chain (BEP-20) (нет предложений)",
+        "TON"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: amount «15 000,50» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: layout is table",
+      "result": "PASS",
+      "detail": "table"
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15 000,50»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "desktop-1440 guest: amount «15000.5» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: layout is table",
+      "result": "PASS",
+      "detail": "table"
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "desktop-1440 guest «15000.5»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "desktop-1440 guest: unknown values render as «Нет данных», inmax 0 as «… – ?», out-of-limit amount flagged",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: selected labels of sort/method/asset/network selects are not clipped",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 guest: sort «best» gives 2,1,6,3,4,5",
+      "result": "PASS",
+      "detail": [
+        "2",
+        "1",
+        "6",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: the first row of the default sort carries the crown",
+      "result": "PASS",
+      "detail": "Тестовый обменник 2"
+    },
+    {
+      "name": "desktop-1440 guest: sort «rate» gives 1,4,2,6,3,5",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "4",
+        "2",
+        "6",
+        "3",
+        "5"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: sort «reserve» gives 6,1,4,2,5,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "1",
+        "4",
+        "2",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: sort «min» gives 6,5,1,2,4,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "5",
+        "1",
+        "2",
+        "4",
+        "3"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: sort «reviews» gives 1,6,2,4,5,3",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "6",
+        "2",
+        "4",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: filter «Подходит под сумму» narrows 6 → 3",
+      "result": "PASS",
+      "detail": 3
+    },
+    {
+      "name": "desktop-1440 guest: filter «Подходит под сумму» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: filter «Есть отзывы» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "desktop-1440 guest: filter «Есть отзывы» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: filter «Без ручной проверки и верификации» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "desktop-1440 guest: filter «Без ручной проверки и верификации» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: search «обменник 3» leaves one row",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: all three filters together leave 2 (1 and 6)",
+      "result": "PASS",
+      "detail": 2
+    },
+    {
+      "name": "desktop-1440 guest: empty filtered state + «Сбросить фильтры» restores the list",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: TRX network label is «TRON (Native)» and TRC-20 is not offered",
+      "result": "PASS",
+      "detail": [
+        "TRON (Native)"
+      ]
+    },
+    {
+      "name": "desktop-1440 guest: TRX hint says it is not USDT TRC-20",
+      "result": "PASS",
+      "detail": "TRX — нативная монета сети TRON. Это не USDT TRC-20: чтобы получить USDT, выберите USDT и сеть TRON (TRC-20)."
+    },
+    {
+      "name": "desktop-1440 guest: «Параметры изменены» shown after switching the asset",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: TRX offers render with fixture math",
+      "result": "PASS",
+      "detail": {
+        "trxRows": [
+          {
+            "name": "Тестовый обменник 1",
+            "receive": "1 249,54 TRX",
+            "rate": "12 ₽",
+            "best": true,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9001",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          },
+          {
+            "name": "Тестовый обменник 2",
+            "receive": "1 209,71 TRX",
+            "rate": "12,4 ₽",
+            "best": false,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9002",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          }
+        ],
+        "trxBad": []
+      }
+    },
+    {
+      "name": "desktop-1440 guest: TRX results heading says «TRX TRON (Native)»",
+      "result": "PASS",
+      "detail": "Сбербанк → TRX TRON (Native) · 15 000,5 ₽"
+    },
+    {
+      "name": "desktop-1440 guest: all 9 FAQ answers expand (aria-expanded + visible region)",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: FAQ answer collapses again",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 guest: tutorial shows 6 steps and the safety rules",
+      "result": "PASS",
+      "detail": 6
+    },
+    {
+      "name": "desktop-1440 guest: no horizontal scroll (scrollWidth 1440 ≤ innerWidth 1440)",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440
+      }
+    },
+    {
+      "name": "desktop-1440 guest: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in: page loads and runs the default search (HTTP 200)",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: content root is lang=\"ru\"",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: shared Nav rendered",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: fixed RUB methods + dynamic «Озон Банк RUB» listed; cash/non-RUB hidden",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "sbp",
+          "text": "Карта и СБП без P2P · платёжная система",
+          "disabled": false
+        },
+        {
+          "value": "sberbank",
+          "text": "Сбербанк · банк",
+          "disabled": false
+        },
+        {
+          "value": "tbank",
+          "text": "Т-Банк · банк",
+          "disabled": false
+        },
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "vtb",
+          "text": "ВТБ · банк",
+          "disabled": false
+        },
+        {
+          "value": "card",
+          "text": "Карта банка и СБП · карта",
+          "disabled": false
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "bc-ozon-bank",
+          "text": "Озон Банк RUB · банк",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: methods without rate rows are disabled (Альфа-Банк, Карта Мир)",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: USDT network label is «TRON (TRC-20)»",
+      "result": "PASS",
+      "detail": "TRON (TRC-20)"
+    },
+    {
+      "name": "desktop-1440 signed-in: USDT networks are the 4 catalogue networks",
+      "result": "PASS",
+      "detail": [
+        "TRON (TRC-20)",
+        "Ethereum (ERC-20)",
+        "BNB Smart Chain (BEP-20) (нет предложений)",
+        "TON"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: amount «15 000,50» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: layout is table",
+      "result": "PASS",
+      "detail": "table"
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15 000,50»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "desktop-1440 signed-in: amount «15000.5» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: layout is table",
+      "result": "PASS",
+      "detail": "table"
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in «15000.5»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "desktop-1440 signed-in: unknown values render as «Нет данных», inmax 0 as «… – ?», out-of-limit amount flagged",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: selected labels of sort/method/asset/network selects are not clipped",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 signed-in: sort «best» gives 2,1,6,3,4,5",
+      "result": "PASS",
+      "detail": [
+        "2",
+        "1",
+        "6",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: the first row of the default sort carries the crown",
+      "result": "PASS",
+      "detail": "Тестовый обменник 2"
+    },
+    {
+      "name": "desktop-1440 signed-in: sort «rate» gives 1,4,2,6,3,5",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "4",
+        "2",
+        "6",
+        "3",
+        "5"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: sort «reserve» gives 6,1,4,2,5,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "1",
+        "4",
+        "2",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: sort «min» gives 6,5,1,2,4,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "5",
+        "1",
+        "2",
+        "4",
+        "3"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: sort «reviews» gives 1,6,2,4,5,3",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "6",
+        "2",
+        "4",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: filter «Подходит под сумму» narrows 6 → 3",
+      "result": "PASS",
+      "detail": 3
+    },
+    {
+      "name": "desktop-1440 signed-in: filter «Подходит под сумму» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: filter «Есть отзывы» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "desktop-1440 signed-in: filter «Есть отзывы» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: filter «Без ручной проверки и верификации» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "desktop-1440 signed-in: filter «Без ручной проверки и верификации» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: search «обменник 3» leaves one row",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: all three filters together leave 2 (1 and 6)",
+      "result": "PASS",
+      "detail": 2
+    },
+    {
+      "name": "desktop-1440 signed-in: empty filtered state + «Сбросить фильтры» restores the list",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: TRX network label is «TRON (Native)» and TRC-20 is not offered",
+      "result": "PASS",
+      "detail": [
+        "TRON (Native)"
+      ]
+    },
+    {
+      "name": "desktop-1440 signed-in: TRX hint says it is not USDT TRC-20",
+      "result": "PASS",
+      "detail": "TRX — нативная монета сети TRON. Это не USDT TRC-20: чтобы получить USDT, выберите USDT и сеть TRON (TRC-20)."
+    },
+    {
+      "name": "desktop-1440 signed-in: «Параметры изменены» shown after switching the asset",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: TRX offers render with fixture math",
+      "result": "PASS",
+      "detail": {
+        "trxRows": [
+          {
+            "name": "Тестовый обменник 1",
+            "receive": "1 249,54 TRX",
+            "rate": "12 ₽",
+            "best": true,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9001",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          },
+          {
+            "name": "Тестовый обменник 2",
+            "receive": "1 209,71 TRX",
+            "rate": "12,4 ₽",
+            "best": false,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9002",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          }
+        ],
+        "trxBad": []
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in: TRX results heading says «TRX TRON (Native)»",
+      "result": "PASS",
+      "detail": "Сбербанк → TRX TRON (Native) · 15 000,5 ₽"
+    },
+    {
+      "name": "desktop-1440 signed-in: all 9 FAQ answers expand (aria-expanded + visible region)",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: FAQ answer collapses again",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 signed-in: tutorial shows 6 steps and the safety rules",
+      "result": "PASS",
+      "detail": 6
+    },
+    {
+      "name": "desktop-1440 signed-in: no horizontal scroll (scrollWidth 1440 ≤ innerWidth 1440)",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440
+      }
+    },
+    {
+      "name": "desktop-1440 signed-in: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest: page loads and runs the default search (HTTP 200)",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: content root is lang=\"ru\"",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: guest header rendered",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: fixed RUB methods + dynamic «Озон Банк RUB» listed; cash/non-RUB hidden",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "sbp",
+          "text": "Карта и СБП без P2P · платёжная система",
+          "disabled": false
+        },
+        {
+          "value": "sberbank",
+          "text": "Сбербанк · банк",
+          "disabled": false
+        },
+        {
+          "value": "tbank",
+          "text": "Т-Банк · банк",
+          "disabled": false
+        },
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "vtb",
+          "text": "ВТБ · банк",
+          "disabled": false
+        },
+        {
+          "value": "card",
+          "text": "Карта банка и СБП · карта",
+          "disabled": false
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "bc-ozon-bank",
+          "text": "Озон Банк RUB · банк",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 guest: methods without rate rows are disabled (Альфа-Банк, Карта Мир)",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 guest: USDT network label is «TRON (TRC-20)»",
+      "result": "PASS",
+      "detail": "TRON (TRC-20)"
+    },
+    {
+      "name": "mobile-390 guest: USDT networks are the 4 catalogue networks",
+      "result": "PASS",
+      "detail": [
+        "TRON (TRC-20)",
+        "Ethereum (ERC-20)",
+        "BNB Smart Chain (BEP-20) (нет предложений)",
+        "TON"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: amount «15 000,50» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: layout is cards",
+      "result": "PASS",
+      "detail": "cards"
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "mobile-390 guest «15 000,50»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "mobile-390 guest: amount «15000.5» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: layout is cards",
+      "result": "PASS",
+      "detail": "cards"
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "mobile-390 guest «15000.5»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "mobile-390 guest: unknown values render as «Нет данных», inmax 0 as «… – ?», out-of-limit amount flagged",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: selected labels of sort/method/asset/network selects are not clipped",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 guest: sort «best» gives 2,1,6,3,4,5",
+      "result": "PASS",
+      "detail": [
+        "2",
+        "1",
+        "6",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: the first row of the default sort carries the crown",
+      "result": "PASS",
+      "detail": "Тестовый обменник 2"
+    },
+    {
+      "name": "mobile-390 guest: sort «rate» gives 1,4,2,6,3,5",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "4",
+        "2",
+        "6",
+        "3",
+        "5"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: sort «reserve» gives 6,1,4,2,5,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "1",
+        "4",
+        "2",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: sort «min» gives 6,5,1,2,4,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "5",
+        "1",
+        "2",
+        "4",
+        "3"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: sort «reviews» gives 1,6,2,4,5,3",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "6",
+        "2",
+        "4",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: filter «Подходит под сумму» narrows 6 → 3",
+      "result": "PASS",
+      "detail": 3
+    },
+    {
+      "name": "mobile-390 guest: filter «Подходит под сумму» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: filter «Есть отзывы» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "mobile-390 guest: filter «Есть отзывы» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: filter «Без ручной проверки и верификации» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "mobile-390 guest: filter «Без ручной проверки и верификации» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: search «обменник 3» leaves one row",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: all three filters together leave 2 (1 and 6)",
+      "result": "PASS",
+      "detail": 2
+    },
+    {
+      "name": "mobile-390 guest: empty filtered state + «Сбросить фильтры» restores the list",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: TRX network label is «TRON (Native)» and TRC-20 is not offered",
+      "result": "PASS",
+      "detail": [
+        "TRON (Native)"
+      ]
+    },
+    {
+      "name": "mobile-390 guest: TRX hint says it is not USDT TRC-20",
+      "result": "PASS",
+      "detail": "TRX — нативная монета сети TRON. Это не USDT TRC-20: чтобы получить USDT, выберите USDT и сеть TRON (TRC-20)."
+    },
+    {
+      "name": "mobile-390 guest: «Параметры изменены» shown after switching the asset",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: TRX offers render with fixture math",
+      "result": "PASS",
+      "detail": {
+        "trxRows": [
+          {
+            "name": "Тестовый обменник 1",
+            "receive": "1 249,54 TRX",
+            "rate": "12 ₽",
+            "best": true,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9001",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          },
+          {
+            "name": "Тестовый обменник 2",
+            "receive": "1 209,71 TRX",
+            "rate": "12,4 ₽",
+            "best": false,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9002",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          }
+        ],
+        "trxBad": []
+      }
+    },
+    {
+      "name": "mobile-390 guest: TRX results heading says «TRX TRON (Native)»",
+      "result": "PASS",
+      "detail": "Сбербанк → TRX TRON (Native) · 15 000,5 ₽"
+    },
+    {
+      "name": "mobile-390 guest: all 9 FAQ answers expand (aria-expanded + visible region)",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: FAQ answer collapses again",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 guest: tutorial shows 6 steps and the safety rules",
+      "result": "PASS",
+      "detail": 6
+    },
+    {
+      "name": "mobile-390 guest: no horizontal scroll (scrollWidth 390 ≤ innerWidth 390)",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 390,
+        "innerWidth": 390
+      }
+    },
+    {
+      "name": "mobile-390 guest: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in: page loads and runs the default search (HTTP 200)",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: content root is lang=\"ru\"",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: shared Nav rendered",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: fixed RUB methods + dynamic «Озон Банк RUB» listed; cash/non-RUB hidden",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "sbp",
+          "text": "Карта и СБП без P2P · платёжная система",
+          "disabled": false
+        },
+        {
+          "value": "sberbank",
+          "text": "Сбербанк · банк",
+          "disabled": false
+        },
+        {
+          "value": "tbank",
+          "text": "Т-Банк · банк",
+          "disabled": false
+        },
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "vtb",
+          "text": "ВТБ · банк",
+          "disabled": false
+        },
+        {
+          "value": "card",
+          "text": "Карта банка и СБП · карта",
+          "disabled": false
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "bc-ozon-bank",
+          "text": "Озон Банк RUB · банк",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: methods without rate rows are disabled (Альфа-Банк, Карта Мир)",
+      "result": "PASS",
+      "detail": [
+        {
+          "value": "alfabank",
+          "text": "Альфа-Банк · банк (нет предложений)",
+          "disabled": true
+        },
+        {
+          "value": "mir",
+          "text": "Карта Мир · карта (нет предложений)",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: USDT network label is «TRON (TRC-20)»",
+      "result": "PASS",
+      "detail": "TRON (TRC-20)"
+    },
+    {
+      "name": "mobile-390 signed-in: USDT networks are the 4 catalogue networks",
+      "result": "PASS",
+      "detail": [
+        "TRON (TRC-20)",
+        "Ethereum (ERC-20)",
+        "BNB Smart Chain (BEP-20) (нет предложений)",
+        "TON"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: amount «15 000,50» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: layout is cards",
+      "result": "PASS",
+      "detail": "cards"
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15 000,50»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "mobile-390 signed-in: amount «15000.5» is sent as 15000.5",
+      "result": "PASS",
+      "detail": {
+        "sentAmount": "15000.5",
+        "status": 200
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: layout is cards",
+      "result": "PASS",
+      "detail": "cards"
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: exactly the active, positive-rate fixture exchangers render (inactive #7, zero-rate #8, unknown changer dropped)",
+      "result": "PASS",
+      "detail": [
+        "Тестовый обменник 1",
+        "Тестовый обменник 2",
+        "Тестовый обменник 3",
+        "Тестовый обменник 4",
+        "Тестовый обменник 5",
+        "Тестовый обменник 6"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: receive = floor(amount / RUB-per-unit, 2) and rate per row match the fixture (incl. crypto-per-RUB row inverted)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: «Показано 6 из 6»",
+      "result": "PASS",
+      "detail": "Показано 6 из 6"
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: the only live region is the short status line (count + update time)",
+      "result": "PASS",
+      "detail": [
+        {
+          "tag": "P",
+          "role": "status",
+          "text": "Показано 6 из 6 предложений. Обновлено в 18:41."
+        }
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: every «Перейти к обменнику» href is exactly https://<BestChange host>/click.php?id=<that exchanger id>",
+      "result": "PASS",
+      "detail": {
+        "count": 5,
+        "bad": []
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: all 7 outbound links have target=_blank, rel⊇noopener, referrerpolicy=origin",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: no token/key/VOLTEX data in any outbound link",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: malicious-urls offer shows «Выбрать на BestChange» to the direction page (with partner id)",
+      "result": "PASS",
+      "detail": {
+        "text": "Выбрать на BestChange",
+        "href": "https://www.bestchange.ru/sberbank-to-tether-trc20.html?p=12345",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: ru-less exchanger falls back to its en click link",
+      "result": "PASS",
+      "detail": {
+        "text": "Перейти к обменнику",
+        "href": "https://www.bestchange.com/click.php?id=9006",
+        "target": "_blank",
+        "rel": "noopener nofollow sponsored",
+        "referrerpolicy": "origin"
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: estimate equals the «Лучший курс» offer (Тестовый обменник 2) receive",
+      "result": "PASS",
+      "detail": {
+        "estimate": "≈ 157,07 USDT",
+        "best": "Тестовый обменник 2"
+      }
+    },
+    {
+      "name": "mobile-390 signed-in «15000.5»: results heading names the query",
+      "result": "PASS",
+      "detail": "Сбербанк → USDT TRON (TRC-20) · 15 000,5 ₽"
+    },
+    {
+      "name": "mobile-390 signed-in: unknown values render as «Нет данных», inmax 0 as «… – ?», out-of-limit amount flagged",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: selected labels of sort/method/asset/network selects are not clipped",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 signed-in: sort «best» gives 2,1,6,3,4,5",
+      "result": "PASS",
+      "detail": [
+        "2",
+        "1",
+        "6",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: the first row of the default sort carries the crown",
+      "result": "PASS",
+      "detail": "Тестовый обменник 2"
+    },
+    {
+      "name": "mobile-390 signed-in: sort «rate» gives 1,4,2,6,3,5",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "4",
+        "2",
+        "6",
+        "3",
+        "5"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: sort «reserve» gives 6,1,4,2,5,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "1",
+        "4",
+        "2",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: sort «min» gives 6,5,1,2,4,3",
+      "result": "PASS",
+      "detail": [
+        "6",
+        "5",
+        "1",
+        "2",
+        "4",
+        "3"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: sort «reviews» gives 1,6,2,4,5,3",
+      "result": "PASS",
+      "detail": [
+        "1",
+        "6",
+        "2",
+        "4",
+        "5",
+        "3"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: filter «Подходит под сумму» narrows 6 → 3",
+      "result": "PASS",
+      "detail": 3
+    },
+    {
+      "name": "mobile-390 signed-in: filter «Подходит под сумму» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: filter «Есть отзывы» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "mobile-390 signed-in: filter «Есть отзывы» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: filter «Без ручной проверки и верификации» narrows 6 → 4",
+      "result": "PASS",
+      "detail": 4
+    },
+    {
+      "name": "mobile-390 signed-in: filter «Без ручной проверки и верификации» off restores 6",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: search «обменник 3» leaves one row",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: all three filters together leave 2 (1 and 6)",
+      "result": "PASS",
+      "detail": 2
+    },
+    {
+      "name": "mobile-390 signed-in: empty filtered state + «Сбросить фильтры» restores the list",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: TRX network label is «TRON (Native)» and TRC-20 is not offered",
+      "result": "PASS",
+      "detail": [
+        "TRON (Native)"
+      ]
+    },
+    {
+      "name": "mobile-390 signed-in: TRX hint says it is not USDT TRC-20",
+      "result": "PASS",
+      "detail": "TRX — нативная монета сети TRON. Это не USDT TRC-20: чтобы получить USDT, выберите USDT и сеть TRON (TRC-20)."
+    },
+    {
+      "name": "mobile-390 signed-in: «Параметры изменены» shown after switching the asset",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: TRX offers render with fixture math",
+      "result": "PASS",
+      "detail": {
+        "trxRows": [
+          {
+            "name": "Тестовый обменник 1",
+            "receive": "1 249,54 TRX",
+            "rate": "12 ₽",
+            "best": true,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9001",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          },
+          {
+            "name": "Тестовый обменник 2",
+            "receive": "1 209,71 TRX",
+            "rate": "12,4 ₽",
+            "best": false,
+            "link": {
+              "text": "Перейти к обменнику",
+              "href": "https://www.bestchange.ru/click.php?id=9002",
+              "target": "_blank",
+              "rel": "noopener nofollow sponsored",
+              "referrerpolicy": "origin"
+            }
+          }
+        ],
+        "trxBad": []
+      }
+    },
+    {
+      "name": "mobile-390 signed-in: TRX results heading says «TRX TRON (Native)»",
+      "result": "PASS",
+      "detail": "Сбербанк → TRX TRON (Native) · 15 000,5 ₽"
+    },
+    {
+      "name": "mobile-390 signed-in: all 9 FAQ answers expand (aria-expanded + visible region)",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: FAQ answer collapses again",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 signed-in: tutorial shows 6 steps and the safety rules",
+      "result": "PASS",
+      "detail": 6
+    },
+    {
+      "name": "mobile-390 signed-in: no horizontal scroll (scrollWidth 390 ≤ innerWidth 390)",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 390,
+        "innerWidth": 390
+      }
+    },
+    {
+      "name": "mobile-390 signed-in: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 not_configured: directory answers 200 {status:\"not_configured\"}",
+      "result": "PASS",
+      "detail": {
+        "status": "not_configured"
+      }
+    },
+    {
+      "name": "desktop-1440 not_configured: honest notice shown",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 not_configured: no claim of a comparison, a list of exchangers or API data anywhere on the page",
+      "result": "PASS",
+      "detail": "VOLTEX / Обменники Обменники Купить криптовалюту за рубли Выберите способ оплаты в рублях, криптовалюту и сеть — и перейдите к выбору обменника на BestChange. VOLTEX не проводит обмен. Мы не принимаем рубли, не обрабатываем платежи и заявки. Обмен проводится на сайте независимого обменника. BestChange — сервис мониторинга обменных пунктов: он собирает их курсы, резервы, лимиты и отзывы клиентов. С"
+    },
+    {
+      "name": "desktop-1440 not_configured: no exchanger name, rate, reserve or review is rendered",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 not_configured: only payment methods with a verified BestChange direction are listed (real names, no «Карта Мир»)",
+      "result": "PASS",
+      "detail": [
+        "Карта и СБП без P2P · платёжная система",
+        "Сбербанк · банк",
+        "Т-Банк · банк",
+        "Альфа-Банк · банк",
+        "ВТБ · банк",
+        "Карта банка и СБП · карта"
+      ]
+    },
+    {
+      "name": "desktop-1440 not_configured: all 66 selectable directions open a verified BestChange page",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "desktop-1440 not_configured: results section contains no numbers",
+      "result": "PASS",
+      "detail": "Выбор обменника на BestChange Сравнение курсов сейчас недоступно. Список обменников и курсы на VOLTEX сейчас не показываются Подключение к данным BestChange не настроено. Вымышленных обменников, курсов и резервов здесь нет. Для выбранного направления откроется страница BestChange — обменник выбирается там. Выбрать на BestChange , откроется в новой вкладке Откроется страница направления на BestChange со списком обменников."
+    },
+    {
+      "name": "desktop-1440 not_configured: no offer rows or cards",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 not_configured: estimate is «—» and says rates are not loaded",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 not_configured: no «Обновить» button, no toolbar",
+      "result": "PASS"
+    },
+    {
+      "name": "desktop-1440 not_configured: «Выбрать на BestChange» to the direction page",
+      "result": "PASS",
+      "detail": "https://www.bestchange.ru/sbp-to-tether-trc20.html"
+    },
+    {
+      "name": "desktop-1440 not_configured: search only re-targets the BestChange link (no offers request, still no rate/receive numbers)",
+      "result": "PASS",
+      "detail": {
+        "offersCalls": 0,
+        "href2": "https://www.bestchange.ru/sberbank-to-tether-trc20.html",
+        "results2": "Список обменников и курсы на VOLTEX сейчас не показываются Подключение к данным BestChange не настроено. Вымышленных обменников, курсов и резервов здесь нет. Для выбранного направления откроется страница BestChange — обменник выбирается там. Выбрать на BestChange , откроется в новой вкладке Откроется страница направления на BestChange со списком обменников.",
+        "estimate2": "—"
+      }
+    },
+    {
+      "name": "desktop-1440 not_configured: no horizontal scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440
+      }
+    },
+    {
+      "name": "desktop-1440 not_configured: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 not_configured: directory answers 200 {status:\"not_configured\"}",
+      "result": "PASS",
+      "detail": {
+        "status": "not_configured"
+      }
+    },
+    {
+      "name": "mobile-390 not_configured: honest notice shown",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 not_configured: no claim of a comparison, a list of exchangers or API data anywhere on the page",
+      "result": "PASS",
+      "detail": "VOLTEX / Обменники Обменники Купить криптовалюту за рубли Выберите способ оплаты в рублях, криптовалюту и сеть — и перейдите к выбору обменника на BestChange. VOLTEX не проводит обмен. Мы не принимаем рубли, не обрабатываем платежи и заявки. Обмен проводится на сайте независимого обменника. BestChange — сервис мониторинга обменных пунктов: он собирает их курсы, резервы, лимиты и отзывы клиентов. С"
+    },
+    {
+      "name": "mobile-390 not_configured: no exchanger name, rate, reserve or review is rendered",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 not_configured: only payment methods with a verified BestChange direction are listed (real names, no «Карта Мир»)",
+      "result": "PASS",
+      "detail": [
+        "Карта и СБП без P2P · платёжная система",
+        "Сбербанк · банк",
+        "Т-Банк · банк",
+        "Альфа-Банк · банк",
+        "ВТБ · банк",
+        "Карта банка и СБП · карта"
+      ]
+    },
+    {
+      "name": "mobile-390 not_configured: all 66 selectable directions open a verified BestChange page",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "mobile-390 not_configured: results section contains no numbers",
+      "result": "PASS",
+      "detail": "Выбор обменника на BestChange Сравнение курсов сейчас недоступно. Список обменников и курсы на VOLTEX сейчас не показываются Подключение к данным BestChange не настроено. Вымышленных обменников, курсов и резервов здесь нет. Для выбранного направления откроется страница BestChange — обменник выбирается там. Выбрать на BestChange , откроется в новой вкладке Откроется страница направления на BestChange со списком обменников."
+    },
+    {
+      "name": "mobile-390 not_configured: no offer rows or cards",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 not_configured: estimate is «—» and says rates are not loaded",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 not_configured: no «Обновить» button, no toolbar",
+      "result": "PASS"
+    },
+    {
+      "name": "mobile-390 not_configured: «Выбрать на BestChange» to the direction page",
+      "result": "PASS",
+      "detail": "https://www.bestchange.ru/sbp-to-tether-trc20.html"
+    },
+    {
+      "name": "mobile-390 not_configured: search only re-targets the BestChange link (no offers request, still no rate/receive numbers)",
+      "result": "PASS",
+      "detail": {
+        "offersCalls": 0,
+        "href2": "https://www.bestchange.ru/sberbank-to-tether-trc20.html",
+        "results2": "Список обменников и курсы на VOLTEX сейчас не показываются Подключение к данным BestChange не настроено. Вымышленных обменников, курсов и резервов здесь нет. Для выбранного направления откроется страница BestChange — обменник выбирается там. Выбрать на BestChange , откроется в новой вкладке Откроется страница направления на BestChange со списком обменников.",
+        "estimate2": "—"
+      }
+    },
+    {
+      "name": "mobile-390 not_configured: no horizontal scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 390,
+        "innerWidth": 390
+      }
+    },
+    {
+      "name": "mobile-390 not_configured: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "nav 1531: signed-in desktop row shows «Обменники» (active)",
+      "result": "PASS"
+    },
+    {
+      "name": "nav 1531: desktop row does not overlap the account controls",
+      "result": "PASS",
+      "detail": {
+        "end": 935.640625,
+        "right": 1161.3125
+      }
+    },
+    {
+      "name": "nav 1531: no two desktop row items overlap and no label is clipped",
+      "result": "PASS",
+      "detail": {
+        "overlaps": [],
+        "clippedItems": []
+      }
+    },
+    {
+      "name": "nav 1531: no horizontal scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1531,
+        "innerWidth": 1531
+      }
+    },
+    {
+      "name": "nav 1531: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "nav 1600: signed-in desktop row shows «Обменники» (active)",
+      "result": "PASS"
+    },
+    {
+      "name": "nav 1600: desktop row does not overlap the account controls",
+      "result": "PASS",
+      "detail": {
+        "end": 935.640625,
+        "right": 1230.3125
+      }
+    },
+    {
+      "name": "nav 1600: no two desktop row items overlap and no label is clipped",
+      "result": "PASS",
+      "detail": {
+        "overlaps": [],
+        "clippedItems": []
+      }
+    },
+    {
+      "name": "nav 1600: no horizontal scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1600,
+        "innerWidth": 1600
+      }
+    },
+    {
+      "name": "nav 1600: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "nav 1920: signed-in desktop row shows «Обменники» (active)",
+      "result": "PASS"
+    },
+    {
+      "name": "nav 1920: desktop row does not overlap the account controls",
+      "result": "PASS",
+      "detail": {
+        "end": 1230.1875,
+        "right": 1534.3125
+      }
+    },
+    {
+      "name": "nav 1920: no two desktop row items overlap and no label is clipped",
+      "result": "PASS",
+      "detail": {
+        "overlaps": [],
+        "clippedItems": []
+      }
+    },
+    {
+      "name": "nav 1920: no horizontal scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1920,
+        "innerWidth": 1920
+      }
+    },
+    {
+      "name": "nav 1920: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "drawer 1440: desktop row hidden below 1531 px",
+      "result": "PASS"
+    },
+    {
+      "name": "drawer 1440: drawer shows «Обменники»",
+      "result": "PASS"
+    },
+    {
+      "name": "drawer 1440: drawer link from /academy opens /exchangers (client-side) and the drawer closes",
+      "result": "PASS"
+    },
+    {
+      "name": "drawer 1440: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "drawer 390: desktop row hidden below 1531 px",
+      "result": "PASS"
+    },
+    {
+      "name": "drawer 390: drawer shows «Обменники»",
+      "result": "PASS"
+    },
+    {
+      "name": "drawer 390: drawer link from /academy opens /exchangers (client-side) and the drawer closes",
+      "result": "PASS"
+    },
+    {
+      "name": "drawer 390: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "guest 1600: «Обменники» visible with aria-current=page",
+      "result": "PASS"
+    },
+    {
+      "name": "guest 1600: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "guest 390: «Обменники» visible with aria-current=page",
+      "result": "PASS"
+    },
+    {
+      "name": "guest 390: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-1024: СБП → USDT TON offers answered 200",
+      "result": "PASS"
+    },
+    {
+      "name": "long-content-1024: layout is table with both long-content rows",
+      "result": "PASS",
+      "detail": {
+        "layout": "table",
+        "rows": 2
+      }
+    },
+    {
+      "name": "long-content-1024: no tag, review count or name spills past its table cell",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-1024: exchanger names are shown in full (wrapped, not ellipsised) and carry a title",
+      "result": "PASS",
+      "detail": {
+        "overflow": [],
+        "namesFull": true,
+        "scrollWidth": 1024,
+        "innerWidth": 1024
+      }
+    },
+    {
+      "name": "long-content-1024: no horizontal page scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1024,
+        "innerWidth": 1024
+      }
+    },
+    {
+      "name": "long-content-1024: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-1280: СБП → USDT TON offers answered 200",
+      "result": "PASS"
+    },
+    {
+      "name": "long-content-1280: layout is table with both long-content rows",
+      "result": "PASS",
+      "detail": {
+        "layout": "table",
+        "rows": 2
+      }
+    },
+    {
+      "name": "long-content-1280: no tag, review count or name spills past its table cell",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-1280: exchanger names are shown in full (wrapped, not ellipsised) and carry a title",
+      "result": "PASS",
+      "detail": {
+        "overflow": [],
+        "namesFull": true,
+        "scrollWidth": 1280,
+        "innerWidth": 1280
+      }
+    },
+    {
+      "name": "long-content-1280: no horizontal page scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1280,
+        "innerWidth": 1280
+      }
+    },
+    {
+      "name": "long-content-1280: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-1440: СБП → USDT TON offers answered 200",
+      "result": "PASS"
+    },
+    {
+      "name": "long-content-1440: layout is table with both long-content rows",
+      "result": "PASS",
+      "detail": {
+        "layout": "table",
+        "rows": 2
+      }
+    },
+    {
+      "name": "long-content-1440: no tag, review count or name spills past its table cell",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-1440: exchanger names are shown in full (wrapped, not ellipsised) and carry a title",
+      "result": "PASS",
+      "detail": {
+        "overflow": [],
+        "namesFull": true,
+        "scrollWidth": 1440,
+        "innerWidth": 1440
+      }
+    },
+    {
+      "name": "long-content-1440: no horizontal page scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440
+      }
+    },
+    {
+      "name": "long-content-1440: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-390: СБП → USDT TON offers answered 200",
+      "result": "PASS"
+    },
+    {
+      "name": "long-content-390: layout is cards with both long-content rows",
+      "result": "PASS",
+      "detail": {
+        "layout": "cards",
+        "rows": 2
+      }
+    },
+    {
+      "name": "long-content-390: no tag, review count or name spills past its card",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "long-content-390: exchanger names are shown in full (wrapped, not ellipsised) and carry a title",
+      "result": "PASS",
+      "detail": {
+        "overflow": [],
+        "namesFull": true,
+        "scrollWidth": 390,
+        "innerWidth": 390
+      }
+    },
+    {
+      "name": "long-content-390: no horizontal page scroll",
+      "result": "PASS",
+      "detail": {
+        "scrollWidth": 390,
+        "innerWidth": 390
+      }
+    },
+    {
+      "name": "long-content-390: no page errors / console errors",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "not_configured mode made no upstream call",
+      "result": "PASS",
+      "detail": 0
+    },
+    {
+      "name": "upstream: every call went to an official BestChange API host with the fake key (injected fetch, no network)",
+      "result": "PASS",
+      "detail": 3
+    },
+    {
+      "name": "upstream: each rates request is one batch of 8 × 12 pairs",
+      "result": "PASS",
+      "detail": {
+        "ratesCalls": 1,
+        "pairsPerCall": [
+          96
+        ]
+      }
+    },
+    {
+      "name": "no API response body carried the key or an upstream URL",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "browser made no request outside 127.0.0.1 (except the fixture-served Google Fonts CSS)",
+      "result": "PASS",
+      "detail": []
+    },
+    {
+      "name": "no unexpected /api read hit the fixture server",
+      "result": "PASS",
+      "detail": []
+    }
+  ],
+  "screenshots": [
+    "docs/qa/exchangers694/desktop-1440-results.png",
+    "docs/qa/exchangers694/desktop-1440-tutorial.png",
+    "docs/qa/exchangers694/mobile-390-calculator.png",
+    "docs/qa/exchangers694/mobile-390-results.png",
+    "docs/qa/exchangers694/mobile-390-calculator.png",
+    "docs/qa/exchangers694/desktop-1440-not-configured.png",
+    "docs/qa/exchangers694/mobile-390-not-configured.png",
+    "docs/qa/exchangers694/nav-1600.png",
+    "docs/qa/exchangers694/drawer-390.png",
+    "docs/qa/exchangers694/desktop-1024-long-content.png",
+    "docs/qa/exchangers694/desktop-1280-long-content.png",
+    "docs/qa/exchangers694/desktop-1440-long-content.png"
+  ],
+  "upstreamCalls": [
+    {
+      "host": "bestchange.app",
+      "path": "/v2/<fake-key>/currencies/ru",
+      "keyOk": true
+    },
+    {
+      "host": "bestchange.app",
+      "path": "/v2/<fake-key>/changers/ru",
+      "keyOk": true
+    },
+    {
+      "host": "bestchange.app",
+      "path": "/v2/<fake-key>/rates/2001-3001+2001-3002+2001-3003+2001-3004+2001-3005+2001-3006+2001-3007+2001-3008+2001-3009+2001-3010+2001-3011+2001-3012+2002-3001+2002-3002+2002-3003+2002-3004+2002-3005+2002-3006+2002-3007+2002-3008+2002-3009+2002-3010+2002-3011+2002-3012+2003-3001+2003-3002+2003-3003+2003-3004+2003-3005+2003-3006+2003-3007+2003-3008+2003-3009+2003-3010+2003-3011+2003-3012+2004-3001+2004-3002+2004-3003+2004-3004+2004-3005+2004-3006+2004-3007+2004-3008+2004-3009+2004-3010+2004-3011+2004-3012+2005-3001+2005-3002+2005-3003+2005-3004+2005-3005+2005-3006+2005-3007+2005-3008+2005-3009+2005-3010+2005-3011+2005-3012+2006-3001+2006-3002+2006-3003+2006-3004+2006-3005+2006-3006+2006-3007+2006-3008+2006-3009+2006-3010+2006-3011+2006-3012+2007-3001+2007-3002+2007-3003+2007-3004+2007-3005+2007-3006+2007-3007+2007-3008+2007-3009+2007-3010+2007-3011+2007-3012+2008-3001+2008-3002+2008-3003+2008-3004+2008-3005+2008-3006+2008-3007+2008-3008+2008-3009+2008-3010+2008-3011+2008-3012",
+      "keyOk": true
+    }
+  ],
+  "apiMisses": [],
+  "denied": [
+    {
+      "label": "desktop-1440-guest",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-guest",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-guest",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-signed-in",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-signed-in",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-signed-in",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-guest",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-guest",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-guest",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-signed-in",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-signed-in",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-signed-in",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-not-configured",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-not-configured",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "desktop-1440-not-configured",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-not-configured",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-not-configured",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "mobile-390-not-configured",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1531",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1531",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1531",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1600",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1600",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1600",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1920",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1920",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "nav-1920",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "drawer-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "guest-nav-1600",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "guest-nav-1600",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "guest-nav-1600",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "guest-nav-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "guest-nav-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "guest-nav-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1024",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1024",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1024",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1280",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1280",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1280",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-1440",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-390",
+      "url": "https://fonts.googleapis.com/css2"
+    },
+    {
+      "label": "long-content-390",
+      "url": "https://fonts.googleapis.com/css2"
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "keyLeaks": [],
+  "result": "PASS",
+  "finishedAt": "2026-11-11T15:41:24.914Z",
+  "summary": {
+    "pass": 330,
+    "fail": 0
+  }
+}

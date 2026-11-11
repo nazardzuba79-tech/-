@@ -1,0 +1,50 @@
+{
+  "_comment": "Test-only fixture shaped like https://bestchange.app/en/openapi.yaml (CurrencyList, ChangerList, ExchangeRateList). All ids (9000+) and names are invented; nothing here is real BestChange data.",
+  "currencies": {
+    "currencies": [
+      { "id": 9001, "name": "СБП", "urlname": "sbp", "viewname": "СБП", "code": "SBPRUB", "crypto": false, "cash": false, "ps": 1, "group": 1 },
+      { "id": 9002, "name": "Сбербанк", "urlname": "sberbank", "viewname": "Сбербанк", "code": "SBERRUB", "crypto": false, "cash": false, "ps": 2, "group": 1 },
+      { "id": 9003, "name": "Т-Банк", "urlname": "tinkoff", "viewname": "Т-Банк", "code": "TCSBRUB", "crypto": false, "cash": false, "ps": 3, "group": 1 },
+      { "id": 9004, "name": "Наличные RUB", "urlname": "cash-rub", "viewname": "Наличные RUB", "code": "CASHRUB", "crypto": false, "cash": true, "ps": 4, "group": 2 },
+      { "id": 9005, "name": "Тестовый банк RUB", "urlname": "test-bank-rub", "viewname": "Тестовый банк", "code": "TESTBRUB", "crypto": false, "cash": false, "ps": 5, "group": 1 },
+      { "id": 9006, "name": "Тестовая карта USD", "urlname": "test-card-usd", "viewname": "Карта USD", "code": "TESTCUSD", "crypto": false, "cash": false, "ps": 6, "group": 1 },
+      { "id": 9101, "name": "Tether TRC20 (USDT)", "urlname": "tether-trc20", "viewname": "USDT TRC20", "code": "USDTTRC20", "crypto": true, "cash": false, "ps": 10, "group": 3 },
+      { "id": 9102, "name": "Tron (TRX)", "urlname": "tron", "viewname": "TRX", "code": "TRX", "crypto": true, "cash": false, "ps": 11, "group": 3 },
+      { "id": 9103, "name": "Bitcoin (BTC)", "urlname": "bitcoin", "viewname": "BTC", "code": "BTC", "crypto": true, "cash": false, "ps": 12, "group": 3 },
+      { "id": "9104", "name": "Broken row (string id)", "urlname": "broken", "code": "BRK", "crypto": true, "cash": false }
+    ]
+  },
+  "changers": {
+    "changers": [
+      { "id": 9201, "name": "Тестовый обменник 1", "langs": ["ru", "en"], "urls": { "ru": "https://www.bestchange.ru/click.php?id=9201", "en": "https://www.bestchange.com/click.php?id=9201" }, "pages": { "ru": "https://www.bestchange.ru/test-1-exchanger.html" }, "reserve": 100000, "reviews": { "claim": "0", "closed": "2", "neutral": "3", "positive": "390" }, "rating": 5, "active": true },
+      { "id": 9202, "name": "Тестовый обменник 2", "langs": ["ru"], "urls": { "ru": "https://evil.example/click.php?id=9202", "en": "javascript:alert(1)" }, "pages": {}, "reserve": 5000, "reviews": { "claim": 1, "closed": 0, "neutral": 0, "positive": 12 }, "rating": 3, "active": true },
+      { "id": 9203, "name": "Тестовый обменник 3", "langs": ["ru"], "urls": { "ru": "https://www.bestchange.ru/click.php?id=9203" }, "pages": {}, "reserve": 1, "reviews": { "claim": 0, "closed": 0, "neutral": 0, "positive": 1 }, "rating": 1, "active": false },
+      { "id": 9204, "name": "Тестовый обменник 4", "langs": ["en"], "urls": { "ru": "https://www.bestchange.ru/click.php?id=9999", "en": "https://www.bestchange.com/click.php?id=9204" }, "pages": {}, "reserve": 1, "reviews": { "claim": "x", "closed": 0, "neutral": 0, "positive": 1 }, "rating": "4", "active": true },
+      { "id": 9205, "name": "Тестовый обменник 5", "langs": ["ru"], "urls": { "ru": "https://www.bestchange.ru/click.php?id=9205&p=1" }, "pages": {}, "reserve": 1, "reviews": { "claim": 0, "closed": 0, "neutral": 0, "positive": 7 }, "rating": 2, "active": true }
+    ]
+  },
+  "rates": {
+    "rates": {
+      "9001-9101": [
+        { "changer": 9201, "rate": 0.0105, "rankrate": "0.0104", "reserve": "12345.6", "inmin": "1000", "inmax": "500000", "marks": ["manual", "verifying", "bogus", "manual"] },
+        { "changer": 9202, "rate": 95.5, "rankrate": "96", "reserve": "500", "inmin": "100", "inmax": "0", "marks": [] },
+        { "changer": 9203, "rate": 90, "rankrate": "90", "reserve": "1", "inmin": "1", "inmax": "1000000", "marks": [] },
+        { "changer": 9204, "rate": 99, "rankrate": "99.5", "reserve": "10", "inmin": "50000", "inmax": "900000", "marks": ["reg"] },
+        { "changer": 9204, "rate": 94.1, "rankrate": "not-a-number", "reserve": "20", "inmin": "50000", "inmax": "900000", "marks": ["floating"] },
+        { "changer": 9999, "rate": 80, "rankrate": "80", "reserve": "1", "inmin": "1", "inmax": "1", "marks": [] },
+        { "changer": 9205, "rate": 0, "rankrate": "0", "reserve": "1", "inmin": "1", "inmax": "1", "marks": [] }
+      ],
+      "9001-9102": [
+        { "changer": 9201, "rate": 8.5, "rankrate": "8.6", "reserve": "100000", "inmin": "500", "inmax": "100000", "marks": [] }
+      ],
+      "9002-9101": [],
+      "9005-9101": [
+        { "changer": 9205, "rate": "96", "rankrate": 96.2, "reserve": 77, "inmin": 10, "inmax": 20000, "marks": ["card2card"] }
+      ],
+      "9001-9101-1": [
+        { "changer": 9201, "rate": 1, "rankrate": "1", "reserve": "1", "inmin": "1", "inmax": "1", "marks": [] }
+      ],
+      "junk": "ignored"
+    }
+  }
+}

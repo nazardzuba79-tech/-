@@ -17,6 +17,7 @@ on:
       - 'frontend/src/lib/__tests__/seo*.test.ts'
       - 'scripts/qa-seo-indexing.cjs'
       - '.github/workflows/seo-indexing.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -24,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   seo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +47,7 @@ jobs:
       - name: Disposable tools (local Pages emulator and browser only, not application dependencies)
         run: |
           npm install --prefix /tmp/seo-qa --no-save --no-audit --no-fund wrangler@4.141.0 playwright@1.63.0
-          node /tmp/seo-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/seo-qa/node_modules/playwright 1.63.0 download
       - name: Crawler without JS, Chromium without JS, Chromium 1440 and 390 on the built site
         run: node scripts/qa-seo-indexing.cjs
         env:
