@@ -27,6 +27,11 @@ Owner-authorized production change: only `listingAt` for two existing records.
   within three seconds. Reloads retain the new dates at both widths.
 - Existing listing calendar tests: 6/6 PASS. Both config-file diffs contain only
   one `listingAt` line each; every other JSON value is unchanged.
+- Two existing candidate tests retained old absolute peak dates, causing the
+  first CI failure after the date change. Only those expected date constants
+  move +48 hours: NRYIA peak 25 → 27 November; AELRI peak 3 → 5 December.
+  Their unchanged 240/192-hour durations, target gains/prices and all generic
+  continuity, OHLCV, restart and financial-admission assertions remain intact.
 
 Evidence: `browser.json`, `production.json`, and the four live PNG captures.
 Complete before/after store snapshots and operation receipts remain in the
