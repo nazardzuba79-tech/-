@@ -7753,3 +7753,35 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Preserved from Codex (#693/#695, #697/#698): native TRX proof, finality gates, approved-recipient check, the 07:00–22:00 schedule and slots, the 7-day initial backfill, the Worker's durable at-most-once claim, the `deposit-notice:<id>` journal key, manual attribution/credit. `scripts/qa-deposit-packages.cjs`: one fixture line gained `blockTimestamp` (the signer now requires the chain time). A watcher built with an injected transfer notifier and no digest notifier never calls the real notification service.
 - Unresolved: (1) owner decision on merge and the narrow release; (2) operator runs `forensics-readonly.sql` for the production rows/log; (3) Telegram's own rejection/timeout is still never retried (existing at-most-once rule) — separate decision; (4) the exact amount, block and time of the #693 incident receipt were redacted from `docs/qa/deposit693/RELEASE.md` and from the 2026-11-08 entry above (owner request 2026-11-11); they remain in Git history and in older PR/issue text, and the private evidence on the server is untouched.
 - Release kit (owner request 2026-11-11): `scripts/ops/deposit-notice-699-release.cjs` (`manifest` / `verify before|after` / `smoke`, offline) and the CI artifact `deposit-notice-699-release`; `docs/qa/deposit699/post-release-readonly.sql`. Local build: 312 compiled modules, exactly 2 changed + 1 added against main `e9d7b32`.
+## 2026-11-06 — Codex, Issue #691 order ticket
+
+- Owner requested editable Spot/ECLV/Futures drafts plus strict viewer no-op and two-identity server admission.
+- Work based on observed Pages source `03d5467bf9e8451eddade12e1c528c211350a1b1`; fresh main `6260ae7731652831480824d4c1eb911c0bef2b87` contains unrelated work and is not a release artifact.
+- Changed ticket presentation/draft parsing, ephemeral session capability, outer API order boundary and focused tests. Existing accounting/engines, Copy Trading, Wallet, listings, timers and deposits preserved.
+- Legacy ADMIN/admin-credit exceptions were reported before implementing the outer two-identity guard. No private account identifiers are in evidence.
+- Local targeted regressions: 45 suites/887 PASS; isolated baseline and fixed 1440/390 browser matrix. See `docs/qa/order-ticket-691/RELEASE.md` for precise test scope and limitations.
+- No production changes: authorized browser/Windows/Hetzner OS connection unavailable. Runtime API compatibility, actual pinned identities, native PostgreSQL release validation and authenticated production acceptance remain blocked. Do not release main or the loopback QA bundle.
+## 2026-11-08 — Codex — Issue 697 native TRX prior-credit correction
+
+- Fresh main 0a5eef345fa42c9773b97a03b7ec18439c65e7a9. Proven manual TRC typo plus legacy Cross transfer; no additional Spot compensation. Owner-authorized conserved ticker correction and unique AuditLog persisted in production. Private identities/receipts remain restricted outside Git.
+- Narrow candidate: server rejects ambiguous TRC credit; admin offers native TRX separately from USDT; ordinary Wallet retains visible legacy Cross ownership without changing Spot spendability or native account accounting.
+- PostgreSQL conservation/rollback/restart/concurrency, targeted Jest and built Wallet 1440/390 fixture QA. Full exact-head CI on the PR is authoritative. Customer-authenticated live Wallet check remains pending the affected user's session; administrator audit read-back and installed Wallet service read-back verified. See docs/qa/trx-credit-697/RELEASE.md.
+- No other account, order, deposit, withdrawal, listing, timer, flag, schema or Worker change. No merge. API/Pages prevention/display release must remain narrowly pinned to the installed bases documented in RELEASE.md.
+
+## 2026-11-11 — Codex — integration of PRs 692 and 698
+
+- Integration branch starts at current main 0feb58bd856028dbc79cb8cc13bf68a9db907a61 and preserves both original PR ancestries.
+- Resolved handoff append conflicts and the overlapping futuresTickerHeader withdrawal fixture normalizer. Original financial fingerprint and negative mutation assertions retained. Windows-only CRLF fixture extraction corrected in spotOrderEntry; no runtime behavior changed by conflict resolution.
+- Targeted Jest 514 PASS. Separately executed native PostgreSQL 18.6 order admission boundary PASS and existing TRX conserved correction/concurrency suite PASS against disposable databases. Built Wallet 1440/390 and six order-ticket fixture scenarios PASS, zero financial requests. Backend and frontend builds PASS.
+- All nine frontend runtime files are byte-equivalent in Git to deployed Pages source ad8a4a56fda233a7880bc6b30f3923302a3a749f. Three compiled API modules match installed SHA256 exactly. Existing deployments already contain these fixes. The local frontend build contains loopback QA parameters and MUST NOT be published.
+- Actual production viewer GET orders/access returned HTTP 200 allowed:false. Live acceptance is in progress. Exact-head CI must complete before integration. No financial operations, migrations, timers, listings or Worker changes.
+- CI exposed a previously nondeterministic concurrency fixture: raw SELECT FOR UPDATE reports PostgreSQL SQLSTATE 40001 inside Prisma P2010. Reproduced on disposable PostgreSQL. The fixture now forces both serializable snapshots before locking and requires exactly one conflict; only P2034 or P2010 with 40001 is accepted. Conservation, unique receipt and restart assertions remain enforced.
+
+## 2026-11-11 — Codex — PR #704 browser CI provisioning
+
+- Continues integration HEAD b06c3f2d1f2d3b1faff3de72fe3a44233b8703ea on the owner-authorized PR branch.
+- Read all 22 failed job logs. Every failure occurred during Ubuntu apt browser dependency installation with DNS resolution errors and exit 100.
+- Twelve browser jobs use the official Playwright 1.63.0 Noble image pinned to registry digest eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27. Ten PostgreSQL jobs retain Ubuntu 24.04 runner database tools and download their existing pinned Chromium revision without apt.
+- Shared CI helper checks the exact package version, executable presence and actual headless launch/render before the existing acceptance tests. Missing runtime libraries remain a hard failure. Workflow YAML and step comparison confirm every test command, PostgreSQL setting and assertion is retained.
+- Files changed are the 22 failing workflow definitions and .github/scripts/verify-ci-browser.cjs. Application source, Claude changes and financial protections are preserved. Final-head CI and code-only merge remain pending. Production deployment is outside this CI change.
+- Container QA exposed Git's workspace ownership check in mobile-review evidence collection. Container jobs now trust only the exact GITHUB_WORKSPACE checkout before running tools. No wildcard safe-directory exception is used.

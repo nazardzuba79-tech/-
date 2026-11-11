@@ -36,6 +36,7 @@ on:
       - 'frontend/src/pages/home/**'
       - 'frontend/src/pages/trade-terminal/SampledDisplay.css'
       - '.github/workflows/sampled-display-budget.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
       - 'frontend/src/lib/__tests__/cfdInfoStrip.test.ts'
       - 'frontend/src/lib/useCfdDailySession.ts'
       - 'frontend/src/lib/cfdInfoStrip.ts'
@@ -66,12 +67,20 @@ concurrency:
   cancel-in-progress: true
 jobs:
   cadence-and-isolation:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Trust this checked-out workspace inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -111,7 +120,7 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-sampled playwright@1.63.0 --no-audit --no-fund
           ln -s /tmp/voltex-sampled/node_modules/playwright node_modules/playwright
-          /tmp/voltex-sampled/node_modules/.bin/playwright install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-sampled/node_modules/playwright 1.63.0 preinstalled
       - name: Futures desktop and phone; exact price pick and order payload
         run: node scripts/qa-futures-visual-polish.cjs --widths 1440x900,390x844 --out docs/qa/sampled-display-ci --label sampled
       - name: Homepage first paint and cached hard reload

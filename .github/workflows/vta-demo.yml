@@ -22,11 +22,12 @@ on:
       - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
       - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
       - '.github/workflows/vta-demo.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 jobs:
   private-demo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     services:
       postgres:
@@ -82,7 +83,7 @@ jobs:
       - name: Disposable browser
         run: |
           npm install --prefix /tmp/vta-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/vta-browser/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/vta-browser/node_modules/playwright 1.63.0 download
       - name: Private VTA browser regression
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/vta-browser/node_modules/playwright

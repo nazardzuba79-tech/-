@@ -42,6 +42,7 @@ on:
       - 'scripts/kyc-hetzner*'
       - 'docs/KYC_RELEASE_RUNBOOK.md'
       - '.github/workflows/kyc-edge.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
       - '.github/workflows/deploy-kyc-edge.yml'
 
 permissions:
@@ -71,7 +72,7 @@ jobs:
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/kyc-edge-dry
 
   api-and-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -133,7 +134,7 @@ jobs:
       - name: Disposable Chromium
         run: |
           npm install --prefix /tmp/kyc-qa-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/kyc-qa-browser/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/kyc-qa-browser/node_modules/playwright 1.63.0 download
       - name: Browser → edge (real Worker code) → email sink → Render routes → PostgreSQL, at 320/360/390/430/1440
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/kyc-qa-browser/node_modules/playwright

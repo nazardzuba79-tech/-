@@ -1,3 +1,4 @@
+import { orderDecimal } from '../orderTicketNumbers';
 import fs from 'fs';
 import path from 'path';
 import { readAllLocales } from '../../../test-utils/i18nSource';
@@ -36,7 +37,7 @@ describe('actual OrderForm submit handler', () => {
   const code = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   function fixture(response: unknown, notTradingYet = false) {
     const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
-    const bindings = { privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
+    const bindings = { ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
       t: (key: string, values?: unknown) => key + (values ? JSON.stringify(values) : ''),
       spotOrderFeedback, positiveOrderNumber, submittingRef: { current: false },
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
@@ -77,7 +78,7 @@ describe('actual OrderForm submit handler', () => {
     const f = fixture({ order: { status: 'FILLED' }, trades: [] }, true); await f.submit({ preventDefault() {} });
     expect(f.setError.mock.calls).toEqual([[null]]);
     expect(f.toast.error).not.toHaveBeenCalled();
-    expect(source).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+    expect(source).toContain('<button type="submit" disabled={!viewer && (submitting || orderBlocked)}');
     expect(f.api.placeOrder).not.toHaveBeenCalled();
     expect(f.onPlaced).not.toHaveBeenCalled();
     expect(f.submittingRef.current).toBe(false);

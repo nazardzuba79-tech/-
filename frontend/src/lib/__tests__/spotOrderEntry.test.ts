@@ -113,13 +113,13 @@ test('parent wiring keeps plain matching APIs, pair-keyed reset and genuine fund
   expect(form).toContain('if (submittingRef.current) return');
   expect(form).toContain('pickedPrice.pair !== pair');
   expect(form).toContain('setQuantity(balancePercentageQuantity(available.base, pct))');
-  expect(form).toContain('orderFundingPrice(family, execution, price, triggerPrice, ocoTakeProfitPrice, ocoStopLimitPrice, marketPrice)');
+  expect(form).toContain("orderFundingPrice(family, execution, orderDecimal(price) ?? '', orderDecimal(triggerPrice) ?? '', orderDecimal(ocoTakeProfitPrice) ?? '', orderDecimal(ocoStopLimitPrice) ?? '', marketPrice)");
   expect(page).toContain('<OrderForm key={pair}'); expect(page).toContain('spotPrecision');
   expect(page).toContain('onResizeBy='); expect(page).toContain('marketWidth={marketPanelWidth}');
 });
 
 test('actual balance reader keeps Retry busy through failure and recovery without duplicate pending requests', async () => {
-  const source = readFileSync(resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
+  const source = readFileSync(resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8').replace(/\r\n/g, '\n');
   const effect = source.slice(source.indexOf('  useEffect(() => {\n    let cancelled = false;'), source.indexOf('  const { ticker: referenceTicker }'));
   expect(effect).toContain('setBalanceLoading(true)');
   let rejectFirst!: (reason: Error) => void;

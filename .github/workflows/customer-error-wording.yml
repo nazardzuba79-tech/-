@@ -11,6 +11,7 @@ on:
       - 'frontend/src/pages/**'
       - 'scripts/qa-customer-error-wording.cjs'
       - '.github/workflows/customer-error-wording.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 
 permissions:
   contents: read
@@ -21,7 +22,13 @@ concurrency:
 
 jobs:
   wording:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     # Twenty customer screens in six states (three of them network failures,
     # one answering after 8 s) take about eleven minutes of browser time.
     timeout-minutes: 40
@@ -29,6 +36,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Trust this checked-out workspace inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -43,11 +52,11 @@ jobs:
       - name: Disposable browser tooling
         run: |
           npm install --prefix /tmp/wording-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/wording-browser/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/wording-browser/node_modules/playwright 1.63.0 preinstalled
           # The author harnesses in this repository resolve playwright from
           # this absolute path. Supply it only in the disposable runner.
-          sudo mkdir -p /opt/node22/lib/node_modules
-          sudo ln -s /tmp/wording-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
+          mkdir -p /opt/node22/lib/node_modules
+          ln -s /tmp/wording-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
       - name: Twenty customer screens, normal / failing / partial / offline / timeout / slow
         run: node scripts/qa-customer-error-wording.cjs
       - uses: actions/upload-artifact@v4

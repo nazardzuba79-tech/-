@@ -327,6 +327,7 @@ export function AssetLedger({
                         </td>
                         <td className="px-3 py-3.5 text-[13px]">
                           <span className="wallet-ledger-quantity num block font-semibold text-ink">{hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}</span>
+                          {!!r.crossBalance && <small className="wallet-ledger-cross num block text-[11px] text-ink-4">Cross: {hidden ? MASK : `${formatAmount(r.crossBalance, lang, dp)} ${r.symbol}`}</small>}
                           {/* The server's valuation, under the quantity. An
                               UNPRICED holding says so — the dash alone would
                               read the same as an empty balance. */}
@@ -385,6 +386,7 @@ export function AssetLedger({
                         <p className="wallet-ledger-mobile-quantity num text-[14px] font-semibold leading-5 text-ink">
                           {hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}
                         </p>
+                        {!!r.crossBalance && <p className="wallet-ledger-cross num text-[11px] text-ink-4">Cross: {hidden ? MASK : `${formatAmount(r.crossBalance, lang, dp)} ${r.symbol}`}</p>}
                         <p className="wallet-ledger-mobile-value num text-[12px] leading-4 text-ink-3">
                           {hidden ? MASK : r.stockPosition ? (r.stockPosition.valueUSDT === null ? t('wallet.noQuote') : `≈ ${formatAmount(r.stockPosition.valueUSDT, lang, 2)} USDT`) : r.priced ? `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}` : t('wallet.noQuote')}
                         </p>

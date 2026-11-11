@@ -9,6 +9,7 @@ on:
       - 'scripts/serve-wallet-review.cjs'
       - 'scripts/qa-wallet-overview.cjs'
       - '.github/workflows/wallet-overview-review.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -17,13 +18,21 @@ concurrency:
   cancel-in-progress: true
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Trust this checked-out workspace inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -39,7 +48,7 @@ jobs:
       - name: Disposable browser tools
         run: |
           npm install --prefix /tmp/voltex-wallet-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-wallet-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-wallet-qa/node_modules/playwright 1.63.0 preinstalled
       - name: Wallet overview, funding, theme and seven languages at 1440 and 390
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-wallet-qa/node_modules/playwright

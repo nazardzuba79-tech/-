@@ -344,6 +344,30 @@ describe('3. an unknown price is never a zero', () => {
   });
 });
 
+describe('ordinary accounts retain visible ownership of legacy Cross balances', () => {
+  it.each([null, 0.32])('shows Cross-only TRX without making it Spot-spendable (price %s)', async priceUsd => {
+    const valueUsd = priceUsd === null ? null : 1684 * priceUsd;
+    const hook = runHook({ overview: () => Promise.resolve({
+      real: { spot: [{ asset: 'TRC', available: '0', locked: '0', priceUsd: null, valueUsd: null }], futures: [{ asset: 'TRX', available: '1684', locked: '0', priceUsd, valueUsd }], spotValueUsd: 0, futuresValueUsd: valueUsd ?? 0, totalValueUsd: valueUsd ?? 0 },
+      valuationComplete: priceUsd !== null, unpricedAssets: priceUsd === null ? ['TRX'] : [], btcPriceUsd: null,
+    }) });
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(hook.render().rows.find((r: any) => r.symbol === 'TRX')).toMatchObject({ total: 1684, crossBalance: 1684, walletBalance: 0, available: 0, locked: 0, valueUsd, priceUsd, priced: priceUsd !== null });
+    expect(hook.calls.filter(call => call === 'native-wallet')).toHaveLength(1);
+  });
+  it('combines the owned quantity/value once and preserves Spot-only availability/reserves', async () => {
+    const hook = runHook({ overview: () => Promise.resolve({
+      real: { spot: [{ asset: 'TRX', available: '3', locked: '2', priceUsd: 0.32, valueUsd: 1.6 }], futures: [{ asset: 'TRX', available: '1684', locked: '1', priceUsd: 0.32, valueUsd: 539.2 }], spotValueUsd: 1.6, futuresValueUsd: 539.2, totalValueUsd: 540.8 },
+      valuationComplete: true, unpricedAssets: [], btcPriceUsd: null,
+    }) });
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(hook.render().rows.filter((r: any) => r.symbol === 'TRX')).toHaveLength(1);
+    const row = hook.render().rows.find((r: any) => r.symbol === 'TRX');
+    expect(row).toMatchObject({ total: 1690, crossBalance: 1685, walletBalance: 5, available: 3, locked: 2 });
+    expect(row.valueUsd).toBeCloseTo(540.8, 10);
+  });
+});
+
 describe('4. no account balance is written into the source', () => {
   const files = [...sources('src', 'frontend/src'), resolve(root, 'frontend/tailwind.config.js')]
     .filter((p) => /\.(tsx?|js)$/.test(p));

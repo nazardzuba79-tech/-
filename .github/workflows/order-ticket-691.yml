@@ -1,0 +1,80 @@
+name: Order ticket viewer boundary
+on:
+  pull_request:
+    paths:
+      - 'src/api/middleware/orderTicketAccess.ts'
+      - 'src/api/routes/orderTicketBoundary.ts'
+      - 'src/api/middleware/__tests__/orderTicket*.test.ts'
+      - 'frontend/src/lib/orderTicketNumbers.ts'
+      - 'frontend/src/lib/useOrderTicketAccess.ts'
+      - 'frontend/src/components/OrderForm.tsx'
+      - 'frontend/src/components/FuturesOrderForm.tsx'
+      - 'frontend/src/lib/__tests__/**'
+      - 'scripts/qa-*.cjs'
+      - 'scripts/serve-native-demo-review.cjs'
+      - '.github/workflows/order-ticket-691.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
+permissions:
+  contents: read
+concurrency:
+  group: order-ticket-691-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  isolated-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-ticket-fixture
+          POSTGRES_DB: order_ticket_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d order_ticket_qa"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - name: Install isolated test tools
+        run: |
+          npm install --prefix /tmp/order-ticket-qa --no-audit --no-fund --ignore-scripts playwright@1.63.0 @electric-sql/pglite@0.5.15
+          node .github/scripts/verify-ci-browser.cjs /tmp/order-ticket-qa/node_modules/playwright 1.63.0 download
+      - name: Session policy, forged writes and PostgreSQL unchanged rows
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+          QA_ORDER_TICKET_PG_URL: postgresql://postgres:isolated-ticket-fixture@127.0.0.1:5432/order_ticket_qa
+        run: >-
+          npm test -- --runInBand
+          src/api/middleware/__tests__/orderTicketAccess.test.ts
+          src/api/middleware/__tests__/orderTicketNumbers.test.ts
+          src/api/middleware/__tests__/orderTicketPostgres.test.ts
+          frontend/src/lib/__tests__/spotOrderEntry.test.ts
+          frontend/src/lib/__tests__/decimalInput.test.ts
+          frontend/src/lib/__tests__/orderTicketAccess.test.ts
+          frontend/src/lib/__tests__/demoSpot.test.ts
+      - name: Build loopback-only frontend fixture
+        env:
+          VITE_API_URL: /api/v1
+          VITE_MARKET_EDGE_URL: http://127.0.0.1:4231/api/v1/market
+        run: npm run build --prefix frontend
+      - name: Desktop and mobile Chromium (no production requests)
+        env:
+          PLAYWRIGHT_MODULE: /tmp/order-ticket-qa/node_modules/playwright
+        run: node scripts/qa-order-ticket-691.cjs --out /tmp/order-ticket-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: order-ticket-691-${{ github.event.pull_request.head.sha }}
+          path: /tmp/order-ticket-evidence
