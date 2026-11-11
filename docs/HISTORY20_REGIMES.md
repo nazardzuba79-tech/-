@@ -46,3 +46,11 @@ Each completed bar preserves all four price ratios relative to the first source 
 5. Run `node scripts/history20/benchmark.cjs` alone. There are 25 ticker clients, 25 chart clients and two clients crossing orders in an isolated in-memory matching engine. The benchmark compares identical loopback workloads with a fixed upstream ticker. It includes a second baseline control to measure host variance. Warmup, every round, matching counts, process CPU and RSS are recorded.
 
 Raw archives, normalized packs, derived comparison images and screenshots remain in the ignored local output directory. Public or commercial use requires separate rights for datasets and derivatives. [Binance dataset terms](https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md)
+
+## Isolated acceptance results
+
+The archive oracle verified 519,840 minute observations and 669,655 total closed candles over all six intervals. The pinned legacy checkout matched seven configs and 252 chart snapshots. Private Chromium produced 240 scenario/interval/viewport captures, two saved-draft screenshots, and 40 comparison sheets. Manual selection saved R20 and AUTO persisted all twenty IDs in sequence.
+
+On Windows, the 50+2 trial produced 36,000 measured crypto requests per build. The pinned baseline p95 was 10.117 ms, its independent A/A control 10.038 ms, and the candidate 6.903 ms (−31.77%). A/A deviation was 0.77%. Each process completed 1,584 isolated matching fills including warmup. Candidate RSS at completion was 114.3 MiB. This measures the loopback router and simulation workload.
+
+Short synchronized pulses initially failed the performance target. The final replay uses verified compact rollups for closed groups. Long sequential benchmark trials also saw substantial A/A host drift. The final harness interleaves six-request-round epochs across the two baselines and candidate after warmup, retaining all samples and all orders. The Windows run used the same four performance cores (logical CPUs 10–13) for all three processes. Neither public data distribution nor production capacity is established by this benchmark.
