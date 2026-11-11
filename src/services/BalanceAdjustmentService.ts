@@ -6,6 +6,12 @@ import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
 export class BalanceAdjustmentError extends Error {}
 export class BalanceAdjustmentConflict extends BalanceAdjustmentError {}
 
+// TRC is a network abbreviation, not the native TRON asset ticker. Never
+// silently turn an ambiguous admin instruction into a different asset credit.
+function rejectTrcTypo(asset: string) {
+  if (asset.trim().toUpperCase() === 'TRC') throw new BalanceAdjustmentError('TRC is not an asset ticker. For native TRON use TRX; for USDT on TRON use USDT.');
+}
+
 export interface BalanceAdjustmentIntent {
   userId: string;
   asset: string;
@@ -30,6 +36,7 @@ function canonicalIntent(input: BalanceAdjustmentIntent): BalanceAdjustmentInten
   const asset = input.asset.trim().toUpperCase(), reason = input.reason.trim(), delta = new BigNumber(input.amount);
   if (!UUID.test(input.idempotencyKey)) throw new BalanceAdjustmentError('Invalid operation key');
   if (!input.userId || !input.performedByAdminId || !/^[A-Z0-9]{1,10}$/.test(asset)) throw new BalanceAdjustmentError('Invalid correction target');
+  rejectTrcTypo(asset);
   if (isTestAssetPairOrSymbol(asset)) throw new BalanceAdjustmentError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
   if (!delta.isFinite() || delta.isZero() || delta.decimalPlaces()! > 18 || delta.abs().gte('1e18')) throw new BalanceAdjustmentError('Amount must be a non-zero number with at most 18 decimal places');
   if (!reason || reason.length > 500) throw new BalanceAdjustmentError('A reason of 1 to 500 characters is required');
@@ -117,6 +124,7 @@ export class BalanceAdjustmentService {
     reason: string;
     performedByAdminId: string;
   }): Promise<BalanceAdjustmentResult> {
+    rejectTrcTypo(params.asset);
     // A test asset never has a balance, not even one an admin writes in.
     if (isTestAssetPairOrSymbol(params.asset)) throw new BalanceAdjustmentError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const delta = new BigNumber(params.amount);

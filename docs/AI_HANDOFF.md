@@ -7761,3 +7761,10 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Legacy ADMIN/admin-credit exceptions were reported before implementing the outer two-identity guard. No private account identifiers are in evidence.
 - Local targeted regressions: 45 suites/887 PASS; isolated baseline and fixed 1440/390 browser matrix. See `docs/qa/order-ticket-691/RELEASE.md` for precise test scope and limitations.
 - No production changes: authorized browser/Windows/Hetzner OS connection unavailable. Runtime API compatibility, actual pinned identities, native PostgreSQL release validation and authenticated production acceptance remain blocked. Do not release main or the loopback QA bundle.
+## 2026-11-08 — Codex — Issue 697 native TRX prior-credit correction
+
+- Fresh main 0a5eef345fa42c9773b97a03b7ec18439c65e7a9. Proven manual TRC typo plus legacy Cross transfer; no additional Spot compensation. Owner-authorized conserved ticker correction and unique AuditLog persisted in production. Private identities/receipts remain restricted outside Git.
+- Narrow candidate: server rejects ambiguous TRC credit; admin offers native TRX separately from USDT; ordinary Wallet retains visible legacy Cross ownership without changing Spot spendability or native account accounting.
+- PostgreSQL conservation/rollback/restart/concurrency, targeted Jest and built Wallet 1440/390 fixture QA. Full exact-head CI on the PR is authoritative. Customer-authenticated live Wallet check remains pending the affected user's session; administrator audit read-back and installed Wallet service read-back verified. See docs/qa/trx-credit-697/RELEASE.md.
+- No other account, order, deposit, withdrawal, listing, timer, flag, schema or Worker change. No merge. API/Pages prevention/display release must remain narrowly pinned to the installed bases documented in RELEASE.md.
+
