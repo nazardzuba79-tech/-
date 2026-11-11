@@ -14,6 +14,7 @@ on:
       - 'frontend/public/images/home-v0/asset-icons/**'
       - 'docs/qa/home-v0-reference-correction/reference.png'
       - '.github/workflows/home-v0-approved.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -21,7 +22,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       HOME_QA_BROWSER_CHANNEL: chromium
@@ -44,7 +45,7 @@ jobs:
       - name: Disposable browser
         run: |
           npm install --prefix /tmp/voltex-home-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-home-qa/node_modules/playwright/cli.js install --with-deps --no-shell chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-home-qa/node_modules/playwright 1.63.0 download
       - name: Network-denied responsive and complete animation cycle QA
         run: node scripts/qa-home-v0.cjs
         env:

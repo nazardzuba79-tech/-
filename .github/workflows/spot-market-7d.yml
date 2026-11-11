@@ -21,6 +21,7 @@ on:
       - 'frontend/src/lib/__tests__/spotPairList.test.ts'
       - 'scripts/qa-spot-market-7d.cjs'
       - '.github/workflows/spot-market-7d.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 
 permissions:
   contents: read
@@ -31,7 +32,7 @@ concurrency:
 
 jobs:
   spot-7d:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +52,7 @@ jobs:
       - name: Disposable browser tooling
         run: |
           npm install --prefix /tmp/spot-7d-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/spot-7d-browser/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/spot-7d-browser/node_modules/playwright 1.63.0 download
       - name: Spot compact rail at 1920, 1440, 1366 and panel widths 240–340
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/spot-7d-browser/node_modules/playwright

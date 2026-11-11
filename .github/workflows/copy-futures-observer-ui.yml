@@ -8,12 +8,13 @@ on:
       - 'frontend/src/App.tsx'
       - 'scripts/qa-copy-futures-observer-browser.cjs'
       - '.github/workflows/copy-futures-observer-ui.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   workflow_dispatch: {}
 permissions:
   contents: read
 jobs:
   review-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx tsc -b frontend
       - run: npm install --prefix output/copy-futures-observer-deps --no-save --package-lock=false playwright@1.62.1
-      - run: node output/copy-futures-observer-deps/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node .github/scripts/verify-ci-browser.cjs output/copy-futures-observer-deps/node_modules/playwright 1.62.1 download
       - run: cd frontend && npx vite build --outDir ../output/copy-futures-observer/frontend
         env:
           VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW: 'true'

@@ -10,6 +10,7 @@ on:
       - 'frontend/src/lib/i18n/locales/**'
       - 'scripts/qa-auth-business-class.cjs'
       - '.github/workflows/auth-visual.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -18,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   presentation:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +40,7 @@ jobs:
       - name: Disposable browser tools
         run: |
           npm install --prefix /tmp/voltex-auth-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-auth-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-auth-qa/node_modules/playwright 1.63.0 download
       - name: Actual Login/Register bundle at seven widths, strictly offline fixtures
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-auth-qa/node_modules/playwright
