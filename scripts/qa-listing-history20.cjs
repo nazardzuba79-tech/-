@@ -50,16 +50,17 @@ const persist = fs.mkdtempSync(path.join(os.tmpdir(), 'voltex-history20-qa-'));
 const secret = 'synthetic-local-listings-store-token-000000';
 const actor = 'history20-fixture-admin';
 const token = jwt.sign({ sub: actor }, process.env.JWT_SECRET);
-let mf, origin, browser, server;
+let mf, mfOptions, origin, browser, server;
 
 async function setup() {
   const bundle = await build({ entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')], bundle: true,
     write: false, format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
-  mf = new Miniflare({ ...convertV4MiniflareOptions({ workers: [{ name: 'listing-history20', modules: true,
+  mfOptions = { ...convertV4MiniflareOptions({ workers: [{ name: 'listing-history20', modules: true,
     script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
     bindings: { LISTINGS_STORE_TOKEN: secret }, durableObjects: { LISTINGS: { className: 'ManagedListingsDO', useSQLite: true } },
     outboundService: () => { report.outbound++; throw new Error('Blocked non-fixture Worker request'); },
-  }] }), isolatedResourcePersistencePath: persist, resourcePersistencePath: persist, telemetry: { enabled: false }, host: '127.0.0.1', port: 0 });
+  }] }), isolatedResourcePersistencePath: persist, resourcePersistencePath: persist, telemetry: { enabled: false }, host: '127.0.0.1', port: 0 };
+  mf = new Miniflare(mfOptions);
   await mf.ready;
   const store = new CloudflareListingStore('http://127.0.0.1', secret, (url, init) => mf.dispatchFetch(String(url), init), false);
   const prisma = { user: { findUnique: async ({ where }) => where.id === actor ? { id: actor, role: 'ADMIN' } : null },
@@ -361,7 +362,25 @@ async function acceptance() {
 async function run() {
   try {
     await setup();
-    if (process.env.HISTORY20_PRIVATE_REGIME_DIR) {
+    if (process.env.QA_ORIGINAL_REGIMES === '1') {
+      report.data = '20 original generative regimes; no historical inputs';
+      await require('./history20/original-browser.cjs')({ newPage, api, origin, output, check,
+        edge: (route) => mf.dispatchFetch('http://local.invalid' + route),
+        restart: async (at) => {
+          await mf.dispose();
+          const options = at ? { ...mfOptions, workers: mfOptions.workers.map(worker => {
+            const manifest = worker.config.manifest;
+            const entry = manifest.modules[manifest.mainModule];
+            return { ...worker, config: { ...worker.config, manifest: { ...manifest,
+              modules: { ...manifest.modules, [manifest.mainModule]: { ...entry,
+                contents: 'Date.now = () => ' + at + ';\n' + entry.contents } },
+            } } };
+          }) } : mfOptions;
+          mf = new Miniflare(options);
+          await mf.ready;
+        },
+      });
+    } else if (process.env.HISTORY20_PRIVATE_REGIME_DIR) {
       report.data = 'Pinned private Binance Vision 1m packs; SHA checked by the admin API';
       await require('./history20/browser.cjs')({ newPage, api, origin, output, check });
     } else await acceptance();

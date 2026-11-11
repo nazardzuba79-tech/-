@@ -2,6 +2,7 @@ import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
 import type { ListingProgram } from './listingMovementModel';
 import type { HistoricalGrowthDataKind, HistoricalGrowthIntrabar, HistoricalGrowthSource } from './historicalGrowthModel';
+import type { OriginalRegimeConfig } from '../../../../src/shared/originalSimulationRegimes';
 
 /** Admin → Listings calls (Render, ADMIN only; Render forwards to the Cloudflare store). */
 
@@ -21,6 +22,7 @@ export interface ListingConfig {
   simulationProfile?: 'CALM_TREND' | 'IMPULSE_TREND' | 'PULLBACK_TREND' | 'COMPRESSION_BREAKOUT';
   wickModel?: 'NATURAL_V1';
   history20Regime?: {version:2; id:string; sha256?:string};
+  originalRegime?: OriginalRegimeConfig;
   simulationProgram?: ListingProgram;
   /** History20 private test (owner and allowlisted testers, SIMUSDT, never public); fixed once started. */
   privateTest?: PrivateTestSettings;
@@ -28,6 +30,7 @@ export interface ListingConfig {
 
 export interface RegimeOption {id:string; title:string; pair:string; start:string; endExclusive:string; sourceFrame:string; rows:number; sha256:string}
 export interface RegimePreview {id:string; sha256:string; interval:string; phase:string; candles:ListingPreview['candles']}
+export interface OriginalPreview { id: string; version: string; interval: string; seed: string; candles: ListingPreview['candles'] }
 
 export interface PrivateTestSettings { settlement: 'SIMUSDT'; funding: { base: string; quote: string } }
 
@@ -163,6 +166,11 @@ export const adminListingsApi = {
     const query = new URLSearchParams({interval,phase,price:price || '1'});
     if (draft) query.set('draft',draft);
     return call<RegimePreview>('/admin/listings/regimes/'+encodeURIComponent(id)+'?'+query,{signal});
+  },
+  originalPreview: (id: string, interval: string, price: string, seed: string, draft: string | null, signal: AbortSignal) => {
+    const query = new URLSearchParams({ interval, price: price || '1', seed: seed || 'original-preview-v1' });
+    if (draft) query.set('draft', draft);
+    return call<OriginalPreview>('/admin/listings/original-regimes/' + encodeURIComponent(id) + '?' + query, { signal });
   },
   list: (signal?: AbortSignal) => call<{ revision: string; serverTime: number; listings: AdminListing[]; history20Regimes?: RegimeOption[] }>('/admin/listings', { signal }),
   create: (config: ListingForm) => call<{ id: string; draftRevision: number; draft: ListingConfig }>('/admin/listings', { method: 'POST', body: { config } }),

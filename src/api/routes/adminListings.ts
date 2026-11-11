@@ -27,6 +27,7 @@ import { AITH_PUBLICATION_PROTOCOL, isAith } from '../../shared/aithPublication'
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
 import { privateRegimes, regimeCandles, regimeOptions } from '../../services/listings/history20RegimePack';
 import { listingScenarioPreview } from '../../services/listings/listingPreview';
+import { ORIGINAL_MODEL_VERSION, ORIGINAL_REGIMES, ORIGINAL_PROVENANCE } from '../../shared/originalSimulationRegimes';
 
 /** Venue spot pairs a managed ticker must not shadow (e.g. a real `QAX/USDT`). */
 export interface VenueSpotPairs { hasSpotPair(pair: string): boolean }
@@ -117,6 +118,36 @@ export function adminListingsRouter(
     } catch(error) { return failure(res,error); }
   });
 
+  router.get('/admin/listings/original-regimes/:regimeId', ...guard, async (req, res) => {
+    noStore(res);
+    try {
+      const model = ORIGINAL_REGIMES.find(item => item.id === req.params.regimeId);
+      if (!model) return res.status(404).json({ error: 'not_found' });
+      const interval = String(req.query.interval ?? '1h');
+      if (!['1m', '5m', '15m', '1h', '4h', '1d'].includes(interval))
+        return res.status(400).json({ error: 'unsupported_interval' });
+      const draftId = req.query.draft;
+      if (draftId && (typeof draftId !== 'string' || !ID.test(draftId)))
+        return res.status(400).json({ error: 'invalid_draft' });
+      const draft = draftId ? (await store.list()).listings.find(item => item.id === draftId)?.draft : null;
+      if (draftId && (!draft || draft.originalRegime?.id !== model.id))
+        return res.status(409).json({ error: 'REGIME_MISMATCH' });
+      const price = Number(req.query.price ?? 1);
+      const seed = String(req.query.seed ?? 'original-preview-v1');
+      if (!draft && (!Number.isFinite(price) || price <= 0 || price > 1e12 || !/^[a-z0-9-]{4,64}$/.test(seed)))
+        return res.status(400).json({ error: 'invalid_preview_input' });
+      const asset = draft ? listingPreviewAssetConfig(draft) : {
+        symbol: 'PREVIEW', name: 'Original simulation', pair: 'PREVIEW/USDT', quote: 'USDT' as const,
+        isTestAsset: true as const, isTradable: false, listingArmed: true,
+        listingAt: Date.UTC(2030, 0, 1), initialPrice: price, seed,
+        originalRegime: { version: ORIGINAL_MODEL_VERSION, id: model.id, disclosure: 'SIMULATED_ORIGINAL_MODEL' as const },
+      };
+      const candles = testMarketCandles(asset, interval, asset.listingAt + model.hours * 3600000 - 1, 160);
+      return res.json({ id: model.id, version: ORIGINAL_MODEL_VERSION, interval,
+        seed: asset.seed, provenance: ORIGINAL_PROVENANCE, candles });
+    } catch (error) { return failure(res, error); }
+  });
+
   router.post('/admin/listings/:id/reschedule', ...guard, async (req: AuthedRequest, res) => {
     noStore(res);
     if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
@@ -171,7 +202,7 @@ export function adminListingsRouter(
       let config = configFromBody(req.body, null);
       if (config.history20Regime && !privateRegimes())
         throw new ListingValidationError('REGIME_PACK_UNAVAILABLE','Проверенный приватный набор не подключён');
-      if (!config.history20Regime && !config.simulationProgram && !config.tradable && Number(config.ownerAllocation)===0 && privateRegimes())
+      if (!config.originalRegime && !config.history20Regime && !config.simulationProgram && !config.tradable && Number(config.ownerAllocation)===0 && privateRegimes())
         config = parseListingConfig({...config,history20Regime:{version:2,id:'AUTO'}});
       ensureNotOnVenue(config, venue);
       const id = `${config.symbol.toLowerCase()}-${randomUUID().slice(0, 8)}`;

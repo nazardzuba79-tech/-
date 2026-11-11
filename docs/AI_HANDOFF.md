@@ -7791,3 +7791,14 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Branch `feat/history20-regimes-705`, pinned baseline `0feb58bd856028dbc79cb8cc13bf68a9db907a61`. See docs/HISTORY20_REGIMES.md for the twenty verified source windows, storage boundary and replay/QA commands.
 - Future draft INSERT selects and pins an ID/digest. Existing markets retain their generators. Private admin browser QA and replay parity use locally acquired, checksum-verified data. The repository contains source coordinates and aggregate evidence only.
 - Public/commercial rights and production release approval remain outstanding. No production deploy, financial action or existing listing edit.
+
+## 2026-11-11 — Codex — PR #706 original public simulation candidate
+
+- Continued existing `feat/history20-regimes-705` at `305ecc6824b0647588257ad4ed8aa3e4bb09d0a1`, fresh main `7e62daa054a8b215ad40c85d54c5b6c2167b8080`.
+- Binance Public Data Terms require a separate commercial agreement. None verified. Historical rights gate and the accepted private20 implementation are preserved.
+- Added opt-in `voltex-original-regimes-v1`, 20 independently authored modes, no historical observations or fitted statistics. Creation-only assignment, immutable version/seed/history, canonical ticks and explicit original-model public provenance. Real execution and inventory are excluded through existing financial guards.
+- Local focused regression 128 PASS, one pre-existing PostgreSQL-only test skipped locally. Backend/frontend builds PASS. Seven legacy configs and 252 OHLCV snapshots match pinned baseline byte-for-byte.
+- Real isolated admin router + persisted SQLite Worker + browser PASS. 20 modes × six intervals × 1440/390, 240 screenshots. Normal UI save, store restart, future-clock public lifecycle, canonical preview parity, public terminal and reload verified. Zero financial requests, external calls or browser exceptions.
+- Evidence under `output/original-regimes-706`, including public terminal screenshots and 20-model contact sheet. CI now includes original tests and browser acceptance. Exact-head CI results will be attached to PR #706.
+- `docs/ORIGINAL_PUBLIC_SIMULATION.md` records rights, dependencies, release and compatible rollback boundaries. The sealed older AI runtime artifact does not install this feature.
+- Owner authorizes candidate only. No merge, deployment, production listing/configuration/timer/ledger changes. Future installation and first publication require separate owner approval.

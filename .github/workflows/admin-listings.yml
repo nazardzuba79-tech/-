@@ -16,6 +16,7 @@ on:
       - 'src/shared/listingHistoricalReplay.ts'
       - 'src/shared/history20MinuteReplay.ts'
       - 'src/shared/history20Regimes.json'
+      - 'src/shared/originalSimulationRegimes.ts'
       - 'scripts/history20/**'
       - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
@@ -104,6 +105,7 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/history20MinuteReplay.test.ts
+          src/services/listings/__tests__/originalRegimes.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
           src/services/listings/__tests__/listingCountdown.test.ts
           src/services/listings/__tests__/tyvnDraft.test.ts
@@ -172,6 +174,13 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report/history20
+      - name: Original public simulation candidate — 20 modes, 6 intervals, desktop/mobile, SQLite restart
+        run: node scripts/qa-listing-history20.cjs
+        env:
+          QA_ORIGINAL_REGIMES: '1'
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/original-regimes
       - name: Pre-listing timer through the real admin router and the Worker — staged stays hidden, start / pause / stop, Spot refuses
         run: node scripts/qa-listing-timer-api.cjs
         env:

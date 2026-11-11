@@ -12,6 +12,7 @@
  * This module is bundled into the Worker and imported by Render. It must
  * stay free of IO, environment reads and clock reads (callers pass `now`).
  */
+import { ORIGINAL_MODEL_VERSION, ORIGINAL_REGIMES } from '../../shared/originalSimulationRegimes';
 import { z } from 'zod';
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import { isHistory20PrivateSymbol, SIMULATION_QUOTE } from '../../shared/history20PrivateSymbol';
@@ -147,6 +148,11 @@ export const listingConfigSchema = z.object({
   simulationProfile: z.enum(SIMULATION_PROFILES).optional(),
   /** Persisted range model assigned on new INSERT; absent means the original shadows. */
   wickModel: z.literal('NATURAL_V1').optional(),
+  originalRegime: z.object({
+    version: z.literal(ORIGINAL_MODEL_VERSION),
+    id: z.enum(['AUTO', ...ORIGINAL_REGIMES.map(r => r.id)]),
+    disclosure: z.literal('SIMULATED_ORIGINAL_MODEL'),
+  }).strict().optional(),
   history20Regime: z.object({
     version: z.literal(2), id: z.string().regex(/^(AUTO|R(0[1-9]|1[0-9]|20))$/),
     sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
@@ -207,6 +213,12 @@ export function parseListingConfig(input: unknown): ListingConfig {
     throw new ListingValidationError('INVALID_CONFIG', `${issue.path.join('.') || 'config'}: ${issue.message}`);
   }
   const config = parsed.data;
+  if (config.originalRegime) {
+    if (config.tradable || Number(config.ownerAllocation) !== 0 || config.privateTest || config.simulationProgram || config.history20Regime)
+      throw new ListingValidationError('DEMO_ONLY', 'Оригинальная модель доступна только для симуляции без торговли и начислений');
+    if (Date.parse(config.listingAt) % 3600000)
+      throw new ListingValidationError('INVALID_SCENARIO', 'Начало оригинальной модели должно совпадать с часом UTC');
+  }
   if (config.history20Regime) {
     if (config.tradable || Number(config.ownerAllocation) !== 0 || config.privateTest || config.simulationProgram)
       throw new ListingValidationError('DEMO_ONLY','Режим OHLCV доступен только в отдельном демонстрационном черновике без торговли и начислений');
@@ -278,6 +290,16 @@ export function withStableSeed(next: ListingConfig, previous: ListingConfig | nu
  * stored without either field keeps that absence and its original candles.
  */
 export function withStableProfile(next: ListingConfig, previous: ListingConfig | null, creationOrdinal: number | null): ListingConfig {
+  if (previous?.originalRegime || next.originalRegime) {
+    const stored = previous?.originalRegime;
+    if (previous && (!stored || next.originalRegime && JSON.stringify(stored) !== JSON.stringify(next.originalRegime)))
+      throw new ListingValidationError('HISTORY_LOCKED', 'Оригинальная модель назначается только новому черновику');
+    if (!previous && creationOrdinal === null) throw new ListingValidationError('HISTORY_LOCKED', 'Требуется новый черновик');
+    const chosen = stored ?? next.originalRegime!;
+    const id = chosen.id === 'AUTO' ? ORIGINAL_REGIMES[creationOrdinal! % ORIGINAL_REGIMES.length].id : chosen.id;
+    const { simulationProfile, wickModel, ...clean } = next;
+    return parseListingConfig({ ...clean, originalRegime: { ...chosen, id } });
+  }
   if (previous?.history20Regime || next.history20Regime) {
     const stored = previous?.history20Regime;
     const requested = next.history20Regime;
@@ -348,6 +370,8 @@ export function checkPrivateTestable(next: ListingConfig, active: ListingConfig 
 export function checkPublishable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS,
   // Whether the active market opened (public history exists). A listing whose timer never ran past its date did not.
   opened: boolean = active !== null && Date.parse(active.listingAt) <= now): void {
+  if (next.originalRegime?.id === 'AUTO')
+    throw new ListingValidationError('INVALID_SCENARIO', 'Сначала сохраните назначенный режим');
   // The one exception to the rights gate below: a History20 window run as a
   // private test (SIMUSDT, owner and allowlisted testers, never public).
   if (next.history20Regime || active?.history20Regime)
@@ -378,6 +402,8 @@ function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, no
     if (at > now + MAX_LEAD_MS) throw new ListingValidationError('LISTING_TIME_TOO_FAR', 'The listing time must be within one year');
     return;
   }
+  if (JSON.stringify(next.originalRegime) !== JSON.stringify(active.originalRegime))
+    throw new ListingValidationError('HISTORY_LOCKED', 'Оригинальную модель опубликованного листинга изменить нельзя');
   if (next.symbol !== active.symbol) throw new ListingValidationError('TICKER_LOCKED', 'The ticker of a published listing cannot change');
   if (next.seed !== active.seed) throw new ListingValidationError('HISTORY_LOCKED', 'The seed of a published listing cannot change');
   if (next.initialPrice !== active.initialPrice) throw new ListingValidationError('HISTORY_LOCKED', 'The initial price of a published listing cannot change');
@@ -409,6 +435,7 @@ export function listingPreviewAssetConfig(config: ListingConfig): TestAssetConfi
     pair: listingPair(config.symbol, listingQuote(config)),
     isTestAsset: true,
     isTradable: config.tradable,
+    ...(config.originalRegime ? { originalRegime: config.originalRegime } : {}),
     ...(config.history20Regime ? {history20Regime: config.history20Regime.id, history20RegimeSha256:config.history20Regime.sha256} : {}),
     ...(config.privateTest ? { privateTest: true as const } : {}),
     listingArmed: true,
