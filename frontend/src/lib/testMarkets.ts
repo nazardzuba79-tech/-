@@ -1,6 +1,6 @@
 import type { MarketTicker } from './api';
 import { aithReadClock, isAith, validAithLease, type ListingReadLease } from '../../../src/shared/aithPublication';
-import { ORIGINAL_PROVENANCE } from '../../../src/shared/originalSimulationRegimes';
+import type { ORIGINAL_PROVENANCE } from '../../../src/shared/originalSimulationRegimes';
 
 /**
  * TEST MARKETS — the pure half (no network, no React).
@@ -231,8 +231,10 @@ export function parseTestMarkets(payload: unknown, source: 'public' | 'private' 
       ...(managed ? {
         managed: true,
         ...(raw.provenance?.origin === 'ORIGINAL_GENERATIVE' && raw.isTradable === false &&
-          Object.entries(ORIGINAL_PROVENANCE).every(([key, value]) => raw.provenance[key] === value)
-          ? { provenance: { ...ORIGINAL_PROVENANCE } } : {}),
+          raw.provenance.mode === 'DEMO_MODEL' && raw.provenance.historicalDataUsed === false &&
+          raw.provenance.priceAndVolume === 'SIMULATED' && raw.provenance.withdrawable === false &&
+          typeof raw.provenance.model === 'string'
+          ? { provenance: { ...raw.provenance } } : {}),
         ...(raw.provenance?.origin !== 'ORIGINAL_GENERATIVE' && raw.isTradable === false && raw.provenance?.mode === 'DEMO_MODEL' && raw.provenance?.withdrawable === false
           ? { provenanceLabel: 'DEMO · SIMULATED · NO REAL TRADING' } : {}),
         version: raw.version,
