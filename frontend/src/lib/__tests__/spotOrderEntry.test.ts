@@ -119,7 +119,7 @@ test('parent wiring keeps plain matching APIs, pair-keyed reset and genuine fund
 });
 
 test('actual balance reader keeps Retry busy through failure and recovery without duplicate pending requests', async () => {
-  const source = readFileSync(resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
+  const source = readFileSync(resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8').replace(/\r\n/g, '\n');
   const effect = source.slice(source.indexOf('  useEffect(() => {\n    let cancelled = false;'), source.indexOf('  const { ticker: referenceTicker }'));
   expect(effect).toContain('setBalanceLoading(true)');
   let rejectFirst!: (reason: Error) => void;

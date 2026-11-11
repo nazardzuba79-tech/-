@@ -7768,3 +7768,10 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - PostgreSQL conservation/rollback/restart/concurrency, targeted Jest and built Wallet 1440/390 fixture QA. Full exact-head CI on the PR is authoritative. Customer-authenticated live Wallet check remains pending the affected user's session; administrator audit read-back and installed Wallet service read-back verified. See docs/qa/trx-credit-697/RELEASE.md.
 - No other account, order, deposit, withdrawal, listing, timer, flag, schema or Worker change. No merge. API/Pages prevention/display release must remain narrowly pinned to the installed bases documented in RELEASE.md.
 
+## 2026-11-11 — Codex — integration of PRs 692 and 698
+
+- Integration branch starts at current main 0feb58bd856028dbc79cb8cc13bf68a9db907a61 and preserves both original PR ancestries.
+- Resolved handoff append conflicts and the overlapping futuresTickerHeader withdrawal fixture normalizer. Original financial fingerprint and negative mutation assertions retained. Windows-only CRLF fixture extraction corrected in spotOrderEntry; no runtime behavior changed by conflict resolution.
+- Targeted Jest 514 PASS. Separately executed native PostgreSQL 18.6 order admission boundary PASS and existing TRX conserved correction/concurrency suite PASS against disposable databases. Built Wallet 1440/390 and six order-ticket fixture scenarios PASS, zero financial requests. Backend and frontend builds PASS.
+- All nine frontend runtime files are byte-equivalent in Git to deployed Pages source ad8a4a56fda233a7880bc6b30f3923302a3a749f. Three compiled API modules match installed SHA256 exactly. Existing deployments already contain these fixes. The local frontend build contains loopback QA parameters and MUST NOT be published.
+- Actual production viewer GET orders/access returned HTTP 200 allowed:false. Live acceptance is in progress. Exact-head CI must complete before integration. No financial operations, migrations, timers, listings or Worker changes.
