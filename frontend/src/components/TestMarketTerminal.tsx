@@ -39,7 +39,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
   const now = useServerNow(clockOffsetMs, counting);
   const presentation = asset ? testMarketPresentation(asset, now) : null;
   // Private History20 provenance only; public managed listing presentation stays unchanged.
-  const privateModelLabel = asset?.provenanceLabel;
+  const privateModelLabel = asset?.provenance?.origin === 'ORIGINAL_GENERATIVE' ? undefined : asset?.provenanceLabel;
   const reachedRef = useRef(false);
   const left = counting ? listingAt - now : NaN;
 

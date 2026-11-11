@@ -7,7 +7,7 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
   const date = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) + 'T00:00:00Z';
   const records = [], screenshots = [];
   for (const [i, regime] of ORIGINAL_REGIMES.entries()) {
-    const config = { name: 'Original simulation ' + regime.id, symbol: 'OG' + String(i + 1).padStart(2, '0'),
+    const config = { name: 'Режим ' + regime.id, symbol: 'OG' + String(i + 1).padStart(2, '0'),
       logo: null, initialPrice: '2', listingAt: date, displayTimeZone: 'UTC', ownerAllocation: '0',
       seedMode: 'manual', seed: 'original-browser-706', tradable: false,
       originalRegime: { id: 'AUTO', version: ORIGINAL_MODEL_VERSION, disclosure: 'SIMULATED_ORIGINAL_MODEL' } };
@@ -34,7 +34,7 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
   check('Durable Object restart preserves model, seed and exact saved preview candles');
   const hidden = await (await edge('/market/listings')).json();
   assert.deepEqual(hidden.assets, []);
-  assert.equal((await api('/admin/listings/' + records[0].id + '/countdown', {
+  for (const record of records) assert.equal((await api('/admin/listings/' + record.id + '/countdown', {
     method: 'POST', body: { action: 'start' },
   })).status, 200);
   await restart();
@@ -43,6 +43,71 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
   assert.equal(counting.assets[0].isTradable, false);
   assert.equal(counting.assets[0].provenance.origin, 'ORIGINAL_GENERATIVE');
   assert.deepEqual((await (await edge('/market/test-assets/OG01-USDT/candles')).json()).candles, []);
+  let financialAttempts = 0;
+  const forbidden = /\bDEMO\b|SIMULAT|NO REAL TRADING|симуляц|модел(?:ьн|ируются)|реальная торговля недоступна|test\s*[·-]\s*not tradable|учебный рынок|s[ií]mulaci[oó]n|シミュレーション|시뮬레이션|模拟|सिमुलेशन/i;
+  async function noNotice(page) {
+    const content = await page.locator('body').innerText();
+    assert.doesNotMatch(content, forbidden);
+    const labels = await page.locator('[title], [aria-label]').evaluateAll(elements => elements
+      .filter(el => el.getClientRects().length).map(el => (el.getAttribute('title') || '') + ' ' + (el.getAttribute('aria-label') || '')).join('\n'));
+    assert.doesNotMatch(labels, forbidden);
+    assert.equal(await page.locator('[data-private-provenance], [data-demo-provenance]').count(), 0);
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('button.submit-btn')).every(button => button.disabled));
+    for (const button of await page.locator('button.submit-btn').all()) {
+      assert(await button.isDisabled(), 'Original regime order submission must stay disabled');
+      await button.evaluate(element => element.click());
+    }
+    assert(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1);
+  }
+  async function terminalChecks(phase) {
+    for (const width of [1440, 390]) {
+      const { page, context } = await newPage(width, width === 390 ? 844 : 1000);
+      await context.route('**/*', async route => {
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) {
+          financialAttempts++;
+          return route.abort();
+        }
+        const url = new URL(route.request().url());
+        const marker = url.pathname.indexOf('/market/');
+        if (marker >= 0 && (url.pathname.endsWith('/market/listings') || /OG\d{2}-USDT/i.test(url.pathname))) {
+          const response = await edge(url.pathname.slice(marker) + url.search);
+          return route.fulfill({ status: response.status, headers: { 'content-type': 'application/json',
+            'access-control-allow-origin': '*' }, body: await response.text() });
+        }
+        return route.fallback();
+      });
+      for (const [index, regime] of ORIGINAL_REGIMES.entries()) {
+        const symbol = 'OG' + String(index + 1).padStart(2, '0');
+        await page.goto(origin + '/trade?pair=' + symbol + '%2FUSDT');
+        const ready = phase === 'countdown' ? '.vta-countdown' : '.managed-demo-chart canvas';
+        await page.locator(ready).first().waitFor();
+        await noNotice(page);
+        if (phase === 'live') for (const interval of ['1h', '5m']) {
+          const loaded = page.waitForResponse(response => response.url().includes(symbol + '-USDT/candles?')
+            && new URL(response.url()).searchParams.get('interval') === interval);
+          const selected = page.locator('[data-cw-tf="' + interval + '"]');
+          if (await selected.count()) await selected.first().click();
+          else {
+            await page.locator('[data-cw-feature="timeframes"]').first().click();
+            await page.locator('[data-cw-tf-option="' + interval + '"]').click();
+          }
+          const response = await loaded;
+          assert.equal(response.status(), 200);
+          assert.equal((await response.json()).provenance.origin, 'ORIGINAL_GENERATIVE');
+          await noNotice(page);
+        }
+        await page.reload();
+        await page.locator(ready).first().waitFor();
+        await noNotice(page);
+        const filename = 'terminal-' + regime.id + '-' + phase + '-' + width + '.png';
+        await page.screenshot({ path: path.join(output, filename), animations: 'disabled' });
+        screenshots.push(filename);
+      }
+      await context.close();
+      check(width + 'px: all 20 ' + phase + ' terminals have no warning copy, including reload/timeframes');
+    }
+  }
+  await terminalChecks('countdown');
   const liveAt = Date.parse(date) + 48 * 3600000;
   await restart(liveAt);
   const pub = await (await edge('/market/test-assets/OG01-USDT/candles?interval=1h')).json();
@@ -64,7 +129,7 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
         await graph.waitFor();
         const count = await graph.locator('[data-server-candle]').count();
         assert(count > 0 && count <= 160);
-        assert((await page.locator('[data-original-panel]').innerText()).includes('Исторические котировки не используются'));
+        assert.doesNotMatch(await page.locator('[data-original-panel]').innerText(), forbidden);
         assert(await page.locator('[data-field="tradable"]').isDisabled());
         assert(await page.locator('[data-field="ownerAllocation"]').isDisabled());
         assert(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1);
@@ -94,37 +159,11 @@ module.exports = async function verify({ newPage, api, origin, output, check, re
       check('Normal browser save persists the chosen original mode and automatic seed; saved selection is immutable');
     }
     await context.close();
-    check(width + 'px: 20 modes × 6 intervals, disclosures, disabled execution/inventory, no overflow');
+    check(width + 'px: 20 modes × 6 intervals, neutral controls, disabled execution/inventory, no overflow');
   }
-  let financialAttempts = 0;
-  for (const width of [1440, 390]) {
-    const { page, context } = await newPage(width, width === 390 ? 844 : 1000);
-    await context.route('**/*', async route => {
-      const url = new URL(route.request().url());
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) {
-        financialAttempts++;
-        return route.abort();
-      }
-      const marker = url.pathname.indexOf('/market/');
-      if (marker >= 0 && (url.pathname.endsWith('/market/listings') || url.pathname.includes('OG01-USDT'))) {
-        const response = await edge(url.pathname.slice(marker) + url.search);
-        return route.fulfill({ status: response.status, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: await response.text() });
-      }
-      return route.fallback();
-    });
-    await page.goto(origin + '/trade?pair=OG01%2FUSDT');
-    await page.locator('[data-private-provenance]').first().waitFor();
-    assert.match(await page.locator('[data-private-provenance]').first().innerText(), /SIMULATED.*NO REAL TRADING/);
-    await page.locator('.managed-demo-chart canvas').first().waitFor();
-    await page.screenshot({ path: path.join(output, 'public-original-' + width + '.png'), animations: 'disabled' });
-    await page.reload();
-    await page.locator('.managed-demo-chart canvas').first().waitFor();
-    assert.match(await page.locator('[data-private-provenance]').first().innerText(), /SIMULATED/);
-    assert(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1);
-    await context.close();
-  }
+  await terminalChecks('live');
   assert.equal(financialAttempts, 0);
-  check('Public terminal 1440/390 + reload: real Worker candles and visible SIMULATED disclosure; zero financial requests');
+  check('All presentation terminal states: provenance retained, public reads available, zero financial requests');
   fs.writeFileSync(path.join(output, 'original-results.json'), JSON.stringify({ records: records.map(r => ({ id: r.id, regime: r.draft.originalRegime })), screenshots,
     savedPreviewHash: require('node:crypto').createHash('sha256').update(JSON.stringify(savedPreview.body)).digest('hex') }, null, 2));
 };

@@ -49,6 +49,14 @@ on:
       - 'frontend/src/pages/markets-bolt/**'
       - 'frontend/src/pages/admin/**'
       - 'frontend/src/components/TestMarketTerminal.tsx'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'frontend/src/components/PairListSidebar.tsx'
+      - 'frontend/src/components/chart-workspace/**'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/lib/__tests__/customerListingPresentation.test.ts'
+      - 'frontend/src/lib/i18n*'
+      - 'frontend/src/lib/i18n/**'
+      - 'AGENTS.md'
       - 'frontend/src/components/OrderForm.tsx'
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
@@ -127,6 +135,7 @@ jobs:
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
+          frontend/src/lib/__tests__/customerListingPresentation.test.ts
           frontend/src/lib/__tests__/listingTimeSafety.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
           frontend/src/lib/__tests__/privateTestMarkets.test.ts

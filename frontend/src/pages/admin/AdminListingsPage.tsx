@@ -587,7 +587,7 @@ export function AdminListingsPage() {
               {logoReading && <small role="status" data-logo-reading>Загрузка логотипа…</small>}
             </div>
             <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram || form.history20Regime || form.originalRegime)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
-              <small>{form.simulationProgram || form.history20Regime || form.originalRegime ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small></label>
+              {!form.originalRegime && <small>{form.simulationProgram || form.history20Regime ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small>}</label>
           </div>
           {(!editing.id || form.originalRegime) && <ListingOriginalPreview config={form.originalRegime}
             draft={editing.id} price={form.initialPrice} seed={form.seedMode === 'manual' ? form.seed : ''}

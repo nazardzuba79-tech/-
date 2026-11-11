@@ -28,7 +28,7 @@ export function ListingOriginalPreview({ config, price, seed, draft, onSelect }:
     return () => controller.abort();
   }, [id, interval, price, seed, draft]);
   return <fieldset className="listing-growth-mode listing-regime" data-original-panel>
-    <legend>Оригинальная модель VOLTEX · симуляция</legend>
+    <legend>20 сценариев</legend>
     <label>Режим движения
       <select data-original-choice value={id ?? 'off'} disabled={Boolean(draft)} onChange={event => {
         const choice = event.target.value;
@@ -41,7 +41,6 @@ export function ListingOriginalPreview({ config, price, seed, draft, onSelect }:
       </select>
     </label>
     {config && <>
-      <p>Цена, свечи и объёмы моделируются. Исторические котировки не используются. Реальная торговля недоступна.</p>
       {id === 'AUTO' ? <small>Режим назначится при сохранении нового черновика. Для просмотра выберите конкретный режим.</small> : <>
         <label>Свечи <select data-original-interval value={interval} onChange={event => setInterval(event.target.value)}>
           {['1m', '5m', '15m', '1h', '4h', '1d'].map(value => <option key={value}>{value}</option>)}

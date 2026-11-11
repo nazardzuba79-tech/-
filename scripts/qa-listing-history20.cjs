@@ -71,6 +71,10 @@ async function setup() {
     email: 'history20-admin@example.invalid', displayName: 'Проверка окна', kycStatus: 'APPROVED', createdAt: '2026-01-01T00:00:00Z' }));
   app.use('/api/v1', adminListingsRouter(prisma, store, { hasSpotPair: () => false }, { invalidate() {}, async ensureFresh() {} }));
   app.get('/api/v1/support/conversations/mine', (_req, res) => res.json({ conversation: null }));
+  if (process.env.QA_ORIGINAL_REGIMES === '1') {
+    // Exercise the original-market gate even for an otherwise admitted order-ticket identity.
+    app.get('/api/v1/orders/access', (_req, res) => res.json({ allowed: true }));
+  }
   app.get('/api/v1/*', (_req, res) => res.json([]));
   app.use('/api/v1', (req, res) => { report.financialWrites.push(`${req.method} ${req.path}`); res.status(405).json({ error: 'fixture_write_denied' }); });
   app.use(express.static(dist, { index: false }));

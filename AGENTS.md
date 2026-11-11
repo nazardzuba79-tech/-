@@ -1,5 +1,20 @@
 # VOLTEX — shared Claude/Codex workflow
 
+## Future listing presentation — owner requirement, 11 November 2026
+
+All future listing implementations in the open presentation terminal use the ordinary
+chart, countdown, watchlist and market-information layout. Add no visible DEMO,
+SIMULATED, NO REAL TRADING, simulation/model warnings, translations, replacement
+badges, icons, tooltips or footnotes. Admin controls use «Режим движения»,
+«20 сценариев», «Предпросмотр». Preserve functional errors and scheduling states.
+Keep truthful API provenance and every financial restriction. Public presentation
+reads remain accessible. Never classify generated prices or activity as actual
+venue quotes, real trades, proven investment returns or execution liquidity.
+Preserve all previously published assets and history.
+Run the production-component presentation tests and the full 20-regime terminal
+browser suite at 1440/390, including reload/timeframe changes and zero financial
+requests, whenever these surfaces or future-listing sources change.
+
 This repository is edited by both Codex and Claude Code. The canonical working branch is `integration/claude-codex` until the owner explicitly promotes it to `main`.
 
 ## Before changing code
