@@ -53,6 +53,7 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       await ctx.route('**/*', async route => {
         const q = route.request(), u = new URL(q.url());
         if (!['GET', 'HEAD'].includes(q.method())) { writes.push(u.pathname); return route.abort(); }
+        if (u.pathname === '/api/v1/orders/access') return route.fulfill({ json: { allowed: false } });
         if (/\/market\/test-assets(?:\/|$)|\/market\/vta(?:\/|$)/.test(u.pathname)) {
           if (u.pathname.endsWith('/candles')) return route.fulfill({ json: { candles } });
           return failed ? route.fulfill({ status: 503, json: { error: 'fixture outage' } })
@@ -94,9 +95,8 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       assert.equal(await banner.count(), 0, 'healthy VTA remains silent');
       assert.equal(await diagnostic.count(), 0, 'healthy VTA clears its diagnostic marker');
       if (width === 390) await page.locator('#mobile-trade-trade').click();
-      // Owner, 2026-10-22: VTA is not open to an ordinary account, so its submit is disabled — no «not
-      // trading yet» line. The side tabs keep their colours; the released CTA colours are checked below
-      // on a pair whose button is live.
+      // #691: ordinary viewers keep active controls, but click/Enter are silent
+      // no-ops even on a restricted listing. The server remains authoritative.
       for (const side of ['buy', 'sell']) {
         await page.locator(`.order-form-tab.${side}`).click();
         await page.waitForFunction(({side}) => {
@@ -106,8 +106,12 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
           const standard = getComputedStyle(probe).color; probe.remove();
           return getComputedStyle(tab).backgroundColor === standard;
         }, {side});
-        assert.equal(await page.locator(`.submit-btn.${side}`).isDisabled(), true, `VTA ${side} submit is disabled for an ordinary account`);
-        await page.locator(`.submit-btn.${side}`).click({ force: true }); await page.waitForTimeout(100);
+        assert.equal(await page.locator(`.submit-btn.${side}`).isDisabled(), false, `VTA ${side} viewer control stays active`);
+        const quantity = page.locator('.order-form-content input[aria-label="Количество"]:not([type="range"])');
+        await quantity.fill('100');
+        await page.locator(`.submit-btn.${side}`).click(); await quantity.press('Enter'); await page.waitForTimeout(100);
+        assert.equal(await quantity.inputValue(), '100', 'viewer submit preserves the draft');
+        assert.deepEqual(writes, [], 'viewer click and Enter never send a mutation');
         assert.doesNotMatch(await page.locator('body').innerText(), /пока не торгуется|not trading yet/i, 'no refusal line');
       }
       await page.screenshot({ path: path.join(out, `vta-sell-${width}.png`), fullPage: true });

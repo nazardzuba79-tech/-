@@ -1,0 +1,95 @@
+{
+  "environment": "isolated built application; synthetic fixtures; no production requests",
+  "baseline": false,
+  "cases": [
+    {
+      "width": 1440,
+      "target": "ECLV",
+      "writes": [],
+      "errors": [],
+      "status": "PASS",
+      "families": [
+        "LIMIT",
+        "MARKET",
+        "STOP",
+        "TAKE_PROFIT",
+        "OCO"
+      ],
+      "financialRequests": 0
+    },
+    {
+      "width": 1440,
+      "target": "BTC",
+      "writes": [],
+      "errors": [],
+      "status": "PASS",
+      "families": [
+        "LIMIT",
+        "MARKET",
+        "STOP",
+        "TAKE_PROFIT",
+        "OCO"
+      ],
+      "financialRequests": 0
+    },
+    {
+      "width": 1440,
+      "target": "Futures",
+      "writes": [],
+      "errors": [],
+      "status": "PASS",
+      "families": [
+        "LIMIT",
+        "MARKET",
+        "STOP",
+        "TAKE_PROFIT"
+      ],
+      "financialRequests": 0
+    },
+    {
+      "width": 390,
+      "target": "ECLV",
+      "writes": [],
+      "errors": [],
+      "status": "PASS",
+      "families": [
+        "LIMIT",
+        "MARKET",
+        "STOP",
+        "TAKE_PROFIT",
+        "OCO"
+      ],
+      "financialRequests": 0
+    },
+    {
+      "width": 390,
+      "target": "BTC",
+      "writes": [],
+      "errors": [],
+      "status": "PASS",
+      "families": [
+        "LIMIT",
+        "MARKET",
+        "STOP",
+        "TAKE_PROFIT",
+        "OCO"
+      ],
+      "financialRequests": 0
+    },
+    {
+      "width": 390,
+      "target": "Futures",
+      "writes": [],
+      "errors": [],
+      "status": "PASS",
+      "families": [
+        "LIMIT",
+        "MARKET",
+        "STOP",
+        "TAKE_PROFIT"
+      ],
+      "financialRequests": 0
+    }
+  ],
+  "status": "PASS"
+}

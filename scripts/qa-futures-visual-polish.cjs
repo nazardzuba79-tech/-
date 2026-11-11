@@ -108,6 +108,8 @@ function start(log) {
   app.get('/api/v1/market/display',(_q,r)=>r.set('Cache-Control','public,max-age=60').json(display({version:1,type:'snapshot',epoch:'sampled-local',revision:1,status:'live',rows:quoteRows()})));
   app.get('/api/v1/market/display/futures-book/:symbol',(q,r)=>r.set('Cache-Control','public,max-age=60').json(display({...book(q.params.symbol),symbol:q.params.symbol,providerTime:Date.now(),fetchedAt:Date.now(),stale:false})));
   app.get('/api/v1/market/display/futures-trades/:symbol',(q,r)=>r.set('Cache-Control','public,max-age=60').json(display({symbol:q.params.symbol,trades:[{id:'sampled-tape-'+q.params.symbol,price:String(MID[q.params.symbol]),quantity:'0.01',time:Date.now(),side:'BUY'}]})));
+  // This isolated executor fixture models an already admitted trader; #691 tests admission separately.
+  app.get('/api/v1/orders/access', (_q, r) => r.json({ allowed: true }));
   app.get('/api/v1/me', (_q, r) => r.json({ id: 'qa-user', email: 'qa@example.invalid', role: 'USER', isAdmin: false, avatarUrl: null }));
   // ORDINARY account: the real execution path, the one most traders see.
   app.get('/api/v1/private-trading/access', (_q, r) =>

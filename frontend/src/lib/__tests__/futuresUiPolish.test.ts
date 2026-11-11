@@ -133,6 +133,8 @@ describe('Futures UI-only reconciliation',()=>{
 test.each([
   [
     "components/FuturesOrderForm.tsx",
+    // Issue #691: deliberate admission/draft-input/total-field change. New browser
+    // and server-boundary tests cover viewers; all engine/payload regressions remain.
     // Re-taken for the removal of the fee row. The owner settled the rate:
     // VOLTEX charges nothing. A row that can only ever read "nothing" is
     // noise, so it is gone — from the spot panel too, along with the
@@ -313,7 +315,7 @@ test.each([
     // Existing engine, leverage, margin, contract and Reduce Only checks stay.
     // 2026-09-30: the «+» beside «Доступно» is gone with its `onTransfer`
     // prop (owner); the row keeps the figure. Nothing else in the form moved.
-    "8aa9ea7f1f61e26a367d21e101d9213b343199975b53ab63a8fdda3f3cac234f"
+    "40396bf83b9f124bc5fa1c94053df17821e2b67583a2164c471126ab2d7fefd3"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -548,12 +550,12 @@ test('every new stylesheet selector is Futures-scoped',()=>{
 });
 test('form uses styled real inputs and accessible selected-side/type state',()=>{
  const source=read('components/FuturesOrderForm.tsx');
- // FOUR real inputs now, not two: price and quantity, plus the two TP/SL
+ // FIVE real inputs with #691 editable total: price and quantity, plus the two TP/SL
  // levels the ticket arms with the order on an engine that accepts them
  // there. The point of the count was never the number — it was that every
  // field in this form is a real styled <input> rather than an inline-styled
  // div, so the count moves with the form and `styles.` stays banned.
- expect(source.match(/className="mono fo-input"/g)).toHaveLength(4);
+ expect(source.match(/className="mono fo-input"/g)).toHaveLength(5);
  expect(source).not.toContain('styles.');
  // The ORDER TYPE is still a selected mode, so it still reports pressed
  // state. The SIDE no longer is: there is nothing above the form to press,
@@ -580,8 +582,8 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // button and the guard are pinned to ONE expression rather than two copies.
  // Since 2026-09-22 the pair also reads `reducible(side)`: under reduce-only
  // the side with nothing to reduce is disabled, with the reason as its title.
- expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}");
- expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}");
+ expect(source).toContain("disabled={!viewer && (!canSubmit || protectionBreachFor('BUY') || !reducible('BUY'))}");
+ expect(source).toContain("disabled={!viewer && (!canSubmit || protectionBreachFor('SELL') || !reducible('SELL'))}");
  expect(source).toContain('if (!canSubmit) return;');
  expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });

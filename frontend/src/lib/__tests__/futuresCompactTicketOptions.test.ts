@@ -152,16 +152,22 @@ describe('«TP / SL» beside «Только уменьшение»', () => {
 });
 
 describe('numbers in the ticket are printed with a dot', () => {
-  it('turns a typed comma into the dot the book and header use, in price, size and levels', async () => {
+  it('preserves a typed comma until an admitted trader blurs, then normalizes for execution', async () => {
     const t = await compactTicket();
     const input = (placeholder: string) => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
     input('0.00').props.onChange({ target: { value: '12,91' } });
+    expect(input('0.00').props.value).toBe('12,91');
+    input('0.00').props.onBlur();
     expect(input('0.00').props.value).toBe('12.91');
     expect(input('0.00').props.type).toBe('text');
     input('0.000').props.onChange({ target: { value: '1,50' } });
+    expect(input('0.000').props.value).toBe('1,50');
+    input('0.000').props.onBlur();
     expect(input('0.000').props.value).toBe('1.50');
     t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
     byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '270,5' } });
+    expect(byData(t.render(), 'data-entry-take-profit')[0].props.value).toBe('270,5');
+    byData(t.render(), 'data-entry-take-profit')[0].props.onBlur();
     expect(byData(t.render(), 'data-entry-take-profit')[0].props.value).toBe('270.5');
   });
 });
@@ -183,11 +189,11 @@ describe('invalid decimal drafts fail closed', () => {
     const t = await compactTicket();
     const input = (placeholder: string) => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
     input('0.00').props.onChange({ target: { value: '0001,2500' } });
-    expect(input('0.00').props.value).toBe('0001.2500');
+    expect(input('0.00').props.value).toBe('0001,2500');
     input('0.000').props.onChange({ target: { value: '0,00000001' } });
-    expect(input('0.000').props.value).toBe('0.00000001');
+    expect(input('0.000').props.value).toBe('0,00000001');
     input('0.00').props.onChange({ target: { value: '123456789012345,6789' } });
-    expect(input('0.00').props.value).toBe('123456789012345.6789');
+    expect(input('0.00').props.value).toBe('123456789012345,6789');
   });
 
   it('treats empty and trailing-dot drafts as editing states, not executable orders', async () => {
@@ -282,7 +288,7 @@ describe('decimal refusal explains the field without changing its draft', () => 
       expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
     }
     t.input('0.00').props.onChange({ target: { value: '0001,25000000000000001' } });
-    expect(t.input('0.00').props.value).toBe('0001.25000000000000001');
+    expect(t.input('0.00').props.value).toBe('0001,25000000000000001');
     t.input('0.00').props.onBlur();
     expect(t.input('0.00').props.value).toBe('1.25000000000000001');
     expect(t.input('0.00').props['aria-invalid']).toBeUndefined();

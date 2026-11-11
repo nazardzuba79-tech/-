@@ -152,6 +152,8 @@ if (fixture) {
 app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.authorization?.replace(/^Bearer /,''),s=session(token);if(!s)return res.status(401).json({error:'Preview session required'});res.locals.actor={userId:s.userId,sessionId:token,expiresAt:now()+3600000};next();});
 // The preview mirrors the production contract: this session is a
 // simulation-only account, so the terminal renders with no mode switch.
+// Isolated preview session capability. Production uses the two-identity API boundary.
+app.get('/api/v1/orders/access',(req,res)=>requestSession(req)?res.json({allowed:true}):res.status(401).json({error:'Preview session required'}));
 app.get('/api/v1/private-trading/access',(_req,res)=>res.json({allowed:true,nativeAvailable:true,simulationOnly:true,mode:'PRIVATE_SIMULATION'}));
 app.use('/api/v1/private-trading/native',nativeDemoRoutes(service,res=>res.locals.actor));
 app.get('/api/v1/private-trading/candles',asyncRoute(async(req,res)=>res.json(await market.chartCandles({symbol:String(req.query.symbol).replace('/',''),interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{})}))));

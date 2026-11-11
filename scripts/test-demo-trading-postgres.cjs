@@ -294,7 +294,8 @@ async function main() {
       assert.equal(request.status, 400);
       await assert.rejects(transferWalletBalance(prisma, 'tester', 'USDT', new BigNumber(1), 'TO_FUTURES'));
       // A native Cross trading account is valued from DemoBalance: nothing is withdrawable, nothing is recorded.
-      assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [], futures: [] });
+      // #688 adds informational review assets, never withdrawable assets.
+      assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [], futures: [], reviewAssets: [{ asset: 'USDT', available: '100' }] });
       const native = await api('POST', '/withdrawals', TRADER, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1' });
       assert.equal(native.status, 403); assert.equal(native.body.code, 'DEMO_FUNDS_NOT_WITHDRAWABLE');
       assert.equal(await prisma.withdrawal.count({ where: { userId: { in: ['tester', 'maker', TRADER] } } }), 0);
@@ -319,7 +320,8 @@ async function main() {
         const before = await state();
         const refused = await send(TRADER);
         assert.equal(refused.status, 403, label); assert.equal(refused.body.code, 'DEMO_FUNDS_NOT_WITHDRAWABLE');
-        assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [], futures: [] });
+        // #688 adds informational review assets, never withdrawable assets.
+      assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [], futures: [], reviewAssets: [{ asset: 'USDT', available: '100' }] });
         await assert.rejects(adminWithdrawals.approveWithdrawal({ withdrawalId: first, performedByAdminId: 'admin' }), DemoFundsNotWithdrawableError);
         await assert.rejects(adminWithdrawals.markSent({ withdrawalId: second, performedByAdminId: 'admin', txHash: '0xfixture' }), DemoFundsNotWithdrawableError);
         assert.equal(await state(), before, `${label}: nothing written, existing requests untouched`);
