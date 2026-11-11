@@ -1,7 +1,7 @@
 import { createPublicKey, verify } from 'crypto';
-import { notificationPublicKey, notifyDeposit, notifyUserRegistered, notifyDepositAddressCopied } from '../TelegramNotifications';
+import { notificationPublicKey, notifyDeposit, notifyDepositDigest, notifyUserRegistered, notifyDepositAddressCopied } from '../TelegramNotifications';
 
-const transfer = { id: 'synthetic-deposit', amount: { toString: () => '15' }, createdAt: new Date(),
+const transfer = { id: 'synthetic-deposit', amount: { toString: () => '15' }, createdAt: new Date(), blockTimestamp: new Date(Date.now() - 90_000),
   asset: 'USDT', chain: 'tron', txHash: 'ab'.repeat(32), confirmations: 19, requiredConfirmations: 19, finalized: true, verifiedAt: new Date() };
 const original = process.env.JWT_SECRET;
 beforeEach(() => { process.env.JWT_SECRET = 'synthetic-notification-key-not-production-123'; });
@@ -13,7 +13,7 @@ test('one signed call from existing transfer; no DB dependency, no user lookup, 
     const headers = init.headers;
     const key = createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: notificationPublicKey()! }, format: 'jwk' });
     expect(verify(null, Buffer.from(`voltex-notifications-v1\n${headers['x-voltex-timestamp']}\n/v1/deposit\n${init.body}`), key, Buffer.from(headers['x-voltex-signature'], 'base64url'))).toBe(true);
-    expect(JSON.parse(init.body)).toEqual({ eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(), amount: '15', asset: 'USDT', network: 'TRC20',
+    expect(JSON.parse(init.body)).toEqual({ eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(), blockTime: transfer.blockTimestamp.getTime(), amount: '15', asset: 'USDT', network: 'TRC20',
       txHash: transfer.txHash, confirmations: 19, requiredConfirmations: 19, finalized: true, proofStatus: 'VERIFIED' });
     return Response.json({ status: 'SENT' });
   });
@@ -35,6 +35,61 @@ test('native proof sends TRX / native network with its real transaction facts', 
 test.each([{ verifiedAt: null }, { finalized: false }, { confirmations: 18 }, { verifyError: 'wrong recipient' }, { txHash: 'spoofed' }, { asset: 'BTC' }])('unverified discovery %j never sends', async patch => {
   const mock = jest.fn();await expect(notifyDeposit({ ...transfer, ...patch }, mock)).resolves.toBeNull();expect(mock).not.toHaveBeenCalled();
 });
+// Issue #699: the chain time travels separately from the record time, and nothing is announced without it.
+test('the event separates the on-chain time (blockTime) from the record time (timestamp)', async () => {
+  const mock = jest.fn(async () => Response.json({ status: 'SENT' }));
+  const createdAt = new Date('2026-11-11T10:00:05Z'), blockTimestamp = new Date('2026-11-10T19:54:00Z');
+  await expect(notifyDeposit({ ...transfer, asset: 'TRX', createdAt, blockTimestamp }, mock)).resolves.toBe('SENT');
+  const body = JSON.parse((mock.mock.calls[0] as any)[1].body);
+  expect(body.timestamp).toBe(createdAt.getTime()); expect(body.blockTime).toBe(blockTimestamp.getTime());
+});
+test.each([{ blockTimestamp: null }, { blockTimestamp: undefined }, { blockTimestamp: new Date(NaN) }, { blockTimestamp: new Date(0) }])('no proven chain time %j: nothing is sent as a new receipt', async patch => {
+  const mock = jest.fn(); await expect(notifyDeposit({ ...transfer, ...patch }, mock)).resolves.toBeNull(); expect(mock).not.toHaveBeenCalled();
+});
+
+const digest = { id: 'deposit-digest:tron:2026-11-11', createdAt: new Date(), groups: [
+  { kind: 'MICRO' as const, asset: 'TRX' as const, count: 5, total: '0.000015', from: Date.now() - 54_000_000, to: Date.now() - 49_000_000, below: '1' },
+  { kind: 'HISTORICAL' as const, asset: 'USDT' as const, count: 1, total: '500', from: Date.now() - 500_000_000, to: Date.now() - 500_000_000 } ] };
+test('digest: one signed event on its own route with counts, sums and chain-time ranges only', async () => {
+  const mock = jest.fn(async (_url: any, _init: any) => Response.json({ status: 'SENT' }));
+  await expect(notifyDepositDigest(digest, mock as typeof fetch)).resolves.toBe('SENT');
+  expect(mock).toHaveBeenCalledTimes(1);
+  const [url, init] = mock.mock.calls[0];
+  expect(url).toBe('https://notify.voltextech.net/v1/deposit-digest');
+  const key = createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: notificationPublicKey()! }, format: 'jwk' });
+  expect(verify(null, Buffer.from(`voltex-notifications-v1\n${init.headers['x-voltex-timestamp']}\n/v1/deposit-digest\n${init.body}`), key, Buffer.from(init.headers['x-voltex-signature'], 'base64url'))).toBe(true);
+  expect(JSON.parse(init.body)).toEqual({ eventId: digest.id, eventType: 'DEPOSIT_DIGEST', timestamp: digest.createdAt.getTime(), groups: [
+    { kind: 'MICRO', asset: 'TRX', network: 'TRON_NATIVE', count: 5, total: '0.000015', from: digest.groups[0].from, to: digest.groups[0].to, below: '1' },
+    { kind: 'HISTORICAL', asset: 'USDT', network: 'TRC20', count: 1, total: '500', from: digest.groups[1].from, to: digest.groups[1].to } ] });
+  expect(init.body).not.toMatch(/txHash|[a-f0-9]{64}|userId|email/);
+});
+test('digest replay answers the stored outcome (DUPLICATE) and Worker outage returns null without throwing', async () => {
+  await expect(notifyDepositDigest(digest, jest.fn(async () => Response.json({ status: 'DUPLICATE', deliveryStatus: 'SENT' })) as any)).resolves.toBe('SENT');
+  await expect(notifyDepositDigest(digest, jest.fn(async () => Response.json({ status: 'FAILED' }, { status: 502 })) as any)).resolves.toBe('FAILED');
+  const log = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  await expect(notifyDepositDigest(digest, jest.fn(async () => { throw new Error('secret-token'); }) as any)).resolves.toBeNull();
+  // The Worker itself refuses this exact digest: a retry can never deliver it.
+  await expect(notifyDepositDigest(digest, jest.fn(async () => Response.json({ status: 'INVALID_EVENT' }, { status: 400 })) as any)).resolves.toBe('REJECTED');
+  // A Worker release from before #699 (no such route), an unsigned answer or an outage is NOT a rejection: it stays due.
+  await expect(notifyDepositDigest(digest, jest.fn(async () => Response.json({ status: 'NOT_FOUND' }, { status: 404 })) as any)).resolves.toBeNull();
+  await expect(notifyDepositDigest(digest, jest.fn(async () => Response.json({ status: 'UNAUTHORIZED' }, { status: 401 })) as any)).resolves.toBeNull();
+  await expect(notifyDepositDigest(digest, jest.fn(async () => Response.json({ status: 'UNAVAILABLE' }, { status: 503 })) as any)).resolves.toBeNull();
+  await expect(notifyDepositDigest(digest, jest.fn(async () => new Response('<html>bad gateway</html>', { status: 400 })) as any)).resolves.toBeNull();
+  expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret-token|deposit-digest/);
+});
+test.each([
+  { id: 'deposit-digest:tron:11-11-2026' }, { id: 'synthetic-deposit' }, { groups: [] }, { groups: [digest.groups[0], digest.groups[0]] },
+  { groups: [{ ...digest.groups[0], kind: 'FRESH' }] }, { groups: [{ ...digest.groups[0], asset: 'BTC' }] }, { groups: [{ ...digest.groups[0], count: 0 }] },
+  { groups: [{ ...digest.groups[0], total: '1e-6' }] }, { groups: [{ ...digest.groups[0], from: undefined }] }, { groups: [{ ...digest.groups[0], from: 5, to: 4 }] },
+  { groups: [{ ...digest.groups[0], below: undefined }] }, { groups: [{ ...digest.groups[1], below: '1' }] },
+])('malformed digest %j is never sent and is reported as REJECTED', async patch => {
+  const mock = jest.fn(); await expect(notifyDepositDigest({ ...digest, ...patch } as any, mock)).resolves.toBe('REJECTED'); expect(mock).not.toHaveBeenCalled();
+});
+test('a rejected (400) deposit alert is NOT final: the receipt stays due for the next run', async () => {
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  await expect(notifyDeposit(transfer, jest.fn(async () => Response.json({ status: 'INVALID_EVENT' }, { status: 400 })) as any)).resolves.toBeNull();
+});
+
 test('durable duplicate acknowledges the original outcome without a new event identity', async () => {
   const mock = jest.fn(async () => Response.json({ status: 'DUPLICATE', deliveryStatus: 'SENT' }));
   await expect(notifyDeposit(transfer, mock)).resolves.toBe('SENT');

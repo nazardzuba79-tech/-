@@ -1,0 +1,74 @@
+name: Deposit notices — chain time, dust and digest (#699, synthetic only)
+# Isolated only: a temporary PostgreSQL cluster on the runner, a local TronGrid
+# fixture, the notification Worker code under workerd/in-memory storage and a
+# fake Telegram. No production database, TronGrid, Cloudflare or Telegram call.
+on:
+  pull_request:
+    paths:
+      - 'src/services/deposits/**'
+      - 'src/services/TelegramNotifications.ts'
+      - 'src/services/__tests__/TelegramNotifications.test.ts'
+      - 'src/services/DepositService.ts'
+      - 'src/services/deposit-verifiers/**'
+      - 'workers/notification-edge/**'
+      - 'scripts/qa-deposit-notice-699.cjs'
+      - 'scripts/qa-deposit-notice-699-reproduce.cjs'
+      - 'scripts/ops/deposit-notice-forensics-699.cjs'
+      - 'prisma/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deposit-notice-699.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deposit-notice-699-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  notices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - name: Record tested commit and parents
+        run: git show -s --format='%H %P'
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript build (dist/ is what the acceptance runs)
+        run: npm run build
+      - name: Notice policy, signer, watcher pacing and schedule
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/services/deposits/__tests__/depositNoticePolicy.test.ts
+          src/services/__tests__/TelegramNotifications.test.ts
+          src/services/deposits/__tests__/depositWatchPacing.test.ts
+          src/services/deposits/__tests__/depositWatchSchedule.test.ts
+          src/services/__tests__/DepositService.test.ts
+      - run: npm ci --prefix workers/notification-edge --no-audit --no-fund
+      - name: Worker contracts, #699 messages and real workerd SQLite restart
+        run: npm test --prefix workers/notification-edge
+      - name: Notification Worker configuration dry run
+        working-directory: workers/notification-edge
+        run: npx wrangler deploy --dry-run
+      - name: Forensics script parses and refuses bad input without a network call
+        run: |
+          node --check scripts/ops/deposit-notice-forensics-699.cjs
+          if node scripts/ops/deposit-notice-forensics-699.cjs not-a-txid < /dev/null; then echo "must refuse" >&2; exit 1; fi
+      - name: Runner PostgreSQL tools (new temporary cluster only)
+        run: |
+          pg_config --version
+          for tool in initdb pg_ctl psql; do test -x "$(pg_config --bindir)/$tool"; done
+          echo "QA699_PG_BIN=$(pg_config --bindir)" >> "$GITHUB_ENV"
+      - name: Disposable PostgreSQL acceptance (history, dust, late finality, Telegram failures, restarts)
+        run: node scripts/qa-deposit-notice-699.cjs
+      - name: Incident shape — five dust transfers produce one digest, the real receipt one alert
+        run: node scripts/qa-deposit-notice-699-reproduce.cjs --expect-fixed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deposit-notice-699-evidence
+          path: output/deposit-notice-699/report.json
+          if-no-files-found: warn
