@@ -92,6 +92,18 @@ describe('20 original models, no historical source dependency', () => {
 });
 
 describe('future-only opt-in and immutable history', () => {
+  test('a non-hour five-minute start preserves UTC minute/hour aggregation', () => {
+    const asset = listingSimulationConfig(config({ listingAt: new Date(FROM + 35 * 60000).toISOString() }));
+    const now = FROM + 2 * HOUR - 1;
+    const minutes = testMarketCandles(asset, '1m', now, 60);
+    const hour = testMarketCandles(asset, '1h', now, 1)[0];
+    expect(hour.open).toBe(minutes[0].open);
+    expect(hour.close).toBe(minutes[59].close);
+    expect(hour.high).toBe(Math.max(...minutes.map(bar => bar.high)));
+    expect(hour.low).toBe(Math.min(...minutes.map(bar => bar.low)));
+    expect(hour.volume / minutes.reduce((sum, bar) => sum + bar.volume, 0)).toBeCloseTo(1, 6);
+    expect(() => config({ listingAt: new Date(FROM + 61000).toISOString() })).toThrow();
+  });
   test('automatic assignment covers all 20 modes and is fixed on later saves', () => {
     const auto = config({ originalRegime: { ...model(), id: 'AUTO' } });
     for (let ordinal = 0; ordinal < 40; ordinal++) {

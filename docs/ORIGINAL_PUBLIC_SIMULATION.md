@@ -24,7 +24,7 @@ All public model data uses the existing canonical simulation tick path. The same
 
 The new mode requires zero owner allocation, disabled execution and no private funding. It participates in the existing restricted-asset/no-ledger protections for Spot, conditional price triggers, collateral, wallet valuation and funding. Existing trading rules for other modes remain intact. A modelled book is display data and supplies no execution liquidity.
 
-New original listings use UTC-hour-aligned start times. Admin preview supports 1m, 5m, 15m, 1h, 4h and 1d. Before saving an automatic-seed draft, the preview uses an explicitly stated preview seed. After saving, both preview and public data use the stored seed.
+New original listings use UTC five-minute boundaries, matching the existing canonical five-minute aggregation. Hour-aligned and non-hour starts are tested. Admin preview supports 1m, 5m, 15m, 1h, 4h and 1d. Before saving an automatic-seed draft, the preview uses an explicitly stated preview seed. After saving, both preview and public data use the stored seed.
 
 ## Verification
 

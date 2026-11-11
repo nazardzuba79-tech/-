@@ -216,8 +216,8 @@ export function parseListingConfig(input: unknown): ListingConfig {
   if (config.originalRegime) {
     if (config.tradable || Number(config.ownerAllocation) !== 0 || config.privateTest || config.simulationProgram || config.history20Regime)
       throw new ListingValidationError('DEMO_ONLY', 'Оригинальная модель доступна только для симуляции без торговли и начислений');
-    if (Date.parse(config.listingAt) % 3600000)
-      throw new ListingValidationError('INVALID_SCENARIO', 'Начало оригинальной модели должно совпадать с часом UTC');
+    if (Date.parse(config.listingAt) % 300000)
+      throw new ListingValidationError('INVALID_SCENARIO', 'Начало оригинальной модели должно совпадать с границей 5 минут UTC');
   }
   if (config.history20Regime) {
     if (config.tradable || Number(config.ownerAllocation) !== 0 || config.privateTest || config.simulationProgram)
