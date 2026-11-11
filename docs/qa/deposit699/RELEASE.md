@@ -160,6 +160,29 @@ notification Worker deployment/version as recorded after #693. Stop on drift.
   day's digest would, under the previous code, be announced individually again
   (the old behaviour).
 
+## Release kit and proof of scope
+
+`scripts/ops/deposit-notice-699-release.cjs` (no network, no database):
+
+- `manifest <headDist> <baseDist>` — written by CI from the exact commit: every
+  compiled file that differs between the base and the head build (must be
+  exactly two changed modules and one added module, plus their source maps),
+  SHA-256 before/after, and the SHA-256 of every module the three release
+  modules import (those must already be installed unchanged).
+- `verify <installedDist> <manifest> before|after` — run by the operator against
+  the installed image (`before`: the two modules still equal the recorded base
+  build, the new module is absent, every imported module matches → safe to
+  overlay) and against the built overlay image (`after`: exactly the three
+  release modules equal the recorded head build, everything else untouched).
+- `smoke <dist>` — offline load of the three modules with the network blocked:
+  classification, signed-event shape, digest validation.
+
+The workflow `deposit-notice-699.yml` uploads the artifact
+`deposit-notice-699-release` (the three compiled modules, source maps,
+`manifest.json`, the kit, the Worker source and `SHA256SUMS`) for the commit
+it ran on. After the release, `post-release-readonly.sql` prints the notice
+journal, the repeat-protection and digest checks and the unchanged sentinels.
+
 ## Known limits (unchanged or by design)
 
 - A message Telegram itself rejects or times out on is never retried (the
