@@ -820,7 +820,6 @@ const MAX_SIMULATIONS = 64;
  * exactly one simulation as before.
  */
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
-  if (asset.history20Regime) throw new Error('HISTORICAL_RIGHTS_UNVERIFIED');
   const cycle = asset.cyclicImpulse;
   const natural = asset.naturalWicks;
   const accumulation = asset.accumulationPhase;

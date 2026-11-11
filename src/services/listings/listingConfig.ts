@@ -394,7 +394,9 @@ function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, no
 }
 
 /** The simulation input for a configuration. Same seed, time and price → same market, everywhere. */
-export function listingSimulationConfig(config: ListingConfig): TestAssetConfig {
+export function listingSimulationConfig(config: ListingConfig, scope?: 'private-regime-preview'): TestAssetConfig {
+  if (config.history20Regime && scope !== 'private-regime-preview')
+    throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED', 'Исторический режим доступен только для приватного предпросмотра');
   return {
     symbol: config.symbol,
     name: config.name,

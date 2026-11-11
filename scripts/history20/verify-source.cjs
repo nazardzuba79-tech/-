@@ -48,6 +48,7 @@ for (const [index, record] of catalog.records.entries()) {
       null,
       index,
     ),
+    'private-regime-preview',
   );
   const source = [];
   for (const archive of record.sources.filter((s) => s.url.includes('/1m/'))) {

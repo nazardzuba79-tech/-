@@ -11,7 +11,6 @@ import {
   withStableProfile,
 } from '../listingConfig';
 import { testMarketCandles } from '../../testMarkets/testMarketService';
-import { simulationFor } from '../../testMarkets/testMarketSimulation';
 import { VOLTORA } from '../../testMarkets/testAssetConfig';
 
 const start = Date.UTC(2026, 10, 15, 13, 7);
@@ -49,7 +48,8 @@ test('20 checksum-pinned minute sources; ordinal selection never modifies an exi
     expect(() => checkPublishable(draft, null, 0)).toThrow(
       expect.objectContaining({ code: 'HISTORICAL_RIGHTS_UNVERIFIED' }),
     );
-    expect(() => simulationFor(listingSimulationConfig(draft))).toThrow('HISTORICAL_RIGHTS_UNVERIFIED');
+    expect(() => listingSimulationConfig(draft)).toThrow(expect.objectContaining({ code: 'HISTORICAL_RIGHTS_UNVERIFIED' }));
+    expect(() => testMarketCandles(listingSimulationConfig(draft, 'private-regime-preview'), '1m', start)).toThrow('HISTORICAL_RIGHTS_UNVERIFIED');
   }
 });
 test('gaps between source close and next open, zero wicks, relative volume and endpoint survive mapping', () => {

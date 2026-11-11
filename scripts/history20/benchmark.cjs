@@ -54,7 +54,7 @@ async function serve(dir, candidate) {
       listingAt: new Date(start).toISOString(),
       ...(candidate ? { history20Regime: { version: 2, id: 'AUTO' } } : {}),
     });
-    return listingSimulationConfig(withStableProfile(cfg, null, i));
+    return listingSimulationConfig(withStableProfile(cfg, null, i), candidate ? 'private-regime-preview' : undefined);
   });
   app.get('/view/:index/:step', (req, res) => {
     const asset = assets[Number(req.params.index) % 20],
