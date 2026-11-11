@@ -28,9 +28,11 @@ async function draft(page) {
 async function edit(input, value) {
   assert(await input.isEnabled());
   assert(!(await input.getAttribute('readonly')));
-  await input.fill('');
+  // Use native select-and-type as one edit, without a separate intermediate
+  // empty-value edit of the linked quantity/total fields.
+  await input.press('ControlOrMeta+A');
   await input.pressSequentially(value);
-  assert.equal(await input.inputValue(), value);
+  assert.equal(await input.inputValue(), value, await input.getAttribute('aria-label'));
   assert.equal(await input.evaluate(el => el.selectionStart), value.length);
 }
 
