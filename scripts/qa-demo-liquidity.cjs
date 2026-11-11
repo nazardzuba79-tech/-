@@ -30,6 +30,8 @@ async function run({ origin, out, token, prisma, demoBal, topUp, reference, cons
       const reply = body => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
       if (url.origin !== origin) return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"external network disabled in QA"}' });
       if (request.method() !== 'GET') { calls.push(`UNEXPECTED ${request.method()} ${p}`); return route.fulfill({ status: 403, body: '{}' }); }
+      // Explicit isolated executor actor, not production funding-based admission.
+      if (p === '/api/v1/orders/access') return reply({ allowed: who === 'qaTrader' });
       if (p === '/api/v1/me') return reply({ id: who, email: `${who}@example.invalid`, displayName: 'QA', kycStatus: 'APPROVED', role: 'USER', isAdmin: false });
       if (p === '/api/v1/balances') return reply([]);
       if (p.includes('private-trading/access')) return reply({ allowed: false });
@@ -67,7 +69,7 @@ async function run({ origin, out, token, prisma, demoBal, topUp, reference, cons
   async function order(page, side, type, quantity, price) {
     await page.locator(`.order-form-tab.${side === 'BUY' ? 'buy' : 'sell'}:visible`).first().click();
     await pickType(page, type === 'MARKET' ? 'Рынок' : 'Лимит', type);
-    if (price !== undefined) await form(page).locator('input[aria-label="Цена"][type="number"]').fill(String(price));
+    if (price !== undefined) await form(page).locator('input[aria-label="Цена"][inputmode="decimal"]').fill(String(price));
     await form(page).locator('input[aria-label="Количество"]:not([type="range"])').fill(String(quantity));
     await form(page).locator('button[type="submit"]').click();
     await settle(page);

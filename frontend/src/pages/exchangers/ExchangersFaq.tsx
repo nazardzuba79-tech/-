@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useExchangersMode } from './mode';
 
-export const FAQ: readonly { q: string; a: string }[] = [
+/** `links`: the answer when the page shows no exchangers of its own; `null` hides a question that is only about the list. */
+export const FAQ: readonly { q: string; a: string; links?: string | null }[] = [
   {
     q: 'VOLTEX проводит обмен сам?',
     a: 'Нет. VOLTEX только показывает и сравнивает предложения обменников. Мы не принимаем рубли, не храним криптовалюту и не обрабатываем заявки — обмен полностью проходит на сайте выбранного обменника.',
+    links: 'Нет. VOLTEX не принимает рубли, не хранит криптовалюту и не обрабатывает заявки. Сейчас страница только открывает выбранное направление на BestChange — обмен полностью проходит на сайте обменника, который вы выберете там.',
   },
   {
     q: 'Откуда берутся курсы?',
+    links: 'Сейчас курсы на этой странице не показываются: подключение к данным BestChange не настроено, а вымышленные значения мы не подставляем. Актуальные курсы, резервы, лимиты и отзывы смотрите на странице направления BestChange.',
     a: 'Курсы, резервы, лимиты и отзывы приходят из официального API BestChange — сервиса мониторинга обменных пунктов. Если данные получить не удалось, страница прямо сообщает об этом и не подставляет вымышленные значения.',
   },
   {
@@ -16,10 +20,12 @@ export const FAQ: readonly { q: string; a: string }[] = [
   },
   {
     q: 'Как упорядочен список?',
+    links: null,
     a: 'По умолчанию — по курсу с учётом дополнительных комиссий обменника. Так BestChange ранжирует предложения для обмена на сумму около 300 долларов. Порядок можно сменить: по курсу, резерву, минимальной сумме или числу отзывов.',
   },
   {
     q: 'Что значит «Нет данных»?',
+    links: null,
     a: 'BestChange не передал этот параметр. Мы не заменяем неизвестные значения нулём или предположениями: неизвестный минимум не означает «от 0 ₽», а отсутствие отметки о проверке не означает, что проверки не будет.',
   },
   {
@@ -28,10 +34,12 @@ export const FAQ: readonly { q: string; a: string }[] = [
   },
   {
     q: 'Что означают резерв и лимиты?',
+    links: 'Резерв — объём криптовалюты, который обменник готов выдать прямо сейчас. Лимиты — минимальная и максимальная сумма одной заявки в рублях. Эти значения показывает BestChange на странице направления и сам обменник.',
     a: 'Резерв — объём криптовалюты, который обменник готов выдать прямо сейчас. Лимиты — минимальная и максимальная сумма одной заявки в рублях. Фильтр «Подходит под сумму» оставляет только предложения, где оба условия подтверждены.',
   },
   {
     q: 'Куда ведёт кнопка перехода?',
+    links: 'Кнопка «Выбрать на BestChange» открывает в новой вкладке страницу выбранного направления на сайте BestChange. Обменник вы выбираете там. VOLTEX не передаёт BestChange и обменникам ваши данные, токены и адреса.',
     a: 'Кнопка «Перейти к обменнику» открывает сайт выбранного обменника через переход BestChange. Направление и сумму обмена вы выбираете уже на сайте обменника. Если ссылка обменника недоступна, кнопка «Выбрать на BestChange» откроет страницу этого направления на BestChange со списком обменников. VOLTEX не добавляет в ссылки ваши данные.',
   },
   {
@@ -42,6 +50,8 @@ export const FAQ: readonly { q: string; a: string }[] = [
 
 /** Accordion of buttons with aria-expanded (v0 exchangers-faq). Several answers may be open at once. */
 export function ExchangersFaq() {
+  const live = useExchangersMode() === 'live';
+  const items = FAQ.filter((item) => live || item.links !== null).map((item) => ({ q: item.q, a: live ? item.a : item.links ?? item.a }));
   const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
   const toggle = (i: number) =>
     setOpen((prev) => {
@@ -54,10 +64,10 @@ export function ExchangersFaq() {
     <section aria-labelledby="vx-ex-faq-title" className="vx-ex-faq">
       <div>
         <h2 id="vx-ex-faq-title">Частые вопросы</h2>
-        <p className="vx-ex-muted">Как работает сравнение и на что обратить внимание.</p>
+        <p className="vx-ex-muted">{live ? 'Как работает сравнение и на что обратить внимание.' : 'Как устроен переход на BestChange и на что обратить внимание.'}</p>
       </div>
       <div className="vx-ex-card vx-ex-accordion">
-        {FAQ.map((item, i) => {
+        {items.map((item, i) => {
           const expanded = open.has(i);
           return (
             <div key={item.q} className="vx-ex-accordion-item">

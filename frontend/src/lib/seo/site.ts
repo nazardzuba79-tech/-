@@ -41,7 +41,8 @@ export const PUBLIC_TOOL_PAGES = ['/exchangers'] as const;
 /** Title and description of /exchangers: the static head (pages.ts) and the page itself (usePageMeta) share them. */
 export const EXCHANGERS_META = {
   title: 'Обменники — купить криптовалюту за рубли | VOLTEX',
-  description: 'Сравните курсы, резервы и лимиты обменников по данным BestChange и перейдите на сайт выбранного обменника. VOLTEX не принимает рубли и не проводит обмен.',
+  // True with and without a BestChange rate source: no promise of a list or of rates.
+  description: 'Выберите способ оплаты в рублях, криптовалюту и сеть и перейдите к выбору обменника по данным BestChange. VOLTEX не принимает рубли и не проводит обмен.',
 } as const;
 
 export const ROBOTS_PRIVATE = 'noindex, nofollow';

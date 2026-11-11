@@ -75,8 +75,10 @@ export function NotConfigured({ directionUrl }: { directionUrl: string | null })
     <StatePanel
       tone="warning"
       icon={<PlugZap size={20} aria-hidden="true" />}
-      title="Сравнение курсов сейчас недоступно: подключение к BestChange не настроено"
-      description="Мы не показываем вымышленные курсы и резервы. Выбрать обменник для этого направления можно прямо на BestChange."
+      title="Список обменников и курсы на VOLTEX сейчас не показываются"
+      description={directionUrl
+        ? 'Подключение к данным BestChange не настроено. Вымышленных обменников, курсов и резервов здесь нет. Для выбранного направления откроется страница BestChange — обменник выбирается там.'
+        : 'Подключение к данным BestChange не настроено. Вымышленных обменников, курсов и резервов здесь нет. Для этого направления проверенной ссылки на BestChange нет — выберите другой способ оплаты, монету или сеть.'}
       action={<DirectionButton href={directionUrl} primary />}
     />
   );

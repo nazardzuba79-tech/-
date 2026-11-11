@@ -26,11 +26,12 @@ on:
       - 'scripts/*demo-trading*.cjs'
       - 'docs/DEMO_TRADING.md'
       - '.github/workflows/demo-trading.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 jobs:
   demo-trading:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +78,7 @@ jobs:
       - name: Isolated QA tools only (not application dependencies)
         run: |
           npm install --prefix output/demo-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1 playwright@1.63.0
-          output/demo-qa-deps/node_modules/.bin/playwright install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs output/demo-qa-deps/node_modules/playwright 1.63.0 download
       - name: Runner PostgreSQL tools (new temporary cluster only)
         run: |
           pg_config --version

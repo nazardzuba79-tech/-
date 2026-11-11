@@ -12,11 +12,12 @@ on:
       - 'workers/market-edge/**'
       - 'scripts/*nrx*'
       - '.github/workflows/nrx-market.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -75,7 +76,7 @@ jobs:
       - run: npm run build && npm run build --prefix frontend
       - name: Isolated browser QA dependencies
         run: npm install --prefix /tmp/nrx-browser-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-      - run: node /tmp/nrx-browser-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node .github/scripts/verify-ci-browser.cjs /tmp/nrx-browser-qa/node_modules/playwright 1.63.0 download
       - run: node scripts/qa-nrx-market.cjs
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/nrx-browser-qa/node_modules/playwright

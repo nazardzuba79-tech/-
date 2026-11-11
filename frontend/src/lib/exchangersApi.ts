@@ -25,6 +25,9 @@ function isAbort(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'AbortError';
 }
 
+/** The API release in production may not carry this feature yet. */
+class RouteAbsent extends Error {}
+
 async function readJson(path: string, signal: AbortSignal): Promise<unknown> {
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'GET',
@@ -33,6 +36,10 @@ async function readJson(path: string, signal: AbortSignal): Promise<unknown> {
     headers: { Accept: 'application/json' },
     signal,
   });
+  // No such route on this API: there is no rate source at all. That is the
+  // honest "not configured" state (links to BestChange only), not a network
+  // error the visitor could fix by retrying.
+  if (response.status === 404) throw new RouteAbsent();
   // Every contract answer (200, 400, 429, 503) carries a JSON status body.
   return response.json();
 }
@@ -42,6 +49,7 @@ export async function fetchExchangersDirectory(signal: AbortSignal): Promise<Dir
     return validateDirectoryBody(await readJson('/exchangers/directory', signal));
   } catch (error) {
     if (isAbort(error) || signal.aborted) throw error;
+    if (error instanceof RouteAbsent) return { kind: 'not_configured' };
     return { kind: 'error' };
   }
 }
@@ -61,6 +69,7 @@ export async function fetchExchangerOffers(query: OffersQuery, signal: AbortSign
     return validateOffersBody(await readJson(offersPath(query), signal), query);
   } catch (error) {
     if (isAbort(error) || signal.aborted) throw error;
+    if (error instanceof RouteAbsent) return { kind: 'not_configured' };
     return { kind: 'error' };
   }
 }

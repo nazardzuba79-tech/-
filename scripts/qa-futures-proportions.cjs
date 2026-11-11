@@ -101,6 +101,9 @@ function start() {
   app.use('/__qa/evidence', express.static(OUT));
   app.get('/__qa/hits', (_q, r) => r.json(hits));
   app.get('/api/v1/me', json({ id: 'qa-proportions', email: 'preview@localhost.invalid', role: 'USER', isAdmin: false, avatarUrl: null, createdAt: '2025-01-01T00:00:00Z', emailVerified: true, kycStatus: 'NONE' }));
+  // This fixture reviews an admitted executor, including its unknown-balance lock.
+  // #691 separately checks viewers whose controls stay interactive without writes.
+  app.get('/api/v1/orders/access', (q, r) => r.json({ allowed: q.headers.authorization === 'Bearer qa-proportions' }));
   app.get('/api/v1/private-trading/access', json({ allowed: true, nativeAvailable: true, simulationOnly: true }));
   app.get(['/api/v1/private-trading/native/state','/api/v1/private-trading/native/live'], (q,r) => r.json(state(q.qaState === 'filled')));
   app.get('/api/v1/private-trading/native/contracts/:symbol', (q,r) => r.json({ ...CONTRACT, symbol:q.params.symbol }));

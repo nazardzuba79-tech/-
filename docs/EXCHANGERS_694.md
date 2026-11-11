@@ -1,6 +1,6 @@
 # «Обменники» (/exchangers) — BestChange integration (Issue #694)
 
-Status: code candidate. Production needs (1) a BestChange API key set on the Hetzner API runtime env by the
+Status: code candidate; no BestChange API key exists yet, so only the links mode (below) can work in production. Production needs (1) a BestChange API key set on the Hetzner API runtime env by the
 operator, (2) a narrow API release that mounts the router, (3) a Pages release of the frontend. Nothing here
 moves money, touches VOLTEX balances, deposits, withdrawals, Copy Trading, Spot, Futures, Wallet, listings or timers.
 
@@ -45,12 +45,12 @@ moves money, touches VOLTEX balances, deposits, withdrawals, Copy Trading, Spot,
 
   | id | urlname | label | kind |
   |---|---|---|---|
-  | sbp | sbp | СБП | payment_system |
+  | sbp | sbp | Карта и СБП без P2P | payment_system |
   | sberbank | sberbank | Сбербанк | bank |
   | tbank | tinkoff | Т-Банк | bank |
   | alfabank | alfaclick | Альфа-Банк | bank |
   | vtb | vtb | ВТБ | bank |
-  | card | visa-mastercard-rub | Карта банка | card |
+  | card | visa-mastercard-rub | Карта банка и СБП | card |
   | mir | mir | Карта Мир | card |
 
   Dynamic extras get id `bc-<urlname>` and kind `bank` unless the name says otherwise.
@@ -69,6 +69,39 @@ moves money, touches VOLTEX balances, deposits, withdrawals, Copy Trading, Spot,
   client volume never reaches BestChange and a shared counter would let a few clients lock everyone out. Errors are fixed
   strings; the key, the upstream URL and upstream bodies never reach logs or responses.
 
+## Two modes of the page (decided 2026-11-11)
+
+The page never claims more than it can show.
+
+- **live** — the server answered with BestChange data. The page lists real
+  exchangers, rates, reserves, limits and reviews, and the visitor picks one.
+  This needs `BESTCHANGE_API_KEY` on the API host.
+- **links** — there is no rate source: the directory answers
+  `{status:"not_configured"}`, or the API release does not carry the route at
+  all (HTTP 404 is read as the same state). The page shows **no exchanger, no
+  rate, no reserve and no review**. It is not worded as a comparison or a
+  catalogue of exchangers: the visitor picks a payment method, a coin and a
+  network, and «Выбрать на BestChange» opens that direction on BestChange,
+  where the exchanger is chosen.
+- In links mode only directions that were checked to exist are offered
+  (`src/shared/exchangers/verifiedDirections.ts`): a HEAD request to
+  `https://www.bestchange.ru/{from}-to-{to}.html` answered 200 (an unknown
+  direction answers 301 to the home page). Status only; no page content is
+  read. Checked 2026-11-11: 66 directions = Карта и СБП без P2P, Сбербанк,
+  Т-Банк, Альфа-Банк, ВТБ, Карта банка и СБП × USDT (TRC-20, ERC-20, BEP-20, TON), BTC, ETH,
+  TRX, TON, USDC (Solana), LTC, SOL. Not confirmed and therefore not offered:
+  «Карта Мир» (candidate urlname `mir`) and USDC ERC-20 (candidate
+  `usd-coin-erc20`). Re-check by hand with `node scripts/qa-exchangers-links.cjs`.
+- What each link opens was confirmed once from the page titles of 16
+  directions (every payment-method urlname and every receive urlname at least
+  once; titles only, no rates read). The two generic methods carry BestChange's
+  own names: urlname `sbp` is «Карта и СБП без P2P», `visa-mastercard-rub` is
+  «Карта банка и СБП». A 200 answer proves the direction page exists; it says
+  nothing about how many exchangers currently offer it.
+- **The main scenario of #694 — choosing a specific exchanger on VOLTEX — works
+  only in live mode.** Without a key the feature is not complete, and the links
+  mode must not be presented as the finished exchanger catalogue.
+
 ## API contract
 
 `GET /api/v1/exchangers/directory`
@@ -76,7 +109,7 @@ moves money, touches VOLTEX balances, deposits, withdrawals, Copy Trading, Spot,
 ```json
 { "status": "ok" | "not_configured" | "unavailable",
   "asOf": "2026-11-08T08:00:00.000Z" | null,
-  "methods": [{ "id": "sbp", "label": "СБП", "kind": "payment_system", "available": true }],
+  "methods": [{ "id": "sbp", "label": "Карта и СБП без P2P", "kind": "payment_system", "available": true }],
   "assets":  [{ "assetId": "USDT", "networkId": "tron", "available": true }] }
 ```
 

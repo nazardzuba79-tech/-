@@ -25,6 +25,7 @@ on:
       - 'prisma/**'
       - 'scripts/qa-private-*'
       - '.github/workflows/private-trading.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 concurrency:
@@ -32,7 +33,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -152,7 +153,7 @@ jobs:
       - name: Install disposable card browser tooling
         run: |
           npm install --prefix /tmp/voltex-private-card-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-private-card-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-private-card-qa/node_modules/playwright 1.63.0 download
       - name: Actual P&L dialog and PNG browser QA
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/voltex-private-card-qa/node_modules/playwright

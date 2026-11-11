@@ -1,6 +1,10 @@
 export const RETENTION_MS = 7 * 24 * 60 * 60_000;
 export const VERSION = 'notifications-v1';
-const TYPES = ['KYC_SUBMITTED', 'KYC_MATERIALS_RECEIVED', 'DEPOSIT_DISCOVERED', 'NEW_USER_REGISTERED', 'DEPOSIT_ADDRESS_COPIED'];
+const TYPES = ['KYC_SUBMITTED', 'KYC_MATERIALS_RECEIVED', 'DEPOSIT_DISCOVERED', 'DEPOSIT_DIGEST', 'NEW_USER_REGISTERED', 'DEPOSIT_ADDRESS_COPIED'];
+// #699: a block cannot come from the future; tolerated chain/server clock difference.
+export const CLOCK_SKEW_MS = 10 * 60_000;
+const DIGEST_KINDS = ['MICRO', 'HISTORICAL', 'TIME_UNKNOWN'];
+const chainTime = value => Number.isSafeInteger(value) && value > 0;
 export const reply = (status, code, extra = {}) => Response.json({ status: code, ...extra }, {
   status, headers: { 'cache-control': 'no-store' },
 });
@@ -33,6 +37,29 @@ export function validEvent(e, type, now = Date.now()) {
       && (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
       && (!e.fullName || text(e.fullName, 200));
   }
+  if (type === 'DEPOSIT_DIGEST') {
+    // A summary of transfers that are NOT announced as new deposits: counts,
+    // sums and chain-time ranges only. No TXID, address, sender or account.
+    return /^deposit-digest:tron:\d{4}-\d{2}-\d{2}$/.test(e.eventId)
+      && Array.isArray(e.groups) && e.groups.length >= 1 && e.groups.length <= 6
+      && new Set(e.groups.map(g => `${g?.kind}|${g?.asset}`)).size === e.groups.length
+      && e.groups.every(g => g && typeof g === 'object' && !Array.isArray(g)
+        && Object.keys(g).every(key => ['kind', 'asset', 'network', 'count', 'total', 'from', 'to', 'below'].includes(key))
+        && DIGEST_KINDS.includes(g.kind)
+        && ((g.asset === 'USDT' && g.network === 'TRC20') || (g.asset === 'TRX' && g.network === 'TRON_NATIVE'))
+        && Number.isSafeInteger(g.count) && g.count >= 1 && g.count <= 100_000
+        && amount(g.total) && BigInt(g.total.replace('.', '')) > 0n
+        && (g.from === undefined) === (g.to === undefined)
+        && (g.from === undefined || (chainTime(g.from) && chainTime(g.to) && g.from <= g.to && g.to <= now + CLOCK_SKEW_MS))
+        && (g.kind === 'MICRO' ? amount(g.below) && BigInt(g.below.replace('.', '')) > 0n : g.below === undefined));
+  }
+  // `timestamp` is when the API recorded the transfer; `blockTime` is when the
+  // transaction happened on chain. An event from an API release older than
+  // #699 has no blockTime and is still accepted, but is never titled as new.
+  // A chain time in the future, or more than the retention older than the
+  // record, cannot be a new receipt and is refused outright.
+  if (e.blockTime !== undefined && (!chainTime(e.blockTime) || e.blockTime > now + CLOCK_SKEW_MS
+    || e.timestamp - e.blockTime > RETENTION_MS)) return false;
   return amount(e.amount) && BigInt(e.amount.replace('.', '')) > 0n
     && ((e.asset === 'USDT' && e.network === 'TRC20') || (e.asset === 'TRX' && e.network === 'TRON_NATIVE'))
     && typeof e.txHash === 'string' && /^[a-f0-9]{64}$/.test(e.txHash)
@@ -70,12 +97,35 @@ export function message(e) {
     `Материал: ${e.part === 'SELFIE' ? 'селфи для подтверждения личности' : 'новое фото документа'}`,
     `Статус: ${e.complete === false ? 'ожидается остальная часть запроса' : 'повторная проверка'}`,
   ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
+  if (e.eventType === 'DEPOSIT_DIGEST') return digestMessage(e);
   // Chain proof is not attribution, USD valuation, a package threshold or credit.
-  return [`Нове надходження: ${e.amount} ${e.asset}`, '',
-    `Мережа: ${e.asset === 'TRX' ? 'TRON (Native)' : 'TRON (TRC-20)'}`,
+  // The title says «нове» only with a proven chain time; the owner always sees
+  // when the transaction really happened, separately from when it was detected.
+  return [`${e.blockTime === undefined ? 'Надходження' : 'Нове надходження'}: ${e.amount} ${e.asset}`, '',
+    `Мережа: ${NETWORK_LABEL[e.asset]}`,
+    e.blockTime === undefined ? 'Час транзакції: не передано' : `Час транзакції: ${kyivTime(e.blockTime)} (Київ)`,
+    e.blockTime !== undefined && `Виявлено: ${kyivTime(e.timestamp)} (Київ)`,
     `TXID: ${e.txHash}`, `Підтвердження: ${e.confirmations} (мінімум ${e.requiredConfirmations})`,
     'Статус: підтверджено в блокчейні; очікує ручної перевірки',
-  ].join('\n');
+  ].filter(line => line !== false).join('\n');
+}
+
+const NETWORK_LABEL = { TRX: 'TRON (Native)', USDT: 'TRON (TRC-20)' };
+const DIGEST_TITLE = {
+  MICRO: g => `Мікроперекази (менше ${g.below} ${g.asset}; можливий dust)`,
+  HISTORICAL: () => 'Старі перекази, вперше знайдені зараз',
+  TIME_UNKNOWN: () => 'Перекази без підтвердженого часу блоку',
+};
+/** One message instead of one per transfer. It never says «нове надходження». */
+function digestMessage(e) {
+  const lines = ['Зведення перевірки надходжень'];
+  for (const g of e.groups) {
+    lines.push('', `${DIGEST_TITLE[g.kind](g)}: ${g.count} шт., разом ${g.total} ${g.asset}`, `Мережа: ${NETWORK_LABEL[g.asset]}`);
+    if (g.from !== undefined) lines.push(`Час транзакцій: ${g.from === g.to ? kyivTime(g.from) : `${kyivTime(g.from)} – ${kyivTime(g.to)}`} (Київ)`);
+  }
+  lines.push('', 'Окремі сповіщення про ці перекази не надсилаються.',
+    'Нічого не зараховано автоматично; усі записи збережено в адмінці («Пополнения») для ручної перевірки.');
+  return lines.join('\n');
 }
 
 export async function acceptEvent(event, type, env) {
@@ -90,7 +140,9 @@ export async function acceptEvent(event, type, env) {
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'documentType']
     : type === 'KYC_MATERIALS_RECEIVED'
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'part', 'complete']
-    : ['eventId', 'eventType', 'timestamp', 'amount', 'asset', 'network', 'txHash', 'confirmations', 'requiredConfirmations', 'finalized', 'proofStatus'];
+    : type === 'DEPOSIT_DIGEST'
+    ? ['eventId', 'eventType', 'timestamp', 'groups']
+    : ['eventId', 'eventType', 'timestamp', 'blockTime', 'amount', 'asset', 'network', 'txHash', 'confirmations', 'requiredConfirmations', 'finalized', 'proofStatus'];
   if (Object.keys(event).some(key => !allowed.includes(key))) return reply(400, 'INVALID_EVENT');
   const id = env.EVENTS.idFromName(`${type}:${event.eventId}`);
   return env.EVENTS.get(id).fetch(new Request('https://internal/event', { method: 'POST', body: JSON.stringify(event) }));
@@ -119,6 +171,7 @@ export async function handle(request, env) {
     depositSigningConfigured: Boolean(env.DEPOSIT_SIGNING_PUBLIC_KEY),
   });
   const type = path === '/v1/deposit' ? 'DEPOSIT_DISCOVERED'
+    : path === '/v1/deposit-digest' ? 'DEPOSIT_DIGEST'
     : path === '/v1/registration' ? 'NEW_USER_REGISTERED'
     : path === '/v1/copy' ? 'DEPOSIT_ADDRESS_COPIED' : null;
   if (request.method !== 'POST' || !type) return reply(404, 'NOT_FOUND');

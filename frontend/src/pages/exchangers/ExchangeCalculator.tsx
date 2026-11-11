@@ -202,7 +202,7 @@ export function ExchangeCalculator({ options, busy, ratesOff, draft, onDraftChan
                 )}
               </div>
               <span className="vx-ex-estimate-note">
-                {ratesOff ? 'курсы не загружены' : 'основной курс лучшего предложения; доп. комиссии и комиссия сети не учтены'}
+                {ratesOff ? 'курсы на этой странице сейчас не показываются' : 'основной курс лучшего предложения; доп. комиссии и комиссия сети не учтены'}
               </span>
             </div>
           </fieldset>
@@ -218,13 +218,13 @@ export function ExchangeCalculator({ options, busy, ratesOff, draft, onDraftChan
             ) : (
               <>
                 <Info size={14} aria-hidden="true" />
-                Итоговая сумма зависит от комиссий и условий обменника
+                {ratesOff ? 'Курс и итоговую сумму показывает BestChange и сайт обменника' : 'Итоговая сумма зависит от комиссий и условий обменника'}
               </>
             )}
           </p>
           <button type="submit" className="vx-ex-btn vx-ex-btn--primary vx-ex-btn--lg" disabled={busy || !hasSelection}>
             <Search size={18} aria-hidden="true" />
-            Найти обменники
+            {ratesOff ? 'Показать направление' : 'Найти обменники'}
           </button>
         </div>
       </form>

@@ -1,3 +1,4 @@
+import * as orderTicketNumbers from '../orderTicketNumbers';
 import { readFileSync } from 'fs';
 import { browserReadModules } from '../../../test-utils/browserReadModules';
 import { resolve } from 'path';
@@ -154,6 +155,10 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   const output: any = {};
   const readModules = browserReadModules(react, api, overrides.document);
   new Function('require', 'exports', 'window', 'document', compiled)((name: string) => {
+    // These existing engine/presentation tests exercise an admitted trader.
+    // Viewer admission is covered by the real browser matrix and boundary tests.
+    if (name === '../lib/useOrderTicketAccess') return { useOrderTicketAccess: () => ({ allowed: true, canSubmit: () => true }) };
+    if (name === '../lib/orderTicketNumbers') return orderTicketNumbers;
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError: Error };
     if (name === '../lib/useFuturesMark') return readModules.mark;
@@ -880,8 +885,8 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
     // button whose side has nothing to reduce is disabled with the reason
     // on it (owner, 2026-09-22) rather than left looking pressable. `place`
     // re-reads the same function and SAYS why instead of returning silently.
-    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}");
-    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}");
+    expect(code).toContain("disabled={!viewer && (!canSubmit || protectionBreachFor('BUY') || !reducible('BUY'))}");
+    expect(code).toContain("disabled={!viewer && (!canSubmit || protectionBreachFor('SELL') || !reducible('SELL'))}");
     expect(code.replace(/\r\n/g, '\n')).toContain("const blocked = reduceBlockedReason(orderSide);\n    if (blocked) { setError(blocked); return; }");
     expect(code).toContain('if (!canSubmit) return;');
     // The old visual-only condition is gone.

@@ -24,12 +24,14 @@ export interface RubMethod {
 
 /** Fixed set, docs/EXCHANGERS_694.md "RUB methods". Shown only if the live directory has the urlname. */
 export const RUB_METHODS: readonly RubMethod[] = [
-  { id: 'sbp', urlname: 'sbp', label: 'СБП', kind: 'payment_system' },
+  // Labels of the two generic directions are BestChange's own names for them (page titles checked 2026-11-11):
+  // `sbp` is «Карта и СБП без P2P», `visa-mastercard-rub` is «Карта банка и СБП».
+  { id: 'sbp', urlname: 'sbp', label: 'Карта и СБП без P2P', kind: 'payment_system' },
   { id: 'sberbank', urlname: 'sberbank', label: 'Сбербанк', kind: 'bank' },
   { id: 'tbank', urlname: 'tinkoff', label: 'Т-Банк', kind: 'bank' },
   { id: 'alfabank', urlname: 'alfaclick', label: 'Альфа-Банк', kind: 'bank' },
   { id: 'vtb', urlname: 'vtb', label: 'ВТБ', kind: 'bank' },
-  { id: 'card', urlname: 'visa-mastercard-rub', label: 'Карта банка', kind: 'card' },
+  { id: 'card', urlname: 'visa-mastercard-rub', label: 'Карта банка и СБП', kind: 'card' },
   { id: 'mir', urlname: 'mir', label: 'Карта Мир', kind: 'card' },
 ];
 

@@ -78,3 +78,16 @@ test('an aborted request is re-thrown so the page can ignore it', async () => {
   });
   await expect(fetchExchangerOffers(QUERY, ctl.signal)).rejects.toMatchObject({ name: 'AbortError' });
 });
+
+// Issue #694: the production API release may not carry this feature yet. A missing
+// route is the honest "no rate source" state (links to BestChange only), not an error.
+test('a 404 from the API means "not configured": no retry prompt, no numbers', async () => {
+  mockFetch({ error: 'Not found' }, 404);
+  await expect(fetchExchangersDirectory(new AbortController().signal)).resolves.toEqual({ kind: 'not_configured' });
+  mockFetch({ error: 'Not found' }, 404);
+  await expect(fetchExchangerOffers(QUERY, new AbortController().signal)).resolves.toEqual({ kind: 'not_configured' });
+});
+test('any other unreadable answer stays an error', async () => {
+  mockFetch('<html>bad gateway</html>', 502);
+  await expect(fetchExchangersDirectory(new AbortController().signal)).resolves.toEqual({ kind: 'error' });
+});

@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma, Deposit, DepositWatchCursor } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
-import { notifyDeposit } from '../TelegramNotifications';
+import { notifyDeposit, notifyDepositDigest } from '../TelegramNotifications';
 import { ChainConfig } from '../../config/chains';
 import { DepositVerificationError, ProviderUnavailableError, TransferNotFoundError } from '../deposit-verifiers';
 import { nativeTrxSun, TronDepositVerifier } from '../deposit-verifiers/TronDepositVerifier';
@@ -10,6 +10,7 @@ import { tronAddressHex } from '../deposit-verifiers/tronAddress';
 import { applyProof, recordProofFailure } from '../DepositService';
 import { recipientFor, rememberTreasuryAddress, treasuryAddresses } from './transferProof';
 import { adminOpenAllowed, dueSlot, isDaytime, localTime, nextSlotAt, slotKeyAt, watchScheduleFromEnv } from './depositWatchSchedule';
+import { classifyNotice, DigestGroup, DigestKind, digestAckIdFor, digestGroups, digestIdFor, NoticePolicy, noticePolicyFromEnv } from './depositNoticePolicy';
 
 const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
@@ -51,6 +52,15 @@ export const WATCH = {
   // Configured API keys retain their existing provider policy.
   anonymousRequestIntervalMs: 1_000,
   maxVerificationsPerRun: 20,
+  /** Proven transfers without a notice record read per run (classification is
+   * in memory; individual sends stay bounded by maxVerificationsPerRun). A row
+   * becomes a candidate only after a proof, at most maxVerificationsPerRun per
+   * run, and summarised rows are closed daily, so the 7-day working set stays
+   * far below this; reaching it is logged. */
+  maxNoticeCandidatesPerRun: 5000,
+  /** An unacknowledged digest older than this can no longer be accepted by the
+   * notification Worker (7-day event retention) and is closed as EXPIRED. */
+  digestClaimMaxAgeMs: 6 * 24 * 60 * 60_000,
   maxRunMs: 60_000,
   leaseMs: 120_000,
   /** Daytime schedule (Europe/Kyiv): first admin open after 07:00, then
@@ -85,6 +95,12 @@ export interface WatchRunSummary {
   unfinalized: number;
   needsFollowUp: boolean;
   addresses: string[];
+  /** #699 notice accounting for this run. Counts only: no TXID, amount or address.
+   * fresh/micro/historical/timeUnknown — proven transfers still without a notice
+   * record, by class; sent — individual «Нове надходження» acknowledged;
+   * digested — rows closed by a digest (or journalled with the digest off);
+   * digest — the digest outcome, or why none was sent. */
+  notices?: { fresh: number; micro: number; historical: number; timeUnknown: number; sent: number; digested: number; digest: string | null };
 }
 
 interface Trc20ListItem {
@@ -110,7 +126,15 @@ export class DepositWatchService {
     private now: () => number = Date.now,
     limits: Partial<Omit<WatchLimits, 'chain'>> = {},
     private readonly notifyTransfer: typeof notifyDeposit = notifyDeposit,
-  ) { this.cfg = { ...WATCH, ...limits }; }
+    notifyDigest?: typeof notifyDepositDigest,
+    private readonly noticePolicy: NoticePolicy = noticePolicyFromEnv(),
+  ) {
+    this.cfg = { ...WATCH, ...limits };
+    // A caller that replaces the transfer notifier (tests, fixtures) and gives
+    // no digest notifier must never reach the real notification service.
+    this.notifyDigest = notifyDigest ?? (notifyTransfer === notifyDeposit ? notifyDepositDigest : null);
+  }
+  private readonly notifyDigest: typeof notifyDepositDigest | null;
 
   async ensureState() {
     await this.prisma.depositWatchState.createMany({ data: [{ id: WATCH.chain }], skipDuplicates: true });
@@ -461,9 +485,19 @@ export class DepositWatchService {
   /** Existing AuditLog is the nonfinancial delivery acknowledgement journal.
    * No schema/ledger change. Worker event IDs remain the deposit ID: a crash
    * after Telegram but before this insert replays the SAME durable event,
-   * never a second sendMessage. Unacknowledged network outcomes remain due. */
+   * never a second sendMessage. Unacknowledged network outcomes remain due.
+   *
+   * #699: «new» is decided from the on-chain block time, never from the time
+   * the row was inserted. Only a FRESH, non-micro transfer gets its own
+   * «Нове надходження». Micro transfers (possible dust) and transfers that
+   * were already old when first recorded are summarised in at most one digest
+   * per Kyiv day. Every row keeps exactly one `deposit-notice:<id>` record, so
+   * a rescan, an API restart or a redeploy can never announce it again.
+   * Nothing here credits, attributes, hides or deletes a transfer. */
   private async notifyVerified(config: ChainConfig, summary: WatchRunSummary, startedAt: number) {
     const since = new Date(this.now() - 7 * 24 * 60 * 60_000);
+    // `createdAt` only bounds the working set (the Worker keeps an event for 7
+    // days after it was recorded). It no longer decides what is new.
     const rows = await this.prisma.$queryRaw<Deposit[]>`
       SELECT d.* FROM "Deposit" d WHERE d.chain = ${WATCH.chain}
         AND d.asset IN ('USDT', 'TRX') AND d.status <> 'CREDITED'
@@ -471,19 +505,137 @@ export class DepositWatchService {
         AND d.confirmations >= ${config.minConfirmations} AND d."ignoredAt" IS NULL
         AND d."createdAt" > ${since}
         AND NOT EXISTS (SELECT 1 FROM "AuditLog" a WHERE a.id = ('deposit-notice:' || d.id))
-      ORDER BY d."createdAt", d.id LIMIT ${this.cfg.maxVerificationsPerRun}`;
-    for (const row of rows) {
-      if (this.now() - startedAt > this.cfg.maxRunMs) throw new BudgetExceeded('notification time budget reached');
-      try {
-        // Recheck the row's recorded recipient against approved current/past
-        // treasuries; a public copy-event or catalogue entry grants no trust.
-        await recipientFor(this.prisma, config, row.recipientAddress);
-        const status = await this.notifyTransfer({ ...row, requiredConfirmations: config.minConfirmations });
-        if (!status) continue;
-        await this.prisma.auditLog.upsert({ where: { id: `deposit-notice:${row.id}` }, update: {},
-          create: { id: `deposit-notice:${row.id}`, userId: null, action: 'DEPOSIT_NOTIFICATION_DELIVERY',
-            metadata: { depositId: row.id, asset: row.asset, chain: row.chain, deliveryStatus: status } } });
-      } catch { console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'); }
+      ORDER BY d."createdAt", d.id LIMIT ${this.cfg.maxNoticeCandidatesPerRun}`;
+    const notices = summary.notices = { fresh: 0, micro: 0, historical: 0, timeUnknown: 0, sent: 0, digested: 0, digest: null as string | null };
+    const fresh: Deposit[] = [];
+    const summarised: { row: Deposit; kind: DigestKind }[] = [];
+    // When each (address, asset) began to be watched: a transfer mined after
+    // that arrived while we were watching, however late it was recorded.
+    const watched = new Map<string, number>();
+    if (rows.length > 0) {
+      for (const c of await this.prisma.depositWatchCursor.findMany({ where: { chain: WATCH.chain }, select: { address: true, asset: true, createdAt: true } })) {
+        watched.set(`${tronAddressHex(c.address)}|${c.asset}`, c.createdAt.getTime());
+      }
     }
+    for (const row of rows) {
+      const since = row.source === 'watcher' && row.recipientAddress ? watched.get(`${tronAddressHex(row.recipientAddress)}|${row.asset}`) ?? null : null;
+      const kind = classifyNotice(row, this.noticePolicy, this.now(), since);
+      if (kind === 'FRESH') { fresh.push(row); notices.fresh++; continue; }
+      summarised.push({ row, kind });
+      if (kind === 'MICRO') notices.micro++; else if (kind === 'HISTORICAL') notices.historical++; else notices.timeUnknown++;
+    }
+    try {
+      // Real, recent receipts first: a digest must never delay them.
+      for (const row of fresh.slice(0, this.cfg.maxVerificationsPerRun)) {
+        if (this.now() - startedAt > this.cfg.maxRunMs) throw new BudgetExceeded('notification time budget reached');
+        try {
+          // Recheck the row's recorded recipient against approved current/past
+          // treasuries; a public copy-event or catalogue entry grants no trust.
+          await recipientFor(this.prisma, config, row.recipientAddress);
+          const status = await this.notifyTransfer({ ...row, requiredConfirmations: config.minConfirmations });
+          if (!status) continue;
+          await this.prisma.auditLog.upsert({ where: { id: `deposit-notice:${row.id}` }, update: {},
+            create: { id: `deposit-notice:${row.id}`, userId: null, action: 'DEPOSIT_NOTIFICATION_DELIVERY',
+              metadata: { depositId: row.id, asset: row.asset, chain: row.chain, deliveryStatus: status, noticeClass: 'FRESH',
+                blockTimestamp: row.blockTimestamp?.toISOString() ?? null } } });
+          notices.sent++;
+        } catch { console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'); }
+      }
+      if (this.now() - startedAt > this.cfg.maxRunMs) throw new BudgetExceeded('notification time budget reached');
+      try { await this.summariseNotices(config, summarised, notices); }
+      catch { notices.digest = 'UNAVAILABLE'; console.warn('[notifications]', 'DIGEST_UNAVAILABLE'); }
+    } finally {
+      // Counts only. No TXID, amount, address or account ever reaches the log.
+      if (rows.length > 0 || notices.digest) console.info('[deposit-watch]', 'notices', JSON.stringify(notices));
+      if (rows.length >= this.cfg.maxNoticeCandidatesPerRun) console.warn('[deposit-watch]', 'NOTICE_CANDIDATE_LIMIT_REACHED');
+    }
+  }
+
+  /** Journal rows that must not be announced as new, with at most ONE Telegram
+   * digest per Kyiv day.
+   *   claim    `deposit-digest:<chain>:<day>` — written BEFORE the send with the
+   *            exact rows and text facts, so a replay is byte-for-byte the same
+   *            event and the Worker's durable claim can only answer DUPLICATE;
+   *   ack      `deposit-digest-ack:…` + one `deposit-notice:<id>` per row, in
+   *            one transaction, only after the Worker reported an outcome.
+   * An unacknowledged claim is finished before anything new is claimed. */
+  private async summariseNotices(config: ChainConfig, candidates: { row: Deposit; kind: DigestKind }[], notices: NonNullable<WatchRunSummary['notices']>) {
+    type Claim = { depositIds: string[]; classes: Record<string, DigestKind>; assets: Record<string, string>; groups: DigestGroup[]; createdAtMs: number };
+    const today = localTime(this.now(), this.noticePolicy.timeZone).day;
+    const journal = (ids: string[], claim: Pick<Claim, 'classes' | 'assets'>, digestId: string | null, deliveryStatus: string) => ids.map((id) => ({
+      id: `deposit-notice:${id}`, userId: null, action: digestId ? 'DEPOSIT_NOTICE_DIGESTED' : 'DEPOSIT_NOTICE_SUPPRESSED',
+      metadata: { depositId: id, asset: claim.assets[id] ?? null, chain: WATCH.chain, noticeClass: claim.classes[id] ?? null, digestId, deliveryStatus },
+    }));
+    const finish = async (digestId: string, claim: Claim, deliveryStatus: string) => {
+      await this.prisma.$transaction([
+        this.prisma.auditLog.createMany({ data: [{ id: digestAckIdFor(digestId), userId: null, action: 'DEPOSIT_NOTICE_DIGEST_DELIVERY',
+          metadata: { digestId, chain: WATCH.chain, deliveryStatus, count: claim.depositIds.length, deliveredDay: today } }], skipDuplicates: true }),
+        this.prisma.auditLog.createMany({ data: journal(claim.depositIds, claim, digestId, deliveryStatus), skipDuplicates: true }),
+      ]);
+      notices.digested += claim.depositIds.length;
+      notices.digest = deliveryStatus;
+    };
+    const notify = this.notifyDigest;
+    const deliver = async (digestId: string, claim: Claim): Promise<boolean> => {
+      if (this.now() - claim.createdAtMs > this.cfg.digestClaimMaxAgeMs) { await finish(digestId, claim, 'EXPIRED'); return true; }
+      const status = notify ? await notify({ id: digestId, createdAt: new Date(claim.createdAtMs), groups: claim.groups }) : null;
+      if (!status) { notices.digest = 'PENDING'; return false; }
+      // REJECTED: the Worker refuses this exact content, so no retry can ever
+      // deliver it. Close it (recorded, visible in the journal) instead of
+      // letting it block every later digest.
+      if (status === 'REJECTED') console.warn('[notifications]', 'DIGEST_REJECTED');
+      await finish(digestId, claim, status);
+      return true;
+    };
+
+    // 1. An earlier claim without an acknowledgement (crash, Worker outage).
+    const open = await this.prisma.$queryRaw<{ id: string; metadata: unknown }[]>`
+      SELECT c.id, c.metadata FROM "AuditLog" c WHERE c.action = 'DEPOSIT_NOTICE_DIGEST_CLAIMED'
+        AND c.id LIKE ${`deposit-digest:${WATCH.chain}:%`}
+        AND NOT EXISTS (SELECT 1 FROM "AuditLog" a WHERE a.id = replace(c.id, 'deposit-digest:', 'deposit-digest-ack:'))
+      ORDER BY c."createdAt", c.id LIMIT 1`;
+    if (open.length > 0) {
+      // One digest call per run: whatever is new waits for the next run.
+      await deliver(open[0].id, open[0].metadata as Claim);
+      return;
+    }
+    if (candidates.length === 0) return;
+
+    // Same recipient rule as an individual alert: only approved treasuries.
+    const trusted: { row: Deposit; kind: DigestKind }[] = [];
+    for (const candidate of candidates) {
+      try { await recipientFor(this.prisma, config, candidate.row.recipientAddress); trusted.push(candidate); }
+      catch { /* not a known treasury: left for manual review, never announced */ }
+    }
+    if (trusted.length === 0) return;
+    const facts: Pick<Claim, 'classes' | 'assets'> = {
+      classes: Object.fromEntries(trusted.map(({ row, kind }) => [row.id, kind])),
+      assets: Object.fromEntries(trusted.map(({ row }) => [row.id, row.asset])),
+    };
+    const ids = trusted.map(({ row }) => row.id);
+
+    // 2. Digest switched off: journal only. Telegram is never called.
+    if (this.noticePolicy.digest === 'off') {
+      await this.prisma.auditLog.createMany({ data: journal(ids, facts, null, 'NOT_SENT'), skipDuplicates: true });
+      notices.digested += ids.length;
+      notices.digest = 'OFF';
+      return;
+    }
+
+    // No digest notifier (a fixture replaced only the transfer notifier):
+    // nothing is claimed and nothing can reach the real notification service.
+    if (!notify) { notices.digest = 'NOT_CONFIGURED'; return; }
+
+    // 3. At most one digest MESSAGE per Kyiv day, including a late delivery of
+    //    an earlier day's claim; later rows join the next day's digest.
+    const digestId = digestIdFor(WATCH.chain, this.now(), this.noticePolicy);
+    const deliveredToday = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT a.id FROM "AuditLog" a WHERE a.action = 'DEPOSIT_NOTICE_DIGEST_DELIVERY'
+        AND a.id LIKE ${`deposit-digest-ack:${WATCH.chain}:%`} AND a.metadata ->> 'deliveredDay' = ${today} LIMIT 1`;
+    if (deliveredToday.length > 0 || await this.prisma.auditLog.findUnique({ where: { id: digestId }, select: { id: true } })) { notices.digest = 'ALREADY_TODAY'; return; }
+    const claim: Claim = { depositIds: ids, ...facts, groups: digestGroups(trusted, this.noticePolicy, this.now()), createdAtMs: this.now() };
+    await this.prisma.auditLog.create({ data: { id: digestId, userId: null, action: 'DEPOSIT_NOTICE_DIGEST_CLAIMED',
+      metadata: { chain: WATCH.chain, ...claim } as unknown as Prisma.InputJsonObject } });
+    await deliver(digestId, claim);
   }
 }

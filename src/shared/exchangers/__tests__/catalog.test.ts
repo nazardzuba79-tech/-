@@ -33,12 +33,12 @@ const cur = (p: Partial<BestChangeCurrencyLike> & { urlname: string; code: strin
 describe('RUB_METHODS', () => {
   test('is exactly the documented fixed table', () => {
     expect(RUB_METHODS.map((m) => [m.id, m.urlname, m.label, m.kind])).toEqual([
-      ['sbp', 'sbp', 'СБП', 'payment_system'],
+      ['sbp', 'sbp', 'Карта и СБП без P2P', 'payment_system'],
       ['sberbank', 'sberbank', 'Сбербанк', 'bank'],
       ['tbank', 'tinkoff', 'Т-Банк', 'bank'],
       ['alfabank', 'alfaclick', 'Альфа-Банк', 'bank'],
       ['vtb', 'vtb', 'ВТБ', 'bank'],
-      ['card', 'visa-mastercard-rub', 'Карта банка', 'card'],
+      ['card', 'visa-mastercard-rub', 'Карта банка и СБП', 'card'],
       ['mir', 'mir', 'Карта Мир', 'card'],
     ]);
     expect(findRubMethod('tbank')?.urlname).toBe('tinkoff');
@@ -90,7 +90,7 @@ describe('resolveRubMethods', () => {
     ];
     const out = resolveRubMethods(dir);
     expect(out.map((m) => [m.id, m.label, m.kind, m.fixed])).toEqual([
-      ['sbp', 'СБП', 'payment_system', true],
+      ['sbp', 'Карта и СБП без P2P', 'payment_system', true],
       ['tbank', 'Т-Банк', 'bank', true],
       ['bc-raiffeisen', 'Райффайзенбанк', 'bank', false],
     ]);

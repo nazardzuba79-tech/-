@@ -1,0 +1,51 @@
+name: TRX credit correction safety
+on:
+  pull_request:
+    paths:
+      - 'scripts/lib/trx697Correction.cjs'
+      - 'scripts/qa-trx697-*.cjs'
+      - 'src/services/BalanceAdjustmentService.ts'
+      - 'src/services/__tests__/BalanceAdjustment*.test.ts'
+      - 'frontend/src/pages/admin/AdminBalanceAdjustment.tsx'
+      - 'frontend/src/pages/wallet-v3/useWalletData.ts'
+      - 'frontend/src/pages/wallet-v3/AssetLedger.tsx'
+      - '.github/workflows/trx-credit-recovery.yml'
+permissions:
+  contents: read
+jobs:
+  isolated:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://unused:unused@127.0.0.1:9/never_production
+      DIRECT_URL: postgresql://unused:unused@127.0.0.1:9/never_production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - name: Admin intent and Wallet display regression
+        run: node node_modules/jest/bin/jest.js --runInBand --runTestsByPath src/services/__tests__/BalanceAdjustmentService.test.ts src/services/__tests__/BalanceAdjustmentIdempotency.test.ts frontend/src/lib/__tests__/adminAdjustmentRecoveryUi.test.ts frontend/src/lib/__tests__/walletUnifiedAccount.test.ts frontend/src/lib/__tests__/walletOverview.test.ts
+      - run: npm install --prefix node_modules/.cache/trx697-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.6.0-beta.19 pg@8.23.1 playwright@1.63.0
+      - name: PostgreSQL conservation, rollback, concurrency and browser reload
+        shell: pwsh
+        run: |
+          $env:DEPOSIT_QA_DEPS = Join-Path (Get-Location) 'node_modules/.cache/trx697-qa/package.json'
+          $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/trx697-qa/node_modules/playwright).Path
+          node scripts/qa-trx697-correction.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/qa-trx697-browser.cjs
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trx697-isolated-proof
+          path: output/trx697
+          retention-days: 7

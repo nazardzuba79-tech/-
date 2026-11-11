@@ -17,12 +17,13 @@ on:
       - 'scripts/test-copy-futures-auto-postgres.cjs'
       - 'scripts/test-copy-futures-executor-postgres.cjs'
       - '.github/workflows/copy-integration-review.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   workflow_dispatch: {}
 permissions:
   contents: read
 jobs:
   integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:
@@ -52,7 +53,7 @@ jobs:
         run: cd frontend && npx vite build --outDir ../output/copy-integration-658/frontend
         env: { VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW: 'true', VITE_API_URL: /api/v1 }
       - name: Chromium
-        run: npm install --prefix /tmp/pw --no-save --package-lock=false --no-audit --no-fund playwright@1.62.1 && node /tmp/pw/node_modules/playwright/cli.js install --with-deps chromium
+        run: npm install --prefix /tmp/pw --no-save --package-lock=false --no-audit --no-fund playwright@1.62.1 && node .github/scripts/verify-ci-browser.cjs /tmp/pw/node_modules/playwright 1.62.1 download
       - name: Authenticated HTTP + browser integration (Spot LIMIT/MARKET, Futures OPEN/CLOSE)
         run: node scripts/test-copy-integration-review.cjs
         env: { COPY_INTEGRATION_BROWSER: '1', QA_PLAYWRIGHT_MODULE: /tmp/pw/node_modules/playwright }

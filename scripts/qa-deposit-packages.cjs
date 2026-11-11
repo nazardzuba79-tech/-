@@ -716,7 +716,7 @@ async function main() {
     await test('Notifications: real publisher performs zero Prisma queries; delivery outage cannot roll back discovery', async () => {
       const { notifyDeposit } = require('../dist/services/TelegramNotifications');
       const before = sqlLog.length; let sends = 0;
-      await notifyDeposit({ id: 'synthetic-only', amount: new BigNumber(15), createdAt: new Date(), asset: 'USDT', chain: 'tron',
+      await notifyDeposit({ id: 'synthetic-only', amount: new BigNumber(15), createdAt: new Date(), blockTimestamp: new Date(Date.now() - 60_000), asset: 'USDT', chain: 'tron',
         txHash: hash(99000), verifiedAt: new Date(), finalized: true, confirmations: 19, requiredConfirmations: 19 }, async () => {
         sends++; return Response.json({ status: 'SENT' });
       });

@@ -70,6 +70,8 @@ app.post('/api/v1/demo/vta/sell',asyncRoute(async(q,r)=>{
  if(loseResponse){loseResponse=false;return r.status(503).json({error:'Temporary response failure'});}
  r.json(receipt);
 }));
+// Fixture owner permission only; never infer production admission from role.
+app.get('/api/v1/orders/access',(q,r)=>r.json({allowed:isAdmin && actor(q).userId===owner.userId}));
 app.get('/api/v1/me',(q,r)=>r.json({id:actor(q).userId,displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin,role:isAdmin?'ADMIN':'USER'}));
 app.get('/api/v1/futures/config',(_q,r)=>r.json({symbols:PAIRS,minLeverage:1,maxLeverage:100,leverageStep:1,fundingIntervalHours:8,highLeverageWarningThreshold:25,leverageTiers:[{notionalCap:null,maxLeverage:100,maintenanceMarginRate:0.005,maintenanceAmount:0}]}));
 app.get('/api/v1/market/universe',(_q,r)=>r.json({available:true,value:{instruments:PAIRS.map(p=>({symbol:p,providerSymbol:p.replace('/',''),marketType:'linear_perpetual',baseAsset:p.split('/')[0],quoteAsset:'USDT',settleAsset:'USDT',status:'Trading',fundingIntervalMinutes:480}))}}));
@@ -176,7 +178,7 @@ async function marketDisplayQA(browser,origin,width) {
  const form=page.locator('.order-form-area');
  await page.waitForFunction(p=>document.querySelector('.order-form-area input[aria-label="Цена"]')?.value===p,price);
  await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
- await form.locator('input[type="number"][aria-label="Количество"]').fill('100');
+ await form.locator('input[inputmode="decimal"][aria-label="Количество"]').fill('100');
  // Owner, 2026-10-22: a LIMIT the VTA account may not place is a disabled button — no refusal line.
  if(!await form.locator('button[type="submit"]').isDisabled())throw Error('Book click LIMIT is not disabled');
  await form.locator('button[type="submit"]').click({force:true});await page.waitForTimeout(300);
@@ -208,7 +210,7 @@ async function panelStates(page, width, expected) {
  await page.evaluate(()=>document.fonts.ready);
  if(width<900)await page.locator('#mobile-trade-trade').click();
  const form=page.locator('.order-form-area'), states={};
- await form.locator('input[type="number"][aria-label="Количество"]').waitFor();
+ await form.locator('input[inputmode="decimal"][aria-label="Количество"]').waitFor();
  // owner, 2026-10-04: order type is one select on a phone — its selected option is the default type, its options the five types.
  if(width<900){
   if(await form.locator('.order-form-tabs button[aria-pressed="true"]').innerText()!=='Купить'||(await typeSelect(form).locator('option:checked').innerText()).trim()!=='Лимит')throw Error('Default Spot selection changed');
@@ -245,7 +247,7 @@ async function panelStates(page, width, expected) {
    const comparable=g=>quiet?g.map(e=>e.type==='submit'?{...e,color:null,background:null}:e):g;
    if(JSON.stringify(comparable(geometry))!==JSON.stringify(comparable(expected[key]))){fs.writeFileSync(OUT+'/parity-failure-'+width+'.json',JSON.stringify({key,ordinary:expected[key],vta:geometry},null,2));throw Error('Standard form geometry differs: '+key+' '+width);}
    if(side==='Купить'||type!=='Рынок'){
-    await form.locator('input[type="number"][aria-label="Количество"]').fill('100');
+    await form.locator('input[inputmode="decimal"][aria-label="Количество"]').fill('100');
     const attempts=financialAttempts.length;
     // Owner, 2026-10-22: what a VTA account may not do is a disabled button — no refusal line, no toast.
     if(!await form.locator('button[type="submit"]').isDisabled())throw Error('Unsupported operation is not disabled: '+key);
@@ -284,7 +286,7 @@ async function panelStates(page, width, expected) {
   if(width<900)await page.locator('#mobile-trade-trade').click();
   const form=page.locator('.order-form-area');
   const button=form.locator('button[type="submit"]');
-  const quantity=form.locator('input[type="number"][aria-label="Количество"]');
+  const quantity=form.locator('input[inputmode="decimal"][aria-label="Количество"]');
   await button.waitFor();
   if(!await form.locator('.order-form-tabs').getByRole('button',{name:'Купить',exact:true}).getAttribute('aria-pressed').then(x=>x==='true'))throw Error('VTA default side differs from Spot');
   await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
@@ -336,7 +338,7 @@ async function panelStates(page, width, expected) {
   const writesBeforeReload=saleRequests;
   postFailure=null; lookupFailure=null; await page.reload();
   if(width<900)await page.locator('#mobile-trade-trade').click();
-  await page.waitForFunction(()=>document.querySelector('.order-form-area input[type="number"][aria-label="Количество"]')?.value==='');
+  await page.waitForFunction(()=>document.querySelector('.order-form-area input[inputmode="decimal"][aria-label="Количество"]')?.value==='');
   if(keys.size!==rows.length+1||saleRequests!==writesBeforeReload)throw Error('duplicate/automatic sale');
   await page.screenshot({path:OUT+'/vta-form-after-sale-'+width+'.png',fullPage:true});
   await page.reload();
@@ -377,7 +379,7 @@ async function panelStates(page, width, expected) {
  const page=await ctx.newPage();
  simNow=VOLTORA.listingAt+60000;
  await page.goto(origin+'/trade?pair=VTA%2FUSDT');
- const form=page.locator('.order-form-area'), quantity=form.locator('input[type="number"][aria-label="Количество"]');
+ const form=page.locator('.order-form-area'), quantity=form.locator('input[inputmode="decimal"][aria-label="Количество"]');
  await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
  await form.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
  await page.waitForFunction(()=>!document.querySelector('.order-form-area input[type="range"]').disabled);
@@ -422,7 +424,7 @@ async function panelStates(page, width, expected) {
   await f.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
   await tab.waitForFunction(()=>!document.querySelector('.order-form-area input[type="range"]').disabled);
   await f.getByRole('button',{name:'100%',exact:true}).click();
-  if(await f.locator('input[type="number"][aria-label="Количество"]').inputValue()!==available)throw Error('full sale lost exact quantity');
+  if(await f.locator('input[inputmode="decimal"][aria-label="Количество"]').inputValue()!==available)throw Error('full sale lost exact quantity');
  }
  const beforeFull=keys.size, exactRemaining=available;
  await Promise.all([page,tab2].map(tab=>tab.locator('.order-form-area button[type="submit"]').click()));
@@ -462,15 +464,16 @@ async function panelStates(page, width, expected) {
  await page.waitForTimeout(400);
  await page.locator('.order-form-area .order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
  await page.locator('.order-form-area .order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
- await page.locator('.order-form-area input[type="number"][aria-label="Количество"]').fill('100');
- // Owner, 2026-10-22: a non-admin on VTA gets a disabled submit — no refusal line.
+ await page.locator('.order-form-area input[inputmode="decimal"][aria-label="Количество"]').fill('100');
+ // #691: a non-admitted viewer gets an active, strictly silent no-op.
  const ordinaryWrites=saleRequests;
- if(!await page.locator('.order-form-area button[type="submit"]').isDisabled())throw Error('non-admin VTA submit is not disabled');
+ if(await page.locator('.order-form-area button[type="submit"]').isDisabled())throw Error('viewer VTA submit must stay clickable');
  await page.locator('.order-form-area button[type="submit"]').click({force:true});await page.waitForTimeout(300);
  if(await page.locator('.order-form-area [role="alert"]').count())throw Error('non-admin VTA shows a refusal line');
  if(saleRequests!==ordinaryWrites)throw Error('non-admin private sale submitted');
  if(privateReads!==before)throw Error('non-admin private read');
- rows.push({ordinarySpot:'all controls enabled, zero private reads',nonAdmin:'blocked, zero private reads'});
+ if(await page.locator('.order-form-area input[aria-label="Количество"]:not([type="range"])').inputValue()!=='100')throw Error('viewer draft was reset');
+ rows.push({ordinarySpot:'all controls enabled, zero private reads',nonAdmin:'active silent no-op, draft preserved, zero private reads or sales'});
  await ctx.close();
  } finally {
   fs.writeFileSync(OUT+'/vta-browser.json',JSON.stringify({rows,saleRequests,uniqueSales:keys.size,lookupRequests,nativeReads},null,2));

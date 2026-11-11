@@ -130,7 +130,7 @@ describe('directory from the live currencies', () => {
     expect(dir.status).toBe('ok');
     expect(dir.asOf).toBe(new Date(T0).toISOString());
     expect(dir.methods).toEqual([
-      { id: 'sbp', label: 'СБП', kind: 'payment_system', available: true },
+      { id: 'sbp', label: 'Карта и СБП без P2P', kind: 'payment_system', available: true },
       { id: 'sberbank', label: 'Сбербанк', kind: 'bank', available: false },
       { id: 'tbank', label: 'Т-Банк', kind: 'bank', available: false },
       { id: 'bc-test-bank-rub', label: 'Тестовый банк RUB', kind: 'bank', available: true },

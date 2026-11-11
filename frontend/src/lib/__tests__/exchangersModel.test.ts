@@ -170,7 +170,11 @@ describe('offer links are re-checked against the offer\'s own exchanger', () => 
       .toBe('https://www.bestchange.ru/sbp-to-tether-trc20.html?p=123');
     expect(directionHref('sbp', 'USDT', 'tron', 'https://evil.com/x.html')).toBe('https://www.bestchange.ru/sbp-to-tether-trc20.html');
     expect(directionHref('tbank', 'TRX', 'tron', null)).toBe('https://www.bestchange.ru/tinkoff-to-tron.html');
-    expect(directionHref('bc-some-bank', 'BTC', 'bitcoin', null)).toBe('https://www.bestchange.ru/some-bank-to-bitcoin.html');
+    // Without the server's link only a direction that was checked to exist is offered: nothing is guessed.
+    expect(directionHref('bc-some-bank', 'BTC', 'bitcoin', null)).toBeNull();
+    expect(directionHref('sbp', 'USDC', 'ethereum', null)).toBeNull();
+    expect(directionHref('sbp', 'TON', 'ton', null)).toBe('https://www.bestchange.ru/sbp-to-ton.html');
+    expect(directionHref('bc-some-bank', 'BTC', 'bitcoin', 'https://www.bestchange.ru/some-bank-to-bitcoin.html')).toBe('https://www.bestchange.ru/some-bank-to-bitcoin.html');
     expect(directionHref('bc-Bad Name', 'BTC', 'bitcoin', null)).toBeNull();
     expect(directionHref('unknown', 'BTC', 'bitcoin', null)).toBeNull();
     expect(methodUrlname('card')).toBe('visa-mastercard-rub');
@@ -249,7 +253,7 @@ describe('directory', () => {
     expect(r.data.methods.map((m) => m.id)).toEqual(['sbp', 'sberbank', 'bc-some-bank']);
     expect(r.data.assets).toEqual([{ assetId: 'USDT', networkId: 'tron', available: true }, { assetId: 'TRX', networkId: 'tron', available: false }]);
     const opts = optionsFromDirectory(r.data);
-    expect(methodOptionLabel(opts.methods[0])).toBe('СБП · платёжная система');
+    expect(methodOptionLabel(opts.methods[0])).toBe('СБП · платёжная система'); // the label the server sent in this fixture
     expect(methodOptionLabel(opts.methods[1])).toBe('Сбербанк · банк (нет предложений)');
     // An unavailable remembered choice moves to an available one.
     const draft: CalculatorDraft = { method: 'sberbank', assetId: 'TRX', networkId: 'tron', amountText: '5 000' };
@@ -265,8 +269,16 @@ describe('directory', () => {
   test('the fixed catalogue (no directory) labels SBP, banks and cards honestly', () => {
     const labels = fallbackOptions().methods.map(methodOptionLabel);
     expect(labels).toEqual([
-      'СБП · платёжная система', 'Сбербанк · банк', 'Т-Банк · банк', 'Альфа-Банк · банк', 'ВТБ · банк', 'Карта банка · карта', 'Карта Мир · карта',
+      'Карта и СБП без P2P · платёжная система', 'Сбербанк · банк', 'Т-Банк · банк', 'Альфа-Банк · банк', 'ВТБ · банк', 'Карта банка и СБП · карта',
     ]);
+    // Without server data only directions with a verified BestChange page are listed:
+    // «Карта Мир» and USDC ERC-20 have none, so they are not offered (never shown as "no offers").
+    const options = fallbackOptions();
+    expect(options.methods.every((m) => m.available)).toBe(true);
+    expect(options.pairs.map((p) => `${p.assetId}:${p.networkId}`)).toEqual([
+      'USDT:tron', 'USDT:ethereum', 'USDT:bsc', 'USDT:ton', 'BTC:bitcoin', 'ETH:ethereum', 'TRX:tron', 'TON:ton', 'USDC:solana', 'LTC:litecoin', 'SOL:solana',
+    ]);
+    for (const m of options.methods) for (const p of options.pairs) expect(directionHref(m.id, p.assetId, p.networkId, null)).toMatch(/^https:\/\/www\.bestchange\.ru\/[a-z0-9-]+-to-[a-z0-9-]+\.html$/);
   });
 });
 

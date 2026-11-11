@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { useExchangersMode } from './mode';
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -21,6 +22,9 @@ interface Step {
   icon: LucideIcon;
   title: string;
   text: string;
+  /** Wording when the page shows no exchangers of its own (links mode): the step happens on BestChange. */
+  linksTitle?: string;
+  linksText?: string;
   warning?: string;
 }
 
@@ -40,11 +44,14 @@ export const STEPS: readonly Step[] = [
   {
     icon: Scale,
     title: 'Сравните предложения обменников',
+    linksTitle: 'Откройте направление на BestChange',
+    linksText: 'Нажмите «Выбрать на BestChange»: в новой вкладке откроется страница выбранного направления со списком обменников. Смотрите не только на курс: проверьте резерв, лимиты, отзывы и отметки об условиях.',
     text: 'Смотрите не только на курс: проверьте резерв, лимиты, отзывы и отметки об условиях. По умолчанию список упорядочен по курсу с учётом дополнительных комиссий обменника — так предложения ранжирует BestChange.',
   },
   {
     icon: ArrowUpRight,
     title: 'Перейдите на сайт обменника',
+    linksText: 'Выберите обменник на странице BestChange и перейдите на его сайт. Направление и сумму обмена вы подтверждаете уже на сайте обменника. VOLTEX не проводит обмен и не передаёт обменнику ваши данные.',
     text: 'Кнопка «Перейти к обменнику» открывает сайт выбранного обменника через BestChange в новой вкладке. Направление и сумму обмена вы выбираете уже на сайте обменника. VOLTEX не проводит обмен и не принимает ваши деньги.',
     warning: 'Проверьте адрес сайта в строке браузера. Не переходите по ссылкам из чатов и рекламы.',
   },
@@ -103,6 +110,7 @@ export const SAFETY: readonly Rule[] = [
 
 /** «Как обменять рубли на криптовалюту»: six steps and the safety rules (v0 exchange-tutorial). */
 export function ExchangeTutorial() {
+  const live = useExchangersMode() === 'live';
   return (
     <section aria-labelledby="vx-ex-tutorial-title" className="vx-ex-tutorial">
       <div className="vx-ex-section-head">
@@ -111,7 +119,7 @@ export function ExchangeTutorial() {
           <h2 id="vx-ex-tutorial-title">Как обменять рубли на криптовалюту</h2>
           <p className="vx-ex-lead">
             Шесть шагов от выбора способа оплаты до зачисления монет на ваш кошелёк. Сам обмен проходит на сайте выбранного
-            обменника — VOLTEX помогает сравнить условия.
+            обменника — {live ? 'VOLTEX помогает сравнить условия.' : 'VOLTEX помогает открыть нужное направление на BestChange.'}
           </p>
         </div>
         <p className="vx-ex-section-badge">
@@ -124,16 +132,16 @@ export function ExchangeTutorial() {
         {STEPS.map((step, index) => {
           const Icon = step.icon;
           return (
-            <li key={step.title} className="vx-ex-card vx-ex-step">
+            <li key={step.title} className="vx-ex-card vx-ex-step">{/* key: the live title, stable in both modes */}
               <div className="vx-ex-step-top">
                 <span className="vx-ex-step-icon"><Icon size={20} aria-hidden="true" /></span>
                 <span className="vx-ex-step-num" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
               </div>
               <h3>
                 <span className="vx-ex-sr">{`Шаг ${index + 1}. `}</span>
-                {step.title}
+                {live ? step.title : step.linksTitle ?? step.title}
               </h3>
-              <p>{step.text}</p>
+              <p>{live ? step.text : step.linksText ?? step.text}</p>
               {step.warning && (
                 <p className="vx-ex-step-warning">
                   <TriangleAlert size={14} aria-hidden="true" />

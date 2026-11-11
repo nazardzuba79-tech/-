@@ -24,6 +24,7 @@ import {
   networkLabel,
 } from '../../../../src/shared/exchangers/catalog';
 import { buildDirectionUrl, isDirectionUrl, isExchangerClickUrl } from '../../../../src/shared/exchangers/links';
+import { isVerifiedDirection } from '../../../../src/shared/exchangers/verifiedDirections';
 import { RUB_AMOUNT_MAX, RUB_AMOUNT_MIN, formatCrypto, formatRub, parseRubAmount } from '../../../../src/shared/exchangers/amount';
 import { isOfferMark } from '../../../../src/shared/exchangers/types';
 import type {
@@ -266,9 +267,13 @@ export interface CalculatorOptions {
  * the BestChange direction link, never an offer.
  */
 export function fallbackOptions(): CalculatorOptions {
+  // No server data: a method or pair is listed only if a verified BestChange
+  // direction exists for it. The rest is simply not offered (never "no offers":
+  // nothing is known about offers here).
+  const linked = (m: { urlname: string }, p: { match: { urlnames: readonly string[] } }) => p.match.urlnames.some((to) => isVerifiedDirection(m.urlname, to));
   return {
-    methods: RUB_METHODS.map((m) => ({ id: m.id, label: m.label, kind: m.kind, available: true })),
-    pairs: RECEIVE_PAIRS.map((p) => ({ assetId: p.assetId, networkId: p.networkId, available: true })),
+    methods: RUB_METHODS.filter((m) => RECEIVE_PAIRS.some((p) => linked(m, p))).map((m) => ({ id: m.id, label: m.label, kind: m.kind, available: true })),
+    pairs: RECEIVE_PAIRS.filter((p) => RUB_METHODS.some((m) => linked(m, p))).map((p) => ({ assetId: p.assetId, networkId: p.networkId, available: true })),
   };
 }
 
@@ -401,7 +406,8 @@ export function methodUrlname(methodId: string): string | null {
 export function directionHref(methodId: string, assetId: AssetId, networkId: NetworkId, serverUrl: string | null): string | null {
   if (serverUrl && isDirectionUrl(serverUrl)) return serverUrl;
   const from = methodUrlname(methodId);
-  const to = findAssetNetwork(assetId, networkId)?.match.urlnames[0];
+  // Without the server's link only a direction page that was checked to exist is offered.
+  const to = findAssetNetwork(assetId, networkId)?.match.urlnames.find((urlname) => !!from && isVerifiedDirection(from, urlname));
   if (!from || !to) return null;
   return buildDirectionUrl(from, to);
 }

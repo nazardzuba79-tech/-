@@ -6,7 +6,7 @@ import { acceptEvent, Delivery, handle, kyivTime, message, RETENTION_MS, validEv
 
 const now = Date.now();
 const event = (extra = {}) => ({ eventId: 'synthetic-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: now, amount: '15', asset: 'USDT', network: 'TRC20',
-  txHash: 'ab'.repeat(32), confirmations: 19, requiredConfirmations: 19, finalized: true, proofStatus: 'VERIFIED', ...extra });
+  blockTime: now - 60_000, txHash: 'ab'.repeat(32), confirmations: 19, requiredConfirmations: 19, finalized: true, proofStatus: 'VERIFIED', ...extra });
 const env = { TELEGRAM_BOT_TOKEN: 'synthetic-only', TELEGRAM_CHAT_ID: 'synthetic-only' };
 function storage() {
   let record; let alarm; let lock = Promise.resolve();

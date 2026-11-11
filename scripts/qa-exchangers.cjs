@@ -562,14 +562,47 @@ async function runNotConfigured(browser, origin, vp) {
     const res = await dir;
     const body = await res.json();
     check(`${tag} not_configured: directory answers 200 {status:"not_configured"}`, res.status() === 200 && JSON.stringify(body) === '{"status":"not_configured"}', body);
-    const notice = page.getByText('Сравнение курсов сейчас недоступно: подключение к BestChange не настроено');
+    const notice = page.getByText('Список обменников и курсы на VOLTEX сейчас не показываются');
     await notice.waitFor();
-    check(`${tag} not_configured: honest notice shown`, await notice.isVisible() && await page.getByText('Мы не показываем вымышленные курсы и резервы.', { exact: false }).isVisible());
+    check(`${tag} not_configured: honest notice shown`, await notice.isVisible() && await page.getByText('Вымышленных обменников, курсов и резервов здесь нет.', { exact: false }).isVisible());
+    // Links mode (#694): the page must not present itself as a comparison or a catalogue of exchangers.
+    const whole = norm(await page.locator('main.vx-ex').innerText());
+    check(`${tag} not_configured: no claim of a comparison, a list of exchangers or API data anywhere on the page`,
+      !/сервис сравнения|Сравнивайте предложения|помогает сравнить|получены через официальный API|Предложения обменников|Данные: BestChange|Как упорядочен список|Перейти к обменнику|Найти обменники|показывает предложения независимых обменников/.test(whole)
+      && whole.includes('VOLTEX не проводит обмен.') && whole.includes('Выбор обменника на BestChange') && whole.includes('обменник выбирается на сайте BestChange'), whole.slice(0, 400));
+    check(`${tag} not_configured: no exchanger name, rate, reserve or review is rendered`,
+      (await page.locator('.vx-ex-table, .vx-ex-cards, .vx-ex-toolbar, .vx-ex-attribution').count()) === 0 && !/Тестовый обменник|резерв:|отзыв/i.test(norm(await page.locator('.vx-ex-results').innerText())));
+    const methodOptions = await page.locator('#vx-ex-method option').allTextContents();
+    check(`${tag} not_configured: only payment methods with a verified BestChange direction are listed (real names, no «Карта Мир»)`,
+      JSON.stringify(methodOptions) === JSON.stringify(['Карта и СБП без P2P · платёжная система', 'Сбербанк · банк', 'Т-Банк · банк', 'Альфа-Банк · банк', 'ВТБ · банк', 'Карта банка и СБП · карта']), methodOptions);
+    // Every direction the visitor can pick resolves to a verified BestChange page (6 methods × 11 asset/network pairs).
+    const allLinks = await page.evaluate(async () => {
+      const set = (el, value) => { const proto = Object.getPrototypeOf(el); Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value); el.dispatchEvent(new Event('change', { bubbles: true })); };
+      const wait = () => new Promise((r) => setTimeout(r, 20));
+      const out = [];
+      const method = document.querySelector('#vx-ex-method'), asset = document.querySelector('#vx-ex-asset'), network = () => document.querySelector('#vx-ex-network');
+      for (const m of [...method.options].map((o) => o.value)) {
+        set(method, m); await wait();
+        for (const a of [...asset.options].map((o) => o.value)) {
+          set(asset, a); await wait();
+          for (const n of [...network().options].map((o) => o.value)) {
+            set(network(), n); await wait();
+            const link = document.querySelector('.vx-ex-results a');
+            out.push(`${m}|${a}|${n}|${link ? link.getAttribute('href') : 'NONE'}`);
+          }
+        }
+      }
+      return out;
+    });
+    const verified = require('ts-node/register/transpile-only') && require(path.join(repo, 'src/shared/exchangers/verifiedDirections.ts'));
+    const okLinks = allLinks.filter((row) => { const m = /\|https:\/\/www\.bestchange\.ru\/([a-z0-9-]+)-to-([a-z0-9-]+)\.html$/.exec(row); return m && verified.isVerifiedDirection(m[1], m[2]); });
+    check(`${tag} not_configured: all ${allLinks.length} selectable directions open a verified BestChange page`, allLinks.length === 66 && okLinks.length === 66, allLinks.filter((r) => !okLinks.includes(r)).slice(0, 5));
+    await page.selectOption('#vx-ex-method', 'sbp'); await page.selectOption('#vx-ex-asset', 'USDT'); await page.selectOption('#vx-ex-network', 'tron');
     const resultsBody = page.locator('.vx-ex-results > div[aria-busy]');
     const results = norm(await page.locator('.vx-ex-results').innerText());
     check(`${tag} not_configured: results section contains no numbers`, !/\d/.test(results), results);
     check(`${tag} not_configured: no offer rows or cards`, (await page.locator('.vx-ex-table tbody tr, .vx-ex-cards > li').count()) === 0);
-    check(`${tag} not_configured: estimate is «—» and says rates are not loaded`, norm(await page.locator('.vx-ex-estimate-value').textContent()) === '—' && await page.getByText('курсы не загружены').isVisible());
+    check(`${tag} not_configured: estimate is «—» and says rates are not loaded`, norm(await page.locator('.vx-ex-estimate-value').textContent()) === '—' && await page.locator('.vx-ex-estimate-note', { hasText: 'курсы на этой странице сейчас не показываются' }).isVisible());
     check(`${tag} not_configured: no «Обновить» button, no toolbar`, (await page.getByRole('button', { name: 'Обновить' }).count()) === 0 && (await page.locator('.vx-ex-toolbar').count()) === 0);
     const dirLink = page.locator('.vx-ex-results a', { hasText: 'Выбрать на BestChange' });
     const href = await dirLink.getAttribute('href');
@@ -579,7 +612,7 @@ async function runNotConfigured(browser, origin, vp) {
     await page.fill('#vx-ex-amount', '15 000,50');
     let offersCalls = 0;
     page.on('request', (r) => { if (r.url().includes('/exchangers/offers')) offersCalls += 1; });
-    await page.getByRole('button', { name: 'Найти обменники' }).click();
+    await page.getByRole('button', { name: 'Показать направление' }).click();
     await page.waitForTimeout(400);
     const href2 = await dirLink.getAttribute('href');
     // The heading now echoes the visitor's own query («… TRON (TRC-20) · 15 000,5 ₽»); the result body must still carry no number.

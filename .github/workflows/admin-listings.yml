@@ -8,6 +8,7 @@ on:
       - 'frontend/src/pages/admin/listingHistoricalPublicationGate.ts'
       - 'frontend/src/lib/__tests__/history20PublicationGate.test.ts'
       - '.github/workflows/admin-listings.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   pull_request:
     paths:
       - 'src/services/listings/**'
@@ -149,7 +150,7 @@ jobs:
       - name: Install browser
         run: |
           npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/listings-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/listings-qa/node_modules/playwright 1.63.0 download
       - name: Historical archive integrity on real Chromium / IndexedDB
         run: node scripts/qa-historical-archive-storage.cjs
         env:

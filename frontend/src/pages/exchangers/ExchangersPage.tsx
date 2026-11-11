@@ -50,6 +50,7 @@ import {
   type OffersResult,
   type SortKey,
 } from './model';
+import { ExchangersModeContext, type ExchangersMode } from './mode';
 import './exchangers.css';
 
 type DirectoryState = { kind: 'loading' } | DirectoryResult;
@@ -96,7 +97,7 @@ function GuestHeader() {
   );
 }
 
-function ExchangersView() {
+function ExchangersView({ onMode }: { onMode: (mode: ExchangersMode) => void }) {
   const [directory, setDirectory] = useState<DirectoryState>({ kind: 'loading' });
   const [offers, setOffers] = useState<OffersState>({ kind: 'idle' });
   const [draft, setDraft] = useState<CalculatorDraft>(INITIAL_DRAFT);
@@ -163,6 +164,9 @@ function ExchangersView() {
     [directory],
   );
   const ratesOff = directory.kind === 'not_configured';
+  // What the rest of the page may claim: real BestChange data, or links only.
+  const mode: ExchangersMode = directory.kind === 'loading' ? 'pending' : directory.kind === 'not_configured' ? 'links' : 'live';
+  useEffect(() => { onMode(mode); }, [mode, onMode]);
 
   function submit() {
     const query = queryFromDraft(draft);
@@ -248,7 +252,7 @@ function ExchangersView() {
       <section aria-labelledby="vx-ex-results-title" className="vx-ex-results">
         <div className="vx-ex-results-head">
           <div>
-            <h2 id="vx-ex-results-title">Предложения обменников</h2>
+            <h2 id="vx-ex-results-title">{ratesOff ? 'Выбор обменника на BestChange' : 'Предложения обменников'}</h2>
             {shown && methodLabel && (
               <p className="vx-ex-muted">
                 {`${methodLabel} → ${shown.asset} ${networkDisplay(shown.asset, shown.network)} · ${formatRub(shown.amount)}`}
@@ -256,7 +260,7 @@ function ExchangersView() {
             )}
           </div>
           <div className="vx-ex-results-meta">
-            <span className="vx-ex-attribution">Данные: BestChange</span>
+            {!ratesOff && <span className="vx-ex-attribution">Данные: BestChange</span>}
             {updated && okData && <span>Обновлено в <time dateTime={okData.asOf ?? undefined}>{updated}</time></span>}
             {!ratesOff && (
               <button type="button" className="vx-ex-btn vx-ex-btn--ghost" onClick={refresh} disabled={busy}>
@@ -319,20 +323,24 @@ function ExchangersView() {
 export function ExchangersPage() {
   usePageMeta(EXCHANGERS_META.title, EXCHANGERS_META.description);
   const signedIn = !!getToken();
+  const [mode, setMode] = useState<ExchangersMode>('pending');
   return (
+    <ExchangersModeContext.Provider value={mode}>
     <div className="vx-ex-page">
       {signedIn ? <Nav active="/exchangers" hideTicker readProfile={false} /> : <GuestHeader />}
       <main className="vx-ex" lang="ru">
         <PageHeading />
-        <ExchangersView />
+        <ExchangersView onMode={setMode} />
         <ExchangeTutorial />
         <ExchangersFaq />
         <p className="vx-ex-disclaimer">
-          VOLTEX показывает предложения независимых обменников по данным BestChange, не принимает рубли и не проводит обмен.
-          Курсы, резервы и лимиты могут измениться к моменту создания заявки.
+          {mode === 'live'
+            ? 'VOLTEX показывает предложения независимых обменников по данным BestChange, не принимает рубли и не проводит обмен. Курсы, резервы и лимиты могут измениться к моменту создания заявки.'
+            : 'VOLTEX не принимает рубли и не проводит обмен. Обменники, курсы, резервы и лимиты смотрите на BestChange и на сайте выбранного обменника.'}
         </p>
       </main>
       <div className="vx-ex-footer"><Footer /></div>
     </div>
+    </ExchangersModeContext.Provider>
   );
 }

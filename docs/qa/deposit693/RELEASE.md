@@ -47,11 +47,13 @@ remain the only route to credit. Copying an address is never a deposit.
 
 ## Incident and controlled recipient gate
 
-Read-only node-level chain proof found **1684.353669 TRX**, block **87802507**,
-`2026-11-07T19:54:00Z` (21:54 Kyiv), to the unchanged catalogue USDT/TRON
-recipient. Solidified body and receipt agree; measured confirmations exceed
-the configured 19. TXID and exact recipient stay in protected server evidence,
-not this public document. Attribution to a particular account is NOT_VERIFIED:
+Read-only node-level chain proof found the reported native TRX receipt (a
+four-figure TRX amount, evening of 7 November Europe/Kyiv) to the unchanged
+catalogue USDT/TRON recipient. Solidified body and receipt agree; measured
+confirmations exceed the configured 19. The exact amount, block number, block
+time, TXID and recipient stay in protected server evidence, not this public
+document: together they would identify the private deposit address on the
+public chain (redacted here on 2026-11-11, Issue #699). Attribution to a particular account is NOT_VERIFIED:
 an address-copy event does not prove who sent funds. Tiny other inbound
 transactions are separate transfers, never combined with this incident.
 

@@ -4,6 +4,9 @@ import { createRequire } from 'module';
 import { OffersList } from '../../pages/exchangers/OffersList';
 import { NotConfigured } from '../../pages/exchangers/ResultStates';
 import { ExchangersFaq } from '../../pages/exchangers/ExchangersFaq';
+import { ExchangeTutorial } from '../../pages/exchangers/ExchangeTutorial';
+import { PageHeading } from '../../pages/exchangers/PageHeading';
+import { ExchangersModeContext } from '../../pages/exchangers/mode';
 import { OUTBOUND_LINK, validateOffer } from '../../pages/exchangers/model';
 import { EXCHANGERS_META, SITE_ORIGIN, canonicalFor, robotsFor } from '../seo/site';
 import { toolPages } from '../seo/pages';
@@ -262,14 +265,53 @@ describe('rendered offers', () => {
 
   test('not configured: honest text and the BestChange direction link when one exists', () => {
     const html = render(React.createElement(NotConfigured, { directionUrl: 'https://www.bestchange.ru/sbp-to-tether-trc20.html' }));
-    expect(html).toContain('Сравнение курсов сейчас недоступно: подключение к BestChange не настроено');
+    expect(html).toContain('Список обменников и курсы на VOLTEX сейчас не показываются');
+    expect(html).toContain('Вымышленных обменников, курсов и резервов здесь нет');
     expect(html).toContain('Выбрать на BestChange');
-    expect(render(React.createElement(NotConfigured, { directionUrl: null }))).not.toContain('href=');
+    const noLink = render(React.createElement(NotConfigured, { directionUrl: null }));
+    expect(noLink).not.toContain('href=');
+    expect(noLink).toContain('проверенной ссылки на BestChange нет');
   });
 
+  const inMode = (mode: 'pending' | 'live' | 'links', el: unknown) => render(React.createElement(ExchangersModeContext.Provider, { value: mode }, el as never));
+
   test('the FAQ is a button accordion, closed by default', () => {
-    const html = render(React.createElement(ExchangersFaq));
+    const html = inMode('live', React.createElement(ExchangersFaq));
     expect(html.match(/aria-expanded="false"/g)?.length).toBe(9);
     expect(html).toContain('Куда ведёт кнопка перехода?');
+  });
+
+  // Issue #694: without a rate source the page must not present itself as a comparison or a catalogue of exchangers.
+  test.each(['links', 'pending'] as const)('%s mode: no claim of a comparison, a list, rates or API data anywhere in the static copy', (mode) => {
+    const html = [PageHeading, ExchangeTutorial, ExchangersFaq].map((c) => inMode(mode, React.createElement(c))).join('\n');
+    expect(html).not.toMatch(/сервис сравнения|Сравнивайте предложения|помогает сравнить|получены через официальный API|показывает и сравнивает|Как упорядочен список|Что значит «Нет данных»|Перейти к обменнику|Как работает сравнение/);
+    expect(html).toContain('VOLTEX не проводит обмен.');
+    expect(html).toContain('Список обменников и курсы на этой странице сейчас не показываются');
+    expect(html).toContain('перейдите к выбору обменника на BestChange');
+    expect(html).toContain('Откройте направление на BestChange');
+    expect(html).toContain('Сейчас курсы на этой странице не показываются');
+    expect(html.match(/aria-expanded="false"/g)?.length).toBe(7);
+    // The safety rules and the six steps stay in both modes.
+    expect(html.match(/class="vx-ex-card vx-ex-step"/g)?.length).toBe(6);
+    expect(html).toContain('USDT TRC-20 и TRX — разные активы');
+  });
+
+  test('live mode keeps the approved comparison copy', () => {
+    const html = [PageHeading, ExchangeTutorial, ExchangersFaq].map((c) => inMode('live', React.createElement(c))).join('\n');
+    expect(html).toContain('VOLTEX — сервис сравнения.');
+    expect(html).toContain('Данные на этой странице получены через официальный API BestChange.');
+    expect(html).toContain('Сравните предложения обменников');
+    expect(html).toContain('Кнопка «Перейти к обменнику» открывает сайт выбранного обменника');
+    expect(html).not.toContain('сейчас не показываются');
+  });
+
+  test('the page derives the mode from the directory answer and gates the list title, the data badge and the footer line', () => {
+    const page = code(read('src/pages/exchangers/ExchangersPage.tsx'));
+    expect(page).toContain("const mode: ExchangersMode = directory.kind === 'loading' ? 'pending' : directory.kind === 'not_configured' ? 'links' : 'live';");
+    expect(page).toContain("{ratesOff ? 'Выбор обменника на BestChange' : 'Предложения обменников'}");
+    expect(page).toContain('{!ratesOff && <span className="vx-ex-attribution">Данные: BestChange</span>}');
+    expect(page).toContain("mode === 'live'");
+    const calc = code(read('src/pages/exchangers/ExchangeCalculator.tsx'));
+    expect(calc).toContain("{ratesOff ? 'Показать направление' : 'Найти обменники'}");
   });
 });

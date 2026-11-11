@@ -25,6 +25,8 @@ export interface LedgerRow {
    * are different facts and the table shows both.
    */
   walletBalance: number;
+  /** Existing legacy Cross holding, display only; never Spot availability. */
+  crossBalance?: number;
   available: number;
   /**
    * Held against the account's own orders and positions, so not spendable.
@@ -305,30 +307,38 @@ export function useWalletData() {
     if (!overview) return [];
 
     const bySymbol = new Map(overview.real.spot.map((b) => [b.asset, b]));
-    const symbols = new Set<string>([...rankingBySymbol.keys(), ...bySymbol.keys()]);
+    const crossBySymbol = new Map(overview.real.futures.map((b) => [b.asset, b]));
+    const symbols = new Set<string>([...rankingBySymbol.keys(), ...bySymbol.keys(), ...crossBySymbol.keys()]);
     return [...symbols].map((symbol) => {
       const ranking = rankingBySymbol.get(symbol);
       const b = bySymbol.get(symbol);
+      const cross = crossBySymbol.get(symbol);
       const available = b ? Number(b.available) : 0;
       const locked = b ? Number(b.locked) : 0;
-      const total = available + locked;
+      const walletBalance = available + locked;
+      const crossBalance = cross ? Number(cross.available) + Number(cross.locked) : 0;
+      const total = walletBalance + crossBalance;
       // A held asset is valued by the same endpoint that produced the
       // portfolio total, so a row can never disagree with the header. The
       // coin browser's ranking price only fills in assets the account does
       // not hold, and its 24h change is used for everything.
-      const priceUsd = b?.priceUsd ?? ranking?.price ?? null;
+      const held = walletBalance !== 0 ? b : crossBalance !== 0 ? cross : b ?? cross;
+      const priceUsd = held ? held.priceUsd : ranking?.price ?? null;
+      const valueUsd = (walletBalance !== 0 && b?.valueUsd == null) || (crossBalance !== 0 && cross?.valueUsd == null)
+        ? null : total !== 0 ? (b?.valueUsd ?? 0) + (cross?.valueUsd ?? 0) : priceUsd === null ? null : 0;
       return {
         symbol,
         name: ranking?.name ?? symbol,
         total,
-        // A plain ledger has no trading ledger behind it, so the wallet row
-        // IS the whole holding.
-        walletBalance: total,
+        // A legacy Cross transfer remains owned even without a native demo
+        // account. Show it once, without making it Spot-spendable collateral.
+        walletBalance,
+        ...(crossBalance !== 0 ? { crossBalance } : {}),
         available,
         locked,
         priceUsd,
         changePercent24h: ranking?.changePercent24h ?? null,
-        valueUsd: b?.valueUsd ?? (priceUsd === null ? null : total * priceUsd),
+        valueUsd,
         spendable: true,
         collateralEnabled: false,
         collateralToggleable: false,

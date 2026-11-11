@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { acceptEvent, message, validEvent, Delivery } from './src/core.js';
 const now=Date.now(),tx='ab'.repeat(32);
-const proof=(extra={})=>({eventId:'native-proof',eventType:'DEPOSIT_DISCOVERED',timestamp:now,asset:'TRX',network:'TRON_NATIVE',amount:'12.345678',txHash:tx,
+const proof=(extra={})=>({eventId:'native-proof',eventType:'DEPOSIT_DISCOVERED',timestamp:now,blockTime:now-60_000,asset:'TRX',network:'TRON_NATIVE',amount:'12.345678',txHash:tx,
   confirmations:19,requiredConfirmations:19,finalized:true,proofStatus:'VERIFIED',...extra});
 const copy=(extra={})=>({eventId:'copy-trx',eventType:'DEPOSIT_ADDRESS_COPIED',timestamp:now,asset:'TRX',network:'tron',networkLabel:'TRON (Native)',...extra});
 test('TRX proof is native and USDT remains TRC-20; no credit or threshold is invented',()=>{

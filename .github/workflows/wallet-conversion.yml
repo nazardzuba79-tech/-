@@ -15,6 +15,7 @@ on:
       - 'scripts/test-wallet-conversion-demo-postgres.cjs'
       - 'scripts/test-wallet-conversion-postgres.cjs'
       - '.github/workflows/wallet-conversion.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
   pull_request:
     paths:
       - 'src/services/WalletConversionService.ts'
@@ -41,7 +42,7 @@ permissions:
   contents: read
 jobs:
   wallet-conversion:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +84,7 @@ jobs:
       - name: Isolated QA tools only (not application dependencies)
         run: |
           npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1 playwright@1.63.0
-          output/wallet-qa-deps/node_modules/.bin/playwright install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs output/wallet-qa-deps/node_modules/playwright 1.63.0 download
       - name: Runner PostgreSQL tools (new temporary cluster only)
         run: |
           pg_config --version
