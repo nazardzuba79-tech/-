@@ -1,7 +1,7 @@
 import { seoPages, type CompiledContent, type SeoPage } from '../content/compile';
 import { legalMeta } from './legalMeta';
 import {
-  ADMIN_PAGES, LEGAL_DOCS, PRIVATE_ROUTES, ROBOTS_PRIVATE, ROBOTS_UNLISTED, SITE_ORIGIN, UNPROMOTED_ROUTES, UTILITY_ROUTES,
+  ADMIN_PAGES, EXCHANGERS_META, LEGAL_DOCS, PRIVATE_ROUTES, ROBOTS_PRIVATE, ROBOTS_UNLISTED, SITE_ORIGIN, UNPROMOTED_ROUTES, UTILITY_ROUTES,
   canonicalFor, robotsFor,
 } from './site';
 
@@ -16,9 +16,14 @@ export function legalPages(): SeoPage[] {
   return LEGAL_DOCS.map((doc) => ({ path: `legal/${doc}`, ...legalMeta(doc) }));
 }
 
+/** Public tool pages (Issue #694: /exchangers) with their own static head and sitemap entry. */
+export function toolPages(): SeoPage[] {
+  return [{ path: 'exchangers', title: EXCHANGERS_META.title, description: EXCHANGERS_META.description }];
+}
+
 /** Every public page with its own static head (index.html itself is the home page). */
 export function publicPages(content: CompiledContent): SeoPage[] {
-  return [...seoPages(content), ...legalPages()];
+  return [...seoPages(content), ...legalPages(), ...toolPages()];
 }
 
 /** Addresses whose static copy carries a robots directive and no canonical. */

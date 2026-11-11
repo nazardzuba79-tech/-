@@ -43,6 +43,7 @@ const LINKS: { to: string; labelKey: Key }[] = [
   { to: '/copy-trading', labelKey: 'nav.copyTrading' },
   { to: '/card', labelKey: 'nav.card' },
   { to: '/otc', labelKey: 'nav.otc' },
+  { to: '/exchangers', labelKey: 'nav.exchangers' },
   { to: '/academy', labelKey: 'nav.academy' },
 ];
 

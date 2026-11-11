@@ -435,7 +435,10 @@ describe('translation integrity', () => {
           // «Не удалось закрыть позицию», named in every language. `git diff
           // --numstat` over the locales reports `2 0` per language,
           // additions only; asserted by name below.
-          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch'];
+          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch',
+          // «Обменники» header link (2026-11-08, Issue #694): one new navigation label per language.
+          // `git diff --numstat` over the locales reports `1 0` per language, additions only.
+          'nav.exchangers'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

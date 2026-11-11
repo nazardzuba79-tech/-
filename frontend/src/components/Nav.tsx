@@ -66,6 +66,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
           <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{t('nav.card')}</Link>
           <HeaderDropdown to="/otc" label={t('nav.otc')} links={OTC_LINKS} className={`nav-item nav-secondary top-nav-link${otcSectionActive?' nav-active is-active':''}`}/>
           <Link to="/trading-bots" className={`nav-item top-nav-link${active==='/trading-bots'?' nav-active is-active':''}`}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
+          <Link to="/exchangers" className={`nav-item top-nav-link${active==='/exchangers'?' nav-active is-active':''}`}>{t('nav.exchangers')}</Link>
           <HeaderDropdown to="/academy" label={t('nav.academy')} links={KNOWLEDGE_LINKS} className={`nav-item top-nav-link${location.pathname.startsWith('/academy')?' nav-active is-active':''}`}/>
           {/* Админка is NOT a product section. It used to sit here, after
               OTC, reading as one more place to trade and getting lost
@@ -90,6 +91,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{t('nav.card')}</Link>
         <HeaderDropdown mobile to="/otc" label={t('nav.otc')} links={OTC_LINKS} className="nav-item" onNavigate={()=>setMobileOpen(false)}/>
         <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
+        <Link to="/exchangers" style={{...styles.mobileLink,...(active==='/exchangers'?styles.linkActive:{})}}>{t('nav.exchangers')}</Link>
         <HeaderDropdown mobile to="/academy" label={t('nav.academy')} links={KNOWLEDGE_LINKS} className="nav-item" onNavigate={()=>setMobileOpen(false)}/>
         {isAdmin&&<Link to="/admin" style={{...styles.mobileLink,...styles.adminBadge,...(active==='/admin'?styles.adminBadgeActive:{})}}><Landmark size={14}/>{t('nav.admin')}</Link>}
         <div style={styles.mobileDivider}/><Link to="/settings" style={{...styles.mobileLink,...styles.cardLink,...(active==='/settings'?styles.linkActive:{})}}><UserRound size={15}/>{t('nav.profile')}</Link>

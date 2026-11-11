@@ -30,6 +30,7 @@ const CopyTradingPage = lazy(() => {
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
 const TradingToolsPage = lazy(() => import('./pages/TradingToolsPage').then((m) => ({ default: m.TradingToolsPage })));
 const TradingBotsPage = lazy(() => import('./pages/TradingBotsPage').then((m) => ({ default: m.TradingBotsPage })));
+const ExchangersPage = lazy(() => import('./pages/exchangers/ExchangersPage').then((m) => ({ default: m.ExchangersPage })));
 const AcademyPage = lazy(() => import('./pages/knowledge/AcademyPage').then((m) => ({ default: m.AcademyPage })));
 const HelpPage = lazy(() => import('./pages/knowledge/HelpPage').then((m) => ({ default: m.HelpPage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
@@ -121,6 +122,8 @@ export function App() {
         <Route path="/tools" element={<RequireAuth><TradingToolsPage /></RequireAuth>} />
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
+        {/* Public: BestChange offers comparison (Issue #694); no sign-in required. */}
+        <Route path="/exchangers" element={<ExchangersPage />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
         {/* Academy is the public knowledge hub. Legacy Help URLs redirect into it;
             system status remains a separate service page. */}

@@ -230,6 +230,7 @@ export const ZH: Record<Key, string> = {
   'nav.settings': '设置',
   'nav.profile': '个人资料',
   'nav.otc': 'OTC',
+  'nav.exchangers': '兑换商',
   'nav.admin': '管理后台',
   'nav.analytics': '分析',
   'analytics.title': '分析',

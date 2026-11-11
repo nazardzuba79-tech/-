@@ -230,6 +230,7 @@ export const ES: Record<Key, string> = {
   'nav.settings': 'Configuración',
   'nav.profile': 'Perfil',
   'nav.otc': 'OTC',
+  'nav.exchangers': 'Casas de cambio',
   'nav.admin': 'Administración',
   'nav.analytics': 'Analítica',
   'analytics.title': 'Analítica',
