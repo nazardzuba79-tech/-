@@ -224,7 +224,7 @@ export function AdminListingsPage() {
   // A historical continuation stays a saved draft with a private preview: the
   // server refuses to publish it (HISTORICAL_RIGHTS_UNVERIFIED), so does the form.
   const windowMode = isHistoricalWindow(form.simulationProgram);
-  const historicalMode = form.simulationProgram?.kind === 'scenario-controls-v2' && (form.simulationProgram.afterGrowth === 'historical' || windowMode);
+  const historicalMode = Boolean(form.history20Regime) || (form.simulationProgram?.kind === 'scenario-controls-v2' && (form.simulationProgram.afterGrowth === 'historical' || windowMode));
   // Only the #518 continuation is a no-ledger model; a History20 window is an ordinary scenario listing's price path.
   const noLedger = form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical';
   // A History20 window run as a private test: the one way it may start (SIMUSDT, participants only, never public).
@@ -636,7 +636,7 @@ export function AdminListingsPage() {
             <div className="listing-buttons">
               <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
               {editing.id && !form.history20Regime && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-              {current && <button type="button" disabled={busy || !draftIsSaved || Boolean(form.history20Regime) || (historicalMode && !privateMode) || publicationBlocked} onClick={openPublish} data-publish>{privateMode ? 'Запустить приватный тест' : 'Опубликовать'}</button>}
+              {current && <button type="button" disabled={busy || !draftIsSaved || (historicalMode && !privateMode) || publicationBlocked} onClick={openPublish} data-publish>{privateMode ? 'Запустить приватный тест' : 'Опубликовать'}</button>}
               {editing.id && windowMode && <button type="button" disabled={busy} onClick={cloneWindow} data-clone-window>Клонировать в новый листинг</button>}
               <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
             </div>
