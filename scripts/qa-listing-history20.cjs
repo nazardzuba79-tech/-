@@ -26,8 +26,9 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const edgeRequire = require('node:module').createRequire(path.join(root, 'workers/market-edge/package.json'));
 const { build } = edgeRequire('esbuild');
 const { Miniflare, convertV4MiniflareOptions } = edgeRequire('miniflare');
-const { adminListingsRouter } = require('../src/api/routes/adminListings');
-const { CloudflareListingStore } = require('../src/services/listings/store');
+const packagedApi = process.env.QA_ORIGINAL_API_DIST && path.resolve(process.env.QA_ORIGINAL_API_DIST);
+const { adminListingsRouter } = require(packagedApi ? path.join(packagedApi, 'api/routes/adminListings.js') : '../src/api/routes/adminListings');
+const { CloudflareListingStore } = require(packagedApi ? path.join(packagedApi, 'services/listings/store.js') : '../src/services/listings/store');
 const { buildHistoricalGrowthProgram } = require('../src/shared/listingHistoricalGrowth');
 // The frontend package is ESM: read its committed metadata module through a plain transpile.
 const { HISTORY20_CATALOG, HISTORY20_PACK } = (() => {
@@ -53,10 +54,12 @@ const token = jwt.sign({ sub: actor }, process.env.JWT_SECRET);
 let mf, mfOptions, origin, browser, server;
 
 async function setup() {
-  const bundle = await build({ entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')], bundle: true,
-    write: false, format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
+  const script = process.env.QA_ORIGINAL_WORKER
+    ? fs.readFileSync(process.env.QA_ORIGINAL_WORKER, 'utf8')
+    : (await build({ entryPoints: [path.join(root, 'workers/market-edge/src/worker.ts')], bundle: true,
+        write: false, format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] })).outputFiles[0].text;
   mfOptions = { ...convertV4MiniflareOptions({ workers: [{ name: 'listing-history20', modules: true,
-    script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
+    script, compatibilityDate: '2026-09-01',
     bindings: { LISTINGS_STORE_TOKEN: secret }, durableObjects: { LISTINGS: { className: 'ManagedListingsDO', useSQLite: true } },
     outboundService: () => { report.outbound++; throw new Error('Blocked non-fixture Worker request'); },
   }] }), isolatedResourcePersistencePath: persist, resourcePersistencePath: persist, telemetry: { enabled: false }, host: '127.0.0.1', port: 0 };
@@ -107,7 +110,20 @@ function syntheticRecord() {
 
 async function newPage(width, height) {
   const context = await browser.newContext({ viewport: { width, height }, locale: 'ru-RU', serviceWorkers: 'block', acceptDownloads: true });
-  await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+  await context.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.origin === origin) return route.continue();
+    if (packagedApi && url.origin === 'https://api.voltextech.net' && url.pathname.startsWith('/api/v1/')) {
+      // The production bundle embeds its real API origin. Dispatch only to the isolated
+      // loopback fixture, including OPTIONS, and forbid redirect follow-through.
+      const cors = { 'access-control-allow-origin': origin, 'access-control-allow-headers': '*',
+        'access-control-allow-methods': 'GET,HEAD,OPTIONS,POST,PUT,DELETE', 'access-control-allow-credentials': 'true' };
+      if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      const response = await route.fetch({ url: origin + url.pathname + url.search, maxRedirects: 0 });
+      return route.fulfill({ response, headers: { ...response.headers(), ...cors } });
+    }
+    return route.abort();
+  });
   await context.routeWebSocket('**/*', socket => socket.close());
   await context.addInitScript(value => { localStorage.setItem('exchange_token', value); localStorage.setItem('exchange_lang', 'ru'); }, token);
   const page = await context.newPage();

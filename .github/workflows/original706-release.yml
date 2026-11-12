@@ -1,0 +1,44 @@
+name: Sealed production backports (706)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/original706-release.yml'
+      - 'scripts/ops/*original-release*'
+      - 'src/shared/originalSimulationRegimes.ts'
+      - 'src/services/testMarkets/originalSimulation.ts'
+      - 'scripts/qa-listing-history20.cjs'
+permissions:
+  contents: read
+jobs:
+  sealed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+      - run: node scripts/ops/verify-original-release.cjs
+      - name: Verify and build exact Pages backport on the Exchangers release
+        env:
+          BASE: c96971b0b31788f10ac8cedb877d552cf4039963
+          PAGES: 6f0280b9e2452631352416aa74790ea14325a1d8
+          VITE_API_URL: https://api.voltextech.net/api/v1
+          VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
+          VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+        run: |
+          test "$(git rev-parse "$PAGES^")" = "$BASE"
+          git worktree add --detach "$RUNNER_TEMP/pages706" "$PAGES"
+          cd "$RUNNER_TEMP/pages706"
+          git diff --exit-code "$BASE" HEAD -- frontend/src/pages/exchangers src/shared/exchangers frontend/src/App.tsx
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/lib/__tests__/exchangersApi.test.ts frontend/src/lib/__tests__/exchangersModel.test.ts frontend/src/lib/__tests__/exchangersPage.test.tsx
+          npm run build --prefix frontend
+          echo 'a5b74ced13a5ef193ce3e7d0f37cdcc4ed9e155f91f9742d257d30775b3d6f5c  frontend/dist/assets/index-BiU8Ppgr.js' | sha256sum --check
