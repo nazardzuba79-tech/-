@@ -31,6 +31,8 @@ export interface ChartIndicatorToggle {
   /** Add another copy beside the one already on the chart. */
   onAdd?: () => void;
   pane?: 'price' | 'lower';
+  /** The chart's own strip (volume): switched in this list, but not one of the catalogue's indicators. */
+  builtIn?: boolean;
 }
 
 export interface ChartActiveIndicator {
@@ -273,7 +275,7 @@ export function ChartToolbarMenus({ chartType, typeLabels, onChartType, indicato
               type="button"
               role="menuitemcheckbox"
               aria-checked={item.active}
-              data-chart-indicator={item.key}
+              {...(item.builtIn ? { 'data-chart-builtin': item.key } : { 'data-chart-indicator': item.key })}
               className="chart-menu-item"
               onClick={item.onToggle}
             >
@@ -325,7 +327,7 @@ export function ChartToolbarMenus({ chartType, typeLabels, onChartType, indicato
             type="button"
             role="menuitemcheckbox"
             aria-checked={item.active}
-            data-chart-indicator={item.key}
+            {...(item.builtIn ? { 'data-chart-builtin': item.key } : { 'data-chart-indicator': item.key })}
             className="chart-menu-item"
             onClick={item.onToggle}
           >

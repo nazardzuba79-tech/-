@@ -125,6 +125,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartPaneLayout') return require('../chartPaneLayout');
     if (id === '../lib/chartIndicators') return require('../chartIndicators');
     // Chart workspace (2026-10-13): pure modules are real, the panels are stubs.
     if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
@@ -275,6 +276,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartPaneLayout') return require('../chartPaneLayout');
     if (id === '../lib/chartIndicators') return require('../chartIndicators');
     if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
     if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
@@ -416,6 +418,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartPaneLayout') return require('../chartPaneLayout');
     if (id === '../lib/chartIndicators') return require('../chartIndicators');
     if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
     if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
