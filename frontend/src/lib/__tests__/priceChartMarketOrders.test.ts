@@ -117,6 +117,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (name === '../lib/chartSettings') return require('../chartSettings');
+    if (name === '../lib/chartPaneLayout') return require('../chartPaneLayout');
     if (name === '../lib/chartIndicators') return require('../chartIndicators');
     // Chart workspace (2026-10-13): the pure modules are real, the toolbar and panels are stubs.
     if (name === '../lib/chartTimeframes') return require('../chartTimeframes');

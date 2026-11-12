@@ -68,10 +68,12 @@ import { ChartDataWindow } from './chart-workspace/ChartDataWindow';
 import { ChartAnalyticsPanel } from './chart-workspace/ChartAnalyticsPanel';
 import './chart-workspace/ChartWorkspace.css';
 import './DrawingTools.css';
+import './ChartLegend.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
 import { ChartToolbarMenus } from './ChartToolbarMenus';
 import { ChartSettingsDialog, requestChartSettingsView } from './ChartSettingsDialog';
 import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, saveChartSettings, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
+import { adoptedPaneRatios, getChartPaneLayout, indicatorPane, paneFactors, prunePaneRatios, resetChartPaneLayout, saveChartPaneLayout, PRICE_PANE, VOLUME_PANE, type AppliedPanes, type PaneRatios } from '../lib/chartPaneLayout';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -404,6 +406,10 @@ export function PriceChart({
   const chartAreaRef = useRef<HTMLDivElement>(null);
   /** Series per indicator instance id (lib/chartIndicators). */
   const indicatorSeriesRef = useRef<Map<string, IndicatorSeriesSet>>(new Map());
+  /** Pane heights as the viewer left them (lib/chartPaneLayout), and what the chart last wrote, to tell a separator drag from our own layout. */
+  const paneLayoutRef = useRef<PaneRatios>(getChartPaneLayout(market));
+  const appliedPanesRef = useRef<AppliedPanes | null>(null);
+  useEffect(() => { paneLayoutRef.current = getChartPaneLayout(market); appliedPanesRef.current = null; }, [market]);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const candlesRef = useRef<Candle[]>([]);
   const tradingRef = useRef(privateTrading);
@@ -795,19 +801,58 @@ export function PriceChart({
     else if (type === 'hollow') hollowSeriesRef.current?.setData(hollowCandles(candles, palette).map(b => ({ time: b.time as Time, open: b.open, high: b.high, low: b.low, close: b.close, color: b.color, borderColor: b.borderColor, wickColor: b.wickColor })));
     else if (type === 'heikin') heikinSeriesRef.current?.setData(heikinAshi(candles).map(b => ({ time: b.time as Time, open: b.open, high: b.high, low: b.low, close: b.close })));
   };
+  /** What each pane holds, in pane order: the candles, the volume strip, one lower-pane indicator each. */
+  const paneRoles = (): string[] => {
+    const chart = chartRef.current;
+    if (!chart || typeof chart.panes !== 'function') return [];
+    const roles = chart.panes().map((_, i) => (i === 0 ? PRICE_PANE : `pane:${i}`));
+    const at = (series: { getPane?: () => { paneIndex: () => number } } | null | undefined) => (series && typeof series.getPane === 'function' ? series.getPane().paneIndex() : 0);
+    const volumeIndex = at(volumeSeriesRef.current);
+    if (volumeIndex > 0 && volumeIndex < roles.length) roles[volumeIndex] = VOLUME_PANE;
+    for (const [id, set] of indicatorSeriesRef.current) {
+      if (set.pane !== 'lower') continue;
+      const index = at(Object.values(set.lines)[0] ?? set.histogram);
+      if (index > 0 && index < roles.length) roles[index] = indicatorPane(id);
+    }
+    return roles;
+  };
+  /** A separator the viewer dragged changes the panes' stretch factors behind the chart's back.
+   *  Keep that size instead of writing the default over it (owner, 2026-11-12: the volume strip
+   *  must stay as small as it was made). */
+  const adoptPaneResize = () => {
+    const chart = chartRef.current;
+    if (!chart || typeof chart.panes !== 'function') return;
+    const panes = chart.panes();
+    if (panes.length < 2 || typeof panes[0].getStretchFactor !== 'function') return;
+    const roles = paneRoles(), factors = panes.map(pane => pane.getStretchFactor());
+    const adopted = adoptedPaneRatios(appliedPanesRef.current, roles, factors, paneLayoutRef.current);
+    if (!adopted) return;
+    paneLayoutRef.current = prunePaneRatios(adopted, getChartIndicators(market).map(i => i.id));
+    saveChartPaneLayout(market, paneLayoutRef.current);
+    appliedPanesRef.current = { roles, factors };
+  };
+  const adoptPaneResizeRef = useRef(adoptPaneResize);
+  adoptPaneResizeRef.current = adoptPaneResize;
+  // The drag ends on a release anywhere: store the size then, not only at the next data update.
+  useEffect(() => {
+    const released = () => adoptPaneResizeRef.current();
+    window.addEventListener('pointerup', released);
+    window.addEventListener('touchend', released);
+    return () => { window.removeEventListener('pointerup', released); window.removeEventListener('touchend', released); };
+  }, []);
   /** Pane heights: the candles keep most of the chart, volume a fifth of it,
-   *  every lower-pane indicator a strip under them. Stretch factors are
-   *  relative, so the candles give way slowly as panes are added. */
+   *  every lower-pane indicator a strip under them — unless the viewer dragged
+   *  a separator, whose size then stays. Stretch factors are relative, so the
+   *  candles give way slowly as panes are added. */
   const layoutPanes = () => {
     const chart = chartRef.current;
     if (!chart || typeof chart.panes !== 'function') return;
     const panes = chart.panes();
     if (!panes.length || typeof panes[0].setStretchFactor !== 'function') return;
-    const volumeSeries = volumeSeriesRef.current;
-    const volumeOn = !!volumeSeries && typeof volumeSeries.getPane === 'function' && volumeSeries.getPane().paneIndex() === 1;
-    const lower = Math.max(0, panes.length - (volumeOn ? 2 : 1));
-    const each = lower >= 3 ? 0.18 : 0.24;
-    panes.forEach((pane, i) => pane.setStretchFactor(i === 0 ? 0.8 : volumeOn && i === 1 ? 0.2 : each));
+    adoptPaneResize();
+    const roles = paneRoles(), factors = paneFactors(roles, paneLayoutRef.current);
+    panes.forEach((pane, i) => pane.setStretchFactor(factors[i]));
+    appliedPanesRef.current = { roles, factors };
   };
 
   // The viewer's chart settings, applied over the paint the chart was created with.
@@ -888,9 +933,6 @@ export function PriceChart({
     const volumePane = s.volume ? 1 : 0;
     if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);
     if (s.volume) {
-      const panes = chart.panes();
-      panes[0]?.setStretchFactor(0.8);
-      panes[1]?.setStretchFactor(0.2);
       layoutPanes();
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
     } else {
@@ -1107,6 +1149,51 @@ export function PriceChart({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [drawingToolsOn]);
+
+  // TradingView's quick measure (owner, 2026-11-12: the ruler «як у Bybit чи TradingView»): hold Shift
+  // over the chart and click — the measurement starts there without picking the tool. Shift only arms the
+  // existing ruler; its anchors, maths and label are the ruler's own. Letting Shift go before a click puts
+  // the cursor back, so a Shift pressed for anything else leaves no tool armed.
+  const shiftRulerRef = useRef<'armed' | 'used' | null>(null);
+  useEffect(() => {
+    if (!drawingToolsOn || !terminal) return;
+    const typing = (target: EventTarget | null) => target instanceof HTMLElement && (/INPUT|TEXTAREA|SELECT/.test(target.tagName) || target.isContentEditable);
+    const disarm = () => {
+      const unused = shiftRulerRef.current === 'armed';
+      shiftRulerRef.current = null;
+      if (unused && toolRef.current === 'ruler') setTool('cursor');
+    };
+    const onDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Shift') { if (shiftRulerRef.current === 'armed') disarm(); return; } // Shift+letter is a shortcut or typing, not a measurement
+      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return;
+      // A press already in progress (a pan, an order line or a handle being dragged) is not interrupted:
+      // changing the tool cancels the gesture under the pointer.
+      if (pointerHeld || toolRef.current !== 'cursor' || lockedRef.current || tradingRef.current?.selecting || !chartAreaRef.current?.matches(':hover')) return;
+      shiftRulerRef.current = 'armed';
+      setTool('ruler');
+    };
+    const onUp = (event: KeyboardEvent) => { if (event.key === 'Shift' && shiftRulerRef.current) disarm(); };
+    const onPress = () => { if (shiftRulerRef.current === 'armed') shiftRulerRef.current = 'used'; };
+    let pointerHeld = false;
+    const held = () => { pointerHeld = true; }, freed = () => { pointerHeld = false; };
+    const area = chartAreaRef.current;
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    window.addEventListener('blur', disarm);
+    window.addEventListener('pointerdown', held, true);
+    window.addEventListener('pointerup', freed, true);
+    window.addEventListener('pointercancel', freed, true);
+    area?.addEventListener('pointerdown', onPress, true);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+      window.removeEventListener('blur', disarm);
+      window.removeEventListener('pointerdown', held, true);
+      window.removeEventListener('pointerup', freed, true);
+      window.removeEventListener('pointercancel', freed, true);
+      area?.removeEventListener('pointerdown', onPress, true);
+    };
+  }, [drawingToolsOn, terminal]);
 
   // Spot gestures cannot survive a tool, instrument or timeframe change,
   // Clear, Escape, focus loss or an unmount and then commit stale anchors.
@@ -2169,18 +2256,28 @@ export function PriceChart({
   const typeLabels: Partial<Record<ChartType, string>> = workspaceOn
     ? { candles: t('chart.type.candles'), bars: t('chart.type.bars'), hollow: t('chart.type.hollow'), heikin: t('chart.type.heikin'), line: t('chart.type.line'), area: t('chart.type.area') }
     : { candles: t('chart.type.candles'), line: t('chart.type.line'), area: t('chart.type.area') };
+  /** The volume strip's switch outside the settings dialog; absent where the chart has no settings or the source no volume. */
+  const volumeToggle = viewSettings && volumeAvailable ? {
+    on: viewSettings.volume,
+    toggle: () => { const current = getChartSettings(); saveChartSettings({ ...current, volume: !current.volume }); },
+  } : null;
   const menusNode = chartMenus ? <ChartToolbarMenus
     chartType={chartType}
     onChartType={selectChartType}
     typeLabels={typeLabels}
     typeGroupLabel={t('chart.group.type')}
     indicatorsLabel={t('chart.group.indicators')}
-    indicators={INDICATOR_CATALOGUE.filter(def => volumeAvailable || !indicatorNeedsVolume(def.type)).map(def => ({
-      key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
-      color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
-      onToggle: () => toggleType(def.type),
-      onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
-    }))}
+    indicators={[
+      // Volume is the chart's own strip, not a catalogue indicator, but it is switched here too:
+      // whatever is drawn on the chart can be taken off it and put back (owner, 2026-11-12).
+      ...(volumeToggle ? [{ key: 'volume', label: t('chart.settings.volume'), params: '', color: '#8b9098', pane: 'lower' as const, builtIn: true, active: volumeToggle.on, onToggle: volumeToggle.toggle }] : []),
+      ...INDICATOR_CATALOGUE.filter(def => volumeAvailable || !indicatorNeedsVolume(def.type)).map(def => ({
+        key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
+        color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
+        onToggle: () => toggleType(def.type),
+        onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
+      })),
+    ]}
     catalogue={{
       active: indicatorInstances.map(inst => ({
         id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
@@ -2255,6 +2352,8 @@ export function PriceChart({
                 onReset: () => {
                   updateChartWorkspace(market, { timeframe: DEFAULT_WORKSPACE.timeframe, quickTimeframes: [...DEFAULT_WORKSPACE.quickTimeframes], barType: 'candles', compare: [], layout: 1 });
                   saveChartIndicators(defaultChartIndicators(market), market);
+                  // «Сбросить» also returns the panes to the chart's own heights.
+                  resetChartPaneLayout(market); paneLayoutRef.current = getChartPaneLayout(market); appliedPanesRef.current = null; layoutPanes();
                   setAppliedPreset(null);
                 },
               }}
@@ -2459,8 +2558,16 @@ export function PriceChart({
             const items = indicatorInstances.filter(i => i.visible).flatMap(i => {
               const need = indicatorMinBars(i), short = bars > 0 && bars < need;
               if (short && hideShort) return [];
-              return [<LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} note={short ? t('chart.indicator.insufficient', { n: bars, need }) : undefined} />];
+              const name = indicatorInstanceLabel(i);
+              return [<LegendItem key={i.id} color={i.colors[0]} label={name} note={short ? t('chart.indicator.insufficient', { n: bars, need }) : undefined}
+                id={i.id}
+                settings={chartSettings ? { label: `${t('chart.settings.indicatorSettings')}: ${name}`, run: () => { requestChartSettingsView('indicators', i.id); setSettingsOpen(true); } } : undefined}
+                remove={{ label: `${t('chart.settings.indicatorRemove')}: ${name}`, run: () => saveChartIndicators(getChartIndicators(market).filter(x => x.id !== i.id), market) }} />];
             });
+            // The volume strip is listed with the indicators on the desktop chart, so it can be taken off
+            // from the chart itself; a phone keeps its short legend and switches volume in «Индикаторы».
+            if (volumeToggle?.on && !compactLayout) items.push(<LegendItem key="volume" color="#8b9098" label={t('chart.settings.volume')} id="volume"
+              remove={{ label: `${t('chart.settings.indicatorRemove')}: ${t('chart.settings.volume')}`, run: volumeToggle.toggle }} />);
             if (!items.length) return null;
             return <div className={compactLayout ? 'voltex-indicator-legend is-compact' : 'voltex-indicator-legend'} style={styles.legend}>{items}</div>;
           })()}
@@ -2533,12 +2640,21 @@ function DrawingDialog({ kind, t, onConfirm, onCancel, initial = '' }: {
   </div>;
 }
 
-function LegendItem({ color, label, note }: { color: string; label: string; note?: string }) {
+type LegendAction = { label: string; run: () => void };
+// The same marks as the Indicators menu (ChartToolbarMenus), at the legend's size.
+const LEGEND_GEAR = <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="2" /><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" /></svg>;
+const LEGEND_CROSS = <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" /></svg>;
+/** One line of the on-chart legend. Its buttons carry no text, so the row still reads as the indicator's name. */
+function LegendItem({ color, label, note, id, settings, remove }: { color: string; label: string; note?: string; id?: string; settings?: LegendAction; remove?: LegendAction }) {
   return (
-    <div style={styles.legendItem} data-indicator-insufficient={note ? '' : undefined} title={note}>
+    <div className="voltex-legend-row" style={styles.legendItem} data-indicator-insufficient={note ? '' : undefined} data-legend-row={id} title={note}>
       <span style={{ ...styles.legendDot, background: color }} />
       {label}
       {note && <span style={styles.legendNote}>{note}</span>}
+      {(settings || remove) && <span className="voltex-legend-actions">
+        {settings && <button type="button" className="voltex-legend-action" aria-label={settings.label} title={settings.label} data-legend-settings={id} onClick={settings.run}>{LEGEND_GEAR}</button>}
+        {remove && <button type="button" className="voltex-legend-action is-remove" aria-label={remove.label} title={remove.label} data-legend-remove={id} onClick={remove.run}>{LEGEND_CROSS}</button>}
+      </span>}
     </div>
   );
 }
@@ -2999,8 +3115,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(30,34,42,0.85)',
     border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 6,
+    // The box lets the pointer through; its rows take it (ChartLegend.css) for their
+    // settings/remove buttons, so it has to clear the chart's own crosshair canvas
+    // (z-index 2) and the drawing overlay (3) — see the overlay's note below.
     pointerEvents: 'none',
-    zIndex: 1,
+    zIndex: 4,
   },
   legendItem: {
     display: 'flex',

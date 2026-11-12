@@ -1,0 +1,58 @@
+{
+  "expect": "broken",
+  "dist": "../voltex-exch/frontend/dist",
+  "environment": "Built frontend; local VTA fixtures; writes and external transports denied",
+  "views": [
+    {
+      "width": 1440,
+      "errors": [],
+      "writes": [],
+      "blockedExternal": [
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png"
+      ],
+      "initial": {
+        "panes": 2,
+        "volumeShare": 0.2
+      },
+      "dragged": {
+        "volumeShare": 0.07567567567567568,
+        "volumePx": 42
+      },
+      "afterData": {
+        "volumeShare": 0.2
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "1440: volume has a strip of its own at the chart's default height",
+      "pass": true,
+      "detail": {
+        "panes": 2,
+        "volumeShare": 0.2
+      }
+    },
+    {
+      "name": "1440: dragging the separator makes the volume strip smaller",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07567567567567568,
+        "volumePx": 42
+      }
+    },
+    {
+      "name": "1440: OLD BUILD — the strip springs back after a data update (the reported fault)",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.2
+      }
+    }
+  ],
+  "passed": 3,
+  "failed": 0
+}

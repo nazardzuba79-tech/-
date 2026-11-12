@@ -1,0 +1,346 @@
+{
+  "expect": "fixed",
+  "dist": "frontend/dist",
+  "environment": "Built frontend; local VTA fixtures; writes and external transports denied",
+  "views": [
+    {
+      "width": 1440,
+      "errors": [],
+      "writes": [],
+      "blockedExternal": [
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png"
+      ],
+      "initial": {
+        "panes": 2,
+        "volumeShare": 0.2
+      },
+      "dragged": {
+        "volumeShare": 0.07567567567567568,
+        "volumePx": 42
+      },
+      "afterData": {
+        "volumeShare": 0.07567567567567568
+      },
+      "afterTimeframe": {
+        "volumeShare": 0.07567567567567568
+      },
+      "stored": {
+        "spot": {
+          "volume": 0.08187134502923969
+        },
+        "futures": {},
+        "cfd": {}
+      },
+      "afterReload": {
+        "volumeShare": 0.07567567567567568
+      },
+      "legend": [
+        "SMA 200мало данных: 48 из 200 свечей",
+        "Объём"
+      ],
+      "noVolume": {
+        "panes": 1,
+        "setting": false
+      },
+      "volumeBack": {
+        "panes": 2,
+        "volumeShare": 0.07567567567567568
+      },
+      "shiftMeasure": {
+        "rulers": 1,
+        "label": [
+          "+0,4964 (+45,32%)",
+          "18 баров, 1ч 30мин",
+          "Объём 336.15K"
+        ],
+        "tool": "false"
+      }
+    },
+    {
+      "width": 390,
+      "errors": [],
+      "writes": [],
+      "blockedExternal": [
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+        "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png"
+      ],
+      "initial": {
+        "panes": 2,
+        "volumeShare": 0.19924098671726756
+      },
+      "dragged": {
+        "volumeShare": 0.07590132827324478,
+        "volumePx": 40
+      },
+      "afterData": {
+        "volumeShare": 0.07590132827324478
+      },
+      "afterTimeframe": {
+        "volumeShare": 0.07590132827324478
+      },
+      "stored": {
+        "spot": {
+          "volume": 0.08302507192766122
+        },
+        "futures": {},
+        "cfd": {}
+      },
+      "afterReload": {
+        "volumeShare": 0.07590132827324478
+      },
+      "legend": [],
+      "volumeBack": {
+        "panes": 2,
+        "volumeShare": 0.07590132827324478
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "1440: volume has a strip of its own at the chart's default height",
+      "pass": true,
+      "detail": {
+        "panes": 2,
+        "volumeShare": 0.2
+      }
+    },
+    {
+      "name": "1440: dragging the separator makes the volume strip smaller",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07567567567567568,
+        "volumePx": 42
+      }
+    },
+    {
+      "name": "1440: the strip keeps its size after a data update",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07567567567567568
+      }
+    },
+    {
+      "name": "1440: the strip keeps its size after a timeframe change",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07567567567567568
+      }
+    },
+    {
+      "name": "1440: the size is kept for Spot only, as a ratio to the candles",
+      "pass": true,
+      "detail": {
+        "spot": {
+          "volume": 0.08187134502923969
+        },
+        "futures": {},
+        "cfd": {}
+      }
+    },
+    {
+      "name": "1440: the strip keeps its size after a reload",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07567567567567568
+      }
+    },
+    {
+      "name": "1440: the legend lists the volume strip and the indicators",
+      "pass": true,
+      "detail": [
+        "SMA 200мало данных: 48 из 200 свечей",
+        "Объём"
+      ]
+    },
+    {
+      "name": "1440: legend buttons add no text to a row",
+      "pass": true,
+      "detail": [
+        "SMA 200мало данных: 48 из 200 свечей",
+        "Объём"
+      ]
+    },
+    {
+      "name": "1440: an indicator's remove button is named",
+      "pass": true,
+      "detail": "Удалить: SMA 200"
+    },
+    {
+      "name": "1440: removing SMA 200 from the legend removes it from the chart and from the saved list",
+      "pass": true,
+      "detail": {
+        "withoutSma": [
+          "Объём"
+        ],
+        "saved": []
+      }
+    },
+    {
+      "name": "1440: removing «Объём» closes the volume strip and saves the choice",
+      "pass": true,
+      "detail": {
+        "panes": 1,
+        "setting": false
+      }
+    },
+    {
+      "name": "1440: «Индикаторы» lists the volume strip with its current state",
+      "pass": true,
+      "detail": "false"
+    },
+    {
+      "name": "1440: switched back on, the strip returns at the size the viewer chose, not at the default",
+      "pass": true,
+      "detail": {
+        "panes": 2,
+        "volumeShare": 0.07567567567567568
+      }
+    },
+    {
+      "name": "1440: Shift over the chart arms the ruler, and letting go without a click puts the cursor back",
+      "pass": true,
+      "detail": {
+        "armedOnShift": "true",
+        "after": "false",
+        "rulers": 0
+      }
+    },
+    {
+      "name": "1440: Shift+click measures price, percent, bars and time, then the cursor is back",
+      "pass": true,
+      "detail": {
+        "rulers": 1,
+        "label": [
+          "+0,4964 (+45,32%)",
+          "18 баров, 1ч 30мин",
+          "Объём 336.15K"
+        ],
+        "tool": "false"
+      }
+    },
+    {
+      "name": "1440: no horizontal page overflow",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "1440: no page errors and no write requests; external requests were blocked",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": [],
+        "blockedExternal": 12
+      }
+    },
+    {
+      "name": "390: volume has a strip of its own at the chart's default height",
+      "pass": true,
+      "detail": {
+        "panes": 2,
+        "volumeShare": 0.19924098671726756
+      }
+    },
+    {
+      "name": "390: dragging the separator makes the volume strip smaller",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07590132827324478,
+        "volumePx": 40
+      }
+    },
+    {
+      "name": "390: the strip keeps its size after a data update",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07590132827324478
+      }
+    },
+    {
+      "name": "390: the strip keeps its size after a timeframe change",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07590132827324478
+      }
+    },
+    {
+      "name": "390: the size is kept for Spot only, as a ratio to the candles",
+      "pass": true,
+      "detail": {
+        "spot": {
+          "volume": 0.08302507192766122
+        },
+        "futures": {},
+        "cfd": {}
+      }
+    },
+    {
+      "name": "390: the strip keeps its size after a reload",
+      "pass": true,
+      "detail": {
+        "volumeShare": 0.07590132827324478
+      }
+    },
+    {
+      "name": "390: the phone legend stays short (no volume line)",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "390: «Индикаторы» lists the volume strip with its current state",
+      "pass": true,
+      "detail": "true"
+    },
+    {
+      "name": "390: «Индикаторы» takes the volume strip off the phone chart",
+      "pass": true,
+      "detail": {
+        "panes": 1
+      }
+    },
+    {
+      "name": "390: switched back on, the strip returns at the size the viewer chose, not at the default",
+      "pass": true,
+      "detail": {
+        "panes": 2,
+        "volumeShare": 0.07590132827324478
+      }
+    },
+    {
+      "name": "390: no horizontal page overflow",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "390: no page errors and no write requests; external requests were blocked",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": [],
+        "blockedExternal": 12
+      }
+    }
+  ],
+  "passed": 29,
+  "failed": 0
+}
