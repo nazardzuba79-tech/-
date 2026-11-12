@@ -1,3 +1,4 @@
+import type { ORIGINAL_PROVENANCE } from '../../../src/shared/originalSimulationRegimes';
 import type { MarketTicker } from './api';
 import { aithReadClock, isAith, validAithLease, type ListingReadLease } from '../../../src/shared/aithPublication';
 
@@ -52,6 +53,7 @@ export interface TestAsset {
   state: TestMarketState;
   /** Managed listings only (Admin → Listings). */
   provenanceLabel?: string;
+  provenance?: typeof ORIGINAL_PROVENANCE;
   managed?: boolean;
   logo?: string | null;
   displayTimeZone?: string;
@@ -166,7 +168,12 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       },
       ...(managed ? {
         managed: true,
-        ...(raw.isTradable === false && raw.provenance?.mode === 'DEMO_MODEL' && raw.provenance?.withdrawable === false
+        ...(raw.provenance?.origin === 'ORIGINAL_GENERATIVE' && raw.isTradable === false &&
+          raw.provenance.mode === 'DEMO_MODEL' && raw.provenance.historicalDataUsed === false &&
+          raw.provenance.priceAndVolume === 'SIMULATED' && raw.provenance.withdrawable === false &&
+          typeof raw.provenance.model === 'string'
+          ? { provenance: { ...raw.provenance } } : {}),
+        ...(raw.provenance?.origin !== 'ORIGINAL_GENERATIVE' && raw.isTradable === false && raw.provenance?.mode === 'DEMO_MODEL' && raw.provenance?.withdrawable === false
           ? { provenanceLabel: 'DEMO · SIMULATED · NO REAL TRADING' } : {}),
         version: raw.version,
         ...(isAith(raw.pair) ? { readLease: raw.readLease } : {}),

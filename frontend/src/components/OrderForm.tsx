@@ -39,6 +39,7 @@ export function OrderForm({
   pickedPrice,
   refreshKey = 0,
   demo = 'off',
+  presentationOnly = false,
 }: {
   pair: string;
   onPlaced: () => void;
@@ -47,11 +48,13 @@ export function OrderForm({
   /** Demo Spot (lib/demoSpot): which ledger this account trades on this
    * pair. TradePage passes 'off' for test markets, listings and VTA. */
   demo?: DemoSpotMode;
+  /** A live original-regime ticket edits drafts only. Server execution guards are independent. */
+  presentationOnly?: boolean;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
   const ticketAccess = useOrderTicketAccess();
-  const viewer = !ticketAccess.allowed;
+  const viewer = presentationOnly || !ticketAccess.allowed;
   // A phone gets the order families as one native select (see below).
   const compact = useMediaQuery(MOBILE_TERMINAL_QUERY);
   const [baseAsset, quoteAsset] = pair.split('/');
@@ -302,6 +305,7 @@ export function OrderForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (presentationOnly) return;
     if (!ticketAccess.canSubmit()) return;
     if (submittingRef.current) return;
     setError(null);
@@ -487,7 +491,7 @@ export function OrderForm({
         ))}
       </div>}
 
-      <form onSubmit={handleSubmit} className="order-form-content" noValidate={viewer || notTradingYet || privateVta}>
+      <form onSubmit={handleSubmit} className="order-form-content" data-original-ticket={presentationOnly || undefined} noValidate={viewer || notTradingYet || privateVta}>
         {/* Stop and take-profit orders can execute as either a limit or a
             market order — the reference has no equivalent control because
             it has no conditional orders, so this reuses its order-type tab

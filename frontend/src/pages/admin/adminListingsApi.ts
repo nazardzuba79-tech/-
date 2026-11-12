@@ -1,5 +1,6 @@
 import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
+import type { OriginalRegimeConfig } from '../../../../src/shared/originalSimulationRegimes';
 import type { ListingProgram } from './listingMovementModel';
 
 /** Admin → Listings calls (Render, ADMIN only; Render forwards to the Cloudflare store). */
@@ -20,6 +21,7 @@ export interface ListingConfig {
   simulationProfile?: 'CALM_TREND' | 'IMPULSE_TREND' | 'PULLBACK_TREND' | 'COMPRESSION_BREAKOUT';
   wickModel?: 'NATURAL_V1';
   simulationProgram?: ListingProgram;
+  originalRegime?: OriginalRegimeConfig;
 }
 
 /** What the form sends. The server fills schemaVersion and an automatic seed; the store assigns the profile. */
@@ -138,7 +140,14 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
   return body as T;
 }
 
+export interface OriginalPreview { id: string; version: string; interval: string; seed: string; candles: ListingPreview['candles'] }
+
 export const adminListingsApi = {
+  originalPreview: (id: string, interval: string, price: string, seed: string, draft: string | null, signal: AbortSignal) => {
+    const query = new URLSearchParams({ interval, price: price || '1', seed: seed || 'original-preview-v1' });
+    if (draft) query.set('draft', draft);
+    return call<OriginalPreview>('/admin/listings/original-regimes/' + encodeURIComponent(id) + '?' + query, { signal });
+  },
   reschedule: (listing: Pick<AdminListing, 'id' | 'draftRevision' | 'activeVersion'>, days: 1 | 2 | 3, operationKey: string) =>
     call<{ id: string; draftRevision: number; activeVersion: number | null; listingAt: string; previousListingAt: string; replayed: boolean; operationKey: string }>(
       `/admin/listings/${encodeURIComponent(listing.id)}/reschedule`, { method: 'POST', body: { days, operationKey, draftRevision: listing.draftRevision, activeVersion: listing.activeVersion } }),

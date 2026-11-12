@@ -8,6 +8,8 @@ import {
 import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, listingTimeZoneLabel } from './adminListingsCopy';
 import { ListingScenarioLab } from './ListingScenarioLab';
 import { ListingMovementEditor } from './ListingMovementEditor';
+import { ORIGINAL_MODEL_VERSION } from '../../../../src/shared/originalSimulationRegimes';
+import { ListingOriginalPreview } from './ListingOriginalPreview';
 import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, historicalModelLabel, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
 import { useAdminCompact } from './useAdminCompact';
@@ -26,12 +28,14 @@ interface FormState {
   /** Display only: assigned by the store, never sent. */
   simulationProfile: ListingConfig['simulationProfile'] | null;
   simulationProgram?: ListingProgram;
+  originalRegime?: ListingConfig['originalRegime'];
   wickModel?: 'NATURAL_V1';
 }
 
 const emptyForm = (): FormState => ({
   name: '', symbol: '', logo: null, initialPrice: '', wallTime: '', timeZone: 'Europe/Kyiv', ownerAllocation: '0',
-  seedMode: 'auto', seed: '', tradable: false, simulationProfile: null, simulationProgram: newListingMovement(),
+  seedMode: 'auto', seed: '', tradable: false, simulationProfile: null,
+  originalRegime: { version: ORIGINAL_MODEL_VERSION, id: 'AUTO', disclosure: 'SIMULATED_ORIGINAL_MODEL' },
 });
 
 const fromConfig = (config: ListingConfig): FormState => ({
@@ -39,7 +43,7 @@ const fromConfig = (config: ListingConfig): FormState => ({
   wallTime: utcToZonedWallTime(config.listingAt, config.displayTimeZone), timeZone: config.displayTimeZone,
   ownerAllocation: config.ownerAllocation, seedMode: config.seedMode, seed: config.seed, tradable: config.tradable,
   simulationProfile: config.simulationProfile ?? null,
-  simulationProgram: config.simulationProgram, wickModel: config.wickModel,
+  originalRegime: config.originalRegime, simulationProgram: config.simulationProgram, wickModel: config.wickModel,
 });
 
 // Compare editable values, including exact text drafts. An automatic seed is
@@ -47,7 +51,7 @@ const fromConfig = (config: ListingConfig): FormState => ({
 const formSignature = (form: FormState): string => JSON.stringify([
   form.name, form.symbol, form.logo, form.initialPrice, form.wallTime, form.timeZone,
   form.ownerAllocation, form.seedMode, form.seedMode === 'manual' ? form.seed : null, form.tradable,
-  form.simulationProgram, form.wickModel,
+  form.originalRegime, form.simulationProgram, form.wickModel,
 ]);
 
 /** The instant in UTC, Kyiv and Moscow (the owner reads both UTC and МСК), plus the listing's own zone when it is another one. */
@@ -272,6 +276,7 @@ export function AdminListingsPage() {
       name: form.name.trim(), symbol: form.symbol.trim().toUpperCase(), logo: form.logo, initialPrice: form.initialPrice.trim(),
       listingAt: listingAtUtc, displayTimeZone: form.timeZone, ownerAllocation: form.ownerAllocation.trim() || '0',
       seedMode: form.seedMode, ...(form.seedMode === 'manual' ? { seed: form.seed.trim() } : {}), tradable: form.tradable,
+      ...(form.originalRegime ? { originalRegime: form.originalRegime } : {}),
       ...(form.simulationProgram ? { simulationProgram: form.simulationProgram } : {}),
       ...(form.wickModel ? { wickModel: form.wickModel } : {}),
     };
@@ -468,7 +473,7 @@ export function AdminListingsPage() {
               const anchor = initialPriceAnchor.current;
               changeForm({ ...form, initialPrice, ...(anchor ? { simulationProgram: rebaseListingMovement(anchor.program, anchor.initial, initialPrice) } : {}) });
             }} data-field="initialPrice" required /></label>
-            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={historicalMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={historicalMode} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={historicalMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={historicalMode || Boolean(form.originalRegime)} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
               <small>{historicalMode ? 'Историческая симуляция не выдаёт актив: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
             <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
             <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
@@ -483,7 +488,7 @@ export function AdminListingsPage() {
               {form.seedMode === 'auto' && form.seed && <small>Сохранён: <code data-saved-seed>{form.seed}</code> — не меняется при правках.</small>}
               <small>Код сохраняет повторяемость симуляции; это не пароль и не ключ доступа.</small>
             </fieldset>
-            {!form.simulationProgram && <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
+            {!form.simulationProgram && !form.originalRegime && <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
               <span>Характер свечей (симуляция)</span>
               <b>{form.simulationProfile ? listingProfileLabel(form.simulationProfile) : editing.id ? 'Исходный' : 'Назначится при создании'}</b>
               <small>По очереди для новых листингов: спокойный тренд → импульсный → с откатами → сжатие и пробой. Меняет только вид свечей, не траекторию и не итоговую цену; после создания не меняется.</small>
@@ -498,13 +503,20 @@ export function AdminListingsPage() {
               <small>PNG, JPEG, WebP или SVG, до 64 КБ.</small>
               {logoReading && <small role="status" data-logo-reading>Загрузка логотипа…</small>}
             </div>
-            <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
-              <small>{form.simulationProgram ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small></label>
+            <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram || form.originalRegime)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
+              {!form.originalRegime && <small>{form.simulationProgram ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small>}</label>
           </div>
+          {(!editing.id || form.originalRegime) && <ListingOriginalPreview config={form.originalRegime}
+            draft={editing.id} price={form.initialPrice} seed={form.seedMode === 'manual' ? form.seed : ''}
+            onSelect={originalRegime => {
+              initialPriceAnchor.current = null;
+              changeForm({ ...form, originalRegime, simulationProfile: null, wickModel: undefined, tradable: false,
+                ownerAllocation: '0', simulationProgram: originalRegime ? undefined : newListingMovement(form.initialPrice || '1') });
+            }} />}
           {form.simulationProgram?.kind === 'scenario-controls-v2' && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} savedModels={savedModels} onChange={simulationProgram => changeForm({ ...form, simulationProgram,
             ...(simulationProgram.afterGrowth === 'historical' ? { ownerAllocation: '0' } : {}) })} /></div>}
           {form.simulationProgram?.kind === 'capped-growth-range-v1' && <p className="listing-hint" data-legacy-movement>Сохранён прежний ограниченный сценарий. Его параметры и история не заменяются новым алгоритмом.</p>}
-          {!form.simulationProgram && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
+          {!form.simulationProgram && !form.originalRegime && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
           {/* The error and the unsaved-draft note travel with the actions, so a refused
               save is shown next to the button that was pressed. */}
           <div className="listing-actions-dock">
@@ -530,13 +542,13 @@ export function AdminListingsPage() {
             </div>
           )}
           {preview && draftIsSaved && (
-            <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label="Предпросмотр симуляции">
+            <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label={form.originalRegime ? 'Предпросмотр' : 'Предпросмотр симуляции'}>
               <header>
                 <b>{preview.asset.pair}</b>
-                <span>{preview.asset.state.phase === 'live' ? 'Симуляция после листинга' : 'До листинга'} · {new Date(preview.previewAt).toISOString().replace('.000Z', 'Z')}</span>
+                <span>{preview.asset.state.phase === 'live' ? (form.originalRegime ? 'После листинга' : 'Симуляция после листинга') : 'До листинга'} · {new Date(preview.previewAt).toISOString().replace('.000Z', 'Z')}</span>
                 {preview.asset.state.lastPrice !== null && <span data-preview-price>{preview.asset.state.lastPrice} USDT ({preview.asset.state.change24hPercent?.toFixed(2)}%)</span>}
               </header>
-              <p className="listing-hint">Цены, объёмы, стакан и сделки в этом предпросмотре сгенерированы. Это симуляция, а не реальные рыночные данные.</p>
+              {!form.originalRegime && <p className="listing-hint">Цены, объёмы, стакан и сделки в этом предпросмотре сгенерированы. Это симуляция, а не реальные рыночные данные.</p>}
               {preview.scenarioSummary && <dl className="listing-preview-metrics" data-preview-summary>
                 <div><dt>Начальная цена</dt><dd>{formatMovementPrice(preview.scenarioSummary.initialPrice)} USDT</dd></div>
                 <div><dt>Цена через 24 часа</dt><dd>{formatMovementPrice(preview.scenarioSummary.first24hPrice)} USDT</dd></div>
@@ -545,11 +557,11 @@ export function AdminListingsPage() {
                 {preview.scenarioSummary.observedLow !== undefined && <div><dt>Минимум показанного отрезка</dt><dd>{formatMovementPrice(preview.scenarioSummary.observedLow)} USDT</dd></div>}
               </dl>}
               <ListingCandlePreview candles={preview.candles} />
-              <small className="listing-hint">{preview.candles.length} свечей · время на графике: Всемирное время (UTC). Объём — модельная активность.</small>
+              <small className="listing-hint">{preview.candles.length} свечей · время на графике: Всемирное время (UTC).{!form.originalRegime && ' Объём — модельная активность.'}</small>
               <div className="listing-preview-grid">
-                <div><h3>Стакан (симуляция)</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
+                <div><h3>{form.originalRegime ? 'Стакан' : 'Стакан (симуляция)'}</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
                   <div key={i} className={i < 5 ? 'ask' : 'bid'}><span>{level.price}</span><span>{level.quantity}</span></div>) : <p className="listing-muted">—</p>}</div>
-                <div><h3>Сделки (симуляция)</h3>{preview.trades.slice(0, 10).map((trade) => <div key={trade.id} className={trade.side === 'BUY' ? 'bid' : 'ask'}><span>{trade.price}</span><span>{trade.quantity}</span></div>)}
+                <div><h3>{form.originalRegime ? 'Сделки' : 'Сделки (симуляция)'}</h3>{preview.trades.slice(0, 10).map((trade) => <div key={trade.id} className={trade.side === 'BUY' ? 'bid' : 'ask'}><span>{trade.price}</span><span>{trade.quantity}</span></div>)}
                   {!preview.trades.length && <p className="listing-muted">—</p>}</div>
               </div>
             </section>
