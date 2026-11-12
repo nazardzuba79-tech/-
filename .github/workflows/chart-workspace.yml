@@ -24,7 +24,11 @@ on:
       - 'frontend/src/lib/__tests__/cfdChartWorkspace.test.ts'
       - 'frontend/src/lib/__tests__/futuresChartBlank.test.ts'
       - 'frontend/src/lib/__tests__/priceChartMarketOrders.test.ts'
+      - 'frontend/src/components/ChartToolbarMenus.tsx'
+      - 'frontend/src/components/ChartToolbarMenus.css'
+      - 'frontend/src/components/ChartLegend.css'
       - 'scripts/qa-chart-workspace.cjs'
+      - 'scripts/qa-chart-pane-size.cjs'
       - 'scripts/qa-hover-interval-isolation.cjs'
       - '.github/workflows/chart-workspace.yml'
   workflow_dispatch: {}
@@ -114,6 +118,12 @@ jobs:
         # Exit 1: a check failed. Exit 2: a section stopped (FATAL), a planned section never ran (NOT_RUN),
         # or the evidence is incomplete — the report and manifest are written in every case.
         run: node scripts/qa-chart-workspace.cjs --dist frontend/dist --out output/chart-workspace --phase after --widths 1366,1440,1920 --phones 360,390 --perf-window 6000
+      - name: Pane heights the viewer chose, removable indicators and volume, Shift quick measure (Spot, 1440 and 390)
+        if: success() || failure()
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-browser/node_modules/playwright
+          LANG: en_US.UTF-8
+        run: node scripts/qa-chart-pane-size.cjs --dist frontend/dist --out output/chart-pane-size
       - name: Sections and verdict
         if: always()
         run: >-
@@ -131,3 +141,38 @@ jobs:
           path: output/chart-workspace/**
           retention-days: 7
           if-no-files-found: warn
+
+  production-base-futures-layout:
+    name: Futures layout on the unchanged Pages source
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 709
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Immutable source of production deployment 77cfe624, independent of the PR.
+          ref: ccd5c99a2667a8501650b7cd35c325a2f11b81f4
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build the unchanged frontend with the locked dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm run build --prefix frontend
+      - name: Install the same disposable browser as the Futures layout gate
+        run: |
+          npm install --prefix /tmp/layout-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/layout-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Run the unmodified Futures geometry assertions on the baseline
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/layout-browser/node_modules/playwright
+        run: node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out output/base-futures-proportions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-base-futures-proportions
+          path: output/base-futures-proportions
+          if-no-files-found: warn
+          retention-days: 7
