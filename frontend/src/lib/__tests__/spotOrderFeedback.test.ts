@@ -37,7 +37,7 @@ describe('actual OrderForm submit handler', () => {
   const code = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   function fixture(response: unknown, notTradingYet = false) {
     const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
-    const bindings = { ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
+    const bindings = { awaitingPair: false, presentationOnly: false, ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
       t: (key: string, values?: unknown) => key + (values ? JSON.stringify(values) : ''),
       spotOrderFeedback, positiveOrderNumber, submittingRef: { current: false },
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
