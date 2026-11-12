@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as markets from '../testMarkets';
+import { ORIGINAL_PROVENANCE, ORIGINAL_REGIMES } from '../../../../src/shared/originalSimulationRegimes';
 import * as listingsOrder from '../listingsOrder';
 import { customerErrorText } from '../customerError';
 import { positionStatus, spotOrderStatus, spotOrderType, type SpotOrderRow } from '../../components/spotOrderPresentation';
@@ -80,6 +81,25 @@ const FORMER_NOTICE = [
   '练习市场', '交易暂不可用', '市场已开放',
 ];
 const expectNoNotice = (html: string) => { for (const text of FORMER_NOTICE) expect(html).not.toContain(text); };
+
+describe.each(ORIGINAL_REGIMES)('future listing $id never adds warning copy', regime => {
+  test.each(LOCALES)('production parser, countdown/chart and Markets strip in %s', lang => {
+    for (const phase of ['pre-listing', 'live'] as const) {
+      const payload = { serverTime: now, assets: [{ ...fixture, name: regime.id, provenance: ORIGINAL_PROVENANCE,
+        state: { ...fixture.state, phase } }] };
+      const asset = markets.parseTestMarkets(payload)!.assets[0];
+      expect(asset).toMatchObject({ isTradable: false, provenance: ORIGINAL_PROVENANCE });
+      expect(asset.provenanceLabel).toBeUndefined();
+      const html = chart(asset, lang) + renderToStaticMarkup(React.createElement(
+        component('pages/markets-bolt/TestMarketsStrip.tsx', lang, [asset]).TestMarketsStrip,
+        { search: '', favoritesOnly: false, favorites: new Set(), onToggleFavorite: () => {}, onOpen: () => {} }));
+      expectNoNotice(html);
+      expect(html.replace(/<[^>]*>/g, ' ')).not.toMatch(/DEMO|SIMULATED|NO REAL TRADING|симуляц|Модельные данные|Реальная торговля недоступна/i);
+      expect(html).not.toMatch(/data-private-provenance|data-demo-provenance/);
+      expect(html).toContain(phase === 'pre-listing' ? 'role="timer"' : 'data-chart');
+    }
+  });
+});
 
 describe.each(LOCALES)('listing customer states in %s', lang => {
   const t = translate(lang);

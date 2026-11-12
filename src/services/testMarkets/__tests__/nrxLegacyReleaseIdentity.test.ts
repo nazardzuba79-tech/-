@@ -30,6 +30,17 @@ function expectBlocked(readSource: (file: string) => string) {
 }
 
 describe('installed NRX release identity', () => {
+  test('the original-model module cannot run new import-time effects', () => {
+    expectBlocked(withSource('originalSimulation.ts', source('originalSimulation.ts') + '\nglobalThis.Math.random = () => 0;\n'));
+    expectBlocked(withSource('../../shared/originalSimulationRegimes.ts', source('../../shared/originalSimulationRegimes.ts') + '\nObject.assign(Math, { random: () => 0 });\n'));
+  });
+  test('original-model dispatch cannot change its guard or introduce shared mutations', () => {
+    expectBlocked(replaceSource(SIMULATION, 'if (this.asset.originalRegime) {', 'if (true) {'));
+    expectBlocked(replaceSource(SIMULATION, "throw Error('ORIGINAL_MODEL_DISPLAY_ONLY');", "throw Error('ORIGINAL_MODEL_DISPLAY_ONLY'); Math.random = () => 0;"));
+    expectBlocked(replaceSource('originalSimulation.ts', "import { normal, seededRandom } from './simulationRandom';", "import './side-effects';"));
+    expectBlocked(replaceSource('originalSimulation.ts', 'const namespace =', 'Math.random = () => 0; const namespace ='));
+    expectBlocked(replaceSource('../../shared/originalSimulationRegimes.ts', 'hours: 168, drift: .24', 'hours: 168, drift: .25'));
+  });
   test('the unchanged legacy trajectory retains its recorded installed identity after activation', () => {
     expect(fingerprintFor(NEURIX, source)).toBe(INSTALLED);
     expect(checkRelease(NEURIX, PAST, INSTALLED, source)).toEqual({ fingerprint: INSTALLED, unchanged: true });

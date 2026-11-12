@@ -15,6 +15,16 @@ async function load(code){
 }
 (async()=>{
   const out=path.resolve(process.env.AI_RELEASE_OUT||path.join(root,'artifacts/ai-listing-release'));
+  // Independently measured on the pre-#705 checkout. A private research import
+  // in either sealed module would make the narrow runtime unloadable.
+  const sealedModules = {
+    'api/api/routes/adminListings.js': '72853e3dda8547fe0a01169d131c9f8ad64267fdd3c2079525670f622a1f1077',
+    'api/services/listings/store.js': '5b4b703ab1de1944ff9aa1a80ef9d248c172a83d4e3feda29cc3c8d9c3903ce0',
+  };
+  for (const [filename, digest] of Object.entries(sealedModules)) {
+    const source = fs.readFileSync(path.join(out, filename), 'utf8').replace(/\r\n/g, '\n');
+    assert.equal(require('node:crypto').createHash('sha256').update(source).digest('hex'), digest, filename);
+  }
   const before=await load(fixture.worker),after=await load(fs.readFileSync(path.join(out,'worker.js'),'utf8'));
   const models=JSON.parse(fs.readFileSync(path.join(root,'scripts/qa/fixtures/ai-preserved-models-20261101.json'),'utf8'));
   let oldTicks=0,newTicks=0;

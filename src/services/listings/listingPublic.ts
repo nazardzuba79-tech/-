@@ -12,6 +12,7 @@ import { testMarketDepth } from '../testMarkets/testMarketDepth';
 import { effectiveTestMarketNow, publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../testMarkets/testMarketService';
 import { listingPair, listingSlug, publishedListingAsset, type PublishedListing } from './listingConfig';
 import { isAith, validAithLease } from '../../shared/aithPublication';
+import { ORIGINAL_PROVENANCE } from '../../shared/originalSimulationRegimes';
 
 const headers = {
   'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
@@ -29,6 +30,7 @@ export function publicListingAsset(listing: PublishedListing, now: number) {
     ...(listing.readLease ? { readLease: listing.readLease } : {}),
     logo: listing.config.logo,
     displayTimeZone: listing.config.displayTimeZone,
+    ...(listing.config.originalRegime ? { provenance: ORIGINAL_PROVENANCE } : {}),
     ...(listing.config.simulationProgram?.kind === 'scenario-controls-v2' && listing.config.simulationProgram.terminalPeak === 'bounded-v1'
       ? { provenance: { mode: 'DEMO_MODEL' as const, withdrawable: false, label: 'DEMO · SIMULATED · NO REAL TRADING' } } : {}),
     // The public timer: anything but `running` shows the date without a countdown (the market stays frozen).
@@ -60,8 +62,10 @@ export function managedListingResponse(request: Request, listings: readonly Publ
   const isCatalogue = path === PUBLIC_CATALOGUE_PATH;
   const listing = isCatalogue ? null : listingForPath(path, listings);
   if (!isCatalogue && !listing) return null;
-  const respond = (body: unknown, status = 200) => new Response(
-    request.method === 'HEAD' ? null : JSON.stringify(body), { status, headers },
+  const respond = (body: object, status = 200) => new Response(
+    request.method === 'HEAD' ? null : JSON.stringify({ ...body,
+      ...(listing?.config.originalRegime ? { provenance: ORIGINAL_PROVENANCE } : {}),
+    }), { status, headers },
   );
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (!['GET', 'HEAD'].includes(request.method)) return respond({ error: 'method_not_allowed' }, 405);

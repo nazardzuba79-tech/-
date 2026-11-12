@@ -8,6 +8,7 @@
  * Shared restrictions still exclude these assets from other financial paths.
  */
 
+import type { OriginalRegimeConfig } from '../../shared/originalSimulationRegimes';
 import { NEURIX } from './neurix';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import { HISTORY20_PRIVATE_SYMBOL, SIMULATION_QUOTE } from '../../shared/history20PrivateSymbol';
@@ -19,6 +20,10 @@ import type { MarketStructureConfig } from './simulationWaves';
 import type { ScheduledScenarioConfig } from './simulationSchedule';
 
 export interface TestAssetConfig {
+  originalRegime?: OriginalRegimeConfig;
+  /** Offline History20 draft reference; never eligible for public execution. */
+  history20Regime?: string;
+  history20RegimeSha256?: string;
   /** Base asset ticker, e.g. VTA. */
   symbol: string;
   /** Display name, e.g. VOLTORA. */
