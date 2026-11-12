@@ -7785,3 +7785,37 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Shared CI helper checks the exact package version, executable presence and actual headless launch/render before the existing acceptance tests. Missing runtime libraries remain a hard failure. Workflow YAML and step comparison confirm every test command, PostgreSQL setting and assertion is retained.
 - Files changed are the 22 failing workflow definitions and .github/scripts/verify-ci-browser.cjs. Application source, Claude changes and financial protections are preserved. Final-head CI and code-only merge remain pending. Production deployment is outside this CI change.
 - Container QA exposed Git's workspace ownership check in mobile-review evidence collection. Container jobs now trust only the exact GITHUB_WORKSPACE checkout before running tools. No wildcard safe-directory exception is used.
+
+## 2026-11-11 — Codex — #705 private History20 regime candidates
+
+- Branch `feat/history20-regimes-705`, pinned baseline `0feb58bd856028dbc79cb8cc13bf68a9db907a61`. See docs/HISTORY20_REGIMES.md for the twenty verified source windows, storage boundary and replay/QA commands.
+- Future draft INSERT selects and pins an ID/digest. Existing markets retain their generators. Private admin browser QA and replay parity use locally acquired, checksum-verified data. The repository contains source coordinates and aggregate evidence only.
+- Public/commercial rights and production release approval remain outstanding. No production deploy, financial action or existing listing edit.
+
+## 2026-11-11 — Codex — PR #706 original public simulation candidate
+
+- Continued existing `feat/history20-regimes-705` at `305ecc6824b0647588257ad4ed8aa3e4bb09d0a1`, fresh main `7e62daa054a8b215ad40c85d54c5b6c2167b8080`.
+- Binance Public Data Terms require a separate commercial agreement. None verified. Historical rights gate and the accepted private20 implementation are preserved.
+- Added opt-in `voltex-original-regimes-v1`, 20 independently authored modes, no historical observations or fitted statistics. Creation-only assignment, immutable version/seed/history, canonical ticks and explicit original-model public provenance. Real execution and inventory are excluded through existing financial guards.
+- Local focused regression 128 PASS, one pre-existing PostgreSQL-only test skipped locally. Backend/frontend builds PASS. Seven legacy configs and 252 OHLCV snapshots match pinned baseline byte-for-byte.
+- Real isolated admin router + persisted SQLite Worker + browser PASS. 20 modes × six intervals × 1440/390, 240 screenshots. Normal UI save, store restart, future-clock public lifecycle, canonical preview parity, public terminal and reload verified. Zero financial requests, external calls or browser exceptions.
+- Evidence under `output/original-regimes-706`, including public terminal screenshots and 20-model contact sheet. CI now includes original tests and browser acceptance. Exact-head CI results will be attached to PR #706.
+- `docs/ORIGINAL_PUBLIC_SIMULATION.md` records rights, dependencies, release and compatible rollback boundaries. The sealed older AI runtime artifact does not install this feature.
+- Owner authorizes candidate only. No merge, deployment, production listing/configuration/timer/ledger changes. Future installation and first publication require separate owner approval.
+- Follow-up visual review added short-memory variation to hourly closes, preserving deterministic boundaries. All 20 regimes now test both rising and falling hourly bars. Regenerated all 240 admin screenshots and both public terminal screenshots; all nine acceptance checks PASS.
+- Initial CI identified exact NRX source-projection guards and one frontend source expectation requiring the new opt-in branch. Production NRX hashes were preserved. The projection accepts only the reviewed exact dispatch and frozen v1 module hashes, rejects global effects and changed guards, and retains the old source/history expectations. All 52 identity tests and 29 movement UI tests PASS locally. No test disabling or changed production identity.
+
+## 2026-11-11 — Codex — #706 presentation amendment
+
+- Continued exact PR head `09e8fe7b363ffd1c7a58860fb5b2a21304184d3e`. Owner comment 6803233969 and the later chat clarification require open presentation access and no visible simulation notices for new original regimes. No team allowlist or changed authentication is included.
+- The production parser retains original provenance separately from rendered labels. The original preview uses neutral controls. Legacy private settlement labels, existing published assets and all backend/Worker/financial source remain unchanged by this amendment.
+- Permanent production parser/chart/Markets rendering tests cover 20 regimes in seven languages. The existing CI browser suite now checks all twenty full countdown/live terminals at 1440/390, reload, timeframe changes, visible text and tooltips, machine provenance and suppressed order submission. CI triggers cover chart, sidebar, translation and presentation-guidance changes.
+- Local focused regression: 413 PASS; nine PostgreSQL-only cases remain assigned to CI. Frontend build PASS. Isolated browser evidence is saved under `output/706-clean-presentation`. Final browser/CI status and exact commit are recorded on PR #706.
+- AGENTS.md records the standing presentation rule. `docs/ORIGINAL_PUBLIC_SIMULATION.md` records the narrow API → Worker → frontend integration dependencies and compatible rollback. Merge, deployment and first publication require separate owner approval.
+
+## 2026-11-11 — Codex — #706 interactive original tickets
+
+- Continued verified head `520a56e470d0745f92f016ef0ecbcc8c776ad806` and owner comment 6804442769. Live original provenance selects a presentation-only capability on the existing Spot OrderForm. All controls remain interactive; the submit handler returns before permission checks, validation and state edits. Pre-listing and all other pairs retain their existing paths.
+- Replaced the incorrect disabled-button browser assertions with actual interactions and unchanged-state snapshots. A dedicated CI identity matrix covers 20 regimes, both widths/sides and seven order variants. Guest-with-open-ticket has its token removed; the existing cold-entry Login boundary is preserved. Synthetic identities and balances are confined to the fixture.
+- Local initial regression 389 PASS, including existing Demo Spot/order feedback cases. The new handler regression proves that an original-mode submit touches neither permissions nor state/API/notifications. Final browser evidence and CI results are recorded on this PR's exact candidate.
+- Backend, Worker, original algorithms, financial restrictions, listing data and production remain untouched. Evidence is saved under `output/706-interactive-tickets`. Merge/deploy require separate owner approval.

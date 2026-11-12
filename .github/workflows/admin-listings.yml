@@ -14,6 +14,10 @@ on:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
       - 'src/shared/listingHistoricalReplay.ts'
+      - 'src/shared/history20MinuteReplay.ts'
+      - 'src/shared/history20Regimes.json'
+      - 'src/shared/originalSimulationRegimes.ts'
+      - 'scripts/history20/**'
       - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
       - 'src/shared/history20PrivateSymbol.ts'
@@ -45,6 +49,14 @@ on:
       - 'frontend/src/pages/markets-bolt/**'
       - 'frontend/src/pages/admin/**'
       - 'frontend/src/components/TestMarketTerminal.tsx'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'frontend/src/components/PairListSidebar.tsx'
+      - 'frontend/src/components/chart-workspace/**'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/lib/__tests__/customerListingPresentation.test.ts'
+      - 'frontend/src/lib/i18n*'
+      - 'frontend/src/lib/i18n/**'
+      - 'AGENTS.md'
       - 'frontend/src/components/OrderForm.tsx'
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
@@ -100,6 +112,8 @@ jobs:
         run: >-
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
+          src/services/listings/__tests__/history20MinuteReplay.test.ts
+          src/services/listings/__tests__/originalRegimes.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
           src/services/listings/__tests__/listingCountdown.test.ts
           src/services/listings/__tests__/tyvnDraft.test.ts
@@ -121,6 +135,9 @@ jobs:
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
+          frontend/src/lib/__tests__/customerListingPresentation.test.ts
+          frontend/src/lib/__tests__/spotOrderFeedback.test.ts
+          frontend/src/lib/__tests__/demoSpot.test.ts
           frontend/src/lib/__tests__/listingTimeSafety.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
           frontend/src/lib/__tests__/privateTestMarkets.test.ts
@@ -168,6 +185,13 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report/history20
+      - name: Original public simulation candidate — 20 modes, 6 intervals, desktop/mobile, SQLite restart
+        run: node scripts/qa-listing-history20.cjs
+        env:
+          QA_ORIGINAL_REGIMES: '1'
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/original-regimes
       - name: Pre-listing timer through the real admin router and the Worker — staged stays hidden, start / pause / stop, Spot refuses
         run: node scripts/qa-listing-timer-api.cjs
         env:
@@ -215,3 +239,42 @@ jobs:
           name: admin-listings-qa
           path: /tmp/listings-qa-report
           if-no-files-found: ignore
+
+  original-tickets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        identity: [guest, ordinary, admitted-a, admitted-b]
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build --prefix frontend
+        env:
+          VITE_API_URL: /api/v1
+          VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
+      - name: Pinned browser launch
+        run: |
+          npm install --prefix /tmp/original-tickets --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node .github/scripts/verify-ci-browser.cjs /tmp/original-tickets/node_modules/playwright 1.63.0 download
+      - name: Every live original ticket, identity, order family and side at 1440/390
+        run: node scripts/qa-listing-history20.cjs
+        env:
+          QA_ORIGINAL_REGIMES: '1'
+          QA_ORIGINAL_TICKETS: '1'
+          QA_TICKET_IDENTITY: ${{ matrix.identity }}
+          QA_PLAYWRIGHT_MODULE: /tmp/original-tickets/node_modules/playwright
+          QA_OUTPUT: /tmp/original-ticket-report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-ticket-interactions-${{ matrix.identity }}
+          path: /tmp/original-ticket-report
+          if-no-files-found: error

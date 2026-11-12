@@ -35,6 +35,7 @@ on:
       - 'scripts/qa-ai-candidate.cjs'
       - 'scripts/ai-draft-import.cjs'
       - '.github/workflows/ai-listing-candidate.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
 permissions:
   contents: read
 jobs:
@@ -75,7 +76,7 @@ jobs:
       - name: Install Chromium for isolated QA
         run: |
           npm install --prefix /tmp/ai-browser playwright@1.63.0 --no-audit --no-fund
-          /tmp/ai-browser/node_modules/.bin/playwright install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/ai-browser/node_modules/playwright 1.63.0 download
       - name: Real browser over disposable local API and workerd
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/ai-browser/node_modules/playwright
@@ -137,7 +138,7 @@ jobs:
         run: |
           node scripts/ops/build-ai-listing-overlay.cjs
           npm install --prefix /tmp/ai-browser playwright@1.63.0 --no-audit --no-fund
-          /tmp/ai-browser/node_modules/.bin/playwright install --with-deps chromium
+          node .github/scripts/verify-ci-browser.cjs /tmp/ai-browser/node_modules/playwright 1.63.0 download
       - name: Test exact production-configured artifact with all remote traffic redirected to disposable localhost services
         env:
           QA_PRODUCTION_BUNDLE: 'true'

@@ -192,6 +192,7 @@ function start() {
   app.get('/__qa/hits', (_q, r) => r.json(hits));
   app.get('/api/v1/me', (_q, r) => r.json({ id: 'qa-chart', email: 'preview@localhost.invalid', role: 'USER', isAdmin: false, avatarUrl: null, createdAt: '2025-01-01T00:00:00Z', emailVerified: true, kycStatus: 'NONE' }));
   app.get('/api/v1/private-trading/access', (_q, r) => r.json({ allowed: false }));
+  app.get('/api/v1/orders/access', (_q, r) => r.json({ allowed: false }));
   app.get('/api/v1/futures/config', (_q, r) => r.json({ symbols: SYMBOLS, minLeverage: 1, maxLeverage: 100, leverageStep: 1, fundingIntervalHours: 8, highLeverageWarningThreshold: 50,
     leverageTiers: [{ notionalCap: 2000000, maxLeverage: 100, maintenanceMarginRate: 0.005, maintenanceAmount: 0 }, { notionalCap: null, maxLeverage: 50, maintenanceMarginRate: 0.01, maintenanceAmount: 10000 }] }));
   app.get('/api/v1/market/universe', (_q, r) => r.json({ available: true, value: { instruments: rows.map(x => ({ ...x, status: 'Trading' })) } }));
@@ -250,7 +251,10 @@ function start() {
   app.get('/api/v1/support/conversations/mine', (_q, r) => r.json({ conversation: null, messages: [] }));
   app.get('/api/v1/private-trading/native/contracts/:symbol', (q, r) => r.json({ ...CONTRACT, symbol: q.params.symbol }));
   app.get('/api/v1/market/live', (_q, r) => { r.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' }); r.write(': open\n\n'); });
-  app.all('/api/*', (q, r) => r.status(404).json({ error: 'Outside fixture scope', path: q.path }));
+  app.all('/api/*', (q, r) => {
+    console.error('Unmocked chart fixture request:', q.method, q.path);
+    r.status(404).json({ error: 'Outside fixture scope', path: q.path });
+  });
   app.use(express.static(DIST, { index: false, redirect: false }));
   app.get('*', (_q, r) => r.type('html').send(fs.readFileSync(path.join(DIST, 'index.html'), 'utf8').replace('<head>', '<head><script src="/__qa/bootstrap.js"></script>')));
   return app.listen(PORT, '127.0.0.1');

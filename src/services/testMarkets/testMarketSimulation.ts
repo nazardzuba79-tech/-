@@ -39,6 +39,7 @@
  * the original price anchor at the end of the second hour. Their fixed
  * cutover preserves every earlier tick, even inside the first shock hour.
  */
+import { originalModelHour } from './originalSimulation';
 import type { TestAssetConfig } from './testAssetConfig';
 import { normal, seededRandom } from './simulationRandom';
 import { scheduledScenarioHour, type ScheduledScenarioConfig } from './simulationSchedule';
@@ -512,6 +513,16 @@ export class TestMarketSimulation {
   }
 
   hourPlan(hour: number): HourPlan {
+    if (this.asset.originalRegime) {
+      if (this.asset.isTradable) throw Error('ORIGINAL_MODEL_DISPLAY_ONLY');
+      let plan = this.scheduledHours.get(hour);
+      if (!plan) {
+        plan = originalModelHour(this.asset.originalRegime, this.asset.seed, this.asset.initialPrice, hour);
+        this.scheduledHours.set(hour, plan);
+        if (this.scheduledHours.size > 96) this.scheduledHours.delete(this.scheduledHours.keys().next().value as number);
+      }
+      return plan;
+    }
     const scheduled = ((this.asset.symbol === 'NRX' && this.asset.pair === 'NRX/USDT') || (!this.asset.isTradable && (this.asset.scheduledScenario?.mode === 'capped-growth-range' || this.asset.scheduledScenario?.mode === 'scenario-controls-v2'))) ? this.asset.scheduledScenario : undefined;
     if (scheduled && hour >= Math.max(0, Math.floor((scheduled.from - this.asset.listingAt) / HOUR_MS))) {
       return this.scheduledHourPlan(hour, scheduled);
@@ -833,7 +844,7 @@ export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
   const scheduleKey = schedule
     ? JSON.stringify(Object.fromEntries(Object.entries(schedule).sort(([a], [b]) => a.localeCompare(b))))
     : 'no-schedule';
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}|${structureKey}|${scheduleKey}`;
+  const key = `${asset.originalRegime ? JSON.stringify(asset.originalRegime) : ''}|${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}|${structureKey}|${scheduleKey}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);

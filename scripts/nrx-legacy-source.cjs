@@ -3,6 +3,7 @@
 // boundaries. All remaining bytes keep the original release fingerprint format.
 // Unknown syntax/dispatch shapes fail closed and require a fresh source review.
 const ts = require('typescript');
+const { createHash } = require('node:crypto');
 
 function fail(message) { throw new Error('Unverified legacy/v2 boundary: ' + message); }
 function parse(name, text) {
@@ -71,7 +72,7 @@ function inertValue(node) {
     && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) || ts.isNumericLiteral(p.name)) && inertValue(p.initializer));
   return false;
 }
-function verifyInertModule(name, source, allowRandomImport) {
+function verifyInertModule(name, source, allowRandomImport, allowFrozenLiteral = false) {
   const file = parse(name, source);
   for (const node of file.statements) {
     if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isFunctionDeclaration(node)) continue;
@@ -84,9 +85,54 @@ function verifyInertModule(name, source, allowRandomImport) {
       fail(name + ' has an unverified runtime import');
     }
     if (ts.isVariableStatement(node) && (node.declarationList.flags & ts.NodeFlags.Const)
-        && node.declarationList.declarations.every(d => ts.isIdentifier(d.name) && inertValue(d.initializer))) continue;
+        && node.declarationList.declarations.every(d => {
+          const value = d.initializer;
+          const frozenLiteral = allowFrozenLiteral && value && ts.isCallExpression(value)
+            && value.expression.getText(file) === 'Object.freeze' && value.arguments.length === 1
+            && ts.isObjectLiteralExpression(value.arguments[0]) && inertValue(value.arguments[0]);
+          return ts.isIdentifier(d.name) && (inertValue(value) || frozenLiteral);
+        })) continue;
     fail(name + ' has a potentially effectful module initializer');
   }
+}
+function projectOriginalSimulation(text, readSource) {
+  if (!text.includes("from './originalSimulation'")) return text;
+  let generator = readSource('originalSimulation.ts');
+  const sha256 = value => createHash('sha256').update(value).digest('hex');
+  // Frozen v1 module sources were reviewed for local-only state. Preserve
+  // them for stored v1 listings; a changed generator needs a new model version.
+  if (sha256(generator) !== 'd90df7a19dca9d9fe71944deaf134cf1eb12786ed1f9e88403c37ae52ba588ea')
+    fail('original v1 generator changed');
+  generator = exactly(generator,
+    "import { ORIGINAL_MODEL_VERSION, ORIGINAL_REGIMES, type OriginalRegimeConfig } from '../../shared/originalSimulationRegimes';\n", '');
+  generator = exactly(generator, "import { normal, seededRandom } from './simulationRandom';\n", '');
+  verifyInertModule('originalSimulation.ts', generator, false);
+  let definitions = readSource('../../shared/originalSimulationRegimes.ts');
+  if (sha256(definitions) !== '0c3ef36237494780180ada37487857379497a733dd851018d22f3d7993790d9b')
+    fail('original v1 parameters changed');
+  // Resolve only this earlier literal const in the provenance object.
+  exactly(definitions, "export const ORIGINAL_MODEL_VERSION = 'voltex-original-regimes-v1' as const;",
+    "export const ORIGINAL_MODEL_VERSION = 'voltex-original-regimes-v1' as const;");
+  definitions = exactly(definitions, 'model: ORIGINAL_MODEL_VERSION,', "model: 'voltex-original-regimes-v1',");
+  verifyInertModule('originalSimulationRegimes.ts', definitions, false, true);
+  text = exactly(text, "import { originalModelHour } from './originalSimulation';\n", '');
+  // This exact creation-only dispatch uses instance-local cache state. Its
+  // absence on legacy assets is the only reason it may be projected away.
+  const envelope = `    if (this.asset.originalRegime) {
+      if (this.asset.isTradable) throw Error('ORIGINAL_MODEL_DISPLAY_ONLY');
+      let plan = this.scheduledHours.get(hour);
+      if (!plan) {
+        plan = originalModelHour(this.asset.originalRegime, this.asset.seed, this.asset.initialPrice, hour);
+        this.scheduledHours.set(hour, plan);
+        if (this.scheduledHours.size > 96) this.scheduledHours.delete(this.scheduledHours.keys().next().value as number);
+      }
+      return plan;
+    }
+`;
+  text = exactly(text, '  hourPlan(hour: number): HourPlan {\n' + envelope, '  hourPlan(hour: number): HourPlan {\n');
+  text = exactly(text, "${asset.originalRegime ? JSON.stringify(asset.originalRegime) : ''}|${asset.pair}", '${asset.pair}');
+  if (/originalRegime|originalModelHour/.test(text)) fail('original model reachable from legacy simulation');
+  return text;
 }
 function projectSchedule(text) {
   text = removeV2Branch(text, 'validateScheduledScenario', 0);
@@ -151,6 +197,7 @@ function projectLegacySources(sources, readSource) {
   if (!schedule.includes('scenario-controls-v2') && !simulation.includes('scenario-controls-v2')) return sources;
   verifyInertModule('simulationScenarioControls.ts', readSource('simulationScenarioControls.ts'), true);
   verifyInertModule('../../shared/listingScenarioControls.ts', readSource('../../shared/listingScenarioControls.ts'), false);
-  return { ...sources, 'simulationSchedule.ts': projectSchedule(schedule), 'testMarketSimulation.ts': projectSimulation(simulation) };
+  return { ...sources, 'simulationSchedule.ts': projectSchedule(schedule),
+    'testMarketSimulation.ts': projectSimulation(projectOriginalSimulation(simulation, readSource)) };
 }
 module.exports = { projectLegacySources };

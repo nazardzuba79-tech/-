@@ -71,7 +71,15 @@ async function main(){
   emit('api/shared/listingScenarioControls.js',fixture.api['shared/listingScenarioControls.js']+`\nconst aiControls=require('./aiListingScenarioControls');\nconst legacyValidate=exports.validateScenarioControls;\nexports.validateScenarioControls=(program,price)=>program.terminalPeak==='bounded-v1'?aiControls.validateScenarioControls(program,price):legacyValidate(program,price);\n`);
   emit('api/services/testMarkets/simulationScenarioControls.js',addOptInPrice(fixture.api['services/testMarkets/simulationScenarioControls.js']));
   emit('api/services/listings/listingPublic.js',addPublicProvenance(fixture.api['services/listings/listingPublic.js']));
-  for(const p of ['api/routes/adminListings','services/listings/store'])emit('api/'+p+'.js',transpile(fs.readFileSync(path.join(root,'src',p+'.ts'),'utf8')));
+  // This sealed AI artifact has its own listingConfig. Its matching router and
+  // store must come from the same reviewed revision, including on future builds.
+  const sealedListingsRevision = '0feb58bd856028dbc79cb8cc13bf68a9db907a61';
+  for (const modulePath of ['api/routes/adminListings', 'services/listings/store']) {
+    const source = cp.execFileSync('git', ['show', sealedListingsRevision + ':src/' + modulePath + '.ts'], {
+      cwd: root, encoding: 'utf8',
+    });
+    emit('api/' + modulePath + '.js', transpile(source));
+  }
   // Approved #668 is the prerequisite, based on exactly the four live modules.
   // Compile only those four, never a generic API build or Prisma migration.
   const normalized=s=>ts.createPrinter({removeComments:true,newLine:ts.NewLineKind.LineFeed}).printFile(parse(s)).trim();

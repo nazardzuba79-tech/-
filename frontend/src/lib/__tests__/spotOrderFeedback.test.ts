@@ -35,9 +35,9 @@ describe('actual OrderForm submit handler', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
   const handler = source.slice(source.indexOf('  async function handleSubmit('), source.indexOf('  // Keep every order family reachable.'));
   const code = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-  function fixture(response: unknown, notTradingYet = false) {
+  function fixture(response: unknown, notTradingYet = false, extra: Record<string, unknown> = {}) {
     const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
-    const bindings = { ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
+    const bindings = { awaitingPair: false, presentationOnly: false, ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
       t: (key: string, values?: unknown) => key + (values ? JSON.stringify(values) : ''),
       spotOrderFeedback, positiveOrderNumber, submittingRef: { current: false },
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
@@ -45,7 +45,7 @@ describe('actual OrderForm submit handler', () => {
       isConditional: false, execution: 'MARKET', side: 'SELL', pair: 'BTC/USDT', baseAsset: 'BTC',
       ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet, orderBlocked: notTradingYet,
       // Demo Spot (Issue #592) off: the ordinary ledger and api.placeOrder.
-      demoLedger: false, demo: 'off', demoRequest: false };
+      demoLedger: false, demo: 'off', demoRequest: false, ...extra };
     const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
     return { ...bindings, submit };
   }
@@ -68,6 +68,21 @@ describe('actual OrderForm submit handler', () => {
   test('accepted order retains existing positive feedback', async () => {
     const f = fixture({ order: { status: 'FILLED' }, trades: [{ quantity: '0.001' }] }); await f.submit({ preventDefault() {} });
     expect(f.toast.success).toHaveBeenCalledWith('trade.orderPlaced'); expect(f.resetFields).toHaveBeenCalledTimes(1);
+  });
+  test.each(['LIMIT', 'MARKET', 'STOP', 'TAKE_PROFIT', 'OCO'])('live original %s submit returns before permissions and every side effect', family => {
+    for (const side of ['BUY', 'SELL']) for (const allowed of [true, false]) {
+      const canSubmit = jest.fn(() => allowed);
+      const f = fixture({}, false, { presentationOnly: true, family, side, ticketAccess: { canSubmit },
+        quantity: '12,50', price: '3.', triggerPrice: 'invalid draft', totalDraft: '77,03' });
+      const preventDefault = jest.fn();
+      void f.submit({ preventDefault });
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      expect(canSubmit).not.toHaveBeenCalled();
+      for (const effect of [f.setError, f.setSubmitting, f.resetFields, f.onPlaced, f.setBalanceVersion,
+        f.api.placeOrder, f.toast.success, f.toast.error, f.toast.info]) expect(effect).not.toHaveBeenCalled();
+      expect(f.submittingRef.current).toBe(false);
+      expect(f.quantity).toBe('12,50');
+    }
   });
   test('unknown response is explicitly unconfirmed, not success', async () => {
     const f = fixture({}); await f.submit({ preventDefault() {} });

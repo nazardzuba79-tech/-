@@ -1,0 +1,2244 @@
+{
+  "version": 2,
+  "provider": "Binance Vision Spot",
+  "rights": "HISTORICAL_RIGHTS_UNVERIFIED",
+  "terms": "https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md",
+  "records": [
+    {
+      "id": "R01",
+      "title": "Капитуляция и отскок",
+      "pair": "BTCUSDT",
+      "start": "2020-03-09",
+      "endExclusive": "2020-03-16",
+      "sourceFrame": "5m",
+      "baseFrame": "1m",
+      "rows": 10080,
+      "sha256": "1578a4c0f816cfaa1ab6c1aab12b8eebbb20bfbf4a5269c77f7b152adca2bc03",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2020-03.zip",
+          "sha256": "ee5d21ec0f3c5bdef1da330d8b74d8571779fe757bb7e9f272847d36b95a71a2"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/5m/BTCUSDT-5m-2020-03.zip",
+          "sha256": "18e19c32d81eba36afc03029bd124b2468a4ae07d68a780a81fd3453a5784265"
+        }
+      ],
+      "minute": {
+        "inside": 2057,
+        "engulfing": 1380,
+        "failedBreakHigh": 512,
+        "failedBreakLow": 619,
+        "longestUp": 12,
+        "longestDown": 14,
+        "absoluteLogReturn": [
+          0.00015418717,
+          0.00099951955,
+          0.0047571302
+        ],
+        "bars": 10080,
+        "body": [
+          0.117506,
+          0.51912568,
+          0.86334056
+        ],
+        "upper": [
+          0.0030272452,
+          0.18930746,
+          0.58059701
+        ],
+        "lower": [
+          0.0071942446,
+          0.19419862,
+          0.57751565
+        ],
+        "relativeVolume": [
+          0.17116875,
+          0.53534241,
+          2.352041
+        ],
+        "maxRelativeVolume": 14.38,
+        "flat": 0,
+        "doji": 422,
+        "singleWick": 1350,
+        "noWicks": 39,
+        "unequalTwoWicks": 8410,
+        "quoteTurnoverUSDT": 7415770282,
+        "returnPct": -33.274,
+        "highAt": "2020-03-09T00:06:00.000Z",
+        "lowAt": "2020-03-13T02:16:00.000Z"
+      },
+      "episode": {
+        "inside": 371,
+        "engulfing": 275,
+        "failedBreakHigh": 106,
+        "failedBreakLow": 106,
+        "longestUp": 9,
+        "longestDown": 11,
+        "absoluteLogReturn": [
+          0.0003910648,
+          0.0021425034,
+          0.010708553
+        ],
+        "bars": 2016,
+        "body": [
+          0.11273792,
+          0.48029002,
+          0.81761006
+        ],
+        "upper": [
+          0.023006618,
+          0.22545032,
+          0.60213777
+        ],
+        "lower": [
+          0.025411061,
+          0.21363813,
+          0.57346874
+        ],
+        "relativeVolume": [
+          0.22192544,
+          0.60217028,
+          2.2276131
+        ],
+        "maxRelativeVolume": 10.19,
+        "flat": 0,
+        "doji": 91,
+        "singleWick": 116,
+        "noWicks": 0,
+        "unequalTwoWicks": 1845,
+        "quoteTurnoverUSDT": 7415770282,
+        "returnPct": -33.274,
+        "highAt": "2020-03-09T00:05:00.000Z",
+        "lowAt": "2020-03-13T02:15:00.000Z"
+      }
+    },
+    {
+      "id": "R02",
+      "title": "Распродажа с паузами",
+      "pair": "ETHUSDT",
+      "start": "2020-03-12",
+      "endExclusive": "2020-03-20",
+      "sourceFrame": "15m",
+      "baseFrame": "1m",
+      "rows": 11520,
+      "sha256": "00ae5ed46b8de55216928df13b47ae2cb7de1fa6abb369cce43563eb9f02b039",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/1m/ETHUSDT-1m-2020-03.zip",
+          "sha256": "4be4045d288edf14305d486ac2f74df763664633a81dee2c9bf856aa4bc57298"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/15m/ETHUSDT-15m-2020-03.zip",
+          "sha256": "01698aaf54e78df4f41701571abb5907128524c684de4ca95d9855a74bf360f0"
+        }
+      ],
+      "minute": {
+        "inside": 2152,
+        "engulfing": 1607,
+        "failedBreakHigh": 633,
+        "failedBreakLow": 700,
+        "longestUp": 10,
+        "longestDown": 13,
+        "absoluteLogReturn": [
+          0.00024603272,
+          0.0014551336,
+          0.0055456832
+        ],
+        "bars": 11520,
+        "body": [
+          0.11904762,
+          0.51470588,
+          0.86666667
+        ],
+        "upper": [
+          0,
+          0.18918919,
+          0.57692308
+        ],
+        "lower": [
+          0,
+          0.2,
+          0.58285714
+        ],
+        "relativeVolume": [
+          0.14724545,
+          0.55071352,
+          2.3934344
+        ],
+        "maxRelativeVolume": 14.72,
+        "flat": 0,
+        "doji": 473,
+        "singleWick": 2626,
+        "noWicks": 172,
+        "unequalTwoWicks": 8296,
+        "quoteTurnoverUSDT": 2222340121,
+        "returnPct": -29.962,
+        "highAt": "2020-03-12T00:05:00.000Z",
+        "lowAt": "2020-03-13T02:16:00.000Z"
+      },
+      "episode": {
+        "inside": 149,
+        "engulfing": 125,
+        "failedBreakHigh": 34,
+        "failedBreakLow": 42,
+        "longestUp": 6,
+        "longestDown": 7,
+        "absoluteLogReturn": [
+          0.00085009923,
+          0.0053029528,
+          0.019105964
+        ],
+        "bars": 768,
+        "body": [
+          0.092783505,
+          0.44094488,
+          0.78723404
+        ],
+        "upper": [
+          0.020754717,
+          0.24581006,
+          0.58333333
+        ],
+        "lower": [
+          0.03539823,
+          0.24437299,
+          0.58823529
+        ],
+        "relativeVolume": [
+          0.24916333,
+          0.61468793,
+          2.2001225
+        ],
+        "maxRelativeVolume": 7,
+        "flat": 0,
+        "doji": 42,
+        "singleWick": 51,
+        "noWicks": 0,
+        "unequalTwoWicks": 695,
+        "quoteTurnoverUSDT": 2222340121,
+        "returnPct": -29.962,
+        "highAt": "2020-03-12T00:00:00.000Z",
+        "lowAt": "2020-03-13T02:15:00.000Z"
+      }
+    },
+    {
+      "id": "R03",
+      "title": "Ступенчатый рост",
+      "pair": "BTCUSDT",
+      "start": "2020-10-20",
+      "endExclusive": "2020-11-11",
+      "sourceFrame": "4h",
+      "baseFrame": "1m",
+      "rows": 31680,
+      "sha256": "4e2c8df486dd73d35b2291aa503a4b5ef7d1e92f4b72885fa13e2bf8649629b4",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2020-10.zip",
+          "sha256": "d7b0fc63c86b2d54f4391fd4ed69e0fd12497108061ca4006d9f709e653cfe40"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2020-11.zip",
+          "sha256": "07ff8e3aa21d340a9e25c32644a4cd6c15e4280879d39815159eb5c858895488"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/4h/BTCUSDT-4h-2020-10.zip",
+          "sha256": "4eb24f27c5345508ec8be9dac331ba8c9a41c27e327c306560837c94c145f9fd"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/4h/BTCUSDT-4h-2020-11.zip",
+          "sha256": "454f59692ede24e8b6a0e6d42249016768ffe2b65a4c1dfe9e4f3539653221a8"
+        }
+      ],
+      "minute": {
+        "inside": 5679,
+        "engulfing": 5342,
+        "failedBreakHigh": 1772,
+        "failedBreakLow": 1811,
+        "longestUp": 15,
+        "longestDown": 12,
+        "absoluteLogReturn": [
+          0.000064636568,
+          0.00041167961,
+          0.001249606
+        ],
+        "bars": 31680,
+        "body": [
+          0.1265121,
+          0.5850138,
+          0.96177847
+        ],
+        "upper": [
+          0,
+          0.12881356,
+          0.58470395
+        ],
+        "lower": [
+          0,
+          0.14265685,
+          0.60530191
+        ],
+        "relativeVolume": [
+          0.23654365,
+          0.65500626,
+          1.9730593
+        ],
+        "maxRelativeVolume": 42.78,
+        "flat": 0,
+        "doji": 1300,
+        "singleWick": 9014,
+        "noWicks": 770,
+        "unequalTwoWicks": 20982,
+        "quoteTurnoverUSDT": 23582971883,
+        "returnPct": 30.173,
+        "highAt": "2020-11-06T01:12:00.000Z",
+        "lowAt": "2020-10-20T01:57:00.000Z"
+      },
+      "episode": {
+        "inside": 25,
+        "engulfing": 23,
+        "failedBreakHigh": 5,
+        "failedBreakLow": 3,
+        "longestUp": 10,
+        "longestDown": 4,
+        "absoluteLogReturn": [
+          0.0008488955,
+          0.006602073,
+          0.021789449
+        ],
+        "bars": 132,
+        "body": [
+          0.066741849,
+          0.39759843,
+          0.69460087
+        ],
+        "upper": [
+          0.061007111,
+          0.23572889,
+          0.60910416
+        ],
+        "lower": [
+          0.089285714,
+          0.24948437,
+          0.61903169
+        ],
+        "relativeVolume": [
+          0.42780224,
+          0.88879688,
+          1.7880398
+        ],
+        "maxRelativeVolume": 3,
+        "flat": 0,
+        "doji": 9,
+        "singleWick": 0,
+        "noWicks": 0,
+        "unequalTwoWicks": 130,
+        "quoteTurnoverUSDT": 23582971883,
+        "returnPct": 30.173,
+        "highAt": "2020-11-06T00:00:00.000Z",
+        "lowAt": "2020-10-20T00:00:00.000Z"
+      }
+    },
+    {
+      "id": "R04",
+      "title": "Импульс с откатами",
+      "pair": "BNBUSDT",
+      "start": "2021-02-15",
+      "endExclusive": "2021-02-26",
+      "sourceFrame": "1h",
+      "baseFrame": "1m",
+      "rows": 15840,
+      "sha256": "a421eabbd51bc128fccb643d38d05c34244e496f3112ca40f4fc7f4c4f38efe4",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BNBUSDT/1m/BNBUSDT-1m-2021-02.zip",
+          "sha256": "1aeb40c89fcd301821670f49bfbb167bf50ccc40b1eb158da55aa81275491ee6"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BNBUSDT/1h/BNBUSDT-1h-2021-02.zip",
+          "sha256": "43b7f41f3f21631ff10bd8773dc15b51fad7e34e71781abe44e293d783be2215"
+        }
+      ],
+      "minute": {
+        "inside": 2729,
+        "engulfing": 2112,
+        "failedBreakHigh": 1055,
+        "failedBreakLow": 1012,
+        "longestUp": 12,
+        "longestDown": 10,
+        "absoluteLogReturn": [
+          0.00031580006,
+          0.0020265196,
+          0.0064527006
+        ],
+        "bars": 15840,
+        "body": [
+          0.10696422,
+          0.48180822,
+          0.83639501
+        ],
+        "upper": [
+          0.010134374,
+          0.19211823,
+          0.55713916
+        ],
+        "lower": [
+          0.024463681,
+          0.23453909,
+          0.60125517
+        ],
+        "relativeVolume": [
+          0.20283473,
+          0.69451002,
+          2.1583537
+        ],
+        "maxRelativeVolume": 14.36,
+        "flat": 0,
+        "doji": 743,
+        "singleWick": 1609,
+        "noWicks": 38,
+        "unequalTwoWicks": 13765,
+        "quoteTurnoverUSDT": 28550428840,
+        "returnPct": 72.906,
+        "highAt": "2021-02-19T14:54:00.000Z",
+        "lowAt": "2021-02-15T02:22:00.000Z"
+      },
+      "episode": {
+        "inside": 46,
+        "engulfing": 29,
+        "failedBreakHigh": 8,
+        "failedBreakLow": 17,
+        "longestUp": 7,
+        "longestDown": 5,
+        "absoluteLogReturn": [
+          0.0025594515,
+          0.016443739,
+          0.048908917
+        ],
+        "bars": 264,
+        "body": [
+          0.10041481,
+          0.43749875,
+          0.7602807
+        ],
+        "upper": [
+          0.036438126,
+          0.23871279,
+          0.58203212
+        ],
+        "lower": [
+          0.038875502,
+          0.24463125,
+          0.61962298
+        ],
+        "relativeVolume": [
+          0.2790466,
+          0.79962933,
+          1.9033532
+        ],
+        "maxRelativeVolume": 4.19,
+        "flat": 0,
+        "doji": 16,
+        "singleWick": 4,
+        "noWicks": 0,
+        "unequalTwoWicks": 254,
+        "quoteTurnoverUSDT": 28550428840,
+        "returnPct": 72.906,
+        "highAt": "2021-02-19T14:00:00.000Z",
+        "lowAt": "2021-02-15T02:00:00.000Z"
+      }
+    },
+    {
+      "id": "R05",
+      "title": "Всплеск цены и объёма",
+      "pair": "DOGEUSDT",
+      "start": "2021-04-12",
+      "endExclusive": "2021-04-20",
+      "sourceFrame": "5m",
+      "baseFrame": "1m",
+      "rows": 11520,
+      "sha256": "fb83f94c148549c3af7f7400eef72613a41e85183c3d4d0ce287ea3a7ea6e7e9",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/DOGEUSDT/1m/DOGEUSDT-1m-2021-04.zip",
+          "sha256": "11e4462bc4c76cb0a5a68ffdbe1e060f861777019ae9f334e41bf14cb0d7f8b6"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/DOGEUSDT/5m/DOGEUSDT-5m-2021-04.zip",
+          "sha256": "09c5272956d12a06e30c9120d94c98747fd2be3d1534110bc5ab58696c7d9d71"
+        }
+      ],
+      "minute": {
+        "inside": 1941,
+        "engulfing": 1512,
+        "failedBreakHigh": 712,
+        "failedBreakLow": 652,
+        "longestUp": 11,
+        "longestDown": 12,
+        "absoluteLogReturn": [
+          0.00055518987,
+          0.0034736369,
+          0.011636766
+        ],
+        "bars": 11520,
+        "body": [
+          0.11777302,
+          0.49295438,
+          0.83568447
+        ],
+        "upper": [
+          0.020030128,
+          0.20587901,
+          0.56152125
+        ],
+        "lower": [
+          0.021862992,
+          0.21241228,
+          0.57525952
+        ],
+        "relativeVolume": [
+          0.13789787,
+          0.64223368,
+          2.2172243
+        ],
+        "maxRelativeVolume": 13.68,
+        "flat": 0,
+        "doji": 519,
+        "singleWick": 1075,
+        "noWicks": 25,
+        "unequalTwoWicks": 10124,
+        "quoteTurnoverUSDT": 48358442110,
+        "returnPct": 450.092,
+        "highAt": "2021-04-16T13:39:00.000Z",
+        "lowAt": "2021-04-12T10:39:00.000Z"
+      },
+      "episode": {
+        "inside": 339,
+        "engulfing": 319,
+        "failedBreakHigh": 154,
+        "failedBreakLow": 118,
+        "longestUp": 10,
+        "longestDown": 8,
+        "absoluteLogReturn": [
+          0.0014072996,
+          0.0080687719,
+          0.026663224
+        ],
+        "bars": 2304,
+        "body": [
+          0.12328042,
+          0.48956044,
+          0.82213412
+        ],
+        "upper": [
+          0.027822613,
+          0.21276424,
+          0.54753709
+        ],
+        "lower": [
+          0.024397175,
+          0.22849612,
+          0.57971014
+        ],
+        "relativeVolume": [
+          0.16139239,
+          0.669986,
+          2.1434534
+        ],
+        "maxRelativeVolume": 8.54,
+        "flat": 0,
+        "doji": 110,
+        "singleWick": 106,
+        "noWicks": 0,
+        "unequalTwoWicks": 2126,
+        "quoteTurnoverUSDT": 48358442110,
+        "returnPct": 450.092,
+        "highAt": "2021-04-16T13:35:00.000Z",
+        "lowAt": "2021-04-12T10:35:00.000Z"
+      }
+    },
+    {
+      "id": "R06",
+      "title": "Разворот от максимума",
+      "pair": "BTCUSDT",
+      "start": "2021-04-10",
+      "endExclusive": "2021-04-20",
+      "sourceFrame": "1h",
+      "baseFrame": "1m",
+      "rows": 14400,
+      "sha256": "8b2a70d2f22a8b4dd57b8a9de231e2c1aab3c07afa42cb9f91d4d85a49bb5f4c",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2021-04.zip",
+          "sha256": "016ea34ee7e52c4783c1e03ec65c710361c1ccf228d3a4c0b44a4d0baa859641"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-04.zip",
+          "sha256": "e5a33803814e6771c4c85e8f2e28e90e46d40f14ca3180a8c10c305cf07fab74"
+        }
+      ],
+      "minute": {
+        "inside": 2245,
+        "engulfing": 2734,
+        "failedBreakHigh": 976,
+        "failedBreakLow": 949,
+        "longestUp": 10,
+        "longestDown": 11,
+        "absoluteLogReturn": [
+          0.000094362538,
+          0.00052540386,
+          0.0015016733
+        ],
+        "bars": 14400,
+        "body": [
+          0.12137749,
+          0.5464191,
+          0.91097774
+        ],
+        "upper": [
+          0.000069381808,
+          0.16898037,
+          0.5918124
+        ],
+        "lower": [
+          0,
+          0.16836441,
+          0.59217779
+        ],
+        "relativeVolume": [
+          0.35761722,
+          0.73584732,
+          1.8763795
+        ],
+        "maxRelativeVolume": 18.11,
+        "flat": 0,
+        "doji": 612,
+        "singleWick": 2674,
+        "noWicks": 108,
+        "unequalTwoWicks": 11201,
+        "quoteTurnoverUSDT": 44296098477,
+        "returnPct": -4.316,
+        "highAt": "2021-04-14T06:14:00.000Z",
+        "lowAt": "2021-04-18T03:35:00.000Z"
+      },
+      "episode": {
+        "inside": 34,
+        "engulfing": 44,
+        "failedBreakHigh": 21,
+        "failedBreakLow": 15,
+        "longestUp": 6,
+        "longestDown": 8,
+        "absoluteLogReturn": [
+          0.00084225377,
+          0.0035530699,
+          0.010396607
+        ],
+        "bars": 240,
+        "body": [
+          0.096586821,
+          0.40503482,
+          0.78462159
+        ],
+        "upper": [
+          0.030920117,
+          0.24761511,
+          0.55128486
+        ],
+        "lower": [
+          0.030097336,
+          0.25446019,
+          0.605016
+        ],
+        "relativeVolume": [
+          0.5046314,
+          0.80081611,
+          1.6240824
+        ],
+        "maxRelativeVolume": 5.11,
+        "flat": 0,
+        "doji": 15,
+        "singleWick": 6,
+        "noWicks": 0,
+        "unequalTwoWicks": 229,
+        "quoteTurnoverUSDT": 44296098477,
+        "returnPct": -4.316,
+        "highAt": "2021-04-14T06:00:00.000Z",
+        "lowAt": "2021-04-18T03:00:00.000Z"
+      }
+    },
+    {
+      "id": "R07",
+      "title": "Каскадное снижение",
+      "pair": "ETHUSDT",
+      "start": "2021-05-10",
+      "endExclusive": "2021-05-25",
+      "sourceFrame": "15m",
+      "baseFrame": "1m",
+      "rows": 21600,
+      "sha256": "5e9e807135e6509bd8c4b871ae3eee7dbb2cc1bfd7cb73e0971b1875ca2a6ae0",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/1m/ETHUSDT-1m-2021-05.zip",
+          "sha256": "241b0fbc11f80d36f5ed97b4ae2f618180542646a6c11e8c012bfe5bbea7bee8"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/15m/ETHUSDT-15m-2021-05.zip",
+          "sha256": "53f84fa5070ce1fc017dfdbcab02282bd9301886131d9e054f5be6c0e10dd2af"
+        }
+      ],
+      "minute": {
+        "inside": 3301,
+        "engulfing": 3303,
+        "failedBreakHigh": 1425,
+        "failedBreakLow": 1413,
+        "longestUp": 12,
+        "longestDown": 14,
+        "absoluteLogReturn": [
+          0.00028126217,
+          0.001595712,
+          0.0048731836
+        ],
+        "bars": 21600,
+        "body": [
+          0.11782787,
+          0.5027027,
+          0.85940246
+        ],
+        "upper": [
+          0.0050125313,
+          0.20696517,
+          0.60214286
+        ],
+        "lower": [
+          0.0038343558,
+          0.18786693,
+          0.56140351
+        ],
+        "relativeVolume": [
+          0.26747839,
+          0.69568798,
+          2.0276469
+        ],
+        "maxRelativeVolume": 16.76,
+        "flat": 0,
+        "doji": 889,
+        "singleWick": 2664,
+        "noWicks": 62,
+        "unequalTwoWicks": 18313,
+        "quoteTurnoverUSDT": 90444983794,
+        "returnPct": -32.506,
+        "highAt": "2021-05-12T14:31:00.000Z",
+        "lowAt": "2021-05-23T16:43:00.000Z"
+      },
+      "episode": {
+        "inside": 197,
+        "engulfing": 234,
+        "failedBreakHigh": 94,
+        "failedBreakLow": 119,
+        "longestUp": 7,
+        "longestDown": 9,
+        "absoluteLogReturn": [
+          0.0012561946,
+          0.0065016296,
+          0.02053658
+        ],
+        "bars": 1440,
+        "body": [
+          0.11422056,
+          0.49739937,
+          0.85124495
+        ],
+        "upper": [
+          0.019697173,
+          0.21417518,
+          0.53470323
+        ],
+        "lower": [
+          0.018957346,
+          0.2354563,
+          0.57955623
+        ],
+        "relativeVolume": [
+          0.34965582,
+          0.74739781,
+          1.8772877
+        ],
+        "maxRelativeVolume": 10.03,
+        "flat": 0,
+        "doji": 68,
+        "singleWick": 78,
+        "noWicks": 0,
+        "unequalTwoWicks": 1309,
+        "quoteTurnoverUSDT": 90444983794,
+        "returnPct": -32.506,
+        "highAt": "2021-05-12T14:30:00.000Z",
+        "lowAt": "2021-05-23T16:30:00.000Z"
+      }
+    },
+    {
+      "id": "R08",
+      "title": "Прорыв диапазона и возврат",
+      "pair": "ADAUSDT",
+      "start": "2021-08-20",
+      "endExclusive": "2021-09-09",
+      "sourceFrame": "4h",
+      "baseFrame": "1m",
+      "rows": 28800,
+      "sha256": "fbfadb3a7a8bcb5994a6cb5575d9bb1606229dee6e73f9fbb5331f915c6be18b",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ADAUSDT/1m/ADAUSDT-1m-2021-08.zip",
+          "sha256": "882de361e92a92f4c7049c7409e7c2f66bbeef06601561e4bc532b71627179b8"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ADAUSDT/1m/ADAUSDT-1m-2021-09.zip",
+          "sha256": "16d221317990c6e21a8e057537d2720504f6add4fb82276dc4986acbfd90c1e7"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ADAUSDT/4h/ADAUSDT-4h-2021-08.zip",
+          "sha256": "dca2b853d20eda0467086834455740634757420dd486fd88363928129471a8d3"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ADAUSDT/4h/ADAUSDT-4h-2021-09.zip",
+          "sha256": "e8452f94cf828cb330d77f48779fa175755fe32bfc132ca84cff3986b41e47cf"
+        }
+      ],
+      "minute": {
+        "inside": 7333,
+        "engulfing": 4722,
+        "failedBreakHigh": 1589,
+        "failedBreakLow": 1741,
+        "longestUp": 13,
+        "longestDown": 10,
+        "absoluteLogReturn": [
+          0.000040795512,
+          0.00079082645,
+          0.0025998294
+        ],
+        "bars": 28800,
+        "body": [
+          0.03030303,
+          0.5,
+          0.86516854
+        ],
+        "upper": [
+          0,
+          0.2,
+          0.55
+        ],
+        "lower": [
+          0,
+          0.25,
+          0.6
+        ],
+        "relativeVolume": [
+          0.21083491,
+          0.59169866,
+          2.094452
+        ],
+        "maxRelativeVolume": 61.14,
+        "flat": 0,
+        "doji": 3039,
+        "singleWick": 9744,
+        "noWicks": 1526,
+        "unequalTwoWicks": 13595,
+        "quoteTurnoverUSDT": 21287045944,
+        "returnPct": 1.184,
+        "highAt": "2021-09-02T06:33:00.000Z",
+        "lowAt": "2021-09-07T15:09:00.000Z"
+      },
+      "episode": {
+        "inside": 24,
+        "engulfing": 19,
+        "failedBreakHigh": 7,
+        "failedBreakLow": 2,
+        "longestUp": 7,
+        "longestDown": 8,
+        "absoluteLogReturn": [
+          0.0021598281,
+          0.0119216,
+          0.037041272
+        ],
+        "bars": 120,
+        "body": [
+          0.10169492,
+          0.39688427,
+          0.73469388
+        ],
+        "upper": [
+          0.025641026,
+          0.26229508,
+          0.6
+        ],
+        "lower": [
+          0.058204334,
+          0.26794258,
+          0.57352941
+        ],
+        "relativeVolume": [
+          0.37082029,
+          0.79797968,
+          1.7777559
+        ],
+        "maxRelativeVolume": 4.62,
+        "flat": 0,
+        "doji": 4,
+        "singleWick": 4,
+        "noWicks": 0,
+        "unequalTwoWicks": 114,
+        "quoteTurnoverUSDT": 21287045944,
+        "returnPct": 1.184,
+        "highAt": "2021-09-02T04:00:00.000Z",
+        "lowAt": "2021-09-07T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "R09",
+      "title": "Рост с глубокими откатами",
+      "pair": "SOLUSDT",
+      "start": "2021-08-15",
+      "endExclusive": "2021-09-16",
+      "sourceFrame": "4h",
+      "baseFrame": "1m",
+      "rows": 46080,
+      "sha256": "b4ff8026ce05d4abbf6388cbcb5af2f595c4655518883d1418f631d27c620fd8",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/1m/SOLUSDT-1m-2021-08.zip",
+          "sha256": "7dcee841a8a512f4aab0cb72986c41621f1aed09d16c3677d5c8b960013bad84"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/1m/SOLUSDT-1m-2021-09.zip",
+          "sha256": "f1ef01c54bacaa75a07c3a79a9116f842a065ffb13557cee7b5c10537a7ce923"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/4h/SOLUSDT-4h-2021-08.zip",
+          "sha256": "a53701949fcba59778b16e18c1b358434b0f6743bf5aeb4a8b286f970d6cada2"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/4h/SOLUSDT-4h-2021-09.zip",
+          "sha256": "a497f391c130e3b86290bc569ee3273339b8c2ab70ab9dc7a1c267d113c29e18"
+        }
+      ],
+      "minute": {
+        "inside": 8071,
+        "engulfing": 6580,
+        "failedBreakHigh": 3067,
+        "failedBreakLow": 2932,
+        "longestUp": 17,
+        "longestDown": 12,
+        "absoluteLogReturn": [
+          0.00024255655,
+          0.0014306756,
+          0.0043634386
+        ],
+        "bars": 46080,
+        "body": [
+          0.10240964,
+          0.47619048,
+          0.83018868
+        ],
+        "upper": [
+          0.012787724,
+          0.20731707,
+          0.575
+        ],
+        "lower": [
+          0.016393443,
+          0.22580645,
+          0.59259259
+        ],
+        "relativeVolume": [
+          0.20088412,
+          0.59406702,
+          2.1337086
+        ],
+        "maxRelativeVolume": 28.95,
+        "flat": 0,
+        "doji": 2236,
+        "singleWick": 7163,
+        "noWicks": 241,
+        "unequalTwoWicks": 37250,
+        "quoteTurnoverUSDT": 35441067617,
+        "returnPct": 259.872,
+        "highAt": "2021-09-09T02:18:00.000Z",
+        "lowAt": "2021-08-15T07:47:00.000Z"
+      },
+      "episode": {
+        "inside": 44,
+        "engulfing": 24,
+        "failedBreakHigh": 16,
+        "failedBreakLow": 8,
+        "longestUp": 12,
+        "longestDown": 5,
+        "absoluteLogReturn": [
+          0.0045520747,
+          0.023370127,
+          0.066729507
+        ],
+        "bars": 192,
+        "body": [
+          0.11226852,
+          0.41291689,
+          0.74092409
+        ],
+        "upper": [
+          0.057324841,
+          0.27156177,
+          0.60808926
+        ],
+        "lower": [
+          0.067734313,
+          0.24630021,
+          0.54358974
+        ],
+        "relativeVolume": [
+          0.36268029,
+          0.81502098,
+          1.84305
+        ],
+        "maxRelativeVolume": 4.41,
+        "flat": 0,
+        "doji": 8,
+        "singleWick": 0,
+        "noWicks": 0,
+        "unequalTwoWicks": 187,
+        "quoteTurnoverUSDT": 35441067617,
+        "returnPct": 259.872,
+        "highAt": "2021-09-09T00:00:00.000Z",
+        "lowAt": "2021-08-15T04:00:00.000Z"
+      }
+    },
+    {
+      "id": "R10",
+      "title": "Ускорение и коррекция",
+      "pair": "AVAXUSDT",
+      "start": "2021-11-01",
+      "endExclusive": "2021-12-03",
+      "sourceFrame": "1d",
+      "baseFrame": "1m",
+      "rows": 46080,
+      "sha256": "431baf8e2da76d343bed62ed97c4859fe26897f1de69b7640e6f9f03b50cce69",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/AVAXUSDT/1m/AVAXUSDT-1m-2021-11.zip",
+          "sha256": "fbf4a693ace097dd8e51a81b8e3b164b45b9a028985ec4151f0a71f6ea8cea52"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/AVAXUSDT/1m/AVAXUSDT-1m-2021-12.zip",
+          "sha256": "36eb6b984846a398732e2a38eb659566c4e28184fe7316576e69fc7001a1f3b6"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/AVAXUSDT/1d/AVAXUSDT-1d-2021-11.zip",
+          "sha256": "4c9bd903eb7d55ac032f759f220b04cfb2cdeeb43fd404aab817f7f0b21435aa"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/AVAXUSDT/1d/AVAXUSDT-1d-2021-12.zip",
+          "sha256": "fad3f33d260edaa5f8586e97685b9e6e4b51d8f0fbf64cc758af73f1502cea6a"
+        }
+      ],
+      "minute": {
+        "inside": 8014,
+        "engulfing": 6702,
+        "failedBreakHigh": 3356,
+        "failedBreakLow": 3192,
+        "longestUp": 13,
+        "longestDown": 13,
+        "absoluteLogReturn": [
+          0.00017095478,
+          0.0010723862,
+          0.0031867017
+        ],
+        "bars": 46080,
+        "body": [
+          0.10526316,
+          0.5,
+          0.85416667
+        ],
+        "upper": [
+          0,
+          0.2,
+          0.57894737
+        ],
+        "lower": [
+          0,
+          0.21052632,
+          0.58333333
+        ],
+        "relativeVolume": [
+          0.20382793,
+          0.60700336,
+          2.051077
+        ],
+        "maxRelativeVolume": 44.64,
+        "flat": 0,
+        "doji": 2205,
+        "singleWick": 10670,
+        "noWicks": 809,
+        "unequalTwoWicks": 32046,
+        "quoteTurnoverUSDT": 13407051839,
+        "returnPct": 67.101,
+        "highAt": "2021-11-21T14:10:00.000Z",
+        "lowAt": "2021-11-01T02:31:00.000Z"
+      },
+      "episode": {
+        "inside": 5,
+        "engulfing": 5,
+        "failedBreakHigh": 5,
+        "failedBreakLow": 0,
+        "longestUp": 4,
+        "longestDown": 2,
+        "absoluteLogReturn": [
+          0.020763624,
+          0.048393476,
+          0.10911784
+        ],
+        "bars": 32,
+        "body": [
+          0.10980227,
+          0.48714286,
+          0.81525735
+        ],
+        "upper": [
+          0.0085470085,
+          0.21724891,
+          0.52806653
+        ],
+        "lower": [
+          0.065272497,
+          0.23224352,
+          0.46876697
+        ],
+        "relativeVolume": [
+          0.55493812,
+          0.93120144,
+          1.3967693
+        ],
+        "maxRelativeVolume": 1.88,
+        "flat": 0,
+        "doji": 1,
+        "singleWick": 1,
+        "noWicks": 0,
+        "unequalTwoWicks": 30,
+        "quoteTurnoverUSDT": 13407051839,
+        "returnPct": 67.101,
+        "highAt": "2021-11-21T00:00:00.000Z",
+        "lowAt": "2021-11-01T00:00:00.000Z"
+      }
+    },
+    {
+      "id": "R11",
+      "title": "Распределение у вершины",
+      "pair": "BTCUSDT",
+      "start": "2021-11-05",
+      "endExclusive": "2021-11-26",
+      "sourceFrame": "1d",
+      "baseFrame": "1m",
+      "rows": 30240,
+      "sha256": "961e9dddc95c36600e122744211c971f9788724b587933248f877ba355c4dfc0",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2021-11.zip",
+          "sha256": "cb4cf36e1590663a803b28261189a719fd00bc1d8eef672378df02a934862df2"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1d/BTCUSDT-1d-2021-11.zip",
+          "sha256": "64162d8ec11458e9d02f49d8569e47765517852bcf0a908cd4d71211e3912e62"
+        }
+      ],
+      "minute": {
+        "inside": 5770,
+        "engulfing": 5317,
+        "failedBreakHigh": 1835,
+        "failedBreakLow": 2117,
+        "longestUp": 13,
+        "longestDown": 14,
+        "absoluteLogReturn": [
+          0.000066056371,
+          0.00041517306,
+          0.0012737467
+        ],
+        "bars": 30240,
+        "body": [
+          0.11072881,
+          0.51388375,
+          0.88828016
+        ],
+        "upper": [
+          0,
+          0.18738598,
+          0.59822451
+        ],
+        "lower": [
+          0.00012578616,
+          0.19238477,
+          0.59298597
+        ],
+        "relativeVolume": [
+          0.28275781,
+          0.65200306,
+          1.8589894
+        ],
+        "maxRelativeVolume": 41.21,
+        "flat": 0,
+        "doji": 1438,
+        "singleWick": 5386,
+        "noWicks": 227,
+        "unequalTwoWicks": 23787,
+        "quoteTurnoverUSDT": 55224863467,
+        "returnPct": -3.966,
+        "highAt": "2021-11-10T14:16:00.000Z",
+        "lowAt": "2021-11-23T09:38:00.000Z"
+      },
+      "episode": {
+        "inside": 3,
+        "engulfing": 2,
+        "failedBreakHigh": 0,
+        "failedBreakLow": 3,
+        "longestUp": 3,
+        "longestDown": 4,
+        "absoluteLogReturn": [
+          0.0040119202,
+          0.02019524,
+          0.057394192
+        ],
+        "bars": 21,
+        "body": [
+          0.15720402,
+          0.48178419,
+          0.76709006
+        ],
+        "upper": [
+          0.01590992,
+          0.18280879,
+          0.43375111
+        ],
+        "lower": [
+          0.068871551,
+          0.315077,
+          0.58933194
+        ],
+        "relativeVolume": [
+          0.59679364,
+          0.98305531,
+          1.4493201
+        ],
+        "maxRelativeVolume": 1.81,
+        "flat": 0,
+        "doji": 0,
+        "singleWick": 1,
+        "noWicks": 0,
+        "unequalTwoWicks": 19,
+        "quoteTurnoverUSDT": 55224863467,
+        "returnPct": -3.966,
+        "highAt": "2021-11-10T00:00:00.000Z",
+        "lowAt": "2021-11-23T00:00:00.000Z"
+      }
+    },
+    {
+      "id": "R12",
+      "title": "Падение с контрдвижениями",
+      "pair": "ETHUSDT",
+      "start": "2022-05-01",
+      "endExclusive": "2022-05-21",
+      "sourceFrame": "4h",
+      "baseFrame": "1m",
+      "rows": 28800,
+      "sha256": "e9c141e195411920101d933dc3920b493da5c216d8a7c184968307e32fa5546d",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/1m/ETHUSDT-1m-2022-05.zip",
+          "sha256": "7f3e2df3fc5c365cd678233c27d7a8864855bab0709370ac665d388e5795dfc3"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/4h/ETHUSDT-4h-2022-05.zip",
+          "sha256": "88173bb4cac582941f140ed00945a7f87fc4ea5e29b8bf14a01ea29adf279b88"
+        }
+      ],
+      "minute": {
+        "inside": 4895,
+        "engulfing": 5264,
+        "failedBreakHigh": 1638,
+        "failedBreakLow": 1996,
+        "longestUp": 12,
+        "longestDown": 13,
+        "absoluteLogReturn": [
+          0.00010064557,
+          0.00062511196,
+          0.0022945263
+        ],
+        "bars": 28800,
+        "body": [
+          0.12765957,
+          0.5530086,
+          0.94654088
+        ],
+        "upper": [
+          0,
+          0.15983607,
+          0.60092807
+        ],
+        "lower": [
+          0,
+          0.15217391,
+          0.58333333
+        ],
+        "relativeVolume": [
+          0.16094659,
+          0.56382514,
+          2.2257148
+        ],
+        "maxRelativeVolume": 25.23,
+        "flat": 0,
+        "doji": 1209,
+        "singleWick": 6651,
+        "noWicks": 541,
+        "unequalTwoWicks": 20595,
+        "quoteTurnoverUSDT": 39968254462,
+        "returnPct": -28.151,
+        "highAt": "2022-05-04T19:12:00.000Z",
+        "lowAt": "2022-05-12T05:16:00.000Z"
+      },
+      "episode": {
+        "inside": 24,
+        "engulfing": 21,
+        "failedBreakHigh": 0,
+        "failedBreakLow": 11,
+        "longestUp": 4,
+        "longestDown": 7,
+        "absoluteLogReturn": [
+          0.0015969106,
+          0.011526011,
+          0.032740258
+        ],
+        "bars": 120,
+        "body": [
+          0.10618679,
+          0.42070031,
+          0.78275702
+        ],
+        "upper": [
+          0.053806792,
+          0.24307205,
+          0.52897907
+        ],
+        "lower": [
+          0.062707767,
+          0.2417795,
+          0.59912594
+        ],
+        "relativeVolume": [
+          0.34742402,
+          0.69841363,
+          2.0364849
+        ],
+        "maxRelativeVolume": 5.84,
+        "flat": 0,
+        "doji": 4,
+        "singleWick": 1,
+        "noWicks": 0,
+        "unequalTwoWicks": 113,
+        "quoteTurnoverUSDT": 39968254462,
+        "returnPct": -28.151,
+        "highAt": "2022-05-04T16:00:00.000Z",
+        "lowAt": "2022-05-12T04:00:00.000Z"
+      }
+    },
+    {
+      "id": "R13",
+      "title": "Кластеры волатильности",
+      "pair": "BTCUSDT",
+      "start": "2022-06-09",
+      "endExclusive": "2022-06-23",
+      "sourceFrame": "1h",
+      "baseFrame": "1m",
+      "rows": 20160,
+      "sha256": "795181020c6cf2eb0833b86e93cd200aa7958d45b91ca8f7a5508d8667ddac24",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2022-06.zip",
+          "sha256": "0ced8899e9c3b2c098e1c5fc4993250bac22d8684d2d38404310351f35e32c0c"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-06.zip",
+          "sha256": "b18f6f8edbb41960f81aec100c7836fdc0de6d640ee4309a3d0fad999ae0a2c8"
+        }
+      ],
+      "minute": {
+        "inside": 3432,
+        "engulfing": 3558,
+        "failedBreakHigh": 1055,
+        "failedBreakLow": 1342,
+        "longestUp": 12,
+        "longestDown": 14,
+        "absoluteLogReturn": [
+          0.00011658512,
+          0.00074895957,
+          0.0025195223
+        ],
+        "bars": 20160,
+        "body": [
+          0.12712713,
+          0.54016009,
+          0.9326453
+        ],
+        "upper": [
+          0,
+          0.19172553,
+          0.6093617
+        ],
+        "lower": [
+          0,
+          0.15407042,
+          0.55787064
+        ],
+        "relativeVolume": [
+          0.18815909,
+          0.59123789,
+          2.1178872
+        ],
+        "maxRelativeVolume": 46.01,
+        "flat": 0,
+        "doji": 817,
+        "singleWick": 3838,
+        "noWicks": 331,
+        "unequalTwoWicks": 15284,
+        "quoteTurnoverUSDT": 39109122175,
+        "returnPct": -33.825,
+        "highAt": "2022-06-09T09:36:00.000Z",
+        "lowAt": "2022-06-18T20:34:00.000Z"
+      },
+      "episode": {
+        "inside": 58,
+        "engulfing": 56,
+        "failedBreakHigh": 15,
+        "failedBreakLow": 29,
+        "longestUp": 8,
+        "longestDown": 9,
+        "absoluteLogReturn": [
+          0.0010597641,
+          0.0061452737,
+          0.020568423
+        ],
+        "bars": 336,
+        "body": [
+          0.10704667,
+          0.46632148,
+          0.77123885
+        ],
+        "upper": [
+          0.061566545,
+          0.26544411,
+          0.61520482
+        ],
+        "lower": [
+          0.035857099,
+          0.2092479,
+          0.52933142
+        ],
+        "relativeVolume": [
+          0.31470324,
+          0.7588484,
+          1.989945
+        ],
+        "maxRelativeVolume": 5.1,
+        "flat": 0,
+        "doji": 12,
+        "singleWick": 5,
+        "noWicks": 0,
+        "unequalTwoWicks": 321,
+        "quoteTurnoverUSDT": 39109122175,
+        "returnPct": -33.825,
+        "highAt": "2022-06-09T09:00:00.000Z",
+        "lowAt": "2022-06-18T20:00:00.000Z"
+      }
+    },
+    {
+      "id": "R14",
+      "title": "Стрессовая распродажа",
+      "pair": "SOLUSDT",
+      "start": "2022-11-04",
+      "endExclusive": "2022-11-16",
+      "sourceFrame": "1h",
+      "baseFrame": "1m",
+      "rows": 17280,
+      "sha256": "4f605c690d96e09d448a4fc90b06134be7a10fe8ccd8895fb739fd03ded45c16",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/1m/SOLUSDT-1m-2022-11.zip",
+          "sha256": "ea0ee69b4424bb70e3e8c36c589a7a782e3b7f7f7fad7bf5ae0a030c64336794"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/1h/SOLUSDT-1h-2022-11.zip",
+          "sha256": "d61c2d3b3ba2e772d39fcc1181973359cd8b59fd1a9b8b29aa8e1dc394d889c9"
+        }
+      ],
+      "minute": {
+        "inside": 4370,
+        "engulfing": 2756,
+        "failedBreakHigh": 862,
+        "failedBreakLow": 976,
+        "longestUp": 9,
+        "longestDown": 11,
+        "absoluteLogReturn": [
+          0,
+          0.0013774107,
+          0.0058196091
+        ],
+        "bars": 17280,
+        "body": [
+          0,
+          0.5,
+          0.875
+        ],
+        "upper": [
+          0,
+          0.22222222,
+          0.6
+        ],
+        "lower": [
+          0,
+          0.2,
+          0.57142857
+        ],
+        "relativeVolume": [
+          0.11434679,
+          0.48811266,
+          2.4257166
+        ],
+        "maxRelativeVolume": 25,
+        "flat": 2,
+        "doji": 1898,
+        "singleWick": 6665,
+        "noWicks": 1263,
+        "unequalTwoWicks": 6893,
+        "quoteTurnoverUSDT": 3503063127,
+        "returnPct": -53.597,
+        "highAt": "2022-11-05T16:32:00.000Z",
+        "lowAt": "2022-11-14T02:12:00.000Z"
+      },
+      "episode": {
+        "inside": 63,
+        "engulfing": 54,
+        "failedBreakHigh": 12,
+        "failedBreakLow": 17,
+        "longestUp": 5,
+        "longestDown": 10,
+        "absoluteLogReturn": [
+          0.0019616091,
+          0.012637348,
+          0.047092327
+        ],
+        "bars": 288,
+        "body": [
+          0.10169492,
+          0.45454545,
+          0.80434783
+        ],
+        "upper": [
+          0.022727273,
+          0.25225225,
+          0.56060606
+        ],
+        "lower": [
+          0.035087719,
+          0.23529412,
+          0.58823529
+        ],
+        "relativeVolume": [
+          0.19431652,
+          0.61137667,
+          2.4229494
+        ],
+        "maxRelativeVolume": 5.49,
+        "flat": 0,
+        "doji": 11,
+        "singleWick": 19,
+        "noWicks": 0,
+        "unequalTwoWicks": 261,
+        "quoteTurnoverUSDT": 3503063127,
+        "returnPct": -53.597,
+        "highAt": "2022-11-05T16:00:00.000Z",
+        "lowAt": "2022-11-14T02:00:00.000Z"
+      }
+    },
+    {
+      "id": "R15",
+      "title": "Резкий импульс из боковика",
+      "pair": "XRPUSDT",
+      "start": "2023-07-10",
+      "endExclusive": "2023-07-20",
+      "sourceFrame": "5m",
+      "baseFrame": "1m",
+      "rows": 14400,
+      "sha256": "b59169537650c9ed43383247719e8f76fee150a0156666c7b55992d044969ce0",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/XRPUSDT/1m/XRPUSDT-1m-2023-07.zip",
+          "sha256": "ab2751fcc117167350081ee0601f4a846b329ce7bbcb543da925e5e16bf798a6"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/XRPUSDT/5m/XRPUSDT-5m-2023-07.zip",
+          "sha256": "8021464fb3cd8a659309da1cd318eb125dcae43be956f90b1eed8cc049fa0697"
+        }
+      ],
+      "minute": {
+        "inside": 4380,
+        "engulfing": 2214,
+        "failedBreakHigh": 668,
+        "failedBreakLow": 663,
+        "longestUp": 10,
+        "longestDown": 8,
+        "absoluteLogReturn": [
+          0,
+          0.00053879312,
+          0.0024489282
+        ],
+        "bars": 14400,
+        "body": [
+          0,
+          0.5,
+          1
+        ],
+        "upper": [
+          0,
+          0.11111111,
+          0.55555556
+        ],
+        "lower": [
+          0,
+          0.2,
+          0.66666667
+        ],
+        "relativeVolume": [
+          0.11361744,
+          0.4336466,
+          1.924856
+        ],
+        "maxRelativeVolume": 62.95,
+        "flat": 18,
+        "doji": 1820,
+        "singleWick": 5984,
+        "noWicks": 1928,
+        "unequalTwoWicks": 5327,
+        "quoteTurnoverUSDT": 6129577432,
+        "returnPct": 75.155,
+        "highAt": "2023-07-13T18:25:00.000Z",
+        "lowAt": "2023-07-10T00:11:00.000Z"
+      },
+      "episode": {
+        "inside": 687,
+        "engulfing": 484,
+        "failedBreakHigh": 170,
+        "failedBreakLow": 131,
+        "longestUp": 12,
+        "longestDown": 9,
+        "absoluteLogReturn": [
+          0.00021090372,
+          0.0011143614,
+          0.0053713201
+        ],
+        "bars": 2880,
+        "body": [
+          0.097560976,
+          0.46082949,
+          0.84615385
+        ],
+        "upper": [
+          0,
+          0.2,
+          0.56097561
+        ],
+        "lower": [
+          0,
+          0.25449871,
+          0.63636364
+        ],
+        "relativeVolume": [
+          0.16041939,
+          0.46524269,
+          1.9447786
+        ],
+        "maxRelativeVolume": 35.81,
+        "flat": 0,
+        "doji": 202,
+        "singleWick": 700,
+        "noWicks": 117,
+        "unequalTwoWicks": 1808,
+        "quoteTurnoverUSDT": 6129577432,
+        "returnPct": 75.155,
+        "highAt": "2023-07-13T18:25:00.000Z",
+        "lowAt": "2023-07-10T00:10:00.000Z"
+      }
+    },
+    {
+      "id": "R16",
+      "title": "Выход из консолидации",
+      "pair": "BTCUSDT",
+      "start": "2023-10-19",
+      "endExclusive": "2023-11-01",
+      "sourceFrame": "15m",
+      "baseFrame": "1m",
+      "rows": 18720,
+      "sha256": "c39c1269daa29c1bb77ba4cc107cf0a404f1e51fe0fb5cbdb7ac1582fd077b4b",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2023-10.zip",
+          "sha256": "9e854972545806398d124571916348238ce39961072730c200cca3c2e0bd50a3"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/15m/BTCUSDT-15m-2023-10.zip",
+          "sha256": "fea186b52b2c9a4044cf6ab9cb82be5c68e70abfa39a2eb3197e084e0c331ad5"
+        }
+      ],
+      "minute": {
+        "inside": 4569,
+        "engulfing": 3092,
+        "failedBreakHigh": 844,
+        "failedBreakLow": 712,
+        "longestUp": 11,
+        "longestDown": 11,
+        "absoluteLogReturn": [
+          0.000012753912,
+          0.00027457064,
+          0.00096287135
+        ],
+        "bars": 18720,
+        "body": [
+          0.12430168,
+          0.77024898,
+          1
+        ],
+        "upper": [
+          0,
+          0.0019230769,
+          0.56450956
+        ],
+        "lower": [
+          0,
+          0.0022522523,
+          0.58208955
+        ],
+        "relativeVolume": [
+          0.15424087,
+          0.55585797,
+          2.0413686
+        ],
+        "maxRelativeVolume": 60.75,
+        "flat": 0,
+        "doji": 1212,
+        "singleWick": 7300,
+        "noWicks": 1992,
+        "unequalTwoWicks": 7810,
+        "quoteTurnoverUSDT": 19079011454,
+        "returnPct": 22.316,
+        "highAt": "2023-10-24T02:26:00.000Z",
+        "lowAt": "2023-10-19T01:44:00.000Z"
+      },
+      "episode": {
+        "inside": 229,
+        "engulfing": 220,
+        "failedBreakHigh": 95,
+        "failedBreakLow": 58,
+        "longestUp": 9,
+        "longestDown": 5,
+        "absoluteLogReturn": [
+          0.00018338917,
+          0.0011138315,
+          0.0037658609
+        ],
+        "bars": 1248,
+        "body": [
+          0.10879559,
+          0.50476535,
+          0.85892974
+        ],
+        "upper": [
+          0.00020938023,
+          0.19608235,
+          0.5551401
+        ],
+        "lower": [
+          0.00024931439,
+          0.22481572,
+          0.59286545
+        ],
+        "relativeVolume": [
+          0.2590027,
+          0.62215262,
+          2.0434966
+        ],
+        "maxRelativeVolume": 17.01,
+        "flat": 0,
+        "doji": 51,
+        "singleWick": 147,
+        "noWicks": 1,
+        "unequalTwoWicks": 1064,
+        "quoteTurnoverUSDT": 19079011454,
+        "returnPct": 22.316,
+        "highAt": "2023-10-24T02:15:00.000Z",
+        "lowAt": "2023-10-19T01:30:00.000Z"
+      }
+    },
+    {
+      "id": "R17",
+      "title": "Серия повышающихся ступеней",
+      "pair": "SOLUSDT",
+      "start": "2023-10-10",
+      "endExclusive": "2023-11-21",
+      "sourceFrame": "4h",
+      "baseFrame": "1m",
+      "rows": 60480,
+      "sha256": "7e6f6de6f783946110dd2d82036f9a7cd15343a34310ffe0890d669722830c61",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/1m/SOLUSDT-1m-2023-10.zip",
+          "sha256": "b5430edaccfa7b58e36ac073112604231d405ff154da037055a425e20ec04e6a"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/1m/SOLUSDT-1m-2023-11.zip",
+          "sha256": "d10bd1154fa04501578767be679b87d203f950db5168e4d2f08a4adbef18ea93"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/4h/SOLUSDT-4h-2023-10.zip",
+          "sha256": "a8ccc3a3c74c413f87ceb918cac044635fb08c41f3a4def1a5578321b89e06a6"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/SOLUSDT/4h/SOLUSDT-4h-2023-11.zip",
+          "sha256": "196b8a3c264f94e307c44db836d68aa2013257c4f2baa4dc0a27a806bf51f54e"
+        }
+      ],
+      "minute": {
+        "inside": 15532,
+        "engulfing": 9525,
+        "failedBreakHigh": 3598,
+        "failedBreakLow": 3365,
+        "longestUp": 12,
+        "longestDown": 11,
+        "absoluteLogReturn": [
+          0,
+          0.00083284755,
+          0.0025831464
+        ],
+        "bars": 60480,
+        "body": [
+          0,
+          0.5,
+          1
+        ],
+        "upper": [
+          0,
+          0.16666667,
+          0.6
+        ],
+        "lower": [
+          0,
+          0.2,
+          0.6
+        ],
+        "relativeVolume": [
+          0.092967783,
+          0.56252341,
+          2.2077335
+        ],
+        "maxRelativeVolume": 73.61,
+        "flat": 326,
+        "doji": 7706,
+        "singleWick": 25088,
+        "noWicks": 7440,
+        "unequalTwoWicks": 21038,
+        "quoteTurnoverUSDT": 14377494362,
+        "returnPct": 156.089,
+        "highAt": "2023-11-16T06:30:00.000Z",
+        "lowAt": "2023-10-12T16:26:00.000Z"
+      },
+      "episode": {
+        "inside": 42,
+        "engulfing": 40,
+        "failedBreakHigh": 21,
+        "failedBreakLow": 8,
+        "longestUp": 7,
+        "longestDown": 5,
+        "absoluteLogReturn": [
+          0.0018570107,
+          0.01166373,
+          0.045188674
+        ],
+        "bars": 252,
+        "body": [
+          0.082004556,
+          0.36721311,
+          0.74887892
+        ],
+        "upper": [
+          0.058823529,
+          0.26815642,
+          0.59649123
+        ],
+        "lower": [
+          0.055172414,
+          0.26356589,
+          0.6
+        ],
+        "relativeVolume": [
+          0.25555563,
+          0.81405068,
+          1.9324648
+        ],
+        "maxRelativeVolume": 5.2,
+        "flat": 0,
+        "doji": 9,
+        "singleWick": 6,
+        "noWicks": 0,
+        "unequalTwoWicks": 237,
+        "quoteTurnoverUSDT": 14377494362,
+        "returnPct": 156.089,
+        "highAt": "2023-11-16T04:00:00.000Z",
+        "lowAt": "2023-10-12T16:00:00.000Z"
+      }
+    },
+    {
+      "id": "R18",
+      "title": "Ралли с волатильными откатами",
+      "pair": "BTCUSDT",
+      "start": "2024-02-25",
+      "endExclusive": "2024-03-16",
+      "sourceFrame": "1h",
+      "baseFrame": "1m",
+      "rows": 28800,
+      "sha256": "487d90b56834f866d9cf331ba1be86df21725230f4d6091da2978a72d43183bc",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2024-02.zip",
+          "sha256": "431132e0db8b9fe6e5c93c8e9ba3ae37dbcfa0edcdd57618b1b78ac18d14be79"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2024-03.zip",
+          "sha256": "a9af86295eae839f1d072643c67eed7fcc47bb1d82c12ef312d041eec9511e7b"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-02.zip",
+          "sha256": "b83aa7319ef1d4baa7b923c0fe802b88dfaf241c7456af295f1f656a24379b33"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-03.zip",
+          "sha256": "b0851daf609d6ab82fdf8f1d1c4fbd974bc1b4e6530a832067516ac1c2be63a6"
+        }
+      ],
+      "minute": {
+        "inside": 5620,
+        "engulfing": 4910,
+        "failedBreakHigh": 1592,
+        "failedBreakLow": 1268,
+        "longestUp": 13,
+        "longestDown": 12,
+        "absoluteLogReturn": [
+          0.000053810089,
+          0.0004171654,
+          0.0014652407
+        ],
+        "bars": 28800,
+        "body": [
+          0.15,
+          0.68176255,
+          0.99972966
+        ],
+        "upper": [
+          0,
+          0.056167153,
+          0.55374439
+        ],
+        "lower": [
+          0,
+          0.064341268,
+          0.57159574
+        ],
+        "relativeVolume": [
+          0.20482653,
+          0.63425324,
+          2.0333232
+        ],
+        "maxRelativeVolume": 26.45,
+        "flat": 0,
+        "doji": 1301,
+        "singleWick": 9111,
+        "noWicks": 1874,
+        "unequalTwoWicks": 15854,
+        "quoteTurnoverUSDT": 84190247484,
+        "returnPct": 34.773,
+        "highAt": "2024-03-14T07:05:00.000Z",
+        "lowAt": "2024-02-26T09:57:00.000Z"
+      },
+      "episode": {
+        "inside": 111,
+        "engulfing": 87,
+        "failedBreakHigh": 37,
+        "failedBreakLow": 21,
+        "longestUp": 7,
+        "longestDown": 6,
+        "absoluteLogReturn": [
+          0.00051084536,
+          0.0034076837,
+          0.011269246
+        ],
+        "bars": 480,
+        "body": [
+          0.096598175,
+          0.42707778,
+          0.81723971
+        ],
+        "upper": [
+          0.015614392,
+          0.21216878,
+          0.56586488
+        ],
+        "lower": [
+          0.026034871,
+          0.25965703,
+          0.63947667
+        ],
+        "relativeVolume": [
+          0.28626863,
+          0.7494038,
+          1.9925975
+        ],
+        "maxRelativeVolume": 8.64,
+        "flat": 0,
+        "doji": 26,
+        "singleWick": 21,
+        "noWicks": 2,
+        "unequalTwoWicks": 440,
+        "quoteTurnoverUSDT": 84190247484,
+        "returnPct": 34.773,
+        "highAt": "2024-03-14T07:00:00.000Z",
+        "lowAt": "2024-02-26T09:00:00.000Z"
+      }
+    },
+    {
+      "id": "R19",
+      "title": "Двусторонний диапазон",
+      "pair": "ETHUSDT",
+      "start": "2024-03-12",
+      "endExclusive": "2024-04-13",
+      "sourceFrame": "4h",
+      "baseFrame": "1m",
+      "rows": 46080,
+      "sha256": "f2c3ef28666e7709c218a8b17b84f039597bcdcc1cb310092cd6a3ef2f4f1875",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/1m/ETHUSDT-1m-2024-03.zip",
+          "sha256": "b63d885ef49b4e0f2a654ab02c5dcb502fb8abeb7300f3ebff4a33aadd3d4a82"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/1m/ETHUSDT-1m-2024-04.zip",
+          "sha256": "9c6ef16ea4e0593ac4547d2f6c64c272d8f39806871473c4877885af47a67b88"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/4h/ETHUSDT-4h-2024-03.zip",
+          "sha256": "b3c10466f739b11910ea93c6d88cafc8e6c9f548576925a341e3892621f70391"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/ETHUSDT/4h/ETHUSDT-4h-2024-04.zip",
+          "sha256": "656722f3c86ea8b553512bc991492aea556a2f3e69dfaad74336221f37197a36"
+        }
+      ],
+      "minute": {
+        "inside": 8084,
+        "engulfing": 8448,
+        "failedBreakHigh": 2481,
+        "failedBreakLow": 2697,
+        "longestUp": 17,
+        "longestDown": 13,
+        "absoluteLogReturn": [
+          0.000078782252,
+          0.00047875223,
+          0.0015079156
+        ],
+        "bars": 46080,
+        "body": [
+          0.14002478,
+          0.61419753,
+          0.99009901
+        ],
+        "upper": [
+          0,
+          0.10769231,
+          0.57843137
+        ],
+        "lower": [
+          0,
+          0.12041885,
+          0.58940397
+        ],
+        "relativeVolume": [
+          0.1885158,
+          0.59932041,
+          2.1741435
+        ],
+        "maxRelativeVolume": 38.42,
+        "flat": 0,
+        "doji": 1772,
+        "singleWick": 13234,
+        "noWicks": 1468,
+        "unequalTwoWicks": 29220,
+        "quoteTurnoverUSDT": 56134381526,
+        "returnPct": -20.355,
+        "highAt": "2024-03-12T00:22:00.000Z",
+        "lowAt": "2024-03-20T05:23:00.000Z"
+      },
+      "episode": {
+        "inside": 35,
+        "engulfing": 36,
+        "failedBreakHigh": 13,
+        "failedBreakLow": 14,
+        "longestUp": 5,
+        "longestDown": 7,
+        "absoluteLogReturn": [
+          0.00075616103,
+          0.007084834,
+          0.024606694
+        ],
+        "bars": 192,
+        "body": [
+          0.057898187,
+          0.3675321,
+          0.77115775
+        ],
+        "upper": [
+          0.036727273,
+          0.23801066,
+          0.64947596
+        ],
+        "lower": [
+          0.045859185,
+          0.28082356,
+          0.60241611
+        ],
+        "relativeVolume": [
+          0.41137589,
+          0.78035567,
+          1.8226802
+        ],
+        "maxRelativeVolume": 4.44,
+        "flat": 0,
+        "doji": 17,
+        "singleWick": 1,
+        "noWicks": 0,
+        "unequalTwoWicks": 185,
+        "quoteTurnoverUSDT": 56134381526,
+        "returnPct": -20.355,
+        "highAt": "2024-03-12T00:00:00.000Z",
+        "lowAt": "2024-03-20T04:00:00.000Z"
+      }
+    },
+    {
+      "id": "R20",
+      "title": "Быстрое восстановление после падения",
+      "pair": "BTCUSDT",
+      "start": "2024-08-01",
+      "endExclusive": "2024-08-13",
+      "sourceFrame": "15m",
+      "baseFrame": "1m",
+      "rows": 17280,
+      "sha256": "00cf3d4450ca371e7e30405c31d5395e68fd90ae93d188cbab7f19193a80de61",
+      "sources": [
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2024-08.zip",
+          "sha256": "6a1cac2a5482132dc5a030534aa028e2becc560877f2b93b7add90194f576c42"
+        },
+        {
+          "url": "https://data.binance.vision/data/spot/monthly/klines/BTCUSDT/15m/BTCUSDT-15m-2024-08.zip",
+          "sha256": "44e084e916a4c661b2177741d71438916388c0d34554f63cb147973aac13b094"
+        }
+      ],
+      "minute": {
+        "inside": 3082,
+        "engulfing": 2981,
+        "failedBreakHigh": 943,
+        "failedBreakLow": 995,
+        "longestUp": 10,
+        "longestDown": 11,
+        "absoluteLogReturn": [
+          0.000071501811,
+          0.00047439325,
+          0.0016759568
+        ],
+        "bars": 17280,
+        "body": [
+          0.13086206,
+          0.60337209,
+          0.99932478
+        ],
+        "upper": [
+          0,
+          0.1173063,
+          0.58691162
+        ],
+        "lower": [
+          0,
+          0.12061385,
+          0.58954797
+        ],
+        "relativeVolume": [
+          0.1128629,
+          0.49908503,
+          2.2515071
+        ],
+        "maxRelativeVolume": 51.97,
+        "flat": 0,
+        "doji": 775,
+        "singleWick": 5508,
+        "noWicks": 724,
+        "unequalTwoWicks": 10336,
+        "quoteTurnoverUSDT": 31177981035,
+        "returnPct": -8.172,
+        "highAt": "2024-08-01T22:26:00.000Z",
+        "lowAt": "2024-08-05T06:24:00.000Z"
+      },
+      "episode": {
+        "inside": 168,
+        "engulfing": 214,
+        "failedBreakHigh": 70,
+        "failedBreakLow": 94,
+        "longestUp": 7,
+        "longestDown": 9,
+        "absoluteLogReturn": [
+          0.00035118225,
+          0.0020062864,
+          0.0068225823
+        ],
+        "bars": 1152,
+        "body": [
+          0.11177855,
+          0.48057375,
+          0.81945981
+        ],
+        "upper": [
+          0.021629041,
+          0.20905013,
+          0.57148689
+        ],
+        "lower": [
+          0.017342541,
+          0.22551849,
+          0.56429429
+        ],
+        "relativeVolume": [
+          0.18708725,
+          0.60207483,
+          2.1561678
+        ],
+        "maxRelativeVolume": 19.43,
+        "flat": 0,
+        "doji": 52,
+        "singleWick": 85,
+        "noWicks": 0,
+        "unequalTwoWicks": 1033,
+        "quoteTurnoverUSDT": 31177981035,
+        "returnPct": -8.172,
+        "highAt": "2024-08-01T22:15:00.000Z",
+        "lowAt": "2024-08-05T06:15:00.000Z"
+      }
+    }
+  ]
+}
