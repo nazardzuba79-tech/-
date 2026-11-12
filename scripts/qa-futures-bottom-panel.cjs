@@ -32,6 +32,9 @@ const OUT = path.resolve(arg('--out', path.join(ROOT, 'docs', 'qa', 'futures-bot
 const LABEL = arg('--label', 'after');
 const MEASURE_ONLY = process.env.QA_MEASURE_ONLY === '1';
 const WIDTHS = (arg('--widths', '1920,1664,1440,1366')).split(',').map(Number);
+// Issue #148's four real desktop viewport pairs. The old harness ran every
+// width at 940px tall, masking short-screen panel/header overlap on 1366×768.
+const HEIGHT_BY_WIDTH = new Map([[1920, 1080], [1664, 900], [1440, 900], [1366, 768]]);
 
 const express = require('express');
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
@@ -280,7 +283,8 @@ const measure = (page) => page.evaluate(() => {
       await waitForServer();
 
       for (const width of WIDTHS) {
-        const context = await browser.newContext({ viewport: { width, height: 940 } });
+        const height = HEIGHT_BY_WIDTH.get(width) ?? 940;
+        const context = await browser.newContext({ viewport: { width, height } });
         const page = await context.newPage();
         const pageErrors = [];
         page.on('pageerror', (e) => pageErrors.push(String(e)));
@@ -300,6 +304,7 @@ const measure = (page) => page.evaluate(() => {
 
         const key = `${fill}-${width}`;
         const view = report[key] = await measure(page);
+        view.viewport = { width, height };
         view.pageErrors = pageErrors;
         await page.screenshot({ path: path.join(OUT, `${LABEL}-${key}.png`) });
         // The panel on its own, which is what the owner is looking at.
