@@ -1,0 +1,24 @@
+/*
+ * On-chart legend rows: every indicator (and the volume strip) can be opened
+ * or taken off the chart from its own line (owner, 2026-11-12).
+ * The legend box itself lets the pointer through to the chart; only a row
+ * takes it, so the candles under the rest of the box stay draggable.
+ */
+.voltex-indicator-legend .voltex-legend-row { pointer-events: auto; }
+.voltex-legend-actions { display: inline-flex; align-items: center; gap: 2px; margin-left: 4px; opacity: 0; transition: opacity 0.12s ease; }
+.voltex-legend-row:hover .voltex-legend-actions,
+.voltex-legend-row:focus-within .voltex-legend-actions { opacity: 1; }
+.voltex-legend-action {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; padding: 0; border: 0; border-radius: 4px;
+  background: transparent; color: #8b9098; cursor: pointer;
+}
+.voltex-legend-action:hover,
+.voltex-legend-action:focus-visible { background: rgba(255, 255, 255, 0.1); color: #eaecef; outline: none; }
+.voltex-legend-action.is-remove:hover,
+.voltex-legend-action.is-remove:focus-visible { color: #f6465d; }
+/* No hover on a touch screen: the buttons are always there, and large enough to hit. */
+@media (hover: none) {
+  .voltex-legend-actions { opacity: 1; }
+  .voltex-legend-action { width: 26px; height: 26px; }
+}
