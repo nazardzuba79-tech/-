@@ -192,6 +192,10 @@ function start() {
   app.get('/__qa/hits', (_q, r) => r.json(hits));
   app.get('/api/v1/me', (_q, r) => r.json({ id: 'qa-chart', email: 'preview@localhost.invalid', role: 'USER', isAdmin: false, avatarUrl: null, createdAt: '2025-01-01T00:00:00Z', emailVerified: true, kycStatus: 'NONE' }));
   app.get('/api/v1/private-trading/access', (_q, r) => r.json({ allowed: false }));
+  // The order ticket asks who may submit (#691, merged with #704). This stand has no account to trade
+  // with: «not allowed» is what the terminal already showed while the request answered 404, minus the
+  // console error that failed seven `.errors` checks on main.
+  app.get('/api/v1/orders/access', (_q, r) => r.json({ allowed: false }));
   app.get('/api/v1/futures/config', (_q, r) => r.json({ symbols: SYMBOLS, minLeverage: 1, maxLeverage: 100, leverageStep: 1, fundingIntervalHours: 8, highLeverageWarningThreshold: 50,
     leverageTiers: [{ notionalCap: 2000000, maxLeverage: 100, maintenanceMarginRate: 0.005, maintenanceAmount: 0 }, { notionalCap: null, maxLeverage: 50, maintenanceMarginRate: 0.01, maintenanceAmount: 10000 }] }));
   app.get('/api/v1/market/universe', (_q, r) => r.json({ available: true, value: { instruments: rows.map(x => ({ ...x, status: 'Trading' })) } }));
