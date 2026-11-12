@@ -48,6 +48,9 @@ try {
   }
   cp.execFileSync(process.execPath, ['scripts/ops/build-original-release.cjs', before, out, 'scripts/ops/original-release-inputs.json'], { stdio:'inherit' });
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out,'manifest.json'))), expected);
+  const recovery = path.join(work,'recovery');
+  cp.execFileSync(process.execPath, ['scripts/ops/build-original-recovery.cjs', before, out, recovery], {stdio:'inherit'});
+  cp.execFileSync(process.execPath, ['scripts/ops/test-original-recovery.cjs', before, out, recovery], {stdio:'inherit'});
   console.log('PASS all sealed API and Worker inputs and outputs match the release manifest');
 } finally {
   fs.rmSync(work, {recursive:true, force:true});

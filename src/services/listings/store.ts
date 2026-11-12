@@ -124,7 +124,9 @@ export class CloudflareListingStore implements ListingStore {
   published() { return this.call('/published', publishedSchema); }
   saveDraft(id: string, config: ListingConfig, ifMatch: number, actor: string) {
     return this.call(`/${encodeURIComponent(id)}/draft`, z.object({ id: z.string(), draftRevision: z.number(), draft: listingConfigSchema }),
-      { method: 'PUT', body: { config }, ifMatch, actor });
+      // An older Worker strips unknown config keys. Its legacy decoder rejects
+      // this envelope before writing, including during staged API upgrades.
+      { method: 'PUT', body: config.originalRegime ? { originalRegimeConfig: config } : { config }, ifMatch, actor });
   }
   publish(id: string, draftRevision: number, publishKey: string, actor: string, countdown?: 'staged' | 'running') {
     return this.call(`/${encodeURIComponent(id)}/publish`, publishReceiptSchema,

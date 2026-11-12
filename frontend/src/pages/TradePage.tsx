@@ -459,6 +459,7 @@ export function TradePage() {
   const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);
   const demoLedger = demoPair && (demoMode === 'trader' || demoMode === 'silent') ? demoMode : null;
   const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoPair ? demoMode : 'off'}
+    awaitingPair={!testPair && !venueSnapshot.tickers.has(pair.toUpperCase()) && (!managedCatalogue.loaded || managedCatalogue.error)}
     presentationOnly={testMarket.asset?.state.phase === 'live' && testMarket.asset.provenance?.origin === 'ORIGINAL_GENERATIVE'} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>

@@ -473,7 +473,7 @@ export class ManagedListingsDO {
         const ifMatch = request.headers.get('If-Match');
         if (!ifMatch) return reply({ error: 'if_match_required' }, 428);
         if (!/^(0|[1-9]\d{0,15})$/.test(ifMatch)) return reply({ error: 'invalid_revision' }, 400);
-        return this.saveDraft(match[1], ifMatch, body.value?.config, actor, Date.now());
+        return this.saveDraft(match[1], ifMatch, body.value?.originalRegimeConfig ?? body.value?.config, actor, Date.now());
       }
       if (match[2] === 'publish' && request.method === 'POST') {
         return this.publish(match[1], body.value?.draftRevision, body.value?.publishKey, body.value?.countdown, actor, Date.now());

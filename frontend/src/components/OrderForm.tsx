@@ -40,6 +40,7 @@ export function OrderForm({
   refreshKey = 0,
   demo = 'off',
   presentationOnly = false,
+  awaitingPair = false,
 }: {
   pair: string;
   onPlaced: () => void;
@@ -50,6 +51,7 @@ export function OrderForm({
   demo?: DemoSpotMode;
   /** A live original-regime ticket edits drafts only. Server execution guards are independent. */
   presentationOnly?: boolean;
+  awaitingPair?: boolean;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -306,6 +308,7 @@ export function OrderForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (presentationOnly) return;
+    if (awaitingPair) return;
     if (!ticketAccess.canSubmit()) return;
     if (submittingRef.current) return;
     setError(null);

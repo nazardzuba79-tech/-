@@ -27,7 +27,7 @@ function once(code, anchor, replacement) {
   return code.slice(0,at)+replacement+code.slice(at+anchor.length);
 }
 const compilerOptions = {target:ts.ScriptTarget.ES2021, module:ts.ModuleKind.CommonJS};
-const readSource = name => fs.readFileSync('src/'+name+'.ts','utf8');
+const readSource = name => fs.readFileSync('src/'+name+'.ts','utf8').replace(/\r\n/g,'\n');
 const compile = source => ts.transpileModule(source,{compilerOptions}).outputText;
 const configSource = readSource('services/listings/listingConfig');
 const simSource = readSource('services/testMarkets/testMarketSimulation');
@@ -74,6 +74,7 @@ function withImport(code, module) {
 }
 api('services/listings/listingConfig',s=>config(withImport(s,'../../'+definitions),'zod_1.z'));
 api('services/listings/listingPublic',s=>catalogue(withImport(s,'../../'+definitions)));
+api('services/listings/store',s=>once(s,'body: { config }, ifMatch, actor','body: config.originalRegime ? { originalRegimeConfig: config } : { config }, ifMatch, actor'));
 api('services/testMarkets/testMarketSimulation',s=>engine(withImport(s,'./originalSimulation')));
 api('api/routes/adminListings',s=>{
   const compiled=compile(routerSource);
@@ -89,5 +90,6 @@ api('services/WalletPortfolioService',s=>once(s,'const held = managedListingAsse
         for (const asset of managed) if (asset.originalRegime) byBase.delete(asset.symbol);
         const held = managed.filter((asset) => !asset.originalRegime && wanted.has(asset.symbol));`));
 const helper = esbuild.buildSync({stdin:{contents:`export * from './src/${definitions}'; export * from './src/${generator}';`,resolveDir:process.cwd()},bundle:true,write:false,format:'iife',globalName:'Original',platform:'browser',target:'es2022'}).outputFiles[0].text;
-emit('worker.js',helper+'\n'+catalogue(engine(config(input('worker.js'),'external_exports'))));
+const worker = once(input('worker.js'),'this.saveDraft(match[1], ifMatch, body.value?.config, actor','this.saveDraft(match[1], ifMatch, body.value?.originalRegimeConfig ?? body.value?.config, actor');
+emit('worker.js',helper+'\n'+catalogue(engine(config(worker,'external_exports'))));
 emit('manifest.json',JSON.stringify({files:result,baseApi:'sha256:1ba06ac77cd203767dea411ccb683b4d2628b55633411053d7cf46fc1f89ca5a',baseWorker:'f13215c0-4767-47df-a901-673770569570',inputs:fence},null,2)+'\n');
