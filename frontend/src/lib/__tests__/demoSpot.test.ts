@@ -101,7 +101,7 @@ function submitFixture(overrides: Record<string, unknown> = {}) {
   class ApiError extends Error { constructor(message: string, public status: number, public body: Record<string, unknown> = {}) { super(message); } }
   const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
   const bindings: Record<string, unknown> = {
-    ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', toast, ApiError,
+    awaitingPair: false, presentationOnly: false, ticketAccess: { canSubmit: () => true }, orderDecimal, privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', toast, ApiError,
     api: { placeOrder: jest.fn().mockResolvedValue({ order: { status: 'OPEN' }, trades: [] }), placeOcoOrder: jest.fn().mockResolvedValue({}),
       placeDemoSpotOrder: jest.fn().mockResolvedValue({ order: { status: 'OPEN' }, trades: [] }) },
     t: (key: string) => key, spotOrderFeedback: (r: any) => (r?.order ? { kind: 'placed' } : { kind: 'unknown' }),
@@ -117,6 +117,14 @@ function submitFixture(overrides: Record<string, unknown> = {}) {
   const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
   return { ...bindings, toast, submit: () => submit({ preventDefault() {} }) } as any;
 }
+
+test.each([{ awaitingPair: true }, { presentationOnly: true }])('quiet submit while resolving a pair or editing an original ticket %j', async (overrides) => {
+  const f = submitFixture(overrides);
+  await f.submit();
+  for (const call of [...Object.values(f.api), ...Object.values(f.toast), f.setError, f.setSubmitting, f.resetFields, f.onPlaced, f.setBalanceVersion]) {
+    expect(call).not.toHaveBeenCalled();
+  }
+});
 
 test("Demo Spot on, an account trading its ordinary Balance ('spot'): the ordinary /orders with a request ID", async () => {
   const f = submitFixture();
