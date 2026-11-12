@@ -58,6 +58,10 @@ export function ChartWorkspaceMenu({ open, anchor, onClose, label, width = 260, 
     const onDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (ref.current?.contains(target) || anchor?.contains(target)) return;
+      // The chart type and indicator lists are opened from inside this menu (the phone sheet) but are
+      // rendered in <body>. A press in such a list is not a press outside: closing here unmounted the
+      // list before its item was clicked, so indicators could not be switched on a phone.
+      if (target instanceof Element && target.closest('.chart-menu')) return;
       onClose(false);
     };
     // The page moving under the anchor closes the popover; the menu's own list scrolling (a long «Ещё», a status line pushing content) does not.

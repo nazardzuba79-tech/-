@@ -24,7 +24,11 @@ on:
       - 'frontend/src/lib/__tests__/cfdChartWorkspace.test.ts'
       - 'frontend/src/lib/__tests__/futuresChartBlank.test.ts'
       - 'frontend/src/lib/__tests__/priceChartMarketOrders.test.ts'
+      - 'frontend/src/components/ChartToolbarMenus.tsx'
+      - 'frontend/src/components/ChartToolbarMenus.css'
+      - 'frontend/src/components/ChartLegend.css'
       - 'scripts/qa-chart-workspace.cjs'
+      - 'scripts/qa-chart-pane-size.cjs'
       - 'scripts/qa-hover-interval-isolation.cjs'
       - '.github/workflows/chart-workspace.yml'
   workflow_dispatch: {}
@@ -114,6 +118,12 @@ jobs:
         # Exit 1: a check failed. Exit 2: a section stopped (FATAL), a planned section never ran (NOT_RUN),
         # or the evidence is incomplete — the report and manifest are written in every case.
         run: node scripts/qa-chart-workspace.cjs --dist frontend/dist --out output/chart-workspace --phase after --widths 1366,1440,1920 --phones 360,390 --perf-window 6000
+      - name: Pane heights the viewer chose, removable indicators and volume, Shift quick measure (Spot, 1440 and 390)
+        if: success() || failure()
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-browser/node_modules/playwright
+          LANG: en_US.UTF-8
+        run: node scripts/qa-chart-pane-size.cjs --dist frontend/dist --out output/chart-pane-size
       - name: Sections and verdict
         if: always()
         run: >-

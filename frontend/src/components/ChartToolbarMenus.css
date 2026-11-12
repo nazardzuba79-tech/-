@@ -16,8 +16,11 @@
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
 }
 
+/* Above the phone's «Инструменты графика» sheet (.cw-menu-layer.is-sheet, 1150), which is where
+   these menus are opened from on a phone: at 1000 the list opened behind the sheet and could
+   not be used. Still under the modal dialogs (1200). */
 .chart-menu {
-  position: fixed; z-index: 1000; max-width: calc(100vw - 16px); padding: 5px;
+  position: fixed; z-index: 1160; max-width: calc(100vw - 16px); padding: 5px;
   background: #17202c; border: 1px solid #354559; border-radius: 8px;
   box-shadow: 0 12px 28px #0008; color: #d7e1ee;
   font-family: var(--font-ui, Inter, "Segoe UI", system-ui, sans-serif);
