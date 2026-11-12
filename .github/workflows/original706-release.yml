@@ -28,18 +28,18 @@ jobs:
       - name: Verify and build exact Pages backport on the Exchangers release
         env:
           BASE: c96971b0b31788f10ac8cedb877d552cf4039963
-          PAGES: bb427a60fc2bfc6b86b6fe02c1d837eeb44ea794
+          PAGES: ccd5c99a2667a8501650b7cd35c325a2f11b81f4
           VITE_API_URL: https://api.voltextech.net/api/v1
           VITE_DEPOSIT_CATALOGUE_URL: https://voltex-deposit-catalogue-production.nazardzuba79.workers.dev
           VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
         run: |
           git merge-base --is-ancestor "$BASE" "$PAGES"
-          test "$(git rev-list --count "$BASE..$PAGES")" = 2
+          test "$(git rev-list --count "$BASE..$PAGES")" = 3
           git worktree add --detach "$RUNNER_TEMP/pages706" "$PAGES"
           cd "$RUNNER_TEMP/pages706"
           git diff --exit-code "$BASE" HEAD -- frontend/src/pages/exchangers src/shared/exchangers frontend/src/App.tsx
           npm ci --ignore-scripts --no-audit --no-fund
           npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
-          node node_modules/jest/bin/jest.js --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/exchangersApi.test.ts frontend/src/lib/__tests__/exchangersModel.test.ts frontend/src/lib/__tests__/exchangersPage.test.tsx frontend/src/lib/__tests__/demoSpot.test.ts
+          node node_modules/jest/bin/jest.js --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/exchangersApi.test.ts frontend/src/lib/__tests__/exchangersModel.test.ts frontend/src/lib/__tests__/exchangersPage.test.tsx frontend/src/lib/__tests__/demoSpot.test.ts frontend/src/lib/__tests__/spotOrderFeedback.test.ts
           npm run build --prefix frontend
           echo '6a3d741d70917187f639474d3aaa3543af9bb4f499e9df83a5f4c8f7a2feee52  frontend/dist/assets/index-FPRmwIWd.js' | sha256sum --check
