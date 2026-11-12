@@ -525,6 +525,16 @@ describe('8. the workspace chrome: gauges, full bleed, and the theme switch', ()
     }
   });
 
+  it('labels a stock holding in the selected interface language, never Russian for all locales', () => {
+    const source = read(wallet + 'WalletOverview.tsx');
+    expect(source).toContain("r.stockPosition ? t('stocks.typeStock') : t('wallet.navUnified')");
+    expect(source).not.toContain("r.stockPosition ? 'Акции'");
+    for (const lang of ['ru', 'en', 'es', 'hi', 'ja', 'ko', 'zh']) {
+      const dictionary = read(`frontend/src/lib/i18n/locales/${lang}.ts`);
+      expect(dictionary).toContain("'stocks.typeStock':");
+    }
+  });
+
   it.each(['ru', 'en', 'es', 'hi', 'ja', 'ko', 'zh'])('%s names the theme switch and the idle state', (lang) => {
     const dictionary = read(`frontend/src/lib/i18n/locales/${lang}.ts`);
     for (const key of ['wallet.themeDark', 'wallet.themeLight', 'wallet.themeToggle', 'wallet.noOpenPositions']) {
