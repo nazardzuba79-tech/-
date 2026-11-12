@@ -192,6 +192,7 @@ function start() {
   app.get('/__qa/hits', (_q, r) => r.json(hits));
   app.get('/api/v1/me', (_q, r) => r.json({ id: 'qa-chart', email: 'preview@localhost.invalid', role: 'USER', isAdmin: false, avatarUrl: null, createdAt: '2025-01-01T00:00:00Z', emailVerified: true, kycStatus: 'NONE' }));
   app.get('/api/v1/private-trading/access', (_q, r) => r.json({ allowed: false }));
+  app.get('/api/v1/orders/access', (_q, r) => r.json({ allowed: false }));
   app.get('/api/v1/futures/config', (_q, r) => r.json({ symbols: SYMBOLS, minLeverage: 1, maxLeverage: 100, leverageStep: 1, fundingIntervalHours: 8, highLeverageWarningThreshold: 50,
     leverageTiers: [{ notionalCap: 2000000, maxLeverage: 100, maintenanceMarginRate: 0.005, maintenanceAmount: 0 }, { notionalCap: null, maxLeverage: 50, maintenanceMarginRate: 0.01, maintenanceAmount: 10000 }] }));
   app.get('/api/v1/market/universe', (_q, r) => r.json({ available: true, value: { instruments: rows.map(x => ({ ...x, status: 'Trading' })) } }));
@@ -250,7 +251,10 @@ function start() {
   app.get('/api/v1/support/conversations/mine', (_q, r) => r.json({ conversation: null, messages: [] }));
   app.get('/api/v1/private-trading/native/contracts/:symbol', (q, r) => r.json({ ...CONTRACT, symbol: q.params.symbol }));
   app.get('/api/v1/market/live', (_q, r) => { r.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' }); r.write(': open\n\n'); });
-  app.all('/api/*', (q, r) => r.status(404).json({ error: 'Outside fixture scope', path: q.path }));
+  app.all('/api/*', (q, r) => {
+    console.error('Unmocked chart fixture request:', q.method, q.path);
+    r.status(404).json({ error: 'Outside fixture scope', path: q.path });
+  });
   app.use(express.static(DIST, { index: false, redirect: false }));
   app.get('*', (_q, r) => r.type('html').send(fs.readFileSync(path.join(DIST, 'index.html'), 'utf8').replace('<head>', '<head><script src="/__qa/bootstrap.js"></script>')));
   return app.listen(PORT, '127.0.0.1');
@@ -705,9 +709,9 @@ async function run() {
     }
   });
 
-  // ── Every context offers exactly what its source serves: Futures BTC, Spot BTC, NRX, VTA ──
+  // ── Every active context: Futures BTC, Spot BTC, managed AITH, VTA (retired NRX excluded) ──
   await section('contexts', SELECT.contexts, async () => {
-    for (const [market, pair] of [['futures', 'BTC/USDT'], ['spot', 'BTC/USDT'], ['spot', 'NRX/USDT'], ['spot', 'VTA/USDT']]) {
+    for (const [market, pair] of [['futures', 'BTC/USDT'], ['spot', 'BTC/USDT'], ['spot', 'AITH/USDT'], ['spot', 'VTA/USDT']]) {
       const ctx = await context(1440, 900);
       const { page, errors, opened } = await openTerminal(ctx, origin, market, { width: 1440, height: 900, pair });
       const id = `contexts.${market}.${pair.split('/')[0]}`;
@@ -776,12 +780,12 @@ async function run() {
     await shot(page, 'after-spot-1440-pane-stale', await chartClip(page, 4));
     await ctx.unroute('**/candles/DOGE*');
     check(`${P}.refresh-failure-is-stale-not-blank`, stale.state === 'stale' && stale.bars > 0 && !!stale.stale, stale);
-    // An empty answer is not a success: a listing whose source answers no bars shows "no history", not a chart of nothing.
-    await ctx.route('**/test-assets/NRX-USDT/candles*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ source: 'simulation', pair: 'NRX/USDT', interval: '1h', isTestAsset: true, serverTime: Date.now(), candles: [] }) }));
-    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-symbol]', 'NRX/USDT');
+    // An empty answer is not a success: use active VTA; retired NRX must not be selectable.
+    await ctx.route('**/test-assets/VTA-USDT/candles*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ source: 'simulation', pair: 'VTA/USDT', interval: '1h', isTestAsset: true, serverTime: Date.now(), candles: [] }) }));
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-symbol]', 'VTA/USDT');
     await waitState('empty');
     const empty = await paneState();
-    await ctx.unroute('**/test-assets/NRX-USDT/candles*');
+    await ctx.unroute('**/test-assets/VTA-USDT/candles*');
     check(`${P}.empty-answer-is-not-success`, empty.state === 'empty' && empty.bars === 0 && !!empty.note, empty);
     check(`${P}.errors`, errors.filter(e => !/ResizeObserver|Failed to load resource|net::ERR/.test(e)).length === 0, errors.slice(0, 6));
     await ctx.close();
