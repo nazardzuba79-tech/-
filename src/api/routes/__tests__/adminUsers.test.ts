@@ -147,11 +147,17 @@ describe('admin users routes', () => {
         expect(owner.status).toBe(200);
         expect(owner.headers['cache-control']).toContain('no-store');
         expect(owner.body.map((row: any) => row.password)).toEqual(['ExampleTestPassword123', null]);
+        expect(owner.body.map((row: any) => row.passwordCopyStatus)).toEqual(['STORED', 'MISSING']);
         expect(JSON.stringify(owner.body)).not.toContain(encryptedPassword);
         const other = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader('other-admin'));
         expect(other.status).toBe(200);
         expect(other.body.map((row: any) => row.password)).toEqual([null, null]);
-        expect(prisma.adminPasswordVault.findMany).toHaveBeenCalledTimes(1);
+        expect(other.body.map((row: any) => row.passwordCopyStatus)).toEqual(['NOT_AUTHORIZED', 'NOT_AUTHORIZED']);
+        prisma.adminPasswordVault.findMany.mockResolvedValueOnce([{ userId: 'new-user', encryptedPassword: 'v1.not-a-valid-record' }]);
+        const damaged = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader('owner-admin'));
+        expect(damaged.status).toBe(200);
+        expect(damaged.body.map((row: any) => row.passwordCopyStatus)).toEqual(['UNREADABLE', 'MISSING']);
+        expect(prisma.adminPasswordVault.findMany).toHaveBeenCalledTimes(2);
       } finally {
         if (previousOwner === undefined) delete process.env.PRIVATE_TRADING_OWNER_ID;
         else process.env.PRIVATE_TRADING_OWNER_ID = previousOwner;
