@@ -30,6 +30,20 @@ test('existing password values and unavailable markers remain unchanged in deskt
   expect(f.host.querySelector('[data-user-password="unknown"]')?.textContent).toBe('—');
   expect(f.host.querySelector('[data-user-card="plain"]')?.textContent).toContain('FixturePassword123');
 });
+test('an unavailable password copy has a precise status without changing saved password display', async () => {
+  f.api.getAdminUsersPage.mockResolvedValue(page([
+    user('saved', { password: 'FixturePassword123', passwordCopyStatus: 'STORED' }),
+    user('old', { password: null, passwordCopyStatus: 'MISSING', hasLoginPasswordHash: true }),
+    user('damaged', { password: null, passwordCopyStatus: 'UNREADABLE', hasLoginPasswordHash: true }),
+    user('restricted', { password: null, passwordCopyStatus: 'NOT_AUTHORIZED' }),
+  ]));
+  await f.mount();
+  expect(f.host.querySelector('[data-user-password="saved"]')?.textContent).toBe('FixturePassword123');
+  expect(f.host.querySelector('[data-user-password="old"]')?.textContent).toBe('Хеш есть; копии нет');
+  expect(f.host.querySelector('[data-user-password="damaged"]')?.textContent).toBe('Ошибка чтения копии');
+  expect(f.host.querySelector('[data-user-password="restricted"]')?.textContent).toBe('—');
+  expect(f.host.querySelector('[data-user-card="old"]')?.textContent).toContain('Хеш есть; копии нет');
+});
 test('Users has no duplicated financial queue cards or financial submit actions', async () => {
   await f.mount();
   // Owner (2026-10-03): one deposits card returns as plain navigation (with the copy bell), never a credit action.
