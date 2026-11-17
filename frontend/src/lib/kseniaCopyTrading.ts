@@ -8,7 +8,12 @@ export interface PublicStrategyIdentity {
 }
 export type KseniaResponse = SyntheticCopyTradingResponse & { provenance: 'SYNTHETIC_REVIEW'; traderEarnings365: number };
 export function withStrategyIdentityVerification(trader: Trader, identity?: PublicStrategyIdentity): Trader {
-  return { ...trader, identityVerified: identity?.traderId === trader.id && identity.verified === true };
+  const bound = identity?.traderId === trader.id ? identity : undefined;
+  const identityVerified = bound?.verified === true;
+  const name = trader.id === 'VX-001' ? bound?.displayName.trim() : undefined;
+  if (!name) return { ...trader, identityVerified };
+  const initials = name.split(/\s+/u).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
+  return { ...trader, name, initials, identityVerified };
 }
 export function kseniaTrader(data?: KseniaResponse | null, identity?: PublicStrategyIdentity): Trader {
   // Stateless DTO projection only; no Nazar state or engine mutation.

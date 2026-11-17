@@ -130,3 +130,12 @@ test('stable same-environment identity exposes only allowed fields and dynamical
   expect(db.user.findUnique).toHaveBeenCalledTimes(calls);
   expect(await resolveStrategyOwner(db, 'arbitrary-user')).toBeNull();
 });
+
+test.each([null, ' ', 'x'.repeat(81), 'one\u0000two', 'abc\u202edef'])('invalid VX-001 profile name uses the strategy fallback (%p)', async displayName => {
+  const db: any = {
+    copyStrategyOwner: { findUnique: async () => ({ publicName: 'Strategy fallback', ownerUserId: 'bound-id' }) },
+    user: { findUnique: jest.fn().mockResolvedValue({ displayName }) },
+  };
+  expect((await resolveStrategyOwner(db, 'VX-001'))?.displayName).toBe('Strategy fallback');
+  expect(db.user.findUnique).toHaveBeenCalledWith({ where: { id: 'bound-id' }, select: { avatarUrl: true, kycStatus: true, displayName: true } });
+});

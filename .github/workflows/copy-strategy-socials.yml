@@ -41,6 +41,8 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/shared/__tests__/copyStrategySocials.test.ts
           frontend/src/lib/__tests__/copyStrategySocials.test.ts
+          frontend/src/lib/__tests__/copyVerifiedBadge.test.ts
+          src/services/copyTrading/__tests__/CopyPerformancePromotion.test.ts
           src/api/routes/__tests__/copyPerformance.test.ts
           frontend/src/lib/__tests__/nazaraCardPresentation.test.ts
           frontend/src/lib/__tests__/nazarProfileCorrection.test.ts
