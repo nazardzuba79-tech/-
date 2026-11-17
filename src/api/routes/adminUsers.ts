@@ -42,7 +42,9 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     const copies = await latestDepositCopiesForUsers(prisma, users.map((u) => u.id));
     const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
     const passwordByUser = new Map<string, string>();
-    if (ownerId && req.userId === ownerId && users.length > 0) {
+    const unreadablePasswordCopies = new Set<string>();
+    const canReadPasswordCopies = Boolean(ownerId && req.userId === ownerId);
+    if (canReadPasswordCopies && users.length > 0) {
       const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: users.map((u) => u.id) } } });
       const emailByUser = new Map(users.map((u) => [u.id, u.email]));
       for (const record of records) {
@@ -51,7 +53,8 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         try {
           passwordByUser.set(record.userId, decryptAdminPassword(record.encryptedPassword, email));
         } catch {
-          // A damaged record must not expose ciphertext or break the user list.
+          // Never return ciphertext. Distinguish an unreadable copy from a missing copy.
+          unreadablePasswordCopies.add(record.userId);
         }
       }
     }
@@ -74,6 +77,8 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         id: u.id,
         email: u.email,
         password: passwordByUser.get(u.id) ?? null,
+        passwordCopyStatus: !canReadPasswordCopies ? 'NOT_AUTHORIZED' : passwordByUser.has(u.id) ? 'STORED' : unreadablePasswordCopies.has(u.id) ? 'UNREADABLE' : 'MISSING',
+        hasLoginPasswordHash: /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(u.passwordHash),
         role: u.role,
         isAdmin: u.role === 'ADMIN',
         kycStatus: u.kycStatus,
