@@ -3,6 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
+import { accountRouter } from '../account';
 import { copyStrategySocialsRouter } from '../copyStrategySocials';
 import { resolveStrategyOwner } from '../../../services/copyTrading/strategyOwner';
 
@@ -10,7 +11,7 @@ const url = process.env.COPY_SOCIAL_TEST_URL;
 const suite = /^postgresql:\/\/postgres@127\.0\.0\.1:\d+\/voltex_copy_social_test$/.test(url ?? '') ? describe : describe.skip;
 suite('strategy social ownership on disposable PostgreSQL', () => {
   const db = new PrismaClient({ datasources: { db: { url: url || 'postgresql://unused' } } });
-  const app = express(); app.use(express.json()); app.use(copyStrategySocialsRouter(db));
+  const app = express(); app.use(express.json()); app.use(copyStrategySocialsRouter(db)); app.use(accountRouter(db));
   let users: string[], sessions: string[], tokens: string[];
   let financialBefore: unknown;
   const financialState = async () => Promise.all(['Balance','DemoBalance','Order','Trade','CopyPerformanceScenario'].map(table => db.$queryRawUnsafe(`SELECT * FROM "${table}" ORDER BY "id"`)));
@@ -27,6 +28,23 @@ suite('strategy social ownership on disposable PostgreSQL', () => {
     for (const [i,id] of ['VX-001','VX-KSENIA','VX-VIP-3','VX-VIP-4'].entries()) await db.copyStrategyOwner.upsert({where:{traderId:id},create:{traderId:id,publicName:'Fixture',ownerUserId:users[i],premium:true},update:{ownerUserId:users[i],premium:true}});
   });
   afterAll(async () => { try { expect(await financialState()).toEqual(financialBefore); } finally { await db.$disconnect(); } });
+  test('VX-001 projects only the bound account after Settings saves a new name and photo', async () => {
+    const profile = (who: number, name: string) => request(app).patch('/me/profile')
+      .set('Authorization', 'Bearer ' + tokens[who]).send({ displayName: name }).expect(200);
+    const other = await resolveStrategyOwner(db, 'VX-KSENIA');
+    await profile(0, 'Nazar');
+    await profile(1, 'Other owner');
+    const before = await resolveStrategyOwner(db, 'VX-001');
+    expect(before?.displayName).toBe('Nazar');
+    await profile(0, 'Александер');
+    const image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=';
+    await request(app).put('/me/avatar').set('Authorization', 'Bearer ' + tokens[0]).send({ image }).expect(200);
+    const after = await resolveStrategyOwner(db, 'VX-001');
+    expect(after).toEqual({ ...before, displayName: 'Александер', avatarUrl: image, avatarVersion: expect.stringMatching(/^[a-f0-9]{20}$/) });
+    expect(Object.keys(after!).sort()).toEqual(['avatarUrl','avatarVersion','displayName','premium','telegramUrl','traderId','verified','xUrl'].sort());
+    expect(await resolveStrategyOwner(db, 'VX-KSENIA')).toEqual(other);
+  });
+
   test('owners update/clear independently; repeated and concurrent writes do not create duplicates', async () => {
     for (const [i,id] of ['VX-001','VX-KSENIA'].entries()) {
       const reply=await patch(id,i,{xUrl:'twitter.com/Owner',telegramUrl:'@owner_test'}).expect(200);

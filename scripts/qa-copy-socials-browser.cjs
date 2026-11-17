@@ -9,6 +9,7 @@ const url=process.env.COPY_SOCIAL_TEST_URL;
 if(!/^postgresql:\/\/postgres@127\.0\.0\.1:\d+\/voltex_copy_social_test$/.test(url||'')) throw Error('Disposable loopback database required');
 process.env.JWT_SECRET=randomUUID();
 const {PrismaClient}=require('@prisma/client'), express=require('express'), jwt=require('jsonwebtoken');
+const {accountRouter}=require('../dist/api/routes/account');
 const {copyPerformanceRouter}=require('../dist/api/routes/copyPerformance');
 const {CopyPerformanceService}=require('../dist/services/copyTrading/CopyPerformanceService');
 const db=new PrismaClient({datasources:{db:{url}}});
@@ -24,6 +25,7 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
  const app=express();app.use(express.json());
  const service=new CopyPerformanceService(db,()=>new Date('2026-09-24T12:00:00Z'));
  app.get('/api/v1/me',(_q,r)=>r.json({id:'qa-owner',displayName:'QA',email:'qa@example.invalid',isAdmin:false,kycStatus:'NOT_STARTED',twoFactorEnabled:false,createdAt:'2026-01-01T00:00:00Z'}));
+ app.use('/api/v1', accountRouter(db));
  app.use('/api/v1',copyPerformanceRouter(db,service));
  app.get('/api/v1/wallet/portfolio-history',(_q,r)=>r.json({points:[]}));
  app.get(['/api/v1/balances','/api/v1/futures/balances'],(_q,r)=>r.json([]));
@@ -42,6 +44,34 @@ const out=path.resolve('output/copy-socials');fs.mkdirSync(out,{recursive:true})
    const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(origin+'/copy-trading');
    const card=page.locator(`.trader-card[data-trader-id="${id}"]`);await card.waitFor();
+   if (id === 'VX-001') {
+    const photo = await page.evaluate(() => document.createElement('canvas').toDataURL('image/png'));
+    const headers = {Authorization:'Bearer ' + tokens[id]};
+    const rename = async displayName => assert.equal((await context.request.patch(origin+'/api/v1/me/profile', {headers,data:{displayName}})).status(),200);
+    const expectIdentity = async (surface, name) => {
+     await surface.getByRole('heading', {name}).waitFor();
+     assert.equal(await surface.locator('.avatar-stack span').first().innerText(), Array.from(name)[0]);
+     const image = surface.locator('.avatar-photo').first();
+     await image.evaluate(img => img.decode());
+     assert.equal(await image.getAttribute('src'), photo);
+    };
+    const before = 'Александер';
+    const after = 'Alexander';
+    await rename(before);
+    assert.equal((await context.request.put(origin+'/api/v1/me/avatar', {headers,data:{image:photo}})).status(),200);
+    await page.reload();
+    await expectIdentity(card, before);
+    await card.click();
+    const header = page.locator('.trader-profile-identity');
+    await expectIdentity(header, before);
+    await rename(after);
+    await page.waitForTimeout(1100); // Beyond the store's one-second focus coalescing window.
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expectIdentity(header, after);
+    await page.reload();
+    await expectIdentity(card, after);
+    assert.match(await card.locator('button[aria-label*="избранное"]').first().getAttribute('aria-label'), /Alexander/);
+   }
    await card.click();
    const editor=page.locator('.strategy-social-editor');await editor.waitFor({timeout:60000});await editor.locator('summary').click();
    await editor.getByLabel('X (Twitter)',{exact:true}).fill('@qa_owner');

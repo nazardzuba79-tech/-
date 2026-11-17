@@ -36,7 +36,7 @@ test.each(['Nazar', 'Nazara', 'New display name', 'Ksenia'])('identity status is
   const trader = { ...nazarTrader, name, verified: false, vip: false };
   const projected = withStrategyIdentityVerification(trader, identity({ displayName: 'Different server label' }));
   expect(projected.identityVerified).toBe(true);
-  expect(projected.name).toBe(name);
+  expect(projected.name).toBe('Different server label');
   expect(render(projected.identityVerified)).toContain('copy-verified-badge');
 });
 
@@ -55,14 +55,16 @@ test.each([undefined, identity({ verified: false }), identity({ traderId: 'VX-UN
   expect(render(projected.identityVerified)).toBe('');
 });
 
-test('identity projection changes only the presentation boolean and never mutates input data', () => {
+test('bound owner rename changes only identity presentation and never mutates input data', () => {
   const trader = syntheticNazaraTrader(null);
-  const owner = identity();
+  const owner = identity({ displayName: 'Александер' });
   const before = JSON.stringify({ trader, owner });
   const projected = withStrategyIdentityVerification(trader, owner);
   expect(projected).not.toBe(trader);
-  const { identityVerified, ...unchanged } = projected;
-  const { identityVerified: previous, ...original } = trader;
+  expect(projected.name).toBe('Александер');
+  expect(projected.initials).toBe('А');
+  const { name, initials, identityVerified, ...unchanged } = projected;
+  const { name: oldName, initials: oldInitials, identityVerified: previous, ...original } = trader;
   expect(identityVerified).toBe(true);
   expect(unchanged).toEqual(original);
   expect(JSON.stringify({ trader, owner })).toBe(before);
