@@ -7819,3 +7819,7 @@ Run41204666241 passed the expanded78 browser checks and failed only the old hard
 - Replaced the incorrect disabled-button browser assertions with actual interactions and unchanged-state snapshots. A dedicated CI identity matrix covers 20 regimes, both widths/sides and seven order variants. Guest-with-open-ticket has its token removed; the existing cold-entry Login boundary is preserved. Synthetic identities and balances are confined to the fixture.
 - Local initial regression 389 PASS, including existing Demo Spot/order feedback cases. The new handler regression proves that an original-mode submit touches neither permissions nor state/API/notifications. Final browser evidence and CI results are recorded on this PR's exact candidate.
 - Backend, Worker, original algorithms, financial restrictions, listing data and production remain untouched. Evidence is saved under `output/706-interactive-tickets`. Merge/deploy require separate owner approval.
+
+## 2026-11-17 — Codex — #712 VX-001 public identity
+
+Implementation `346fa509` projects the bound account's public name in strategyOwner.ts and applies it in kseniaCopyTrading.ts only for VX-001. The existing owner-photo path and marketplace refresh are reused. Scope excludes ledger, VIP, Ksenia and owner bindings. Production read-only check found the saved spelling `Alexander`; branch coverage includes profile edits, safe fallback and the marketplace/detail UI. See PR checks before release. Production rollout requires separate approval.
