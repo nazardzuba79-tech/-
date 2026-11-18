@@ -40,6 +40,10 @@ on:
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
       - 'scripts/qa-futures-proportions.cjs'
+      - 'scripts/qa-futures-mobile-position-card.cjs'
+      - 'frontend/src/components/FuturesMobilePositions.css'
+      - 'frontend/src/components/FuturesUnrealizedPnl.tsx'
+      - 'frontend/src/components/FuturesUnrealizedPnl.css'
       - 'scripts/qa-spot-cfd-terminal.cjs'
       - 'scripts/qa-vta-presentation.cjs'
       - 'scripts/qa-chart-ruler-label.cjs'
@@ -106,6 +110,10 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
         run: node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out docs/qa/futures-proportions-ci
+      - name: Phone position card as Bybit's — layout, figures and controls at 320, 360, 390, 430
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-futures-mobile-position-card.cjs --out output/futures-mobile-position-card
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
       - name: VTA source-specific connection and readable measurement card

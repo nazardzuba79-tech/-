@@ -14,6 +14,7 @@ import { FuturesUnrealizedPnl } from './FuturesUnrealizedPnl';
 import { FuturesPositionClosedCard, type ClosedPositionNotice } from './FuturesPositionClosedCard';
 import type { FuturesPosition } from '../lib/futuresAccountStore';
 import './FuturesPositionParity.css';
+import './FuturesMobilePositions.css';
 
 type Tab = 'open' | 'history';
 
@@ -617,7 +618,7 @@ export function FuturesPositionsPanel({
                   return (
                     <tr key={p.id} className="futures-position-row" data-side={p.side} data-pnl-split={openSplit && p.pnlBreakdown ? 'true' : undefined}>
                       {/* Contract, with Cross and the leverage under it. */}
-                      <Td label={t('futures.colContracts')}>
+                      <Td label={t('futures.colContracts')} col="contract">
                         <div className="futures-position-contract">
                           <span className="futures-position-ticker">
                             {/* The CONTRACT NAME is the control, not the
@@ -642,7 +643,7 @@ export function FuturesPositionsPanel({
                               is the colour of the quantity and the bar on
                               this cell, and is said aloud above. */}
                           <small className="futures-position-mode">
-                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.marginTrading')}{' '}
+                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : mobile ? t('futures.cross') : t('futures.marginTrading')}{' '}
                             {onEditLeverage ? <button
                               type="button"
                               className="futures-position-leverage"
@@ -654,10 +655,10 @@ export function FuturesPositionsPanel({
                           </small>
                         </div>
                       </Td>
-                      <Td label={t('futures.colQty')} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
+                      <Td label={mobile ? t('futures.size') : t('futures.colQty')} col="qty" unit={p.symbol.split('/')[0]} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
                         {groupQuantity(formatPositionQuantity(p.size, p.symbol))} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
                       </Td>
-                      {!archive && <Td label={t('futures.colValue')} className="mono">
+                      {!archive && <Td label={t('futures.colValue')} col="value" unit={quoteAsset} className="mono">
                         {value === null ? '—' : (
                           <>{group(value, 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         )}
@@ -666,17 +667,17 @@ export function FuturesPositionsPanel({
                           margin the position posts — size × entry ÷ leverage
                           on Cross, the posted amount on Isolated. The
                           server's figure, the same one ROI is measured on. */}
-                      <Td label={archive ? t('futures.initialMarginPct') : t('futures.margin')} className="mono">
+                      <Td label={archive && !mobile ? t('futures.initialMarginPct') : t('futures.margin')} col="margin" unit={quoteAsset} className="mono">
                         {Number.isFinite(parseFloat(p.initialMargin)) ? (
                           <>{group(parseFloat(p.initialMargin), 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         ) : '—'}
                       </Td>
-                      <Td label={t('futures.colEntry')} className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
-                      <Td label={t('futures.colMark')} className="mono">{p.markPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
-                      <Td label={t('futures.colLiq')} className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
+                      <Td label={t('futures.colEntry')} col="entry" className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
+                      <Td label={t('futures.colMark')} col="mark" className="mono">{p.markPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
+                      <Td label={t('futures.colLiq')} col="liq" className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
-                      <Td label={t('futures.colUnrealized')} className="mono futures-unrealized-cell">
+                      <Td label={mobile ? t('futures.unrealizedPnl') : t('futures.colUnrealized')} col="unrealized" unit={quoteAsset} className="mono futures-unrealized-cell">
                         <FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset} approx={p.unrealizedPnl === null ? null : approxUsd(Number(p.unrealizedPnl), quoteAsset)}>
                           {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
                             onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
@@ -687,20 +688,20 @@ export function FuturesPositionsPanel({
                             result: what the price did (open and already
                             closed parts), the funding settled so far, the
                             fees paid, and their sum. Nothing is added here. */}
-                        <Td label={t('futures.colTradingPnl')} className={`mono ${pnlTone(p.pnlBreakdown.tradingPnl)}`}>
+                        <Td label={t('futures.colTradingPnl')} col="trading" className={`mono ${pnlTone(p.pnlBreakdown.tradingPnl)}`}>
                           <PnlPart raw={p.pnlBreakdown.tradingPnl} quoteAsset={quoteAsset} digits={archive ? 2 : 4} />
                         </Td>
-                        <Td label={t('futures.colFunding')} className={`mono ${pnlTone(p.pnlBreakdown.funding)}`}>
+                        <Td label={t('futures.colFunding')} col="funding" className={`mono ${pnlTone(p.pnlBreakdown.funding)}`}>
                           <PnlPart raw={p.pnlBreakdown.funding} quoteAsset={quoteAsset} digits={archive ? 2 : 4} />
                         </Td>
-                        <Td label={t('futures.colFees')} className="mono">
+                        <Td label={t('futures.colFees')} col="fees" className="mono">
                           <PnlPart raw={p.pnlBreakdown.fees} quoteAsset={quoteAsset} digits={archive ? 2 : 4} debit />
                         </Td>
-                        <Td label={t('futures.colNetPnl')} className={`mono ${pnlTone(p.pnlBreakdown.netPnl)}`}>
+                        <Td label={t('futures.colNetPnl')} col="net" className={`mono ${pnlTone(p.pnlBreakdown.netPnl)}`}>
                           <PnlPart raw={p.pnlBreakdown.netPnl} quoteAsset={quoteAsset} digits={archive ? 2 : 4} approx />
                         </Td>
                       </>) : (
-                      <Td label={t('futures.colRealized')} className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
+                      <Td label={mobile ? t('futures.realizedPnl') : t('futures.colRealized')} col="realized" unit={quoteAsset} className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
                           <span
                             className="futures-position-realized"
@@ -721,7 +722,7 @@ export function FuturesPositionsPanel({
                         const protection = (
                           <FuturesPositionProtectionCell
                             compactTrigger={archive && mobile}
-                            compactLabel={narrow}
+                            compactLabel={narrow || mobile}
                             positionId={p.id}
                             protection={p.protection ?? null}
                             onSaved={() => execution.refresh(['positions'])}
@@ -750,7 +751,7 @@ export function FuturesPositionsPanel({
                           </>
                         );
                         if (narrow) return (
-                          <Td label={`${t('futures.tpsl')} · ${t('futures.colCloseAs')}`}>
+                          <Td label={`${t('futures.tpsl')} · ${t('futures.colCloseAs')}`} col="actions">
                             <div className="futures-position-actions futures-position-actions--joined">
                               {protection}
                               <div className="futures-position-close-pair">{closes}</div>
@@ -759,8 +760,8 @@ export function FuturesPositionsPanel({
                         );
                         return (
                           <>
-                            <Td label={t('futures.tpsl')}>{protection}</Td>
-                            <Td label={t('futures.colCloseAs')}>
+                            <Td label={t('futures.tpsl')} col="tpsl">{protection}</Td>
+                            <Td label={t('futures.colCloseAs')} col="close">
                               <div className="futures-position-actions">
                                 {closes}
                                 {/* The P&L card, as a compact icon button with a
@@ -850,9 +851,11 @@ export function FuturesPositionsPanel({
 function Th({ children, title }: { children?: React.ReactNode; title?: string }) {
   return <th style={styles.th} title={title}>{children}</th>;
 }
-function Td({ children, className, style, label }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; label?: string }) {
+/** `col` names the cell and `unit` its asset for the phone card (FuturesMobilePositions.css), which places
+ *  cells by name and prints the unit in the label — «Размер (BTC)» — as Bybit's phone card does. */
+function Td({ children, className, style, label, col, unit }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; label?: string; col?: string; unit?: string }) {
   return (
-    <td className={className} data-mobile-label={label} style={{ ...styles.td, ...style }}>
+    <td className={className} data-mobile-label={label} data-col={col} data-col-unit={unit || undefined} style={{ ...styles.td, ...style }}>
       {children}
     </td>
   );

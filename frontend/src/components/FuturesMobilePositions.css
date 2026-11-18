@@ -1,0 +1,277 @@
+/*
+ * The open-position card on a phone, laid out as Bybit's phone card
+ * (owner, 2026-11-18: «в точності скопіюй мобільну версію показу угод з Bybit»).
+ *
+ *   BTCUSDT Бесср.  [Лонг]  [Кросс 10.00x]                         ↗
+ *   Нереализ. PnL (USDT)                                         ROI
+ *   +3,077.97                                                +16.92%
+ *   Размер (BTC)        Маржа (USDT)             Реализ. PnL (USDT)
+ *   2.166               18,191.04                               0.00
+ *   Цена Входа          Цена марк.                      Цена ликвид.
+ *   84,000.00           85,421.30                          74,800.00
+ *   TP/SL                                       TP 90000    SL 81000
+ *   [   + TP/SL   ]   [   Лимитный   ]   [   Рыночный   ]
+ *
+ * Presentation only. The row is the same <tr> the desktop table draws, with
+ * the same figures and the same handlers; its cells are placed by name
+ * (`data-col`, FuturesPositionsPanel's Td) instead of by position, so the
+ * native P&L split and the narrow joined actions land where they belong.
+ * The selectors outweigh the positional rules of FuturesMobile.css on purpose.
+ */
+@media (max-width: 900px) {
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table tbody { gap: 8px; padding: 8px 12px 12px; }
+
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "head head head"
+      "pnl pnl pnl"
+      "qty margin realized"
+      "entry mark liq"
+      "tpsl tpsl tpsl"
+      "act1 act2 act3";
+    gap: 12px 10px;
+    padding: 12px 14px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-alt);
+  }
+  /* The native row shows its result apart: Net beside the prices, the three parts under them. */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row[data-pnl-split] {
+    grid-template-areas:
+      "head head head"
+      "pnl pnl pnl"
+      "qty margin net"
+      "entry mark liq"
+      "trading funding fees"
+      "tpsl tpsl tpsl"
+      "act1 act2 act3";
+  }
+
+  /* ── Cells: a small grey label over the figure, no boxes of their own ── */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col] {
+    grid-column: auto;
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* A label that wraps must not push its figure off the line its neighbours' figures share. */
+    justify-content: space-between;
+    gap: 3px;
+    min-width: 0;
+    margin: 0;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--text-primary);
+    font-size: 14px !important;
+    font-weight: 500;
+    line-height: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col]::before {
+    content: attr(data-mobile-label);
+    display: block;
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 16px;
+    letter-spacing: 0;
+    white-space: normal;
+  }
+  /* The unit lives in the label, as on Bybit's card, and leaves the figure alone on its line. */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col][data-col-unit]::before {
+    content: attr(data-mobile-label) " (" attr(data-col-unit) ")";
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col-unit] :is(.futures-position-unit, .futures-unrealized-unit) { display: none; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col-unit] .futures-position-realized[data-unit]::after { content: none; }
+  /* The four parts of a native result are in the asset the P&L label above them names. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td:is([data-col=net], [data-col=trading], [data-col=funding], [data-col=fees]) .futures-position-realized[data-unit]::after { content: none; }
+
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=qty] { grid-area: qty; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=margin] { grid-area: margin; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=entry] { grid-area: entry; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=mark] { grid-area: mark; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=liq] { grid-area: liq; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=realized] { grid-area: realized; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=net] { grid-area: net; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=trading] { grid-area: trading; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=funding] { grid-area: funding; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=fees] { grid-area: fees; }
+  /* The third column reads from the right edge. */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=liq], [data-col=realized], [data-col=net], [data-col=fees]) {
+    align-items: flex-end;
+    text-align: right;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=liq], [data-col=realized], [data-col=net], [data-col=fees])::before { white-space: nowrap; }
+  /* The side is the tag in the header; the size itself is a plain figure, as on Bybit's card. */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=qty] { color: var(--text-primary) !important; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td:is([data-col=realized], [data-col=net], [data-col=fees]) .futures-position-pnl { align-items: flex-end; text-align: right; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col] :is(.futures-position-realized, .futures-position-pnl) { font-size: 14px; font-weight: 500; line-height: 20px; }
+  /* «≈… USD» repeats the figure beside a label that already names the unit; the card leaves it to the desktop row. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col] .futures-position-approx { display: none; }
+
+  /* ── Header: contract, side, margin mode and leverage on one line ── */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=contract] {
+    grid-area: head;
+    position: static !important;
+    left: auto;
+    padding: 0 40px 0 0 !important;
+    border: 0 !important;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=contract]::before { content: none; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-contract {
+    display: flex;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    justify-content: flex-start;
+    gap: 4px 8px;
+    width: 100%;
+    min-height: 24px;
+    padding: 0 !important;
+  }
+  /* The side bar of the desktop row: the tag says it here. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-contract::before { content: none !important; display: none !important; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-ticker { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-ticker b { font-size: 16px; font-weight: 700; line-height: 24px; color: var(--text-primary); }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-perp { font-size: 11.5px; font-style: normal; font-weight: 400; color: var(--text-tertiary); }
+  /* A 44px touch area that takes the height of one line. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-symbol-link { min-height: 44px; margin-block: -10px; padding: 0 2px 0 0; }
+  /* The side, said aloud on the desktop row, is Bybit's coloured tag on the card. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-contract > .futures-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 1px 7px;
+    overflow: visible;
+    clip: auto;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row[data-side=LONG] .futures-position-contract > .futures-sr-only { color: var(--buy); background: color-mix(in srgb, var(--buy) 16%, transparent); }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row[data-side=SHORT] .futures-position-contract > .futures-sr-only { color: var(--sell); background: color-mix(in srgb, var(--sell) 16%, transparent); }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-contract small.futures-position-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 0;
+    padding: 1px 4px 1px 7px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-leverage {
+    min-height: 44px;
+    margin-block: -13px;
+    padding: 0 3px !important;
+    border-bottom: 0 !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+  }
+
+  /* ── Unrealized P&L on the left, ROI on the right, both large ── */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] {
+    grid-area: pnl;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 3px;
+    align-items: start;
+    justify-content: stretch;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized]::before { grid-column: 1; grid-row: 1; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-unrealized { display: contents; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-money {
+    grid-column: 1; grid-row: 2;
+    font-size: 20px; font-weight: 600; line-height: 26px;
+    white-space: normal; overflow-wrap: anywhere;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-roi { display: none; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-roi-side {
+    grid-column: 2; grid-row: 1 / span 2;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+    text-align: right;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-roi-side i {
+    color: var(--text-tertiary); font-size: 11.5px; font-style: normal; font-weight: 400; line-height: 16px;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-roi-side b { font-size: 20px; font-weight: 600; line-height: 26px; white-space: nowrap; }
+  /* The result card opens from the corner of the card, where Bybit keeps «Поделиться». */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .archive-pnl-open {
+    /* `grid-area: auto`: with the desktop cell's grid lines kept, an absolute box in a grid is laid out
+       against that grid AREA, not against the card. */
+    grid-area: auto !important;
+    position: absolute; top: 0 !important; right: 2px !important; bottom: auto; left: auto;
+    margin: 0 !important;
+    width: 44px; height: 44px; min-width: 44px; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary);
+  }
+
+  /* ── TP/SL line and the three actions under it ── */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=tpsl], [data-col=close], [data-col=actions]) { display: contents; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=tpsl], [data-col=close], [data-col=actions])::before { content: none; display: none; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row :is(.fut-tpsl, .futures-position-actions, .futures-position-close-pair) { display: contents !important; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-mobile-protection-values {
+    grid-area: tpsl;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-mobile-protection-values::before {
+    content: "TP/SL";
+    margin-right: auto;
+    color: var(--text-tertiary);
+    font-size: 11.5px;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-mobile-protection-values b { color: var(--text-primary); font-weight: 500; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row :is(.fut-tpslTrigger, .futures-position-close) {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0 6px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: color-mix(in srgb, var(--text-primary) 9%, transparent) !important;
+    color: var(--text-primary) !important;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .fut-tpslTrigger { grid-area: act1; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .fut-tpslTrigger .fut-tpslAdd { color: inherit !important; font: inherit !important; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-close[data-limit-close-open] { grid-area: act2; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-close:not([data-limit-close-open]) { grid-area: act3; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-close:disabled { opacity: .55; }
+}
+@media (max-width: 359px) {
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row { gap: 10px 8px; padding-inline: 12px; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=realized], [data-col=net])[data-col-unit]::before { content: attr(data-mobile-label); }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row :is(.fut-tpslTrigger, .futures-position-close) { font-size: 12px; }
+}

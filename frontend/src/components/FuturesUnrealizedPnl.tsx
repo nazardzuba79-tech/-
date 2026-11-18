@@ -21,6 +21,9 @@ export function FuturesUnrealizedPnl({ amount, roi, asset, approx, children }: {
     <span className="futures-position-money">{money}{money !== '—' && asset && <> <span className="futures-unrealized-unit">{asset}</span></>}</span>
     <small className="futures-position-roi">{percent === '—' ? '—' : `(${percent}%)`}</small>
     {approx && <small className="futures-position-approx">{approx}</small>}
+    {/* The same ROI under its own label, for the phone position card (FuturesMobilePositions.css), which
+        shows it beside the P&L as Bybit's card does and hides the bracketed line. Hidden everywhere else. */}
+    <span className="futures-position-roi-side" aria-hidden="true"><i>ROI</i><b>{percent === '—' ? '—' : `${percent}%`}</b></span>
     {children}
   </div>;
 }

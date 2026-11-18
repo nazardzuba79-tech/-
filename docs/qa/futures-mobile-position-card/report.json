@@ -1,0 +1,831 @@
+{
+  "dist": "frontend/dist",
+  "environment": "Built frontend; read-only loopback fixture; no order submitted",
+  "views": [
+    {
+      "width": 320,
+      "split": false,
+      "writes": [],
+      "errors": [],
+      "external": [],
+      "cardHeights": [
+        325,
+        345,
+        361
+      ]
+    },
+    {
+      "width": 360,
+      "split": false,
+      "writes": [],
+      "errors": [],
+      "external": [],
+      "cardHeights": [
+        335,
+        335,
+        371
+      ]
+    },
+    {
+      "width": 390,
+      "split": false,
+      "writes": [],
+      "errors": [],
+      "external": [],
+      "cardHeights": [
+        308,
+        335,
+        371
+      ]
+    },
+    {
+      "width": 430,
+      "split": false,
+      "writes": [],
+      "errors": [],
+      "external": [],
+      "cardHeights": [
+        308,
+        308,
+        328
+      ]
+    },
+    {
+      "width": 390,
+      "split": true,
+      "writes": [],
+      "errors": [],
+      "external": []
+    },
+    {
+      "width": 1440,
+      "split": false,
+      "writes": [],
+      "errors": [],
+      "external": []
+    }
+  ],
+  "checks": [
+    {
+      "name": "320: three position cards, laid out as a grid, without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "cards": 3,
+        "overflow": 0
+      }
+    },
+    {
+      "name": "320: a card is compact (the ordinary one under 350px)",
+      "pass": true,
+      "detail": [
+        325,
+        345,
+        361
+      ]
+    },
+    {
+      "name": "320: header — contract, side tag, margin mode with leverage",
+      "pass": true,
+      "detail": {
+        "btc": [
+          "BTCUSDT",
+          "Лонг",
+          "Кросс 10.00x"
+        ],
+        "eth": [
+          "Шорт",
+          "Изолированная 5.00x"
+        ]
+      }
+    },
+    {
+      "name": "320: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "pass": true,
+      "detail": {
+        "money": "+3,077.97",
+        "roi": "+16.92%"
+      }
+    },
+    {
+      "name": "320: labels name the figure and its unit; the unit is not repeated beside the figure",
+      "pass": true,
+      "detail": {
+        "unrealized": "Нереализ. PnL (USDT)",
+        "qty": "Размер (BTC)",
+        "margin": "Маржа (USDT)",
+        "realized": "Реализ. PnL",
+        "net": null,
+        "entry": "Цена Входа",
+        "mark": "Цена марк.",
+        "liq": "Цена ликвид.",
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "320: two rows of three figures — size, margin, realized P&L; entry, mark and liquidation price",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "top": 472,
+          "bottom": 489,
+          "left": 25,
+          "right": 65.046875
+        },
+        "margin": {
+          "top": 472,
+          "bottom": 489,
+          "left": 117.65625,
+          "right": 188.6875
+        },
+        "realized": {
+          "top": 472,
+          "bottom": 489,
+          "left": 264,
+          "right": 294.984375
+        },
+        "net": null,
+        "entry": {
+          "top": 521,
+          "bottom": 538,
+          "left": 25,
+          "right": 96.03125
+        },
+        "mark": {
+          "top": 521,
+          "bottom": 538,
+          "left": 117.65625,
+          "right": 188.6875
+        },
+        "liq": {
+          "top": 521,
+          "bottom": 538,
+          "left": 223.953125,
+          "right": 294.984375
+        },
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "320: the figures are the fixture's own",
+      "pass": true
+    },
+    {
+      "name": "320: the TP/SL line shows the server-held protection",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        "TP —SL —"
+      ]
+    },
+    {
+      "name": "320: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall",
+      "pass": true,
+      "detail": [
+        [
+          "+ TP/SL",
+          85,
+          44
+        ],
+        [
+          "Лимитный",
+          85,
+          44
+        ],
+        [
+          "Рыночный",
+          85,
+          44
+        ]
+      ]
+    },
+    {
+      "name": "320: every control on the card is at least 44px tall",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "320: nothing leaves a card and nothing overlaps",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "320: a long contract and quantity stay inside the card",
+      "pass": true,
+      "detail": 361
+    },
+    {
+      "name": "320: «TP/SL» opens the protection editor inside the screen",
+      "pass": true,
+      "detail": {
+        "x": 12,
+        "y": 328,
+        "w": 296,
+        "h": 284
+      }
+    },
+    {
+      "name": "320: the editor closes again",
+      "pass": true
+    },
+    {
+      "name": "320: «Лимитный» opens «Закрытие по лимиту» for this very position",
+      "pass": true
+    },
+    {
+      "name": "320: no order or other write request was made and nothing left the stand",
+      "pass": true,
+      "detail": {
+        "writes": [],
+        "errors": [],
+        "external": []
+      }
+    },
+    {
+      "name": "360: three position cards, laid out as a grid, without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "cards": 3,
+        "overflow": 0
+      }
+    },
+    {
+      "name": "360: a card is compact (the ordinary one under 350px)",
+      "pass": true,
+      "detail": [
+        335,
+        335,
+        371
+      ]
+    },
+    {
+      "name": "360: header — contract, side tag, margin mode with leverage",
+      "pass": true,
+      "detail": {
+        "btc": [
+          "BTCUSDT",
+          "Лонг",
+          "Кросс 10.00x"
+        ],
+        "eth": [
+          "Шорт",
+          "Изолированная 5.00x"
+        ]
+      }
+    },
+    {
+      "name": "360: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "pass": true,
+      "detail": {
+        "money": "+3,077.97",
+        "roi": "+16.92%"
+      }
+    },
+    {
+      "name": "360: labels name the figure and its unit; the unit is not repeated beside the figure",
+      "pass": true,
+      "detail": {
+        "unrealized": "Нереализ. PnL (USDT)",
+        "qty": "Размер (BTC)",
+        "margin": "Маржа (USDT)",
+        "realized": "Реализ. PnL (USDT)",
+        "net": null,
+        "entry": "Цена Входа",
+        "mark": "Цена марк.",
+        "liq": "Цена ликвид.",
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "360: two rows of three figures — size, margin, realized P&L; entry, mark and liquidation price",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "top": 421,
+          "bottom": 438,
+          "left": 27,
+          "right": 67.046875
+        },
+        "margin": {
+          "top": 421,
+          "bottom": 438,
+          "left": 132.328125,
+          "right": 203.359375
+        },
+        "realized": {
+          "top": 421,
+          "bottom": 438,
+          "left": 302.015625,
+          "right": 333
+        },
+        "net": null,
+        "entry": {
+          "top": 472,
+          "bottom": 489,
+          "left": 27,
+          "right": 98.03125
+        },
+        "mark": {
+          "top": 472,
+          "bottom": 489,
+          "left": 132.328125,
+          "right": 203.359375
+        },
+        "liq": {
+          "top": 472,
+          "bottom": 489,
+          "left": 261.96875,
+          "right": 333
+        },
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "360: the figures are the fixture's own",
+      "pass": true
+    },
+    {
+      "name": "360: the TP/SL line shows the server-held protection",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        "TP —SL —"
+      ]
+    },
+    {
+      "name": "360: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall",
+      "pass": true,
+      "detail": [
+        [
+          "+ TP/SL",
+          95,
+          44
+        ],
+        [
+          "Лимитный",
+          95,
+          44
+        ],
+        [
+          "Рыночный",
+          95,
+          44
+        ]
+      ]
+    },
+    {
+      "name": "360: every control on the card is at least 44px tall",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "360: nothing leaves a card and nothing overlaps",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "360: a long contract and quantity stay inside the card",
+      "pass": true,
+      "detail": 371
+    },
+    {
+      "name": "360: «TP/SL» opens the protection editor inside the screen",
+      "pass": true,
+      "detail": {
+        "x": 12,
+        "y": 472,
+        "w": 336,
+        "h": 284
+      }
+    },
+    {
+      "name": "360: the editor closes again",
+      "pass": true
+    },
+    {
+      "name": "360: «Лимитный» opens «Закрытие по лимиту» for this very position",
+      "pass": true
+    },
+    {
+      "name": "360: no order or other write request was made and nothing left the stand",
+      "pass": true,
+      "detail": {
+        "writes": [],
+        "errors": [],
+        "external": []
+      }
+    },
+    {
+      "name": "390: three position cards, laid out as a grid, without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "cards": 3,
+        "overflow": 0
+      }
+    },
+    {
+      "name": "390: a card is compact (the ordinary one under 350px)",
+      "pass": true,
+      "detail": [
+        308,
+        335,
+        371
+      ]
+    },
+    {
+      "name": "390: header — contract, side tag, margin mode with leverage",
+      "pass": true,
+      "detail": {
+        "btc": [
+          "BTCUSDT",
+          "Лонг",
+          "Кросс 10.00x"
+        ],
+        "eth": [
+          "Шорт",
+          "Изолированная 5.00x"
+        ]
+      }
+    },
+    {
+      "name": "390: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "pass": true,
+      "detail": {
+        "money": "+3,077.97",
+        "roi": "+16.92%"
+      }
+    },
+    {
+      "name": "390: labels name the figure and its unit; the unit is not repeated beside the figure",
+      "pass": true,
+      "detail": {
+        "unrealized": "Нереализ. PnL (USDT)",
+        "qty": "Размер (BTC)",
+        "margin": "Маржа (USDT)",
+        "realized": "Реализ. PnL (USDT)",
+        "net": null,
+        "entry": "Цена Входа",
+        "mark": "Цена марк.",
+        "liq": "Цена ликвид.",
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "390: two rows of three figures — size, margin, realized P&L; entry, mark and liquidation price",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "top": 394,
+          "bottom": 411,
+          "left": 27,
+          "right": 67.046875
+        },
+        "margin": {
+          "top": 394,
+          "bottom": 411,
+          "left": 142.328125,
+          "right": 213.359375
+        },
+        "realized": {
+          "top": 394,
+          "bottom": 411,
+          "left": 332.015625,
+          "right": 363
+        },
+        "net": null,
+        "entry": {
+          "top": 445,
+          "bottom": 462,
+          "left": 27,
+          "right": 98.03125
+        },
+        "mark": {
+          "top": 445,
+          "bottom": 462,
+          "left": 142.328125,
+          "right": 213.359375
+        },
+        "liq": {
+          "top": 445,
+          "bottom": 462,
+          "left": 291.96875,
+          "right": 363
+        },
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "390: the figures are the fixture's own",
+      "pass": true
+    },
+    {
+      "name": "390: the TP/SL line shows the server-held protection",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        "TP —SL —"
+      ]
+    },
+    {
+      "name": "390: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall",
+      "pass": true,
+      "detail": [
+        [
+          "+ TP/SL",
+          105,
+          44
+        ],
+        [
+          "Лимитный",
+          105,
+          44
+        ],
+        [
+          "Рыночный",
+          105,
+          44
+        ]
+      ]
+    },
+    {
+      "name": "390: every control on the card is at least 44px tall",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "390: nothing leaves a card and nothing overlaps",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "390: a long contract and quantity stay inside the card",
+      "pass": true,
+      "detail": 371
+    },
+    {
+      "name": "390: «TP/SL» opens the protection editor inside the screen",
+      "pass": true,
+      "detail": {
+        "x": 12,
+        "y": 472,
+        "w": 366,
+        "h": 284
+      }
+    },
+    {
+      "name": "390: the editor closes again",
+      "pass": true
+    },
+    {
+      "name": "390: «Лимитный» opens «Закрытие по лимиту» for this very position",
+      "pass": true
+    },
+    {
+      "name": "390: no order or other write request was made and nothing left the stand",
+      "pass": true,
+      "detail": {
+        "writes": [],
+        "errors": [],
+        "external": []
+      }
+    },
+    {
+      "name": "430: three position cards, laid out as a grid, without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "cards": 3,
+        "overflow": 0
+      }
+    },
+    {
+      "name": "430: a card is compact (the ordinary one under 350px)",
+      "pass": true,
+      "detail": [
+        308,
+        308,
+        328
+      ]
+    },
+    {
+      "name": "430: header — contract, side tag, margin mode with leverage",
+      "pass": true,
+      "detail": {
+        "btc": [
+          "BTCUSDT",
+          "Лонг",
+          "Кросс 10.00x"
+        ],
+        "eth": [
+          "Шорт",
+          "Изолированная 5.00x"
+        ]
+      }
+    },
+    {
+      "name": "430: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "pass": true,
+      "detail": {
+        "money": "+3,077.97",
+        "roi": "+16.92%"
+      }
+    },
+    {
+      "name": "430: labels name the figure and its unit; the unit is not repeated beside the figure",
+      "pass": true,
+      "detail": {
+        "unrealized": "Нереализ. PnL (USDT)",
+        "qty": "Размер (BTC)",
+        "margin": "Маржа (USDT)",
+        "realized": "Реализ. PnL (USDT)",
+        "net": null,
+        "entry": "Цена Входа",
+        "mark": "Цена марк.",
+        "liq": "Цена ликвид.",
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "430: two rows of three figures — size, margin, realized P&L; entry, mark and liquidation price",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "top": 394,
+          "bottom": 411,
+          "left": 27,
+          "right": 67.046875
+        },
+        "margin": {
+          "top": 394,
+          "bottom": 411,
+          "left": 155.65625,
+          "right": 226.6875
+        },
+        "realized": {
+          "top": 394,
+          "bottom": 411,
+          "left": 372,
+          "right": 402.984375
+        },
+        "net": null,
+        "entry": {
+          "top": 445,
+          "bottom": 462,
+          "left": 27,
+          "right": 98.03125
+        },
+        "mark": {
+          "top": 445,
+          "bottom": 462,
+          "left": 155.65625,
+          "right": 226.6875
+        },
+        "liq": {
+          "top": 445,
+          "bottom": 462,
+          "left": 331.953125,
+          "right": 402.984375
+        },
+        "trading": null,
+        "funding": null,
+        "fees": null
+      }
+    },
+    {
+      "name": "430: the figures are the fixture's own",
+      "pass": true
+    },
+    {
+      "name": "430: the TP/SL line shows the server-held protection",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        "TP —SL —"
+      ]
+    },
+    {
+      "name": "430: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall",
+      "pass": true,
+      "detail": [
+        [
+          "+ TP/SL",
+          119,
+          44
+        ],
+        [
+          "Лимитный",
+          119,
+          44
+        ],
+        [
+          "Рыночный",
+          119,
+          44
+        ]
+      ]
+    },
+    {
+      "name": "430: every control on the card is at least 44px tall",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "430: nothing leaves a card and nothing overlaps",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "430: a long contract and quantity stay inside the card",
+      "pass": true,
+      "detail": 328
+    },
+    {
+      "name": "430: «TP/SL» opens the protection editor inside the screen",
+      "pass": true,
+      "detail": {
+        "x": 12,
+        "y": 472,
+        "w": 406,
+        "h": 284
+      }
+    },
+    {
+      "name": "430: the editor closes again",
+      "pass": true
+    },
+    {
+      "name": "430: «Лимитный» opens «Закрытие по лимиту» for this very position",
+      "pass": true
+    },
+    {
+      "name": "430: no order or other write request was made and nothing left the stand",
+      "pass": true,
+      "detail": {
+        "writes": [],
+        "errors": [],
+        "external": []
+      }
+    },
+    {
+      "name": "390 split: net P&L beside size and margin, then the prices, then trading, funding and fees",
+      "pass": true,
+      "detail": {
+        "labels": {
+          "unrealized": "Нереализ. PnL (USDT)",
+          "qty": "Размер (BTC)",
+          "margin": "Маржа (USDT)",
+          "realized": null,
+          "net": "Чистый P&L",
+          "entry": "Цена Входа",
+          "mark": "Цена марк.",
+          "liq": "Цена ликвид.",
+          "trading": "Торговый P&L",
+          "funding": "Фандинг",
+          "fees": "Комиссии"
+        },
+        "height": 359
+      }
+    },
+    {
+      "name": "390 split: nothing leaves a card and nothing overlaps",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "1440: the desktop table is unchanged — a table row, bracketed ROI, «Марж. торговля», the side said aloud only",
+      "pass": true,
+      "detail": {
+        "display": "table-row",
+        "roiSide": false,
+        "roiBracket": "(+16.92%)",
+        "mode": "Марж. торговля 10.00x",
+        "sideTagWidth": 1,
+        "headers": [
+          "Контракты",
+          "К-во",
+          "Начальная маржа",
+          "Цена Входа",
+          "Цена марк.",
+          "Цена ликвид.",
+          "Нереализованный P&L (ROI)",
+          "Реализованный P&L",
+          "TP/SL · Закрыть как"
+        ]
+      }
+    }
+  ],
+  "passed": 67,
+  "failed": 0
+}
