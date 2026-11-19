@@ -36,6 +36,7 @@ export function FuturesPositionProtectionCell({
   onSaved,
   compactTrigger = false,
   compactLabel = false,
+  phoneLabel = false,
 }: {
   positionId: string;
   /** Server state. `null` means the payload has not said yet — unknown, not
@@ -46,6 +47,8 @@ export function FuturesPositionProtectionCell({
   /** «+ TP/SL» instead of «+ Добавить»: for a column that already carries
    *  the TP/SL heading and has no room for the longer word. */
   compactLabel?: boolean;
+  /** Phone card: the action reads «Установить TP/SL», as the owner's reference names it. */
+  phoneLabel?: boolean;
 }) {
   const execution = useFuturesExecution();
   const { t } = useLanguage();
@@ -223,7 +226,7 @@ export function FuturesPositionProtectionCell({
         style={styles.trigger}
       >
         {compactTrigger ? (
-          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t(compactLabel ? 'futures.tpsl' : 'futures.addTpsl')}</span>
+          <span className="fut-tpslAdd" style={styles.setLabel}>{phoneLabel ? t('futures.mobileSetTpsl') : <>+ {t(compactLabel ? 'futures.tpsl' : 'futures.addTpsl')}</>}</span>
         ) : protection === null ? (
           <span style={styles.dash}>—</span>
         ) : hasAny ? (
@@ -246,7 +249,7 @@ export function FuturesPositionProtectionCell({
         )}
       </button>
 
-      {compactTrigger && <div className="futures-mobile-protection-values" aria-label={t('futures.tpsl')}>
+      {compactTrigger && <div className="futures-mobile-protection-values" data-protected={tp || sl ? 'true' : undefined} aria-label={t('futures.tpsl')}>
         <span>TP <b>{tp?.triggerPrice ?? '—'}</b>{tp?.status === 'FAILED' && <em>{t('futures.protectionRetrying')}</em>}</span>
         <span>SL <b>{sl?.triggerPrice ?? '—'}</b>{sl?.status === 'FAILED' && <em>{t('futures.protectionRetrying')}</em>}</span>
       </div>}
