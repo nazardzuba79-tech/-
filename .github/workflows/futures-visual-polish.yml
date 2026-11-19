@@ -25,6 +25,7 @@ on:
       - 'frontend/src/lib/useMediaQuery.ts'
       - 'frontend/src/lib/__tests__/mobileTradeDeposit.test.ts'
       - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/components/OrderForm.tsx'
       - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
       - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'
@@ -43,6 +44,8 @@ on:
       - 'scripts/qa-futures-mobile-position-card.cjs'
       - 'frontend/src/components/FuturesMobilePositions.css'
       - 'scripts/qa-futures-mobile-terminal.cjs'
+      - 'scripts/qa-spot-mobile-terminal.cjs'
+      - 'frontend/src/pages/trade-terminal/SpotMobileReference.css'
       - 'frontend/src/pages/trade-terminal/FuturesMobileReference.css'
       - 'frontend/src/components/FuturesTickerBar.tsx'
       - 'frontend/src/components/FuturesUnrealizedPnl.tsx'
@@ -121,6 +124,10 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
         run: node scripts/qa-futures-mobile-terminal.cjs --out output/futures-mobile-terminal
+      - name: Spot and CFD phone terminals in the Futures phone layout — switch, ticket beside the book, «Ордера», chart, every control
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-spot-mobile-terminal.cjs --out output/spot-mobile-terminal
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
       - name: VTA source-specific connection and readable measurement card
@@ -148,5 +155,6 @@ jobs:
             output/chart-ruler-timeframes/*
             output/futures-mobile-position-card/*
             output/futures-mobile-terminal/*
+            output/spot-mobile-terminal/*
           retention-days: 7
           if-no-files-found: warn
