@@ -109,9 +109,10 @@
     flex:1 1 auto; width:auto; min-width:max-content; justify-content:space-between; height:var(--fm-control); min-height:var(--fm-control); padding:0 10px;
     border:0; border-radius:var(--fm-radius); background:var(--fm-field); font-size:13px; font-weight:500;
   }
-  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availRow { display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:6px; min-height:20px; font-size:12px; line-height:16px; }
+  /* A balance too long for the label's line drops under it, right-aligned. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availRow { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0 6px; min-height:20px; font-size:12px; line-height:16px; }
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availLabel { color:var(--text-tertiary); }
-  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availValue { min-width:0; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availValue { margin-left:auto; text-align:right; white-space:nowrap; }
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .order-family-select select {
     min-height:var(--fm-control); height:var(--fm-control); padding:0 28px 0 10px; border:0; border-radius:var(--fm-radius);
     background-color:var(--fm-field); background-position:right 10px center; font-weight:600;
@@ -143,6 +144,11 @@
 
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-optionsRow { display:grid; grid-template-columns:minmax(0,1fr); gap:0; }
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] :is(.fo-tpslToggle,.fo-reduceOnlyRow) { min-height:32px; height:32px; gap:8px; font-size:13px; }
+  /* TP/SL is a square checkbox, as «Только уменьшение» under it and as the desktop ticket draws it. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-tpslPlus { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:3px; border:1px solid #5a5e66; background:transparent; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-tpslPlus svg { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-tpslToggle:has(input:checked) .fo-tpslPlus { background:var(--accent); border-color:var(--accent); }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-tpslToggle:has(input:checked) .fo-tpslPlus::after { content:''; width:5px; height:9px; margin-top:-2px; border:solid #111; border-width:0 2px 2px 0; transform:rotate(45deg); }
 
   /* Long over Short: two pills. */
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-submitPair { gap:8px; }
@@ -177,10 +183,24 @@
   #archive-terminal-preview.futures-terminal .bottom-tab { min-height:40px; padding:0; font-size:15px; font-weight:500; color:var(--text-tertiary); border-bottom:2px solid transparent; }
   #archive-terminal-preview.futures-terminal .bottom-tab.active { color:var(--text-primary); font-weight:700; border-bottom-color:var(--text-primary); }
   #archive-terminal-preview.futures-terminal .bottom-tab .reference-tab-count { margin-left:0; color:inherit; font-weight:inherit; }
-  /* Row one: the tabs and the list glyph. Row two: «Все рынки». (The reference also has «Закрыть все» there; bulk close was
-     taken out of this design earlier on purpose and is not brought back without the owner's word.) */
+  /* Row one: the tabs and the list glyph. Row two: «Все рынки» on the left, «Закрыть все» (from the panel below) on the right. */
   #archive-terminal-preview.futures-terminal .terminal-account-header { flex-wrap:wrap; }
   #archive-terminal-preview.futures-terminal .terminal-account-header > .archive-pair-filter { order:3; flex:1 1 100%; min-height:40px; gap:8px; font-size:13px; color:var(--text-primary); }
+  /* The positions are cards, not a sideways table: nothing to scroll, and «Закрыть все» may rise into the row above. */
+  #archive-terminal-preview.futures-terminal .bottom-content:has(> .futures-positions-panel) { overflow:visible; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar { position:relative; z-index:3; display:flex; justify-content:flex-end; align-items:center; min-height:40px; margin:-41px 0 1px; padding:0 var(--fm-pad); border:0; background:transparent; pointer-events:none; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar > * { pointer-events:auto; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar:has(.futures-close-all-confirm) { display:block; margin:0; padding:10px var(--fm-pad); }
+  #archive-terminal-preview.futures-terminal .futures-close-all-trigger { min-height:36px; padding:0 2px; border:0; background:transparent; color:var(--text-primary); font-size:13px; font-weight:600; }
+  /* The confirmation: what will happen, then Cancel and the red action, each a full pill. */
+  #archive-terminal-preview.futures-terminal .futures-close-all-confirm { display:grid; gap:10px; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--panel-alt); }
+  #archive-terminal-preview.futures-terminal .futures-close-all-text { display:grid; gap:2px; font-size:13px; line-height:18px; color:var(--text-secondary); }
+  #archive-terminal-preview.futures-terminal .futures-close-all-text strong { font-size:15px; line-height:20px; color:var(--text-primary); }
+  #archive-terminal-preview.futures-terminal .futures-close-all-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-actions button { min-height:40px; padding:0 8px; border-radius:20px; font-size:13px; font-weight:700; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-cancel { border:1px solid color-mix(in srgb, var(--text-primary) 28%, transparent); background:transparent; color:var(--text-primary); }
+  #archive-terminal-preview.futures-terminal .futures-close-all-go { border:0; background:var(--sell); color:#fff; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar :is(.futures-close-all-status,.futures-close-all-report) { font-size:12px; color:var(--text-secondary); }
   /* The totals line belongs to the «Ордера» screen; under the ticket the cards start at once. */
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-summary { display:none; }
   /* The two history lists live on the «Ордера» screen; the ticket keeps what is open now. */
@@ -209,6 +229,9 @@
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col] { gap:2px; font-size:13px !important; line-height:18px; }
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col]::before { font-size:10.5px; line-height:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=liq] { align-items:flex-end; text-align:right; }
+  /* «Ориент. цена ликвидации» is the reference's small two-line label over the last figure. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=liq]::before { font-size:9px; line-height:11px; white-space:normal; overflow:visible; text-align:right; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=mark]::before { font-size:clamp(8.5px, 2.45vw, 10.5px); letter-spacing:-0.02em; overflow:visible; text-overflow:clip; }
 
   /* Name over side and margin mode. */
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=contract] { padding:0 !important; }
@@ -241,7 +264,12 @@
   /* Three outlined pills. */
   #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row :is(.fut-tpslTrigger,.futures-position-close) {
     min-height:32px; height:32px; padding:0 4px !important; border:1px solid color-mix(in srgb, var(--text-primary) 28%, transparent) !important; border-radius:16px !important;
-    background:transparent !important; font-size:clamp(9.5px, 2.75vw, 12px) !important; font-weight:600; line-height:16px; letter-spacing:-0.01em;
+    background:transparent !important; font-size:clamp(9px, 2.75vw, 12px) !important; font-weight:600; line-height:16px; letter-spacing:-0.01em;
+  }
+
+  /* The card's three actions keep their words whole on every phone screen, the «Ордера» card included. */
+  #archive-terminal-preview.futures-terminal .futures-positions-panel .futures-positions-table .futures-position-row :is(.fut-tpslTrigger,.futures-position-close) {
+    padding:0 2px !important; font-size:clamp(9px, 2.75vw, 12px) !important; letter-spacing:-0.01em; text-overflow:clip;
   }
 
   /* ── Order cards (open orders and their history): the contract and side in the head, then label left, figure right ── */

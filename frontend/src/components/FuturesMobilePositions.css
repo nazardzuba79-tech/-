@@ -273,7 +273,7 @@
   #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-close:disabled { opacity: .55; }
 }
 @media (max-width: 359px) {
-  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row { gap: 10px 8px; padding-inline: 12px; }
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row { gap: 10px 6px; padding-inline: 10px; }
   #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=realized], [data-col=net])[data-col-unit]::before { content: attr(data-mobile-label); }
   #archive-terminal-preview .futures-positions-panel .futures-position-row :is(.fut-tpslTrigger, .futures-position-close) { font-size: 12px; }
 }

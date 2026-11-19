@@ -65,6 +65,7 @@ const readTrade = page => page.evaluate(() => {
       resultRect: rect(cell('unrealized')), headRect: rect(cell('contract')),
       figures: Object.fromEntries(['qty', 'entry', 'mark', 'liq', 'margin', 'realized'].map(n => [n, figure(n)])),
       protection: (() => { const el = row.querySelector('.futures-mobile-protection-values'); return shown(el) ? el.textContent.replace(/\s+/g, ' ').trim() : null; })(),
+      labels: ['qty', 'entry', 'mark', 'liq'].map(n => { const td = cell(n); const c = getComputedStyle(td, '::before').content; return c === 'none' ? '' : c.replace(/^"|"$/g, '').replace(/" "|"\("|"\)"/g, ''); }),
       actions: buttons.map(b => ({ text: b.textContent.trim(), ...rect(b), clipped: b.scrollWidth > b.clientWidth + 1 })),
       outside: [...row.querySelectorAll('td[data-col], button')].filter(shown).filter(el => { const b = el.getBoundingClientRect(); return b.left < box.left - 12 || b.right > box.right + 12; }).length,
     };
@@ -91,7 +92,7 @@ const readTrade = page => page.evaluate(() => {
       ratio: shown(book.querySelector('.rb-ratio')), step: shown(book.querySelector('.rb-controls select')), tabs: shown(book.querySelector('.rb-tabs')),
       rows: [...book.querySelectorAll('.rb-row')].slice(0, 3).map(r => ({ text: r.innerText.replace(/\s+/g, ' ').trim(), clipped: [...r.querySelectorAll('span')].filter(shown).some(s => s.scrollWidth > s.clientWidth + 1) })) } : null,
     bottomTabs: bottomTabs.map(b => ({ id: b.id, text: b.textContent.replace(/\s+/g, ' ').trim(), shown: shown(b), active: b.classList.contains('active') })),
-    ordersOpen: rect(q('.futures-mobile-orders-open')), allMarkets: rect(q('.archive-pair-filter')), closeAll: q('.futures-close-all-trigger') ? 'present' : null,
+    ordersOpen: rect(q('.futures-mobile-orders-open')), allMarkets: rect(q('.archive-pair-filter')), closeAll: (() => { const b = q('.futures-close-all-trigger'); if (!b) return null; b.scrollIntoView({ block: 'center' }); const box = b.getBoundingClientRect(); const out = { text: b.textContent.trim(), ...rect(b), filter: rect(q('.archive-pair-filter')), onTop: document.elementFromPoint(box.left + 10, box.top + 10) === b }; window.scrollTo(0, 0); return out; })(),
     summaryShown: shown(q('.futures-positions-summary')), ordersBar: shown(q('.futures-mobile-orders-bar')), quick: shown(q('.futures-mobile-quick')),
     cards: rows.map(card), text: document.body.innerText,
   };
@@ -142,16 +143,17 @@ const readTrade = page => page.evaluate(() => {
         && t.sizeFields.length === 2 && t.sizeFields.find(f => f.unit === 'base').shown && !t.sizeFields.find(f => f.unit === 'quote').shown && t.swap && t.swap.width >= 32
         && t.presets === 0 && t.slider && /Стоимость позиции/.test(t.info) && /Маржа/.test(t.info) && t.reduceOnly, { margin: t.margin.map(m => m.text), available: t.available, family: t.family });
       const [long, short] = t.submit;
-      ok(`${P}: Long over Short, two full-width pills, their words whole`, t.submit.length === 2 && long.text === 'Открыть Лонг' && short.text === 'Открыть Шорт' && short.top >= long.bottom + 4 && [long, short].every(b => b.height >= 40 && b.radius >= 20 && !b.clipped
+      ok(`${P}: Long over Short, two full-width pills, their words whole`, t.submit.length === 2 && long.text === 'Лонг' && short.text === 'Шорт' && short.top >= long.bottom + 4 && [long, short].every(b => b.height >= 40 && b.radius >= 20 && !b.clipped
         && Math.abs(b.left - t.form.left) <= 1 && Math.abs(b.right - t.form.right) <= 1), t.submit.map(b => [b.text, Math.round(b.width), Math.round(b.height)]));
       ok(`${P}: book column — funding with its countdown, at least four asks and four bids around the last price, the buy/sell ratio and the price step; no tab strip`, t.funding && /Ставка финансирования/.test(t.funding.text) && /\d\d:\d\d:\d\d/.test(t.funding.text)
         && t.funding.left >= t.bookArea.left - 0.5 && t.book.asks >= 4 && t.book.bids >= 4 && t.book.last === '85,421.30' && t.book.ratio && t.book.step && !t.book.tabs && t.book.rows.every(r => !r.clipped && /\d/.test(r.text)), { funding: t.funding?.text, asks: t.book.asks, bids: t.book.bids, rows: t.book.rows.map(r => r.text) });
 
       // ── Account lists under the ticket ──
       const names = t.bottomTabs.filter(b => b.shown).map(b => b.text);
-      ok(`${P}: under the ticket — «Ордера», «Позиции», «Активы» with counts, the list key for the full screen, then «Все рынки»; history lives on the «Ордера» screen; bulk close is not in this design`,
+      ok(`${P}: under the ticket — «Ордера», «Позиции», «Активы» with counts, the list key for the full screen, «Все рынки» and «Закрыть все» on one row; history lives on the «Ордера» screen`,
         names.map(n => n.replace(/\s/g, '')).join('|') === 'Ордера(0)|Позиции(3)|Активы' && t.bottomTabs.find(b => b.id === 'futures-tab-positions').active && t.ordersOpen && t.ordersOpen.width >= 36
-        && t.allMarkets && t.closeAll === null && !/Закрыть все/.test(t.text) && !t.summaryShown && !t.ordersBar && !t.quick, { tabs: names });
+        && t.allMarkets && t.closeAll && t.closeAll.text === 'Закрыть все' && t.closeAll.onTop && Math.abs(t.closeAll.bottom - t.closeAll.filter.bottom) <= 6 && t.closeAll.left > t.closeAll.filter.left + 80
+        && !t.summaryShown && !t.ordersBar && !t.quick, { tabs: names, closeAll: t.closeAll && [Math.round(t.closeAll.left), t.closeAll.onTop] });
       const [btc, eth, pepe] = t.cards;
       const line = c => ['qty', 'entry', 'mark', 'liq'].map(n => c.figures[n]);
       ok(`${P}: position card — name over side and margin mode on the left, the result with ROI on the right, in one line`, t.cards.length === 3 && btc.ticker === 'BTCUSDT' && btc.side === 'Лонг' && eth.side === 'Шорт' && /^Кросс 10\.00x$/.test(btc.mode)
@@ -161,6 +163,7 @@ const readTrade = page => page.evaluate(() => {
       ok(`${P}: position card — three outlined pills in one row with their words whole: TP/SL, limit close, market close`, [btc, eth, pepe].every(c => c.actions.length === 3 && c.actions.map(a => a.text).join('|') === 'Установить TP/SL|Закрыть лимитом|Закрыть по рынку'
         && c.actions.every(a => a.height >= 32 && !a.clipped && Math.abs(a.top - c.actions[0].top) <= 1 && Math.abs(a.width - c.actions[0].width) <= 1.5)), btc.actions.map(a => [a.text, Math.round(a.width), Math.round(a.height)]));
       ok(`${P}: the TP/SL line shows only where protection is set; nothing leaves a card`, /TP 90000/.test(btc.protection ?? '') && /SL 81000/.test(btc.protection ?? '') && eth.protection === null && pepe.protection === null && t.cards.every(c => c.outside === 0), [btc.protection, eth.protection]);
+      ok(`${P}: the card's labels are the reference's: quantity, entry, mark and estimated liquidation price`, /Кол-во \(BTC\)/.test(btc.labels.join('|')) && /Цена маркировки/.test(btc.labels.join('|')) && /Ориент\. цена ликвидации/.test(btc.labels.join('|')), btc.labels);
       ok(`${P}: no demo wording anywhere on the screen`, !/демо|demo/i.test(t.text));
       await page.screenshot({ path: path.join(OUT, `${P}-trade.png`), animations: 'disabled' });
       if (width === 390) await page.screenshot({ path: path.join(OUT, '390-trade-full.png'), fullPage: true, animations: 'disabled' });
@@ -202,6 +205,12 @@ const readTrade = page => page.evaluate(() => {
       ok(`${P}: «Закрыть лимитом» opens the limit-close dialog`, await limit.first().isVisible() && /84,000\.00/.test(await limit.first().innerText()));
       await page.keyboard.press('Escape'); await page.waitForTimeout(200);
 
+      await page.locator('.futures-close-all-trigger').click(); await page.waitForTimeout(200);
+      const confirm = await page.evaluate(() => { const c = document.querySelector('.futures-close-all-confirm'); if (!c) return null; const buttons = [...c.querySelectorAll('button')].map(b => ({ text: b.textContent.trim(), h: b.getBoundingClientRect().height, radius: parseFloat(getComputedStyle(b).borderTopLeftRadius), bg: getComputedStyle(b).backgroundColor })); return { text: c.innerText.replace(/\s+/g, ' '), buttons }; });
+      ok(`${P}: «Закрыть все» asks first: what will be closed, Cancel and the red action`, confirm && /Закрыть все позиции\?/.test(confirm.text) && /3/.test(confirm.text) && confirm.buttons.length === 2 && confirm.buttons.every(b => b.h >= 40 && b.radius >= 20) && confirm.buttons[0].bg !== confirm.buttons[1].bg, confirm?.buttons.map(b => b.text));
+      if (width === 390) await page.screenshot({ path: path.join(OUT, '390-close-all-confirm.png'), animations: 'disabled' });
+      await page.locator('.futures-close-all-cancel').click();
+      ok(`${P}: Cancel puts «Закрыть все» back; nothing was closed and nothing was sent`, await page.locator('.futures-close-all-trigger').isVisible() && await page.locator('.futures-position-row').count() === 3 && view.writes.length === 0);
       const shareKey = await firstCard.locator('.archive-pnl-open').evaluate(el => { el.scrollIntoView({ block: 'center' }); const b = el.getBoundingClientRect(), hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return hit === el || el.contains(hit); });
       ok(`${P}: the result-card key beside the P&L label takes the press`, shareKey);
 

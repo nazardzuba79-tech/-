@@ -1,0 +1,1222 @@
+{
+  "dist": "frontend/dist",
+  "environment": "Built frontend; read-only loopback fixture; nothing submitted",
+  "views": [
+    {
+      "width": 320,
+      "writes": [],
+      "errors": [],
+      "external": []
+    },
+    {
+      "width": 360,
+      "writes": [],
+      "errors": [],
+      "external": []
+    },
+    {
+      "width": 390,
+      "writes": [],
+      "errors": [],
+      "external": []
+    },
+    {
+      "width": 430,
+      "writes": [],
+      "errors": [],
+      "external": []
+    }
+  ],
+  "checks": [
+    {
+      "name": "320: the terminal opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "320: instrument row — the pair, the «24h» figures key and the calculator; no second price beside the book's",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45,
+        "calc": 32
+      }
+    },
+    {
+      "name": "320: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          198,
+          38
+        ],
+        [
+          "trade",
+          236,
+          38
+        ],
+        [
+          "positions",
+          274,
+          38
+        ]
+      ]
+    },
+    {
+      "name": "320: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 172,
+        "book": 124
+      }
+    },
+    {
+      "name": "320: ticket — margin mode and leverage on one row, available balance, order type, one size field with its unit swap, the size slider without preset keys, the order summary, reduce-only",
+      "pass": true,
+      "detail": {
+        "margin": [
+          "Кросс▾",
+          "10.00x▾"
+        ],
+        "available": "Доступно 56,381,922.68 USDT",
+        "family": "LIMIT"
+      }
+    },
+    {
+      "name": "320: Long over Short, two full-width pills, their words whole",
+      "pass": true,
+      "detail": [
+        [
+          "Лонг",
+          172,
+          40
+        ],
+        [
+          "Шорт",
+          172,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "320: book column — funding with its countdown, at least four asks and four bids around the last price, the buy/sell ratio and the price step; no tab strip",
+      "pass": true,
+      "detail": {
+        "funding": "Ставка финансирования — · 06:00:00",
+        "asks": 6,
+        "bids": 6,
+        "rows": [
+          "85,421.40 0.027",
+          "85,421.50 0.075",
+          "85,421.60 0.123"
+        ]
+      }
+    },
+    {
+      "name": "320: under the ticket — «Ордера», «Позиции», «Активы» with counts, the list key for the full screen, «Все рынки» and «Закрыть все» on one row; history lives on the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(0)",
+          "Позиции(3)",
+          "Активы"
+        ],
+        "closeAll": [
+          225,
+          true
+        ]
+      }
+    },
+    {
+      "name": "320: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
+      "pass": true,
+      "detail": {
+        "result": "+3,077.97(+16.92%)",
+        "mode": "Кросс 10.00x"
+      }
+    },
+    {
+      "name": "320: position card — size, entry, mark and liquidation price on one line; margin and realized P&L are left to the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "left": 8,
+          "right": 45.1875,
+          "bottom": 889.390625
+        },
+        "entry": {
+          "left": 85.5,
+          "right": 151.453125,
+          "bottom": 889.390625
+        },
+        "mark": {
+          "left": 163,
+          "right": 228.953125,
+          "bottom": 889.390625
+        },
+        "liq": {
+          "left": 246.046875,
+          "right": 312,
+          "bottom": 889.390625
+        },
+        "margin": null,
+        "realized": null
+      }
+    },
+    {
+      "name": "320: position card — three outlined pills in one row with their words whole: TP/SL, limit close, market close",
+      "pass": true,
+      "detail": [
+        [
+          "Установить TP/SL",
+          97,
+          32
+        ],
+        [
+          "Закрыть лимитом",
+          97,
+          32
+        ],
+        [
+          "Закрыть по рынку",
+          97,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "320: the TP/SL line shows only where protection is set; nothing leaves a card",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        null
+      ]
+    },
+    {
+      "name": "320: the card's labels are the reference's: quantity, entry, mark and estimated liquidation price",
+      "pass": true,
+      "detail": [
+        "Кол-во (BTC)",
+        "Цена Входа",
+        "Цена маркировки",
+        "Ориент. цена ликвидации"
+      ]
+    },
+    {
+      "name": "320: no demo wording anywhere on the screen",
+      "pass": true
+    },
+    {
+      "name": "320: the unit swap shows the value field; 1000 USDT writes the quantity the order would carry",
+      "pass": true,
+      "detail": "0.01170668"
+    },
+    {
+      "name": "320: the order type select switches to market; the summary keeps every label whole",
+      "pass": true,
+      "detail": "Стоимость позиции 1,000.00 USDT Маржа 101.10 USDT Прим. цена ликвидации — / 4,816,311,514."
+    },
+    {
+      "name": "320: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "85421.4"
+    },
+    {
+      "name": "320: scrolled, the instrument row and the switch stay at the top, opaque, over the ticket",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "background": "rgb(0, 0, 0)",
+        "switchTop": 6,
+        "hit": true
+      }
+    },
+    {
+      "name": "320: the «24h» key opens every figure of the contract in place",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 ↑ +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за "
+    },
+    {
+      "name": "320: the calculator opens from the instrument row",
+      "pass": true
+    },
+    {
+      "name": "320: «Установить TP/SL» opens the protection editor with the server-held prices",
+      "pass": true
+    },
+    {
+      "name": "320: «Закрыть лимитом» opens the limit-close dialog",
+      "pass": true
+    },
+    {
+      "name": "320: «Закрыть все» asks first: what will be closed, Cancel and the red action",
+      "pass": true,
+      "detail": [
+        "Отмена",
+        "Закрыть все по рынку"
+      ]
+    },
+    {
+      "name": "320: Cancel puts «Закрыть все» back; nothing was closed and nothing was sent",
+      "pass": true
+    },
+    {
+      "name": "320: the result-card key beside the P&L label takes the press",
+      "pass": true
+    },
+    {
+      "name": "320: the list key opens «Ордера»: a title row with the way back, all five lists, the totals line and the full position card",
+      "pass": true,
+      "detail": [
+        "Ордера(0)",
+        "Позиции(3)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ]
+    },
+    {
+      "name": "320: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "320: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "320: chart screen — last price large with its change, the day's high and low, mark price and turnover, then «График | Стакан»",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за 24ч (USDT) 1,555,469,9"
+    },
+    {
+      "name": "320: Long and Short sit under the chart, above the bottom menu, and the chart keeps a useful height",
+      "pass": true,
+      "detail": {
+        "chart": 310,
+        "quick": [
+          "Лонг 85421.3",
+          "Шорт 85421.3"
+        ],
+        "scroll": 0
+      }
+    },
+    {
+      "name": "320: Long under the chart opens the ticket and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "320: the pair name opens the market list with its search",
+      "pass": true
+    },
+    {
+      "name": "320: no page error, no write request, nothing left the stand",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": [],
+        "external": []
+      }
+    },
+    {
+      "name": "360: the terminal opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "360: instrument row — the pair, the «24h» figures key and the calculator; no second price beside the book's",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45,
+        "calc": 32
+      }
+    },
+    {
+      "name": "360: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          222,
+          42
+        ],
+        [
+          "trade",
+          264,
+          42
+        ],
+        [
+          "positions",
+          306,
+          42
+        ]
+      ]
+    },
+    {
+      "name": "360: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 189,
+        "book": 137
+      }
+    },
+    {
+      "name": "360: ticket — margin mode and leverage on one row, available balance, order type, one size field with its unit swap, the size slider without preset keys, the order summary, reduce-only",
+      "pass": true,
+      "detail": {
+        "margin": [
+          "Кросс▾",
+          "10.00x▾"
+        ],
+        "available": "Доступно 56,381,922.68 USDT",
+        "family": "LIMIT"
+      }
+    },
+    {
+      "name": "360: Long over Short, two full-width pills, their words whole",
+      "pass": true,
+      "detail": [
+        [
+          "Лонг",
+          189,
+          40
+        ],
+        [
+          "Шорт",
+          189,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "360: book column — funding with its countdown, at least four asks and four bids around the last price, the buy/sell ratio and the price step; no tab strip",
+      "pass": true,
+      "detail": {
+        "funding": "Ставка финансирования — · 06:00:00",
+        "asks": 6,
+        "bids": 6,
+        "rows": [
+          "85,421.40 0.027",
+          "85,421.50 0.075",
+          "85,421.60 0.123"
+        ]
+      }
+    },
+    {
+      "name": "360: under the ticket — «Ордера», «Позиции», «Активы» with counts, the list key for the full screen, «Все рынки» and «Закрыть все» on one row; history lives on the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(0)",
+          "Позиции(3)",
+          "Активы"
+        ],
+        "closeAll": [
+          261,
+          true
+        ]
+      }
+    },
+    {
+      "name": "360: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
+      "pass": true,
+      "detail": {
+        "result": "+3,077.97(+16.92%)",
+        "mode": "Кросс 10.00x"
+      }
+    },
+    {
+      "name": "360: position card — size, entry, mark and liquidation price on one line; margin and realized P&L are left to the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "left": 12,
+          "right": 49.1875,
+          "bottom": 834.390625
+        },
+        "entry": {
+          "left": 98,
+          "right": 163.953125,
+          "bottom": 834.390625
+        },
+        "mark": {
+          "left": 184,
+          "right": 249.953125,
+          "bottom": 834.390625
+        },
+        "liq": {
+          "left": 282.046875,
+          "right": 348,
+          "bottom": 834.390625
+        },
+        "margin": null,
+        "realized": null
+      }
+    },
+    {
+      "name": "360: position card — three outlined pills in one row with their words whole: TP/SL, limit close, market close",
+      "pass": true,
+      "detail": [
+        [
+          "Установить TP/SL",
+          107,
+          32
+        ],
+        [
+          "Закрыть лимитом",
+          107,
+          32
+        ],
+        [
+          "Закрыть по рынку",
+          107,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "360: the TP/SL line shows only where protection is set; nothing leaves a card",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        null
+      ]
+    },
+    {
+      "name": "360: the card's labels are the reference's: quantity, entry, mark and estimated liquidation price",
+      "pass": true,
+      "detail": [
+        "Кол-во (BTC)",
+        "Цена Входа",
+        "Цена маркировки",
+        "Ориент. цена ликвидации"
+      ]
+    },
+    {
+      "name": "360: no demo wording anywhere on the screen",
+      "pass": true
+    },
+    {
+      "name": "360: the unit swap shows the value field; 1000 USDT writes the quantity the order would carry",
+      "pass": true,
+      "detail": "0.01170668"
+    },
+    {
+      "name": "360: the order type select switches to market; the summary keeps every label whole",
+      "pass": true,
+      "detail": "Стоимость позиции 1,000.00 USDT Маржа 101.10 USDT Прим. цена ликвидации — / 4,816,311,514."
+    },
+    {
+      "name": "360: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "85421.4"
+    },
+    {
+      "name": "360: scrolled, the instrument row and the switch stay at the top, opaque, over the ticket",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "background": "rgb(0, 0, 0)",
+        "switchTop": 6,
+        "hit": true
+      }
+    },
+    {
+      "name": "360: the «24h» key opens every figure of the contract in place",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 ↑ +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за "
+    },
+    {
+      "name": "360: the calculator opens from the instrument row",
+      "pass": true
+    },
+    {
+      "name": "360: «Установить TP/SL» opens the protection editor with the server-held prices",
+      "pass": true
+    },
+    {
+      "name": "360: «Закрыть лимитом» opens the limit-close dialog",
+      "pass": true
+    },
+    {
+      "name": "360: «Закрыть все» asks first: what will be closed, Cancel and the red action",
+      "pass": true,
+      "detail": [
+        "Отмена",
+        "Закрыть все по рынку"
+      ]
+    },
+    {
+      "name": "360: Cancel puts «Закрыть все» back; nothing was closed and nothing was sent",
+      "pass": true
+    },
+    {
+      "name": "360: the result-card key beside the P&L label takes the press",
+      "pass": true
+    },
+    {
+      "name": "360: the list key opens «Ордера»: a title row with the way back, all five lists, the totals line and the full position card",
+      "pass": true,
+      "detail": [
+        "Ордера(0)",
+        "Позиции(3)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ]
+    },
+    {
+      "name": "360: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "360: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "360: chart screen — last price large with its change, the day's high and low, mark price and turnover, then «График | Стакан»",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за 24ч (USDT) 1,555,469,9"
+    },
+    {
+      "name": "360: Long and Short sit under the chart, above the bottom menu, and the chart keeps a useful height",
+      "pass": true,
+      "detail": {
+        "chart": 509,
+        "quick": [
+          "Лонг 85421.3",
+          "Шорт 85421.3"
+        ],
+        "scroll": 0
+      }
+    },
+    {
+      "name": "360: Long under the chart opens the ticket and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "360: the pair name opens the market list with its search",
+      "pass": true
+    },
+    {
+      "name": "360: no page error, no write request, nothing left the stand",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": [],
+        "external": []
+      }
+    },
+    {
+      "name": "390: the terminal opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "390: instrument row — the pair, the «24h» figures key and the calculator; no second price beside the book's",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45,
+        "calc": 32
+      }
+    },
+    {
+      "name": "390: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          252,
+          42
+        ],
+        [
+          "trade",
+          294,
+          42
+        ],
+        [
+          "positions",
+          336,
+          42
+        ]
+      ]
+    },
+    {
+      "name": "390: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 206,
+        "book": 150
+      }
+    },
+    {
+      "name": "390: ticket — margin mode and leverage on one row, available balance, order type, one size field with its unit swap, the size slider without preset keys, the order summary, reduce-only",
+      "pass": true,
+      "detail": {
+        "margin": [
+          "Кросс▾",
+          "10.00x▾"
+        ],
+        "available": "Доступно 56,381,922.68 USDT",
+        "family": "LIMIT"
+      }
+    },
+    {
+      "name": "390: Long over Short, two full-width pills, their words whole",
+      "pass": true,
+      "detail": [
+        [
+          "Лонг",
+          206,
+          40
+        ],
+        [
+          "Шорт",
+          206,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "390: book column — funding with its countdown, at least four asks and four bids around the last price, the buy/sell ratio and the price step; no tab strip",
+      "pass": true,
+      "detail": {
+        "funding": "Ставка финансирования — · 06:00:00",
+        "asks": 6,
+        "bids": 6,
+        "rows": [
+          "85,421.40 0.027",
+          "85,421.50 0.075",
+          "85,421.60 0.123"
+        ]
+      }
+    },
+    {
+      "name": "390: under the ticket — «Ордера», «Позиции», «Активы» with counts, the list key for the full screen, «Все рынки» and «Закрыть все» on one row; history lives on the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(0)",
+          "Позиции(3)",
+          "Активы"
+        ],
+        "closeAll": [
+          291,
+          true
+        ]
+      }
+    },
+    {
+      "name": "390: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
+      "pass": true,
+      "detail": {
+        "result": "+3,077.97(+16.92%)",
+        "mode": "Кросс 10.00x"
+      }
+    },
+    {
+      "name": "390: position card — size, entry, mark and liquidation price on one line; margin and realized P&L are left to the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "left": 12,
+          "right": 49.1875,
+          "bottom": 806.390625
+        },
+        "entry": {
+          "left": 105.5,
+          "right": 171.453125,
+          "bottom": 806.390625
+        },
+        "mark": {
+          "left": 199,
+          "right": 264.953125,
+          "bottom": 806.390625
+        },
+        "liq": {
+          "left": 312.046875,
+          "right": 378,
+          "bottom": 806.390625
+        },
+        "margin": null,
+        "realized": null
+      }
+    },
+    {
+      "name": "390: position card — three outlined pills in one row with their words whole: TP/SL, limit close, market close",
+      "pass": true,
+      "detail": [
+        [
+          "Установить TP/SL",
+          117,
+          32
+        ],
+        [
+          "Закрыть лимитом",
+          117,
+          32
+        ],
+        [
+          "Закрыть по рынку",
+          117,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "390: the TP/SL line shows only where protection is set; nothing leaves a card",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        null
+      ]
+    },
+    {
+      "name": "390: the card's labels are the reference's: quantity, entry, mark and estimated liquidation price",
+      "pass": true,
+      "detail": [
+        "Кол-во (BTC)",
+        "Цена Входа",
+        "Цена маркировки",
+        "Ориент. цена ликвидации"
+      ]
+    },
+    {
+      "name": "390: no demo wording anywhere on the screen",
+      "pass": true
+    },
+    {
+      "name": "390: the unit swap shows the value field; 1000 USDT writes the quantity the order would carry",
+      "pass": true,
+      "detail": "0.01170668"
+    },
+    {
+      "name": "390: the order type select switches to market; the summary keeps every label whole",
+      "pass": true,
+      "detail": "Стоимость позиции 1,000.00 USDT Маржа 101.10 USDT Прим. цена ликвидации — / 4,816,311,514."
+    },
+    {
+      "name": "390: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "85421.4"
+    },
+    {
+      "name": "390: scrolled, the instrument row and the switch stay at the top, opaque, over the ticket",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "background": "rgb(0, 0, 0)",
+        "switchTop": 6,
+        "hit": true
+      }
+    },
+    {
+      "name": "390: the «24h» key opens every figure of the contract in place",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 ↑ +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за "
+    },
+    {
+      "name": "390: the calculator opens from the instrument row",
+      "pass": true
+    },
+    {
+      "name": "390: «Установить TP/SL» opens the protection editor with the server-held prices",
+      "pass": true
+    },
+    {
+      "name": "390: «Закрыть лимитом» opens the limit-close dialog",
+      "pass": true
+    },
+    {
+      "name": "390: «Закрыть все» asks first: what will be closed, Cancel and the red action",
+      "pass": true,
+      "detail": [
+        "Отмена",
+        "Закрыть все по рынку"
+      ]
+    },
+    {
+      "name": "390: Cancel puts «Закрыть все» back; nothing was closed and nothing was sent",
+      "pass": true
+    },
+    {
+      "name": "390: the result-card key beside the P&L label takes the press",
+      "pass": true
+    },
+    {
+      "name": "390: the list key opens «Ордера»: a title row with the way back, all five lists, the totals line and the full position card",
+      "pass": true,
+      "detail": [
+        "Ордера(0)",
+        "Позиции(3)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ]
+    },
+    {
+      "name": "390: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "390: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "390: chart screen — last price large with its change, the day's high and low, mark price and turnover, then «График | Стакан»",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за 24ч (USDT) 1,555,469,9"
+    },
+    {
+      "name": "390: Long and Short sit under the chart, above the bottom menu, and the chart keeps a useful height",
+      "pass": true,
+      "detail": {
+        "chart": 523,
+        "quick": [
+          "Лонг 85421.3",
+          "Шорт 85421.3"
+        ],
+        "scroll": 0
+      }
+    },
+    {
+      "name": "390: Long under the chart opens the ticket and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "390: the pair name opens the market list with its search",
+      "pass": true
+    },
+    {
+      "name": "390: no page error, no write request, nothing left the stand",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": [],
+        "external": []
+      }
+    },
+    {
+      "name": "430: the terminal opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "430: instrument row — the pair, the «24h» figures key and the calculator; no second price beside the book's",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45,
+        "calc": 32
+      }
+    },
+    {
+      "name": "430: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          292,
+          42
+        ],
+        [
+          "trade",
+          334,
+          42
+        ],
+        [
+          "positions",
+          376,
+          42
+        ]
+      ]
+    },
+    {
+      "name": "430: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 230,
+        "book": 166
+      }
+    },
+    {
+      "name": "430: ticket — margin mode and leverage on one row, available balance, order type, one size field with its unit swap, the size slider without preset keys, the order summary, reduce-only",
+      "pass": true,
+      "detail": {
+        "margin": [
+          "Кросс▾",
+          "10.00x▾"
+        ],
+        "available": "Доступно 56,381,922.68 USDT",
+        "family": "LIMIT"
+      }
+    },
+    {
+      "name": "430: Long over Short, two full-width pills, their words whole",
+      "pass": true,
+      "detail": [
+        [
+          "Лонг",
+          230,
+          40
+        ],
+        [
+          "Шорт",
+          230,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "430: book column — funding with its countdown, at least four asks and four bids around the last price, the buy/sell ratio and the price step; no tab strip",
+      "pass": true,
+      "detail": {
+        "funding": "Ставка финансирования — · 06:00:00",
+        "asks": 6,
+        "bids": 6,
+        "rows": [
+          "85,421.40 0.027",
+          "85,421.50 0.075",
+          "85,421.60 0.123"
+        ]
+      }
+    },
+    {
+      "name": "430: under the ticket — «Ордера», «Позиции», «Активы» with counts, the list key for the full screen, «Все рынки» and «Закрыть все» on one row; history lives on the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(0)",
+          "Позиции(3)",
+          "Активы"
+        ],
+        "closeAll": [
+          331,
+          true
+        ]
+      }
+    },
+    {
+      "name": "430: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
+      "pass": true,
+      "detail": {
+        "result": "+3,077.97(+16.92%)",
+        "mode": "Кросс 10.00x"
+      }
+    },
+    {
+      "name": "430: position card — size, entry, mark and liquidation price on one line; margin and realized P&L are left to the «Ордера» screen",
+      "pass": true,
+      "detail": {
+        "qty": {
+          "left": 12,
+          "right": 49.1875,
+          "bottom": 806.390625
+        },
+        "entry": {
+          "left": 115.5,
+          "right": 181.453125,
+          "bottom": 806.390625
+        },
+        "mark": {
+          "left": 219,
+          "right": 284.953125,
+          "bottom": 806.390625
+        },
+        "liq": {
+          "left": 352.046875,
+          "right": 418,
+          "bottom": 806.390625
+        },
+        "margin": null,
+        "realized": null
+      }
+    },
+    {
+      "name": "430: position card — three outlined pills in one row with their words whole: TP/SL, limit close, market close",
+      "pass": true,
+      "detail": [
+        [
+          "Установить TP/SL",
+          130,
+          32
+        ],
+        [
+          "Закрыть лимитом",
+          130,
+          32
+        ],
+        [
+          "Закрыть по рынку",
+          130,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "430: the TP/SL line shows only where protection is set; nothing leaves a card",
+      "pass": true,
+      "detail": [
+        "TP 90000SL 81000",
+        null
+      ]
+    },
+    {
+      "name": "430: the card's labels are the reference's: quantity, entry, mark and estimated liquidation price",
+      "pass": true,
+      "detail": [
+        "Кол-во (BTC)",
+        "Цена Входа",
+        "Цена маркировки",
+        "Ориент. цена ликвидации"
+      ]
+    },
+    {
+      "name": "430: no demo wording anywhere on the screen",
+      "pass": true
+    },
+    {
+      "name": "430: the unit swap shows the value field; 1000 USDT writes the quantity the order would carry",
+      "pass": true,
+      "detail": "0.01170668"
+    },
+    {
+      "name": "430: the order type select switches to market; the summary keeps every label whole",
+      "pass": true,
+      "detail": "Стоимость позиции 1,000.00 USDT Маржа 101.10 USDT Прим. цена ликвидации — / 4,816,311,514."
+    },
+    {
+      "name": "430: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "85421.4"
+    },
+    {
+      "name": "430: scrolled, the instrument row and the switch stay at the top, opaque, over the ticket",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "background": "rgb(0, 0, 0)",
+        "switchTop": 6,
+        "hit": true
+      }
+    },
+    {
+      "name": "430: the «24h» key opens every figure of the contract in place",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 ↑ +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за "
+    },
+    {
+      "name": "430: the calculator opens from the instrument row",
+      "pass": true
+    },
+    {
+      "name": "430: «Установить TP/SL» opens the protection editor with the server-held prices",
+      "pass": true
+    },
+    {
+      "name": "430: «Закрыть лимитом» opens the limit-close dialog",
+      "pass": true
+    },
+    {
+      "name": "430: «Закрыть все» asks first: what will be closed, Cancel and the red action",
+      "pass": true,
+      "detail": [
+        "Отмена",
+        "Закрыть все по рынку"
+      ]
+    },
+    {
+      "name": "430: Cancel puts «Закрыть все» back; nothing was closed and nothing was sent",
+      "pass": true
+    },
+    {
+      "name": "430: the result-card key beside the P&L label takes the press",
+      "pass": true
+    },
+    {
+      "name": "430: the list key opens «Ордера»: a title row with the way back, all five lists, the totals line and the full position card",
+      "pass": true,
+      "detail": [
+        "Ордера(0)",
+        "Позиции(3)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ]
+    },
+    {
+      "name": "430: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "430: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "430: chart screen — last price large with its change, the day's high and low, mark price and turnover, then «График | Стакан»",
+      "pass": true,
+      "detail": "BTC/USDT Bitcoin 85,421.30 +1.25% Маркировочная цена 85,421.30 Макс. за 24ч 87,556.83 Мин. за 24ч 83,712.87 Оборот за 24ч (USDT) 1,555,469,9"
+    },
+    {
+      "name": "430: Long and Short sit under the chart, above the bottom menu, and the chart keeps a useful height",
+      "pass": true,
+      "detail": {
+        "chart": 523,
+        "quick": [
+          "Лонг 85421.3",
+          "Шорт 85421.3"
+        ],
+        "scroll": 0
+      }
+    },
+    {
+      "name": "430: Long under the chart opens the ticket and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "430: the pair name opens the market list with its search",
+      "pass": true
+    },
+    {
+      "name": "430: no page error, no write request, nothing left the stand",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": [],
+        "external": []
+      }
+    },
+    {
+      "name": "1440: none of the phone controls is drawn; both size fields and the desktop action names are as before",
+      "pass": true,
+      "detail": {
+        "phoneOnly": [],
+        "sizeFields": 2,
+        "close": [
+          "Лимитный",
+          "Рыночный"
+        ]
+      }
+    }
+  ],
+  "passed": 133,
+  "failed": 0
+}

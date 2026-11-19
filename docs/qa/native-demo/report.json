@@ -16,52 +16,52 @@
           "bottom": 0
         },
         "deposit": {
-          "left": 225.203125,
+          "left": 225,
           "right": 312,
-          "top": 4,
-          "bottom": 48
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 8,
-          "right": 179.671875,
-          "top": 155,
-          "bottom": 187
+          "left": 128.21875,
+          "right": 314,
+          "top": 238,
+          "bottom": 332
         },
         "tabs": {
-          "left": 8,
-          "right": 179.671875,
-          "top": 214,
-          "bottom": 246
+          "left": 128.21875,
+          "right": 314,
+          "top": 340,
+          "bottom": 384
         },
         "price": {
-          "left": 8,
-          "right": 179.671875,
-          "top": 254,
-          "bottom": 302
+          "left": 128.21875,
+          "right": 314,
+          "top": 407,
+          "bottom": 455
         },
         "info": {
-          "left": 8,
-          "right": 179.671875,
-          "top": 412.390625,
-          "bottom": 496.390625
+          "left": 128.21875,
+          "right": 314,
+          "top": 701.390625,
+          "bottom": 778.390625
         },
         "submit": {
-          "left": 8,
-          "right": 179.671875,
-          "top": 572.390625,
-          "bottom": 660.390625
+          "left": 128.21875,
+          "right": 314,
+          "top": 786.390625,
+          "bottom": 898.390625
         },
         "heading": {
           "left": 0,
           "right": 320,
-          "top": 103,
-          "bottom": 151
+          "top": 111,
+          "bottom": 182
         },
         "launcher": {
-          "left": 160,
-          "right": 192,
-          "top": 111,
-          "bottom": 143
+          "left": 268,
+          "right": 312,
+          "top": 124,
+          "bottom": 168
         },
         "summaryBeforeSubmit": true,
         "submitPosition": "static"
@@ -69,8 +69,14 @@
     },
     {
       "name": "mobile-position-actions-320",
-      "passed": false,
-      "error": "AssertionError [ERR_ASSERTION]: Archive bulk close returned under another selector\n\n1 !== 0\n\n    at archivePositionActions (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:773:12)\n    at async check (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:36:26)\n    at async main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:801:5)"
+      "passed": true,
+      "evidence": {
+        "width": 320,
+        "scroll": 320,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
     },
     {
       "name": "mobile-ticket-layout-390",
@@ -85,52 +91,52 @@
           "bottom": 0
         },
         "deposit": {
-          "left": 293.203125,
+          "left": 293,
           "right": 380,
-          "top": 1.5,
-          "bottom": 45.5
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 218.46875,
-          "top": 100,
-          "bottom": 132
+          "left": 164.59375,
+          "right": 382,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 218.46875,
-          "top": 159,
-          "bottom": 191
+          "left": 164.59375,
+          "right": 382,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 218.46875,
-          "top": 199,
-          "bottom": 247
+          "left": 164.59375,
+          "right": 382,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 218.46875,
-          "top": 357.390625,
-          "bottom": 426.390625
+          "left": 164.59375,
+          "right": 382,
+          "top": 589.390625,
+          "bottom": 654.390625
         },
         "submit": {
-          "left": 12,
-          "right": 218.46875,
-          "top": 502.390625,
-          "bottom": 590.390625
+          "left": 164.59375,
+          "right": 382,
+          "top": 662.390625,
+          "bottom": 774.390625
         },
         "heading": {
           "left": 0,
           "right": 390,
-          "top": 48,
-          "bottom": 96
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 214,
-          "right": 246,
-          "top": 56,
-          "bottom": 88
+          "left": 336,
+          "right": 380,
+          "top": 67,
+          "bottom": 111
         },
         "summaryBeforeSubmit": true,
         "submitPosition": "static"
@@ -138,8 +144,14 @@
     },
     {
       "name": "mobile-position-actions-390",
-      "passed": false,
-      "error": "AssertionError [ERR_ASSERTION]: Archive bulk close returned under another selector\n\n1 !== 0\n\n    at archivePositionActions (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:773:12)\n    at async check (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:36:26)\n    at async main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:801:5)"
+      "passed": true,
+      "evidence": {
+        "width": 390,
+        "scroll": 390,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
     },
     {
       "name": "mobile-ticket-layout-393",
@@ -154,52 +166,52 @@
           "bottom": 0
         },
         "deposit": {
-          "left": 296.203125,
+          "left": 296,
           "right": 383,
-          "top": 1.5,
-          "bottom": 45.5
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 220.21875,
-          "top": 100,
-          "bottom": 132
+          "left": 165.796875,
+          "right": 385,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 220.21875,
-          "top": 159,
-          "bottom": 191
+          "left": 165.796875,
+          "right": 385,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 220.21875,
-          "top": 199,
-          "bottom": 247
+          "left": 165.796875,
+          "right": 385,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 220.21875,
-          "top": 357.390625,
-          "bottom": 426.390625
+          "left": 165.796875,
+          "right": 385,
+          "top": 589.390625,
+          "bottom": 654.390625
         },
         "submit": {
-          "left": 12,
-          "right": 220.21875,
-          "top": 502.390625,
-          "bottom": 590.390625
+          "left": 165.796875,
+          "right": 385,
+          "top": 662.390625,
+          "bottom": 774.390625
         },
         "heading": {
           "left": 0,
           "right": 393,
-          "top": 48,
-          "bottom": 96
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 217,
-          "right": 249,
-          "top": 56,
-          "bottom": 88
+          "left": 339,
+          "right": 383,
+          "top": 67,
+          "bottom": 111
         },
         "summaryBeforeSubmit": true,
         "submitPosition": "static"
@@ -207,8 +219,14 @@
     },
     {
       "name": "mobile-position-actions-393",
-      "passed": false,
-      "error": "AssertionError [ERR_ASSERTION]: Archive bulk close returned under another selector\n\n1 !== 0\n\n    at archivePositionActions (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:773:12)\n    at async check (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:36:26)\n    at async main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:801:5)"
+      "passed": true,
+      "evidence": {
+        "width": 393,
+        "scroll": 393,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
     },
     {
       "name": "mobile-ticket-layout-430",
@@ -219,56 +237,56 @@
         "brand": {
           "left": 60,
           "right": 88,
-          "top": 1.5,
-          "bottom": 45.5
+          "top": 8,
+          "bottom": 52
         },
         "deposit": {
-          "left": 333.203125,
+          "left": 333,
           "right": 420,
-          "top": 1.5,
-          "bottom": 45.5
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 241.671875,
-          "top": 100,
-          "bottom": 132
+          "left": 180.59375,
+          "right": 422,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 241.671875,
-          "top": 159,
-          "bottom": 191
+          "left": 180.59375,
+          "right": 422,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 241.671875,
-          "top": 199,
-          "bottom": 247
+          "left": 180.59375,
+          "right": 422,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 241.671875,
-          "top": 357.390625,
-          "bottom": 426.390625
+          "left": 180.59375,
+          "right": 422,
+          "top": 541.390625,
+          "bottom": 606.390625
         },
         "submit": {
-          "left": 12,
-          "right": 241.671875,
-          "top": 502.390625,
-          "bottom": 590.390625
+          "left": 180.59375,
+          "right": 422,
+          "top": 614.390625,
+          "bottom": 726.390625
         },
         "heading": {
           "left": 0,
           "right": 430,
-          "top": 48,
-          "bottom": 96
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 254,
-          "right": 286,
-          "top": 56,
-          "bottom": 88
+          "left": 376,
+          "right": 420,
+          "top": 67,
+          "bottom": 111
         },
         "summaryBeforeSubmit": true,
         "submitPosition": "static"
@@ -276,8 +294,14 @@
     },
     {
       "name": "mobile-position-actions-430",
-      "passed": false,
-      "error": "AssertionError [ERR_ASSERTION]: Archive bulk close returned under another selector\n\n1 !== 0\n\n    at archivePositionActions (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:773:12)\n    at async check (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:36:26)\n    at async main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:801:5)"
+      "passed": true,
+      "evidence": {
+        "width": 430,
+        "scroll": 430,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
     },
     {
       "name": "mobile-ticket-layout-768",
@@ -288,56 +312,56 @@
         "brand": {
           "left": 60,
           "right": 88,
-          "top": 1.5,
-          "bottom": 45.5
+          "top": 8,
+          "bottom": 52
         },
         "deposit": {
-          "left": 671.203125,
+          "left": 671,
           "right": 758,
-          "top": 1.5,
-          "bottom": 45.5
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 437.71875,
-          "top": 100,
-          "bottom": 132
+          "left": 315.796875,
+          "right": 760,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 437.71875,
-          "top": 159,
-          "bottom": 191
+          "left": 315.796875,
+          "right": 760,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 437.71875,
-          "top": 199,
-          "bottom": 247
+          "left": 315.796875,
+          "right": 760,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 437.71875,
-          "top": 357.390625,
-          "bottom": 426.390625
+          "left": 315.796875,
+          "right": 760,
+          "top": 541.390625,
+          "bottom": 606.390625
         },
         "submit": {
-          "left": 12,
-          "right": 437.71875,
-          "top": 502.390625,
-          "bottom": 590.390625
+          "left": 315.796875,
+          "right": 760,
+          "top": 614.390625,
+          "bottom": 726.390625
         },
         "heading": {
           "left": 0,
           "right": 768,
-          "top": 48,
-          "bottom": 96
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 592,
-          "right": 624,
-          "top": 56,
-          "bottom": 88
+          "left": 714,
+          "right": 758,
+          "top": 67,
+          "bottom": 111
         },
         "summaryBeforeSubmit": true,
         "submitPosition": "static"
@@ -345,8 +369,14 @@
     },
     {
       "name": "mobile-position-actions-768",
-      "passed": false,
-      "error": "AssertionError [ERR_ASSERTION]: Archive bulk close returned under another selector\n\n1 !== 0\n\n    at archivePositionActions (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:773:12)\n    at async check (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:36:26)\n    at async main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:801:5)"
+      "passed": true,
+      "evidence": {
+        "width": 768,
+        "scroll": 768,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
     },
     {
       "name": "desktop-position-actions-1366",
@@ -406,16 +436,16 @@
           "height": 42,
           "left": 1148,
           "right": 1280,
-          "top": 684.390625,
-          "bottom": 726.390625
+          "top": 622.390625,
+          "bottom": 664.390625
         },
         "short": {
           "width": 132,
           "height": 42,
           "left": 1292,
           "right": 1424,
-          "top": 684.390625,
-          "bottom": 726.390625
+          "top": 622.390625,
+          "bottom": 664.390625
         },
         "trailing": [
           {
@@ -428,9 +458,9 @@
               "bottom": 278
             },
             "inner": {
-              "width": 86.03125,
+              "width": 85.203125,
               "height": 40,
-              "left": 1336.96875,
+              "left": 1337.796875,
               "right": 1423,
               "top": 237,
               "bottom": 277
@@ -446,9 +476,9 @@
               "bottom": 340
             },
             "inner": {
-              "width": 44.078125,
+              "width": 44.609375,
               "height": 40,
-              "left": 1378.921875,
+              "left": 1378.390625,
               "right": 1423,
               "top": 299,
               "bottom": 339
@@ -468,9 +498,9 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 49733.9,
+        "price": 49353.2,
         "quantity": 5,
-        "positionValue": "248,669.50"
+        "positionValue": "246,766.00"
       }
     },
     {
@@ -502,16 +532,16 @@
           "height": 42,
           "left": 1148,
           "right": 1280,
-          "top": 706.390625,
-          "bottom": 748.390625
+          "top": 644.390625,
+          "bottom": 686.390625
         },
         "short": {
           "width": 132,
           "height": 42,
           "left": 1292,
           "right": 1424,
-          "top": 706.390625,
-          "bottom": 748.390625
+          "top": 644.390625,
+          "bottom": 686.390625
         },
         "trailing": [
           {
@@ -524,9 +554,9 @@
               "bottom": 278
             },
             "inner": {
-              "width": 53.578125,
+              "width": 54.8125,
               "height": 40,
-              "left": 1369.421875,
+              "left": 1368.1875,
               "right": 1423,
               "top": 237,
               "bottom": 277
@@ -542,9 +572,9 @@
               "bottom": 340
             },
             "inner": {
-              "width": 44.078125,
+              "width": 44.609375,
               "height": 40,
-              "left": 1378.921875,
+              "left": 1378.390625,
               "right": 1423,
               "top": 299,
               "bottom": 339
@@ -557,9 +587,9 @@
       "name": "account-summary-1440",
       "passed": true,
       "evidence": {
-        "balance": "10,099,193.26 USDT",
-        "available": "10,049,185.83 USDT",
-        "im": "0.50%",
+        "balance": "10,098,433.96 USDT",
+        "available": "10,048,809.31 USDT",
+        "im": "0.49%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -595,10 +625,10 @@
           "Чистый P&L",
           "TP/SL · Закрыть как"
         ],
-        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nКонтракты\tК-во\tНачальная маржа\tЦена Входа\tЦена марк.\tЦена ликвид.\tНереализованный P&L (ROI)\tТорговый P&L\tФандинг\tКомиссии\tЧистый P&L\tTP/SL · Закрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t34,813.80 USDT\t49,734.00\t49,733.90\t—\t\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n\t\n-0.70\n\t\n0.00\n\t\n-191.48\n\t\n-192.18\n≈-192.18 USD\n\t\n+ TP/SL\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t14,920.14 USDT\t49,733.80\t49,733.90\t—\t\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n\t\n-0.30\n\t\n0.00\n\t\n-82.06\n\t\n-82.36\n≈-82.36 USD\n\t\n+ TP/SL\nЛимитный\nРыночный",
+        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nКонтракты\tК-во\tНачальная маржа\tЦена Входа\tЦена марк.\tЦена ликвид.\tНереализованный P&L (ROI)\tТорговый P&L\tФандинг\tКомиссии\tЧистый P&L\tTP/SL · Закрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t34,547.31 USDT\t49,353.30\t49,353.20\t—\t\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n\t\n-0.70\n\t\n0.00\n\t\n-190.01\n\t\n-190.71\n≈-190.71 USD\n\t\n+ TP/SL\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t14,805.93 USDT\t49,353.10\t49,353.20\t—\t\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n\t\n-0.30\n\t\n0.00\n\t\n-81.43\n\t\n-81.73\n≈-81.73 USD\n\t\n+ TP/SL\nЛимитный\nРыночный",
         "scroll": {
           "client": 1128,
-          "full": 1494,
+          "full": 1499,
           "overflow": "scroll"
         }
       }
@@ -620,7 +650,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-d68a8c84-99fb-4519-afb6-c66532c1d701",
+        "href": "/futures?nativeCard=native%3A9%3Anative-06eeb961-e6ea-4918-9a11-202b3d32d0f3",
         "exported": "1080x1215"
       }
     },
@@ -663,72 +693,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 206.46875,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 218.46875,
-          "top": 199,
-          "bottom": 247
+          "left": 164.59375,
+          "right": 382,
+          "top": 295,
+          "bottom": 343
         },
         "quantity": {
-          "width": 206.46875,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 218.46875,
-          "top": 255,
-          "bottom": 303
+          "left": 164.59375,
+          "right": 382,
+          "top": 351,
+          "bottom": 399
         },
         "long": {
-          "width": 206.46875,
-          "height": 40,
-          "left": 12,
-          "right": 218.46875,
-          "top": 502.390625,
-          "bottom": 542.390625
+          "width": 217.40625,
+          "height": 52,
+          "left": 164.59375,
+          "right": 382,
+          "top": 662.390625,
+          "bottom": 714.390625
         },
         "short": {
-          "width": 206.46875,
-          "height": 40,
-          "left": 12,
-          "right": 218.46875,
-          "top": 550.390625,
-          "bottom": 590.390625
+          "width": 217.40625,
+          "height": 52,
+          "left": 164.59375,
+          "right": 382,
+          "top": 722.390625,
+          "bottom": 774.390625
         },
         "trailing": [
           {
             "outer": {
-              "width": 206.46875,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 218.46875,
-              "top": 199,
-              "bottom": 247
+              "left": 164.59375,
+              "right": 382,
+              "top": 295,
+              "bottom": 343
             },
             "inner": {
-              "width": 84,
+              "width": 94,
               "height": 46,
-              "left": 133.46875,
-              "right": 217.46875,
-              "top": 200,
-              "bottom": 246
+              "left": 287,
+              "right": 381,
+              "top": 296,
+              "bottom": 342
             }
           },
           {
             "outer": {
-              "width": 206.46875,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 218.46875,
-              "top": 255,
-              "bottom": 303
+              "left": 164.59375,
+              "right": 382,
+              "top": 351,
+              "bottom": 399
             },
             "inner": {
-              "width": 74.203125,
+              "width": 51.609375,
               "height": 46,
-              "left": 143.265625,
-              "right": 217.46875,
-              "top": 256,
-              "bottom": 302
+              "left": 329.390625,
+              "right": 381,
+              "top": 352,
+              "bottom": 398
             }
           }
         ]
@@ -745,9 +775,9 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 49733.9,
+        "price": 49340.6,
         "quantity": 5,
-        "positionValue": "248,669.50"
+        "positionValue": "246,703.00"
       }
     },
     {
@@ -759,72 +789,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 206.46875,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 218.46875,
-          "top": 199,
-          "bottom": 247
+          "left": 164.59375,
+          "right": 382,
+          "top": -25,
+          "bottom": 23
         },
         "quantity": {
-          "width": 206.46875,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 218.46875,
-          "top": 255,
-          "bottom": 303
+          "left": 164.59375,
+          "right": 382,
+          "top": 31,
+          "bottom": 79
         },
         "long": {
-          "width": 206.46875,
-          "height": 40,
-          "left": 12,
-          "right": 218.46875,
-          "top": 521.390625,
-          "bottom": 561.390625
+          "width": 217.40625,
+          "height": 52,
+          "left": 164.59375,
+          "right": 382,
+          "top": 364.390625,
+          "bottom": 416.390625
         },
         "short": {
-          "width": 206.46875,
-          "height": 40,
-          "left": 12,
-          "right": 218.46875,
-          "top": 569.390625,
-          "bottom": 609.390625
+          "width": 217.40625,
+          "height": 52,
+          "left": 164.59375,
+          "right": 382,
+          "top": 424.390625,
+          "bottom": 476.390625
         },
         "trailing": [
           {
             "outer": {
-              "width": 206.46875,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 218.46875,
-              "top": 199,
-              "bottom": 247
+              "left": 164.59375,
+              "right": 382,
+              "top": -25,
+              "bottom": 23
             },
             "inner": {
-              "width": 50.390625,
+              "width": 62.8125,
               "height": 46,
-              "left": 167.078125,
-              "right": 217.46875,
-              "top": 200,
-              "bottom": 246
+              "left": 318.1875,
+              "right": 381,
+              "top": -24,
+              "bottom": 22
             }
           },
           {
             "outer": {
-              "width": 206.46875,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 218.46875,
-              "top": 255,
-              "bottom": 303
+              "left": 164.59375,
+              "right": 382,
+              "top": 31,
+              "bottom": 79
             },
             "inner": {
-              "width": 74.203125,
+              "width": 51.609375,
               "height": 46,
-              "left": 143.265625,
-              "right": 217.46875,
-              "top": 256,
-              "bottom": 302
+              "left": 329.390625,
+              "right": 381,
+              "top": 32,
+              "bottom": 78
             }
           }
         ]
@@ -834,9 +864,9 @@
       "name": "account-summary-390",
       "passed": true,
       "evidence": {
-        "balance": "10,099,193.26 USDT",
-        "available": "10,049,185.83 USDT",
-        "im": "0.50%",
+        "balance": "10,098,408.83 USDT",
+        "available": "10,048,796.85 USDT",
+        "im": "0.49%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -873,7 +903,7 @@
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "Закрыть все\nВсе фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nBTCUSDT\nБесср.\nЛонг\nКросс\n10.00x\n7.000\n34,813.80\n49,734.00\n49,733.90\n—\n-0.70\nROI\n0.00%\n-0.70\n0.00\n-191.48\n-192.18\nУстановить TP/SL\nTP —\nSL —\nЗакрыть лимитом\nЗакрыть по рынку\nBTCUSDT\nБесср.\nШорт\nКросс\n10.00x\n3.000\n14,920.14\n49,733.80\n49,733.90\n—\n-0.30\nROI\n0.00%\n-0.30\n0.00\n-82.06\n-82.36\nУстановить TP/SL\nTP —\nSL —\nЗакрыть лимитом\nЗакрыть по рынку",
+        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n34,538.49\nUSDT\n49,340.70\n49,340.60\n—\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n-0.70\n0.00\n-189.96\n-190.66\n≈-190.66 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n14,802.15\nUSDT\n49,340.50\n49,340.60\n—\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n-0.30\n0.00\n-81.41\n-81.71\n≈-81.71 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
         "scroll": {
           "client": 390,
           "full": 390,
@@ -886,9 +916,39 @@
       "passed": true
     },
     {
+      "name": "pnl-card-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 162.296875,
+        "bottom": 681.6875,
+        "dialogHeight": 519.390625,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-b10c11bc-9424-4ec6-8a79-f39660174aec",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "owner-no-real-account-requests-390",
+      "passed": true
+    },
+    {
       "name": "normal-owner-flow-390",
-      "passed": false,
-      "error": "locator.click: Timeout 25000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.futures-positions-table tbody tr[data-side=LONG]').locator('.futures-position-card, .archive-pnl-open')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" class=\"archive-pnl-open\" title=\"P&L Card · Поделиться результатом\" aria-label=\"P&L Card · Поделиться результатом · BTC/USDT\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <td data-col=\"contract\" data-mobile-label=\"Контракты\">…</td> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <td data-col=\"contract\" data-mobile-label=\"Контракты\">…</td> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    47 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <td data-col=\"contract\" data-mobile-label=\"Контракты\">…</td> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at normalFlow (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:401:68)\n    at async check (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:36:26)\n    at async main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:809:5)"
+      "passed": true,
+      "evidence": {
+        "openLongShort": true,
+        "add": true,
+        "cancel": true,
+        "protection": true,
+        "partialClose": true,
+        "fullClose": true,
+        "reload": true,
+        "fixtureRestart": false
+      }
     },
     {
       "name": "access-outage-no-real-fallback-390",
@@ -926,6 +986,5 @@
     }
   ],
   "errors": [],
-  "passed": false,
-  "failure": "AssertionError [ERR_ASSERTION]: 6 QA checks failed; see report.json\n    at main (/home/user/voltex-pos/scripts/qa-native-demo-browser.cjs:817:3)"
+  "passed": true
 }

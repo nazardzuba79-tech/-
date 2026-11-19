@@ -9,9 +9,9 @@
       "errors": [],
       "external": [],
       "cardHeights": [
-        325,
-        345,
-        361
+        341,
+        361,
+        377
       ]
     },
     {
@@ -21,9 +21,9 @@
       "errors": [],
       "external": [],
       "cardHeights": [
-        335,
-        335,
-        371
+        351,
+        351,
+        387
       ]
     },
     {
@@ -75,12 +75,12 @@
       }
     },
     {
-      "name": "320: a card is compact (the ordinary one under 350px)",
+      "name": "320: a card is compact (the ordinary one under 370px)",
       "pass": true,
       "detail": [
-        325,
-        345,
-        361
+        341,
+        361,
+        377
       ]
     },
     {
@@ -111,13 +111,13 @@
       "pass": true,
       "detail": {
         "unrealized": "Нереализ. PnL (USDT)",
-        "qty": "Размер (BTC)",
+        "qty": "Кол-во (BTC)",
         "margin": "Маржа (USDT)",
         "realized": "Реализ. PnL",
         "net": null,
         "entry": "Цена Входа",
-        "mark": "Цена марк.",
-        "liq": "Цена ликвид.",
+        "mark": "Цена маркировки",
+        "liq": "Ориент. цена ликвидации",
         "trading": null,
         "funding": null,
         "fees": null
@@ -128,41 +128,41 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 472,
-          "bottom": 489,
-          "left": 25,
-          "right": 65.046875
+          "top": 452,
+          "bottom": 469,
+          "left": 23,
+          "right": 63.046875
         },
         "margin": {
-          "top": 472,
-          "bottom": 489,
-          "left": 117.65625,
-          "right": 188.6875
+          "top": 452,
+          "bottom": 469,
+          "left": 116.328125,
+          "right": 187.359375
         },
         "realized": {
-          "top": 472,
-          "bottom": 489,
-          "left": 264,
-          "right": 294.984375
+          "top": 452,
+          "bottom": 469,
+          "left": 266.015625,
+          "right": 297
         },
         "net": null,
         "entry": {
-          "top": 521,
-          "bottom": 538,
-          "left": 25,
-          "right": 96.03125
+          "top": 517,
+          "bottom": 534,
+          "left": 23,
+          "right": 94.03125
         },
         "mark": {
-          "top": 521,
-          "bottom": 538,
-          "left": 117.65625,
-          "right": 188.6875
+          "top": 517,
+          "bottom": 534,
+          "left": 116.328125,
+          "right": 187.359375
         },
         "liq": {
-          "top": 521,
-          "bottom": 538,
-          "left": 223.953125,
-          "right": 294.984375
+          "top": 517,
+          "bottom": 534,
+          "left": 225.96875,
+          "right": 297
         },
         "trading": null,
         "funding": null,
@@ -186,18 +186,18 @@
       "pass": true,
       "detail": [
         [
-          "+ TP/SL",
-          85,
+          "Установить TP/SL",
+          87,
           44
         ],
         [
-          "Лимитный",
-          85,
+          "Закрыть лимитом",
+          87,
           44
         ],
         [
-          "Рыночный",
-          85,
+          "Закрыть по рынку",
+          87,
           44
         ]
       ]
@@ -215,7 +215,7 @@
     {
       "name": "320: a long contract and quantity stay inside the card",
       "pass": true,
-      "detail": 361
+      "detail": 377
     },
     {
       "name": "320: «TP/SL» opens the protection editor inside the screen",
@@ -230,6 +230,14 @@
     {
       "name": "320: the editor closes again",
       "pass": true
+    },
+    {
+      "name": "320: the result-card key in the corner of the card takes the press",
+      "pass": true,
+      "detail": {
+        "pressed": true,
+        "hit": "path"
+      }
     },
     {
       "name": "320: «Лимитный» opens «Закрытие по лимиту» for this very position",
@@ -253,12 +261,12 @@
       }
     },
     {
-      "name": "360: a card is compact (the ordinary one under 350px)",
+      "name": "360: a card is compact (the ordinary one under 370px)",
       "pass": true,
       "detail": [
-        335,
-        335,
-        371
+        351,
+        351,
+        387
       ]
     },
     {
@@ -289,13 +297,13 @@
       "pass": true,
       "detail": {
         "unrealized": "Нереализ. PnL (USDT)",
-        "qty": "Размер (BTC)",
+        "qty": "Кол-во (BTC)",
         "margin": "Маржа (USDT)",
         "realized": "Реализ. PnL (USDT)",
         "net": null,
         "entry": "Цена Входа",
-        "mark": "Цена марк.",
-        "liq": "Цена ликвид.",
+        "mark": "Цена маркировки",
+        "liq": "Ориент. цена ликвидации",
         "trading": null,
         "funding": null,
         "fees": null
@@ -306,39 +314,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 421,
-          "bottom": 438,
+          "top": 401,
+          "bottom": 418,
           "left": 27,
           "right": 67.046875
         },
         "margin": {
-          "top": 421,
-          "bottom": 438,
+          "top": 401,
+          "bottom": 418,
           "left": 132.328125,
           "right": 203.359375
         },
         "realized": {
-          "top": 421,
-          "bottom": 438,
+          "top": 401,
+          "bottom": 418,
           "left": 302.015625,
           "right": 333
         },
         "net": null,
         "entry": {
-          "top": 472,
-          "bottom": 489,
+          "top": 468,
+          "bottom": 485,
           "left": 27,
           "right": 98.03125
         },
         "mark": {
-          "top": 472,
-          "bottom": 489,
+          "top": 468,
+          "bottom": 485,
           "left": 132.328125,
           "right": 203.359375
         },
         "liq": {
-          "top": 472,
-          "bottom": 489,
+          "top": 468,
+          "bottom": 485,
           "left": 261.96875,
           "right": 333
         },
@@ -364,17 +372,17 @@
       "pass": true,
       "detail": [
         [
-          "+ TP/SL",
+          "Установить TP/SL",
           95,
           44
         ],
         [
-          "Лимитный",
+          "Закрыть лимитом",
           95,
           44
         ],
         [
-          "Рыночный",
+          "Закрыть по рынку",
           95,
           44
         ]
@@ -393,7 +401,7 @@
     {
       "name": "360: a long contract and quantity stay inside the card",
       "pass": true,
-      "detail": 371
+      "detail": 387
     },
     {
       "name": "360: «TP/SL» opens the protection editor inside the screen",
@@ -408,6 +416,14 @@
     {
       "name": "360: the editor closes again",
       "pass": true
+    },
+    {
+      "name": "360: the result-card key in the corner of the card takes the press",
+      "pass": true,
+      "detail": {
+        "pressed": true,
+        "hit": "path"
+      }
     },
     {
       "name": "360: «Лимитный» opens «Закрытие по лимиту» for this very position",
@@ -431,7 +447,7 @@
       }
     },
     {
-      "name": "390: a card is compact (the ordinary one under 350px)",
+      "name": "390: a card is compact (the ordinary one under 370px)",
       "pass": true,
       "detail": [
         308,
@@ -467,13 +483,13 @@
       "pass": true,
       "detail": {
         "unrealized": "Нереализ. PnL (USDT)",
-        "qty": "Размер (BTC)",
+        "qty": "Кол-во (BTC)",
         "margin": "Маржа (USDT)",
         "realized": "Реализ. PnL (USDT)",
         "net": null,
         "entry": "Цена Входа",
-        "mark": "Цена марк.",
-        "liq": "Цена ликвид.",
+        "mark": "Цена маркировки",
+        "liq": "Ориент. цена ликвидации",
         "trading": null,
         "funding": null,
         "fees": null
@@ -484,39 +500,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 394,
-          "bottom": 411,
+          "top": 374,
+          "bottom": 391,
           "left": 27,
           "right": 67.046875
         },
         "margin": {
-          "top": 394,
-          "bottom": 411,
+          "top": 374,
+          "bottom": 391,
           "left": 142.328125,
           "right": 213.359375
         },
         "realized": {
-          "top": 394,
-          "bottom": 411,
+          "top": 374,
+          "bottom": 391,
           "left": 332.015625,
           "right": 363
         },
         "net": null,
         "entry": {
-          "top": 445,
-          "bottom": 462,
+          "top": 425,
+          "bottom": 442,
           "left": 27,
           "right": 98.03125
         },
         "mark": {
-          "top": 445,
-          "bottom": 462,
+          "top": 425,
+          "bottom": 442,
           "left": 142.328125,
           "right": 213.359375
         },
         "liq": {
-          "top": 445,
-          "bottom": 462,
+          "top": 425,
+          "bottom": 442,
           "left": 291.96875,
           "right": 363
         },
@@ -542,17 +558,17 @@
       "pass": true,
       "detail": [
         [
-          "+ TP/SL",
+          "Установить TP/SL",
           105,
           44
         ],
         [
-          "Лимитный",
+          "Закрыть лимитом",
           105,
           44
         ],
         [
-          "Рыночный",
+          "Закрыть по рынку",
           105,
           44
         ]
@@ -588,6 +604,14 @@
       "pass": true
     },
     {
+      "name": "390: the result-card key in the corner of the card takes the press",
+      "pass": true,
+      "detail": {
+        "pressed": true,
+        "hit": "path"
+      }
+    },
+    {
       "name": "390: «Лимитный» opens «Закрытие по лимиту» for this very position",
       "pass": true
     },
@@ -609,7 +633,7 @@
       }
     },
     {
-      "name": "430: a card is compact (the ordinary one under 350px)",
+      "name": "430: a card is compact (the ordinary one under 370px)",
       "pass": true,
       "detail": [
         308,
@@ -645,13 +669,13 @@
       "pass": true,
       "detail": {
         "unrealized": "Нереализ. PnL (USDT)",
-        "qty": "Размер (BTC)",
+        "qty": "Кол-во (BTC)",
         "margin": "Маржа (USDT)",
         "realized": "Реализ. PnL (USDT)",
         "net": null,
         "entry": "Цена Входа",
-        "mark": "Цена марк.",
-        "liq": "Цена ликвид.",
+        "mark": "Цена маркировки",
+        "liq": "Ориент. цена ликвидации",
         "trading": null,
         "funding": null,
         "fees": null
@@ -662,39 +686,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 394,
-          "bottom": 411,
+          "top": 374,
+          "bottom": 391,
           "left": 27,
           "right": 67.046875
         },
         "margin": {
-          "top": 394,
-          "bottom": 411,
+          "top": 374,
+          "bottom": 391,
           "left": 155.65625,
           "right": 226.6875
         },
         "realized": {
-          "top": 394,
-          "bottom": 411,
+          "top": 374,
+          "bottom": 391,
           "left": 372,
           "right": 402.984375
         },
         "net": null,
         "entry": {
-          "top": 445,
-          "bottom": 462,
+          "top": 425,
+          "bottom": 442,
           "left": 27,
           "right": 98.03125
         },
         "mark": {
-          "top": 445,
-          "bottom": 462,
+          "top": 425,
+          "bottom": 442,
           "left": 155.65625,
           "right": 226.6875
         },
         "liq": {
-          "top": 445,
-          "bottom": 462,
+          "top": 425,
+          "bottom": 442,
           "left": 331.953125,
           "right": 402.984375
         },
@@ -720,17 +744,17 @@
       "pass": true,
       "detail": [
         [
-          "+ TP/SL",
+          "Установить TP/SL",
           119,
           44
         ],
         [
-          "Лимитный",
+          "Закрыть лимитом",
           119,
           44
         ],
         [
-          "Рыночный",
+          "Закрыть по рынку",
           119,
           44
         ]
@@ -766,6 +790,14 @@
       "pass": true
     },
     {
+      "name": "430: the result-card key in the corner of the card takes the press",
+      "pass": true,
+      "detail": {
+        "pressed": true,
+        "hit": "path"
+      }
+    },
+    {
       "name": "430: «Лимитный» opens «Закрытие по лимиту» for this very position",
       "pass": true
     },
@@ -784,13 +816,13 @@
       "detail": {
         "labels": {
           "unrealized": "Нереализ. PnL (USDT)",
-          "qty": "Размер (BTC)",
+          "qty": "Кол-во (BTC)",
           "margin": "Маржа (USDT)",
           "realized": null,
           "net": "Чистый P&L",
           "entry": "Цена Входа",
-          "mark": "Цена марк.",
-          "liq": "Цена ликвид.",
+          "mark": "Цена маркировки",
+          "liq": "Ориент. цена ликвидации",
           "trading": "Торговый P&L",
           "funding": "Фандинг",
           "fees": "Комиссии"
@@ -826,6 +858,6 @@
       }
     }
   ],
-  "passed": 67,
+  "passed": 71,
   "failed": 0
 }

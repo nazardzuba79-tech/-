@@ -475,7 +475,8 @@ export function FuturesPositionsPanel({
           with them — taking "Closed 3 of 3" away and leaving the trader to
           infer the outcome from an empty screen. So it renders whenever
           there is something to close OR something to report. */}
-      {!archive && tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
+      {/* «Закрыть все» is back on the phone layout of every design (owner, 2026-11-19: «Роби»); the same confirmed path. */}
+      {(!archive || mobile) && tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
         <div className="futures-close-all-bar">
           {closeAll.phase === 'confirm' ? (
             <div className="futures-close-all-confirm" role="alertdialog" aria-live="assertive"
@@ -655,7 +656,7 @@ export function FuturesPositionsPanel({
                           </small>
                         </div>
                       </Td>
-                      <Td label={mobile ? t('futures.size') : t('futures.colQty')} col="qty" unit={p.symbol.split('/')[0]} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
+                      <Td label={mobile ? t('futures.mobileQty') : t('futures.colQty')} col="qty" unit={p.symbol.split('/')[0]} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
                         {groupQuantity(formatPositionQuantity(p.size, p.symbol))} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
                       </Td>
                       {!archive && <Td label={t('futures.colValue')} col="value" unit={quoteAsset} className="mono">
@@ -673,8 +674,8 @@ export function FuturesPositionsPanel({
                         ) : '—'}
                       </Td>
                       <Td label={t('futures.colEntry')} col="entry" className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
-                      <Td label={t('futures.colMark')} col="mark" className="mono">{p.markPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
-                      <Td label={t('futures.colLiq')} col="liq" className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
+                      <Td label={mobile ? t('futures.mobileMarkPrice') : t('futures.colMark')} col="mark" className="mono">{p.markPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
+                      <Td label={mobile ? t('futures.mobileLiqPrice') : t('futures.colLiq')} col="liq" className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
                       <Td label={mobile ? t('futures.unrealizedPnl') : t('futures.colUnrealized')} col="unrealized" unit={quoteAsset} className="mono futures-unrealized-cell">

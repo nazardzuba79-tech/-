@@ -63,7 +63,7 @@ const read = page => page.evaluate(() => {
       if (Math.min(a.right, b.right) > Math.max(a.left, b.left) + 1 && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) + 1) overlaps.push(`${name(items[i])} × ${name(items[j])}`);
     }
     const sideTag = row.querySelector('.futures-position-contract > .futures-sr-only');
-    const actions = [row.querySelector('.fut-tpslTrigger'), row.querySelector('.futures-position-close[data-limit-close-open]'), row.querySelector('.futures-position-close:not([data-limit-close-open])')].filter(Boolean).map(b => ({ text: b.textContent.trim(), ...rect(b) }));
+    const actions = [row.querySelector('.fut-tpslTrigger'), row.querySelector('.futures-position-close[data-limit-close-open]'), row.querySelector('.futures-position-close:not([data-limit-close-open])')].filter(Boolean).map(b => { const r = document.createRange(); r.selectNodeContents(b); return { text: b.textContent.trim(), ...rect(b), words: r.getBoundingClientRect().width }; });
     return {
       side: row.getAttribute('data-side'), split: row.hasAttribute('data-pnl-split'), display: getComputedStyle(row).display, rect: rect(row),
       labels: Object.fromEntries(['unrealized', 'qty', 'margin', 'realized', 'net', 'entry', 'mark', 'liq', 'trading', 'funding', 'fees'].map(n => [n, label(n)])),
@@ -124,16 +124,17 @@ const read = page => page.evaluate(() => {
       const state = await read(page), [btc, eth, pepe] = state.cards;
       view.cardHeights = state.cards.map(c => Math.round(c.rect.height));
       ok(`${P}: three position cards, laid out as a grid, without a horizontal page scroll`, state.cards.length === 3 && state.cards.every(c => c.display === 'grid') && state.pageOverflow <= 1, { cards: state.cards.length, overflow: state.pageOverflow });
-      // The card this replaced measured 570px for the same position at 390px.
-      ok(`${P}: a card is compact (the ordinary one under 350px)`, btc.rect.height < 350, view.cardHeights);
+      // The card this replaced measured 570px for the same position at 390px. 370, not 350: since 2026-11-19 the last label is the
+      // reference's «Ориент. цена ликвидации», which takes two lines on a 360px phone.
+      ok(`${P}: a card is compact (the ordinary one under 370px)`, btc.rect.height < 370, view.cardHeights);
 
       ok(`${P}: header — contract, side tag, margin mode with leverage`, btc.ticker === 'BTCUSDT' && btc.sideTag?.text === 'Лонг' && btc.sideTag.width > 20 && /^Кросс 10\.00x$/.test(btc.mode)
         && eth.sideTag?.text === 'Шорт' && /^Изолированная 5\.00x$/.test(eth.mode) && btc.sideTag.color !== eth.sideTag.color, { btc: [btc.ticker, btc.sideTag?.text, btc.mode], eth: [eth.sideTag?.text, eth.mode] });
       ok(`${P}: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»`, btc.money === '+3,077.97' && btc.roiSide?.text === '+16.92%' && btc.roiSide.label === 'ROI'
         && !btc.roiBracketVisible && !btc.approxVisible && btc.roiSide.right > btc.rect.right - 20, { money: btc.money, roi: btc.roiSide?.text });
       const unit = width >= 360 ? ' (USDT)' : '';
-      ok(`${P}: labels name the figure and its unit; the unit is not repeated beside the figure`, btc.labels.unrealized === 'Нереализ. PnL (USDT)' && btc.labels.qty === 'Размер (BTC)' && btc.labels.margin === 'Маржа (USDT)'
-        && btc.labels.realized === `Реализ. PnL${unit}` && btc.labels.entry === 'Цена Входа' && btc.labels.mark === 'Цена марк.' && btc.labels.liq === 'Цена ликвид.' && !btc.unitsInline, btc.labels);
+      ok(`${P}: labels name the figure and its unit; the unit is not repeated beside the figure`, btc.labels.unrealized === 'Нереализ. PnL (USDT)' && btc.labels.qty === 'Кол-во (BTC)' && btc.labels.margin === 'Маржа (USDT)'
+        && btc.labels.realized === `Реализ. PnL${unit}` && btc.labels.entry === 'Цена Входа' && btc.labels.mark === 'Цена маркировки' && btc.labels.liq === 'Ориент. цена ликвидации' && !btc.unitsInline, btc.labels);
       const sameLine = names => { const f = names.map(n => btc.figures[n]); return f.every(Boolean) && Math.max(...f.map(x => x.bottom)) - Math.min(...f.map(x => x.bottom)) <= 1.5; };
       ok(`${P}: two rows of three figures — size, margin, realized P&L; entry, mark and liquidation price`, sameLine(['qty', 'margin', 'realized']) && sameLine(['entry', 'mark', 'liq'])
         && btc.figures.entry.top > btc.figures.qty.bottom && btc.figures.qty.left < btc.figures.margin.left && btc.figures.margin.left < btc.figures.realized.left
@@ -142,7 +143,7 @@ const read = page => page.evaluate(() => {
         && !/NaN|Infinity|undefined/.test(state.cards.map(c => c.text).join(' ')));
       ok(`${P}: the TP/SL line shows the server-held protection`, /TP 90000/.test(btc.protection) && /SL 81000/.test(btc.protection) && /TP —/.test(eth.protection) && /SL —/.test(eth.protection), [btc.protection, eth.protection]);
       const a = btc.actions;
-      ok(`${P}: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall`, a.length === 3 && a[0].text === 'Установить TP/SL' && a[1].text === 'Закрыть лимитом' && a[2].text === 'Закрыть по рынку'
+      ok(`${P}: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall`, a.length === 3 && a[0].text === 'Установить TP/SL' && a[1].text === 'Закрыть лимитом' && a[2].text === 'Закрыть по рынку' && a.every(b => b.words <= b.width - 2)
         && a.every(b => b.height >= 44 && Math.abs(b.top - a[0].top) <= 1 && Math.abs(b.width - a[0].width) <= 1.5) && a[0].left < a[1].left && a[1].left < a[2].left, a.map(b => [b.text, Math.round(b.width), Math.round(b.height)]));
       ok(`${P}: every control on the card is at least 44px tall`, btc.controls.every(c => c.height >= 44), btc.controls.filter(c => c.height < 44));
       ok(`${P}: nothing leaves a card and nothing overlaps`, state.cards.every(c => c.outside.length === 0 && c.overlaps.length === 0), state.cards.flatMap(c => [...c.outside, ...c.overlaps]));

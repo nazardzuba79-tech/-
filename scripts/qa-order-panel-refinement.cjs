@@ -95,8 +95,9 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     assert.equal(geometry.price.height, fieldHeight); assert.equal(geometry.quantity.height, fieldHeight);
     assert(Math.abs(geometry.price.width - geometry.quantity.width) < 1);
     assert.equal(geometry.long.height, geometry.short.height);
-    // Desktop 38px pills since 2026-10-07 (Bybit 1:1); phones keep the released 52px.
-    assert(geometry.long.height >= (width > 900 ? 38 : 50));
+    // Desktop 38px pills since 2026-10-07 (Bybit 1:1). Phones: 40px pills since 2026-11-19 — the owner's phone
+    // reference stacks Long over Short as two compact pills beside the order book (they were 52px before).
+    assert(geometry.long.height >= (width > 900 ? 38 : 40));
     assert(Math.abs(geometry.long.width - geometry.short.width) < 1);
     // owner, 2026-10-04: order type is one select on a phone — the same «Рыночный» / «Лимитный», chosen through it.
     const familySelect = page.locator('.order-family-select select');

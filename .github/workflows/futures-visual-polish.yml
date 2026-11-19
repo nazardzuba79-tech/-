@@ -42,6 +42,9 @@ on:
       - 'scripts/qa-futures-proportions.cjs'
       - 'scripts/qa-futures-mobile-position-card.cjs'
       - 'frontend/src/components/FuturesMobilePositions.css'
+      - 'scripts/qa-futures-mobile-terminal.cjs'
+      - 'frontend/src/pages/trade-terminal/FuturesMobileReference.css'
+      - 'frontend/src/components/FuturesTickerBar.tsx'
       - 'frontend/src/components/FuturesUnrealizedPnl.tsx'
       - 'frontend/src/components/FuturesUnrealizedPnl.css'
       - 'scripts/qa-spot-cfd-terminal.cjs'
@@ -114,6 +117,10 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
         run: node scripts/qa-futures-mobile-position-card.cjs --out output/futures-mobile-position-card
+      - name: Phone terminal after the owner's reference — ticket beside the book, view switch, «Ордера», chart, every control at 320, 360, 390, 430
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-futures-mobile-terminal.cjs --out output/futures-mobile-terminal
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
       - name: VTA source-specific connection and readable measurement card
@@ -139,5 +146,7 @@ jobs:
             output/vta-presentation/*
             output/chart-ruler-label/*
             output/chart-ruler-timeframes/*
+            output/futures-mobile-position-card/*
+            output/futures-mobile-terminal/*
           retention-days: 7
           if-no-files-found: warn

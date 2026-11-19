@@ -1256,7 +1256,7 @@ export function FuturesOrderForm({
             onClick={() => place('BUY')}
             className="submit-btn buy"
           >
-            {submitting && side === 'BUY' ? t('auth.wait') : t(reduceOnly ? 'futures.closeShort' : 'futures.buyLong')}
+            {submitting && side === 'BUY' ? t('auth.wait') : compact && !reduceOnly ? t('futures.long') : t(reduceOnly ? 'futures.closeShort' : 'futures.buyLong')}
           </button>
           <button
             type="button"
@@ -1266,7 +1266,7 @@ export function FuturesOrderForm({
             onClick={() => place('SELL')}
             className="submit-btn sell"
           >
-            {submitting && side === 'SELL' ? t('auth.wait') : t(reduceOnly ? 'futures.closeLong' : 'futures.sellShort')}
+            {submitting && side === 'SELL' ? t('auth.wait') : compact && !reduceOnly ? t('futures.short') : t(reduceOnly ? 'futures.closeLong' : 'futures.sellShort')}
           </button>
         </div>
       </form>
