@@ -2471,4 +2471,10 @@ export const RU = {
   'kycMaterials.removePhoto': "Удалить фото",
   'kycMaterials.openRequest': "Открыть запрос",
   'kycMaterials.submitError': "Не удалось отправить файл. Проверьте соединение и попробуйте ещё раз — повторная отправка не создаст дубликат.",
+  'futures.mobileSetTpsl': 'Установить TP/SL',
+  'futures.mobileCloseLimit': 'Закрыть лимитом',
+  'futures.mobileCloseMarket': 'Закрыть по рынку',
+  'futures.mobileQty': 'Кол-во',
+  'futures.mobileMarkPrice': 'Цена маркировки',
+  'futures.mobileLiqPrice': 'Ориент. цена ликвидации',
 } as const;
