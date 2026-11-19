@@ -2435,4 +2435,10 @@ export const ZH: Record<Key, string> = {
   'kycMaterials.removePhoto': "删除照片",
   'kycMaterials.openRequest': "打开请求",
   'kycMaterials.submitError': "文件发送失败。请检查网络后重试，重新发送不会产生重复。",
+  'futures.mobileSetTpsl': '设置止盈止损',
+  'futures.mobileCloseLimit': '限价平仓',
+  'futures.mobileCloseMarket': '市价平仓',
+  'futures.mobileQty': '数量',
+  'futures.mobileMarkPrice': '标记价格',
+  'futures.mobileLiqPrice': '预估强平价',
 };
