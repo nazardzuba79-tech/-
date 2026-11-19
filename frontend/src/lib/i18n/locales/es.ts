@@ -2412,4 +2412,10 @@ export const ES: Record<Key, string> = {
   'kycMaterials.removePhoto': "Eliminar foto",
   'kycMaterials.openRequest': "Abrir solicitud",
   'kycMaterials.submitError': "No se pudo enviar el archivo. Comprueba la conexión e inténtalo de nuevo: reenviarlo no creará un duplicado.",
+  'futures.mobileSetTpsl': 'Fijar TP/SL',
+  'futures.mobileCloseLimit': 'Cerrar con límite',
+  'futures.mobileCloseMarket': 'Cerrar a mercado',
+  'futures.mobileQty': 'Cant.',
+  'futures.mobileMarkPrice': 'Precio de marca',
+  'futures.mobileLiqPrice': 'Precio liq. est.',
 };
