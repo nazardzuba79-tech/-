@@ -2441,4 +2441,10 @@ export const EN: Record<Key, string> = {
   'kycMaterials.removePhoto': "Remove photo",
   'kycMaterials.openRequest': "Open request",
   'kycMaterials.submitError': "The file could not be sent. Check your connection and try again — sending again will not create a duplicate.",
+  'futures.mobileSetTpsl': 'Set TP/SL',
+  'futures.mobileCloseLimit': 'Close by limit',
+  'futures.mobileCloseMarket': 'Close by market',
+  'futures.mobileQty': 'Qty',
+  'futures.mobileMarkPrice': 'Mark price',
+  'futures.mobileLiqPrice': 'Est. liq. price',
 };
