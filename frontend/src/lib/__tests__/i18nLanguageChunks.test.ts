@@ -50,6 +50,20 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
 // Mobile terminal, 2026-10-04: «Спот / Фьючерсы» switch, its two notes and the compact order-type selector.
 const MOBILE_TERMINAL_KEYS = ['terminal.marketSwitch', 'terminal.noFuturesContract', 'terminal.noSpotPair', 'trade.orderType'];
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
+// Historical fingerprint normalization ONLY. The actual Pages production baseline
+// 9ec3fc8 predates the main-only Cross wallet label; do not ship that unapproved
+// label as part of a phone Futures release. Reinstate its exact original line
+// inside the fingerprint calculation, not the user-facing dictionaries.
+const unpublishedMainCrossLabel: Record<string, string> = {
+  "ru": "  'wallet.conversion.subtitleCross': \"Доступные тестовые USDT счёта Unified Trading (Cross) · вывод недоступен · комиссия VOLTEX 0%\",",
+  "en": "  'wallet.conversion.subtitleCross': \"Available test USDT in Unified Trading (Cross) · non-withdrawable · 0% VOLTEX fee\",",
+  "es": "  'wallet.conversion.subtitleCross': \"USDT de prueba disponibles en Unified Trading (Cross) · sin retiros · comisión VOLTEX 0%\",",
+  "hi": "  'wallet.conversion.subtitleCross': \"Unified Trading (Cross) में उपलब्ध टेस्ट USDT · निकासी उपलब्ध नहीं · VOLTEX शुल्क 0%\",",
+  "ja": "  'wallet.conversion.subtitleCross': \"Unified Trading（Cross）の利用可能なテストUSDT · 出金不可 · VOLTEX手数料0%\",",
+  "ko": "  'wallet.conversion.subtitleCross': \"Unified Trading (Cross)의 사용 가능한 테스트 USDT · 출금 불가 · VOLTEX 수수료 0%\",",
+  "zh": "  'wallet.conversion.subtitleCross': \"Unified Trading (Cross) 可用测试 USDT · 不可提现 · VOLTEX 手续费 0%\","
+};
+
 const shortCardLabels: Record<string, string> = { ru: 'Card', en: 'Card', zh: 'Card', es: 'Card', hi: 'Card', ja: 'Card', ko: 'Card' };
 const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStepFilled', 'kycStepNotFilled', 'kycStepAdded', 'kycStepNotAdded',
   'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
@@ -520,12 +534,18 @@ describe('translation integrity', () => {
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
+      // Keep the historical digest frozen while comparing the pinned LIVE dictionary.
+      // The one pre-existing main-only key is restored virtually, exactly once.
+      const crossAnchor = /(\n  'wallet\.conversion\.subtitleTrading': [^\n]*\n)/;
+      expect({ code, crossAnchor: crossAnchor.test(source) }).toEqual({ code, crossAnchor: true });
+      const canonicalSource = source.includes("'wallet.conversion.subtitleCross':") ? source
+        : source.replace(crossAnchor, (_, match: string) => match + unpublishedMainCrossLabel[code] + '\n');
       const withNotices = removedNoticeLines[code].reduce((text, { after, line }) => {
         // The anchor's value may sit on the next line (`'settings.reservesDisclaimer':` then the text).
         const anchor = new RegExp(`\\n  '${after.replace(/\./g, '\\.')}':(?:[ \\t]*\\n[^\\n]*|[^\\n]*)`);
         expect({ code, after, found: anchor.test(text) }).toEqual({ code, after, found: true });
         return text.replace(anchor, (m) => `${m}\n${line}`);
-      }, source);
+      }, canonicalSource);
       const restored = withNotices.replace(/(\n  'trade\.cfdInstrument': [^\n]*)/, `$1\n  'trade.cfdUnavailable': '${cfdCopyBefore[code]}',`)
         // Reverse only the owner's exact short navigation label; product copy stays frozen.
         .replace("'nav.card': '" + shortCardLabels[code] + "'", "'nav.card': 'Crypto Card'")
