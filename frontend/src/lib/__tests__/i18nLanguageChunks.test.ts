@@ -362,6 +362,7 @@ describe('translation integrity', () => {
     // back in that order for the old digest. (`home.markets.cfdNotConfigured` follows `home.cfdSoon`, restored below.)
     const removedNoticeLines: Record<string, Array<{ after: string; line: string }>> = require('./removedNoticeLines.json');
     const { createHash } = require('crypto');
+    const frozenDigestMismatches: Array<{ code: string; expected: string; actual: string }> = [];
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
@@ -420,6 +421,9 @@ describe('translation integrity', () => {
           'authShell.moreCurrencies',
           // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
           'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl',
+          // Phone position card after the owner's reference (2026-11-19): `git diff --numstat` over the locales reports `6 0` per language.
+          'futures.mobileSetTpsl', 'futures.mobileCloseLimit', 'futures.mobileCloseMarket',
+          'futures.mobileQty', 'futures.mobileMarkPrice', 'futures.mobileLiqPrice',
           // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
           // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
           // `git diff --numstat` over the locales reports `1 0` per language.
@@ -538,9 +542,10 @@ describe('translation integrity', () => {
         .replace(/(\n  'serverError\.notFound': [^\n]*)/, `$1\n  'serverError.practiceOnly': '${removedPracticeCopy[code]}',`)
         .replace(/(\n  'home\.marketDataUnavailable': [^\n]*)/, `$1\n  'home.cfdSoon': '${removedHomeCfdSoon[code]}',`);
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
-      expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
-        .toEqual({ code, digest: digests[code] });
+      const actual = createHash('sha256').update(body).digest('hex').slice(0, 16);
+      if (actual !== digests[code]) frozenDigestMismatches.push({ code, expected: digests[code], actual });
     }
+    expect(frozenDigestMismatches).toEqual([]);
   });
 
   it('carries the OTC page copy in every language, the Russian word for word from OTC.zip', () => {
