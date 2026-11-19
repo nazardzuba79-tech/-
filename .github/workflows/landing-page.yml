@@ -1,0 +1,64 @@
+name: Landing page candidate
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/landing/**'
+      - 'frontend/src/pages/home/useHomeMarket.ts'
+      - 'frontend/src/App.tsx'
+      - 'frontend/src/lib/seo/site.ts'
+      - 'frontend/public/_headers'
+      - 'scripts/qa-landing-page.cjs'
+      - 'scripts/qa-home-v0-fixture.cjs'
+      - '.claude/skills/landing-page-design/**'
+      - '.github/workflows/landing-page.yml'
+      - '.github/scripts/verify-ci-browser.cjs'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: landing-page-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  presentation:
+    runs-on: ubuntu-24.04
+    # The pinned browser image carries the fonts the seven-language layout checks measure.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Trust this checked-out workspace inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Copy, stylesheet, routing and indexing rules
+        run: node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/pages/landing/__tests__/landingCopy.test.ts frontend/src/lib/__tests__/seoIndexing.test.ts frontend/src/lib/__tests__/routeCodeSplitting.test.ts
+      - name: TypeScript and production frontend build
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix frontend
+      - name: Disposable browser
+        run: |
+          npm install --prefix /tmp/voltex-landing-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node .github/scripts/verify-ci-browser.cjs /tmp/voltex-landing-qa/node_modules/playwright 1.63.0 preinstalled
+      - name: Built page against the design skill at 1440, 390 and 320, seven languages, loading, error and reduced motion
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-landing-qa/node_modules/playwright
+        run: node scripts/qa-landing-page.cjs --dist frontend/dist --out output/landing-page
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: landing-page-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/landing-page/
+          if-no-files-found: warn
+          retention-days: 7

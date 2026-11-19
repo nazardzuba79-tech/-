@@ -1,0 +1,293 @@
+/*
+ * Landing page candidate (pages/landing/LandingPage.tsx), styled to
+ * .claude/skills/landing-page-design, Part B.
+ *
+ * B1  one typeface (Manrope, already loaded by index.html), no italic, weight capped at 700;
+ *     every size is a Tailwind scale step, applied through the named text styles below.
+ * B2  spacing only from the token table (--s-*).
+ * B3  Tailwind radii only; an inner shape is outer radius minus gap.
+ * B4  flat backgrounds from the dark list; borders on all four sides or none.
+ * B5  the hero heading is the one gradient, on its text, #FFFFFF to #9B9B9B, capped at 680px.
+ * B7  one curve, cubic-bezier(0.22, 1, 0.36, 1); only transform and opacity move.
+ */
+.vxl {
+  --s-25: 2px; --s-50: 4px; --s-75: 8px; --s-100: 12px; --s-200: 16px; --s-300: 24px; --s-400: 32px;
+  --s-500: 40px; --s-600: 48px; --s-700: 64px; --s-800: 80px; --s-900: 96px;
+  --bg: #131209; --surface: #181818; --raised: #1F1F1F; --hover: #272727; --line: #313131;
+  --text: #FFFFFF; --text-2: #9B9B9B; --gold: #f0c964; --gold-hover: #f6d98a; --up: #00d68f; --down: #ff4d6a;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-style: normal;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+.vxl *, .vxl *::before, .vxl *::after { box-sizing: border-box; }
+.vxl :is(h1, h2, h3, p, ul, ol, li, table) { margin: 0; padding: 0; }
+.vxl :is(ul, ol) { list-style: none; }
+.vxl a { color: inherit; text-decoration: none; }
+.vxl :is(em, i) { font-style: normal; }
+
+/* ── B1 named text styles ── */
+.vxl .heading-1 { font-size: 3.75rem; line-height: 1; font-weight: 600; }
+.vxl .heading-2 { font-size: 3rem; line-height: 1; font-weight: 600; }
+.vxl .heading-3 { font-size: 2.25rem; line-height: 2.5rem; font-weight: 600; }
+.vxl .heading-4 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; }
+.vxl .heading-5 { font-size: 1.5rem; line-height: 2rem; font-weight: 600; }
+.vxl .title-1 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 500; }
+.vxl .title-2 { font-size: 1.125rem; line-height: 1.75rem; font-weight: 500; }
+.vxl .title-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 500; }
+.vxl .title-4 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.vxl .body-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 400; }
+.vxl .body-5 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.vxl .body-6 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; }
+.vxl .button-md { font-size: 1rem; line-height: 1.5rem; font-weight: 600; }
+.vxl .button-sm { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; }
+.vxl .caption-1 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.vxl .caption-2 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; }
+.vxl .caption-3 { font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
+.vxl .caption-4 { font-size: 0.75rem; line-height: 1rem; font-weight: 500; }
+.vxl .caption-5 { font-size: 0.75rem; line-height: 1rem; font-weight: 400; }
+.vxl :is(h1, h2, h3) { text-wrap: balance; }
+.vxl p { text-wrap: pretty; }
+.vxl .vxl-muted { color: var(--text-2); }
+
+.vxl .vxl-container { width: 100%; max-width: 72rem; margin-inline: auto; padding-inline: var(--s-200); }
+
+/* ── Skip link ── */
+.vxl .vxl-skip {
+  position: fixed; top: var(--s-75); left: var(--s-75); z-index: 60;
+  padding: var(--s-75) var(--s-100); border-radius: 0.5rem; background: var(--gold); color: var(--bg);
+  transform: translateY(-200%); transition: transform 500ms var(--ease);
+}
+.vxl .vxl-skip:focus-visible { transform: translateY(0); outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ── Buttons: 8px by 12px, Button-md; hover, active and focus on every one ── */
+.vxl .vxl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-75);
+  padding: var(--s-75) var(--s-100); border: 1px solid transparent; border-radius: 0.5rem;
+  white-space: nowrap; cursor: pointer;
+  transition: background-color 300ms var(--ease), border-color 300ms var(--ease), color 300ms var(--ease), transform 500ms var(--ease);
+}
+.vxl .vxl-btn-primary { background: var(--gold); color: var(--bg); }
+.vxl .vxl-btn-primary:hover { background: var(--gold-hover); }
+.vxl .vxl-btn-ghost { background: var(--surface); border-color: var(--line); color: var(--text); }
+.vxl .vxl-btn-ghost:hover { background: var(--hover); }
+.vxl .vxl-btn:active { transform: scale(0.98); }
+.vxl .vxl-btn-block { width: 100%; }
+.vxl :is(a, button):focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 0.5rem; }
+@media (pointer: coarse) { .vxl .vxl-btn { min-height: var(--s-600); } }
+
+/* ── Navigation: a compact bar floating off the top edge, translucent over a blur ── */
+.vxl .vxl-nav-wrap { position: fixed; top: var(--s-200); left: 0; right: 0; z-index: 50; display: flex; justify-content: center; padding-inline: var(--s-200); pointer-events: none; }
+.vxl .vxl-nav {
+  pointer-events: auto;
+  display: flex; align-items: center; gap: var(--s-100);
+  max-width: 100%; padding: var(--s-75); padding-left: var(--s-200);
+  border: 1px solid var(--line); border-radius: 1rem;
+  background: rgba(24, 24, 24, 0.72);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.vxl .vxl-nav-brand { display: inline-flex; align-items: center; }
+.vxl .vxl-nav-links { display: none; align-items: center; gap: var(--s-50); }
+.vxl .vxl-nav-links a, .vxl .vxl-nav-login {
+  display: inline-flex; padding: var(--s-75) var(--s-100); border-radius: 0.5rem; color: var(--text-2);
+  transition: color 300ms var(--ease), background-color 300ms var(--ease);
+}
+.vxl .vxl-nav-links a:hover, .vxl .vxl-nav-login:hover { color: var(--text); background: var(--hover); }
+.vxl .vxl-nav-end { display: flex; align-items: center; gap: var(--s-75); margin-left: auto; }
+.vxl .vxl-nav-login, .vxl .vxl-nav-lang { display: none; }
+/* The toggle's two lines turn into a cross; they move, they are not swapped. */
+.vxl .vxl-menu-toggle {
+  position: relative; width: var(--s-500); height: var(--s-500); padding: 0;
+  border: 1px solid var(--line); border-radius: 0.5rem; background: var(--raised); color: var(--text); cursor: pointer;
+  transition: background-color 300ms var(--ease), transform 500ms var(--ease);
+}
+.vxl .vxl-menu-toggle:hover { background: var(--hover); }
+.vxl .vxl-menu-toggle:active { transform: scale(0.98); }
+.vxl .vxl-menu-toggle span {
+  position: absolute; left: 50%; top: 50%; width: 18px; height: 2px; border-radius: 9999px; background: currentColor;
+  transition: transform 500ms var(--ease);
+}
+.vxl .vxl-menu-toggle span:first-child { transform: translate(-50%, -50%) translateY(-4px); }
+.vxl .vxl-menu-toggle span:last-child { transform: translate(-50%, -50%) translateY(4px); }
+.vxl .vxl-menu-toggle[aria-expanded=true] span:first-child { transform: translate(-50%, -50%) rotate(45deg); }
+.vxl .vxl-menu-toggle[aria-expanded=true] span:last-child { transform: translate(-50%, -50%) rotate(-45deg); }
+
+/* The phone menu: a full height panel on the base surface with a strong blur; links arrive one after another. */
+.vxl .vxl-menu {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; justify-content: space-between; gap: var(--s-400);
+  padding: var(--s-900) var(--s-300) var(--s-400);
+  background: rgba(19, 18, 9, 0.92);
+  -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+  overflow-y: auto;
+}
+.vxl .vxl-menu[hidden] { display: none; }
+.vxl .vxl-menu ul { display: flex; flex-direction: column; gap: var(--s-50); }
+.vxl .vxl-menu li { animation: vxl-menu-in 500ms var(--ease) both; }
+.vxl .vxl-menu a.heading-5 { display: block; padding: var(--s-100) 0; }
+@keyframes vxl-menu-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Hero ── */
+/* The floating bar overlays the first 96px; the copy starts 48px under it. */
+.vxl .vxl-hero { padding-top: var(--s-900); padding-bottom: var(--s-700); }
+.vxl .vxl-hero-inner { display: flex; flex-direction: column; align-items: center; gap: var(--s-300); padding-top: var(--s-600); text-align: center; }
+.vxl .vxl-overline { color: var(--gold); }
+.vxl .vxl-hero-title span { display: block; }
+.vxl .vxl-hero-title {
+  max-width: 680px;
+  font-size: 2.25rem; line-height: 2.5rem; font-weight: 600; /* Heading 3 on a phone */
+  background-image: linear-gradient(90deg, #FFFFFF, #9B9B9B);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+.vxl .vxl-hero-sub { max-width: 680px; font-size: 1rem; line-height: 1.5rem; font-weight: 400; color: var(--text-2); } /* Body 3 */
+.vxl .vxl-hero-action { display: flex; flex-direction: column; align-items: center; gap: var(--s-100); }
+.vxl .vxl-hero-risk { max-width: 480px; }
+.vxl .vxl-proof { display: inline-flex; align-items: center; gap: var(--s-75); color: var(--text); }
+.vxl .vxl-dot { width: var(--s-75); height: var(--s-75); border-radius: 9999px; background: var(--up); }
+.vxl .vxl-hero-visual { margin-top: var(--s-600); max-width: 56rem; }
+
+/* ── Market board: a card at 16px; rows inside sit 8px in, so they take 8px ── */
+.vxl .vxl-board { padding: var(--s-75); border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); }
+.vxl .vxl-board-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-200); padding: var(--s-100) var(--s-100) var(--s-75); }
+.vxl .vxl-board-empty { padding: var(--s-400) var(--s-100); text-align: center; }
+.vxl .vxl-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.vxl .vxl-table th { padding: var(--s-75) var(--s-100); color: var(--text-2); text-align: left; }
+.vxl .vxl-table td { padding: var(--s-100); vertical-align: middle; transition: background-color 300ms var(--ease); }
+.vxl .vxl-table td:first-child { border-radius: 0.5rem 0 0 0.5rem; }
+.vxl .vxl-table td:last-child { border-radius: 0 0.5rem 0.5rem 0; }
+.vxl .vxl-table tbody tr:hover td { background: var(--raised); }
+.vxl .vxl-table .vxl-num { text-align: right; white-space: nowrap; }
+.vxl .vxl-col-spark { display: none; }
+.vxl .vxl-pair { display: inline-flex; align-items: center; gap: var(--s-75); min-width: 0; }
+.vxl .vxl-coin { flex: none; width: var(--s-300); height: var(--s-300); border-radius: 9999px; object-fit: cover; }
+.vxl .vxl-coin-letter { display: inline-flex; align-items: center; justify-content: center; background: var(--hover); font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
+.vxl .vxl-spark { display: block; width: 100%; height: 28px; color: var(--text-2); }
+.vxl .vxl-spark polyline[data-up=true] { stroke: var(--up); }
+.vxl .vxl-spark polyline[data-up=false] { stroke: var(--down); }
+/* Colour alone carries the direction; a tinted chip would be a background outside the dark list. */
+.vxl .vxl-change[data-up=true] { color: var(--up); }
+.vxl .vxl-change[data-up=false] { color: var(--down); }
+/* Loading: rows shaped like the rows that will replace them. */
+.vxl .vxl-skeleton { display: inline-block; height: var(--s-200); border-radius: 0.25rem; background: var(--hover); animation: vxl-pulse 1600ms var(--ease) infinite alternate; }
+.vxl .vxl-skeleton-pair { width: 96px; }
+.vxl .vxl-skeleton-spark { width: 100%; }
+.vxl .vxl-skeleton-num { width: 72px; }
+.vxl .vxl-skeleton-chip { width: 56px; }
+@keyframes vxl-pulse { from { opacity: 0.45; } to { opacity: 1; } }
+
+/* ── Sections ── */
+.vxl .vxl-section { padding-block: var(--s-700); }
+.vxl .vxl-section-head { display: flex; flex-direction: column; gap: var(--s-100); max-width: 680px; margin-bottom: var(--s-400); }
+.vxl .vxl-h2 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; } /* Heading 4 on a phone */
+.vxl .vxl-lead { font-size: 1rem; line-height: 1.5rem; font-weight: 400; color: var(--text-2); }
+.vxl .vxl-section-link { margin-top: var(--s-300); }
+
+.vxl .vxl-benefits, .vxl .vxl-steps { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-200); }
+.vxl .vxl-card {
+  display: flex; flex-direction: column; gap: var(--s-100);
+  padding: var(--s-300); border: 1px solid var(--line); border-radius: 1rem; background: var(--surface);
+  transition: background-color 300ms var(--ease), transform 500ms var(--ease);
+}
+.vxl .vxl-card:hover { background: var(--raised); transform: translateY(-2px); }
+.vxl .vxl-card-icon { display: inline-flex; align-items: center; justify-content: center; width: var(--s-500); height: var(--s-500); margin-bottom: var(--s-75); border-radius: 0.5rem; background: var(--hover); color: var(--gold); }
+.vxl .vxl-step-no { color: var(--gold); font-variant-numeric: tabular-nums; }
+
+/* ── B11 tagline: words start muted and light up one at a time ── */
+.vxl .vxl-tagline { padding-block: var(--s-800); }
+.vxl .vxl-tagline > .vxl-container { padding-block: var(--s-400); }
+/* Heading 4 on a phone: at six lines or fewer the browser can still balance them, so no word is left alone on the last line. */
+.vxl .vxl-tagline-text { max-width: 680px; margin-inline: auto; font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; text-align: center; text-wrap: balance; }
+.vxl .vxl-tagline-text span[data-word] { opacity: 0.3; transition: opacity 600ms var(--ease); }
+.vxl .vxl-tagline-text span.is-lit { opacity: 1; }
+.vxl .vxl-tagline-keep { white-space: nowrap; }
+
+/* ── FAQ ── */
+.vxl .vxl-faq { display: flex; flex-direction: column; gap: var(--s-75); }
+.vxl .vxl-faq-item { border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); transition: background-color 300ms var(--ease); }
+.vxl .vxl-faq-item[data-open=true] { background: var(--raised); }
+.vxl .vxl-faq-q {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-200); width: 100%;
+  padding: var(--s-200) var(--s-300); border: 0; border-radius: 1rem; background: transparent; color: var(--text);
+  font-family: inherit; text-align: left; cursor: pointer;
+  /* The product's own button rule moves faster and on another curve; this page keeps one. */
+  transition: color 300ms var(--ease), transform 500ms var(--ease);
+}
+.vxl .vxl-faq-q:active { transform: scale(0.99); }
+.vxl .vxl-faq-mark { flex: none; display: inline-flex; color: var(--text-2); transition: transform 500ms var(--ease), color 300ms var(--ease); }
+.vxl .vxl-faq-q:hover .vxl-faq-mark { color: var(--text); }
+.vxl .vxl-faq-item[data-open=true] .vxl-faq-mark { transform: rotate(45deg); color: var(--gold); }
+.vxl .vxl-faq-a { padding: 0 var(--s-300) var(--s-300); animation: vxl-fade 500ms var(--ease) both; }
+.vxl .vxl-faq-a[hidden] { display: none; }
+@keyframes vxl-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Final call, the same action as the top ── */
+.vxl .vxl-final { display: flex; flex-direction: column; align-items: center; gap: var(--s-200); padding: var(--s-600) var(--s-300); border: 1px solid var(--line); border-radius: 1.5rem; background: var(--surface); text-align: center; }
+.vxl .vxl-final-title { max-width: 680px; font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; }
+.vxl .vxl-final-text { max-width: 480px; margin-bottom: var(--s-75); }
+
+/* ── Footer ── */
+.vxl .vxl-footer { padding-block: var(--s-600); background: var(--surface); }
+.vxl .vxl-footer-inner { display: flex; flex-direction: column; gap: var(--s-300); }
+.vxl .vxl-footer-brand { display: flex; flex-direction: column; gap: var(--s-100); max-width: 480px; }
+.vxl .vxl-footer-links { display: flex; flex-wrap: wrap; gap: var(--s-75) var(--s-300); }
+.vxl .vxl-footer-links a { color: var(--text-2); transition: color 300ms var(--ease); }
+.vxl .vxl-footer-links a:hover { color: var(--text); }
+.vxl .vxl-footer-note { max-width: 680px; }
+
+/* ── Scroll reveal: rise 32px and fade, once ── */
+.vxl .vxl-reveal { opacity: 0; transform: translateY(32px); transition: opacity 700ms var(--ease), transform 700ms var(--ease); }
+.vxl .vxl-reveal.is-in { opacity: 1; transform: translateY(0); }
+
+/* ── Wider screens ── */
+@media (min-width: 480px) {
+  .vxl .vxl-col-spark { display: table-cell; width: 28%; }
+}
+@media (min-width: 640px) {
+  .vxl .vxl-container { padding-inline: var(--s-300); }
+  .vxl .vxl-hero-title { font-size: 3rem; line-height: 1; } /* Heading 2 */
+  .vxl .vxl-hero-sub { font-size: 1.125rem; line-height: 1.75rem; } /* text-lg */
+  .vxl .vxl-h2 { font-size: 2.25rem; line-height: 2.5rem; } /* Heading 3 */
+  .vxl .vxl-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vxl .vxl-nav-lang { display: inline-flex; }
+  .vxl .vxl-tagline-text { font-size: 3rem; line-height: 1; } /* Heading 2 */
+  .vxl .vxl-final { padding: var(--s-700) var(--s-600); }
+  .vxl .vxl-final-title { font-size: 2.25rem; line-height: 2.5rem; } /* Heading 3 */
+}
+@media (min-width: 900px) {
+  .vxl .vxl-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* The question list sits beside its heading, on the same left edge as every other section. */
+  .vxl .vxl-faq-wrap { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--s-700); align-items: start; }
+  .vxl .vxl-faq-wrap .vxl-section-head { margin-bottom: 0; }
+  .vxl .vxl-footer-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .vxl .vxl-footer-note { grid-column: 1 / -1; }
+}
+@media (min-width: 1024px) {
+  .vxl .vxl-hero-inner { padding-top: var(--s-800); }
+  .vxl .vxl-hero-title { font-size: 3.75rem; line-height: 1; } /* Heading 1 */
+  .vxl .vxl-nav { gap: var(--s-300); }
+  .vxl .vxl-nav-links { display: flex; }
+  .vxl .vxl-nav-login { display: inline-flex; }
+  .vxl .vxl-menu-toggle { display: none; }
+  .vxl .vxl-menu { display: none; }
+}
+/* Below the desktop bar the header keeps the brand, the action and the toggle. */
+@media (max-width: 359px) {
+  .vxl .vxl-nav { padding-left: var(--s-100); }
+  .vxl .vxl-nav-cta { display: none; }
+  .vxl .vxl-hero-title { font-size: 1.875rem; line-height: 2.25rem; } /* Heading 4 */
+}
+
+/* ── Reduced motion: no movement, a plain opacity change at most ── */
+@media (prefers-reduced-motion: reduce) {
+  .vxl .vxl-reveal { transform: none; transition: opacity 300ms var(--ease); }
+  .vxl .vxl-menu li, .vxl .vxl-faq-a { animation: none; }
+  .vxl .vxl-tagline-text span[data-word] { opacity: 1; transition: none; }
+  .vxl .vxl-card:hover, .vxl .vxl-btn:active, .vxl .vxl-menu-toggle:active, .vxl .vxl-faq-q:active { transform: none; }
+  .vxl .vxl-skeleton { animation: none; }
+  .vxl .vxl-menu-toggle span, .vxl .vxl-skip { transition: none; }
+}

@@ -81,3 +81,5 @@
   X-Robots-Tag: noindex, follow
 /legal/licenses
   X-Robots-Tag: noindex, nofollow
+/home-preview
+  X-Robots-Tag: noindex, nofollow

@@ -18,6 +18,7 @@ const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default:
 const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
 const PrivateTradingPage = lazy(() => import('./pages/private-trading/PrivateTradingPage').then((m) => ({ default: m.PrivateTradingPage })));
 const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));
+const LandingPage = lazy(() => import('./pages/landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));
 const OtcPage = lazy(() => import('./pages/OtcPage').then((m) => ({ default: m.OtcPage })));
@@ -106,6 +107,8 @@ export function App() {
       <Routes>
         {stocksEnabled && <><Route path="/stocks" element={<StocksPage/>}/><Route path="/stocks/:instrumentId" element={<StocksPage/>}/></>}
         <Route path="/" element={<RootEntry />} />
+        {/* The landing page candidate for «/» (landing-page-design skill). Unlisted and noindex until the owner approves it. */}
+        <Route path="/home-preview" element={<LandingPage />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
         <Route path="/trade" element={<RequireAuth><TradePage /></RequireAuth>} />

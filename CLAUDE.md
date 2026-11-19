@@ -12,4 +12,6 @@ For visual reference tasks, the owner's approved ZIP/archive is the visual sourc
 
 After every task, append a concise factual handoff entry to `docs/AI_HANDOFF.md`: agent, task, commit, material files, what was preserved from the other agent, and unresolved work. Never claim tests/QA you did not run.
 
+The `landing-page-design` skill in `.claude/skills/` applies to public marketing pages only (currently the candidate at `/home-preview`). Do not apply its typeface, palette or motion rules to the terminal or any other product screen.
+
 If a conflict appears, reconcile intent rather than choosing `ours`/`theirs` wholesale. Functional correctness stays intact first; visual parity is reapplied on top.

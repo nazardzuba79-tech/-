@@ -27,7 +27,7 @@ export const UTILITY_ROUTES = ['/login', '/register'] as const;
 /** Public, but kept out of search with the page's own noindex, nofollow
  * (LicencesPage): it shows supplied images whose details are not confirmed in
  * official registers (licenses.reviewNotice). */
-export const UNPROMOTED_ROUTES = ['/legal/licenses'] as const;
+export const UNPROMOTED_ROUTES = ['/legal/licenses', '/home-preview'] as const;
 /** Old Help addresses that the app redirects into the Academy (HelpPage). */
 export const LEGACY_HELP: Readonly<Record<string, string>> = {
   '/help': '/academy/faq',

@@ -1,0 +1,673 @@
+{
+  "dist": "frontend/dist",
+  "views": [
+    {
+      "width": 1440,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "ru",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "es",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "zh",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "hi",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "ja",
+      "writes": [],
+      "external": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "lang": "ko",
+      "writes": [],
+      "external": [],
+      "errors": []
+    }
+  ],
+  "checks": [
+    {
+      "name": "A2: one h1, the offer, in written lines, with one primary action repeated unchanged at the bottom",
+      "pass": true,
+      "detail": {
+        "lines": 3,
+        "actions": [
+          [
+            "/register",
+            "Начать торговлю"
+          ],
+          [
+            "/register",
+            "Начать торговлю"
+          ],
+          [
+            "/register",
+            "Начать торговлю"
+          ],
+          [
+            "/register",
+            "Начать торговлю"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "A2: benefits (3 to 5), three steps, FAQ (6 to 12), market proof on the first screen and again below",
+      "pass": true,
+      "detail": {
+        "benefits": 4,
+        "steps": 3,
+        "faq": 6,
+        "rows": [
+          5,
+          8
+        ]
+      }
+    },
+    {
+      "name": "B1: one typeface (Manrope), no italic, nothing heavier than bold",
+      "pass": true,
+      "detail": {
+        "fonts": [
+          "Manrope"
+        ],
+        "weights": [
+          400,
+          500,
+          600
+        ]
+      }
+    },
+    {
+      "name": "B1: every font size is a Tailwind scale step with its own line height",
+      "pass": true,
+      "detail": {
+        "pairs": [
+          "12/16",
+          "14/20",
+          "16/24",
+          "18/28",
+          "20/28",
+          "24/32",
+          "36/40",
+          "48/48",
+          "60/60"
+        ]
+      }
+    },
+    {
+      "name": "B2: every padding, gap and vertical margin is a spacing token",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "B3: every corner radius is a Tailwind radius",
+      "pass": true,
+      "detail": [
+        8,
+        16,
+        24,
+        9999
+      ]
+    },
+    {
+      "name": "B4: flat backgrounds from the dark list only",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "B5: the only gradient is on the hero heading text, white to #9B9B9B; heading and subheading stay within 680px",
+      "pass": true,
+      "detail": {
+        "gradients": [
+          "h1.vxl-hero-title"
+        ],
+        "h1": 513,
+        "sub": 680
+      }
+    },
+    {
+      "name": "B7: one curve, cubic-bezier(0.22, 1, 0.36, 1); nothing faster than 200ms; only colour, opacity and transform move",
+      "pass": true,
+      "detail": {
+        "curves": [
+          "cubic-bezier(0.22, 1, 0.36, 1)"
+        ],
+        "shortest": 300,
+        "animated": [
+          "background-color",
+          "border-color",
+          "color",
+          "opacity",
+          "transform"
+        ]
+      }
+    },
+    {
+      "name": "B7: the navigation is a compact bar floating off the top edge, centred, translucent over a blur; the current page is marked",
+      "pass": true,
+      "detail": {
+        "top": 16,
+        "left": 229.03125,
+        "right": 229.03125,
+        "blur": "blur(16px)",
+        "current": 1
+      }
+    },
+    {
+      "name": "B10: skip link, landmarks, legal links, alt text, no dead link; the candidate is kept out of search",
+      "pass": true,
+      "detail": {
+        "landmarks": {
+          "nav": 2,
+          "main": 1,
+          "footer": 1,
+          "skip": "#vxl-main"
+        },
+        "robots": "noindex, nofollow"
+      }
+    },
+    {
+      "name": "B8: no placeholder, no invented figure — the only number in the copy is the count of listed markets",
+      "pass": true,
+      "detail": "8 спотовых рынков в списке"
+    },
+    {
+      "name": "no horizontal overflow, no page error, no write request, nothing but fonts left the stand",
+      "pass": true,
+      "detail": {
+        "overflow": 0,
+        "errors": [],
+        "writes": [],
+        "external": []
+      }
+    },
+    {
+      "name": "B11: a tagline of two lines or more whose words start near 30% and light up in reading order as it is scrolled in",
+      "pass": true,
+      "detail": {
+        "before": {
+          "words": 14,
+          "lit": 0,
+          "opacity": 0.3,
+          "sentences": 3
+        },
+        "mid": 14,
+        "after": {
+          "lit": 14,
+          "opacity": 1,
+          "lines": 4
+        }
+      }
+    },
+    {
+      "name": "B7: sections reveal once on entering the viewport and stay revealed",
+      "pass": true,
+      "detail": {
+        "sections": 5,
+        "shown": 5,
+        "stillShown": 5
+      }
+    },
+    {
+      "name": "B9: one answer is open at a time, and a focused control shows a ring",
+      "pass": true,
+      "detail": {
+        "faq": "false,true,false,false,false,false",
+        "ring": "solid 2px"
+      }
+    },
+    {
+      "name": "a signed-in visitor gets one action too: the terminal, and no «Вход»",
+      "pass": true,
+      "detail": [
+        "/trade",
+        "/trade",
+        "/trade",
+        "/trade"
+      ]
+    },
+    {
+      "name": "B9 loading: skeleton rows shaped like the table, no spinner",
+      "pass": true,
+      "detail": {
+        "skeleton": 13,
+        "busy": "true",
+        "spinner": 0
+      }
+    },
+    {
+      "name": "B9 error: a plain sentence where the market cannot be read, and no market count is claimed",
+      "pass": true,
+      "detail": {
+        "message": [
+          "Данные рынка временно недоступны",
+          "Данные рынка временно недоступны"
+        ],
+        "proof": 0,
+        "alerts": 0
+      }
+    },
+    {
+      "name": "390: no overflow, the primary action is on the first screen, buttons keep their text and are at least 48px tall",
+      "pass": true,
+      "detail": {
+        "top": 452,
+        "bottom": 500,
+        "height": 48,
+        "viewport": 844,
+        "clipped": 0
+      }
+    },
+    {
+      "name": "390: the phone page keeps the type scale, spacing tokens and the single typeface",
+      "pass": true,
+      "detail": {
+        "pairs": [
+          "12/16",
+          "14/20",
+          "16/24",
+          "18/28",
+          "20/28",
+          "24/32",
+          "30/36",
+          "36/40"
+        ],
+        "offSpacing": []
+      }
+    },
+    {
+      "name": "390: no single word is left alone on the last line of the tagline",
+      "pass": true,
+      "detail": 4
+    },
+    {
+      "name": "390: the menu opens as a full height blurred panel; links arrive 60ms apart, capped at 400ms",
+      "pass": true,
+      "detail": {
+        "height": 844,
+        "viewport": 844,
+        "width": 390,
+        "blur": "blur(24px)",
+        "delays": [
+          0,
+          60,
+          120,
+          180,
+          240,
+          300,
+          360
+        ],
+        "expanded": "true",
+        "scrollLocked": "hidden"
+      }
+    },
+    {
+      "name": "390: Escape closes the menu and gives the page back",
+      "pass": true
+    },
+    {
+      "name": "390: no page error, no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "320: no overflow, the primary action is on the first screen, buttons keep their text and are at least 48px tall",
+      "pass": true,
+      "detail": {
+        "top": 464,
+        "bottom": 512,
+        "height": 48,
+        "viewport": 700,
+        "clipped": 0
+      }
+    },
+    {
+      "name": "320: the phone page keeps the type scale, spacing tokens and the single typeface",
+      "pass": true,
+      "detail": {
+        "pairs": [
+          "12/16",
+          "14/20",
+          "16/24",
+          "18/28",
+          "20/28",
+          "24/32",
+          "30/36"
+        ],
+        "offSpacing": []
+      }
+    },
+    {
+      "name": "320: no single word is left alone on the last line of the tagline",
+      "pass": true,
+      "detail": 2
+    },
+    {
+      "name": "320: the menu opens as a full height blurred panel; links arrive 60ms apart, capped at 400ms",
+      "pass": true,
+      "detail": {
+        "height": 700,
+        "viewport": 700,
+        "width": 320,
+        "blur": "blur(24px)",
+        "delays": [
+          0,
+          60,
+          120,
+          180,
+          240,
+          300,
+          360
+        ],
+        "expanded": "true",
+        "scrollLocked": "hidden"
+      }
+    },
+    {
+      "name": "320: Escape closes the menu and gives the page back",
+      "pass": true
+    },
+    {
+      "name": "320: no page error, no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "B7/B11 reduced motion: the tagline is at full colour at once and reveals do not move",
+      "pass": true,
+      "detail": {
+        "lit": 14,
+        "words": 14,
+        "opacity": "1",
+        "transform": "none"
+      }
+    },
+    {
+      "name": "ru: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "Спот, фьючерсы / и копитрейдинг / в одном аккаунте",
+        "lines": 3,
+        "action": "Начать торговлю"
+      }
+    },
+    {
+      "name": "ru: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 14,
+          "onLastLine": 4
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "ru: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 17
+      }
+    },
+    {
+      "name": "en: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "Spot, futures / and copy trading / in one account",
+        "lines": 3,
+        "action": "Start trading"
+      }
+    },
+    {
+      "name": "en: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 13,
+          "onLastLine": 4
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "en: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 34
+      }
+    },
+    {
+      "name": "es: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "Spot, futuros / y copy trading / en una sola cuenta",
+        "lines": 3,
+        "action": "Empezar a operar"
+      }
+    },
+    {
+      "name": "es: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 16,
+          "onLastLine": 3
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "es: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 19
+      }
+    },
+    {
+      "name": "zh: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "现货、合约 / 与跟单交易 / 尽在一个账户",
+        "lines": 3,
+        "action": "开始交易"
+      }
+    },
+    {
+      "name": "zh: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 12,
+          "onLastLine": 5
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "zh: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 49
+      }
+    },
+    {
+      "name": "hi: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "स्पॉट, फ्यूचर्स / और कॉपी ट्रेडिंग / एक ही खाते में",
+        "lines": 3,
+        "action": "ट्रेडिंग शुरू करें"
+      }
+    },
+    {
+      "name": "hi: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 16,
+          "onLastLine": 5
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "hi: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 43
+      }
+    },
+    {
+      "name": "ja: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "現物、先物、 / コピートレードを / 1つのアカウントで",
+        "lines": 3,
+        "action": "取引を始める"
+      }
+    },
+    {
+      "name": "ja: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 21,
+          "onLastLine": 4
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "ja: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 34
+      }
+    },
+    {
+      "name": "ko: the heading holds its three written lines at 390px, nothing overflows or is cut",
+      "pass": true,
+      "detail": {
+        "h1": "현물, 선물, / 카피 트레이딩을 / 하나의 계정에서",
+        "lines": 3,
+        "action": "거래 시작하기"
+      }
+    },
+    {
+      "name": "ko: the tagline is cut into words (also where the language has no spaces), no hyphen in the copy, no lone last word",
+      "pass": true,
+      "detail": {
+        "words": {
+          "count": 11,
+          "onLastLine": 2
+        },
+        "hyphens": []
+      }
+    },
+    {
+      "name": "ko: brand, action and menu button sit inside the floating bar with its padding on both sides",
+      "pass": true,
+      "detail": {
+        "left": 17,
+        "right": 9,
+        "navRight": 33
+      }
+    }
+  ],
+  "passed": 53,
+  "failed": 0
+}
