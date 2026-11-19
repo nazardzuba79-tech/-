@@ -1,0 +1,58 @@
+name: Claude mobile Futures 717 pinned release verification
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - 'frontend/src/components/FuturesMobilePositions.css'
+      - 'frontend/src/components/FuturesPositionsPanel.tsx'
+      - 'frontend/src/components/FuturesOrderForm.tsx'
+      - 'frontend/src/pages/trade-terminal/FuturesMobileReference.css'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'frontend/src/lib/__tests__/futuresUiPolish.test.ts'
+      - 'frontend/src/lib/__tests__/i18nLanguageChunks.test.ts'
+      - 'scripts/qa-futures-mobile-terminal.cjs'
+      - 'scripts/qa-futures-mobile-position-card.cjs'
+      - '.github/workflows/mobile-futures-717-review.yml'
+permissions:
+  contents: read
+jobs:
+  mobile-futures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked root and frontend dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: TypeScript and exact candidate Vite build
+        run: npm run build --prefix frontend
+      - name: Futures presentation invariants and seven dictionary integrity checks
+        run: npx jest --runInBand frontend/src/lib/__tests__/futuresUiPolish.test.ts frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+      - name: Install isolated browser tooling
+        run: |
+          npm install --prefix /tmp/voltex-717-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-717-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Mobile position cards (320 360 390 430)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-717-browser/node_modules/playwright
+        run: node scripts/qa-futures-mobile-position-card.cjs --out output/qa-mobile-717-positions
+      - name: Mobile Futures terminal (320 360 390 430)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-717-browser/node_modules/playwright
+        run: node scripts/qa-futures-mobile-terminal.cjs --out output/qa-mobile-717-terminal
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-futures-717-${{ github.sha }}
+          path: |
+            output/qa-mobile-717-positions/**
+            output/qa-mobile-717-terminal/**
+          retention-days: 7
+          if-no-files-found: warn
