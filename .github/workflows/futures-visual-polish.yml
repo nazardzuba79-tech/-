@@ -65,7 +65,7 @@ concurrency:
 jobs:
   visual-polish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 28
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,6 +93,14 @@ jobs:
           sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
       - name: Futures browser QA at desktop and 320, 360, 390, 430 mobile widths
         run: node scripts/qa-futures-visual-polish.cjs --label ci
+      - name: Claude phone positions — read-only 320/360/390/430 + desktop
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-futures-mobile-position-card.cjs --out output/ci-futures-mobile-position-card
+      - name: Claude phone terminal — no trading writes, 320/360/390/430 + desktop
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-futures-mobile-terminal.cjs --out output/ci-futures-mobile-terminal
       - name: Real Futures proportions, all desktop widths and mobile
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
