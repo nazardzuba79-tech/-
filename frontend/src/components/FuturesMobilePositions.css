@@ -213,6 +213,8 @@
        against that grid AREA, not against the card. */
     grid-area: auto !important;
     position: absolute; top: 0 !important; right: 2px !important; bottom: auto; left: auto;
+    /* Above the header cell, which spans the card's full width and would otherwise take the press. */
+    z-index: 2;
     margin: 0 !important;
     width: 44px; height: 44px; min-width: 44px; min-height: 44px;
     display: inline-flex; align-items: center; justify-content: center;

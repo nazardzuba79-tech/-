@@ -161,6 +161,9 @@ const read = page => page.evaluate(() => {
       await page.keyboard.press('Escape'); await page.waitForTimeout(150);
       if (await editor.count()) { await first.locator('.fut-tpslTrigger').click(); await page.waitForTimeout(150); }
       ok(`${P}: the editor closes again`, await editor.count() === 0);
+      // The share key lies over the header cell: it must be the element a press lands on (2026-11-19: the cell used to take it).
+      const share = await first.locator('.archive-pnl-open').evaluate(el => { el.scrollIntoView({ block: 'center' }); const b = el.getBoundingClientRect(), hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { pressed: hit === el || el.contains(hit), hit: hit && hit.tagName }; });
+      ok(`${P}: the result-card key in the corner of the card takes the press`, share.pressed, share);
       await first.locator('.futures-position-close[data-limit-close-open]').click();
       const dialog = page.locator('[data-limit-close-dialog="fixture-btc"]');
       await dialog.waitFor({ timeout: 5000 });

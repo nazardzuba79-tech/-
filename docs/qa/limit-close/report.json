@@ -7,7 +7,7 @@
       "evidence": {
         "side": "LONG",
         "width": 1440,
-        "positionId": "native-a9d7dd2b-7023-4a44-922d-94d86bd7d6f2",
+        "positionId": "native-d8f7ff57-5672-42fd-b552-f6ada71a2a8d",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
@@ -42,79 +42,9 @@
       }
     },
     {
-      "name": "limit-close-LONG-1600",
-      "passed": true,
-      "evidence": {
-        "side": "LONG",
-        "width": 1600,
-        "positionId": "native-433207cc-df7a-4b71-b228-78bfa579e83d",
-        "before": "15000000",
-        "realizedBefore": "-33",
-        "dialog": {
-          "entry": 0.004,
-          "market": 0.0549,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0549. Ожидаемая прибыль составит 254,349.0250 USDT (включая расчетную комиссию за закрытие)"
-        },
-        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
-        "cancel": {
-          "restedAt": "0.0649",
-          "ordersAfterCancel": 0,
-          "quantityAfterCancel": "15000000"
-        },
-        "fill": {
-          "limit": "0.0558",
-          "fillPrice": 0.0558,
-          "quantityAfter": "10000000",
-          "realizedBefore": "-33",
-          "realizedAfter": "258911.2",
-          "realizedDelta": 258944.2,
-          "gross": 259000
-        },
-        "quarter": {
-          "quantityAfter": "7500000",
-          "filledInOpen": true
-        },
-        "formGating": {
-          "buyBlocked": "true",
-          "sellBlocked": null,
-          "blockedTitle": "Нет открытого шорта по AKE/USDT — закрывать нечего"
-        }
-      }
-    },
-    {
       "name": "limit-close-LONG-390",
-      "passed": true,
-      "evidence": {
-        "side": "LONG",
-        "width": 390,
-        "positionId": "native-6a6f1ee2-34f0-400b-ae63-de709c99a961",
-        "before": "15000000",
-        "realizedBefore": "-33",
-        "dialog": {
-          "entry": 0.004,
-          "market": 0.056,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0560. Ожидаемая прибыль составит 259,846.0000 USDT (включая расчетную комиссию за закрытие)"
-        },
-        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
-        "cancel": {
-          "restedAt": "0.0659",
-          "ordersAfterCancel": 0,
-          "quantityAfterCancel": "15000000"
-        },
-        "fill": {
-          "limit": "0.0569",
-          "fillPrice": 0.0571,
-          "quantityAfter": "10000000",
-          "realizedBefore": "-33",
-          "realizedAfter": "265409.9",
-          "realizedDelta": 265442.9,
-          "gross": 265500
-        },
-        "quarter": {
-          "quantityAfter": "7500000",
-          "filledInOpen": true
-        }
-      }
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: seed position row\n+ actual - expected\n\n+ '15,000,000'\n- '15,000,000 AKE'\n             ^\n\n    at scenario (/home/user/voltex-pos/scripts/qa-limit-close.cjs:128:12)\n    at async check (/home/user/voltex-pos/scripts/qa-limit-close.cjs:66:26)\n    at async /home/user/voltex-pos/scripts/qa-limit-close.cjs:256:35"
     },
     {
       "name": "limit-close-SHORT-1440",
@@ -122,7 +52,7 @@
       "evidence": {
         "side": "SHORT",
         "width": 1440,
-        "positionId": "native-4410b1b3-4215-40de-ab43-e093e5e44e83",
+        "positionId": "native-955e7c90-13f4-494d-af04-bb0b5ee63b62",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
@@ -157,81 +87,12 @@
       }
     },
     {
-      "name": "limit-close-SHORT-1600",
-      "passed": true,
-      "evidence": {
-        "side": "SHORT",
-        "width": 1600,
-        "positionId": "native-3148a54e-ec8a-4e50-9b6c-d3cce266ef8c",
-        "before": "15000000",
-        "realizedBefore": "-33",
-        "dialog": {
-          "entry": 0.004,
-          "market": 0.0527,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0527. Ожидаемый убыток составит 243,644.9250 USDT (включая расчетную комиссию за закрытие)"
-        },
-        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
-        "cancel": {
-          "restedAt": "0.0427",
-          "ordersAfterCancel": 0,
-          "quantityAfterCancel": "15000000"
-        },
-        "fill": {
-          "limit": "0.0518",
-          "fillPrice": 0.0518,
-          "quantityAfter": "10000000",
-          "realizedBefore": "-33",
-          "realizedAfter": "-239084.8",
-          "realizedDelta": -239051.8,
-          "gross": -238999.99999999997
-        },
-        "quarter": {
-          "quantityAfter": "7500000",
-          "filledInOpen": true
-        },
-        "formGating": {
-          "buyBlocked": null,
-          "sellBlocked": "true",
-          "blockedTitle": "Нет открытого лонга по AKE/USDT — закрывать нечего"
-        }
-      }
-    },
-    {
       "name": "limit-close-SHORT-390",
-      "passed": true,
-      "evidence": {
-        "side": "SHORT",
-        "width": 390,
-        "positionId": "native-5ba1e4a6-23db-450f-a58e-f95563ea43c9",
-        "before": "15000000",
-        "realizedBefore": "-33",
-        "dialog": {
-          "entry": 0.004,
-          "market": 0.0516,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0516. Ожидаемый убыток составит 238,141.9000 USDT (включая расчетную комиссию за закрытие)"
-        },
-        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
-        "cancel": {
-          "restedAt": "0.0417",
-          "ordersAfterCancel": 0,
-          "quantityAfterCancel": "15000000"
-        },
-        "fill": {
-          "limit": "0.0506",
-          "fillPrice": 0.0505,
-          "quantityAfter": "10000000",
-          "realizedBefore": "-33",
-          "realizedAfter": "-232583.5",
-          "realizedDelta": -232550.5,
-          "gross": -232500
-        },
-        "quarter": {
-          "quantityAfter": "7500000",
-          "filledInOpen": true
-        }
-      }
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: seed position row\n+ actual - expected\n\n+ '15,000,000'\n- '15,000,000 AKE'\n             ^\n\n    at scenario (/home/user/voltex-pos/scripts/qa-limit-close.cjs:128:12)\n    at async check (/home/user/voltex-pos/scripts/qa-limit-close.cjs:66:26)\n    at async /home/user/voltex-pos/scripts/qa-limit-close.cjs:256:35"
     }
   ],
   "errors": [],
-  "passed": true
+  "passed": false,
+  "failure": "AssertionError [ERR_ASSERTION]: 2 checks failed\n    at /home/user/voltex-pos/scripts/qa-limit-close.cjs:259:5"
 }

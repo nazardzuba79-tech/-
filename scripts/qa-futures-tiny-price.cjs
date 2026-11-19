@@ -98,6 +98,8 @@ async function viewport(width) {
     const buy = page.locator('.fo-submitPair .buy');
     await page.waitForFunction((expected) => document.querySelector('.fo-priceInputRow input')?.value === expected, PRICE);
     check(`${width}: automatic price is full decimal 0.0000001`, await price.inputValue() === PRICE);
+    // Phone (owner reference, 2026-11-19): the trade screen states the price in the book; the instrument row shows it on the chart screen.
+    if (width < 500) await page.locator('#mobile-futures-chart').click();
     const header = page.locator('.futures-ticker-bar .futures-primary-price > .price');
     await header.waitFor({ state: 'visible' });
     await page.waitForFunction((expected) => {
@@ -108,6 +110,7 @@ async function viewport(width) {
     const headerPrice = await header.evaluate(element => Array.from(element.childNodes)
       .filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim());
     check(`${width}: positive header price is exactly 0.0000001`, headerPrice === PRICE && Number(headerPrice) > 0, { headerPrice });
+    if (width < 500) await page.locator('#mobile-futures-trade').click();
     await quantity.fill(QUANTITY);
     await page.waitForFunction(() => !document.querySelector('.fo-submitPair .buy')?.disabled);
 

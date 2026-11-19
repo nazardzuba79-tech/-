@@ -475,8 +475,7 @@ export function FuturesPositionsPanel({
           with them — taking "Closed 3 of 3" away and leaving the trader to
           infer the outcome from an empty screen. So it renders whenever
           there is something to close OR something to report. */}
-      {/* The phone layout carries «Закрыть все» on every design (owner reference, 2026-11-19); the same confirmed path. */}
-      {(!archive || mobile) && tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
+      {!archive && tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
         <div className="futures-close-all-bar">
           {closeAll.phase === 'confirm' ? (
             <div className="futures-close-all-confirm" role="alertdialog" aria-live="assertive"

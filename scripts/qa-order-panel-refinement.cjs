@@ -48,8 +48,9 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     // TP/SL is a checkbox beside «Только уменьшение» (owner, 2026-09-29).
     const toggle = page.locator('.fo-tpslToggle'), toggleBox = toggle.locator('input');
     await toggle.waitFor();
-    // Desktop 28px since 2026-10-07 (Bybit 1:1: its TP/SL checkbox row); phones keep the 44px touch target.
-    assert.equal(await toggle.evaluate(e => e.getBoundingClientRect().height), width > 900 ? 28 : 44);
+    // Desktop 28px since 2026-10-07 (Bybit 1:1: its TP/SL checkbox row). Phones: 32px since 2026-11-19 — the owner's
+    // phone reference stacks the two checkbox rows tightly under the order summary; the whole row stays the target.
+    assert.equal(await toggle.evaluate(e => e.getBoundingClientRect().height), width > 900 ? 28 : 32);
     assert.equal((await toggle.innerText()).trim(), 'TP / SL');
     assert(await toggle.getAttribute('title'), 'Protection explanation must remain available');
     assert.equal(await toggleBox.isChecked(), false);
