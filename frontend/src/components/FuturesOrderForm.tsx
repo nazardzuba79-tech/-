@@ -168,6 +168,11 @@ export function FuturesOrderForm({
   }, [family, lastPrice, price, priceEdited]);
   const [quantity, writeQuantity] = useState('');
   const [totalDraft, setTotalDraft] = useState<string | null>(null);
+  /** Phone only: which of the two size fields is on screen — the contract quantity or its value in the quote asset.
+   *  Presentation; both fields keep writing the one quantity the order submits. */
+  const [sizeUnit, setSizeUnit] = useState<'base' | 'quote'>('base');
+  const unitSwap = <button type="button" className="fo-unitSwap" aria-label={`${t('trade.quantity')} / ${t('trade.total')}`} aria-pressed={sizeUnit === 'quote'}
+    onClick={() => setSizeUnit(unit => unit === 'base' ? 'quote' : 'base')}><span aria-hidden="true">⇄</span></button>;
   function setQuantity(value: string) { setTotalDraft(null); writeQuantity(value); }
   const [closeTarget, setCloseTarget] = useState<FuturesCloseTicket | null>(null);
   /** A close requested from the positions table fills the ticket in, in
@@ -905,7 +910,7 @@ export function FuturesOrderForm({
           reference the order will submit stays on the form as data for the
           browser checks. Only the armed-but-empty picker still says what
           the disabled buttons are waiting for. */}
-      <form noValidate={viewer} onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}
+      <form noValidate={viewer} onSubmit={handleSubmit} className="fo-form" data-size-unit={sizeUnit} data-close-position-id={activeCloseTarget?.id}
         data-entry-reference={execution.engine === 'NATIVE' && !reduceOnly && execution.candle ? JSON.stringify(execution.candle) : undefined}>
         {execution.engine === 'NATIVE' && !reduceOnly && !execution.candle && execution.historicalEntryPending && <div className="fo-infoRow" role="status" aria-label="Точка входа">
           <span>Вход</span><strong>Выберите свечу на графике</strong>
@@ -998,7 +1003,7 @@ export function FuturesOrderForm({
           </label>
         ) : null}
 
-        <label className="fo-label fo-field">
+        <label className="fo-label fo-field fo-sizeField" data-size-field="base">
           <span className="fo-fieldCaption">{t('trade.quantity')}</span>
           {/* The unit is a label, not a selector: this form trades one
               contract, the one the page is on, so a dropdown here would
@@ -1020,18 +1025,18 @@ export function FuturesOrderForm({
               }}
               placeholder={archive && baseAsset === 'BTC' ? '0.000' : '0.00000'}
             />
-            <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
+            <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span>{unitSwap}</span>
           </div>
           {refusalNote(quantityInput, quantityRefusalId)}
         </label>
 
-        <label className="fo-label fo-field">
+        <label className="fo-label fo-field fo-sizeField" data-size-field="quote">
           <span className="fo-fieldCaption">{t('trade.total')}</span>
           <div className="fo-fieldRow">
             <input className="mono fo-input" type="text" inputMode="decimal" autoComplete="off"
               aria-label={t('trade.total')} value={totalDraft ?? ticketTotal(quantity, effectivePrice ?? 0)}
               onChange={event => { setTotalDraft(event.target.value); writeQuantity(ticketQuantity(event.target.value, effectivePrice ?? 0)); setPercent(0); }} />
-            <span className="fo-fieldTrailing"><span className="fo-unit">{quoteAsset}</span></span>
+            <span className="fo-fieldTrailing"><span className="fo-unit">{quoteAsset}</span>{unitSwap}</span>
           </div>
         </label>
 
@@ -1251,7 +1256,7 @@ export function FuturesOrderForm({
             onClick={() => place('BUY')}
             className="submit-btn buy"
           >
-            {submitting && side === 'BUY' ? t('auth.wait') : t(reduceOnly ? 'futures.closeShort' : 'futures.buyLong')}
+            {submitting && side === 'BUY' ? t('auth.wait') : compact && !reduceOnly ? t('futures.long') : t(reduceOnly ? 'futures.closeShort' : 'futures.buyLong')}
           </button>
           <button
             type="button"
@@ -1261,7 +1266,7 @@ export function FuturesOrderForm({
             onClick={() => place('SELL')}
             className="submit-btn sell"
           >
-            {submitting && side === 'SELL' ? t('auth.wait') : t(reduceOnly ? 'futures.closeLong' : 'futures.sellShort')}
+            {submitting && side === 'SELL' ? t('auth.wait') : compact && !reduceOnly ? t('futures.short') : t(reduceOnly ? 'futures.closeLong' : 'futures.sellShort')}
           </button>
         </div>
       </form>

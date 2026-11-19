@@ -11,11 +11,11 @@ import { useFuturesPanelHeight, maxPanelHeightFor, FUTURES_PANEL_MIN_HEIGHT, FUT
 import { installPageFirstWheel } from '../lib/futuresPageFirstWheel';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
-import { FuturesTickerBar } from '../components/FuturesTickerBar';
+import { FuturesTickerBar, FuturesFundingLine } from '../components/FuturesTickerBar';
 import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
 import { FuturesContractDetails } from '../components/FuturesContractDetails';
 import { ArchiveAccountActivity } from '../components/ArchiveTerminalDetails';
-import { Calculator } from 'lucide-react';
+import { Calculator, ArrowLeft, CandlestickChart, ClipboardList, ReceiptText } from 'lucide-react';
 import { ArchiveTopAssets } from '../components/ArchiveTopAssets';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
@@ -76,6 +76,8 @@ import './trade-terminal/FuturesFigmaDesktop.css';
 import './trade-terminal/FuturesMobileLargeText.css';
 // The account panel's draggable top edge (owner, 2026-10-21); TerminalPanelTiles stays last.
 import './trade-terminal/FuturesPanelResize.css';
+// The phone layout after the owner's reference (2026-11-19); TerminalPanelTiles stays last.
+import './trade-terminal/FuturesMobileReference.css';
 import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
@@ -696,7 +698,11 @@ export function FuturesPage() {
                 mobileTabsRef.current?.querySelector<HTMLButtonElement>(`#mobile-futures-${next}`)?.focus();
               }}
               onClick={() => { selectMobileTab(id); if (id === 'positions') accountPanel.reveal(); }}>
-              {t(label)}{id === 'positions' && <span>{visibleAccount.positions.data?.length ?? '—'}</span>}
+              {/* Phone (owner reference, 2026-11-19): the three workspaces are an
+                  icon switch in the instrument row. The words stay in the
+                  button for a screen reader; the sheet hides them from sight. */}
+              {id === 'chart' ? <CandlestickChart size={18} aria-hidden="true" /> : id === 'trade' ? <ReceiptText size={18} aria-hidden="true" /> : <ClipboardList size={18} aria-hidden="true" />}
+              <b className="futures-mobile-tab-label">{t(label)}</b>{id === 'positions' && <span>{visibleAccount.positions.data?.length ?? '—'}</span>}
             </button>)}
         </div>
         <div className="futures-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
@@ -826,6 +832,10 @@ export function FuturesPage() {
           </div>
 
           <div className="orderbook-area repaired-futures-book">
+            {/* Phone: the funding rate and its countdown head the book column,
+                where the reference keeps them; the instrument row no longer
+                carries a «24h +» drawer in the trade view. */}
+            {compact && <FuturesFundingLine />}
             {/* No `key` here on purpose. Remounting on every contract switch
                 threw away the trader's own choices — the Trades tab, the
                 bids-only view, the grouping step — and forced a fresh DOM
@@ -900,6 +910,11 @@ export function FuturesPage() {
               else if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); panelHeight.set(event.key === 'End' ? panelMax : FUTURES_PANEL_MIN_HEIGHT, panelMax); }
               else if (event.key === 'Escape') { event.preventDefault(); panelHeight.reset(); }
             }} />
+          {/* Phone, «Ордера» screen: its own title row with the way back to the ticket. */}
+          {compact && <div className="futures-mobile-orders-bar">
+            <button type="button" aria-label={t('nav.trade')} onClick={() => selectMobileTab('trade', true)}><ArrowLeft size={22} aria-hidden="true" /></button>
+            <strong>{t('trade.mobileTabOrders')}</strong>
+          </div>}
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (
@@ -913,12 +928,16 @@ export function FuturesPage() {
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
                 onClick={() => { setBottomTab(tab.id); accountPanel.reveal(); }}
               >
-                {t(tab.labelKey)}
+                {/* A phone names the open-orders tab «Ордера», as the Spot terminal's phone tab does. */}
+                {t(compact && tab.id === 'orders' ? 'trade.mobileTabOrders' : tab.labelKey)}
                 {tab.id === 'positions' && <span className="reference-tab-count">{`(${visibleAccount.positions.data?.length ?? '—'})`}</span>}
                 {tab.id === 'orders' && <span className="reference-tab-count">{`(${visibleAccount.orders.data?.length ?? '—'})`}</span>}
               </button>
             ))}
           </div>
+          {/* Phone: the list glyph at the end of the tab row opens the «Ордера» screen — every tab, full height. */}
+          {compact && <button type="button" className="futures-mobile-orders-open" aria-label={t('trade.mobileTabOrders')} title={t('trade.mobileTabOrders')}
+            onClick={() => { selectMobileTab('positions', true); accountPanel.reveal(); }}><ClipboardList size={18} aria-hidden="true" /></button>}
           {archivePreview && <label className="archive-pair-filter"><input type="checkbox" checked={!onlyCurrentPair} onChange={e => setOnlyCurrentPair(!e.target.checked)} />{t('futures.allMarkets')}</label>}
           {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="futures-bottom-content" />}
           </div>
@@ -966,6 +985,15 @@ export function FuturesPage() {
         {/* Phone: what used to follow the ticket — the account block, the
             leverage tiers and the contract facts — follows the positions,
             so the trade buttons lead straight into the trader's positions. */}
+        {/* Phone, chart screen: Long and Short under the chart carry the last
+            price and open the ticket. They submit nothing — the order is
+            still placed with the ticket's own buttons. */}
+        {compact && <div className="futures-mobile-quick" role="group" aria-label={t('nav.trade')}>
+          {(['long', 'short'] as const).map(side => <button type="button" key={side} className={side} data-quick-side={side} onClick={() => selectMobileTab('trade', true)}>
+            <b>{t(side === 'long' ? 'futures.long' : 'futures.short')}</b>
+            <span>{livePrice ?? '—'}</span>
+          </button>)}
+        </div>}
         {compact && <div className="futures-mobile-extras">
           <div className="futures-mobile-account-slot" ref={setAccountSlot} />
           {archivePreview && <FuturesContractDetails symbol={symbol} />}
