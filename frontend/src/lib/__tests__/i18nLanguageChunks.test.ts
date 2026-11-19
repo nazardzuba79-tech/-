@@ -536,7 +536,9 @@ describe('translation integrity', () => {
       // digest is taken over the original wording, restored here by name.
       // Keep the historical digest frozen while comparing the pinned LIVE dictionary.
       // The one pre-existing main-only key is restored virtually, exactly once.
-      const crossAnchor = /(\n  'wallet\.conversion\.subtitleTrading': [^\n]*\n)/;
+      // All older wallet.conversion labels were removed from the frozen-digest body.
+      // Therefore the main-only subtitleCross immediately follows the dictionary opener.
+      const crossAnchor = /(= \{\n)/;
       expect({ code, crossAnchor: crossAnchor.test(source) }).toEqual({ code, crossAnchor: true });
       const canonicalSource = source.includes("'wallet.conversion.subtitleCross':") ? source
         : source.replace(crossAnchor, (_, match: string) => match + unpublishedMainCrossLabel[code] + '\n');
