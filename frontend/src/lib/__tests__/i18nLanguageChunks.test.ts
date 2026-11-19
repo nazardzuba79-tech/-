@@ -362,6 +362,7 @@ describe('translation integrity', () => {
     // back in that order for the old digest. (`home.markets.cfdNotConfigured` follows `home.cfdSoon`, restored below.)
     const removedNoticeLines: Record<string, Array<{ after: string; line: string }>> = require('./removedNoticeLines.json');
     const { createHash } = require('crypto');
+    const frozenDigestMismatches: Array<{ code: string; expected: string; actual: string }> = [];
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
@@ -541,9 +542,10 @@ describe('translation integrity', () => {
         .replace(/(\n  'serverError\.notFound': [^\n]*)/, `$1\n  'serverError.practiceOnly': '${removedPracticeCopy[code]}',`)
         .replace(/(\n  'home\.marketDataUnavailable': [^\n]*)/, `$1\n  'home.cfdSoon': '${removedHomeCfdSoon[code]}',`);
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
-      expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
-        .toEqual({ code, digest: digests[code] });
+      const actual = createHash('sha256').update(body).digest('hex').slice(0, 16);
+      if (actual !== digests[code]) frozenDigestMismatches.push({ code, expected: digests[code], actual });
     }
+    expect(frozenDigestMismatches).toEqual([]);
   });
 
   it('carries the OTC page copy in every language, the Russian word for word from OTC.zip', () => {
