@@ -426,33 +426,35 @@ async function tradeSide(s, width, side, counts) {
 
 /** The same selected bar through the «Рыночный» tab: the form sends type MARKET with the bar attached and no
  *  price; the engine opens at the bar's price, exactly as from the LIMIT tab. Closed again at the near-live price. */
-async function marketTabEntry(s, width, counts) {
+async function marketTabEntry(s, width, counts, side) {
   const p = s.page;
   await workspace(p, 'trade');
   const reference = JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference'));
   const tabName = await chooseFamily(p, 1, 'MARKET');
   await p.waitForFunction(() => !document.querySelector('.fo-priceInputRow input'));
   await qty(p).fill(QUANTITY);
-  await p.waitForFunction(() => !document.querySelector('.fo-submitPair .buy')?.disabled);
-  await p.screenshot({ path: path.join(out, `market-tab-armed-${width}.png`), fullPage: width === 390 });
-  const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
+  await p.waitForFunction(side => !document.querySelector(`.fo-submitPair .${side === 'LONG' ? 'buy' : 'sell'}`)?.disabled, side);
+  await p.screenshot({ path: path.join(out, `market-tab-armed-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
+  const { state, draft } = await command(s, 'OPEN', () => button(p, side).click());
   assert.equal(draft.type, 'MARKET'); assert.equal(draft.price, undefined, 'The Market tab sent a price'); assert.deepEqual(draft.candle, reference); assert.equal(draft.executionMode, 'HISTORICAL_DEMO');
   assert.equal(state.positions.length, counts.positions + 1); assert.equal(activeOrders(state).length, counts.orders);
-  const position = state.positions.find(x => x.symbol === SYMBOL && x.side === 'LONG');
-  assert(position, 'No LONG AKE position from the Market tab');
+  const position = state.positions.find(x => x.symbol === SYMBOL && x.side === side);
+  assert(position, `No ${side} AKE position from the Market tab`);
   assert.equal(Number(position.entryPrice), ENTRY, `Market-tab entry is ${position.entryPrice}, not the selected ${ENTRY}`);
   assert(Math.abs(Number(position.markPrice) - CURRENT) < 1e-9);
   assert.equal(position.executionMode, 'HISTORICAL_DEMO');
+  const signedPnl = (side === 'LONG' ? 1 : -1) * (CURRENT - ENTRY) * Number(QUANTITY);
+  assert(Math.abs(Number(position.unrealizedPnl) - signedPnl) < 1e-6, `Market ${side} P&L must use selected historical entry, not live fill`);
   const order = state.orders.find(o => o.positionId === position.id || o.id === position.id);
   assert(order && order.status === 'FILLED' && order.type === 'MARKET' && Number(order.historicalPrice) === ENTRY, `Market-tab order: ${JSON.stringify(order)}`);
   await workspace(p, 'positions');
   await p.locator('#futures-tab-positions').click();
-  const row = p.locator('.futures-position-row[data-side="LONG"]').filter({ hasText: 'AKE' }).first(); await row.waitFor();
+  const row = p.locator(`.futures-position-row[data-side="${side}"]`).filter({ hasText: 'AKE' }).first(); await row.waitFor();
   const closed = await command(s, 'CLOSE', () => row.locator('.futures-position-close').nth(1).click());
   assert.equal(closed.state.positions.filter(x => x.symbol === SYMBOL).length, 0, 'Market-tab position still open after close');
   await workspace(p, 'trade'); await chooseFamily(p, 0, 'LIMIT');
   await p.waitForFunction(() => !!document.querySelector('.fo-priceInputRow input'));
-  return { tab: tabName, submittedType: draft.type, price: draft.price ?? null, entry: position.entryPrice, mark: position.markPrice, orderType: order.type, historicalPrice: order.historicalPrice, positionsAfterClose: closed.state.positions.length };
+  return { side, tab: tabName, submittedType: draft.type, price: draft.price ?? null, entry: position.entryPrice, mark: position.markPrice, orderType: order.type, historicalPrice: order.historicalPrice, positionsAfterClose: closed.state.positions.length };
 }
 
 async function historicalEntry(width) {
@@ -467,7 +469,8 @@ async function historicalEntry(width) {
     const results = {};
     for (const side of sides) results[side] = await tradeSide(s, width, side, counts);
     if (!SERVER_ONLY) {
-      results.MARKET_TAB = await marketTabEntry(s, width, counts);
+      results.MARKET_TAB = await marketTabEntry(s, width, counts, 'LONG');
+      results.MARKET_TAB_SHORT = await marketTabEntry(s, width, counts, 'SHORT');
       // The phone keeps the indicator menus in the chart workspace's sheet; the separate-pane rule is one code
       // path (paneIndex ≠ 0), exercised here on the desktop layout and in chartTrading.test.ts.
       await workspace(p, 'chart');
