@@ -139,15 +139,19 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
     ]);
     // Preserve the owner-only password vault behavior exactly; never read other pages' vault entries.
     const passwords = new Map<string, string>();
-    if (process.env.PRIVATE_TRADING_OWNER_ID && req.userId === process.env.PRIVATE_TRADING_OWNER_ID && ids.length) {
+    const unreadablePasswordCopies = new Set<string>();
+    const canReadPasswordCopies = Boolean(process.env.PRIVATE_TRADING_OWNER_ID && req.userId === process.env.PRIVATE_TRADING_OWNER_ID);
+    if (canReadPasswordCopies && ids.length) {
       const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: ids } } });
       const emails = new Map(users.map(u => [u.id, u.email]));
       for (const record of records) { const email = emails.get(record.userId); if (email) {
-        try { passwords.set(record.userId, decryptAdminPassword(record.encryptedPassword, email)); } catch { /* same damaged-record handling as legacy */ }
+        try { passwords.set(record.userId, decryptAdminPassword(record.encryptedPassword, email)); } catch { unreadablePasswordCopies.add(record.userId); }
       } }
     }
     const lastLogin = new Map(logins.map(x => [x.userId, x._max.createdAt]));
     const items = users.map(u => ({ ...identity(u), password: passwords.get(u.id) ?? null,
+      passwordCopyStatus: !canReadPasswordCopies ? 'NOT_AUTHORIZED' : passwords.has(u.id) ? 'STORED' : unreadablePasswordCopies.has(u.id) ? 'UNREADABLE' : 'MISSING',
+      hasLoginPasswordHash: /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(u.passwordHash),
       lastLoginAt: lastLogin.get(u.id) ?? null, lastDepositCopy: copies.byUser.get(u.id) ?? null,
       depositCopyLookupFailed: copies.failed, balances: balances.filter(b => b.userId === u.id).map(balanceView) }));
     res.set('Cache-Control', 'private, no-store').json(pageResult(items, total, q));

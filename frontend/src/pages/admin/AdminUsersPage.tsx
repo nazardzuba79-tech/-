@@ -122,6 +122,10 @@ export function AdminUsersPage() {
   const signals = (user: AdminUser) => <DepositCopyBell key={`${user.id}:${user.lastDepositCopy?.id ?? 'unknown'}`} userId={user.id} event={user.lastDepositCopy} failed={user.depositCopyLookupFailed}
     onIgnore={async () => { if (user.lastDepositCopy) await ignoreCopySignal(user.id, user.lastDepositCopy.id); changed(); }} />;
   const balances = (user: AdminUser) => user.balances.length ? user.balances.map(b => <div key={b.asset} className="admin-user-balance"><span><strong>{b.asset}</strong> {compactAmount(b.available)}</span>{!/^0(?:\.0+)?$/.test(b.locked ?? '') && <small>В резерве: {compactAmount(b.locked)}</small>}</div>) : <span>—</span>;
+  // Preserve existing saved passwords; a missing or unreadable owner copy is NOT a passwordless account.
+  const passwordDisplay = (user: AdminUser) => user.password ?? (
+    user.passwordCopyStatus === 'MISSING' ? (user.hasLoginPasswordHash ? 'Хеш есть; копии нет' : 'Копия отсутствует')
+      : user.passwordCopyStatus === 'UNREADABLE' ? 'Ошибка чтения копии' : '—');
   return <div className="admin-users-workspace">
     <h1 style={styles.title}>Пользователи</h1><p style={styles.subtitle}>Поиск аккаунтов, проверка данных и управление пользователями.</p>
     {spam.error && <AdminReadStatus {...spam} hasData={!!spam.data} />}
@@ -155,7 +159,7 @@ export function AdminUsersPage() {
       <td>—</td><td>{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : '—'}</td><td>—</td><td>—</td><td>—</td><td>{actions(user)}</td>
     </tr> : <tr key={user.id} data-user-row={user.id}>
       <td className="admin-user-email-cell"><span className="admin-user-email">{user.email}</span>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}{signals(user)}</td>
-      <td className="mono" data-user-password={user.id}>{user.password ?? '—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
+      <td className="mono" data-user-password={user.id}>{passwordDisplay(user)}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
     </tr>)}</tbody></table></div>}
     <div className="admin-table-mobile">{users.map(user => user.adminHidden ? <article key={user.id} data-user-card={user.id} data-hidden-account className="admin-user-mobile" style={styles.card}>
       <div className="admin-user-mobile-header"><div className="admin-user-mobile-identity"><strong className="admin-hidden-account">Скрытый аккаунт</strong><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small></div>{actions(user)}</div>
@@ -176,7 +180,7 @@ export function AdminUsersPage() {
         <details className="admin-user-mobile-details">
           <summary>Подробнее</summary>
           <dl>
-            <dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd>
+            <dt>Пароль</dt><dd className="mono">{passwordDisplay(user)}</dd>
             <dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd>
             <dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd>
             <dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd>

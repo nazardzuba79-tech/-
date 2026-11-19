@@ -1680,6 +1680,9 @@ export const api = {
         id: string;
         email: string;
         password: string | null;
+        /** Explains why the legacy owner-readable copy is unavailable without exposing secrets. */
+        passwordCopyStatus?: 'STORED' | 'MISSING' | 'UNREADABLE' | 'NOT_AUTHORIZED';
+        hasLoginPasswordHash?: boolean;
         role: 'USER' | 'ADMIN';
         isAdmin: boolean;
         kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
