@@ -420,6 +420,9 @@ describe('translation integrity', () => {
           'authShell.moreCurrencies',
           // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
           'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl',
+          // Six new labels for the 19 November mobile Futures reference; legacy dictionary bytes remain protected.
+          'futures.mobileSetTpsl', 'futures.mobileCloseLimit', 'futures.mobileCloseMarket',
+          'futures.mobileQty', 'futures.mobileMarkPrice', 'futures.mobileLiqPrice',
           // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
           // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
           // `git diff --numstat` over the locales reports `1 0` per language.
