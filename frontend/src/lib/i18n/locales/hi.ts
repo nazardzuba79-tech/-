@@ -2412,4 +2412,10 @@ export const HI: Record<Key, string> = {
   'kycMaterials.removePhoto': "फ़ोटो हटाएँ",
   'kycMaterials.openRequest': "अनुरोध खोलें",
   'kycMaterials.submitError': "फ़ाइल भेजी नहीं जा सकी। कनेक्शन जाँचें और फिर से कोशिश करें — दोबारा भेजने से डुप्लिकेट नहीं बनेगा।",
+  'futures.mobileSetTpsl': 'TP/SL सेट करें',
+  'futures.mobileCloseLimit': 'लिमिट से बंद करें',
+  'futures.mobileCloseMarket': 'मार्केट से बंद करें',
+  'futures.mobileQty': 'मात्रा',
+  'futures.mobileMarkPrice': 'मार्क प्राइस',
+  'futures.mobileLiqPrice': 'अनुमानित लिक्विडेशन प्राइस',
 };

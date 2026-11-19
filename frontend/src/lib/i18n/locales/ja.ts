@@ -2412,4 +2412,10 @@ export const JA: Record<Key, string> = {
   'kycMaterials.removePhoto': "写真を削除",
   'kycMaterials.openRequest': "依頼を開く",
   'kycMaterials.submitError': "ファイルを送信できませんでした。接続を確認して再試行してください。再送信しても重複は作成されません。",
+  'futures.mobileSetTpsl': 'TP/SLを設定',
+  'futures.mobileCloseLimit': '指値で決済',
+  'futures.mobileCloseMarket': '成行で決済',
+  'futures.mobileQty': '数量',
+  'futures.mobileMarkPrice': 'マーク価格',
+  'futures.mobileLiqPrice': '推定清算価格',
 };

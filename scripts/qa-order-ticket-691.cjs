@@ -53,6 +53,12 @@ const sleep = ms => new Promise(r=>setTimeout(r,ms));
       if(!futures&&width===390)await page.locator('#mobile-trade-trade').click();
       await form.waitFor({state:'visible'});
       await sleep(400);
+      // Claude's phone Futures ticket displays either quantity or total at a time.
+      // Select total explicitly; all untouched Spot and desktop paths remain identical.
+      if(futures&&width===390&&!baseline){
+        await form.locator('.fo-unitSwap:visible').first().click();
+        assert.equal(await form.getAttribute('data-size-unit'),'quote','phone unit switch must reveal total');
+      }
       if(baseline) {
         await form.locator('input[aria-label="Цена"]').fill('0.014');
         const total=form.locator('input[aria-label="Итого"]');
@@ -68,7 +74,7 @@ const sleep = ms => new Promise(r=>setTimeout(r,ms));
         const select=page.locator(futures?'.order-family-select select':'.order-type-select select').first();
         if(await select.isVisible())await select.selectOption(families[f]);
         else await page.locator(futures?'.order-family-tabs:visible':'.order-type-tabs:visible').first().locator('button').nth(f).click();
-        for(const input of await form.locator('input[type="text"]:not([readonly]):not([disabled])').all()) {
+        for(const input of await form.locator('input[type="text"]:not([readonly]):not([disabled]):visible').all()) {
           for(const value of ['2','2,','2,5','2.50']) {await input.fill(value);assert.equal(await input.inputValue(),value,`${target} ${families[f]} draft`);}
         }
         const total=form.locator('input[aria-label="Итого"]');

@@ -20,6 +20,8 @@
   grid-column: 1; grid-row: 3; font-size: 12px; font-weight: 400; white-space: nowrap;
 }
 .futures-unrealized-unit { font-size: .9em; font-weight: 400; }
+/* Shown by the phone position card only (FuturesMobilePositions.css). */
+.futures-position-roi-side { display: none; }
 :is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized .archive-pnl-open { grid-column: 2; grid-row: 1 / 3; }
 :is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized:has(.futures-position-approx) .archive-pnl-open { grid-row: 1 / 4; }
 @media (max-width: 900px) {
