@@ -124,10 +124,13 @@
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .slider-container { order:1; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .submit-btn { order:4; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .info-section { order:5; }
+  /* «Доступно» over its figure, always two short lines: the row is the same height whatever the balance's length, so a
+     long eight-decimal balance on the sell side never moves the ticket (qa-vta-demo compares the two sides). */
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .available-balance {
-    display:flex !important; flex-direction:row !important; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0 6px; width:100%; min-height:20px; padding:0 !important; border:0 !important; background:transparent !important; font-size:12px; line-height:16px;
+    display:flex !important; flex-direction:column !important; flex-wrap:nowrap !important; align-items:flex-start !important; justify-content:flex-start; gap:0 !important; width:100%;
+    height:30px; min-height:30px !important; padding:0 !important; border:0 !important; background:transparent !important; font-size:10px; line-height:12px; color:var(--text-tertiary,#6a6e73);
   }
-  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount { margin-left:auto; font-size:12px; font-weight:500; white-space:nowrap; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount { margin:0; max-width:100%; font-size:12px; line-height:18px; font-weight:500; color:var(--text-primary,#fff); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] :is(.order-summary,.available-balance) { box-shadow:none !important; outline:0 !important; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-group { gap:2px; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .input-group { min-height:40px; border:0; border-radius:var(--sm-radius); background:var(--sm-field); }

@@ -37,7 +37,7 @@ const stamp = () => new Date().toISOString();
 const OPEN = [{id:'ord-open-1',pair:'BTC/USDT',side:'BUY',type:'LIMIT',status:'OPEN',price:'84000',triggerPrice:null,ocoGroupId:null,originalQuantity:'0.015',remainingQuantity:'0.015',createdAt:stamp()},{id:'ord-open-2',pair:'ETH/USDT',side:'SELL',type:'LIMIT',status:'PARTIALLY_FILLED',price:'3300',triggerPrice:null,ocoGroupId:null,originalQuantity:'1.2',remainingQuantity:'0.7',createdAt:stamp()}];
 const HISTORY = [{id:'ord-h-1',pair:'BTC/USDT',side:'BUY',type:'MARKET',status:'FILLED',price:null,triggerPrice:null,ocoGroupId:null,originalQuantity:'0.01',remainingQuantity:'0',createdAt:stamp()}];
 app.get('/api/v1/orders/me',(q,r)=>r.json(q.query.status&&/OPEN|PARTIALLY|PENDING/.test(String(q.query.status))?OPEN:q.query.status?HISTORY:[...OPEN,...HISTORY]));
-app.get('/api/v1/balances',(_q,r)=>r.json([{asset:'USDT',available:'12500.50',locked:'1260'},{asset:'BTC',available:'0.4215',locked:'0'}]));
+app.get('/api/v1/balances',(_q,r)=>r.json([{asset:'USDT',available:'12500.50',locked:'1260'},{asset:'BTC',available:'454535445453.54545454',locked:'0'}]));
 app.get('/api/v1/market/display/spot-book/:symbol',(q,r)=>r.json({available:true,pair:q.params.symbol.replace('-','/'),symbol:q.params.symbol,timestamp:Date.now(),fetchedAt:Date.now(),stale:false,bids:Array.from({length:14},(_,i)=>({price:String(84880-i),quantity:(0.2+i*0.13).toFixed(3)})),asks:Array.from({length:14},(_,i)=>({price:String(84892+i),quantity:(0.15+i*0.11).toFixed(3)})),_display:{mode:'snapshot',capturedAt:Date.now(),refreshMs:60000}}));
 // Current display endpoints; fixtures only, never proxy a production service.
 const rows = PAIRS.map(pair => ({pair,symbol:pair,providerSymbol:pair.replace('/',''),marketType:'linear_perpetual',baseAsset:pair.split('/')[0],quoteAsset:'USDT',lastPrice:84890.1,high24h:85954.6,low24h:83535,changePercent24h:1.25,quoteVolume24h:3.19e9,volume24h:15000,receivedAt:Date.now(),fetchedAt:Date.now(),stale:false}));
@@ -97,7 +97,7 @@ const readSpot = page => page.evaluate(() => {
     form: rect(q('.order-form-area')), bookArea: shown(q('.orderbook-area')) ? rect(q('.orderbook-area')) : null,
     sides: [...document.querySelectorAll('.order-form-tab')].map(b => ({ text: b.textContent.trim(), active: b.classList.contains('active'), bg: getComputedStyle(b).backgroundColor, ...rect(b) })),
     family: q('.order-type-select select')?.value ?? null,
-    available: q('.available-balance')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+    available: q('.available-balance')?.innerText.replace(/\s+/g, ' ').trim() ?? null, availableHeight: q('.available-balance') ? Math.round(q('.available-balance').getBoundingClientRect().height) : null,
     fields: [...document.querySelectorAll('.order-form-content .input-group')].filter(shown).map(el => Math.round(el.getBoundingClientRect().height)),
     presets: [...document.querySelectorAll('.slider-labels button')].filter(shown).map(b => Math.round(b.getBoundingClientRect().height)), slider: shown(q('.terminal-size-range')),
     submit: submit ? { text: submit.textContent.trim(), radius: parseFloat(getComputedStyle(submit).borderTopLeftRadius), bg: getComputedStyle(submit).backgroundColor, clipped: submit.scrollWidth > submit.clientWidth + 1, ...rect(submit) } : null,
@@ -169,6 +169,8 @@ const readSpot = page => page.evaluate(() => {
       // ── The controls do what they did ──
       await page.locator('.order-form-tab.sell').click(); await page.waitForTimeout(120);
       const sold = await readSpot(page);
+      // The sell side shows the base balance, here a long eight-decimal one: the row keeps its height and the ticket does not move (qa-vta-demo compares the two).
+      ok(`${P}: a long balance keeps the available row and everything under it where they were`, sold.availableHeight === t.availableHeight && /454535445453\.5454/.test(sold.available) && Math.abs(sold.submit.top - t.submit.top) <= 1, { buy: t.availableHeight, sell: sold.availableHeight, available: sold.available });
       ok(`${P}: «Продать» turns the pill and the action to the sell side`, sold.sides[1].active && !sold.sides[0].active && sold.submit.text === 'Продать' && sold.submit.bg !== t.submit.bg && sold.sides[1].bg !== t.sides[0].bg, [sold.submit.text]);
       await page.locator('.order-form-tab.buy').click();
       await page.locator('.orderbook-asks .ob-row').last().click(); await page.waitForTimeout(150);

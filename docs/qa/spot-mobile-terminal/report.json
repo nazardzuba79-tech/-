@@ -144,8 +144,8 @@
       "name": "spot 320: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
       "pass": true,
       "detail": {
-        "asks": 5,
-        "bids": 5,
+        "asks": 6,
+        "bids": 6,
         "last": "84,886.00≈ $84,886.00",
         "step": true,
         "title": false,
@@ -169,6 +169,15 @@
       "pass": true
     },
     {
+      "name": "spot 320: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
       "name": "spot 320: «Продать» turns the pill and the action to the sell side",
       "pass": true,
       "detail": [
@@ -178,7 +187,7 @@
     {
       "name": "spot 320: a price pressed in the book fills the ticket and keeps the trade screen",
       "pass": true,
-      "detail": "84896.0"
+      "detail": "84897.0"
     },
     {
       "name": "spot 320: the order type select switches the ticket",
@@ -349,8 +358,8 @@
       "name": "spot 360: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
       "pass": true,
       "detail": {
-        "asks": 5,
-        "bids": 5,
+        "asks": 6,
+        "bids": 6,
         "last": "84,886.00≈ $84,886.00",
         "step": true,
         "title": false,
@@ -374,6 +383,15 @@
       "pass": true
     },
     {
+      "name": "spot 360: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
       "name": "spot 360: «Продать» turns the pill and the action to the sell side",
       "pass": true,
       "detail": [
@@ -383,7 +401,7 @@
     {
       "name": "spot 360: a price pressed in the book fills the ticket and keeps the trade screen",
       "pass": true,
-      "detail": "84896.0"
+      "detail": "84897.0"
     },
     {
       "name": "spot 360: the order type select switches the ticket",
@@ -554,8 +572,8 @@
       "name": "spot 390: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
       "pass": true,
       "detail": {
-        "asks": 5,
-        "bids": 5,
+        "asks": 6,
+        "bids": 6,
         "last": "84,886.00≈ $84,886.00",
         "step": true,
         "title": false,
@@ -579,6 +597,15 @@
       "pass": true
     },
     {
+      "name": "spot 390: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
       "name": "spot 390: «Продать» turns the pill and the action to the sell side",
       "pass": true,
       "detail": [
@@ -588,7 +615,7 @@
     {
       "name": "spot 390: a price pressed in the book fills the ticket and keeps the trade screen",
       "pass": true,
-      "detail": "84896.0"
+      "detail": "84897.0"
     },
     {
       "name": "spot 390: the order type select switches the ticket",
@@ -759,8 +786,8 @@
       "name": "spot 430: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
       "pass": true,
       "detail": {
-        "asks": 5,
-        "bids": 5,
+        "asks": 6,
+        "bids": 6,
         "last": "84,886.00≈ $84,886.00",
         "step": true,
         "title": false,
@@ -784,6 +811,15 @@
       "pass": true
     },
     {
+      "name": "spot 430: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
       "name": "spot 430: «Продать» turns the pill and the action to the sell side",
       "pass": true,
       "detail": [
@@ -793,7 +829,7 @@
     {
       "name": "spot 430: a price pressed in the book fills the ticket and keeps the trade screen",
       "pass": true,
-      "detail": "84896.0"
+      "detail": "84897.0"
     },
     {
       "name": "spot 430: the order type select switches the ticket",
@@ -955,6 +991,6 @@
       }
     }
   ],
-  "passed": 103,
+  "passed": 107,
   "failed": 0
 }
