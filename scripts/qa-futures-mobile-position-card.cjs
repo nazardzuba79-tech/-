@@ -142,7 +142,7 @@ const read = page => page.evaluate(() => {
         && !/NaN|Infinity|undefined/.test(state.cards.map(c => c.text).join(' ')));
       ok(`${P}: the TP/SL line shows the server-held protection`, /TP 90000/.test(btc.protection) && /SL 81000/.test(btc.protection) && /TP —/.test(eth.protection) && /SL —/.test(eth.protection), [btc.protection, eth.protection]);
       const a = btc.actions;
-      ok(`${P}: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall`, a.length === 3 && /TP\/SL/.test(a[0].text) && a[1].text === 'Лимитный' && a[2].text === 'Рыночный'
+      ok(`${P}: three equal actions in one row — TP/SL, limit close, market close — each at least 44px tall`, a.length === 3 && a[0].text === 'Установить TP/SL' && a[1].text === 'Закрыть лимитом' && a[2].text === 'Закрыть по рынку'
         && a.every(b => b.height >= 44 && Math.abs(b.top - a[0].top) <= 1 && Math.abs(b.width - a[0].width) <= 1.5) && a[0].left < a[1].left && a[1].left < a[2].left, a.map(b => [b.text, Math.round(b.width), Math.round(b.height)]));
       ok(`${P}: every control on the card is at least 44px tall`, btc.controls.every(c => c.height >= 44), btc.controls.filter(c => c.height < 44));
       ok(`${P}: nothing leaves a card and nothing overlaps`, state.cards.every(c => c.outside.length === 0 && c.overlaps.length === 0), state.cards.flatMap(c => [...c.outside, ...c.overlaps]));

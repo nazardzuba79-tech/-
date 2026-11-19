@@ -1,0 +1,310 @@
+/* Futures on a phone, after the owner's reference (2026-11-19, 52 frames of a
+ * phone futures terminal): the instrument row carries the view switch; the
+ * trade screen is the ticket on the left and a short order book on the right,
+ * with the account lists under them; the chart screen ends in Long / Short;
+ * «Ордера» is a full-height screen of its own.
+ *
+ * Presentation only. Every control here is one the terminal already had and
+ * does what it did; nothing is drawn for a function VOLTEX does not have.
+ * All rules are <=900px and inside #archive-terminal-preview. Imported after
+ * the other Futures phone sheets; TerminalPanelTiles stays the last import.
+ */
+.futures-mobile-funding, .futures-mobile-orders-bar, .futures-mobile-orders-open, .futures-mobile-quick,
+.futures-mobile-tab-label + span:empty, .fo-unitSwap { display:none; }
+/* Above the phone layout the switch does not exist, so its words are never shown there either. */
+.futures-mobile-tabs svg { display:none; }
+
+@media (max-width:900px) {
+  #archive-terminal-preview.futures-terminal { --fm-pad:12px; --fm-control:32px; --fm-radius:6px; --fm-field:var(--panel-alt); --fm-switch-width:126px; }
+
+  /* ── Instrument row: pair on the left, the «24h» figures key and the view switch on the right ── */
+  #archive-terminal-preview.futures-terminal .ticker-bar,
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] {
+    position:sticky; top:0; z-index:34; order:0;
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:48px; grid-auto-rows:auto; align-items:center; gap:0 12px;
+    min-height:48px; padding:0 var(--fm-pad); overflow:hidden;
+    background:var(--panel); border:0;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-cluster { grid-column:1 / -1; grid-row:1; min-width:0; padding-right:calc(var(--fm-switch-width) + 60px); }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-selector { min-height:44px; gap:6px; padding:0; }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-selector > :is(svg,img,.crypto-icon) { display:none; }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-name { font-size:18px; line-height:22px; font-weight:700; letter-spacing:0; }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-asset { font-size:11px; line-height:14px; color:var(--text-tertiary); }
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-calc-btn { display:none; }
+  /* «24h +» is a small key beside the switch: it opens every figure of the contract in place. */
+  #archive-terminal-preview.futures-terminal .ticker-bar .futures-mobile-stats-toggle {
+    position:absolute; top:10px; right:calc(var(--fm-pad) + var(--fm-switch-width) + 8px); grid-column:auto; grid-row:auto;
+    display:flex; align-items:center; justify-content:center; gap:2px; width:auto; min-width:44px; height:28px; min-height:28px; padding:0 8px;
+    border:1px solid var(--border); border-radius:14px; background:transparent; color:var(--text-secondary); font-size:11px; font-weight:600; line-height:14px;
+  }
+  /* The trade screen states the price once, in the book; the figures come back when the key opens them. */
+  #archive-terminal-preview.futures-terminal .terminal:not([data-mobile-tab=chart]) .ticker-bar:not([data-mobile-details=true]) .ticker-item { display:none; }
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] { position:relative; padding-bottom:8px; }
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] .ticker-item,
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] .ticker-item:nth-child(even),
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] .ticker-item:nth-child(odd):not(.futures-primary-price) {
+    display:flex; flex-direction:row; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0 8px; grid-column:1 / -1; grid-row:auto;
+    min-width:0; padding:2px 0; font-size:12px; line-height:18px; text-align:left;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] .ticker-item :is(.label,.value) { font-size:12px; line-height:18px; }
+  #archive-terminal-preview.futures-terminal .ticker-bar[data-mobile-details=true] .ticker-item .label { color:var(--text-tertiary); }
+
+  /* The three workspaces as one icon switch, riding in the instrument row. The strip itself has no height: it is a
+     sticky line at the top of the terminal and its buttons hang from it, so the rows below keep their own heights. */
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs {
+    position:sticky; top:0; z-index:36; order:-1; align-self:stretch;
+    display:grid; grid-template-columns:repeat(3,calc(var(--fm-switch-width) / 3)); justify-content:end; gap:0;
+    width:auto; height:0; min-height:0; margin:0; padding:0 var(--fm-pad) 0 0; overflow:visible;
+    border:0; background:transparent;
+  }
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button {
+    position:relative; display:flex; align-items:center; justify-content:center; gap:0;
+    min-width:0; min-height:36px; height:36px; margin-top:6px; padding:0; border:0; border-radius:0;
+    background:var(--panel-alt); color:var(--text-tertiary);
+  }
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button:first-child { border-radius:18px 0 0 18px; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button:last-child { border-radius:0 18px 18px 0; }
+  /* The chosen workspace is a lighter pill inside the track. */
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button[aria-selected=true] { color:var(--text-primary); border-bottom-color:transparent; box-shadow:inset 0 0 0 2px var(--panel-alt), inset 0 0 0 20px #3b3b44; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button[aria-selected=true]:first-child,
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button[aria-selected=true]:last-child,
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button[aria-selected=true] { border-radius:18px; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs svg { display:block; position:relative; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs .futures-mobile-tab-label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  /* The open-position count rides on the list glyph as a small badge. */
+  #archive-terminal-preview.futures-terminal .futures-mobile-tabs button > span {
+    position:absolute; top:1px; right:3px; min-width:14px; height:14px; padding:0 3px; border-radius:7px;
+    background:var(--accent); color:#111; font-size:9px; line-height:14px; font-weight:700; text-align:center;
+  }
+
+  /* ── Trade screen: ticket left, book right ── */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .main-grid {
+    grid-template-columns:minmax(0,58fr) minmax(0,42fr); gap:0 10px; padding:4px var(--fm-pad) 12px; background:var(--panel);
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .main-grid > .order-form-area { grid-column:1; grid-row:1; background:transparent; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .main-grid > .orderbook-area { grid-column:2; grid-row:1; background:transparent; }
+
+  /* The ticket. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-panel { padding:0; gap:8px; background:transparent; border:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > * { order:3; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > .fo-mlWrap { grid-row:1; order:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > .fo-availRow { grid-row:2; order:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-panel > :is(.order-family-select,.order-family-tabs) { grid-row:3; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > :is(.fo-field,.fo-label,.percent-slider,.percent-slider-continuous,.fo-tpslNote,.order-family-fields) { order:1; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > .fo-infoBox { order:2; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > :is(.fo-optionsRow,.archive-protection-fields,.fo-tpslBox) { order:3; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form > :is(.fo-error,.fo-submitPair) { order:4; }
+
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-mlRow { flex-wrap:nowrap; gap:8px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTrigger {
+    flex:1 1 0; justify-content:space-between; height:var(--fm-control); min-height:var(--fm-control); padding:0 10px;
+    border:0; border-radius:var(--fm-radius); background:var(--fm-field); font-size:13px; font-weight:500;
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availRow { display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:6px; min-height:20px; font-size:12px; line-height:16px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availLabel { color:var(--text-tertiary); }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-availValue { min-width:0; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .order-family-select select {
+    min-height:var(--fm-control); height:var(--fm-control); padding:0 28px 0 10px; border:0; border-radius:var(--fm-radius);
+    background-color:var(--fm-field); background-position:right 10px center; font-weight:600;
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-field { border:0; border-radius:var(--fm-radius); background:var(--fm-field); }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] :is(.fo-priceInputRow,.fo-qtyInputRow,.fo-fieldRow) { min-height:40px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-fieldCaption { font-size:10px; line-height:12px; color:var(--text-tertiary); }
+  /* One size field at a time; the swap beside the unit shows the other. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form[data-size-unit=base] > .fo-sizeField[data-size-field=quote],
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-form[data-size-unit=quote] > .fo-sizeField[data-size-field=base] { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-fieldTrailing { display:flex; align-items:center; gap:2px; padding-right:4px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-fieldTrailing .fo-unit { position:static; font-size:13px; font-weight:600; color:var(--text-primary); }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-unitSwap {
+    display:inline-flex; align-items:center; justify-content:center; width:32px; min-width:32px; height:36px; min-height:36px; padding:0;
+    border:0; background:transparent; color:var(--text-primary); font-size:16px; line-height:1;
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-lastPriceBtn { min-height:36px; }
+
+  /* The size slider: the track and its five stops, no preset buttons. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .percent-slider-presets { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .percent-slider-track { min-height:28px; }
+
+  /* Order value, margin and the estimated liquidation price as one quiet box. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-infoBox { gap:2px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--fm-radius); background:transparent; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-infoBox .fo-infoRow { flex-wrap:nowrap; justify-content:space-between; min-height:16px; gap:6px; font-size:11px; line-height:16px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-infoBox .fo-infoRow > :first-child { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-infoBox .fo-infoRow > :last-child { flex:none; white-space:nowrap; }
+
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-optionsRow { display:grid; grid-template-columns:minmax(0,1fr); gap:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] :is(.fo-tpslToggle,.fo-reduceOnlyRow) { min-height:30px; gap:8px; font-size:13px; }
+
+  /* Long over Short: two pills. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-submitPair { gap:8px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-submitPair button {
+    min-height:40px; height:40px; padding:0 8px; border-radius:20px; font-size:15px; font-weight:700; line-height:20px; white-space:nowrap;
+  }
+
+  /* The book column. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-mobile-funding {
+    flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:0; min-height:calc(var(--fm-control) + 8px + 20px); padding-top:2px;
+    font-size:10px; line-height:14px; color:var(--text-tertiary); text-align:right;
+  }
+  #archive-terminal-preview.futures-terminal .futures-mobile-funding-label { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-decoration:underline dotted; text-underline-offset:2px; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-funding-values { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:0 3px; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-funding-values .up { color:var(--buy); }
+  #archive-terminal-preview.futures-terminal .futures-mobile-funding-values .down { color:var(--sell); }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-tabs { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .reference-book { background:transparent; border:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-columns { padding:2px 0; font-size:10px; line-height:13px; color:var(--text-tertiary); }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-columns > span:nth-child(2) { text-align:right; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-row { padding:0 2px 0 0; font-size:13px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-center { padding:2px 0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-center strong { font-size:17px; line-height:22px; font-weight:700; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-ratio { margin:4px 0 0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-controls { min-height:0; padding:8px 0 0; gap:8px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-controls select { min-height:var(--fm-control); height:var(--fm-control); border:0; border-radius:var(--fm-radius); background-color:var(--fm-field); }
+
+  /* ── The account lists under the ticket ── */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .bottom-panel { border-top:0; background:var(--panel); }
+  #archive-terminal-preview.futures-terminal .terminal-account-header { padding:0 var(--fm-pad); gap:4px; border-bottom:1px solid var(--border); background:var(--panel); }
+  #archive-terminal-preview.futures-terminal .bottom-tabs { min-height:40px; gap:0 18px; padding:0 20px 0 0; }
+  #archive-terminal-preview.futures-terminal .bottom-tab { min-height:40px; padding:0; font-size:15px; font-weight:500; color:var(--text-tertiary); border-bottom:2px solid transparent; }
+  #archive-terminal-preview.futures-terminal .bottom-tab.active { color:var(--text-primary); font-weight:700; border-bottom-color:var(--text-primary); }
+  #archive-terminal-preview.futures-terminal .bottom-tab .reference-tab-count { margin-left:0; color:inherit; font-weight:inherit; }
+  /* Row one: the tabs and the list glyph. Row two: «Все рынки» on the left, «Закрыть все» (from the panel below) on the right. */
+  #archive-terminal-preview.futures-terminal .terminal-account-header { flex-wrap:wrap; }
+  #archive-terminal-preview.futures-terminal .terminal-account-header > .archive-pair-filter { order:3; flex:1 1 100%; min-height:40px; gap:8px; font-size:13px; color:var(--text-primary); }
+  /* The positions are cards, not a sideways table: nothing to scroll, and «Закрыть все» may rise into the row above. */
+  #archive-terminal-preview.futures-terminal .bottom-content:has(> .futures-positions-panel) { overflow:visible; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar { position:relative; z-index:3; display:flex; justify-content:flex-end; align-items:center; min-height:40px; margin:-41px 0 1px; padding:0 var(--fm-pad); border:0; background:transparent; pointer-events:none; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar > * { pointer-events:auto; }
+  #archive-terminal-preview.futures-terminal .futures-close-all-bar:has(.futures-close-all-confirm) { display:block; margin:0; padding:10px var(--fm-pad); }
+  #archive-terminal-preview.futures-terminal .futures-close-all-trigger { min-height:36px; padding:0 2px; border:0; background:transparent; color:var(--text-primary); font-size:13px; font-weight:600; }
+  /* The totals line belongs to the «Ордера» screen; under the ticket the cards start at once. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-summary { display:none; }
+  /* The two history lists live on the «Ордера» screen; the ticket keeps what is open now. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] :is(#futures-tab-orderHistory,#futures-tab-positionHistory) { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-mobile-orders-open {
+    display:inline-flex; flex:none; align-items:center; justify-content:center; width:36px; min-width:36px; height:40px; min-height:40px; padding:0;
+    border:0; background:transparent; color:var(--text-secondary);
+  }
+  #archive-terminal-preview.futures-terminal .terminal-account-header > .terminal-account-toggle { display:none; }
+
+  /* ── The position card under the ticket (reference: name and side on the left, the result on the right,
+        four figures on one line, three pill actions, a hairline between cards). The «Ордера» screen keeps
+        the full card of FuturesMobilePositions.css with margin, realized P&L and the TP/SL line. ── */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table tbody { gap:0; padding:0 var(--fm-pad) 8px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row,
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row[data-pnl-split] {
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    grid-template-areas:
+      "head head head head head head pnl pnl pnl pnl pnl pnl"
+      "qty qty qty entry entry entry mark mark mark liq liq liq"
+      "tpsl tpsl tpsl tpsl tpsl tpsl tpsl tpsl tpsl tpsl tpsl tpsl"
+      "act1 act1 act1 act1 act2 act2 act2 act2 act3 act3 act3 act3";
+    gap:10px 8px; padding:14px 0 16px; border:0; border-bottom:1px solid var(--border); border-radius:0; background:transparent;
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td:is([data-col=margin],[data-col=realized],[data-col=net],[data-col=trading],[data-col=funding],[data-col=fees]) { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col] { gap:2px; font-size:13px !important; line-height:18px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col]::before { font-size:10.5px; line-height:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=liq] { align-items:flex-end; text-align:right; }
+
+  /* Name over side and margin mode. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=contract] { padding:0 !important; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-position-contract { gap:2px 8px; min-height:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-position-ticker { flex:0 0 100%; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-position-ticker b { font-size:16px; line-height:22px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-position-perp { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-position-contract > .futures-sr-only { padding:0; background:transparent !important; font-size:12px; font-weight:700; line-height:18px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-position-contract small.futures-position-mode { padding:0; background:transparent; color:var(--text-primary); font-size:12px; font-weight:400; }
+
+  /* The result, right-aligned: its label with the share glyph, then amount and ROI on one line. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] { display:flex; flex-direction:column; align-items:flex-end; justify-content:flex-start; gap:2px; text-align:right; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized]::before { padding-right:20px; text-decoration:underline dotted; text-underline-offset:2px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] .futures-unrealized { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:baseline; gap:0; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] .futures-position-money { font-size:16px; line-height:22px; font-weight:700; white-space:nowrap; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] .futures-position-roi { display:inline; font-size:16px; line-height:22px; font-weight:700; white-space:nowrap; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] .futures-position-roi-side { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .archive-pnl-open { top:6px !important; right:-10px !important; width:36px; height:36px; min-width:36px; min-height:36px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .archive-pnl-open svg { width:14px; height:14px; }
+
+  /* The TP/SL line appears once protection is set. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-mobile-protection-values { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row .futures-mobile-protection-values[data-protected] { display:flex; padding-top:0; border-top:0; font-size:12px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row:not(:has(.futures-mobile-protection-values[data-protected])) {
+    grid-template-areas:
+      "head head head head head head pnl pnl pnl pnl pnl pnl"
+      "qty qty qty entry entry entry mark mark mark liq liq liq"
+      "act1 act1 act1 act1 act2 act2 act2 act2 act3 act3 act3 act3";
+  }
+  /* Three outlined pills. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .futures-positions-panel .futures-positions-table .futures-position-row :is(.fut-tpslTrigger,.futures-position-close) {
+    min-height:32px; height:32px; padding:0 4px !important; border:1px solid color-mix(in srgb, var(--text-primary) 28%, transparent) !important; border-radius:16px !important;
+    background:transparent !important; font-size:12px; font-weight:600; line-height:16px;
+  }
+
+  /* ── Order cards (open orders and their history): the contract and side in the head, then label left, figure right ── */
+  #archive-terminal-preview.futures-terminal .futures-orders-caption { padding:8px var(--fm-pad) 0; font-size:11px; color:var(--text-tertiary); }
+  #archive-terminal-preview.futures-terminal .futures-orders-table tbody { gap:10px; padding:10px var(--fm-pad) 12px; }
+  #archive-terminal-preview.futures-terminal .futures-orders-table tbody tr { grid-template-columns:minmax(0,1fr); gap:8px; padding:12px 14px; border:0; border-radius:10px; background:var(--panel-alt); }
+  #archive-terminal-preview.futures-terminal .futures-orders-table td { flex-direction:row; align-items:baseline; justify-content:space-between; gap:12px; font-size:13px; line-height:18px; text-align:right; }
+  #archive-terminal-preview.futures-terminal .futures-orders-table td::before { flex:none; font-size:12px; line-height:18px; color:var(--text-tertiary); text-align:left; }
+  #archive-terminal-preview.futures-terminal .futures-orders-table td.futures-order-symbol { order:-2; justify-content:flex-start; font-size:16px; line-height:22px; font-weight:700; text-align:left; }
+  #archive-terminal-preview.futures-terminal .futures-orders-table td.futures-order-symbol small { margin-left:6px; padding:1px 6px; border-radius:4px; background:color-mix(in srgb, var(--text-primary) 8%, transparent); font-size:12px; font-weight:500; color:var(--text-secondary); }
+  /* The time sits under the contract, as the card's own date line. */
+  #archive-terminal-preview.futures-terminal .futures-orders-table td:first-child { order:-1; justify-content:flex-start; margin-top:-6px; padding-bottom:8px; border-bottom:1px solid var(--border); font-size:12px; color:var(--text-tertiary); }
+  #archive-terminal-preview.futures-terminal .futures-orders-table td:first-child::before { display:none; }
+  #archive-terminal-preview.futures-terminal .futures-orders-table .cancel-btn { min-height:36px; border-radius:18px; }
+  #archive-terminal-preview.futures-terminal .futures-orders-table tbody tr:has(.futures-orders-empty) { background:transparent; }
+
+  /* ── «Ордера»: a full-height screen with its own title row ── */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=positions] .ticker-bar { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=positions] .futures-mobile-orders-bar {
+    position:sticky; top:0; z-index:34; display:grid; grid-template-columns:44px minmax(0,1fr); align-items:center;
+    height:48px; padding:0 calc(var(--fm-pad) + var(--fm-switch-width)) 0 4px; background:var(--panel);
+  }
+  #archive-terminal-preview.futures-terminal .futures-mobile-orders-bar button { display:flex; align-items:center; justify-content:center; width:44px; height:44px; min-height:44px; padding:0; border:0; background:transparent; color:var(--text-primary); }
+  #archive-terminal-preview.futures-terminal .futures-mobile-orders-bar strong { font-size:18px; line-height:24px; font-weight:700; color:var(--text-primary); }
+
+  /* ── Chart screen ── */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar,
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar[data-mobile-details=true] { position:relative; padding-bottom:8px; }
+  /* Last price and its change on the left, the day's high and low on the right, mark price and turnover under them. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:is(.archive-index-mark,:nth-of-type(3),:nth-of-type(4),:nth-of-type(5)) {
+    display:flex; flex-direction:row; align-items:baseline; justify-content:space-between; gap:8px; min-width:0; padding:0; font-size:11px; line-height:16px;
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .futures-primary-price {
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; grid-column:1; grid-row:2 / 4; align-self:start; padding:0; text-align:left;
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .value.price { font-size:22px; line-height:28px; font-weight:700; white-space:nowrap; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar .archive-price-direction { display:none; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar .futures-mobile-price-change { font-size:13px; line-height:18px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(3) { grid-column:2; grid-row:2; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(4) { grid-column:2; grid-row:3; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item.archive-index-mark { grid-column:1 / -1; grid-row:4; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(5) { grid-column:1 / -1; grid-row:5; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:not(.futures-primary-price) :is(.label,.value) { min-width:0; font-size:11px; line-height:16px; white-space:nowrap; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .ticker-bar .ticker-item .label { color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart][data-mobile-chart=chart] .chart-area { flex:1 1 0; }
+  /* «График | Стакан» as plain text tabs under the figures. */
+  #archive-terminal-preview.futures-terminal .futures-mobile-chart-tabs { gap:20px; margin:0; padding:0 var(--fm-pad); border-radius:0; background:var(--panel); box-shadow:inset 0 -1px 0 var(--border); }
+  #archive-terminal-preview.futures-terminal .futures-mobile-chart-tabs button { flex:none; min-height:36px; padding:0; border-radius:0; border-bottom:2px solid transparent; font-size:15px; font-weight:500; color:var(--text-tertiary); }
+  #archive-terminal-preview.futures-terminal .futures-mobile-chart-tabs button[aria-pressed=true] { background:transparent; box-shadow:none; color:var(--text-primary); font-weight:700; border-bottom-color:var(--text-primary); }
+  /* Long and Short under the chart: they open the ticket. */
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=chart] .futures-mobile-quick {
+    order:2; position:sticky; bottom:calc(var(--mobile-nav-space) + var(--mobile-keyboard-inset,0px)); z-index:30;
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; padding:8px var(--fm-pad); background:var(--panel); border-top:1px solid var(--border);
+  }
+  #archive-terminal-preview.futures-terminal .futures-mobile-quick button {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:44px; height:44px; padding:0 8px;
+    border:0; border-radius:22px; color:#fff; font-size:13px; line-height:16px;
+  }
+  #archive-terminal-preview.futures-terminal .futures-mobile-quick button.long { background:var(--buy); }
+  #archive-terminal-preview.futures-terminal .futures-mobile-quick button.short { background:var(--sell); }
+  #archive-terminal-preview.futures-terminal .futures-mobile-quick button b { font-weight:600; }
+  #archive-terminal-preview.futures-terminal .futures-mobile-quick button span { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+}
+@media (max-width:359px) {
+  #archive-terminal-preview.futures-terminal { --fm-pad:8px; --fm-switch-width:114px; }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-name { font-size:16px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .main-grid { grid-template-columns:minmax(0,58fr) minmax(0,42fr); gap:0 8px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .fo-submitPair button { font-size:14px; }
+  #archive-terminal-preview.futures-terminal .terminal[data-mobile-tab=trade] .rb-row { font-size:12px; }
+}

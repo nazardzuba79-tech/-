@@ -475,7 +475,8 @@ export function FuturesPositionsPanel({
           with them — taking "Closed 3 of 3" away and leaving the trader to
           infer the outcome from an empty screen. So it renders whenever
           there is something to close OR something to report. */}
-      {!archive && tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
+      {/* The phone layout carries «Закрыть все» on every design (owner reference, 2026-11-19); the same confirmed path. */}
+      {(!archive || mobile) && tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
         <div className="futures-close-all-bar">
           {closeAll.phase === 'confirm' ? (
             <div className="futures-close-all-confirm" role="alertdialog" aria-live="assertive"
@@ -723,6 +724,7 @@ export function FuturesPositionsPanel({
                           <FuturesPositionProtectionCell
                             compactTrigger={archive && mobile}
                             compactLabel={narrow || mobile}
+                            phoneLabel={mobile}
                             positionId={p.id}
                             protection={p.protection ?? null}
                             onSaved={() => execution.refresh(['positions'])}
@@ -738,7 +740,7 @@ export function FuturesPositionsPanel({
                           <>
                             <button type="button" className="futures-position-close" data-limit-close-open={p.id}
                               onClick={() => setLimitClose(p)}>
-                              {t('futures.closeLimit')}
+                              {mobile ? t('futures.mobileCloseLimit') : t('futures.closeLimit')}
                             </button>
                             <button
                               type="button"
@@ -746,7 +748,7 @@ export function FuturesPositionsPanel({
                               onClick={() => handleClose(p.id)}
                               disabled={closingId === p.id}
                             >
-                              {closingId === p.id ? t('futures.closing') : t('futures.closeMarket')}
+                              {closingId === p.id ? t('futures.closing') : mobile ? t('futures.mobileCloseMarket') : t('futures.closeMarket')}
                             </button>
                           </>
                         );
