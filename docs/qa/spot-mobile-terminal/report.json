@@ -108,7 +108,7 @@
       ]
     },
     {
-      "name": "spot 320: ticket — order type, available balance, price, quantity and total fields, the size slider without preset keys",
+      "name": "spot 320: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
       "pass": true,
       "detail": {
         "family": "LIMIT",
@@ -117,6 +117,13 @@
           42,
           42,
           42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
         ]
       }
     },
@@ -306,7 +313,7 @@
       ]
     },
     {
-      "name": "spot 360: ticket — order type, available balance, price, quantity and total fields, the size slider without preset keys",
+      "name": "spot 360: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
       "pass": true,
       "detail": {
         "family": "LIMIT",
@@ -315,6 +322,13 @@
           42,
           42,
           42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
         ]
       }
     },
@@ -504,7 +518,7 @@
       ]
     },
     {
-      "name": "spot 390: ticket — order type, available balance, price, quantity and total fields, the size slider without preset keys",
+      "name": "spot 390: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
       "pass": true,
       "detail": {
         "family": "LIMIT",
@@ -513,6 +527,13 @@
           42,
           42,
           42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
         ]
       }
     },
@@ -702,7 +723,7 @@
       ]
     },
     {
-      "name": "spot 430: ticket — order type, available balance, price, quantity and total fields, the size slider without preset keys",
+      "name": "spot 430: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
       "pass": true,
       "detail": {
         "family": "LIMIT",
@@ -711,6 +732,13 @@
           42,
           42,
           42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
         ]
       }
     },

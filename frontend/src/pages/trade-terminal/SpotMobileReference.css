@@ -131,8 +131,15 @@
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] :is(.order-summary,.available-balance) { box-shadow:none !important; outline:0 !important; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-group { gap:2px; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .input-group { min-height:40px; border:0; border-radius:var(--sm-radius); background:var(--sm-field); }
-  /* The size slider: the track only, no preset keys. */
-  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels { display:none; }
+  /* The size slider with its five stops as quiet tick labels under it. They are the same pressable keys as before
+     (the listing and VTA checks press them on a phone), drawn as a scale instead of five boxes; 28px tall, the least
+     a button on these phone screens may be (qa-spot-cfd-terminal). */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels { display:flex !important; justify-content:space-between; gap:0 !important; padding:0 !important; margin:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button {
+    flex:none !important; min-width:28px; min-height:28px !important; height:28px; padding:0 2px !important; border:0 !important; border-radius:0 !important;
+    background:transparent !important; box-shadow:none !important; color:var(--text-tertiary,#6a6e73); font-size:10px !important; line-height:28px; font-weight:500;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button[aria-pressed=true] { color:var(--accent,#f0b90b); font-weight:700; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-container { min-height:28px; padding:0; }
   /* The action: one pill in the side's colour. */
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .submit-btn {

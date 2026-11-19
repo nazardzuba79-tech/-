@@ -99,7 +99,7 @@ const readSpot = page => page.evaluate(() => {
     family: q('.order-type-select select')?.value ?? null,
     available: q('.available-balance')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     fields: [...document.querySelectorAll('.order-form-content .input-group')].filter(shown).map(el => Math.round(el.getBoundingClientRect().height)),
-    presets: [...document.querySelectorAll('.slider-labels *')].filter(shown).length, slider: shown(q('.terminal-size-range')),
+    presets: [...document.querySelectorAll('.slider-labels button')].filter(shown).map(b => Math.round(b.getBoundingClientRect().height)), slider: shown(q('.terminal-size-range')),
     submit: submit ? { text: submit.textContent.trim(), radius: parseFloat(getComputedStyle(submit).borderTopLeftRadius), bg: getComputedStyle(submit).backgroundColor, clipped: submit.scrollWidth > submit.clientWidth + 1, ...rect(submit) } : null,
     book: { asks: document.querySelectorAll('.orderbook-asks .ob-row').length, bids: document.querySelectorAll('.orderbook-bids .ob-row').length, last: q('.ob-spread-price')?.textContent.trim() ?? null, step: shown(q('.ob-group-select')), title: shown(q('.orderbook-title')),
       clipped: [...document.querySelectorAll('.ob-row .cell')].filter(shown).filter(c => c.scrollWidth > c.clientWidth + 1).length },
@@ -155,8 +155,8 @@ const readSpot = page => page.evaluate(() => {
       const [buy, sell] = t.sides;
       ok(`${P}: «Купить | Продать» is one segmented pill over the ticket; the chosen side carries its colour`, t.sides.length === 2 && buy.text === 'Купить' && sell.text === 'Продать' && buy.active && !sell.active && Math.abs(buy.top - sell.top) <= 1
         && Math.round(buy.height) === 32 && buy.bg !== sell.bg && Math.abs(buy.left - t.form.left) <= 1 && Math.abs(sell.right - t.form.right) <= 1, t.sides.map(s => [s.text, Math.round(s.width), Math.round(s.height)]));
-      ok(`${P}: ticket — order type, available balance, price, quantity and total fields, the size slider without preset keys`, t.family === 'LIMIT' && /Доступно/.test(t.available) && /12[,\s]?500\.50 USDT/.test(t.available)
-        && t.fields.length === 3 && t.fields.every(h => h >= 40) && t.slider && t.presets === 0, { family: t.family, available: t.available, fields: t.fields });
+      ok(`${P}: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels`, t.family === 'LIMIT' && /Доступно/.test(t.available) && /12[,\s]?500\.50 USDT/.test(t.available)
+        && t.fields.length === 3 && t.fields.every(h => h >= 40) && t.slider && t.presets.length === 5 && t.presets.every(h => h >= 28 && h <= 30), { family: t.family, available: t.available, fields: t.fields, presets: t.presets });
       ok(`${P}: the action is one pill with its word whole`, t.submit && t.submit.text === 'Купить' && Math.round(t.submit.height) === 40 && t.submit.radius >= 20 && !t.submit.clipped
         && Math.abs(t.submit.left - t.form.left) <= 1 && Math.abs(t.submit.right - t.form.right) <= 1, t.submit && [t.submit.text, Math.round(t.submit.width), Math.round(t.submit.height), t.submit.bg, buy.bg, t.submit.radius, t.submit.clipped]);
       ok(`${P}: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure`, t.book.asks >= 4 && t.book.bids >= 4 && /84,?88\d/.test(t.book.last ?? '') && t.book.step && !t.book.title && t.book.clipped === 0, t.book);

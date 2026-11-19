@@ -135,7 +135,7 @@
       "name": "320: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
       "pass": true,
       "detail": {
-        "result": "+3,077.97(+16.92%)",
+        "result": "+3,077.97USDT(+16.92%)",
         "mode": "Кросс 10.00x"
       }
     },
@@ -429,7 +429,7 @@
       "name": "360: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
       "pass": true,
       "detail": {
-        "result": "+3,077.97(+16.92%)",
+        "result": "+3,077.97USDT(+16.92%)",
         "mode": "Кросс 10.00x"
       }
     },
@@ -723,7 +723,7 @@
       "name": "390: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
       "pass": true,
       "detail": {
-        "result": "+3,077.97(+16.92%)",
+        "result": "+3,077.97USDT(+16.92%)",
         "mode": "Кросс 10.00x"
       }
     },
@@ -1017,7 +1017,7 @@
       "name": "430: position card — name over side and margin mode on the left, the result with ROI on the right, in one line",
       "pass": true,
       "detail": {
-        "result": "+3,077.97(+16.92%)",
+        "result": "+3,077.97USDT(+16.92%)",
         "mode": "Кросс 10.00x"
       }
     },

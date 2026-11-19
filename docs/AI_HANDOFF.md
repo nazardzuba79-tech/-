@@ -7871,3 +7871,12 @@ Implementation `346fa509` projects the bound account's public name in strategyOw
 - Evidence: `docs/qa/spot-mobile-terminal/`.
 - Unresolved: owner review; the listing checks above on CI; whether the Spot order card and the CFD header should follow the Futures phone further.
 - Owner, 19 Nov, after these screenshots: «Добавляй на біржу коли все закінчиш». A PR is opened for the branch; this session cannot publish (no Cloudflare Pages or Hetzner access), so publication is Codex's, as a narrow release on the verified live source — frontend only, no backend, Worker or data change in this work.
+
+## 2026-11-19 — Claude — PR #719 after its first CI run
+
+- PR `nazardzuba79-tech/-#719` (phone terminals: Futures, Spot, CFD). First CI run on `9a326422`: 35 green, 9 red. Root causes and what was done:
+  - Five jobs (`private-demo`, `original-tickets` × 4) press the Spot size presets on a phone; the new sheet had hidden them. They are back as small tick labels under the slider — the same pressable keys, drawn as a scale. The listing and VTA scripts were not touched.
+  - `native` (two steps: P&L matrix and large numbers at 320/390): the phone position card of 18 Nov hid the unit and the «≈ USD» and bracketed-ROI lines with `display:none`, against that check's rule that sign, unit and ROI are real DOM text on separate lines. The «Ордера» card now states the result as three lines (amount, ROI, «≈ USD»); the unit keeps its text and takes no room. No change to the native script.
+  - `isolated-qa` (#691 viewer boundary) fills every text input of the Futures ticket; on a phone one size field is behind the unit swap. Two lines in `qa-order-ticket-691.cjs` bring the other field forward before filling it.
+  - `spot-7d` and `publication-and-layout` died in `playwright install --with-deps` on Ubuntu mirror 503s before any test ran — not this PR's. The fix that already exists for exactly these two workflows on PR #696 (Codex's `verify-ci-browser.cjs` in `download` mode on `ubuntu-24.04`, green there) is ported here unchanged; it becomes a no-op once the base carries it.
+- Reproduced red and then green here: `qa-native-demo-browser.cjs` with `NATIVE_QA_PNL_ONLY=1`, `qa-large-numbers-browser.cjs`, `qa-order-ticket-691.cjs` (built with the workflow's `VITE_*`), plus the three phone checks (133/0, 103/0, 71/0). `qa-vta-demo.cjs` needs PostgreSQL and was not run here.

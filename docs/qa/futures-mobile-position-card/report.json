@@ -9,9 +9,9 @@
       "errors": [],
       "external": [],
       "cardHeights": [
-        341,
-        361,
-        377
+        394,
+        397,
+        413
       ]
     },
     {
@@ -21,9 +21,9 @@
       "errors": [],
       "external": [],
       "cardHeights": [
-        351,
-        351,
-        387
+        404,
+        404,
+        423
       ]
     },
     {
@@ -33,9 +33,9 @@
       "errors": [],
       "external": [],
       "cardHeights": [
-        308,
-        335,
-        371
+        361,
+        388,
+        407
       ]
     },
     {
@@ -45,9 +45,9 @@
       "errors": [],
       "external": [],
       "cardHeights": [
-        308,
-        308,
-        328
+        361,
+        361,
+        364
       ]
     },
     {
@@ -75,12 +75,12 @@
       }
     },
     {
-      "name": "320: a card is compact (the ordinary one under 370px)",
+      "name": "320: a card is compact (the ordinary one under 410px)",
       "pass": true,
       "detail": [
-        341,
-        361,
-        377
+        394,
+        397,
+        413
       ]
     },
     {
@@ -99,11 +99,12 @@
       }
     },
     {
-      "name": "320: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "name": "320: the result is the amount, its ROI on the next line and «≈ USD» under it",
       "pass": true,
       "detail": {
-        "money": "+3,077.97",
-        "roi": "+16.92%"
+        "money": "+3,077.97 USDT",
+        "roi": "(+16.92%)",
+        "lines": 3
       }
     },
     {
@@ -128,39 +129,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 452,
-          "bottom": 469,
+          "top": 505,
+          "bottom": 522,
           "left": 23,
           "right": 63.046875
         },
         "margin": {
-          "top": 452,
-          "bottom": 469,
+          "top": 505,
+          "bottom": 522,
           "left": 116.328125,
           "right": 187.359375
         },
         "realized": {
-          "top": 452,
-          "bottom": 469,
-          "left": 266.015625,
+          "top": 509,
+          "bottom": 523,
+          "left": 236.75,
           "right": 297
         },
         "net": null,
         "entry": {
-          "top": 517,
-          "bottom": 534,
+          "top": 570,
+          "bottom": 587,
           "left": 23,
           "right": 94.03125
         },
         "mark": {
-          "top": 517,
-          "bottom": 534,
+          "top": 570,
+          "bottom": 587,
           "left": 116.328125,
           "right": 187.359375
         },
         "liq": {
-          "top": 517,
-          "bottom": 534,
+          "top": 570,
+          "bottom": 587,
           "left": 225.96875,
           "right": 297
         },
@@ -215,7 +216,7 @@
     {
       "name": "320: a long contract and quantity stay inside the card",
       "pass": true,
-      "detail": 377
+      "detail": 413
     },
     {
       "name": "320: «TP/SL» opens the protection editor inside the screen",
@@ -261,12 +262,12 @@
       }
     },
     {
-      "name": "360: a card is compact (the ordinary one under 370px)",
+      "name": "360: a card is compact (the ordinary one under 410px)",
       "pass": true,
       "detail": [
-        351,
-        351,
-        387
+        404,
+        404,
+        423
       ]
     },
     {
@@ -285,11 +286,12 @@
       }
     },
     {
-      "name": "360: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "name": "360: the result is the amount, its ROI on the next line and «≈ USD» under it",
       "pass": true,
       "detail": {
-        "money": "+3,077.97",
-        "roi": "+16.92%"
+        "money": "+3,077.97 USDT",
+        "roi": "(+16.92%)",
+        "lines": 3
       }
     },
     {
@@ -314,39 +316,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 401,
-          "bottom": 418,
+          "top": 454,
+          "bottom": 471,
           "left": 27,
           "right": 67.046875
         },
         "margin": {
-          "top": 401,
-          "bottom": 418,
+          "top": 454,
+          "bottom": 471,
           "left": 132.328125,
           "right": 203.359375
         },
         "realized": {
-          "top": 401,
-          "bottom": 418,
-          "left": 302.015625,
+          "top": 458,
+          "bottom": 472,
+          "left": 272.75,
           "right": 333
         },
         "net": null,
         "entry": {
-          "top": 468,
-          "bottom": 485,
+          "top": 521,
+          "bottom": 538,
           "left": 27,
           "right": 98.03125
         },
         "mark": {
-          "top": 468,
-          "bottom": 485,
+          "top": 521,
+          "bottom": 538,
           "left": 132.328125,
           "right": 203.359375
         },
         "liq": {
-          "top": 468,
-          "bottom": 485,
+          "top": 521,
+          "bottom": 538,
           "left": 261.96875,
           "right": 333
         },
@@ -401,7 +403,7 @@
     {
       "name": "360: a long contract and quantity stay inside the card",
       "pass": true,
-      "detail": 387
+      "detail": 423
     },
     {
       "name": "360: «TP/SL» opens the protection editor inside the screen",
@@ -447,12 +449,12 @@
       }
     },
     {
-      "name": "390: a card is compact (the ordinary one under 370px)",
+      "name": "390: a card is compact (the ordinary one under 410px)",
       "pass": true,
       "detail": [
-        308,
-        335,
-        371
+        361,
+        388,
+        407
       ]
     },
     {
@@ -471,11 +473,12 @@
       }
     },
     {
-      "name": "390: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "name": "390: the result is the amount, its ROI on the next line and «≈ USD» under it",
       "pass": true,
       "detail": {
-        "money": "+3,077.97",
-        "roi": "+16.92%"
+        "money": "+3,077.97 USDT",
+        "roi": "(+16.92%)",
+        "lines": 3
       }
     },
     {
@@ -500,39 +503,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 374,
-          "bottom": 391,
+          "top": 427,
+          "bottom": 444,
           "left": 27,
           "right": 67.046875
         },
         "margin": {
-          "top": 374,
-          "bottom": 391,
+          "top": 427,
+          "bottom": 444,
           "left": 142.328125,
           "right": 213.359375
         },
         "realized": {
-          "top": 374,
-          "bottom": 391,
-          "left": 332.015625,
+          "top": 431,
+          "bottom": 445,
+          "left": 302.75,
           "right": 363
         },
         "net": null,
         "entry": {
-          "top": 425,
-          "bottom": 442,
+          "top": 478,
+          "bottom": 495,
           "left": 27,
           "right": 98.03125
         },
         "mark": {
-          "top": 425,
-          "bottom": 442,
+          "top": 478,
+          "bottom": 495,
           "left": 142.328125,
           "right": 213.359375
         },
         "liq": {
-          "top": 425,
-          "bottom": 442,
+          "top": 478,
+          "bottom": 495,
           "left": 291.96875,
           "right": 363
         },
@@ -587,7 +590,7 @@
     {
       "name": "390: a long contract and quantity stay inside the card",
       "pass": true,
-      "detail": 371
+      "detail": 407
     },
     {
       "name": "390: «TP/SL» opens the protection editor inside the screen",
@@ -633,12 +636,12 @@
       }
     },
     {
-      "name": "430: a card is compact (the ordinary one under 370px)",
+      "name": "430: a card is compact (the ordinary one under 410px)",
       "pass": true,
       "detail": [
-        308,
-        308,
-        328
+        361,
+        361,
+        364
       ]
     },
     {
@@ -657,11 +660,12 @@
       }
     },
     {
-      "name": "430: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»",
+      "name": "430: the result is the amount, its ROI on the next line and «≈ USD» under it",
       "pass": true,
       "detail": {
-        "money": "+3,077.97",
-        "roi": "+16.92%"
+        "money": "+3,077.97 USDT",
+        "roi": "(+16.92%)",
+        "lines": 3
       }
     },
     {
@@ -686,39 +690,39 @@
       "pass": true,
       "detail": {
         "qty": {
-          "top": 374,
-          "bottom": 391,
+          "top": 427,
+          "bottom": 444,
           "left": 27,
           "right": 67.046875
         },
         "margin": {
-          "top": 374,
-          "bottom": 391,
+          "top": 427,
+          "bottom": 444,
           "left": 155.65625,
           "right": 226.6875
         },
         "realized": {
-          "top": 374,
-          "bottom": 391,
-          "left": 372,
+          "top": 431,
+          "bottom": 445,
+          "left": 342.734375,
           "right": 402.984375
         },
         "net": null,
         "entry": {
-          "top": 425,
-          "bottom": 442,
+          "top": 478,
+          "bottom": 495,
           "left": 27,
           "right": 98.03125
         },
         "mark": {
-          "top": 425,
-          "bottom": 442,
+          "top": 478,
+          "bottom": 495,
           "left": 155.65625,
           "right": 226.6875
         },
         "liq": {
-          "top": 425,
-          "bottom": 442,
+          "top": 478,
+          "bottom": 495,
           "left": 331.953125,
           "right": 402.984375
         },
@@ -773,7 +777,7 @@
     {
       "name": "430: a long contract and quantity stay inside the card",
       "pass": true,
-      "detail": 328
+      "detail": 364
     },
     {
       "name": "430: «TP/SL» opens the protection editor inside the screen",
@@ -827,7 +831,7 @@
           "funding": "Фандинг",
           "fees": "Комиссии"
         },
-        "height": 359
+        "height": 412
       }
     },
     {

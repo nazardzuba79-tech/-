@@ -69,6 +69,8 @@ const sleep = ms => new Promise(r=>setTimeout(r,ms));
         if(await select.isVisible())await select.selectOption(families[f]);
         else await page.locator(futures?'.order-family-tabs:visible':'.order-type-tabs:visible').first().locator('button').nth(f).click();
         for(const input of await form.locator('input[type="text"]:not([readonly]):not([disabled])').all()) {
+          // Phone Futures ticket (2026-11-19): quantity and total share one place behind the unit swap; bring the other one forward.
+          if(!await input.isVisible()){const swap=form.locator('.fo-unitSwap:visible');if(await swap.count())await swap.first().click();}
           for(const value of ['2','2,','2,5','2.50']) {await input.fill(value);assert.equal(await input.inputValue(),value,`${target} ${families[f]} draft`);}
         }
         const total=form.locator('input[aria-label="Итого"]');
