@@ -2412,4 +2412,10 @@ export const KO: Record<Key, string> = {
   'kycMaterials.removePhoto': "사진 삭제",
   'kycMaterials.openRequest': "요청 열기",
   'kycMaterials.submitError': "파일을 보내지 못했습니다. 연결을 확인하고 다시 시도해 주세요. 다시 보내도 중복되지 않습니다.",
+  'futures.mobileSetTpsl': 'TP/SL 설정',
+  'futures.mobileCloseLimit': '지정가 청산',
+  'futures.mobileCloseMarket': '시장가 청산',
+  'futures.mobileQty': '수량',
+  'futures.mobileMarkPrice': '마크 가격',
+  'futures.mobileLiqPrice': '예상 청산가',
 };
