@@ -130,7 +130,6 @@
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount { margin-left:auto; font-size:12px; font-weight:500; white-space:nowrap; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] :is(.order-summary,.available-balance) { box-shadow:none !important; outline:0 !important; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-group { gap:2px; }
-  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-label { font-size:10px; line-height:12px; color:var(--text-tertiary,#6a6e73); }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .input-group { min-height:40px; border:0; border-radius:var(--sm-radius); background:var(--sm-field); }
   /* The size slider: the track only, no preset keys. */
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels { display:none; }
@@ -171,6 +170,21 @@
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tabs { flex-wrap:wrap; overflow:visible; -webkit-mask-image:none; mask-image:none; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-actions { flex:1 0 100%; display:flex; justify-content:flex-end; min-height:36px; margin:0; padding:0; }
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-action-btn { min-height:36px; padding:0 2px; border:0; background:transparent; color:var(--text-primary,#fff); font-size:13px; font-weight:600; }
+
+  /* Field captions stay over their fields: the stop and OCO tickets put hints and a second caption in the same group,
+     which a caption drawn inside the field would cover. They are small and quiet, as the Futures captions are. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-label { font-size:10px; line-height:12px; color:var(--text-tertiary,#6a6e73); }
+
+  /* ── Order cards (open orders and history): the pair in the head, the time under it, then label left, figure right — the Futures phone card ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody { display:grid !important; gap:10px; padding:10px var(--sm-pad) 12px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] { display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:8px !important; padding:12px 14px !important; border:0 !important; border-radius:10px !important; background:var(--sm-field) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td { display:flex !important; flex-direction:row !important; align-items:baseline !important; justify-content:flex-end !important; gap:4px; min-width:0; grid-column:auto !important; padding:0 !important; border:0 !important; font-size:13px; line-height:18px; text-align:right; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td::before { content:attr(data-mobile-label); flex:none; margin:0 auto 0 0; padding-right:8px; font-size:12px; line-height:18px; color:var(--text-tertiary,#6a6e73); text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td.spot-order-pair { order:-2; justify-content:flex-start !important; font-size:16px; line-height:22px; font-weight:700; text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td.spot-order-time { order:-1; justify-content:flex-start !important; margin-top:-6px; padding-bottom:8px !important; border-bottom:1px solid var(--border,#222227) !important; font-size:12px; color:var(--text-tertiary,#6a6e73); text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td:is(.spot-order-pair,.spot-order-time,.spot-order-action)::before { content:none; display:none; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td.spot-order-action { justify-content:stretch !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] .cancel-btn { width:100%; min-height:36px; border-radius:18px; }
 
   /* ── CFD: the same instrument row and ticket language (no order book: this market has none) ── */
   :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar {
