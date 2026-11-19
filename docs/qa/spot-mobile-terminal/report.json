@@ -1,0 +1,996 @@
+{
+  "dist": "frontend/dist",
+  "environment": "Built frontend; read-only loopback fixture; nothing submitted",
+  "views": [
+    {
+      "width": 320,
+      "url": "/trade?pair=BTC%2FUSDT",
+      "writes": [],
+      "errors": []
+    },
+    {
+      "width": 360,
+      "url": "/trade?pair=BTC%2FUSDT",
+      "writes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "url": "/trade?pair=BTC%2FUSDT",
+      "writes": [],
+      "errors": []
+    },
+    {
+      "width": 430,
+      "url": "/trade?pair=BTC%2FUSDT",
+      "writes": [],
+      "errors": []
+    },
+    {
+      "width": 360,
+      "url": "/trade?market=cfd",
+      "writes": [],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "url": "/trade?market=cfd",
+      "writes": [],
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "url": "/trade?pair=BTC%2FUSDT",
+      "writes": [],
+      "errors": []
+    }
+  ],
+  "checks": [
+    {
+      "name": "spot 320: opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "spot 320: instrument row — the pair and the «24h» figures key; the price is stated once, in the book",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45
+      }
+    },
+    {
+      "name": "spot 320: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders — as on Futures",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          198,
+          38
+        ],
+        [
+          "trade",
+          236,
+          38
+        ],
+        [
+          "account",
+          274,
+          38
+        ]
+      ]
+    },
+    {
+      "name": "spot 320: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 172,
+        "book": 124
+      }
+    },
+    {
+      "name": "spot 320: «Купить | Продать» is one segmented pill over the ticket; the chosen side carries its colour",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          86,
+          32
+        ],
+        [
+          "Продать",
+          86,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "spot 320: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
+      "pass": true,
+      "detail": {
+        "family": "LIMIT",
+        "available": "Доступно 12500.50 USDT",
+        "fields": [
+          42,
+          42,
+          42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    },
+    {
+      "name": "spot 320: the action is one pill with its word whole",
+      "pass": true,
+      "detail": [
+        "Купить",
+        172,
+        40,
+        "rgb(30, 173, 106)",
+        "rgb(6, 193, 103)",
+        20,
+        false
+      ]
+    },
+    {
+      "name": "spot 320: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
+      "pass": true,
+      "detail": {
+        "asks": 6,
+        "bids": 6,
+        "last": "84,886.00≈ $84,886.00",
+        "step": true,
+        "title": false,
+        "clipped": 0
+      }
+    },
+    {
+      "name": "spot 320: under the ticket — «Ордера» with its count, «История ордеров», «Активы», the list key for the full screen and «Отменить все»",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(1)",
+          "Историяордеров",
+          "Активы"
+        ],
+        "cancelAll": "Отменить все"
+      }
+    },
+    {
+      "name": "spot 320: no demo wording on the screen",
+      "pass": true
+    },
+    {
+      "name": "spot 320: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
+      "name": "spot 320: «Продать» turns the pill and the action to the sell side",
+      "pass": true,
+      "detail": [
+        "Продать"
+      ]
+    },
+    {
+      "name": "spot 320: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "84897.0"
+    },
+    {
+      "name": "spot 320: the order type select switches the ticket",
+      "pass": true,
+      "detail": "MARKET"
+    },
+    {
+      "name": "spot 320: the «24h» key opens the figures of the pair in place",
+      "pass": true,
+      "detail": "BTC/USDT Последняя цена 84,890.10 Изменение 24ч +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24"
+    },
+    {
+      "name": "spot 320: scrolled, the instrument row and the switch stay at the top",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "switchTop": 6
+      }
+    },
+    {
+      "name": "spot 320: the list key opens «Ордера»: a title row with the way back and the three lists",
+      "pass": true,
+      "detail": [
+        "Ордера(1)",
+        "История ордеров",
+        "Активы"
+      ]
+    },
+    {
+      "name": "spot 320: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "spot 320: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "spot 320: chart screen — last price large with its change, the day's high and low, then «График | Стакан | Рынки»",
+      "pass": true,
+      "detail": "BTC/USDT 84,890.10 +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24ч (USDT) 3.19B 24h +"
+    },
+    {
+      "name": "spot 320: «Купить» and «Продать» sit under the chart, above the bottom menu, in their colours",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          147
+        ],
+        [
+          "Продать",
+          147
+        ]
+      ]
+    },
+    {
+      "name": "spot 320: «Продать» under the chart opens the ticket on the sell side and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "spot 320: «Стакан» on the chart screen shows the full book",
+      "pass": true
+    },
+    {
+      "name": "spot 320: no page error and no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "spot 360: opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "spot 360: instrument row — the pair and the «24h» figures key; the price is stated once, in the book",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45
+      }
+    },
+    {
+      "name": "spot 360: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders — as on Futures",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          222,
+          42
+        ],
+        [
+          "trade",
+          264,
+          42
+        ],
+        [
+          "account",
+          306,
+          42
+        ]
+      ]
+    },
+    {
+      "name": "spot 360: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 189,
+        "book": 137
+      }
+    },
+    {
+      "name": "spot 360: «Купить | Продать» is one segmented pill over the ticket; the chosen side carries its colour",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          95,
+          32
+        ],
+        [
+          "Продать",
+          95,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "spot 360: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
+      "pass": true,
+      "detail": {
+        "family": "LIMIT",
+        "available": "Доступно 12500.50 USDT",
+        "fields": [
+          42,
+          42,
+          42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    },
+    {
+      "name": "spot 360: the action is one pill with its word whole",
+      "pass": true,
+      "detail": [
+        "Купить",
+        189,
+        40,
+        "rgb(30, 173, 106)",
+        "rgb(6, 193, 103)",
+        20,
+        false
+      ]
+    },
+    {
+      "name": "spot 360: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
+      "pass": true,
+      "detail": {
+        "asks": 6,
+        "bids": 6,
+        "last": "84,886.00≈ $84,886.00",
+        "step": true,
+        "title": false,
+        "clipped": 0
+      }
+    },
+    {
+      "name": "spot 360: under the ticket — «Ордера» with its count, «История ордеров», «Активы», the list key for the full screen and «Отменить все»",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(1)",
+          "Историяордеров",
+          "Активы"
+        ],
+        "cancelAll": "Отменить все"
+      }
+    },
+    {
+      "name": "spot 360: no demo wording on the screen",
+      "pass": true
+    },
+    {
+      "name": "spot 360: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
+      "name": "spot 360: «Продать» turns the pill and the action to the sell side",
+      "pass": true,
+      "detail": [
+        "Продать"
+      ]
+    },
+    {
+      "name": "spot 360: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "84897.0"
+    },
+    {
+      "name": "spot 360: the order type select switches the ticket",
+      "pass": true,
+      "detail": "MARKET"
+    },
+    {
+      "name": "spot 360: the «24h» key opens the figures of the pair in place",
+      "pass": true,
+      "detail": "BTC/USDT Последняя цена 84,890.10 Изменение 24ч +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24"
+    },
+    {
+      "name": "spot 360: scrolled, the instrument row and the switch stay at the top",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "switchTop": 6
+      }
+    },
+    {
+      "name": "spot 360: the list key opens «Ордера»: a title row with the way back and the three lists",
+      "pass": true,
+      "detail": [
+        "Ордера(1)",
+        "История ордеров",
+        "Активы"
+      ]
+    },
+    {
+      "name": "spot 360: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "spot 360: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "spot 360: chart screen — last price large with its change, the day's high and low, then «График | Стакан | Рынки»",
+      "pass": true,
+      "detail": "BTC/USDT 84,890.10 +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24ч (USDT) 3.19B 24h +"
+    },
+    {
+      "name": "spot 360: «Купить» and «Продать» sit under the chart, above the bottom menu, in their colours",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          163
+        ],
+        [
+          "Продать",
+          163
+        ]
+      ]
+    },
+    {
+      "name": "spot 360: «Продать» under the chart opens the ticket on the sell side and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "spot 360: «Стакан» on the chart screen shows the full book",
+      "pass": true
+    },
+    {
+      "name": "spot 360: no page error and no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "spot 390: opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "spot 390: instrument row — the pair and the «24h» figures key; the price is stated once, in the book",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45
+      }
+    },
+    {
+      "name": "spot 390: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders — as on Futures",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          252,
+          42
+        ],
+        [
+          "trade",
+          294,
+          42
+        ],
+        [
+          "account",
+          336,
+          42
+        ]
+      ]
+    },
+    {
+      "name": "spot 390: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 206,
+        "book": 150
+      }
+    },
+    {
+      "name": "spot 390: «Купить | Продать» is one segmented pill over the ticket; the chosen side carries its colour",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          103,
+          32
+        ],
+        [
+          "Продать",
+          103,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "spot 390: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
+      "pass": true,
+      "detail": {
+        "family": "LIMIT",
+        "available": "Доступно 12500.50 USDT",
+        "fields": [
+          42,
+          42,
+          42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    },
+    {
+      "name": "spot 390: the action is one pill with its word whole",
+      "pass": true,
+      "detail": [
+        "Купить",
+        206,
+        40,
+        "rgb(30, 173, 106)",
+        "rgb(6, 193, 103)",
+        20,
+        false
+      ]
+    },
+    {
+      "name": "spot 390: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
+      "pass": true,
+      "detail": {
+        "asks": 6,
+        "bids": 6,
+        "last": "84,886.00≈ $84,886.00",
+        "step": true,
+        "title": false,
+        "clipped": 0
+      }
+    },
+    {
+      "name": "spot 390: under the ticket — «Ордера» with its count, «История ордеров», «Активы», the list key for the full screen and «Отменить все»",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(1)",
+          "Историяордеров",
+          "Активы"
+        ],
+        "cancelAll": "Отменить все"
+      }
+    },
+    {
+      "name": "spot 390: no demo wording on the screen",
+      "pass": true
+    },
+    {
+      "name": "spot 390: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
+      "name": "spot 390: «Продать» turns the pill and the action to the sell side",
+      "pass": true,
+      "detail": [
+        "Продать"
+      ]
+    },
+    {
+      "name": "spot 390: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "84897.0"
+    },
+    {
+      "name": "spot 390: the order type select switches the ticket",
+      "pass": true,
+      "detail": "MARKET"
+    },
+    {
+      "name": "spot 390: the «24h» key opens the figures of the pair in place",
+      "pass": true,
+      "detail": "BTC/USDT Последняя цена 84,890.10 Изменение 24ч +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24"
+    },
+    {
+      "name": "spot 390: scrolled, the instrument row and the switch stay at the top",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "switchTop": 6
+      }
+    },
+    {
+      "name": "spot 390: the list key opens «Ордера»: a title row with the way back and the three lists",
+      "pass": true,
+      "detail": [
+        "Ордера(1)",
+        "История ордеров",
+        "Активы"
+      ]
+    },
+    {
+      "name": "spot 390: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "spot 390: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "spot 390: chart screen — last price large with its change, the day's high and low, then «График | Стакан | Рынки»",
+      "pass": true,
+      "detail": "BTC/USDT 84,890.10 +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24ч (USDT) 3.19B 24h +"
+    },
+    {
+      "name": "spot 390: «Купить» and «Продать» sit under the chart, above the bottom menu, in their colours",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          178
+        ],
+        [
+          "Продать",
+          178
+        ]
+      ]
+    },
+    {
+      "name": "spot 390: «Продать» under the chart opens the ticket on the sell side and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "spot 390: «Стакан» on the chart screen shows the full book",
+      "pass": true
+    },
+    {
+      "name": "spot 390: no page error and no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "spot 430: opens on the trade screen without a horizontal page scroll",
+      "pass": true,
+      "detail": {
+        "tab": "trade",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "spot 430: instrument row — the pair and the «24h» figures key; the price is stated once, in the book",
+      "pass": true,
+      "detail": {
+        "height": 48,
+        "stats": 45
+      }
+    },
+    {
+      "name": "spot 430: the view switch is three icon keys in the instrument row, at its right edge: chart, ticket, orders — as on Futures",
+      "pass": true,
+      "detail": [
+        [
+          "chart",
+          292,
+          42
+        ],
+        [
+          "trade",
+          334,
+          42
+        ],
+        [
+          "account",
+          376,
+          42
+        ]
+      ]
+    },
+    {
+      "name": "spot 430: the ticket is on the left and the order book on the right, side by side, inside the screen",
+      "pass": true,
+      "detail": {
+        "form": 230,
+        "book": 166
+      }
+    },
+    {
+      "name": "spot 430: «Купить | Продать» is one segmented pill over the ticket; the chosen side carries its colour",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          115,
+          32
+        ],
+        [
+          "Продать",
+          115,
+          32
+        ]
+      ]
+    },
+    {
+      "name": "spot 430: ticket — order type, available balance, price, quantity and total fields, the size slider with its five stops as small tick labels",
+      "pass": true,
+      "detail": {
+        "family": "LIMIT",
+        "available": "Доступно 12500.50 USDT",
+        "fields": [
+          42,
+          42,
+          42
+        ],
+        "presets": [
+          28,
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    },
+    {
+      "name": "spot 430: the action is one pill with its word whole",
+      "pass": true,
+      "detail": [
+        "Купить",
+        230,
+        40,
+        "rgb(30, 173, 106)",
+        "rgb(6, 193, 103)",
+        20,
+        false
+      ]
+    },
+    {
+      "name": "spot 430: book column — at least four asks and four bids around the last price, the price step under them, no heading, no cut figure",
+      "pass": true,
+      "detail": {
+        "asks": 6,
+        "bids": 6,
+        "last": "84,886.00≈ $84,886.00",
+        "step": true,
+        "title": false,
+        "clipped": 0
+      }
+    },
+    {
+      "name": "spot 430: under the ticket — «Ордера» with its count, «История ордеров», «Активы», the list key for the full screen and «Отменить все»",
+      "pass": true,
+      "detail": {
+        "tabs": [
+          "Ордера(1)",
+          "Историяордеров",
+          "Активы"
+        ],
+        "cancelAll": "Отменить все"
+      }
+    },
+    {
+      "name": "spot 430: no demo wording on the screen",
+      "pass": true
+    },
+    {
+      "name": "spot 430: a long balance keeps the available row and everything under it where they were",
+      "pass": true,
+      "detail": {
+        "buy": 30,
+        "sell": 30,
+        "available": "Доступно 454535445453.545471 BTC"
+      }
+    },
+    {
+      "name": "spot 430: «Продать» turns the pill and the action to the sell side",
+      "pass": true,
+      "detail": [
+        "Продать"
+      ]
+    },
+    {
+      "name": "spot 430: a price pressed in the book fills the ticket and keeps the trade screen",
+      "pass": true,
+      "detail": "84897.0"
+    },
+    {
+      "name": "spot 430: the order type select switches the ticket",
+      "pass": true,
+      "detail": "MARKET"
+    },
+    {
+      "name": "spot 430: the «24h» key opens the figures of the pair in place",
+      "pass": true,
+      "detail": "BTC/USDT Последняя цена 84,890.10 Изменение 24ч +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24"
+    },
+    {
+      "name": "spot 430: scrolled, the instrument row and the switch stay at the top",
+      "pass": true,
+      "detail": {
+        "top": 0,
+        "switchTop": 6
+      }
+    },
+    {
+      "name": "spot 430: the list key opens «Ордера»: a title row with the way back and the three lists",
+      "pass": true,
+      "detail": [
+        "Ордера(1)",
+        "История ордеров",
+        "Активы"
+      ]
+    },
+    {
+      "name": "spot 430: order history opens on the «Ордера» screen",
+      "pass": true
+    },
+    {
+      "name": "spot 430: the arrow in the title row returns to the ticket",
+      "pass": true
+    },
+    {
+      "name": "spot 430: chart screen — last price large with its change, the day's high and low, then «График | Стакан | Рынки»",
+      "pass": true,
+      "detail": "BTC/USDT 84,890.10 +1,048.03 (+1.25%) Максимум 24ч 85,954.60 Минимум 24ч 83,535.00 Объём 24ч (USDT) 3.19B 24h +"
+    },
+    {
+      "name": "spot 430: «Купить» and «Продать» sit under the chart, above the bottom menu, in their colours",
+      "pass": true,
+      "detail": [
+        [
+          "Купить",
+          198
+        ],
+        [
+          "Продать",
+          198
+        ]
+      ]
+    },
+    {
+      "name": "spot 430: «Продать» under the chart opens the ticket on the sell side and submits nothing",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "spot 430: «Стакан» on the chart screen shows the full book",
+      "pass": true
+    },
+    {
+      "name": "spot 430: no page error and no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "cfd 360: the same icon switch in the instrument row; the last price is large and clear of the switch",
+      "pass": true,
+      "detail": {
+        "price": "2,650.30",
+        "top": 104,
+        "left": 12
+      }
+    },
+    {
+      "name": "cfd 360: chart screen — «График | Рынки» as text tabs",
+      "pass": true,
+      "detail": [
+        "График",
+        "Рынки"
+      ]
+    },
+    {
+      "name": "cfd 360: ticket — the side as one segmented pill, the action as a pill",
+      "pass": true,
+      "detail": {
+        "sides": [
+          "Открыть Лонг",
+          "Открыть Шорт"
+        ],
+        "submit": "Открыть Лонг"
+      }
+    },
+    {
+      "name": "cfd 360: «Позиции» is a full screen with its title row and way back",
+      "pass": true
+    },
+    {
+      "name": "cfd 360: the arrow returns to the ticket; no page error and no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "cfd 390: the same icon switch in the instrument row; the last price is large and clear of the switch",
+      "pass": true,
+      "detail": {
+        "price": "2,650.30",
+        "top": 104,
+        "left": 12
+      }
+    },
+    {
+      "name": "cfd 390: chart screen — «График | Рынки» as text tabs",
+      "pass": true,
+      "detail": [
+        "График",
+        "Рынки"
+      ]
+    },
+    {
+      "name": "cfd 390: ticket — the side as one segmented pill, the action as a pill",
+      "pass": true,
+      "detail": {
+        "sides": [
+          "Открыть Лонг",
+          "Открыть Шорт"
+        ],
+        "submit": "Открыть Лонг"
+      }
+    },
+    {
+      "name": "cfd 390: «Позиции» is a full screen with its title row and way back",
+      "pass": true
+    },
+    {
+      "name": "cfd 390: the arrow returns to the ticket; no page error and no write request",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "writes": []
+      }
+    },
+    {
+      "name": "spot 1440: none of the phone controls is drawn and the first tab keeps its full name",
+      "pass": true,
+      "detail": {
+        "phoneOnly": [],
+        "openTab": "Открытые ордера 1"
+      }
+    }
+  ],
+  "passed": 107,
+  "failed": 0
+}

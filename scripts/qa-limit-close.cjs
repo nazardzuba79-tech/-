@@ -125,7 +125,8 @@ async function scenario(side, width) {
   try {
     await positionsTab(p);
     const row = p.locator(`.futures-position-row[data-side=${side}]`).first();
-    assert.equal(await cell(row, 2), '15,000,000 AKE', 'seed position row');
+    // The phone card names the unit in the label («Размер (AKE)») and leaves the figure alone on its line.
+    assert.match(await cell(row, 2), /^15,000,000( AKE)?$/, 'seed position row');
     // 1. The dialog, for this row.
     await row.locator(`[data-limit-close-open="${target.id}"]`).click();
     await dialog(p).waitFor();

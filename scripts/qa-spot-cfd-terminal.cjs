@@ -268,8 +268,10 @@ const READ = (tokenNames) => {
       if (mobile && name !== 'futures' && (m.mobileTabs?.length ?? 0) !== 3) {
         findings.push(`${name} @${key}: expected 3 primary mobile tabs, got ${m.mobileTabs?.length ?? 0}`);
       }
-      if (mobile && name !== 'futures' && (m.mobileTabs || []).some(tab => tab.h < 44 || tab.w < 44)) {
-        findings.push(`${name} @${key}: primary mobile tab below 44px touch target`);
+      // Owner, 2026-11-19 («стара версія з великими кнопками … в єдиному стилі, як і ф'ючерси»): the three workspaces are
+      // the Futures phone's icon switch in the instrument row — 36px keys, 38px wide on the narrowest phone — not a 44px tab strip.
+      if (mobile && name !== 'futures' && (m.mobileTabs || []).some(tab => tab.h < 36 || tab.w < 36)) {
+        findings.push(`${name} @${key}: primary mobile tab below the 36px switch key`);
       }
       if (mobile && name === 'spot' && m.visibleSpotStats > 2) {
         findings.push(`spot @${key}: ${m.visibleSpotStats} market stat blocks visible; compact mobile header should show only price/change`);
@@ -289,8 +291,9 @@ const READ = (tokenNames) => {
       if (!mobile && name !== 'futures' && (!m.desktopCta?.visible || m.desktopCta.height < 38)) {
         findings.push(`${name} @${key}: primary action missing or under 38px ${JSON.stringify(m.desktopCta)}`);
       }
-      if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaHeight ?? 0) < 52) {
-        findings.push(`${name} @${key}: primary action on the Trade tab missing or under 52px (${m.tradeWorkspace?.ctaHeight ?? 0}px)`);
+      // Same instruction: the action is the Futures phone's 40px pill (it was a 52px block).
+      if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaHeight ?? 0) < 40) {
+        findings.push(`${name} @${key}: primary action on the Trade tab missing or under 40px (${m.tradeWorkspace?.ctaHeight ?? 0}px)`);
       }
       if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaRightOverflow ?? 0) > 0) {
         findings.push(`${name} @${key}: primary action overflows the viewport by ${m.tradeWorkspace.ctaRightOverflow}px`);

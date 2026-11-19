@@ -770,7 +770,9 @@ async function archivePositionActions(width, height) {
     await p.setViewportSize({width,height}); await ready(s); await accountTab(p,'positions');
     await rows(p).first().waitFor();
     assert.equal(await p.locator('.archive-close-all, .archive-close-all-dialog').count(),0,'Removed archive Close All returned');
-    assert.equal(await p.getByRole('button',{name:'Закрыть все',exact:true}).count(),0,'Archive bulk close returned under another selector');
+    // Owner, 2026-11-19: the phone layout follows the reference terminal and carries «Закрыть все» again, in the «Все рынки»
+    // row, behind its confirmation. The removed archive control above stays removed; this is the panel's own confirmed path.
+    assert.equal(await p.getByRole('button',{name:'Закрыть все',exact:true}).count(),width<=900?1:0,'Phone bulk close must be the one confirmed control');
     assert.equal(await rows(p).count(),2,'Seeded positions are missing');
     for(const side of ['LONG','SHORT']) {
       const actions=positionRow(p,side).locator('.futures-position-close');

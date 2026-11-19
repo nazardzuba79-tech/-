@@ -390,6 +390,29 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
 }
 
 /**
+ * The funding rate by side and the time to the next settlement, as one
+ * compact line. A phone draws it at the head of the order book column; it is
+ * the same two figures the instrument row states, from the same config read.
+ */
+export function FuturesFundingLine() {
+  const { t } = useLanguage();
+  const config = useFuturesConfig().config;
+  const funding = voltexFundingRates(config);
+  return <div className="futures-mobile-funding" title={t('futures.headerFunding')}>
+    <span className="futures-mobile-funding-label">{t('futures.headerFunding')}</span>
+    <span className="futures-mobile-funding-values" data-funding-rates={funding ? 'voltex' : undefined}>
+      {funding ? <>
+        <span className={funding.long.negative ? 'down' : 'up'}>{funding.long.value}</span>
+        <span aria-hidden="true">/</span>
+        <span className={funding.short.negative ? 'down' : 'up'}>{funding.short.value}</span>
+      </> : '—'}
+      <span aria-hidden="true">·</span>
+      <NextFundingCountdown intervalHours={config?.fundingIntervalHours ?? null} />
+    </span>
+  </div>;
+}
+
+/**
  * Split out and memoised so the one-second tick repaints this single cell
  * instead of the whole instrument row — otherwise every price, volume and
  * funding figure above would re-render once a second for a clock.
