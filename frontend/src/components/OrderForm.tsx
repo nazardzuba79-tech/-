@@ -41,6 +41,7 @@ export function OrderForm({
   demo = 'off',
   presentationOnly = false,
   awaitingPair = false,
+  sideRequest = null,
 }: {
   pair: string;
   onPlaced: () => void;
@@ -52,6 +53,8 @@ export function OrderForm({
   /** A live original-regime ticket edits drafts only. Server execution guards are independent. */
   presentationOnly?: boolean;
   awaitingPair?: boolean;
+  /** Phone chart screen: «Купить» / «Продать» under the chart open the ticket on that side. A new `seq` is a new press. */
+  sideRequest?: { side: 'BUY' | 'SELL'; seq: number } | null;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -73,6 +76,8 @@ export function OrderForm({
   const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
   const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
+  const sideRequestSeq = sideRequest?.seq;
+  useEffect(() => { if (sideRequest) setSide(sideRequest.side); }, [sideRequestSeq]);
   const [family, setFamily] = useState<OrderFamily>('LIMIT');
   const [execution, setExecution] = useState<Execution>('LIMIT');
   const [price, setPrice] = useState('');

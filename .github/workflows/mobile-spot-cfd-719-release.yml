@@ -1,0 +1,58 @@
+name: Claude 719 Spot CFD mobile production-pinned release gate
+on:
+  pull_request:
+    branches:
+      - 'release/claude-mobile-futures-production-20261119'
+    paths:
+      - 'frontend/src/components/OrderForm.tsx'
+      - 'frontend/src/components/FuturesMobilePositions.css'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/pages/trade-terminal/**'
+      - 'scripts/qa-spot-mobile-terminal.cjs'
+      - '.github/workflows/mobile-spot-cfd-719-release.yml'
+  push:
+    branches:
+      - 'release/claude-mobile-719-production-pinned-20261120'
+permissions:
+  contents: read
+jobs:
+  mobile-terminals:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned project dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Build exact production-pinned frontend
+        run: npm run build --prefix frontend
+      - name: Mobile and trading presentation Jest regressions
+        run: npx jest --runInBand frontend/src/lib/__tests__/futuresUiPolish.test.ts frontend/src/lib/__tests__/i18nLanguageChunks.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/spotOrderEntry.test.ts
+      - name: Install isolated read-only Chromium runner
+        run: |
+          npm install --prefix /tmp/voltex-719-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-719-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Spot and CFD mobile QA (320 360 390 430 and desktop; no writes)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-719-browser/node_modules/playwright
+        run: node scripts/qa-spot-mobile-terminal.cjs --out output/qa-mobile-719-spot-cfd
+      - name: Preserve unchanged Futures phone behavior
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-719-browser/node_modules/playwright
+        run: |
+          node scripts/qa-futures-mobile-terminal.cjs --out output/qa-mobile-719-futures
+          node scripts/qa-futures-mobile-position-card.cjs --out output/qa-mobile-719-positions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-719-pinned-${{ github.sha }}
+          path: output/qa-mobile-719-*/**
+          retention-days: 7
+          if-no-files-found: warn

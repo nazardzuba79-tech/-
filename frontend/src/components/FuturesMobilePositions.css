@@ -3,8 +3,10 @@
  * (owner, 2026-11-18: «в точності скопіюй мобільну версію показу угод з Bybit»).
  *
  *   BTCUSDT Бесср.  [Лонг]  [Кросс 10.00x]                         ↗
- *   Нереализ. PnL (USDT)                                         ROI
- *   +3,077.97                                                +16.92%
+ *   Нереализ. PnL (USDT)
+ *   +3,077.97
+ *   (+16.92%)
+ *   ≈3,077.97 USD
  *   Размер (BTC)        Маржа (USDT)             Реализ. PnL (USDT)
  *   2.166               18,191.04                               0.00
  *   Цена Входа          Цена марк.                      Цена ликвид.
@@ -86,7 +88,11 @@
   #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col][data-col-unit]::before {
     content: attr(data-mobile-label) " (" attr(data-col-unit) ")";
   }
-  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col-unit] :is(.futures-position-unit, .futures-unrealized-unit) { display: none; }
+  /* Not `display:none`: the unit stays in the figure's own text for a screen reader and for anything that reads the cell,
+     it only takes no room on the line (the label above already names it). */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col-unit] :is(.futures-position-unit, .futures-unrealized-unit) { display: inline !important; font-size: 0 !important; line-height: 0 !important; letter-spacing: 0 !important; margin: 0 !important; padding: 0 !important; }
+  /* A unit that is the cell's own child would be a flex item and push its figure off the shared line by the row gap: it leaves the flow. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col-unit] > :is(.futures-position-unit, .futures-unrealized-unit) { position: absolute !important; width: 0; height: 0; overflow: hidden; }
   #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col-unit] .futures-position-realized[data-unit]::after { content: none; }
   /* The four parts of a native result are in the asset the P&L label above them names. */
   #archive-terminal-preview .futures-positions-panel .futures-position-row > td:is([data-col=net], [data-col=trading], [data-col=funding], [data-col=fees]) .futures-position-realized[data-unit]::after { content: none; }
@@ -111,8 +117,6 @@
   #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=qty] { color: var(--text-primary) !important; }
   #archive-terminal-preview .futures-positions-panel .futures-position-row > td:is([data-col=realized], [data-col=net], [data-col=fees]) .futures-position-pnl { align-items: flex-end; text-align: right; }
   #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col] :is(.futures-position-realized, .futures-position-pnl) { font-size: 14px; font-weight: 500; line-height: 20px; }
-  /* «≈… USD» repeats the figure beside a label that already names the unit; the card leaves it to the desktop row. */
-  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col] .futures-position-approx { display: none; }
 
   /* ── Header: contract, side, margin mode and leverage on one line ── */
   #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=contract] {
@@ -180,33 +184,20 @@
     font-weight: 600 !important;
   }
 
-  /* ── Unrealized P&L on the left, ROI on the right, both large ── */
-  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] {
-    grid-area: pnl;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 12px;
-    row-gap: 3px;
-    align-items: start;
-    justify-content: stretch;
+  /* ── Unrealized P&L: the amount large, its ROI on the next line, «≈ USD» under that — three lines of real text,
+        as the reference's position detail states them and as the desktop row does (owner, 2026-09-30). ── */
+  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized] { grid-area: pnl; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-unrealized {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 0; min-width: 0; max-width: 100%;
   }
-  #archive-terminal-preview .futures-positions-panel .futures-positions-table .futures-position-row > td[data-col=unrealized]::before { grid-column: 1; grid-row: 1; }
-  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-unrealized { display: contents; }
   #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-money {
-    grid-column: 1; grid-row: 2;
     font-size: 20px; font-weight: 600; line-height: 26px;
     white-space: normal; overflow-wrap: anywhere;
   }
-  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-roi { display: none; }
-  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-roi-side {
-    grid-column: 2; grid-row: 1 / span 2;
-    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
-    text-align: right;
-  }
-  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-roi-side i {
-    color: var(--text-tertiary); font-size: 11.5px; font-style: normal; font-weight: 400; line-height: 16px;
-  }
-  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-roi-side b { font-size: 20px; font-weight: 600; line-height: 26px; white-space: nowrap; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col=unrealized] .futures-position-roi { display: block; font-size: 14px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+  /* The side-by-side ROI of the first phone card (18 Nov) is not drawn: the bracketed one above is the figure. */
+  #archive-terminal-preview .futures-positions-panel .futures-position-row .futures-position-roi-side { display: none; }
+  #archive-terminal-preview .futures-positions-panel .futures-position-row > td[data-col] .futures-position-approx { display: block; color: var(--text-tertiary); font-size: 11.5px; font-weight: 400; line-height: 16px; white-space: nowrap; }
   /* The result card opens from the corner of the card, where Bybit keeps «Поделиться». */
   #archive-terminal-preview .futures-positions-panel .futures-position-row .archive-pnl-open {
     /* `grid-area: auto`: with the desktop cell's grid lines kept, an absolute box in a grid is laid out
