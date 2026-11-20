@@ -44,7 +44,7 @@ export function Footer() {
         <SocialRow label={t('footer.social')} soon={t('nav.botsSoon')} />
       </div>
       <p style={styles.disclaimer}>{t('footer.riskWarning')}</p>
-      <p style={styles.copyright}>{t('footer.rights')}</p>
+      <p style={styles.copyright}>© 2014–{new Date().getFullYear()} VOLTEX. {t('footer.rights')}</p>
     </footer>
   );
 }
