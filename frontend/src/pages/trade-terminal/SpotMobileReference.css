@@ -1,0 +1,264 @@
+/* Spot and CFD on a phone, in the layout the Futures phone terminal took from
+ * the owner's reference (FuturesMobileReference.css; owner, 2026-11-19: «щоб
+ * і спот, і CFD були в єдиному стилі, як і ф'ючерси»).
+ *
+ * The instrument row carries the «24h» figures key and the three workspaces
+ * as an icon switch; the Spot trade screen is the ticket on the left and a
+ * short order book on the right, with the order lists under them; «Ордера» is
+ * a full-height screen with its way back; the chart screen ends in «Купить» /
+ * «Продать», which open the ticket.
+ *
+ * Presentation only: every control is one these terminals already had. All
+ * rules are <=900px and scoped to .spot-terminal / .cfd-terminal. The `:is(#archive-terminal-preview, …)`
+ * head gives them the same weight the earlier Spot phone sheets use, so they settle the cascade by order.
+ */
+.terminal-mobile-orders-bar, .terminal-mobile-orders-open, .terminal-mobile-quick { display:none; }
+.terminal-mobile-tabs svg { display:none; }
+.terminal-mobile-tabs .terminal-mobile-tab-label { display:contents; font-weight:inherit; }
+.terminal-mobile-tabs .terminal-mobile-tab-label + span { display:none; }
+
+@media (max-width:900px) {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) { --sm-pad:12px; --sm-control:32px; --sm-radius:6px; --sm-field:var(--panel-alt,#222227); --sm-switch-width:126px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal { display:flex; flex-direction:column; }
+
+  /* ── The view switch: three icon keys hanging from a sticky line at the top of the terminal ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs {
+    position:sticky !important; top:0 !important; z-index:36; order:-1; align-self:stretch;
+    display:grid !important; grid-template-columns:repeat(3,calc(var(--sm-switch-width) / 3)); justify-content:end; gap:0;
+    width:auto; height:0 !important; min-height:0 !important; margin:0 !important; padding:0 var(--sm-pad) 0 0 !important; overflow:visible;
+    border:0 !important; background:transparent !important;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs button {
+    position:relative; display:flex; align-items:center; justify-content:center; gap:0;
+    min-width:0; min-height:36px !important; height:36px; margin-top:6px; padding:0 !important; border:0 !important; border-radius:0;
+    background:var(--sm-field) !important; color:var(--text-tertiary,#6a6e73) !important; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs button:first-child { border-radius:18px 0 0 18px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs button:last-child { border-radius:0 18px 18px 0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs button[aria-selected=true] { color:var(--text-primary,#fff) !important; border-radius:18px; box-shadow:inset 0 0 0 2px var(--sm-field), inset 0 0 0 20px #3b3b44; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs svg { display:block; position:relative; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs .terminal-mobile-tab-label { display:block; position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  /* The open-order count rides on the list glyph. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-tabs .terminal-mobile-tab-label + span {
+    display:block; position:absolute; top:1px; right:3px; min-width:14px; height:14px; padding:0 3px; border-radius:7px;
+    background:var(--accent,#f0b90b); color:#111; font-size:9px; line-height:14px; font-weight:700; text-align:center;
+  }
+
+  /* ── Spot instrument row ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar,
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar[data-mobile-details=true] {
+    position:sticky; top:0; z-index:34; order:0;
+    display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; grid-template-rows:48px !important; grid-auto-rows:auto; align-items:center;
+    column-gap:12px !important; row-gap:0 !important; min-height:48px !important; height:auto; padding:0 var(--sm-pad) !important; overflow:hidden;
+    background:var(--bg-primary,#000) !important; border:0 !important;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .pair-cluster { grid-column:1 / -1 !important; grid-row:1 !important; min-width:0; padding-right:calc(var(--sm-switch-width) + 56px); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .pair-selector { min-height:44px; gap:6px; padding:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .pair-selector > :not(.pair-identity):not(.pair-arrow) { display:none !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .pair-name { font-size:18px !important; line-height:22px !important; font-weight:700; letter-spacing:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .pair-asset { font-size:11px; line-height:14px; color:var(--text-tertiary,#6a6e73); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .spot-mobile-stats-toggle {
+    position:absolute; top:10px; right:calc(var(--sm-pad) + var(--sm-switch-width) + 8px); grid-column:auto !important; grid-row:auto !important;
+    display:flex; align-items:center; justify-content:center; gap:2px; width:auto; min-width:40px; height:28px; min-height:28px; padding:0 6px;
+    border:1px solid var(--border,#222227); border-radius:14px; background:transparent; color:var(--text-secondary,#9aa1ad); font-size:11px; font-weight:600; line-height:14px;
+  }
+  /* The trade screen states the price once, in the book; the figures come back on the chart screen and behind the key. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal:not([data-mobile-tab=chart]) .ticker-bar:not([data-mobile-details=true]) .ticker-item { display:none !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar[data-mobile-details=true] { position:relative; padding-bottom:8px !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item,
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item:nth-of-type(n+2) {
+    display:flex !important; flex-direction:row; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0 8px; grid-column:1 / -1 !important; grid-row:auto !important;
+    min-width:0; padding:2px 0; text-align:left;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item .label { display:inline !important; font-size:12px; line-height:18px; color:var(--text-tertiary,#6a6e73); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item .value { font-size:12px !important; line-height:18px !important; white-space:nowrap; }
+
+  /* Chart screen: last price with its change on the left, the day's high and low on the right, turnover under them. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar { position:relative; padding-bottom:8px !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item { display:none !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:is(:nth-of-type(2),:nth-of-type(3),:nth-of-type(4),:nth-of-type(5),:nth-of-type(7)) {
+    display:flex !important; flex-direction:row; align-items:baseline; justify-content:space-between; gap:8px; min-width:0; padding:0; text-align:left;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(2) { grid-column:1 !important; grid-row:2 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(3) { grid-column:1 !important; grid-row:3 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(4) { grid-column:2 !important; grid-row:2 !important; align-self:end; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(5) { grid-column:2 !important; grid-row:3 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(7) { grid-column:1 / -1 !important; grid-row:4 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(n+4) .label { display:inline !important; font-size:11px; line-height:16px; color:var(--text-tertiary,#6a6e73); white-space:nowrap; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(n+4) .value { font-size:11px !important; line-height:16px !important; white-space:nowrap; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .value.price { font-size:22px !important; line-height:28px !important; font-weight:700; white-space:nowrap; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart] .ticker-bar:not([data-mobile-details=true]) .ticker-item:nth-of-type(3) .value { font-size:12px !important; line-height:16px !important; white-space:nowrap; }
+
+  /* «График | Стакан | Рынки» as plain text tabs. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-chart-tabs { gap:20px !important; margin:0 !important; padding:0 var(--sm-pad) !important; border-radius:0 !important; background:transparent !important; box-shadow:inset 0 -1px 0 var(--border,#222227) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-chart-tabs button { flex:none !important; min-height:36px !important; padding:0 !important; border:0 !important; border-bottom:2px solid transparent !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; font-size:15px; font-weight:500; color:var(--text-tertiary,#6a6e73) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-chart-tabs button[aria-pressed=true] { color:var(--text-primary,#fff) !important; font-weight:700; border-bottom-color:var(--text-primary,#fff) !important; }
+
+  /* ── Spot trade screen: ticket left, book right ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .main-grid {
+    grid-template-columns:minmax(0,58fr) minmax(0,42fr); gap:0 10px; padding:4px var(--sm-pad) 12px; background:var(--panel,#101014);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > .order-form-area { grid-column:1; grid-row:1; background:transparent; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > .orderbook-area { grid-column:2; grid-row:1; background:transparent; }
+
+  /* Buy / Sell: one segmented pill across the ticket. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tabs {
+    display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 !important; min-height:var(--sm-control) !important; height:var(--sm-control); margin:0 0 8px !important; padding:0 !important; border:0 !important; border-radius:16px !important; background:var(--sm-field) !important; overflow:hidden; box-shadow:none !important;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tab {
+    min-height:var(--sm-control) !important; height:var(--sm-control) !important; padding:0 4px !important; border:0 !important; border-radius:16px !important; background:transparent; color:var(--text-tertiary,#6a6e73); font-size:14px !important; font-weight:600; box-shadow:none !important;
+  }
+  /* The chosen side takes the terminal's standard buy / sell colour; the action below keeps its own approved fill. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tab.buy.active { background:var(--color-buy,var(--buy,#06c167)) !important; color:#fff !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tab.sell.active { background:var(--color-sell,var(--sell,#f63649)) !important; color:#fff !important; }
+
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-type-select { margin:0 0 8px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-type-select select {
+    min-height:var(--sm-control); height:var(--sm-control); padding:0 28px 0 10px; border:0; border-radius:var(--sm-radius); background-color:var(--sm-field); background-position:right 10px center; font-weight:600;
+  }
+  /* The ticket as one column: available balance, price, quantity, slider, total, the action. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content { display:flex; flex-direction:column; gap:8px; padding:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > * { order:3; margin:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .order-summary { order:0; min-height:0 !important; padding:0 !important; border:0 !important; border-radius:0 !important; background:transparent !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .form-group { order:1; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .slider-container { order:1; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .submit-btn { order:4; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .info-section { order:5; }
+  /* «Доступно» over its figure, always two short lines: the row is the same height whatever the balance's length, so a
+     long eight-decimal balance on the sell side never moves the ticket (qa-vta-demo compares the two sides). */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .available-balance {
+    display:flex !important; flex-direction:column !important; flex-wrap:nowrap !important; align-items:flex-start !important; justify-content:flex-start; gap:0 !important; width:100%;
+    height:30px; min-height:30px !important; padding:0 !important; border:0 !important; background:transparent !important; font-size:10px; line-height:12px; color:var(--text-tertiary,#6a6e73);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount { margin:0; max-width:100%; font-size:12px; line-height:18px; font-weight:500; color:var(--text-primary,#fff); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] :is(.order-summary,.available-balance) { box-shadow:none !important; outline:0 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-group { gap:2px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .input-group { min-height:40px; border:0; border-radius:var(--sm-radius); background:var(--sm-field); }
+  /* The size slider with its five stops as quiet tick labels under it. They are the same pressable keys as before
+     (the listing and VTA checks press them on a phone), drawn as a scale instead of five boxes; 28px tall, the least
+     a button on these phone screens may be (qa-spot-cfd-terminal). */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels { display:flex !important; justify-content:space-between; gap:0 !important; padding:0 !important; margin:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button {
+    flex:none !important; min-width:28px; min-height:28px !important; height:28px; padding:0 2px !important; border:0 !important; border-radius:0 !important;
+    background:transparent !important; box-shadow:none !important; color:var(--text-tertiary,#6a6e73); font-size:10px !important; line-height:28px; font-weight:500;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels button[aria-pressed=true] { color:var(--accent,#f0b90b); font-weight:700; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .slider-container { min-height:28px; padding:0; }
+  /* The action: one pill in the side's colour. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .submit-btn {
+    min-height:40px !important; height:40px !important; padding:0 8px !important; border-radius:20px !important; font-size:15px; font-weight:700; line-height:20px; white-space:nowrap;
+  }
+
+  /* The short book. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-header { order:9; min-height:0; padding:8px 0 0; border:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-title { display:none; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-header-actions { width:100%; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .ob-group-select { width:100%; min-height:var(--sm-control); height:var(--sm-control); border:0; border-radius:var(--sm-radius); background-color:var(--sm-field); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-col-headers { padding:2px 0; font-size:10px; line-height:13px; color:var(--text-tertiary,#6a6e73); border:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .ob-row { padding-inline:0 2px; font-size:13px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-spread { padding:2px 0; border:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .ob-spread-price { font-size:17px; line-height:22px; font-weight:700; }
+
+  /* ── The order lists under the ticket ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .bottom-panel { border-top:0; background:var(--panel,#101014); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal-account-header { display:flex; flex-wrap:nowrap; align-items:center; padding:0 var(--sm-pad); gap:4px; border-bottom:1px solid var(--border,#222227); background:var(--panel,#101014); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tabs { flex:1 1 0; min-width:0; min-height:40px; gap:0 18px; padding:0 20px 0 0; border:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab { flex:none; min-height:40px !important; padding:0 !important; font-size:15px; font-weight:500; color:var(--text-tertiary,#6a6e73); border-bottom:2px solid transparent; background:transparent; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab.active { color:var(--text-primary,#fff); font-weight:700; border-bottom-color:var(--text-primary,#fff); }
+  /* «Ордера(1)»: the short name, the count in brackets beside it. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab[data-mobile-label] { font-size:0 !important; gap:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab[data-mobile-label]::before { content:attr(data-mobile-label); font-size:15px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab .badge { display:inline !important; min-width:0 !important; width:auto !important; height:auto !important; margin:0 !important; padding:0 !important; border:0 !important; border-radius:0 !important; background:transparent !important; color:inherit !important; font-size:15px !important; font-weight:inherit !important; line-height:inherit !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab .badge::before { content:"(" !important; display:inline !important; position:static !important; width:auto !important; height:auto !important; background:none !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tab .badge::after { content:")" !important; display:inline !important; position:static !important; width:auto !important; height:auto !important; background:none !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .terminal-mobile-orders-open {
+    display:inline-flex; flex:none; align-items:center; justify-content:center; width:36px; min-width:36px; height:40px; min-height:40px; padding:0; border:0; background:transparent; color:var(--text-secondary,#9aa1ad);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal-account-header > .terminal-account-toggle { display:none; }
+  /* «Отменить все» takes the right end of a second row, where the Futures phone keeps «Закрыть все». */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal-account-header { align-items:flex-start; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-tabs { flex-wrap:wrap; overflow:visible; -webkit-mask-image:none; mask-image:none; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-actions { flex:1 0 100%; display:flex; justify-content:flex-end; min-height:36px; margin:0; padding:0; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .bottom-action-btn { min-height:36px; padding:0 2px; border:0; background:transparent; color:var(--text-primary,#fff); font-size:13px; font-weight:600; }
+
+  /* Field captions stay over their fields: the stop and OCO tickets put hints and a second caption in the same group,
+     which a caption drawn inside the field would cover. They are small and quiet, as the Futures captions are. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .form-label { font-size:10px; line-height:12px; color:var(--text-tertiary,#6a6e73); }
+
+  /* ── Order cards (open orders and history): the pair in the head, the time under it, then label left, figure right — the Futures phone card ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody { display:grid !important; gap:10px; padding:10px var(--sm-pad) 12px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] { display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:8px !important; padding:12px 14px !important; border:0 !important; border-radius:10px !important; background:var(--sm-field) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td { display:flex !important; flex-direction:row !important; align-items:baseline !important; justify-content:flex-end !important; gap:4px; min-width:0; grid-column:auto !important; padding:0 !important; border:0 !important; font-size:13px; line-height:18px; text-align:right; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td::before { content:attr(data-mobile-label); flex:none; margin:0 auto 0 0; padding-right:8px; font-size:12px; line-height:18px; color:var(--text-tertiary,#6a6e73); text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td.spot-order-pair { order:-2; justify-content:flex-start !important; font-size:16px; line-height:22px; font-weight:700; text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td.spot-order-time { order:-1; justify-content:flex-start !important; margin-top:-6px; padding-bottom:8px !important; border-bottom:1px solid var(--border,#222227) !important; font-size:12px; color:var(--text-tertiary,#6a6e73); text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td:is(.spot-order-pair,.spot-order-time,.spot-order-action)::before { content:none; display:none; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] > td.spot-order-action { justify-content:stretch !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .spot-orders-table tbody tr[data-order-id] .cancel-btn { width:100%; min-height:36px; border-radius:18px; }
+
+  /* ── CFD: the same instrument row and ticket language (no order book: this market has none) ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar {
+    position:relative; order:0; display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; grid-template-rows:48px !important; grid-auto-rows:auto; align-items:center;
+    gap:0 12px !important; min-height:48px !important; height:auto !important; padding:0 var(--sm-pad) 8px !important; overflow:hidden; background:var(--bg-primary,#000) !important; border:0 !important;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-pair-cluster { grid-column:1 / -1 !important; grid-row:1 !important; min-width:0; padding-right:calc(var(--sm-switch-width) + 8px); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar .cfd-symbol { font-size:18px; line-height:22px; font-weight:700; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar .cfd-instrument-name { font-size:11px; line-height:14px; color:var(--text-tertiary,#6a6e73); }
+  /* Last price large on the left; the day's high and low on the right. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-ticker-last { grid-column:1 !important; grid-row:2 / 4 !important; align-self:start; justify-self:start; display:flex !important; flex-wrap:wrap; align-items:baseline; gap:0 6px; padding:0; text-align:left; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-ticker-last { justify-content:flex-start !important; justify-items:start; text-align:left !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-ticker-last > * { margin:0 !important; text-align:left !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-ticker-last .cfd-ticker-price { font-size:22px !important; line-height:28px !important; font-weight:700; white-space:nowrap; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > :is(.cfd-ticker-day-high,.cfd-ticker-day-low) {
+    grid-column:2 !important; display:flex !important; flex-direction:row; align-items:baseline; justify-content:space-between; gap:8px; min-width:0; padding:0; font-size:11px; line-height:16px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-ticker-day-high { grid-row:2 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > .cfd-ticker-day-low { grid-row:3 !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .cfd-ticker-bar > :is(.cfd-ticker-day-high,.cfd-ticker-day-low) > * { font-size:11px !important; line-height:16px !important; white-space:nowrap; text-transform:none; letter-spacing:0; }
+
+  /* The ticket: one column, the side as a segmented pill, the action as a pill in the side's colour. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-order-panel { padding:4px var(--sm-pad) 12px; gap:8px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-sideTabs {
+    display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 !important; min-height:36px !important; height:36px; margin:0 !important; padding:0 !important;
+    border:0 !important; border-radius:18px !important; background:var(--sm-field) !important; overflow:hidden; box-shadow:none !important;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-sideTab {
+    min-height:36px !important; height:36px !important; padding:0 4px !important; border:0 !important; border-radius:18px !important; background:transparent; color:var(--text-tertiary,#6a6e73); font-size:14px !important; font-weight:600; box-shadow:none !important;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-sideTab.buy.active { background:var(--buy,#06c167) !important; color:#fff !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-sideTab.sell.active { background:var(--sell,#f63649) !important; color:#fff !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-input { min-height:40px; border:0 !important; border-radius:var(--sm-radius) !important; background:var(--sm-field) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-infoBox { gap:2px; padding:6px 8px !important; border:1px solid var(--border,#222227) !important; border-radius:var(--sm-radius) !important; background:transparent !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-infoBox .cfd-infoRow { min-height:16px; font-size:11px; line-height:16px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-submit {
+    min-height:40px !important; height:40px !important; padding:0 8px !important; border:0 !important; border-radius:20px !important; color:#fff !important; font-size:15px !important; font-weight:700; line-height:20px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-submit.buy { background:var(--buy,#06c167) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-submit.sell { background:var(--sell,#f63649) !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-submit:disabled { opacity:.55; }
+
+  /* ── «Ордера» / «Позиции»: a full-height screen with its own title row ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal[data-mobile-tab=account] :is(.ticker-bar,.cfd-ticker-bar) { display:none !important; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal[data-mobile-tab=account] .terminal-mobile-orders-bar {
+    display:grid; grid-template-columns:44px minmax(0,1fr); align-items:center; height:48px; padding:0 calc(var(--sm-pad) + var(--sm-switch-width)) 0 4px; background:var(--bg-primary,#000);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-orders-bar button { display:flex; align-items:center; justify-content:center; width:44px; height:44px; min-height:44px; padding:0; border:0; background:transparent; color:var(--text-primary,#fff); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) .terminal-mobile-orders-bar strong { font-size:18px; line-height:24px; font-weight:700; color:var(--text-primary,#fff); }
+
+  /* ── Chart screen: «Купить» and «Продать» under the chart open the ticket ── */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart] .terminal-mobile-quick {
+    order:9; position:sticky; bottom:calc(var(--mobile-nav-space,76px) + var(--mobile-keyboard-inset,0px)); z-index:30;
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; padding:8px var(--sm-pad); background:var(--panel,#101014); border-top:1px solid var(--border,#222227);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal-mobile-quick button { min-width:0; min-height:44px; height:44px; padding:0 8px; border:0; border-radius:22px; color:#fff; font-size:15px; font-weight:700; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal-mobile-quick button.buy { background:var(--buy,#06c167); }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal-mobile-quick button.sell { background:var(--sell,#f63649); }
+}
+@media (max-width:389px) {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .ticker-bar .pair-name { font-size:16px; }
+}
+@media (max-width:359px) {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio:is(.spot-terminal,.cfd-terminal) { --sm-pad:8px; --sm-switch-width:114px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .main-grid { gap:0 8px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.market-reference.terminal-studio.spot-terminal .terminal[data-mobile-tab=trade] .ob-row { font-size:12px; }
+}

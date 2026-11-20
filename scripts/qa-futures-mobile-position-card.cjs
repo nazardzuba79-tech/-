@@ -75,6 +75,8 @@ const read = page => page.evaluate(() => {
       roiSide: (() => { const el = row.querySelector('.futures-position-roi-side'); return el && visible(el) ? { text: el.querySelector('b').textContent.trim(), label: el.querySelector('i').textContent.trim(), ...rect(el) } : null; })(),
       roiBracketVisible: (() => { const el = row.querySelector('.futures-position-roi'); return !!el && visible(el); })(),
       approxVisible: [...row.querySelectorAll('.futures-position-approx')].some(visible),
+      roiText: row.querySelector('.futures-position-roi')?.textContent.trim() ?? null,
+      resultLines: ['.futures-unrealized .futures-position-money', '.futures-unrealized .futures-position-roi', '.futures-unrealized .futures-position-approx'].map(sel => row.querySelector(sel)).filter(el => el && visible(el)).map(el => { const b = el.getBoundingClientRect(); return { top: b.top, bottom: b.bottom }; }),
       unitsInline: [...row.querySelectorAll('td[data-col-unit] .futures-position-unit, td[data-col-unit] .futures-unrealized-unit')].some(visible),
       protection: row.querySelector('.futures-mobile-protection-values')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
       actions, outside, overlaps,
@@ -124,14 +126,15 @@ const read = page => page.evaluate(() => {
       const state = await read(page), [btc, eth, pepe] = state.cards;
       view.cardHeights = state.cards.map(c => Math.round(c.rect.height));
       ok(`${P}: three position cards, laid out as a grid, without a horizontal page scroll`, state.cards.length === 3 && state.cards.every(c => c.display === 'grid') && state.pageOverflow <= 1, { cards: state.cards.length, overflow: state.pageOverflow });
-      // The card this replaced measured 570px for the same position at 390px. 370, not 350: since 2026-11-19 the last label is the
-      // reference's «Ориент. цена ликвидации», which takes two lines on a 360px phone.
-      ok(`${P}: a card is compact (the ordinary one under 370px)`, btc.rect.height < 370, view.cardHeights);
+      // The card this replaced measured 570px for the same position at 390px. 410, not 350: since 2026-11-19 the last label is the
+      // reference's «Ориент. цена ликвидации» (two lines on a 360px phone) and the result is three lines of text again.
+      ok(`${P}: a card is compact (the ordinary one under 410px)`, btc.rect.height < 410, view.cardHeights);
 
       ok(`${P}: header — contract, side tag, margin mode with leverage`, btc.ticker === 'BTCUSDT' && btc.sideTag?.text === 'Лонг' && btc.sideTag.width > 20 && /^Кросс 10\.00x$/.test(btc.mode)
         && eth.sideTag?.text === 'Шорт' && /^Изолированная 5\.00x$/.test(eth.mode) && btc.sideTag.color !== eth.sideTag.color, { btc: [btc.ticker, btc.sideTag?.text, btc.mode], eth: [eth.sideTag?.text, eth.mode] });
-      ok(`${P}: P&L on the left and ROI on the right under its own label, no brackets, no repeated «≈ USD»`, btc.money === '+3,077.97' && btc.roiSide?.text === '+16.92%' && btc.roiSide.label === 'ROI'
-        && !btc.roiBracketVisible && !btc.approxVisible && btc.roiSide.right > btc.rect.right - 20, { money: btc.money, roi: btc.roiSide?.text });
+      // 2026-11-19: three lines of real text — the amount, its bracketed ROI, «≈ USD» — as the desktop row and the native large-number checks state them.
+      ok(`${P}: the result is the amount, its ROI on the next line and «≈ USD» under it`, /^\+3,077\.97( USDT)?$/.test(btc.money) && btc.roiBracketVisible && btc.roiText === '(+16.92%)' && btc.roiSide === null && btc.approxVisible
+        && btc.resultLines.length === 3 && btc.resultLines[1].top >= btc.resultLines[0].bottom - 1 && btc.resultLines[2].top >= btc.resultLines[1].bottom - 1, { money: btc.money, roi: btc.roiText, lines: btc.resultLines.length });
       const unit = width >= 360 ? ' (USDT)' : '';
       ok(`${P}: labels name the figure and its unit; the unit is not repeated beside the figure`, btc.labels.unrealized === 'Нереализ. PnL (USDT)' && btc.labels.qty === 'Кол-во (BTC)' && btc.labels.margin === 'Маржа (USDT)'
         && btc.labels.realized === `Реализ. PnL${unit}` && btc.labels.entry === 'Цена Входа' && btc.labels.mark === 'Цена маркировки' && btc.labels.liq === 'Ориент. цена ликвидации' && !btc.unitsInline, btc.labels);

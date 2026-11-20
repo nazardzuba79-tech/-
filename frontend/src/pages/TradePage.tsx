@@ -43,7 +43,7 @@ import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { useCfdPracticePositionLines } from '../lib/useCfdPracticePositions';
 import { rememberTradingMode } from '../lib/tradingMode';
-import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { PanelLeftOpen, PanelRightOpen, ArrowLeft, CandlestickChart, ClipboardList, ReceiptText } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/MarketReferenceTerminal.css';
@@ -66,6 +66,8 @@ import './trade-terminal/CfdWorkspace.css';
 import './trade-terminal/SpotMobileCompact.css';
 import './trade-terminal/SpotMobilePhone.css';
 import './trade-terminal/TerminalMobileHeader.css';
+// Spot and CFD on a phone in the Futures phone layout (owner, 2026-11-19).
+import './trade-terminal/SpotMobileReference.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
@@ -145,6 +147,7 @@ function ActiveTradePage() {
   // "not chosen yet": the default follows the pair until the trader picks.
   const [mobileTabChoice, setMobileTab] = useState<'chart' | 'trade' | 'account' | null>(null);
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
+  const [sideRequest, setSideRequest] = useState<{ side: 'BUY' | 'SELL'; seq: number } | null>(null);
   const mobileTabsRef = useRef<HTMLDivElement>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   // Reference chrome: the tab badge and the Cancel All action both need the
@@ -410,7 +413,12 @@ function ActiveTradePage() {
             selectMobileTab(next);
             mobileTabsRef.current?.querySelector<HTMLButtonElement>(`#mobile-trade-${next}`)?.focus();
           }}
-          onClick={() => selectMobileTab(id)}>{t(label)}</button>
+          onClick={() => selectMobileTab(id)}>
+          {/* Phone (owner, 2026-11-19: Spot and CFD in the Futures phone style): the three workspaces are an icon
+              switch in the instrument row. The words stay in the button for a screen reader; the sheet hides them. */}
+          {id === 'chart' ? <CandlestickChart size={18} aria-hidden="true" /> : id === 'trade' ? <ReceiptText size={18} aria-hidden="true" /> : <ClipboardList size={18} aria-hidden="true" />}
+          <b className="terminal-mobile-tab-label">{t(label)}</b>{id === 'account' && marketType !== 'cfd' && !!openOrderCount && <span>{openOrderCount}</span>}
+        </button>
       ))}
     </div>
   );
@@ -443,6 +451,11 @@ function ActiveTradePage() {
             </section>
           </main>
           <div className="cfd-bottom-panel" data-mobile-account-panel>
+            {/* Phone, «Позиции» screen: its own title row with the way back. */}
+            <div className="terminal-mobile-orders-bar">
+              <button type="button" aria-label={t('nav.trade')} onClick={() => selectMobileTab('trade')}><ArrowLeft size={22} aria-hidden="true" /></button>
+              <strong>{t('futures.positions')}</strong>
+            </div>
             <CfdPositionsPanel refreshKey={ordersRefreshKey} tickers={cfdTickers} />
           </div>
         </div>
@@ -455,6 +468,7 @@ function ActiveTradePage() {
   const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);
   const demoLedger = demoPair && (demoMode === 'trader' || demoMode === 'silent') ? demoMode : null;
   const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoPair ? demoMode : 'off'}
+    sideRequest={sideRequest}
     awaitingPair={!testPair && !venueSnapshot.tickers.has(pair.toUpperCase()) && (!managedCatalogue.loaded || managedCatalogue.error)}
     presentationOnly={testMarket.asset?.state.phase === 'live' && testMarket.asset.provenance?.origin === 'ORIGINAL_GENERATIVE'} />;
   return (
@@ -529,6 +543,11 @@ function ActiveTradePage() {
           <div className="orders-resize-handle" role="separator" tabIndex={0} aria-label="Высота панели ордеров" aria-orientation="horizontal" aria-valuemin={136} aria-valuemax={360} aria-valuenow={ordersHeight} onPointerDown={startOrdersResize} onKeyDown={event => {
             if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizeOrders(event.key === 'ArrowUp' ? 24 : -24); }
           }} />
+          {/* Phone, «Ордера» screen: its own title row with the way back to the ticket. */}
+          <div className="terminal-mobile-orders-bar">
+            <button type="button" aria-label={t('nav.trade')} onClick={() => selectMobileTab('trade')}><ArrowLeft size={22} aria-hidden="true" /></button>
+            <strong>{t('trade.mobileTabOrders')}</strong>
+          </div>
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label="Ордера и активы">
             {BOTTOM_TABS.map((tab) => (
@@ -536,6 +555,8 @@ function ActiveTradePage() {
                 key={tab.id}
                 role="tab"
                 id={`spot-tab-${tab.id}`}
+                /* A phone names the open-orders tab «Ордера», as the Futures phone tab row does (the sheet draws it). */
+                data-mobile-label={tab.id === 'open' ? t('trade.mobileTabOrders') : undefined}
                 aria-selected={bottomTab === tab.id}
                 aria-controls="spot-bottom-content"
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
@@ -554,6 +575,9 @@ function ActiveTradePage() {
               </div>
             )}
           </div>
+          {/* Phone: the list glyph at the end of the tab row opens the «Ордера» screen. */}
+          <button type="button" className="terminal-mobile-orders-open" aria-label={t('trade.mobileTabOrders')} title={t('trade.mobileTabOrders')}
+            onClick={() => { selectMobileTab('account'); accountPanel.reveal(); }}><ClipboardList size={18} aria-hidden="true" /></button>
           {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="spot-bottom-content" />}
           </div>
 
@@ -568,6 +592,11 @@ function ActiveTradePage() {
             {bottomTab === 'orderHistory' && (pair === 'VTA/USDT' ? <VtaSpotPanels history refreshKey={ordersRefreshKey} /> : demoLedger ? <DemoSpotOrders key={demoLedger} history mode={demoLedger} pair={pair} refreshKey={ordersRefreshKey} /> : <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />)}
             {bottomTab === 'assets' && (pair === 'VTA/USDT' ? <VtaSpotPanels refreshKey={ordersRefreshKey} /> : demoLedger ? <DemoSpotAssets key={demoLedger} mode={demoLedger} refreshKey={ordersRefreshKey} /> : <AssetsPanel compact refreshKey={ordersRefreshKey} />)}
           </div>
+        </div>
+        {/* Phone, chart screen: «Купить» and «Продать» under the chart open the ticket on that side. They submit nothing. */}
+        <div className="terminal-mobile-quick" role="group" aria-label={t('nav.trade')}>
+          {(['BUY', 'SELL'] as const).map(next => <button type="button" key={next} className={next === 'BUY' ? 'buy' : 'sell'} data-quick-side={next}
+            onClick={() => { setSideRequest(previous => ({ side: next, seq: (previous?.seq ?? 0) + 1 })); selectMobileTab('trade'); }}>{t(next === 'BUY' ? 'trade.buy' : 'trade.sell')}</button>)}
         </div>
       </div>
     </div>
