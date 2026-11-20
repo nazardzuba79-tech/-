@@ -1355,7 +1355,7 @@ export const ES: Record<Key, string> = {
   'footer.risk': 'Divulgación de riesgos',
   'footer.support': 'Soporte',
   'footer.social': 'Redes sociales',
-  'footer.rights': '© 2026 VOLTEX. Todos los derechos reservados.',
+  'footer.rights': 'Todos los derechos reservados.',
   'footer.riskWarning': 'El trading de criptomonedas conlleva un alto nivel de riesgo y puede no ser adecuado para todos los inversores. El valor de los activos puede fluctuar significativamente. Opera solo con fondos que puedas permitirte perder.',
   'nav.futures': 'Futuros',
   'marketing.eyebrow': 'Exchange de criptomonedas de nivel institucional',
