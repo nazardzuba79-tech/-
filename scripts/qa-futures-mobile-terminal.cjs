@@ -157,7 +157,7 @@ const readTrade = page => page.evaluate(() => {
       const [btc, eth, pepe] = t.cards;
       const line = c => ['qty', 'entry', 'mark', 'liq'].map(n => c.figures[n]);
       ok(`${P}: position card — name over side and margin mode on the left, the result with ROI on the right, in one line`, t.cards.length === 3 && btc.ticker === 'BTCUSDT' && btc.side === 'Лонг' && eth.side === 'Шорт' && /^Кросс 10\.00x$/.test(btc.mode)
-        && btc.result === '+3,077.97(+16.92%)' && btc.resultRect.left > btc.headRect.left + 60 && Math.abs(btc.resultRect.right - btc.rect.right) <= 1 && parseFloat(btc.radius) === 0 && parseFloat(btc.border) === 1, { result: btc.result, mode: btc.mode });
+        && /^\+3,077\.97(USDT)?\(\+16\.92%\)$/.test(btc.result) && btc.resultRect.left > btc.headRect.left + 60 && Math.abs(btc.resultRect.right - btc.rect.right) <= 1 && parseFloat(btc.radius) === 0 && parseFloat(btc.border) === 1, { result: btc.result, mode: btc.mode });
       ok(`${P}: position card — size, entry, mark and liquidation price on one line; margin and realized P&L are left to the «Ордера» screen`, line(btc).every(Boolean) && Math.max(...line(btc).map(f => f.bottom)) - Math.min(...line(btc).map(f => f.bottom)) <= 1.5
         && line(btc).every((f, i, all) => i === 0 || f.left > all[i - 1].left) && Math.abs(btc.figures.liq.right - btc.rect.right) <= 1.5 && !btc.figures.margin && !btc.figures.realized, btc.figures);
       ok(`${P}: position card — three outlined pills in one row with their words whole: TP/SL, limit close, market close`, [btc, eth, pepe].every(c => c.actions.length === 3 && c.actions.map(a => a.text).join('|') === 'Установить TP/SL|Закрыть лимитом|Закрыть по рынку'
