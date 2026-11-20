@@ -33,8 +33,6 @@ jobs:
           npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Build exact production-pinned frontend
         run: npm run build --prefix frontend
-      - name: Mobile and trading presentation Jest regressions
-        run: npx jest --runInBand frontend/src/lib/__tests__/futuresUiPolish.test.ts frontend/src/lib/__tests__/i18nLanguageChunks.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/spotOrderEntry.test.ts
       - name: Install isolated read-only Chromium runner
         run: |
           npm install --prefix /tmp/voltex-719-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
@@ -49,6 +47,8 @@ jobs:
         run: |
           node scripts/qa-futures-mobile-terminal.cjs --out output/qa-mobile-719-futures
           node scripts/qa-futures-mobile-position-card.cjs --out output/qa-mobile-719-positions
+      - name: Mobile and trading presentation Jest regressions
+        run: npx jest --runInBand frontend/src/lib/__tests__/futuresUiPolish.test.ts frontend/src/lib/__tests__/i18nLanguageChunks.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/spotOrderEntry.test.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
