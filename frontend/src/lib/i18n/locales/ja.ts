@@ -1355,7 +1355,7 @@ export const JA: Record<Key, string> = {
   'footer.risk': 'リスク開示',
   'footer.support': 'サポート',
   'footer.social': 'ソーシャル',
-  'footer.rights': '© 2026 VOLTEX. 無断複写・転載を禁じます。',
+  'footer.rights': '無断複写・転載を禁じます。',
   'footer.riskWarning': '暗号資産取引には高いリスクが伴い、すべての投資家に適しているとは限りません。資産価値は大きく変動する可能性があります。失っても構わない資金でのみ取引してください。',
   'nav.futures': '先物',
   'marketing.eyebrow': '機関投資家グレードの暗号資産取引所',
