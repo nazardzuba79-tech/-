@@ -1367,7 +1367,7 @@ export const EN: Record<Key, string> = {
   'footer.risk': 'Risk Disclosure',
   'footer.support': 'Support',
   'footer.social': 'Social',
-  'footer.rights': '© 2026 VOLTEX. All rights reserved.',
+  'footer.rights': 'All rights reserved.',
   'footer.riskWarning':
     'Cryptocurrency trading carries a high level of risk and may not be suitable for all investors. Asset values can fluctuate significantly. Only trade with funds you can afford to lose.',
 

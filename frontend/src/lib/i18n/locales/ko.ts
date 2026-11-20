@@ -1355,7 +1355,7 @@ export const KO: Record<Key, string> = {
   'footer.risk': '위험 고지',
   'footer.support': '고객센터',
   'footer.social': '소셜',
-  'footer.rights': '© 2026 VOLTEX. 모든 권리 보유.',
+  'footer.rights': '모든 권리 보유.',
   'footer.riskWarning': '암호화폐 거래는 높은 수준의 위험을 수반하며 모든 투자자에게 적합하지 않을 수 있습니다. 자산 가치는 크게 변동할 수 있습니다. 손실을 감당할 수 있는 자금으로만 거래하세요.',
   'nav.futures': '선물',
   'marketing.eyebrow': '기관급 암호화폐 거래소',

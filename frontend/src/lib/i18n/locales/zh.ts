@@ -1366,7 +1366,7 @@ export const ZH: Record<Key, string> = {
   'footer.risk': '风险披露',
   'footer.support': '帮助与支持',
   'footer.social': '社交媒体',
-  'footer.rights': '© 2026 VOLTEX. 保留所有权利。',
+  'footer.rights': '保留所有权利。',
   'footer.riskWarning': '加密货币交易存在高风险,并非适合所有投资者。资产价值可能大幅波动。请仅使用你能承受损失的资金进行交易。',
 
   'nav.futures': '合约',
