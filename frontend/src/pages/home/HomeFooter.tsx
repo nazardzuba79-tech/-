@@ -86,8 +86,8 @@ export function HomeFooter() {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-white/6 pt-5 text-[11.5px] text-faint">
-          {/* Current year, read at render — never a hardcoded one. */}
-          <span>© {new Date().getFullYear()} VOLTEX. {t('home.footer.rights')}</span>
+          {/* Owner-requested 2014 start year (provenance pending confirmation); end year read at render. */}
+          <span>© 2014–{new Date().getFullYear()} VOLTEX. {t('home.footer.rights')}</span>
           <span className="ml-auto max-w-[620px] leading-relaxed">
             {t('home.footer.riskNote')}
           </span>
