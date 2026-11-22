@@ -94,6 +94,7 @@ import { nativeWithdrawableRows } from './private-trading/native/withdrawable';
 import { portfolioRouter } from './api/routes/portfolio';
 import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
+import { tradingBotCreatorsRouter } from './api/routes/tradingBotCreators';
 import { copyPerformanceRouter } from './api/routes/copyPerformance';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
@@ -369,6 +370,7 @@ app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffor
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
+app.use('/api/v1', tradingBotCreatorsRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService, marketUniverse));
 app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));

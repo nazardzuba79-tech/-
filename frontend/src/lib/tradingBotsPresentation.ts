@@ -2,8 +2,10 @@
  * performance, backtests, forecasts or an execution engine. Never feed these
  * values into balances, financial calculations or trading endpoints. */
 export type BotCategory = 'grid' | 'dca' | 'trend' | 'portfolio';
+export type BotCreator = { displayName: string | null; avatarUrl: string | null };
 export type BotDefinition = {
   id: string; name: string; mark: string; symbol: string; category: BotCategory;
+  creatorName?: string;
   strategy: string; description: string; detail: string; minimum: number;
   risk: 'Умеренный' | 'Высокий'; baseRoi: number;
 };
@@ -21,9 +23,9 @@ export const BOT_CATALOGUE: readonly BotDefinition[] = [
   { id: 'delta', name: 'Delta Balance', mark: 'DB', symbol: 'BTC + ETH', category: 'portfolio', strategy: 'Баланс позиций', minimum: 10000, risk: 'Высокий', baseRoi: 134,
     description: 'Сочетает спотовые и фьючерсные позиции в одной стратегии.',
     detail: 'Распределяет экспозицию между двумя рынками. Хеджирование не исключает риски финансирования, комиссий и исполнения.' },
-  { id: 'range', name: 'Range Trader', mark: 'RT', symbol: 'XRP / USDT', category: 'grid', strategy: 'Адаптивная сетка', minimum: 12500, risk: 'Умеренный', baseRoi: 178,
-    description: 'Работает с короткими колебаниями XRP на боковом рынке.',
-    detail: '36 уровней сетки с пересмотром границ диапазона. Перед изменением параметров проверяются открытые позиции и доступный бюджет.' },
+  { id: 'range', name: 'Thomas Quant AI', mark: 'TQ', symbol: 'XRP / USDT', category: 'trend', strategy: 'Количественный импульс', creatorName: 'Thomas', minimum: 12500, risk: 'Умеренный', baseRoi: 178,
+    description: 'В центре стратегии — сила ценового импульса XRP и глубина откатов.',
+    detail: 'Количественный подход к динамике XRP: направление движения рассматривается вместе с волатильностью. Для оценки результата за период сравнивайте доходность с максимальной просадкой.' },
   { id: 'balance', name: 'Smart Rebalance', mark: 'SR', symbol: 'BTC · ETH · SOL · BNB · XRP', category: 'portfolio', strategy: 'Ребалансировка', minimum: 15000, risk: 'Умеренный', baseRoi: 166,
     description: 'Поддерживает выбранные доли пяти активов в портфеле.',
     detail: 'Возвращает веса активов к целевым при отклонении на пять процентных пунктов. Рыночный риск портфеля сохраняется.' },

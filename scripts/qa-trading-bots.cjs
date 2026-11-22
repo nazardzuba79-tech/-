@@ -10,6 +10,7 @@ const OUT = path.resolve(process.env.QA_OUT || 'docs/qa/trading-bots');
 const PAIRS = ['BTC/USDT','ETH/USDT','SOL/USDT'];
 const CANDLES=Array.from({length:120},(_,i)=>({time:Math.floor(Date.now()/1000)-(120-i)*60,open:84800,high:84950,low:84700,close:84890,volume:12}));
 const app = express();
+app.get('/api/v1/trading-bots/creators', (_q,r)=>r.json({creators:{range:{displayName:'Thomas QA',avatarUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII='}}}));
 app.get('/api/v1/me', (_q,r)=>r.json({id:'qa',displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin:false,role:'USER'}));
 app.get('/api/v1/futures/config',(_q,r)=>r.json({symbols:PAIRS,minLeverage:1,maxLeverage:100,leverageStep:1,fundingIntervalHours:8,highLeverageWarningThreshold:25,leverageTiers:[{notionalCap:null,maxLeverage:100,maintenanceMarginRate:0.005,maintenanceAmount:0}]}));
 app.get('/api/v1/market/universe',(_q,r)=>r.json({available:true,value:{instruments:PAIRS.map(p=>({symbol:p,providerSymbol:p.replace('/',''),marketType:'linear_perpetual',baseAsset:p.split('/')[0],quoteAsset:'USDT',settleAsset:'USDT',status:'Trading',fundingIntervalMinutes:480}))}}));
@@ -64,6 +65,13 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       page.on('pageerror',e=>errors.push(e.message));
       await page.goto(base+'/trading-bots'); await page.locator('[data-bot]').first().waitFor();
       check(width+': seven bots',await page.locator('[data-bot]').count()===7);
+      const quant = page.locator('[data-bot="range"]');
+      await quant.locator('.vb-creator').getByText('Thomas QA').waitFor();
+      check(width+': Quant identity on its own card',await quant.getByRole('heading',{name:'Thomas Quant AI'}).count()===1 && await page.locator('.vb-bot .vb-creator').getByText('Thomas QA').count()===1);
+      check(width+': profile avatar loaded',await quant.locator('.vb-creator img').evaluate(async image=>{await image.decode();return image.naturalWidth===1;}));
+      await quant.locator('.vb-open').click();
+      check(width+': modal uses the same creator',await page.locator('dialog .vb-creator').getByText('Thomas QA').isVisible());
+      await page.locator('dialog .vb-close').click();
       const layout=await page.evaluate(()=>{
         const h=document.querySelector('.global-header'),s=getComputedStyle(h);
         const left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect();

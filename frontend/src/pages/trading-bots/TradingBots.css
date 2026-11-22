@@ -137,3 +137,7 @@
   .bots-content .vb-modal-metrics { grid-template-columns:1fr 1fr; }
 }
 @media(pointer:coarse) { .bots-content .vb-heart,.bots-content .vb-close,.bots-content .vb-periods button { min-width:44px; min-height:44px; } }
+
+.bots-content .vb-creator { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; color: #b9bdc7; font-size: .75rem; overflow-wrap: anywhere; }
+.bots-content .vb-creator bdi { color: #e2e4e9; }
+.bots-content .vb-creator img { border-radius: 50%; object-fit: cover; }
