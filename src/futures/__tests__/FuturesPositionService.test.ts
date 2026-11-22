@@ -38,6 +38,8 @@ function makeFakePrisma(opts?: {
   const userCreatedAt = opts?.userCreatedAt ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // 1yr-old account by default
 
   const tx = {
+    // No account here has simulation-sale receipts: the #630 provenance hold reads none.
+    auditLog: { findMany: jest.fn(async () => []) },
     $queryRaw: jest.fn(async (query: any) => query.strings.join('').includes('pg_current_xact_id') ? [{ id: '1' }] : [{ locked: null }]),
     user: {
       findUnique: jest.fn(async () => ({ id: 'u', createdAt: userCreatedAt })),

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { requireAuth, type AuthedRequest } from '../middleware/auth';
 import { BankingError, BankingService } from '../../banking/service';
+import { SyntheticProceedsLockedError } from '../../services/syntheticProceedsFloor';
 
 const decimalString = z.string().min(1).max(80).refine(value => {
   const number = new BigNumber(value);
@@ -30,6 +31,7 @@ const placementSchema = z.object({
 export function bankingRouter(prisma: PrismaClient): Router {
   const router=Router(), service=new BankingService(prisma);
   const handle=(res:any,error:unknown)=>{
+    if(error instanceof SyntheticProceedsLockedError)return res.status(403).json({error:error.code});
     if(error instanceof BankingError)return res.status(error.status).json({error:error.code});
     console.error('Banking request failed',error);return res.status(500).json({error:'banking_unavailable'});
   };

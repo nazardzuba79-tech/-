@@ -10,7 +10,7 @@ function makePrismaMock(overrides: Partial<any> = {}) {
     },
     balance: walletDelegate(new Map([['user1:USDT', { available: '100', locked: '0' }]])),
     purchase: { create: jest.fn().mockResolvedValue({ id: 'purchase1', status: 'PENDING_FULFILLMENT' }) },
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     ...overrides,
   };
   return { ...base, $transaction: jest.fn((fn: any) => fn(base)) } as any;

@@ -26,7 +26,9 @@ function fixture(available = '100', fetchedAt = NOW, blockedAt: Date | null = nu
   const committed = { today: [] as { fromAmount: string; fromPriceUsd: string }[], exposure: {} as Record<string, string> };
   const prisma = { balance: { findUnique: jest.fn().mockResolvedValue({ available, locked: '1000' }), findMany: jest.fn().mockResolvedValue([{ asset: 'USD', available }]) },
     user: { findUnique: jest.fn().mockResolvedValue({ blockedAt }) }, $transaction: jest.fn(),
-    auditLog: { create: jest.fn().mockResolvedValue({}), findMany: jest.fn(async () => committed.today.map(metadata => ({ metadata }))) },
+    auditLog: { create: jest.fn().mockResolvedValue({}), findMany: jest.fn(async (args?: { where?: { action?: { in?: string[] } } }) =>
+      // An ordinary account has no simulation-sale receipts (#630 admission); every other read is the conversion ledger.
+      args?.where?.action?.in?.includes('NRX_SIMULATION_SOLD') ? [] : committed.today.map(metadata => ({ metadata }))) },
     $queryRaw: jest.fn((_strings: TemplateStringsArray, asset: string) => Promise.resolve([{ value: committed.exposure[asset] ?? '0' }])) } as any;
   // SOL has a real Kraken book but is not on the admission list.
   const prices = { read: jest.fn().mockResolvedValue({ fetchedAt, ...book([['USD', '1', '1'], ['EUR', '1.24', '1.25'], ['BTC', '59000', '60000'], ['USDT', '0.997', '0.998'], ['SOL', '150', '150.1']]) }),

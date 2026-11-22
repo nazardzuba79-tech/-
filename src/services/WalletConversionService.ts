@@ -4,6 +4,7 @@ import BigNumber from 'bignumber.js';
 import { KrakenMarketDataService } from './KrakenMarketDataService';
 import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
+import { assertConvertible, refuseFloorBound, SyntheticProceedsLockedError } from './syntheticProceedsFloor';
 import { demoSpotEnabled, demoSpotLedger, demoWithdrawalGuardEnabled } from './demoSpotAccess';
 import { demoLiquidityConfig, liquidityAccountRefusal } from './DemoLiquidity';
 import { DEMO_SPOT_LEDGER } from './SpotBookTransaction';
@@ -254,6 +255,14 @@ export class WalletConversionService {
     return this.admitted.has(asset) && ASSET.test(asset) && !isTestAssetPairOrSymbol(asset);
   }
   /** An admin block (User.blockedAt) stops conversions at once, also for sessions issued before it. */
+  /**
+   * #630 provenance admission (owner rule 2026-11-04): an account identified by simulation-sale receipts cannot
+   * convert; every ordinary account passes. `quote` reads it early, `confirm` re-checks it under the account lock.
+   */
+  private async admitProvenance(db: PrismaClient | Prisma.TransactionClient, userId: string, locked: boolean) {
+    try { await (locked ? assertConvertible(db as Prisma.TransactionClient, userId) : refuseFloorBound(db, userId)); }
+    catch (error) { if (error instanceof SyntheticProceedsLockedError) throw new ConversionError('ACCOUNT_RESTRICTED'); throw error; }
+  }
   private async notBlocked(db: Db, userId: string) {
     const user = await db.user.findUnique({ where: { id: userId }, select: { blockedAt: true } });
     if (!user || user.blockedAt) throw new ConversionError('ACCOUNT_BLOCKED');
@@ -277,6 +286,7 @@ export class WalletConversionService {
     const ledger = await this.ledger(this.prisma, userId);
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { blockedAt: true } });
     if (!user || user.blockedAt) return { convertible: false, ledger };
+    try { await this.admitProvenance(this.prisma, userId, false); } catch (error) { if (error instanceof ConversionError) return { convertible: false, ledger }; throw error; }
     if (ledger === 'spot') return { convertible: [...this.limits.reserves.keys()].some(asset => this.supported(asset)), ledger };
     if (ledger === 'cross') {
       const account = await nativeCrossAccount(this.prisma, userId, this.env);
@@ -299,6 +309,7 @@ export class WalletConversionService {
     // More decimals than the source keeps (e.g. 0.001 USD, 9 BTC decimals) is not an amount of that asset.
     if (new Decimal(amount).decimalPlaces()! > this.admitted.get(fromAsset)!) throw new ConversionError('INVALID_CONVERSION');
     await this.notBlocked(this.prisma, userId);
+    await this.admitProvenance(this.prisma, userId, false);
     const feed = await this.feed(); this.fresh(feed);
     const fromPriceUsd = feed.bid.get(fromAsset), toPriceUsd = feed.ask.get(toAsset);
     if (!fromPriceUsd || !toPriceUsd) throw new ConversionError('UNSUPPORTED_ASSET');
@@ -355,6 +366,8 @@ export class WalletConversionService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`wallet-conversion:${userId}`}, 0))`;
       const previous = await tx.auditLog.findFirst({ where: { id: `conversion:${quoteId}`, userId, action: { in: RECEIPT_ACTIONS } } });
       if (previous) return this.receipt(previous);
+      // Provenance under the account lock, before any shared lock (account → floor → reserves/demo book, everywhere).
+      await this.admitProvenance(tx, userId, true);
       // The final shared lock — over every account's Balance conversions (reserve check), or the demo book — is
       // taken BEFORE the checks below, so a quote that expires, a block or a ledger change set while this waits
       // for it cannot pass. Taken after the account lock, in this order everywhere, so the two cannot deadlock.

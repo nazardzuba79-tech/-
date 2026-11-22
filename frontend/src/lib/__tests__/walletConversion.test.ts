@@ -34,7 +34,7 @@ describe('wallet conversion UI safety boundaries', () => {
     expect(modal).toContain('...Object.keys(REFUSAL)].includes(code)');
     // A price outage at confirmation is a definite refusal (server-side: after the receipt check, before any write).
     expect(modal).toMatch(/\[[^\]]*'PRICE_UNAVAILABLE', \.\.\.Object\.keys\(REFUSAL\)\]\.includes\(code\)/);
-    for (const code of ['ACCOUNT_BLOCKED', 'INSUFFICIENT_BALANCE', 'LIMIT_EXCEEDED', 'DAILY_LIMIT_EXCEEDED', 'RESERVE_UNVERIFIED', 'RESERVE_EXHAUSTED', 'INSUFFICIENT_LIQUIDITY']) {
+    for (const code of ['ACCOUNT_BLOCKED', 'ACCOUNT_RESTRICTED', 'INSUFFICIENT_BALANCE', 'LIMIT_EXCEEDED', 'DAILY_LIMIT_EXCEEDED', 'RESERVE_UNVERIFIED', 'RESERVE_EXHAUSTED', 'INSUFFICIENT_LIQUIDITY']) {
       expect(modal).toMatch(new RegExp(`const REFUSAL[^;]*\\b${code}: 'wallet\\.conversion\\.`));
     }
     expect(modal).not.toMatch(/parseFloat|parseInt|\bNumber\(amount\)|setInterval|setTimeout/);
