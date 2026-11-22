@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import { asyncRoute } from '../asyncRoute';
 import { requireAuth } from '../middleware/auth';
 
-// Temporary owner-approved binding until the dedicated Thomas account is ready.
+// Owner-approved profile binding. Renaming the profile preserves author identity.
 const CATALOGUE_THOMAS_USER_ID = '85bb5e78-7f14-43e1-a5e4-7a0becf14a60';
 export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = process.env.TRADING_BOTS_THOMAS_USER_ID ?? CATALOGUE_THOMAS_USER_ID) {
   const router = Router();

@@ -7884,4 +7884,4 @@ Implementation `346fa509` projects the bound account's public name in strategyOw
 
 ### Thomas Quant AI — trading bot catalogue
 - The existing XRP entry keeps the stable `range` ID for favourites and the weekly presentation metrics. Its neural mark is separate from the author's profile avatar.
-- Authenticated GET `/api/v1/trading-bots/creators` reads only display name and avatar from the user bound to the owner-approved interim UUID. Override it per environment with `TRADING_BOTS_THOMAS_USER_ID`. If explicitly unbound or unavailable, the card and detail show the catalogue name Thomas. No database migration. Other strategies have catalogue attribution until authors are supplied.
+- Authenticated GET `/api/v1/trading-bots/creators` reads only display name and avatar from the user bound to the owner-approved profile UUID. Override it per environment with `TRADING_BOTS_THOMAS_USER_ID`. If explicitly unbound or unavailable, the card and detail show the catalogue name Thomas. No database migration. Other strategies have catalogue attribution until authors are supplied.
