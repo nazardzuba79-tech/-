@@ -128,6 +128,16 @@ function cell(key: string, year: number, month: number | null, days: MonthlyPerf
  * rows, and without those it is unknown (null), never guessed.
  */
 export function buildMonthlyPerformance(
+  dailyResults: readonly (MonthlyPerformanceDay & { realizedPnl: number })[] | null | undefined,
+  methodology: SyntheticReturnMethodology | null | undefined,
+  monthly?: readonly MonthlyPerformanceSummaryRow[] | null,
+): MonthlyPerformanceTable & { cells: Record<string, MonthlyPerformanceCell & { realizedPnl: number }> };
+export function buildMonthlyPerformance(
+  dailyResults: readonly MonthlyPerformanceDay[] | null | undefined,
+  methodology: SyntheticReturnMethodology | null | undefined,
+  monthly?: readonly MonthlyPerformanceSummaryRow[] | null,
+): MonthlyPerformanceTable;
+export function buildMonthlyPerformance(
   dailyResults: readonly MonthlyPerformanceDay[] | null | undefined,
   methodology: SyntheticReturnMethodology | null | undefined,
   monthly?: readonly MonthlyPerformanceSummaryRow[] | null,

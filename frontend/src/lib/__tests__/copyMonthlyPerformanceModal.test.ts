@@ -136,7 +136,7 @@ it('shows every detail figure the history supports, and each figure from the cho
   const figures = Object.fromEntries($$('.mcp-detail dl > div').map(row => [text(row.querySelector('dt')), text(row.querySelector('dd'))]));
   expect(figures).toEqual({
     'ROI за месяц': monthly.monthlyPercent(december.roi).text,
-    'Реализованный PnL': money.publicSignedUsdt(december.realizedPnl!),
+    'Реализованный PnL': money.publicSignedUsdt(december.realizedPnl),
     'Торговых дней': String(december.tradingDays),
     'Сделок': String(december.trades),
     'Прибыльных дней': String(december.profitableDays),
