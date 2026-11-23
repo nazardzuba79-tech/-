@@ -35,6 +35,17 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
       expect(botPresentation(bot, week + 1)).not.toEqual(first);
     }
   });
+  it('uses seven different model chart trajectories rather than one copied ascending graph', () => {
+    const curves = BOT_CATALOGUE.map(bot => botPresentation(bot, 46).series);
+    const normalized = curves.map(points => points.map((point, i) =>
+      i === 0 ? 0 : Math.round(point / points[points.length - 1] * 1000)).join(','));
+    expect(new Set(normalized).size).toBe(BOT_CATALOGUE.length);
+    for (const id of ['atlas', 'sol', 'delta', 'range', 'breakout']) {
+      const bot = BOT_CATALOGUE.find(value => value.id === id)!;
+      const points = botPresentation(bot, 46).series;
+      expect(points.some((point, index) => index > 0 && point < points[index - 1])).toBe(true);
+    }
+  });
   it('computes drawdown from equity, not percentage-point differences', () => {
     expect(maxDrawdown([0, 100, 50, 200])).toBe(25);
     expect(maxDrawdown([0, 10, 20])).toBe(0);
