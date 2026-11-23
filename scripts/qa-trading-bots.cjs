@@ -92,12 +92,12 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+': last model month equals catalogue ROI',model.at(-1)===await quant.locator('.vb-roi').innerText() && model.at(-1)==='+180.26%');
       if(width===1440 || width===390) {
         await modelMonths.screenshot({path:path.join(OUT,'thomas-model-months-'+width+'.png')});
-        const path='**/api/v1/trading-bots/range/performance';
-        await page.route(path,route=>route.fulfill({status:503,json:{error:'fixture'}}));
+        const performanceRoute='**/api/v1/trading-bots/range/performance';
+        await page.route(performanceRoute,route=>route.fulfill({status:503,json:{error:'fixture'}}));
         await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
         await page.getByText('Не удалось загрузить историю доходности.').waitFor();
-        await page.unroute(path);
-        await page.route(path,route=>route.fulfill({json:history}));
+        await page.unroute(performanceRoute);
+        await page.route(performanceRoute,route=>route.fulfill({json:history}));
         await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
         const panel=page.locator('.vb-history');
         await panel.getByRole('button',{name:'Помесячная доходность'}).waitFor();
@@ -120,7 +120,7 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         check(width+': card refreshed from same snapshot',parseFloat(await quant.locator('.vb-roi').innerText())===Number(history.periods['30D'].roi.toFixed(2)));
         await page.reload(); await quant.locator('.vb-open').click();
         await panel.getByRole('button',{name:'Помесячная доходность'}).waitFor();
-        await page.unroute(path);
+        await page.unroute(performanceRoute);
         await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
         await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
       }
