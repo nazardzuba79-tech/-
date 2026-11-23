@@ -88,8 +88,20 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
       const modelMonths=page.getByRole('region',{name:'Модельная доходность по месяцам'});
       const model=await modelMonths.locator('li strong').allTextContents();
-      check(width+': 12 distinct fractional model months',model.length===12 && new Set(model).size===12 && model.every(s=>Number.parseFloat(s)>=120 && Number.parseFloat(s)<=190 && !Number.isInteger(Number.parseFloat(s))));
-      check(width+': last model month equals catalogue ROI',model.at(-1)===await quant.locator('.vb-roi').innerText() && model.at(-1)==='+180.26%');
+      check(width+': 12 distinct fractional months for selected year',model.length===12 && new Set(model).size===12 && model.every(s=>Number.parseFloat(s)>=120 && Number.parseFloat(s)<=190 && !Number.isInteger(Number.parseFloat(s))));
+      check(width+': last model month equals current catalogue ROI',model.at(-1)===await quant.locator('.vb-roi').innerText());
+      const toNum=s=>Number.parseFloat(s.replace(/[+%]/g,''));
+      const year2Total=model.reduce((sum,s)=>sum+toNum(s),0);
+      const figures=await modelMonths.locator('.vb-model-summary strong').allTextContents();
+      check(width+': second year total sums 12 displayed percentages',Math.abs(toNum(figures[1])-year2Total)<0.001);
+      check(width+': selected model chart has 12 varying bars',await modelMonths.locator('.vb-model-column').count()===12 && new Set(await modelMonths.locator('.vb-model-column > span').evaluateAll(nodes=>nodes.map(n=>n.style.height))).size>5);
+      await modelMonths.getByRole('button',{name:'Год 1'}).click();
+      const firstYear=await modelMonths.locator('li strong').allTextContents();
+      const year1Total=firstYear.reduce((sum,s)=>sum+toNum(s),0);
+      check(width+': first year differs and sums correctly',firstYear.length===12 && firstYear.join(',')!==model.join(',') && Math.abs(toNum(figures[0])-year1Total)<0.001);
+      check(width+': all period equals both annual model sums',Math.abs(toNum(figures[2])-year1Total-year2Total)<0.001);
+      await modelMonths.getByRole('button',{name:'Год 2'}).click();
+      check(width+': model year selection restores card alignment',(await modelMonths.locator('li strong').allTextContents()).at(-1)===await quant.locator('.vb-roi').innerText());
       if(width===1440 || width===390) {
         await modelMonths.screenshot({path:path.join(OUT,'thomas-model-months-'+width+'.png')});
         const performanceRoute='**/api/v1/trading-bots/range/performance';
