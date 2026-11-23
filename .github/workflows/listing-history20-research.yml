@@ -1,0 +1,35 @@
+name: Listing history research (public data only)
+
+# One bounded research run. No application imports, secrets, services, orders,
+# balances, migrations, deployment or paid infrastructure. Do not merge.
+on:
+  pull_request:
+    paths:
+      - 'research/listing-history20-20261018/**'
+      - '.github/workflows/listing-history20-research.yml'
+permissions:
+  contents: read
+concurrency:
+  group: listing-history20-research-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  collect:
+    if: github.repository == 'nazardzuba79-tech/-' && github.head_ref == 'research/listing-history20-20261018'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: research/listing-history20-20261018
+      - name: Collect and validate 20 historical research slices
+        run: python3 research/listing-history20-20261018/collect_history.py
+      - name: Research evidence only; not a production payload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voltex-history20-research
+          path: research-output/
+          if-no-files-found: error
+          retention-days: 1
