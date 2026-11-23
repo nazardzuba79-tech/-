@@ -52,6 +52,11 @@ it('rejects incomplete, foreign, future or unreconciled publications and preserv
     { days: [{...input.days[0], fees: '9'}, ...input.days.slice(1)] },
     { days: [input.days[0], {...input.days[1], opening: '45'}, input.days[2]] },
   ]) expect(() => buildBotHistory({...input,...change},owner)).toThrow();
+  const truncated = fixture(owner, '2024-01-31');
+  truncated.asOf = '2024-01-31T12:00:00Z';
+  const intraday = buildBotHistory(truncated, owner);
+  if (intraday.status !== 'verified') throw Error('missing partial fixture');
+  expect(intraday.monthly.cells['2024-01'].partial).toBe(true);
   input.days[1].realizedGross = null;
   const result = buildBotHistory(input, owner);
   if (result.status !== 'verified') throw Error('missing fixture history');

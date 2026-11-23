@@ -80,6 +80,10 @@ export function buildBotHistory(input: unknown, ownerId: string, now = Date.now(
   const monthly = buildMonthlyPerformance(days.map(d => ({
     date: d.date, dailyReturn: d.dailyReturn, realizedPnl: d.realizedGross?.toNumber() ?? null, numberOfTrades: d.trades,
   })), 'DAILY_TWR');
+  if (data.asOf.slice(11, 19) !== '23:59:59') {
+    monthly.cells[data.asOf.slice(0, 7)].partial = true;
+    monthly.cells[data.asOf.slice(0, 4)].partial = true;
+  }
   if (Object.values(monthly.cells).some(cell => !Number.isFinite(cell.roi))) throw Error('Unrepresentable monthly index');
   return { status: 'verified', botId: data.botId, strategyId: data.strategyId, inceptionDate: data.inceptionDate,
     asOf: data.asOf, periods, monthly };

@@ -28,8 +28,9 @@ function periodTitle(cell: MonthlyPerformanceCell) {
   return cell.month === null ? `${cell.year} · Итог` : `${MONTH_NAMES_RU[cell.month - 1]} ${cell.year}`;
 }
 
-function coverageNote(cell: MonthlyPerformanceCell, latestDate: string, firstDate: string) {
+function coverageNote(cell: MonthlyPerformanceCell, latestDate: string, firstDate: string, archivedSnapshot = false) {
   if (!cell.partial) return null;
+  if (archivedSnapshot && cell.lastDate === latestDate) return `Неполный период · данные по ${shownDate(cell.lastDate)}`;
   if (cell.lastDate === latestDate) return `Период ещё идёт · данные по ${shownDate(cell.lastDate)}`;
   if (cell.firstDate === firstDate) return `Стратегия ведётся с ${shownDate(cell.firstDate)}`;
   return `Данные с ${shownDate(cell.firstDate)} по ${shownDate(cell.lastDate)}`;
@@ -121,7 +122,7 @@ export function MonthlyPerformanceDialog({ table, trader, allTimeRoi, onClose }:
             {current && (
               <section className="mcp-detail" aria-live="polite" aria-label={`Подробности: ${periodTitle(current)}`}>
                 <h3>{periodTitle(current)}</h3>
-                {coverageNote(current, latestDate, firstDate) && <p className="mcp-coverage">{coverageNote(current, latestDate, firstDate)}</p>}
+                {coverageNote(current, latestDate, firstDate, allTimeRoi !== undefined) && <p className="mcp-coverage">{coverageNote(current, latestDate, firstDate, allTimeRoi !== undefined)}</p>}
                 <dl>
                   <div><dt>{current.month === null ? 'ROI за год' : 'ROI за месяц'}</dt><dd><Percent value={current.roi} strong /></dd></div>
                   <div><dt>Реализованный PnL</dt><dd className={`mcp-${realized != null && realized > 0 ? 'positive' : realized != null && realized < 0 ? 'negative' : 'neutral'}`}>{realized == null ? '—' : publicSignedUsdt(realized)}</dd></div>
