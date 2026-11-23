@@ -86,7 +86,12 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       await quant.locator('.vb-open').click();
       check(width+': modal uses the same creator',await page.locator('dialog .vb-creator').getByText('Thomas QA').isVisible());
       await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
+      const modelMonths=page.getByRole('region',{name:'Модельная доходность по месяцам'});
+      const model=await modelMonths.locator('li strong').allTextContents();
+      check(width+': 12 distinct fractional model months',model.length===12 && new Set(model).size===12 && model.every(s=>Number.parseFloat(s)>=120 && Number.parseFloat(s)<=190 && !Number.isInteger(Number.parseFloat(s))));
+      check(width+': last model month equals catalogue ROI',model.at(-1)===await quant.locator('.vb-roi').innerText() && model.at(-1)==='+180.26%');
       if(width===1440 || width===390) {
+        await modelMonths.screenshot({path:path.join(OUT,'thomas-model-months-'+width+'.png')});
         const path='**/api/v1/trading-bots/range/performance';
         await page.route(path,route=>route.fulfill({status:503,json:{error:'fixture'}}));
         await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
@@ -95,6 +100,8 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await page.route(path,route=>route.fulfill({json:history}));
         await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
         const panel=page.locator('.vb-history');
+        await panel.getByRole('button',{name:'Помесячная доходность'}).waitFor();
+        check(width+': verified history replaces model examples',await modelMonths.count()===0);
         for(const [period,label] of Object.entries({'7D':'7Д','30D':'30Д','90D':'90Д','1Y':'1Р',ALL:'Всё время'})){
           await panel.getByRole('button',{name:label,exact:true}).click();
           check(width+' '+period+': verified period ROI',parseFloat(await panel.locator('.vb-roi').innerText())===Number(history.periods[period].roi.toFixed(2)));

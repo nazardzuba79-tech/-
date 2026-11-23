@@ -146,3 +146,9 @@
 .bots-content .vb-history .vb-periods { flex-wrap: wrap; margin: 12px 0; }
 .bots-content .vb-history p, .bots-content .vb-history small { color: #bdc1ca; line-height: 1.5; }
 .bots-content .vb-history dd { overflow-wrap: anywhere; }
+
+.bots-content .vb-model-months { margin-top: 20px; border-top: 1px solid #3b3d45; padding-top: 16px; }
+.bots-content .vb-model-months ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; padding: 0; list-style: none; }
+.bots-content .vb-model-months li { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; padding: 8px 0; border-bottom: 1px solid #33353c; font-size: .83rem; }
+.bots-content .vb-model-months strong { color: #e8ddbf; font-variant-numeric: tabular-nums; }
+@media(max-width:360px) { .bots-content .vb-model-months ol { grid-template-columns: 1fr; } }

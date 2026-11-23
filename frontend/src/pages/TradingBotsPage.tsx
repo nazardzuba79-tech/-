@@ -69,7 +69,7 @@ function BotModal({ bot, profile, stats, history, onClose }: { history: ReturnTy
     <div className="vb-modal-head"><BotStrategyIcon id={bot.id}/><div><h2 id="vb-dialog-title">{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p><CreatorLine bot={bot} profile={profile}/></div><button type="button" className="vb-close" onClick={onClose} aria-label="Закрыть"><X size={20}/></button></div>
     <span className={`vb-risk ${bot.risk === 'Высокий' ? 'high' : ''}`}>{bot.risk} риск</span>
     <p className="vb-modal-note">{bot.detail}</p>
-    {bot.id === 'range' ? <BotHistoryPanel history={history}/> : <>
+    {bot.id === 'range' ? <BotHistoryPanel history={history} modelRoi={stats.roi}/> : <>
     <div className="vb-roi-row"><div><span className="vb-label">Модельная доходность · {period} дней</span><strong className="vb-roi">+{percent(series[series.length - 1])}</strong></div><div className="vb-periods">{([7, 30] as const).map(days => <button type="button" key={days} aria-pressed={period === days} onClick={() => setPeriod(days)}>{days}д</button>)}</div></div>
     <Sparkline series={series} name={bot.name} large/>
     <dl className="vb-metrics vb-modal-metrics"><Metric label="Макс. просадка · 30д" value={percent(stats.drawdown)}/><Metric label="Прибыльные сделки · 30д" value={percent(stats.winRate)}/><Metric label="Сделок · 30д" value={stats.trades}/></dl>
@@ -101,6 +101,7 @@ export function TradingBotsPage() {
   const [favorites, setFavorites] = useState(loadFavorites);
   const [selected, setSelected] = useState<BotDefinition | null>(null);
   const entries = useMemo(() => BOT_CATALOGUE.map(bot => ({ bot, stats: botPresentation(bot, bot.id === 'range' ? presentationWeek(Date.UTC(2026, 10, 22)) : week) })), [week]);
+  const selectedEntry = entries.find(entry => entry.bot === selected);
   const visible = entries.filter(({ bot }) => (category === 'all' || bot.category === category) && (tab === 'all' || favorites.includes(bot.id)));
   const unknownMetric = (bot: BotDefinition) => bot.id === 'range' && !history.data;
   if (sort === 'roi') visible.sort((a, b) => Number(unknownMetric(a.bot)) - Number(unknownMetric(b.bot)) || (b.bot.id === 'range' && verified ? verified.roi : b.stats.roi) - (a.bot.id === 'range' && verified ? verified.roi : a.stats.roi));
@@ -130,6 +131,6 @@ export function TradingBotsPage() {
       </section>
       <footer className="vb-bottom"><strong>VOLTEX Bot Studio</strong></footer>
     </main>
-    {selected && <BotModal key={selected.id} bot={selected} profile={creators[selected.id]} history={history} stats={botPresentation(selected, week)} onClose={() => setSelected(null)}/>}
+    {selectedEntry && <BotModal key={selectedEntry.bot.id} bot={selectedEntry.bot} profile={creators[selectedEntry.bot.id]} history={history} stats={selectedEntry.stats} onClose={() => setSelected(null)}/>}
   </div>;
 }
