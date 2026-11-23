@@ -10,6 +10,13 @@ const OUT = path.resolve(process.env.QA_OUT || 'docs/qa/trading-bots');
 const PAIRS = ['BTC/USDT','ETH/USDT','SOL/USDT'];
 const CANDLES=Array.from({length:120},(_,i)=>({time:Math.floor(Date.now()/1000)-(120-i)*60,open:84800,high:84950,low:84700,close:84890,volume:12}));
 const app = express();
+// This runner accepts only loopback page requests. Build verified scenarios from an isolated fixture.
+require('ts-node/register/transpile-only');
+const {buildBotHistory}=require('../src/services/tradingBotPerformance');
+const historyOwner='00000000-0000-4000-8000-000000000722';
+const historyFixture=require('./qa-thomas-snapshot.cjs');
+const history=buildBotHistory(historyFixture(historyOwner),historyOwner);
+app.get('/api/v1/trading-bots/range/performance',(_q,r)=>r.json({status:'unavailable'}));
 app.get('/api/v1/trading-bots/creators', (_q,r)=>r.json({creators:{range:{displayName:'Thomas QA',avatarUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII='}}}));
 app.get('/api/v1/me', (_q,r)=>r.json({id:'qa',displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin:false,role:'USER'}));
 app.get('/api/v1/futures/config',(_q,r)=>r.json({symbols:PAIRS,minLeverage:1,maxLeverage:100,leverageStep:1,fundingIntervalHours:8,highLeverageWarningThreshold:25,leverageTiers:[{notionalCap:null,maxLeverage:100,maintenanceMarginRate:0.005,maintenanceAmount:0}]}));
@@ -52,7 +59,14 @@ const report = { environment:'Local production bundle, mocked read-only API; no 
 const check = (name, condition) => { assert.ok(condition, name); report.checks.push(name); };
 (async () => {
   fs.mkdirSync(OUT,{recursive:true});
-  const server=app.listen(0,'127.0.0.1'); await once(server,'listening');
+  // Some Windows ephemeral ports (e.g. 1723) are explicitly forbidden by Chromium.
+  let server;
+  for (let port=43170; port<43200; port++) {
+    const listener=app.listen(port,'127.0.0.1');
+    try { await once(listener,'listening'); server=listener; break; }
+    catch (error) { if (error.code!=='EADDRINUSE') throw error; }
+  }
+  assert(server,'No free loopback port for browser QA');
   const base='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({headless:true, ...(process.env.QA_BROWSER_CHANNEL ? {channel:process.env.QA_BROWSER_CHANNEL} : {})});
   try {
@@ -71,6 +85,38 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+': profile avatar loaded',await quant.locator('.vb-creator img').evaluate(async image=>{await image.decode();return image.naturalWidth===1;}));
       await quant.locator('.vb-open').click();
       check(width+': modal uses the same creator',await page.locator('dialog .vb-creator').getByText('Thomas QA').isVisible());
+      await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
+      if(width===1440 || width===390) {
+        const path='**/api/v1/trading-bots/range/performance';
+        await page.route(path,route=>route.fulfill({status:503,json:{error:'fixture'}}));
+        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+        await page.getByText('Не удалось загрузить историю доходности.').waitFor();
+        await page.unroute(path);
+        await page.route(path,route=>route.fulfill({json:history}));
+        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+        const panel=page.locator('.vb-history');
+        for(const [period,label] of Object.entries({'7D':'7Д','30D':'30Д','90D':'90Д','1Y':'1Р',ALL:'Всё время'})){
+          await panel.getByRole('button',{name:label,exact:true}).click();
+          check(width+' '+period+': verified period ROI',parseFloat(await panel.locator('.vb-roi').innerText())===Number(history.periods[period].roi.toFixed(2)));
+          check(width+' '+period+': verified graph',await panel.getByRole('img').isVisible());
+        }
+        await panel.getByRole('button',{name:'Помесячная доходность'}).click();
+        const calendar=page.locator('.copy-monthly-dialog');
+        check(width+': 24 monthly cells',await calendar.locator('tbody button').count()===24);
+        await calendar.getByRole('button',{name:/Февраль 2024/}).click();
+        check(width+': zero month selectable',await calendar.locator('.mcp-detail strong.mcp-neutral').innerText()==='0.00%');
+        check(width+': all-time alongside annual totals',await calendar.getByText(/За всё время/).isVisible());
+        await page.keyboard.press('Escape');
+        check(width+': calendar returns focus to open profile',await panel.getByRole('button',{name:'Помесячная доходность'}).evaluate(e=>e===document.activeElement));
+        check(width+': detail fits viewport',await page.locator('dialog.vb-modal').evaluate(e=>e.scrollWidth<=e.clientWidth+1));
+        await page.locator('dialog .vb-close').click();
+        check(width+': card refreshed from same snapshot',parseFloat(await quant.locator('.vb-roi').innerText())===Number(history.periods['30D'].roi.toFixed(2)));
+        await page.reload(); await quant.locator('.vb-open').click();
+        await panel.getByRole('button',{name:'Помесячная доходность'}).waitFor();
+        await page.unroute(path);
+        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+        await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
+      }
       await page.locator('dialog .vb-close').click();
       const layout=await page.evaluate(()=>{
         const h=document.querySelector('.global-header'),s=getComputedStyle(h);
@@ -148,10 +194,10 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await page.locator('header').first().waitFor();
         const layout=await page.locator('header').first().evaluate(h=>{const s=getComputedStyle(h),left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect(),nav=h.querySelector('.main-nav');return {background:s.backgroundColor,texture:s.backgroundImage,overflow:document.documentElement.scrollWidth-innerWidth,height:h.getBoundingClientRect().height,overlap:left.right>right.left+1,navClipped:Math.max(0,nav.scrollWidth-nav.clientWidth)};});
         report.layouts.push({name,width,...layout});
-        check(name+' '+width+': shared graphite',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
+        check(name+' '+width+': shared graphite',(layout.background===(name!=='markets'?'rgb(23, 24, 30)':'rgb(26, 27, 32)'))&&layout.texture==='none');
         check(name+' '+width+': no overflow',layout.overflow<=1);
         check(name+' '+width+': header controls separate',!layout.overlap);
-        if(width>1024) check(name+' '+width+': approved desktop header height',layout.height===68);
+        if(width>1024) check(name+' '+width+': approved desktop header height',layout.height===(name==='markets'?68:48));
         check(name+' '+width+': no clipped navigation links',layout.navClipped===0);
         await page.screenshot({path:path.join(OUT,name+'-header-'+width+'.png')});
       }

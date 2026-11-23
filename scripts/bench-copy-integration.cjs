@@ -25,6 +25,11 @@ copy = new CopyDemoService(db, engine, demo);
 const app = express(); app.use(express.json());
 app.use('/api/v1', demoTradingRouter(db, demo, undefined, { enabled: () => true, isSpotPair: async () => true }));
 app.use('/api/v1', copyDemoRouter(db, copy));
+const botBenchmark = process.env.BENCH_THOMAS_BOTS === '1';
+if (botBenchmark) {
+  assert(process.env.TRADING_BOTS_THOMAS_VERIFIED_SNAPSHOT, 'isolated performance fixture required');
+  app.use('/api/v1', require('../src/api/routes/tradingBotCreators').tradingBotCreatorsRouter(db));
+}
 const PHASE_MS = Number(process.env.BENCH_PHASE_MS || 20000), ROUNDS = Number(process.env.BENCH_ROUNDS || 3);
 let port; const agent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 function call(token, method, route, body) {
@@ -60,9 +65,11 @@ async function main() {
   const workerErrors = [];
   const stopWorker = startCopyDemoWorker(copy, copyDemoEnabled, e => { workerErrors.push({ at: new Date().toISOString(), code: e?.code ?? String(e).slice(0, 80) }); console.error(e?.code, e?.message?.slice(0, 160)); });
   const probeLoop = async (until, out) => { while (Date.now() < until) { const r = await call(tokens[probe], 'GET', '/demo/orders/open'); assert.equal(r.status, 200); out.push(r.ms); await new Promise(x => setTimeout(x, 50)); } };
-  const load = async until => {
+  const load = async (until, phase) => {
     const tasks = readers.map(async (r, i) => { await new Promise(x => setTimeout(x, (i * 60) % 3000));
-      while (Date.now() < until) { await call(tokens[r], 'GET', '/copy-trading/demo'); await new Promise(x => setTimeout(x, 3000)); } });
+      while (Date.now() < until) { await call(tokens[r], 'GET', '/copy-trading/demo');
+        if (botBenchmark && phase === 'load') assert.equal((await call(tokens[r], 'GET', '/trading-bots/range/performance')).status, 200);
+        await new Promise(x => setTimeout(x, 3000)); } });
     tasks.push(...leaders.map(async (l, i) => { let n = 0; await new Promise(x => setTimeout(x, i * 2000));
       while (Date.now() < until) {
         const res = await call(tokens[l], 'POST', '/demo/orders', { pair: 'BTC/USDT', side: n++ % 2 ? 'SELL' : 'BUY', type: 'LIMIT', quantity: '0.01', price: n % 2 ? '100' : '101', requestId: randomUUID() });
@@ -74,7 +81,7 @@ async function main() {
   for (let round = 0; round < ROUNDS; round++) {
     for (const phase of round % 2 ? ['load', 'baseline'] : ['baseline', 'load']) {
       const until = Date.now() + PHASE_MS, samples = [];
-      await Promise.all([probeLoop(until, samples), phase === 'load' ? load(until) : Promise.resolve()]);
+      await Promise.all([probeLoop(until, samples), phase === 'load' || botBenchmark ? load(until, phase) : Promise.resolve()]);
       result[phase].push(...samples);
       console.log(round, phase, 'n', samples.length, 'p50', p(samples, .5).toFixed(2), 'p95', p(samples, .95).toFixed(2));
     }
@@ -90,7 +97,12 @@ async function main() {
     p95ms: { baseline: +b95.toFixed(2), load: +l95.toFixed(2) }, p50ms: { baseline: +p(result.baseline, .5).toFixed(2), load: +p(result.load, .5).toFixed(2) },
     deltaP95Percent: +(100 * (l95 - b95) / b95).toFixed(1), copiedOrdersExecuted: executed, pendingAfterSettle: pending, workerErrors, readers: 50, traders: 2,
     note: 'single-process loopback API and local PostgreSQL; not representative of production hardware' };
-  const out = path.resolve('output/copy-integration-658'); fs.mkdirSync(out, { recursive: true });
+  const out = path.resolve(botBenchmark ? 'output/bots-722' : 'output/copy-integration-658'); fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(out, 'bench.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report));
+  if (botBenchmark) {
+    assert.equal(workerErrors.length, 0);
+    assert.equal(pending, 0);
+    assert(l95 <= b95 * 1.05, '50+2 crypto p95 exceeded baseline by more than 5%');
+  }
 }
 main().catch(e => { console.error(e); process.exitCode = 1; }).finally(() => db.$disconnect());

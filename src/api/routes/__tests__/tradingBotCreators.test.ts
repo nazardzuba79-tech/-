@@ -42,3 +42,15 @@ it('omits unsafe identity fields', async () => {
   findUnique.mockResolvedValue({ displayName: 'A\u202eB', avatarUrl: 'https://example.invalid/tracker' });
   await get().expect(200, { creators: { range: { displayName: null, avatarUrl: null } } });
 });
+
+it('serves only bot aggregate history, requires authentication and exposes no trading action', async () => {
+  const {app,findUnique} = fixture('');
+  const url = '/api/v1/trading-bots/range/performance';
+  await request(app).get(url).expect(401);
+  const token = jwt.sign({ sub: 'viewer', sid: 'local-session' }, process.env.JWT_SECRET!, { expiresIn: '10m' });
+  const auth = { Authorization: 'Bearer ' + token };
+  await request(app).get(url + '?creatorUserId=other&path=other').set(auth).expect(200,{status:'unavailable'});
+  await request(app).post(url).set(auth).expect(404);
+  await request(app).get('/api/v1/trading-bots/other/performance').set(auth).expect(404);
+  expect(findUnique).not.toHaveBeenCalled();
+});

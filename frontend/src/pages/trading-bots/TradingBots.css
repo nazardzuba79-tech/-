@@ -141,3 +141,8 @@
 .bots-content .vb-creator { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; color: #b9bdc7; font-size: .75rem; overflow-wrap: anywhere; }
 .bots-content .vb-creator bdi { color: #e2e4e9; }
 .bots-content .vb-creator img { border-radius: 50%; object-fit: cover; }
+
+.bots-content .vb-history { margin: 20px 0; }
+.bots-content .vb-history .vb-periods { flex-wrap: wrap; margin: 12px 0; }
+.bots-content .vb-history p, .bots-content .vb-history small { color: #bdc1ca; line-height: 1.5; }
+.bots-content .vb-history dd { overflow-wrap: anywhere; }

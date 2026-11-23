@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, X } from 'lucide-react';
 import type { SyntheticCopyTradingResponse } from '../../lib/syntheticCopyTrading';
-import { buildMonthlyPerformance, monthKey, monthlyPercent, MONTH_NAMES_RU, type MonthlyPerformanceCell } from '../../lib/monthlyCopyPerformance';
+import { buildMonthlyPerformance, monthKey, monthlyPercent, MONTH_NAMES_RU, type MonthlyPerformanceCell, type MonthlyPerformanceTable } from '../../lib/monthlyCopyPerformance';
 import { publicSignedUsdt } from '../../lib/copyTradingMoney';
 import './CopyMonthlyPerformance.css';
 
@@ -36,10 +36,16 @@ function coverageNote(cell: MonthlyPerformanceCell, latestDate: string, firstDat
 }
 
 export function CopyMonthlyPerformanceModal({ synthetic, onClose }: { synthetic: SyntheticCopyTradingResponse; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
   const table = useMemo(() => buildMonthlyPerformance(synthetic.dailyResults, synthetic.economics?.methodology, synthetic.monthly),
     [synthetic.dailyResults, synthetic.economics?.methodology, synthetic.monthly]);
+  return <MonthlyPerformanceDialog table={table} trader={synthetic.trader} onClose={onClose}/>;
+}
+
+export function MonthlyPerformanceDialog({ table, trader, allTimeRoi, onClose }: {
+  table: MonthlyPerformanceTable; trader: { id: string; name: string }; allTimeRoi?: number; onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   const [selected, setSelected] = useState<string | null>(table.latestKey);
   const current = (selected && table.cells[selected]) || (table.latestKey ? table.cells[table.latestKey] : undefined);
   const { firstDate, latestDate } = useMemo(() => {
@@ -63,6 +69,7 @@ export function CopyMonthlyPerformanceModal({ synthetic, onClose }: { synthetic:
   }, []);
 
   const simple = table.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
+  const realized = current?.realizedPnl;
   const choose = (key: string) => setSelected(key);
   const cellButton = (key: string, strong = false) => {
     const cell = table.cells[key];
@@ -77,13 +84,13 @@ export function CopyMonthlyPerformanceModal({ synthetic, onClose }: { synthetic:
   };
 
   return createPortal(
-    <dialog ref={dialogRef} className="copy-monthly-dialog" aria-labelledby={titleId} data-trader-id={synthetic.trader.id}
+    <dialog ref={dialogRef} className="copy-monthly-dialog" aria-labelledby={titleId} data-trader-id={trader.id}
       onClick={event => { event.stopPropagation(); if (event.target === dialogRef.current) onClose(); }}
-      onCancel={event => { event.preventDefault(); onClose(); }}>
+      onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose(); }}>
       <div className="mcp-shell">
         <header className="mcp-header">
           <div>
-            <span className="mcp-trader">{synthetic.trader.name} · {synthetic.trader.id}</span>
+            <span className="mcp-trader">{trader.name} · {trader.id}</span>
             <h2 id={titleId}>Помесячная доходность</h2>
             <p>Результаты по месяцам с накопительным итогом</p>
           </div>
@@ -117,7 +124,7 @@ export function CopyMonthlyPerformanceModal({ synthetic, onClose }: { synthetic:
                 {coverageNote(current, latestDate, firstDate) && <p className="mcp-coverage">{coverageNote(current, latestDate, firstDate)}</p>}
                 <dl>
                   <div><dt>{current.month === null ? 'ROI за год' : 'ROI за месяц'}</dt><dd><Percent value={current.roi} strong /></dd></div>
-                  <div><dt>Реализованный PnL</dt><dd className={`mcp-${current.realizedPnl > 0 ? 'positive' : current.realizedPnl < 0 ? 'negative' : 'neutral'}`}>{publicSignedUsdt(current.realizedPnl)}</dd></div>
+                  <div><dt>Реализованный PnL</dt><dd className={`mcp-${realized != null && realized > 0 ? 'positive' : realized != null && realized < 0 ? 'negative' : 'neutral'}`}>{realized == null ? '—' : publicSignedUsdt(realized)}</dd></div>
                   <div><dt>Торговых дней</dt><dd>{count(current.tradingDays)}</dd></div>
                   <div><dt>Сделок</dt><dd>{count(current.trades)}</dd></div>
                   <div><dt>Прибыльных дней</dt><dd>{count(current.profitableDays)}</dd></div>
@@ -129,6 +136,7 @@ export function CopyMonthlyPerformanceModal({ synthetic, onClose }: { synthetic:
           </div>
         )}
 
+        {allTimeRoi !== undefined && <p className="mcp-note">За всё время · <Percent value={allTimeRoi} strong/></p>}
         <p className="mcp-note">
           {simple
             ? 'ROI месяца и года — сумма дневных доходностей за период, без реинвестирования, как в дневной доходности профиля.'

@@ -1,3 +1,5 @@
+import { botHistoryReader } from '../../services/tradingBotPerformance';
+import type { BotHistory } from '../../shared/thomasPerformance';
 import { Router } from 'express';
 import type { PrismaClient } from '@prisma/client';
 import { asyncRoute } from '../asyncRoute';
@@ -7,6 +9,21 @@ import { requireAuth } from '../middleware/auth';
 const CATALOGUE_THOMAS_USER_ID = '85bb5e78-7f14-43e1-a5e4-7a0becf14a60';
 export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = process.env.TRADING_BOTS_THOMAS_USER_ID ?? CATALOGUE_THOMAS_USER_ID) {
   const router = Router();
+  const history = botHistoryReader(process.env.TRADING_BOTS_THOMAS_VERIFIED_SNAPSHOT, thomasId);
+  let lastHistory: BotHistory | undefined;
+  let responseBody = '';
+  router.get('/trading-bots/range/performance', requireAuth(prisma), asyncRoute(async (_req, res) => {
+    res.set('Cache-Control', 'private, no-store');
+    try {
+      const current = await history();
+      if (current !== lastHistory) {
+        responseBody = JSON.stringify(current);
+        lastHistory = current;
+      }
+      res.type('json').send(responseBody);
+    }
+    catch { res.status(503).json({ error: 'Performance temporarily unavailable' }); }
+  }));
   router.get('/trading-bots/creators', requireAuth(prisma), asyncRoute(async (_req, res) => {
     res.set('Cache-Control', 'private, no-store');
     const owner = thomasId ? await prisma.user.findUnique({
