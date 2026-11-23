@@ -204,3 +204,12 @@
   .bots-content .vb-model-summary .vb-model-total { grid-column:auto; }
 }
 @media(prefers-reduced-motion:reduce) { .bots-content .vb-bot, .bots-content .vb-model-column > span { transition:none; } .bots-content .vb-bot:hover { transform:none; } }
+
+/* Charts have a distinct visual identity without changing ROI colour semantics. */
+.bots-content .vb-bot[data-bot="atlas"] .vb-spark { color:#d9b76b; }
+.bots-content .vb-bot[data-bot="ether"] .vb-spark { color:#afa1eb; }
+.bots-content .vb-bot[data-bot="sol"] .vb-spark { color:#59c9aa; }
+.bots-content .vb-bot[data-bot="delta"] .vb-spark { color:#83b2e3; }
+.bots-content .vb-bot[data-bot="range"] .vb-spark { color:#6ed5df; }
+.bots-content .vb-bot[data-bot="balance"] .vb-spark { color:#93c9ae; }
+.bots-content .vb-bot[data-bot="breakout"] .vb-spark { color:#deb76e; }
