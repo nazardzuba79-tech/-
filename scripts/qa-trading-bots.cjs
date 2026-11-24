@@ -108,7 +108,12 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       if(width===1440||width===390){
         await quant.screenshot({path:path.join(OUT,'flagship-'+width+'.png')});
         await rank.screenshot({path:path.join(OUT,'ranking-'+width+'.png')});
-        await page.route('**/api/v1/trading-bots/studio',r=>r.fulfill({json:{canCreate:true,thomasVip:true,published:[],drafts:[]}}));
+        const studioRoute='**/api/v1/trading-bots/studio';
+        await page.route(studioRoute,r=>r.fulfill({json:{canCreate:true}}));
+        await page.reload();await page.locator('.qm-studio summary').waitFor();
+        check(width+': incomplete Studio response preserves catalogue without edit access',await page.locator('[data-bot]').count()===7 && await page.getByRole('button',{name:'Создать стратегию'}).count()===0);
+        await page.unroute(studioRoute);
+        await page.route(studioRoute,r=>r.fulfill({json:{canCreate:true,thomasVip:true,published:[],drafts:[]}}));
         await page.reload();await page.getByRole('button',{name:'Создать стратегию'}).click();
         await page.getByLabel('Название',{exact:true}).fill('Quant Research');
         await page.locator('.qm-studio').screenshot({path:path.join(OUT,'vip-studio-'+width+'.png')});

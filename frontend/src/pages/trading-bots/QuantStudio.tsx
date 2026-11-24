@@ -10,14 +10,32 @@ type Draft = {
   owner?: { displayName: string | null };
 };
 type Studio = { canCreate: boolean; thomasVip: boolean; drafts: Draft[]; published: Draft[] };
+function record(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isDraft(value: unknown): value is Draft {
+  if (!record(value)) return false;
+  return ['id', 'name', 'pair', 'description'].every(key => typeof value[key] === 'string')
+    && (value.publishedAt === null || typeof value.publishedAt === 'string')
+    && (value.owner === undefined || (record(value.owner)
+      && (value.owner.displayName === null || typeof value.owner.displayName === 'string')));
+}
+
+function isStudio(value: unknown): value is Studio {
+  return record(value) && typeof value.canCreate === 'boolean' && typeof value.thomasVip === 'boolean'
+    && Array.isArray(value.drafts) && value.drafts.every(isDraft)
+    && Array.isArray(value.published) && value.published.every(isDraft);
+}
+
 export function useStudio() {
   const [data, setData] = useState<Studio | null>(null);
   const [version, refresh] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    request<Studio>('/trading-bots/studio', { signal: controller.signal })
+    request<unknown>('/trading-bots/studio', { signal: controller.signal })
       .then((result) => {
-        if (!controller.signal.aborted) setData(result);
+        if (!controller.signal.aborted) setData(isStudio(result) ? result : null);
       })
       .catch(() => {
         if (!controller.signal.aborted) setData(null);
