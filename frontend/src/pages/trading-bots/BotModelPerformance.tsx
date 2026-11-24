@@ -19,6 +19,7 @@ const display = (n: number) => monthlyPercent(n).text;
 
 export function BotModelPerformance({ cardRoi, dailySeries, period }: { cardRoi: number; dailySeries: readonly number[]; period: BotPeriod }) {
   const [selectedYear, setSelectedYear] = useState<0 | 1>(1);
+  const [picked,setPicked] = useState(11);
   const years = [MODEL_FIRST_YEAR, [...MODEL_SECOND_YEAR, cardRoi]] as const;
   const first = summedModelPercent(years[0]), second = summedModelPercent(years[1]);
   const total = summedModelPercent([...years[0], ...years[1]]);
@@ -54,11 +55,12 @@ export function BotModelPerformance({ cardRoi, dailySeries, period }: { cardRoi:
       <button type="button" aria-pressed={selectedYear === 1} onClick={() => setSelectedYear(1)}>Год 2</button>
     </div>
 
-    <div className="vb-model-chart" role="img" aria-label={'Сравнение двенадцати модельных месяцев. Значения от ' + display(Math.min(...values)) + ' до ' + display(Math.max(...values))}>
+    <div className="vb-model-chart" role="group" aria-label={'Сравнение двенадцати модельных месяцев. Значения от ' + display(Math.min(...values)) + ' до ' + display(Math.max(...values))}>
       {values.map((roi, i) => <span key={i} className="vb-model-column" title={'Период ' + (i + 1) + ': ' + display(roi)}>
-        <span style={{ height: (18 + (roi - 120) / 70 * 82) + '%' }} />
+        <button type="button" aria-label={'Месяц ' + (i + 1) + ' · ' + display(roi)} aria-pressed={picked === i} onFocus={()=>setPicked(i)} onPointerEnter={()=>setPicked(i)} onClick={()=>setPicked(i)} style={{ height: (18 + (roi - 120) / 70 * 82) + '%' }}/>
       </span>)}
     </div>
+    <div className="vb-model-picked">Месяц {picked+1} · {display(values[picked])}</div>
     <ol className="vb-model-rows">{values.map((roi, index) =>
       <li key={index}><span>Месяц {String(index + 1).padStart(2, '0')}</span><strong>{display(roi)}</strong></li>)}</ol>
     <p className="vb-model-caveat">

@@ -67,6 +67,7 @@ async function main() {
   const probeLoop = async (until, out) => { while (Date.now() < until) { const r = await call(tokens[probe], 'GET', '/demo/orders/open'); assert.equal(r.status, 200); out.push(r.ms); await new Promise(x => setTimeout(x, 50)); } };
   const load = async (until, phase) => {
     const tasks = readers.map(async (r, i) => { await new Promise(x => setTimeout(x, (i * 60) % 3000));
+      if (botBenchmark && phase === 'load') assert.equal((await call(tokens[r], 'GET', '/trading-bots/studio')).status, 200);
       while (Date.now() < until) { await call(tokens[r], 'GET', '/copy-trading/demo');
         if (botBenchmark && phase === 'load') assert.equal((await call(tokens[r], 'GET', '/trading-bots/range/performance')).status, 200);
         await new Promise(x => setTimeout(x, 3000)); } });

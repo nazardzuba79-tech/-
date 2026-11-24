@@ -1,5 +1,6 @@
 import { botHistoryReader } from '../../services/tradingBotPerformance';
 import type { BotHistory } from '../../shared/thomasPerformance';
+import { quantStudioRouter } from './quantStudio';
 import { Router } from 'express';
 import type { PrismaClient } from '@prisma/client';
 import { asyncRoute } from '../asyncRoute';
@@ -37,5 +38,6 @@ export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = proces
     const avatarUrl = photo && photo.length <= 700_000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(photo) ? photo : null;
     return res.json({ creators: { range: { displayName, avatarUrl } } });
   }));
+  router.use(quantStudioRouter(prisma, thomasId));
   return router;
 }

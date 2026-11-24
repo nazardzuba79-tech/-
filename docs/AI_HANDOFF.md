@@ -7896,3 +7896,22 @@ Implementation `346fa509` projects the bound account's public name in strategyOw
 ## 2026-11-24 — Codex — #722 / Draft #723 Trading Bots presentation
 - Continued from 3d71f37e8. TradingBotsPage, tradingBotsPresentation and BotHistoryPanel/BotModelPerformance/BotSparkline/TradingBots.css put Thomas first and connect all five detail windows to the existing illustration. The 30-day Thomas model ends at +180.26%; verified returns still take precedence. Long windows compare ordinal monthly returns.
 - Kept the existing seven strategies, model months and arithmetic summaries, verified-history API and author binding. Extended tradingBotsPresentation.test and qa-trading-bots. Final local checks: 32 unit assertions, 366 Chromium checks at five widths, TypeScript and Vite build passed. Browser fixtures only. Draft review pending.
+
+## 2026-11-24 — Draft #723 — Quant Marketplace review
+
+The new catalogue, ranking, Thomas profile, Academy and Studio are scoped to Trading Bots.
+The board ranks comparable results. In verified mode it excludes entries with only a model.
+Thomas's illustrative annual and lifetime figures sum ordinal monthly percentages. Published
+performance snapshots replace the illustration. Missing periods in the catalogue show a dash.
+
+Studio reads the existing CopyStrategyOwner premium flag on the server. An editorial binding
+uses studioAuthorUserId with a null ownerUserId so it does not register a copy-trading leader.
+Drafts and publications contain descriptions only. The schema migration precedes API rollout.
+No account is granted privileges by this migration. A read-only check found the Thomas profile
+and zero existing copy-author bindings. After separate owner approval, the idempotent
+scripts/ops/prepare-thomas-studio-vip.sql binds that profile to an editorial-only premium row.
+Leave existing copy leaders, model data and the previous Pages candidate 32bfe4eef78b8519445f12be74b9ac22ffebaead intact.
+
+Browser QA uses local fixtures and tests regular and premium viewers. The bench compares the
+same 50 readers and two trading fixtures in both phases, adding the Studio visit and history
+reads only in the candidate phase. All benchmark financial requests target a disposable database.

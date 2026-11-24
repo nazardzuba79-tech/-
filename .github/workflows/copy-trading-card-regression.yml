@@ -56,6 +56,8 @@ on:
       - 'src/shared/thomasPerformance.ts'
       - 'src/services/tradingBotPerformance.ts'
       - 'src/api/routes/tradingBotCreators.ts'
+      - 'src/api/routes/quantStudio.ts'
+      - 'src/api/routes/__tests__/quantStudio.test.ts'
       - 'frontend/src/pages/TradingBotsPage.tsx'
       - 'frontend/src/pages/trading-bots/**'
       - 'scripts/qa-trading-bots.cjs'
@@ -170,6 +172,8 @@ on:
       - 'src/shared/thomasPerformance.ts'
       - 'src/services/tradingBotPerformance.ts'
       - 'src/api/routes/tradingBotCreators.ts'
+      - 'src/api/routes/quantStudio.ts'
+      - 'src/api/routes/__tests__/quantStudio.test.ts'
       - 'frontend/src/pages/TradingBotsPage.tsx'
       - 'frontend/src/pages/trading-bots/**'
       - 'scripts/qa-trading-bots.cjs'
@@ -343,6 +347,7 @@ jobs:
           npm test -- --runInBand --runTestsByPath
           src/services/__tests__/tradingBotPerformance.test.ts
           src/api/routes/__tests__/tradingBotCreators.test.ts
+          src/api/routes/__tests__/quantStudio.test.ts
           frontend/src/lib/__tests__/tradingBotsPresentation.test.ts
       - name: Trading bots catalogue and detailed performance in a local browser
         env:
