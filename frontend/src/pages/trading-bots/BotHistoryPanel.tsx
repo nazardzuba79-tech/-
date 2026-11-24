@@ -45,19 +45,19 @@ export function useBotHistory() {
 const labels = { '7D': '7Д', '30D': '30Д', '90D': '90Д', '1Y': '1Р', ALL: 'Всё время' };
 const money = (n: number | null) => n === null ? '—' : n.toLocaleString('ru-RU', { maximumFractionDigits: 8 }) + ' USDT';
 
-export function BotHistoryPanel({ history, modelRoi }: { history: HistoryState; modelRoi: number }) {
+export function BotHistoryPanel({ history, modelRoi, modelSeries }: { history: HistoryState; modelRoi: number; modelSeries: readonly number[] }) {
   const [period, setPeriod] = useState<BotPeriod>('30D');
   const [calendar, setCalendar] = useState(false);
   const data = history.data?.status === 'verified' ? history.data : null;
   const stats = data?.periods[period];
   return <section className="vb-history" aria-label="История доходности">
     <h3>История доходности</h3>
-    <div className="vb-periods" role="group" aria-label="Период графика">{BOT_PERIODS.map(key =>
-      <button key={key} type="button" aria-pressed={period === key} onClick={() => setPeriod(key)}>{labels[key]}</button>)}</div>
+    {history.data && <div className="vb-periods" role="group" aria-label="Период графика">{BOT_PERIODS.map(key =>
+      <button key={key} type="button" aria-pressed={period === key} onClick={() => setPeriod(key)}>{labels[key]}</button>)}</div>}
     {data && stats ? <>
       <p>С начала стратегии · {data.inceptionDate}<br/>Данные на {data.asOf.replace('T', ' ').slice(0, 16)} UTC</p>
       <strong className="vb-roi">{monthlyPercent(stats.roi).text}</strong>
-      <Sparkline series={stats.series} name="Thomas Quant AI" verified large/>
+      <Sparkline key={period} series={stats.series} name="Thomas Quant AI" verified large/>
       <small>{stats.firstDate} — {stats.lastDate} UTC</small>
       <dl className="vb-metrics vb-modal-metrics">
         <div><dt>Чистый PnL за период</dt><dd>{money(stats.netPnl)}</dd></div>
@@ -75,6 +75,6 @@ export function BotHistoryPanel({ history, modelRoi }: { history: HistoryState; 
         allTimeRoi={data.periods.ALL.roi} onClose={() => setCalendar(false)}/>}
     </> : <p role="status">{history.error ? 'Не удалось загрузить историю доходности.' :
       history.data ? 'Подтверждённой истории этой стратегии пока нет.' : 'Загрузка истории доходности…'}</p>}
-    {history.data?.status === 'unavailable' && <BotModelPerformance cardRoi={modelRoi}/>}
+    {history.data?.status === 'unavailable' && <BotModelPerformance cardRoi={modelRoi} dailySeries={modelSeries} period={period}/>}
   </section>;
 }

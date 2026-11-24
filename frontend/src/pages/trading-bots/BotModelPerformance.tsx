@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import type { BotPeriod } from '../../../../src/shared/thomasPerformance';
+import { presentationPeriod } from '../../lib/tradingBotsPresentation';
+import { Sparkline } from './BotSparkline';
 import { monthlyPercent } from '../../lib/monthlyCopyPerformance';
 
 // An ordinal illustration only. No trade history, account balances, calendar dates or
@@ -14,13 +17,23 @@ export function summedModelPercent(values: readonly number[]): number {
 
 const display = (n: number) => monthlyPercent(n).text;
 
-export function BotModelPerformance({ cardRoi }: { cardRoi: number }) {
+export function BotModelPerformance({ cardRoi, dailySeries, period }: { cardRoi: number; dailySeries: readonly number[]; period: BotPeriod }) {
   const [selectedYear, setSelectedYear] = useState<0 | 1>(1);
   const years = [MODEL_FIRST_YEAR, [...MODEL_SECOND_YEAR, cardRoi]] as const;
   const first = summedModelPercent(years[0]), second = summedModelPercent(years[1]);
   const total = summedModelPercent([...years[0], ...years[1]]);
   const values = years[selectedYear];
-  return <section className="vb-model-months" aria-label="Модельная доходность по месяцам">
+  const shortWindow = period === '7D' || period === '30D';
+  const months = [...years[0], ...years[1]];
+  const series = shortWindow ? presentationPeriod(dailySeries, period === '7D' ? 7 : 30)
+    : months.slice(period === '90D' ? -3 : period === '1Y' ? -12 : 0);
+  return <>
+    <section className="vb-model-trend" aria-label="График модельной доходности">
+      <h4>{shortWindow ? 'Модельная доходность от начала периода' : 'Доходность по условным месяцам'}</h4>
+      <Sparkline key={period} series={series} name="Thomas Quant AI" large
+        unit={shortWindow ? 'День' : 'Месяц'} firstPoint={shortWindow ? 0 : months.length - series.length + 1}/>
+    </section>
+    <section className="vb-model-months" aria-label="Модельная доходность по месяцам">
     <div className="vb-model-head">
       <div>
         <span className="vb-model-eyebrow">АНАЛИТИКА СТРАТЕГИИ · СЦЕНАРИЙ</span>
@@ -49,9 +62,7 @@ export function BotModelPerformance({ cardRoi }: { cardRoi: number }) {
     <ol className="vb-model-rows">{values.map((roi, index) =>
       <li key={index}><span>Месяц {String(index + 1).padStart(2, '0')}</span><strong>{display(roi)}</strong></li>)}</ol>
     <p className="vb-model-caveat">
-      Годовые и общая суммы — простое сложение показанных месячных процентов по запросу владельца.
-      Это не сложная доходность (ROI), не прибыль в USDT и не результаты торгов. После подключения
-      подтверждённой истории расчёты будут выполняться отдельно по фактическим данным.
+      Сводка показывает сумму месячных процентов. Капитализация и PnL в USDT в неё не входят.
     </p>
-  </section>;
+  </section></>;
 }

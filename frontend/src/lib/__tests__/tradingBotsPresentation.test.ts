@@ -26,6 +26,7 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
     for (let week = 0; week < 104; week++) {
       const first = botPresentation(bot, week), again = botPresentation(bot, week);
       expect(first).toEqual(again);
+      if (bot.id === 'range') expect(first.roi).toBe(180.26);
       expect(first.roi).toBeGreaterThanOrEqual(120);
       expect(first.roi).toBeLessThanOrEqual(217);
       expect(first.series[0]).toBe(0);

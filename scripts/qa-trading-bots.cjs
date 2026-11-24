@@ -90,6 +90,32 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const model=await modelMonths.locator('li strong').allTextContents();
       check(width+': 12 distinct fractional months for selected year',model.length===12 && new Set(model).size===12 && model.every(s=>Number.parseFloat(s)>=120 && Number.parseFloat(s)<=190 && !Number.isInteger(Number.parseFloat(s))));
       check(width+': last model month equals current catalogue ROI',model.at(-1)===await quant.locator('.vb-roi').innerText());
+      check(width+': spotlight leads default catalogue',await page.locator('[data-bot]').first().getAttribute('data-bot')==='range');
+      const trend=page.getByRole('region',{name:'График модельной доходности'});
+      const cursor=trend.getByRole('slider',{name:'Точка графика'});
+      const paths=new Set();
+      for(const [label,first,last,steps] of [
+        ['7Д','День 0','День 7',7],['30Д','День 0','День 30',30],
+        ['90Д','Месяц 22','Месяц 24',2],['1Р','Месяц 13','Месяц 24',11],
+        ['Всё время','Месяц 1','Месяц 24',23]
+      ]){
+        await page.getByRole('group',{name:'Период графика'}).getByRole('button',{name:label,exact:true}).click();
+        const axes=await trend.locator('.vb-trend-axis span').allTextContents();
+        check(width+' '+label+': window and observation count',axes[0]===first && axes[1]===last && Number(await cursor.getAttribute('max'))===steps);
+        await cursor.focus();
+        await cursor.press('Home');
+        check(width+' '+label+': first point readable', (await cursor.getAttribute('aria-valuetext')).startsWith(first+' · '));
+        await cursor.press('End');
+        const reading=await cursor.getAttribute('aria-valuetext');
+        check(width+' '+label+': last point readable',reading.startsWith(last+' · ') && (label==='7Д' || reading.endsWith(model.at(-1))));
+        paths.add(await trend.locator('path[stroke]').getAttribute('d'));
+      }
+      check(width+': all five model charts differ',paths.size===5);
+      await page.getByRole('group',{name:'Период графика'}).getByRole('button',{name:'30Д',exact:true}).click();
+      if ([1440,1024,390].includes(width)) {
+        await page.locator('.vb-modal').evaluate(dialog=>dialog.scrollTop=0);
+        await page.screenshot({path:path.join(OUT,'thomas-detail-'+width+'.png')});
+      }
       const toNum=s=>Number.parseFloat(s.replace(/[+%]/g,''));
       const year2Total=model.reduce((sum,s)=>sum+toNum(s),0);
       const figures=await modelMonths.locator('.vb-model-summary strong').allTextContents();
@@ -167,6 +193,7 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+': focus restored',await page.locator('[data-bot="atlas"] .vb-open').evaluate(el=>el===document.activeElement));
       await page.locator('[data-bot="atlas"] .vb-heart').click();
       await page.reload();await page.locator('[data-bot]').first().waitFor();
+      await quant.locator('.vb-roi').waitFor();
       check(width+': stable after reload',JSON.stringify(await page.locator('.vb-bot .vb-roi').allTextContents())===JSON.stringify(values));
       check(width+': favorite retained',await page.locator('[data-bot="atlas"] .vb-heart').getAttribute('aria-pressed')==='true');
       await page.getByRole('button',{name:'DCA',exact:true}).click();

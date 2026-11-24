@@ -23,9 +23,9 @@ export const BOT_CATALOGUE: readonly BotDefinition[] = [
   { id: 'delta', name: 'Delta Balance', mark: 'DB', symbol: 'BTC + ETH', category: 'portfolio', strategy: 'Баланс позиций', minimum: 10000, risk: 'Высокий', baseRoi: 134,
     description: 'Исследует связку BTC и ETH через направленную экспозицию и компенсирующие позиции.',
     detail: 'Парная конфигурация оценивает согласованность движений BTC и ETH. Даже компенсирующая позиция не исключает проскальзывание, издержки и риск расхождения активов.' },
-  { id: 'range', name: 'Thomas Quant AI', mark: 'TQ', symbol: 'XRP / USDT', category: 'trend', strategy: 'Количественный импульс', creatorName: 'Thomas', minimum: 12500, risk: 'Умеренный', baseRoi: 178,
-    description: 'XRP под аналитическим микроскопом: динамика цены, волатильность и устойчивость рыночного импульса.',
-    detail: 'Авторская концепция Thomas Quant AI: количественная интерпретация цены и изменчивости XRP. Текущая модель показывает сценарные значения, а не результат работающего AI-движка; проверяйте риск вместе с доходностью.' },
+  { id: 'range', name: 'Thomas Quant AI', mark: 'TQ', symbol: 'XRP / USDT', category: 'trend', strategy: 'Количественный импульс', creatorName: 'Thomas', minimum: 12500, risk: 'Умеренный', baseRoi: 180.26,
+    description: 'Оценивает силу импульса XRP относительно волатильности рынка и глубины откатов.',
+    detail: 'Thomas рассматривает движение XRP в контексте рыночной структуры. Устойчивость импульса оценивается по глубине откатов и восстановлению цены. Сравнить периоды помогают доходность и максимальная просадка.' },
   { id: 'balance', name: 'Smart Rebalance', mark: 'SR', symbol: 'BTC · ETH · SOL · BNB · XRP', category: 'portfolio', strategy: 'Ребалансировка', minimum: 15000, risk: 'Умеренный', baseRoi: 166,
     description: 'Модель портфеля из пяти активов с контролем целевых весов и концентрации риска.',
     detail: 'Портфельный сценарий сравнивает текущие и целевые доли BTC, ETH, SOL, BNB и XRP. Отклонение более пяти процентных пунктов рассматривается как сигнал для ребалансировки.' },
@@ -61,7 +61,7 @@ export function maxDrawdown(roi: readonly number[]): number {
 export function botPresentation(bot: BotDefinition, week: number) {
   const hash = seed(`${bot.id}:${week}`);
   const variation = ((hash % 601) - 300) / 100;
-  const roi = round(Math.max(120, Math.min(217, bot.baseRoi + variation)));
+  const roi = bot.id === 'range' ? bot.baseRoi : round(Math.max(120, Math.min(217, bot.baseRoi + variation)));
   const trades = 110 + hash % 310;
   const wins = Math.round(trades * (0.57 + (hash % 160) / 1000));
   // Each illustrative strategy has its own recognisable path: pullbacks, plateaus

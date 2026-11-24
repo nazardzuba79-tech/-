@@ -69,7 +69,7 @@ function BotModal({ bot, profile, stats, history, onClose }: { history: ReturnTy
     <div className="vb-modal-head"><BotStrategyIcon id={bot.id}/><div><h2 id="vb-dialog-title">{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p><CreatorLine bot={bot} profile={profile}/></div><button type="button" className="vb-close" onClick={onClose} aria-label="Закрыть"><X size={20}/></button></div>
     <span className={`vb-risk ${bot.risk === 'Высокий' ? 'high' : ''}`}>{bot.risk} риск</span>
     <p className="vb-modal-note">{bot.detail}</p>
-    {bot.id === 'range' ? <BotHistoryPanel history={history} modelRoi={stats.roi}/> : <>
+    {bot.id === 'range' ? <BotHistoryPanel history={history} modelSeries={stats.series} modelRoi={stats.roi}/> : <>
     <div className="vb-roi-row"><div><span className="vb-label">Модельная доходность · {period} дней</span><strong className="vb-roi">+{percent(series[series.length - 1])}</strong></div><div className="vb-periods">{([7, 30] as const).map(days => <button type="button" key={days} aria-pressed={period === days} onClick={() => setPeriod(days)}>{days}д</button>)}</div></div>
     <Sparkline series={series} name={bot.name} large/>
     <dl className="vb-metrics vb-modal-metrics"><Metric label="Макс. просадка · 30д" value={percent(stats.drawdown)}/><Metric label="Прибыльные сделки · 30д" value={percent(stats.winRate)}/><Metric label="Сделок · 30д" value={stats.trades}/></dl>
@@ -104,6 +104,8 @@ export function TradingBotsPage() {
   const selectedEntry = entries.find(entry => entry.bot === selected);
   const visible = entries.filter(({ bot }) => (category === 'all' || bot.category === category) && (tab === 'all' || favorites.includes(bot.id)));
   const unknownMetric = (bot: BotDefinition) => bot.id === 'range' && !history.data;
+  const spotlight = sort === 'default' && tab === 'all' && category === 'all';
+  if (spotlight) visible.sort((a, b) => Number(b.bot.id === 'range') - Number(a.bot.id === 'range'));
   if (sort === 'roi') visible.sort((a, b) => Number(unknownMetric(a.bot)) - Number(unknownMetric(b.bot)) || (b.bot.id === 'range' && verified ? verified.roi : b.stats.roi) - (a.bot.id === 'range' && verified ? verified.roi : a.stats.roi));
   if (sort === 'drawdown') visible.sort((a, b) => Number(unknownMetric(a.bot)) - Number(unknownMetric(b.bot)) || (a.bot.id === 'range' && verified ? verified.drawdown : a.stats.drawdown) - (b.bot.id === 'range' && verified ? verified.drawdown : b.stats.drawdown));
   if (sort === 'minimum') visible.sort((a, b) => a.bot.minimum - b.bot.minimum);
@@ -120,7 +122,7 @@ export function TradingBotsPage() {
       <div className="vb-filterbar"><div className="vb-filters" aria-label="Тип стратегии">{([['all', 'Все стратегии'], ['grid', 'Grid'], ['dca', 'DCA'], ['trend', 'Трендовые'], ['portfolio', 'Портфельные']] as const).map(([id, label]) => <button key={id} type="button" aria-pressed={category === id} onClick={() => setCategory(id)}>{label}</button>)}</div><select aria-label="Сортировка ботов" value={sort} onChange={e => setSort(e.target.value)}><option value="default">Коллекция VOLTEX</option><option value="roi">По доходности</option><option value="drawdown">По меньшей просадке</option><option value="minimum">По минимальной сумме</option></select></div>
       <section className="vb-bots" aria-label="Коллекция торговых ботов">
         {visible.map(({ bot, stats }) => {
-          const featured = bot.id === 'range' && tab === 'all' && category === 'all' && sort === 'default';
+          const featured = spotlight && bot.id === 'range';
           const header = <div className="vb-bot-head"><BotStrategyIcon id={bot.id}/><div><h2>{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p><CreatorLine bot={bot} profile={creators[bot.id]}/></div><button type="button" className="vb-heart" aria-label={`${favorites.includes(bot.id) ? 'Убрать из избранного' : 'В избранное'}: ${bot.name}`} aria-pressed={favorites.includes(bot.id)} onClick={() => toggleFavorite(bot.id)}><Star size={18} fill={favorites.includes(bot.id) ? 'currentColor' : 'none'}/></button></div>;
           const footer = <div className="vb-foot"><div><small>Мин. инвестиция</small><span>{usd(bot.minimum)}</span></div><button type="button" className="vb-open" onClick={() => setSelected(bot)}>Подробнее <ArrowUpRight size={14}/></button></div>;
           const live = bot.id === 'range' ? verified : null;
