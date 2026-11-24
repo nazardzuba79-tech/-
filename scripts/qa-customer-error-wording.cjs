@@ -25,6 +25,12 @@
  */
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const http = require('node:http');
+const assert = require('node:assert/strict');
+// A BTC row also contains return/drawdown percentages. Only a decimal zero
+// outside a percentage or larger number can stand for the unknown holding.
+const zeroHolding = /BTC[^\n]*?(?<![\d.,])\$?0[.,]0+(?![\d.,]|\s*%)/;
+for (const row of ['BTC $0.00', 'BTC\t0,0000 USDT']) assert(zeroHolding.test(row));
+for (const row of ['BTC\t0,00%','BTC\t0.00 %','BTC\t10,00 USDT','BTC\t0,001 USDT']) assert(!zeroHolding.test(row));
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -338,8 +344,8 @@ async function run() {
         if (process.env.QA_DUMP) console.log('---- ' + tag + '\n' + text + '\n----');
         if (['partial', 'offline', 'timeout', 'slow'].includes(state)) {
           // An unpriced holding, or one never received, must read as unknown, not as nothing.
-          const zeroed = /BTC[^\n]*\$?0[.,]00/.test(text);
-          check(`${tag}: an unknown value is not printed as zero`, !zeroed, zeroed ? text.match(/BTC[^\n]*/)[0] : '');
+          const zeroed = text.match(zeroHolding);
+          check(`${tag}: an unknown value is not printed as zero`, !zeroed, zeroed?.[0] || '');
         }
         check(`${tag}: no uncaught page error`, console_errors.length === 0, console_errors[0] || '');
         page.removeAllListeners('pageerror');
