@@ -318,7 +318,12 @@ async function run() {
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(2500);
 
-        const text = await page.evaluate(() => document.body.innerText);
+        // The marketplace renders into a shadow root to isolate its CSS. Include its
+        // visible text in exactly the same customer-wording and error assertions.
+        const text = await page.evaluate(() => {
+          const quant = document.querySelector('[data-voltex-quant]')?.shadowRoot?.querySelector('[data-quant-theme]');
+          return [document.body.innerText, quant?.innerText].filter(Boolean).join('\n');
+        });
         const tag = `${target.label} · ${state}`;
         await page.screenshot({ path: path.join(OUT, `${target.label}-${state}.png`), fullPage: false });
 

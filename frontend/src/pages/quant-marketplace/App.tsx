@@ -15,6 +15,7 @@ import {
   presentationWeek,
   nextPresentationWeek,
   type BotCreator,
+  readBotCreators,
 } from "../../lib/tradingBotsPresentation";
 import { useStudio, type Draft } from "../trading-bots/QuantStudio";
 import { useBotHistory } from "../trading-bots/BotHistoryPanel";
@@ -47,12 +48,12 @@ export default function App() {
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    request<{ creators: Record<string, BotCreator> }>(
+    request<unknown>(
       "/trading-bots/creators",
       { signal: controller.signal },
     )
       .then((r) => {
-        if (!controller.signal.aborted) setCreators(r.creators);
+        if (!controller.signal.aborted) setCreators(readBotCreators(r));
       })
       .catch(() => {});
     return () => controller.abort();

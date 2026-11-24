@@ -1,3 +1,4 @@
+import { readBotCreators } from '../tradingBotsPresentation';
 import { catalogue } from "../../pages/quant-marketplace/data/catalogue";
 import { BOT_CATALOGUE } from "../tradingBotsPresentation";
 import type { BotHistory } from "../../../../src/shared/thomasPerformance";
@@ -80,4 +81,10 @@ it("uses the supplied verified periods and true observation dates, with no model
     "2026-03-08",
   ]);
   expect(s.monthly24).toEqual([]);
+});
+
+it('keeps the catalogue available when creator data is absent or partial', () => {
+  for (const response of [null, {}, { creators: [] }]) expect(readBotCreators(response)).toEqual({});
+  expect(readBotCreators({ creators: { range: { displayName: 'Thomas' }, atlas: { displayName: {} } } }))
+    .toEqual({range: {displayName: 'Thomas', avatarUrl: null}, atlas: {displayName: null, avatarUrl: null}});
 });

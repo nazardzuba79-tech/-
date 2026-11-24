@@ -3,6 +3,24 @@
  * values into balances, financial calculations or trading endpoints. */
 export type BotCategory = 'grid' | 'dca' | 'trend' | 'portfolio';
 export type BotCreator = { displayName: string | null; avatarUrl: string | null };
+
+/** Keep profiles independently usable when a rollout or partial response omits creators. */
+export function readBotCreators(payload: unknown): Record<string, BotCreator> {
+  if (!payload || typeof payload !== 'object' || !('creators' in payload)) return {};
+  const rows = payload.creators;
+  if (!rows || typeof rows !== 'object' || Array.isArray(rows)) return {};
+  const result: Record<string, BotCreator> = {};
+  for (const {id} of BOT_CATALOGUE) {
+    const row: unknown = (rows as Record<string, unknown>)[id];
+    if (!row || typeof row !== 'object') continue;
+    const name = 'displayName' in row ? row.displayName : null;
+    const avatar = 'avatarUrl' in row ? row.avatarUrl : null;
+    result[id] = { displayName: typeof name === 'string' ? name : null,
+      avatarUrl: typeof avatar === 'string' ? avatar : null };
+  }
+  return result;
+}
+
 export type BotDefinition = {
   id: string; name: string; mark: string; symbol: string; category: BotCategory;
   creatorName?: string;
