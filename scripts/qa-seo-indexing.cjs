@@ -163,8 +163,13 @@ async function browsers(base, locs) {
       const onError = (error) => errors.push(String(error.message || error).slice(0, 200));
       page.on('pageerror', onError);
       await page.goto(base + address, { waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(() => document.getElementById('root')?.childElementCount > 0, null, { timeout: 15000 }).catch(() => {});
+      // A Suspense placeholder can already be a child of #root while the
+      // requested route still has no visible content. Sample after its redirect
+      // and actual render; the assertions below still report any timed-out page.
       await page.waitForTimeout(1200);
+      await page.waitForFunction((expectedPath) =>
+        location.pathname === expectedPath && (document.getElementById('root')?.innerText || '').trim().length > 20,
+        finalPath, { timeout: 15000 }).catch(() => {});
       const state = await page.evaluate(() => ({
         path: location.pathname,
         title: document.title,
