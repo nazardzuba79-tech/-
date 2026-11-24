@@ -194,7 +194,7 @@ function BotModal({
         ) : history.data?.status === 'unavailable' ? (
           <BotModelPerformance cardRoi={stats.roi} dailySeries={stats.series} period="ALL" />
         ) : (
-          <p>История пока недоступна.</p>
+          <p>{history.error ? 'Не удалось загрузить историю доходности.' : 'Загрузка истории доходности…'}</p>
         )
       ) : (
         <>
