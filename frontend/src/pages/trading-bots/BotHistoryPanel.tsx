@@ -24,7 +24,7 @@ export function useBotHistory() {
         }
         if (!controller.signal.aborted) setState({ data });
       } catch {
-        if (!controller.signal.aborted) setState({ error: true });
+        if (!controller.signal.aborted) setState(previous => ({ ...previous, error: true }));
       } finally { pending = false; }
     };
     void refresh();

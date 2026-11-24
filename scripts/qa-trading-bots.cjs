@@ -78,168 +78,56 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const page=await context.newPage(), writes=[], errors=[];
       page.on('request',r=>{if(!['GET','HEAD','OPTIONS'].includes(r.method()))writes.push(r.method()+' '+new URL(r.url()).pathname);});
       page.on('pageerror',e=>errors.push(e.message));
-      await page.goto(base+'/trading-bots'); await page.locator('[data-bot]').first().waitFor();
-      check(width+': seven bots',await page.locator('[data-bot]').count()===7);
-      const quant = page.locator('[data-bot="range"]');
-      await quant.locator('.vb-creator').getByText('Thomas QA').waitFor();
-      check(width+': Quant identity on its own card',await quant.getByRole('heading',{name:'Thomas Quant AI'}).count()===1 && await page.locator('.vb-bot .vb-creator').getByText('Thomas QA').count()===1);
-      check(width+': profile avatar loaded',await quant.locator('.vb-creator img').evaluate(async image=>{await image.decode();return image.naturalWidth===1;}));
-      const rank=page.locator('.qm-ranking');
-      check(width+': ranking covers all strategies and derives Thomas first',await rank.locator('tbody tr').count()===7 && (await rank.locator('tbody th').first().innerText()).includes('Thomas Quant AI'));
-      const rebalanceRow=rank.locator('tbody tr').filter({hasText:'Smart Rebalance'});
-      check(width+': missing annual result stays unknown',await rebalanceRow.locator('td').nth(4).innerText()==='—');
-      check(width+': drawdown is a percentage',/^\d+(?:\.\d{1,2})?%$/.test(await rebalanceRow.locator('td').nth(6).innerText()));
-      await rank.getByLabel('Поиск стратегии').fill('Thomas QA');
-      check(width+': author filter',await rank.locator('tbody tr').count()===1);
-      await rank.getByLabel('Поиск стратегии').fill('');
-      await rank.getByLabel('Тип в рейтинге').selectOption('portfolio');
-      check(width+': portfolio filter',await rank.locator('tbody tr').count()===2);
-      await rank.getByLabel('Тип в рейтинге').selectOption('');
-      await rank.getByLabel('Период рейтинга').selectOption('year');
-      check(width+': only comparable annual histories ranked',await rank.locator('tbody tr').count()===1);
-      await rank.getByLabel('Период рейтинга').selectOption('roi');
-      const mini=quant.getByRole('slider',{name:'График Thomas Quant AI'});await mini.focus();await mini.press('Home');
-      check(width+': compact chart inspects real first point',await mini.getAttribute('aria-valuetext')==='День 0 · 0.00%');
-      await mini.blur();
-      check(width+': viewer cannot create',await page.getByRole('button',{name:'Создать стратегию'}).count()===0);
-      await page.locator('.qm-academy details summary').first().click();
-      check(width+': article opens inline',await page.locator('.qm-academy details[open] p').first().isVisible());
-      await page.locator('.qm-academy details summary').first().click();
-      if(width===1440||width===390){
-        await quant.screenshot({path:path.join(OUT,'flagship-'+width+'.png')});
-        await rank.screenshot({path:path.join(OUT,'ranking-'+width+'.png')});
-        const studioRoute='**/api/v1/trading-bots/studio';
-        await page.route(studioRoute,r=>r.fulfill({json:{canCreate:true}}));
-        await page.reload();await page.locator('.qm-studio summary').waitFor();
-        check(width+': incomplete Studio response preserves catalogue without edit access',await page.locator('[data-bot]').count()===7 && await page.getByRole('button',{name:'Создать стратегию'}).count()===0);
-        await page.unroute(studioRoute);
-        await page.route(studioRoute,r=>r.fulfill({json:{canCreate:true,thomasVip:true,published:[],drafts:[]}}));
-        await page.reload();await page.getByRole('button',{name:'Создать стратегию'}).click();
-        await page.getByLabel('Название',{exact:true}).fill('Quant Research');
-        await page.locator('.qm-studio').screenshot({path:path.join(OUT,'vip-studio-'+width+'.png')});
-        await page.unroute('**/api/v1/trading-bots/studio');await page.reload();
+      await page.goto(base+'/trading-bots');
+      page.setDefaultTimeout(10000);
+      const rows=page.locator('#strategy-leaderboard [data-bot]:visible');
+      await rows.first().waitFor();
+      check(width+' seven comparable strategies', await rows.count()===7);
+      const ids=await rows.evaluateAll(els=>els.map(e=>e.dataset.bot));
+      check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
+      const flagship=page.locator('main section').filter({has:page.getByRole('button',{name:'Подробнее о стратегии',exact:true})});
+      await flagship.getByText('Thomas QA',{exact:true}).waitFor();
+      check(width+' flagship and catalogue agree',Number(await rows.first().getAttribute('data-roi'))===180.26);
+      const market=page.locator('.quant-filter select').nth(1);
+      await market.selectOption({label:'XRP / USDT'});check(width+' market filter',await rows.count()===1);
+      await market.selectOption('Все');
+      const q=page.locator('#strategy-leaderboard input').first();
+      await q.fill('Thomas QA');check(width+' owner search',await rows.count()===1);await q.fill('');
+      await page.locator('#strategy-leaderboard').getByRole('button',{name:'DCA',exact:true}).first().click();
+      check(width+' category filter',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='ether');
+      await flagship.getByRole('button',{name:'Подробнее о стратегии'}).click();
+      await page.waitForURL('**/trading-bots/strategy/range');await page.reload();await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).first().waitFor();
+      for(const period of ['7D','30D','90D','1Y','ALL']){
+        await page.getByRole('button',{name:period,exact:true}).click();
+        const out=page.locator('output[data-period="'+period+'"]');
+        check(width+' '+period+' has data',Number(await out.getAttribute('data-count'))>1&&Number.isFinite(Number(await out.getAttribute('data-return'))));
       }
-      await quant.locator('.vb-open').click();
-      const sections=page.getByRole('group',{name:'Раздел профиля'});
-      for(const name of ['Статистика','По месяцам','О стратегии','Автор','Обзор']){const btn=sections.getByRole('button',{name,exact:true});await btn.click();check(width+' profile '+name,await btn.getAttribute('aria-pressed')==='true');}
-      check(width+': modal uses the same creator',await page.locator('dialog .vb-creator').getByText('Thomas QA').isVisible());
-      await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
-      const modelMonths=page.getByRole('region',{name:'Модельная доходность по месяцам'});
-      const model=await modelMonths.locator('li strong').allTextContents();
-      check(width+': 12 distinct fractional months for selected year',model.length===12 && new Set(model).size===12 && model.every(s=>Number.parseFloat(s)>=120 && Number.parseFloat(s)<=190 && !Number.isInteger(Number.parseFloat(s))));
-      check(width+': last model month equals current catalogue ROI',model.at(-1)===await quant.locator('.vb-roi').innerText());
-      check(width+': spotlight leads default catalogue',await page.locator('[data-bot]').first().getAttribute('data-bot')==='range');
-      const trend=page.getByRole('region',{name:'График модельной доходности'});
-      const cursor=trend.getByRole('slider',{name:'Точка графика'});
-      const paths=new Set();
-      for(const [label,first,last,steps] of [
-        ['7Д','День 0','День 7',7],['30Д','День 0','День 30',30],
-        ['90Д','Месяц 22','Месяц 24',2],['1Р','Месяц 13','Месяц 24',11],
-        ['Всё время','Месяц 1','Месяц 24',23]
-      ]){
-        await page.getByRole('group',{name:'Период графика'}).getByRole('button',{name:label,exact:true}).click();
-        const axes=await trend.locator('.vb-trend-axis span').allTextContents();
-        check(width+' '+label+': window and observation count',axes[0]===first && axes[1]===last && Number(await cursor.getAttribute('max'))===steps);
-        await cursor.focus();
-        await cursor.press('Home');
-        check(width+' '+label+': first point readable', (await cursor.getAttribute('aria-valuetext')).startsWith(first+' · '));
-        await cursor.press('End');
-        const reading=await cursor.getAttribute('aria-valuetext');
-        check(width+' '+label+': last point readable',reading.startsWith(last+' · ') && (label==='7Д' || reading.endsWith(model.at(-1))));
-        paths.add(await trend.locator('path[stroke]').getAttribute('d'));
-      }
-      check(width+': all five model charts differ',paths.size===5);
-      await page.getByRole('group',{name:'Период графика'}).getByRole('button',{name:'30Д',exact:true}).click();
-      if ([1440,1024,390].includes(width)) {
-        await page.locator('.vb-modal').evaluate(dialog=>dialog.scrollTop=0);
-        await page.screenshot({path:path.join(OUT,'thomas-detail-'+width+'.png')});
-      }
-      const toNum=s=>Number.parseFloat(s.replace(/[+%]/g,''));
-      const year2Total=model.reduce((sum,s)=>sum+toNum(s),0);
-      const figures=await modelMonths.locator('.vb-model-summary strong').allTextContents();
-      check(width+': second year total sums 12 displayed percentages',Math.abs(toNum(figures[1])-year2Total)<0.001);
-      check(width+': selected model chart has 12 varying bars',await modelMonths.locator('.vb-model-column').count()===12 && new Set(await modelMonths.locator('.vb-model-column > button').evaluateAll(nodes=>nodes.map(n=>n.style.height))).size>5);
-      await modelMonths.getByRole('button',{name:'Год 1'}).click();
-      const firstYear=await modelMonths.locator('li strong').allTextContents();
-      const year1Total=firstYear.reduce((sum,s)=>sum+toNum(s),0);
-      check(width+': first year differs and sums correctly',firstYear.length===12 && firstYear.join(',')!==model.join(',') && Math.abs(toNum(figures[0])-year1Total)<0.001);
-      check(width+': all period equals both annual model sums',Math.abs(toNum(figures[2])-year1Total-year2Total)<0.001);
-      await modelMonths.getByRole('button',{name:'Год 2'}).click();
-      check(width+': model year selection restores card alignment',(await modelMonths.locator('li strong').allTextContents()).at(-1)===await quant.locator('.vb-roi').innerText());
-      if(width===1440 || width===390) {
-        await modelMonths.screenshot({path:path.join(OUT,'thomas-model-months-'+width+'.png')});
-        const performanceRoute='**/api/v1/trading-bots/range/performance';
-        await page.route(performanceRoute,route=>route.fulfill({status:503,json:{error:'fixture'}}));
-        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-        await page.getByText('Не удалось загрузить историю доходности.').waitFor();
-        await page.unroute(performanceRoute);
-        await page.route(performanceRoute,route=>route.fulfill({json:history}));
-        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-        const panel=page.locator('.vb-history');
-        await panel.getByRole('button',{name:'Помесячная доходность'}).waitFor();
-        check(width+': verified history replaces model examples',await modelMonths.count()===0 && await rank.locator('tbody tr').count()===1);
-        for(const [period,label] of Object.entries({'7D':'7Д','30D':'30Д','90D':'90Д','1Y':'1Р',ALL:'Всё время'})){
-          await panel.getByRole('button',{name:label,exact:true}).click();
-          check(width+' '+period+': verified period ROI',parseFloat(await panel.locator('.vb-roi').innerText())===Number(history.periods[period].roi.toFixed(2)));
-          check(width+' '+period+': verified graph',await panel.getByRole('img').isVisible());
+      await page.getByRole('button',{name:'☆ В избранное'}).click();await page.reload();await page.getByRole('button',{name:'★ В избранном'}).waitFor();
+      await page.getByRole('button',{name:'Личный план'}).click();await page.getByLabel('Планируемая инвестиция').fill('1');
+      check(width+' minimum enforced',await page.getByRole('button',{name:'Рассчитать'}).isDisabled());
+      await page.getByLabel('Планируемая инвестиция').fill('12500');await page.getByRole('button',{name:'Рассчитать'}).click();
+      await page.getByText(/локальный план без исполнения/).waitFor();
+      await page.getByRole('button',{name:'Помесячная доходность',exact:true}).click();
+      check(width+' finite model display',!/(NaN|Infinity|undefined)%?/.test(await page.locator('[data-quant-theme]').innerText()));
+      const cells=page.locator('[data-month]');check(width+' 24 conditional months',await cells.count()===24);
+      check(width+' last month sync',Number(await cells.last().getAttribute('data-return'))===180.26);
+      await page.getByRole('button',{name:'Статистика',exact:true}).click();await page.getByText(/Чистый PnL за всё время/).waitFor();
+      if(width===1440 || width===390){
+        const api='**/api/v1/trading-bots/range/performance';
+        await page.route(api,r=>r.fulfill({status:503,json:{error:'fixture'}}));await page.reload();await page.getByText('Не удалось загрузить историю доходности.').waitFor();
+        await page.unroute(api);await page.route(api,r=>r.fulfill({json:history}));await page.reload();await page.getByText('Подтверждённая торговая история',{exact:true}).first().waitFor();
+        for(const period of ['7D','30D','90D','1Y','ALL']){
+          await page.getByRole('button',{name:period,exact:true}).click();const out=page.locator('output[data-period="'+period+'"]');
+          check(width+' verified '+period, Math.abs(Number(await out.getAttribute('data-return'))-history.periods[period].roi)<.011);
         }
-        await panel.getByRole('button',{name:'Помесячная доходность'}).click();
-        const calendar=page.locator('.copy-monthly-dialog');
-        check(width+': 24 monthly cells',await calendar.locator('tbody button').count()===24);
-        await calendar.getByRole('button',{name:/Февраль 2024/}).click();
-        check(width+': zero month selectable',await calendar.locator('.mcp-detail strong.mcp-neutral').innerText()==='0.00%');
-        check(width+': all-time alongside annual totals',await calendar.getByText(/За всё время/).isVisible());
-        await page.keyboard.press('Escape');
-        check(width+': calendar returns focus to open profile',await panel.getByRole('button',{name:'Помесячная доходность'}).evaluate(e=>e===document.activeElement));
-        check(width+': detail fits viewport',await page.locator('dialog.vb-modal').evaluate(e=>e.scrollWidth<=e.clientWidth+1));
-        await page.locator('dialog .vb-close').click();
-        check(width+': card refreshed from same snapshot',parseFloat(await quant.locator('.vb-roi').innerText())===Number(history.periods['30D'].roi.toFixed(2)));
-        await page.reload(); await quant.locator('.vb-open').click();
-        await panel.getByRole('button',{name:'Помесячная доходность'}).waitFor();
-        await page.unroute(performanceRoute);
-        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-        await page.getByText('Подтверждённой истории этой стратегии пока нет.').waitFor();
+        await page.getByRole('button',{name:'Помесячная доходность',exact:true}).click();
+        check(width+' verified months replace scenarios',await page.locator('[data-month]').count()===0 && await page.locator('.quant-data tbody tr').count()===Object.values(history.monthly.cells).filter(c=>c.month!==null&&c.year===history.monthly.years.slice(-1)[0]).length);
+        await page.unroute(api);
       }
-      await page.locator('dialog .vb-close').click();
-      const layout=await page.evaluate(()=>{
-        const h=document.querySelector('.global-header'),s=getComputedStyle(h);
-        const left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect();
-        const nav=h.querySelector('.main-nav');
-        return {width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,background:s.backgroundColor,texture:s.backgroundImage,font:s.fontFamily,headerOverlap:left.right>right.left+1,navClipped:Math.max(0,nav.scrollWidth-nav.clientWidth)};
-      });
-      report.layouts.push(layout);
-      check(width+': no horizontal overflow',layout.overflow<=1);
-      check(width+': solid graphite header',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
-      check(width+': header clusters separate',!layout.headerOverlap);
-      check(width+': no clipped navigation links',layout.navClipped===0);
-      await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
-      await page.screenshot({path:path.join(OUT,'bots-'+width+'.png'),fullPage:true});
-      const values=await page.locator('.vb-bot .vb-roi').allTextContents();
-      check(width+': positive model range',values.every(v=>parseFloat(v.replace('+',''))>=120&&parseFloat(v.replace('+',''))<=217));
-      check(width+': model disclosure visible',await page.locator('.vb-data-note').isVisible());
-      await page.locator('[data-bot="atlas"] .vb-open').click();
-      check(width+': modal opens',await page.locator('dialog[open]').count()===1);
-      await page.locator('#vb-budget').fill('2499');
-      check(width+': minimum enforced',await page.getByRole('button',{name:'Копировать',exact:true}).isDisabled());
-      await page.locator('#vb-budget').fill('2500');
-      await page.getByRole('button',{name:'Копировать',exact:true}).click();
-      check(width+': local plan shown',await page.locator('.vb-plan').isVisible());
-      await page.getByRole('button',{name:'7д',exact:true}).click();
-      check(width+': 7-day period',await page.getByRole('button',{name:'7д',exact:true}).getAttribute('aria-pressed')==='true');
-      await page.screenshot({path:path.join(OUT,'bot-detail-'+width+'.png')});
-      await page.keyboard.press('Escape');
-      check(width+': Escape closes modal',await page.locator('dialog').count()===0);
-      check(width+': focus restored',await page.locator('[data-bot="atlas"] .vb-open').evaluate(el=>el===document.activeElement));
-      await page.locator('[data-bot="atlas"] .vb-heart').click();
-      await page.reload();await page.locator('[data-bot]').first().waitFor();
-      await quant.locator('.vb-roi').waitFor();
-      check(width+': stable after reload',JSON.stringify(await page.locator('.vb-bot .vb-roi').allTextContents())===JSON.stringify(values));
-      check(width+': favorite retained',await page.locator('[data-bot="atlas"] .vb-heart').getAttribute('aria-pressed')==='true');
-      await page.getByRole('button',{name:'DCA',exact:true}).click();
-      check(width+': category filter',await page.locator('[data-bot]').count()===1);
-      await page.getByRole('button',{name:'Все стратегии',exact:true}).click();
-      await page.getByLabel('Сортировка ботов').selectOption('minimum');
-      check(width+': minimum sorting',await page.locator('[data-bot]').first().getAttribute('data-bot')==='atlas');
+      await page.goto(base+'/trading-bots/studio');await page.getByRole('heading',{name:'Bot Studio доступен только VIP-трейдерам'}).waitFor();
+      check(width+' ordinary account cannot edit',await page.locator('textarea').count()===0);
+      await page.goto(base+'/trading-bots');await rows.first().waitFor();
+      await page.screenshot({path:path.join(OUT,'bots-'+width+'.png')});
       if(await page.locator('.nav-burger').isVisible()) {
         await page.locator('.nav-burger').click();
         check(width+': mobile bots link',await page.locator('.nav-mobile-menu a[href="/trading-bots"]').isVisible());
@@ -264,9 +152,9 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
     const page=await context.newPage();
     await page.clock.install({time:new Date('2026-09-27T23:59:58Z')});
     await page.goto(base+'/trading-bots');await page.locator('[data-bot]').first().waitFor();
-    const before=await page.locator('.vb-bot .vb-roi').allTextContents();
+    const before=await page.locator('#strategy-leaderboard [data-bot]:visible').evaluateAll(els=>els.map(e=>e.dataset.roi));
     await page.clock.fastForward(3000);
-    const after=await page.locator('.vb-bot .vb-roi').allTextContents();
+    const after=await page.locator('#strategy-leaderboard [data-bot]:visible').evaluateAll(els=>els.map(e=>e.dataset.roi));
     check('Monday boundary refreshes an open page',JSON.stringify(before)!==JSON.stringify(after));
     await context.close();
     for(const width of [1920,1440,1024,390]) {

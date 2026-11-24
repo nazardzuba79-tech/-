@@ -1,0 +1,125 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --bg-canvas: #F3F5F8;
+  --bg-surface: rgba(255, 255, 255, 0.94);
+  --bg-surface-elevated: #FAFBFD;
+  --bg-subtle: #EDF1F6;
+  --bg-muted: #E2E8F0;
+  --bg-header: rgba(255, 255, 255, 0.90);
+  --bg-footer: rgba(236, 239, 244, 0.92);
+
+  --bg-hero-from: rgba(255, 255, 255, 0.88);
+  --bg-hero-via: rgba(247, 249, 252, 0.84);
+  --bg-hero-to: rgba(238, 242, 247, 0.82);
+
+  --bg-intel-from: rgba(255, 255, 255, 0.92);
+  --bg-intel-via: rgba(246, 248, 251, 0.90);
+  --bg-intel-to: rgba(237, 241, 246, 0.90);
+
+  --bg-thomas-from: rgba(255, 253, 247, 0.95);
+  --bg-thomas-via: rgba(251, 248, 240, 0.94);
+  --bg-thomas-to: rgba(244, 239, 226, 0.94);
+
+  --border-subtle: rgba(15, 23, 42, 0.09);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --border-gold: rgba(168, 124, 42, 0.38);
+
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-gold: #8F681E;
+  --text-teal: #0F766E;
+  --text-emerald: #047857;
+  --text-crimson: #DC2626;
+
+  --chart-grid: rgba(15, 23, 42, 0.07);
+  --chart-axis: #64748B;
+  --chart-ref: rgba(15, 23, 42, 0.16);
+  --chart-tooltip-bg: rgba(255, 255, 255, 0.97);
+  --chart-tooltip-border: rgba(15, 23, 42, 0.14);
+}
+
+.dark {
+  color-scheme: dark;
+  /* Cosmic Obsidian-Sapphire × Aurora Cyan × Molten Champagne Gold */
+  --bg-canvas: #080C1D;
+  --bg-surface: rgba(14, 21, 46, 0.68);
+  --bg-surface-elevated: rgba(21, 31, 68, 0.80);
+  --bg-subtle: rgba(10, 16, 36, 0.64);
+  --bg-muted: #1E2B4D;
+  --bg-header: rgba(9, 13, 30, 0.80);
+  --bg-footer: rgba(8, 12, 26, 0.82);
+
+  --bg-hero-from: rgba(22, 27, 64, 0.58);
+  --bg-hero-via: rgba(14, 21, 50, 0.46);
+  --bg-hero-to: rgba(9, 18, 40, 0.38);
+
+  --bg-intel-from: rgba(22, 28, 64, 0.72);
+  --bg-intel-via: rgba(14, 24, 52, 0.64);
+  --bg-intel-to: rgba(11, 32, 48, 0.70);
+
+  --bg-thomas-from: rgba(38, 28, 22, 0.78);
+  --bg-thomas-via: rgba(18, 26, 52, 0.72);
+  --bg-thomas-to: rgba(11, 36, 44, 0.76);
+
+  --border-subtle: rgba(129, 140, 248, 0.20);
+  --border-strong: rgba(56, 189, 248, 0.36);
+  --border-gold: rgba(251, 191, 36, 0.52);
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #D6E2F5;
+  --text-muted: #9CB0D4;
+  --text-gold: #FCD34D;
+  --text-teal: #22D3EE;
+  --text-emerald: #34D399;
+  --text-crimson: #FB7185;
+
+  --chart-grid: rgba(129, 140, 248, 0.12);
+  --chart-axis: #9CB0D4;
+  --chart-ref: rgba(148, 163, 184, 0.22);
+  --chart-tooltip-bg: rgba(12, 18, 40, 0.96);
+  --chart-tooltip-border: rgba(56, 189, 248, 0.28);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom subtle institutional scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

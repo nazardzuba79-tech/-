@@ -1717,6 +1717,8 @@ model NativeFundingModel {
 
 /// Editorial metadata only. Publication cannot place orders or allocate funds.
 model QuantStrategyDraft {
+  settings Json?
+  revision Int @default(1)
   id String @id @default(uuid())
   ownerUserId String
   owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)

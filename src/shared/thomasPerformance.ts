@@ -17,6 +17,8 @@ export interface BotPeriodResult {
   drawdown: number;
   /** Daily compounded return in %, starting with the opening reference point. */
   series: number[];
+  /** UTC dates of daily observations following the initial reference point. */
+  observationDates?: string[];
 }
 
 export type BotHistory = { status: 'unavailable' } | {

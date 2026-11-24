@@ -46,7 +46,7 @@ function summarize(days: Day[]): BotPeriodResult {
   }
   if (!series.every(Number.isFinite)) throw Error('Unrepresentable performance index');
   return { firstDate: days[0].date, lastDate: days[days.length - 1].date,
-    roi: series[series.length - 1], series, netPnl: sum(days, 'net')!,
+    roi: series[series.length - 1], series, observationDates: days.map(day=>day.date), netPnl: sum(days, 'net')!,
     realizedPnl: sum(days, 'realizedGross'), unrealizedChange: sum(days, 'unrealizedChange'),
     fees: sum(days, 'fees'), trades, winRate: trades ? wins / trades * 100 : null,
     drawdown: periodDrawdown(days.map(d => d.dailyReturn), 'DAILY_TWR'),

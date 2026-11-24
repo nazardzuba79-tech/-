@@ -8,7 +8,7 @@ test('Settings header exposes the existing Trading Bots route on desktop and mob
   const nav = read('src/pages/settings-arctic/ArcticTopNav.tsx');
   const app = read('src/App.tsx');
 
-  expect(app).toContain('<Route path="/trading-bots"');
+  expect(app).toContain('<Route path="/trading-bots/*"');
   expect(nav.match(/to="\/trading-bots"/g)).toHaveLength(2);
   expect(nav).not.toContain('this app has no live page');
   expect(nav).not.toContain('only a "coming soon" teaser');

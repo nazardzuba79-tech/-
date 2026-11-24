@@ -60,6 +60,8 @@ on:
       - 'src/api/routes/__tests__/quantStudio.test.ts'
       - 'frontend/src/pages/TradingBotsPage.tsx'
       - 'frontend/src/pages/trading-bots/**'
+      - 'frontend/src/pages/quant-marketplace/**'
+      - 'frontend/public/quant-marketplace/**'
       - 'scripts/qa-trading-bots.cjs'
       - 'scripts/qa-thomas-snapshot.cjs'
       - 'frontend/src/lib/depositMinimum.ts'
@@ -176,6 +178,8 @@ on:
       - 'src/api/routes/__tests__/quantStudio.test.ts'
       - 'frontend/src/pages/TradingBotsPage.tsx'
       - 'frontend/src/pages/trading-bots/**'
+      - 'frontend/src/pages/quant-marketplace/**'
+      - 'frontend/public/quant-marketplace/**'
       - 'scripts/qa-trading-bots.cjs'
       - 'scripts/qa-thomas-snapshot.cjs'
       - 'frontend/src/lib/depositMinimum.ts'
@@ -348,6 +352,7 @@ jobs:
           src/services/__tests__/tradingBotPerformance.test.ts
           src/api/routes/__tests__/tradingBotCreators.test.ts
           src/api/routes/__tests__/quantStudio.test.ts
+          frontend/src/lib/__tests__/quantMarketplace.test.ts
           frontend/src/lib/__tests__/tradingBotsPresentation.test.ts
       - name: Trading bots catalogue and detailed performance in a local browser
         env:

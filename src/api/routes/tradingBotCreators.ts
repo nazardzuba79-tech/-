@@ -12,16 +12,18 @@ export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = proces
   const router = Router();
   const history = botHistoryReader(process.env.TRADING_BOTS_THOMAS_VERIFIED_SNAPSHOT, thomasId);
   let lastHistory: BotHistory | undefined;
-  let responseBody = '';
+  let responseBody = Buffer.alloc(0);
   router.get('/trading-bots/range/performance', requireAuth(prisma), asyncRoute(async (_req, res) => {
     res.set('Cache-Control', 'private, no-store');
     try {
       const current = await history();
       if (current !== lastHistory) {
-        responseBody = JSON.stringify(current);
+        responseBody = Buffer.from(JSON.stringify(current));
         lastHistory = current;
       }
-      res.type('json').send(responseBody);
+      // The same immutable snapshot is shared by authenticated readers. Avoid encoding
+      // and generating a new ETag per poll on this private, no-store endpoint.
+      res.type('json').set('Content-Length', String(responseBody.length)).end(responseBody);
     }
     catch { res.status(503).json({ error: 'Performance temporarily unavailable' }); }
   }));

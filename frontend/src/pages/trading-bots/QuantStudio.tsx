@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { request } from '../../lib/api';
 
-type Draft = {
+import type { StudioDraftStrategy } from '../quant-marketplace/types/strategy';
+export type CardSettings = Pick<StudioDraftStrategy, 'category'|'risk'|'minInvestmentUsdt'|'maxDrawdownStop'|'lookbackWindow'|'rebalanceInterval'|'presetLogoId'|'customLogoUrl'>;
+export type Draft = {
+  revision?: number;
+  settings?: CardSettings | null;
   id: string;
   name: string;
   pair: string;

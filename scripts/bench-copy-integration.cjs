@@ -31,7 +31,7 @@ if (botBenchmark) {
   app.use('/api/v1', require('../src/api/routes/tradingBotCreators').tradingBotCreatorsRouter(db));
 }
 const PHASE_MS = Number(process.env.BENCH_PHASE_MS || 20000), ROUNDS = Number(process.env.BENCH_ROUNDS || 3);
-let port; const agent = new http.Agent({ keepAlive: true, maxSockets: 256 });
+let port; const agent = new http.Agent({ keepAlive: true, maxSockets: 256, timeout: 4000 });
 function call(token, method, route, body) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null, t0 = process.hrtime.bigint();
