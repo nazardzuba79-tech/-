@@ -208,3 +208,17 @@ it("pins edits and unpublication to owner and revision and reports stale version
     },
   });
 });
+
+it('looks up only published cards on an authenticated permanent URL',async()=>{
+  const {app,auth,drafts}=setup(false);
+  await request(app).get(base+'/published/old').expect(401);
+  drafts.findFirst.mockResolvedValueOnce(null);
+  await request(app).get(base+'/published/old').set(auth).expect(404);
+  expect(drafts.findFirst.mock.calls[0][0].where).toEqual({id:'old',publishedAt:{not:null}});
+});
+it('decodes valid raster logos and stores a re-encoded image', async()=>{
+  const {app,auth,drafts}=setup(true);
+  const bytes=await require('sharp')({create:{width:8,height:8,channels:3,background:'red'}}).png().toBuffer();
+  await request(app).post(base+'/drafts').set(auth).send({...input,settings:{...metadata,customLogoUrl:'data:image/png;base64,'+bytes.toString('base64')}}).expect(201);
+  expect(drafts.create.mock.calls[0][0].data.settings.customLogoUrl).toMatch(/^data:image\/webp;base64,/);
+});

@@ -123,7 +123,9 @@ export function App() {
         {import.meta.env.VITE_COPY_FUTURES_DEMO_OBSERVER_REVIEW === 'true' && <Route path="/copy-trading/futures-demo-observer" element={<RequireAuth><CopyFuturesObserverPage /></RequireAuth>} />}
         <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
         <Route path="/tools" element={<RequireAuth><TradingToolsPage /></RequireAuth>} />
-        <Route path="/trading-bots/*" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
+        <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
+        <Route path="/trading-bots/studio" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
+        <Route path="/trading-bots/strategy/:strategyId" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
         {/* Academy is the public knowledge hub. Legacy Help URLs redirect into it;

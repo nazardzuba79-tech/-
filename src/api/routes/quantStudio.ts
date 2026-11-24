@@ -139,6 +139,15 @@ export function quantStudioRouter(prisma: PrismaClient, thomasId: string) {
       res.json({ canCreate: !!viewer, thomasVip: !!thomas, published, drafts });
     }),
   );
+  // A previously shared card URL remains readable after it leaves the latest page.
+  router.get('/trading-bots/studio/published/:id',asyncRoute(async(req,res)=>{
+    const row=await prisma.quantStrategyDraft.findFirst({
+      where:{id:req.params.id,publishedAt:{not:null}},
+      select:{...fields,owner:{select:{displayName:true}}},
+    });
+    if(!row){res.status(404).json({error:'Strategy unavailable'});return;}
+    res.json(row);
+  }));
   router.post(
     "/trading-bots/studio/drafts",
     asyncRoute(async (req: AuthedRequest, res) => {

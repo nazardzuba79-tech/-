@@ -16,7 +16,7 @@ import {
   nextPresentationWeek,
   type BotCreator,
 } from "../../lib/tradingBotsPresentation";
-import { useStudio } from "../trading-bots/QuantStudio";
+import { useStudio, type Draft } from "../trading-bots/QuantStudio";
 import { useBotHistory } from "../trading-bots/BotHistoryPanel";
 import { catalogue } from "./data/catalogue";
 import { AcademySection } from "./components/marketplace/AcademySection";
@@ -64,6 +64,16 @@ export default function App() {
     );
     return () => clearTimeout(timer);
   }, [now]);
+  const publishedId = /^\/trading-bots\/strategy\/([a-f0-9-]{36})\/?$/i.exec(location.pathname)?.[1];
+  const missingPublication = studio.data && publishedId && !studio.data.published.some(row=>row.id===publishedId) ? publishedId : null;
+  const [shared,setShared]=useState<Draft|null>(null);
+  useEffect(()=>{
+    setShared(null);if(!missingPublication)return;
+    const controller=new AbortController();
+    request<Draft>('/trading-bots/studio/published/'+encodeURIComponent(missingPublication),{signal:controller.signal})
+      .then(row=>{if(!controller.signal.aborted && row.id===missingPublication)setShared(row)}).catch(()=>{});
+    return ()=>controller.abort();
+  },[missingPublication]);
   const strategies = useMemo(
     () =>
       catalogue(
@@ -71,9 +81,9 @@ export default function App() {
         creators,
         studio.data?.thomasVip === true,
         history.data,
-        studio.data?.published,
+        shared && shared.id===missingPublication ? [...(studio.data?.published??[]),shared] : studio.data?.published,
       ),
-    [now, creators, studio.data, history.data],
+    [now, creators, studio.data, history.data, shared,missingPublication],
   );
   const thomasStrategy = strategies.find((s) => s.id === "range")!;
   const path = location.pathname
