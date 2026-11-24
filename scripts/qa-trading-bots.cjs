@@ -86,6 +86,9 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+': profile avatar loaded',await quant.locator('.vb-creator img').evaluate(async image=>{await image.decode();return image.naturalWidth===1;}));
       const rank=page.locator('.qm-ranking');
       check(width+': ranking covers all strategies and derives Thomas first',await rank.locator('tbody tr').count()===7 && (await rank.locator('tbody th').first().innerText()).includes('Thomas Quant AI'));
+      const rebalanceRow=rank.locator('tbody tr').filter({hasText:'Smart Rebalance'});
+      check(width+': missing annual result stays unknown',await rebalanceRow.locator('td').nth(4).innerText()==='—');
+      check(width+': drawdown is a percentage',/^\d+(?:\.\d{1,2})?%$/.test(await rebalanceRow.locator('td').nth(6).innerText()));
       await rank.getByLabel('Поиск стратегии').fill('Thomas QA');
       check(width+': author filter',await rank.locator('tbody tr').count()===1);
       await rank.getByLabel('Поиск стратегии').fill('');

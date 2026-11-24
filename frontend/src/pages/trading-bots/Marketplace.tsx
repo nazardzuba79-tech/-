@@ -55,6 +55,13 @@ export function MarketHero() {
   );
 }
 
+// Keep rankings compact while retaining both source decimal places when present.
+function rankedPercent(value: number | null, signed = false) {
+  if (value === null) return '—';
+  const rounded = Number(value.toFixed(2));
+  return (signed && rounded > 0 ? '+' : '') + rounded + '%';
+}
+
 export function Ranking({
   entries,
   history,
@@ -187,11 +194,11 @@ export function Ranking({
                   {bot.id === 'range' && vip && <b>VIP</b>}
                 </td>
                 <td>{bot.symbol}</td>
-                <td className="qm-return">{pct(s.roi)}</td>
-                <td>{pct(s.year)}</td>
-                <td>{pct(s.all)}</td>
-                <td>{s.dd === null ? '—' : s.dd.toFixed(2) + '%'}</td>
-                <td>{s.win === null ? '—' : s.win.toFixed(2) + '%'}</td>
+                <td className="qm-return">{rankedPercent(s.roi, true)}</td>
+                <td>{rankedPercent(s.year, true)}</td>
+                <td>{rankedPercent(s.all, true)}</td>
+                <td>{rankedPercent(s.dd)}</td>
+                <td>{rankedPercent(s.win)}</td>
                 <td>${bot.minimum.toLocaleString('ru-RU')}</td>
                 <td>
                   <button onClick={() => open(bot)} aria-label={'Подробнее о ' + bot.name}>
