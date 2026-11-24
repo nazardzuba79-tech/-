@@ -140,6 +140,7 @@ async function main() {
       CREATE FUNCTION qa_shift_created() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
         NEW."createdAt" := NEW."createdAt" + make_interval(secs => (SELECT shift_ms FROM qa_clock) / 1000.0); RETURN NEW; END $$;
       CREATE TRIGGER qa_shift_deposit BEFORE INSERT ON "Deposit" FOR EACH ROW EXECUTE FUNCTION qa_shift_created();
+      CREATE TRIGGER qa_shift_cursor BEFORE INSERT ON "DepositWatchCursor" FOR EACH ROW EXECUTE FUNCTION qa_shift_created();
       CREATE TRIGGER qa_shift_audit BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION qa_shift_created();`]);
     assert.equal(fixtureClock.status, 0, fixtureClock.stderr);
     const advance = async (ms) => { shiftMs += ms; await prisma.$executeRawUnsafe(`UPDATE qa_clock SET shift_ms = ${clockOffset()}`); };
