@@ -78,8 +78,32 @@ jobs:
           name: deposit-notice-699-evidence
           path: output/deposit-notice-699/report.json
           if-no-files-found: warn
+      - name: Select deposit notice release package
+        id: package_scope
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          package=true
+          if [[ "$EVENT" == pull_request ]]; then
+            git cat-file -e "$PR_BASE^{commit}"
+            if git diff --quiet "$PR_BASE" HEAD -- \
+              src/services/deposits/DepositWatchService.ts \
+              src/services/deposits/depositNoticePolicy.ts \
+              src/services/TelegramNotifications.ts \
+              workers/notification-edge/src workers/notification-edge/wrangler.toml \
+              scripts/ops/deposit-notice-699-release.cjs docs/qa/deposit699; then
+              package=false
+            else
+              code=$?
+              [[ "$code" == 1 ]] || exit "$code"
+            fi
+          fi
+          echo "package=$package" >> "$GITHUB_OUTPUT"
       # Build-only: nothing here deploys or contacts production.
       - name: Release scope — only the three release modules differ from the base build
+        if: steps.package_scope.outputs.package == 'true'
         env:
           BASE_INPUT: ${{ inputs.base_sha }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
@@ -105,6 +129,7 @@ jobs:
           printf 'head=%s\nbase=%s\n' "$(git rev-parse HEAD)" "$base" > "$out/commit.txt"
           (cd "$out" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && cat SHA256SUMS)
       - uses: actions/upload-artifact@v4
+        if: steps.package_scope.outputs.package == 'true'
         with:
           name: deposit-notice-699-release
           path: output/deposit-notice-699-release
