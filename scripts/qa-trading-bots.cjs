@@ -83,6 +83,7 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const rows=page.locator('#strategy-leaderboard [data-bot]:visible');
       await rows.first().waitFor();
       check(width+' seven comparable strategies', await rows.count()===7);
+      check(width+' marketplace fits the viewport', await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       const ids=await rows.evaluateAll(els=>els.map(e=>e.dataset.bot));
       check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
       const flagship=page.locator('main section').filter({has:page.getByRole('button',{name:'Подробнее о стратегии',exact:true})});

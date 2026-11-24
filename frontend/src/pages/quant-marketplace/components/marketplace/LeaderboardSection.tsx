@@ -217,8 +217,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
             Рейтинг торговых стратегий
           </h2>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
-            Сопоставительный рейтинг модельных показателей на единой шкале риска
-            и доходности.
+            Стратегии с выбранным источником данных за указанный период.
           </p>
         </div>
 
@@ -302,7 +301,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
       </div>
 
       {/* Search, Risk & Sort Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+      <div className="quant-rank-toolbar flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1">
           <div className="relative flex-1 max-w-sm">
             <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -316,7 +315,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] self-start">
+          <div className="quant-risk-filter flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] self-start">
             {RISKS.map((r) => (
               <button
                 key={r}
@@ -334,7 +333,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="quant-sort-controls flex items-center gap-2.5 self-start md:self-auto">
           <label className="text-xs text-[var(--text-muted)] flex items-center gap-2">
             <span>Сортировка:</span>
             <select
@@ -696,9 +695,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
       </div>
 
       <p className="mt-3 text-[11px] text-[var(--text-muted)]">
-        Рейтинг соответствует отображаемым модельным значениям (годовой и общий
-        итоги приведены как арифметическая сумма месячных периодов, без учёта
-        сложного процента и комиссий).
+        {source === "model" ? "Показатели Thomas за условный год и весь период суммируются по месяцам." : source === "verified" ? "Доходность рассчитывается по подтверждённой истории стратегии." : "Для этих стратегий пока нет данных о доходности."}
       </p>
     </section>
   );

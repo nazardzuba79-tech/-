@@ -231,7 +231,7 @@ export const QuantIntelligenceSection: React.FC<
                 <div className="relative z-10 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] px-2.5 pt-2.5 pb-1">
                   <div className="flex items-baseline justify-between px-1 mb-1">
                     <span className="text-[11px] text-[var(--text-muted)]">
-                      Модель (
+                      {strategy.source === "model" ? "Модель" : "Подтверждено"} (
                       {chartWindow === "30D"
                         ? "30Д"
                         : chartWindow === "90D"
@@ -292,13 +292,12 @@ export const QuantIntelligenceSection: React.FC<
           })}
         </div>
 
-        {/* Prototype Model Disclosure */}
+        {/* Recommendation method */}
         <div className="relative z-10 mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-start sm:items-center gap-2 text-[11px] text-[var(--text-muted)]">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 sm:mt-0" />
           <span>
-            Рекомендации в данном прототипе формируются на основе иллюстративных
-            параметров стратегий и не представляют собой работу действующего
-            ИИ-движка исполнения.
+            Подборка использует выбранную категорию и доступные данные за период.
+            Источник доходности указан в карточке стратегии.
           </span>
         </div>
       </div>

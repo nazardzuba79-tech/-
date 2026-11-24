@@ -239,7 +239,7 @@ export const BotStudioView: React.FC<BotStudioViewProps> = ({
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-5 sm:py-7">
       {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+      <div className="quant-studio-bar flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -275,16 +275,15 @@ export const BotStudioView: React.FC<BotStudioViewProps> = ({
         </button>
       </div>
 
-      {/* Prototype Safety Disclosure */}
+      {/* Publication scope */}
       <div className="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] px-4 py-3 mb-6 flex items-start gap-2.5 text-xs text-[var(--text-secondary)]">
         <ShieldAlert className="w-4 h-4 text-[var(--text-gold)] shrink-0 mt-0.5" />
         <span>
           <strong className="text-[var(--text-primary)] font-semibold">
-            Прототип интерфейса VIP-публикации:
+            Публикация стратегии
           </strong>{" "}
-          сохранение черновиков и переключение статуса работают локально.
-          Интерфейс не отправляет реальных сделок, не переводит средства и не
-          активирует торговые права без проверки бэкенда VOLTEX.
+          открывает её карточку в каталоге. Черновики сохраняются в вашем аккаунте.
+          Для запуска торгового алгоритма нужны отдельные права.
         </span>
       </div>
 

@@ -157,7 +157,7 @@ export default function App() {
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
                     {/* Left Headline & Actions */}
                     <div className="lg:col-span-6 space-y-4">
-                      <div className="text-xs font-semibold text-[var(--text-gold)] tracking-wide">
+                      <div className="quant-hero-eyebrow text-xs font-semibold text-[var(--text-gold)] tracking-wide">
                         Институциональная витрина алгоритмов VOLTEX
                       </div>
 

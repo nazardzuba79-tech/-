@@ -26,7 +26,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
   const [tf, setTf] = useState<TimeframeKey>("30D");
   const activeSeries = strategy.series[tf];
   const latestVal =
-    activeSeries[activeSeries.length - 1]?.value ?? strategy.return30d;
+    activeSeries[activeSeries.length - 1]?.value ?? NaN;
 
   return (
     <section className="max-w-[1600px] mx-auto px-3 sm:px-6 mt-6">
@@ -217,13 +217,11 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
                   <div className="text-xs text-[var(--text-muted)]">
-                    Кривая модельной динамики · {strategy.market}
+                    {strategy.source === "model" ? "Модельная доходность" : "Доходность за период"} · {strategy.market}
                   </div>
                   <div className="flex items-baseline gap-2.5 mt-0.5">
                     <span className="font-mono text-2xl font-bold text-[var(--text-teal)] tabular-nums">
-                      {latestVal >= 0
-                        ? `+${latestVal.toFixed(1)}%`
-                        : `${latestVal.toFixed(1)}%`}
+                      {percent(latestVal, true)}
                     </span>
                     <span className="text-xs text-[var(--text-muted)]">
                       за выбранный интервал (
