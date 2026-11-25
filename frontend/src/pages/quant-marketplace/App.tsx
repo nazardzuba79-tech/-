@@ -200,8 +200,6 @@ export default function App({presentation}: {presentation?: import("../../../../
                         <span>
                           <b>24</b>-месячная аналитика
                         </span>
-                        {!presentation && <span aria-hidden="true">·</span>}
-                        {!presentation && <span>Иллюстративный набор данных для презентации</span>}
                       </div>
                     </div>
 
@@ -292,10 +290,12 @@ export default function App({presentation}: {presentation?: import("../../../../
                 О маркетплейсе
               </button>
             </div>
-            <p className="max-w-2xl text-[11px] text-[var(--text-muted)] leading-relaxed">
-              Модельные результаты обозначены отдельно. Подтверждённая
-              статистика доступна при наличии торговой истории.
-            </p>
+            {!presentation && (
+              <p className="max-w-2xl text-[11px] text-[var(--text-muted)] leading-relaxed">
+                Модельные результаты обозначены отдельно. Подтверждённая
+                статистика доступна при наличии торговой истории.
+              </p>
+            )}
           </div>
         </footer>
 
