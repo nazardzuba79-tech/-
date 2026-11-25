@@ -290,7 +290,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             </div>
           </div>
 
-          {!readOnly && <div className="text-xs text-[var(--text-secondary)]">
+          {!readOnly && !showcase && <div className="text-xs text-[var(--text-secondary)]">
             {strategy.source === "verified"
               ? "Подтверждённая торговая история"
               : strategy.source === "model"
@@ -359,11 +359,11 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 <strong>До 100 активов</strong>
               </div>
               <div className="thomas-terminal-metric">
-                <span>Сумма в калькуляторе</span>
+                <span>Начальный капитал</span>
                 <strong>5 000 USDT</strong>
               </div>
               <p className="thomas-terminal-disclaimer">
-                Презентационный сценарий, не подтверждённая доходность. Сделки не исполняются.
+                Сценарий · расчётные показатели.
               </p>
             </div>
           ) : (
@@ -520,7 +520,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             </div>
 
             <div className="relative z-10 mt-4 pt-3 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
-              {!readOnly && <span>
+              {!readOnly && !showcase && <span>
                 {strategy.verified
                   ? "Подтверждённая история. ROI учитывает денежные потоки. Данные на " +
                     strategy.verified.asOf.slice(0, 10) +
@@ -1204,7 +1204,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
               </div>
             </div>
 
-            {!readOnly && <div className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] leading-relaxed">
+            {!readOnly && !showcase && <div className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] leading-relaxed">
               {strategy.source === "model"
                 ? "Модельный сценарий. Данные не являются подтверждённой историей сделок."
                 : strategy.source === "verified"
