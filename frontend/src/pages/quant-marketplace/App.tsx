@@ -36,7 +36,13 @@ export default function App({presentation}: {presentation?: import("../../../../
 
   const studio = useStudio();
   const history = useBotHistory(!presentation);
-  const [creators, setCreators] = useState<Record<string, BotCreator>>({});
+  const isThomasVisualReview =
+    !!presentation &&
+    window.location.hostname === "codex-thomas-ai-pulse.voltex-exchange.pages.dev" &&
+    new URLSearchParams(window.location.search).get("visualReview") === "thomas";
+  const [creators, setCreators] = useState<Record<string, BotCreator>>(() =>
+    isThomasVisualReview ? { range: { displayName: "Thomas", avatarUrl: null } } : {},
+  );
   const [now, setNow] = useState(Date.now);
   const root = useRef<HTMLDivElement>(null);
   const location = useLocation(),
