@@ -96,7 +96,7 @@ export function ThomasSocialLinks({ readOnly = false }: { readOnly?: boolean }) 
             <SiTelegram size={17} aria-hidden="true" /><span>Telegram</span><ArrowUpRight size={12} aria-hidden="true" />
           </a>
         )}
-        {profile.canEdit && (
+        {!readOnly && profile.canEdit && (
           <button type="button" className="th-social-edit"
             aria-expanded={editing} onClick={() => {
               setEditing(!editing);
