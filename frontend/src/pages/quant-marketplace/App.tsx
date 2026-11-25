@@ -5,10 +5,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { ArrowDownRight, HelpCircle, X } from "lucide-react";
 import { NeuralBlockchainBackdrop } from "./components/background/NeuralBlockchainBackdrop";
 import { NeuralWebOverlay } from "./components/background/NeuralWebOverlay";
-import {
-  HeroBoundary as QuantHeroVisual,
-  type ThemeMode,
-} from "./components/hero/HeroBoundary";
+import type { ThemeMode } from "./types/theme";
 import { useLocation, useNavigate } from "react-router-dom";
 import { request } from "../../lib/api";
 import {
@@ -30,7 +27,7 @@ import { BotStudioView } from "./components/studio/BotStudioView";
 import { ACADEMY_ARTICLES, FAQ_ITEMS } from "./data/learning";
 
 // The marketplace is shown on its light stage only (owner, 25 Nov 2026). The dark values stay in the
-// stylesheet and in the scene, so a second theme can return by making this a state again.
+// stylesheet, so a second theme can return by making this a state again.
 const QUANT_THEME: ThemeMode = "light";
 
 export default function App() {
@@ -44,17 +41,6 @@ export default function App() {
   const location = useLocation(),
     navigate = useNavigate();
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
-  // A coin chosen on the hero sphere: the board below is searched for that market and scrolled into view.
-  const [marketRequest, setMarketRequest] = useState<{
-    text: string;
-    seq: number;
-  } | null>(null);
-  const handleSelectMarket = (symbol: string) => {
-    setMarketRequest((prev) => ({ text: symbol, seq: (prev?.seq ?? 0) + 1 }));
-    root.current
-      ?.querySelector("#strategy-leaderboard")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
   useEffect(() => {
     const controller = new AbortController();
     request<unknown>(
@@ -96,6 +82,14 @@ export default function App() {
     [now, creators, studio.data, history.data, shared,missingPublication],
   );
   const thomasStrategy = strategies.find((s) => s.id === "range")!;
+  // "№ 1" is said only when it is true: the best 30-day result among the strategies it is ranked with.
+  const rankedWithThomas = strategies.filter(
+    (s) => s.source === thomasStrategy.source && Number.isFinite(s.return30d),
+  );
+  const thomasLeads30d =
+    Number.isFinite(thomasStrategy.return30d) &&
+    rankedWithThomas.length > 1 &&
+    rankedWithThomas.every((s) => s.return30d <= thomasStrategy.return30d);
   const path = location.pathname
     .replace(/^\/trading-bots\/?/, "")
     .replace(/\/$/, "");
@@ -149,7 +143,7 @@ export default function App() {
                 <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-6 py-6 sm:py-8 lg:py-9">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
                     {/* Left Headline & Actions */}
-                    <div className="qx-hero-copy lg:col-span-6 space-y-4">
+                    <div className="qx-hero-copy lg:col-span-5 space-y-4">
                       <div className="qx-eyebrow quant-hero-eyebrow text-xs font-semibold text-[var(--text-gold)] tracking-wide">
                         Институциональная витрина алгоритмов VOLTEX
                       </div>
@@ -205,11 +199,12 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Right Three.js 3D Quantitative Visualization */}
-                    <div className="qx-hero-visual lg:col-span-6">
-                      <QuantHeroVisual
-                        theme={theme}
-                        onSelectMarket={handleSelectMarket}
+                    {/* The flagship strategy itself: the product is the first thing the page shows */}
+                    <div className="qx-hero-visual lg:col-span-7">
+                      <FlagshipThomasSection
+                        strategy={thomasStrategy}
+                        leads30d={thomasLeads30d}
+                        onOpenProfile={handleOpenProfile}
                       />
                     </div>
                   </div>
@@ -222,12 +217,6 @@ export default function App() {
                 onOpenBotStudio={handleOpenBotStudio}
               />
 
-              {/* Flagship Strategy Highlight — Thomas Quant AI */}
-              <FlagshipThomasSection
-                strategy={thomasStrategy}
-                onOpenProfile={handleOpenProfile}
-              />
-
               {/* VOLTEX Quant Intelligence Recommendation Zone */}
               <QuantIntelligenceSection
                 strategies={strategies}
@@ -238,7 +227,6 @@ export default function App() {
               <LeaderboardSection
                 strategies={strategies}
                 onOpenProfile={handleOpenProfile}
-                searchRequest={marketRequest}
               />
 
               {/* VOLTEX Quant Academy & FAQ */}

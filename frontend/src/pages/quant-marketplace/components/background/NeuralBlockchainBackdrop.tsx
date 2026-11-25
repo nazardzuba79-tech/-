@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import type { ThemeMode } from "../hero/QuantHeroVisual";
+import type { ThemeMode } from "../../types/theme";
 
 interface NeuralNode {
   x: number;
