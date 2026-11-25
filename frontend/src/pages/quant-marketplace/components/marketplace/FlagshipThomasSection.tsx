@@ -12,6 +12,7 @@ interface FlagshipThomasSectionProps {
   /** True only when this strategy has the highest 30-day result among the strategies it is ranked with. */
   leads30d: boolean;
   presentation?: boolean;
+  socialsReadOnly?: boolean;
   onOpenProfile: (strategyId: string) => void;
 }
 
