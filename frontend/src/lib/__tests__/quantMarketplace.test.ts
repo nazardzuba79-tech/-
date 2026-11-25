@@ -1,3 +1,4 @@
+import { examplePresentation } from "../../../../src/services/quantPresentation";
 import { readBotCreators } from '../tradingBotsPresentation';
 import { catalogue } from "../../pages/quant-marketplace/data/catalogue";
 import { BOT_CATALOGUE } from "../tradingBotsPresentation";
@@ -87,4 +88,22 @@ it('keeps the catalogue available when creator data is absent or partial', () =>
   for (const response of [null, {}, { creators: [] }]) expect(readBotCreators(response)).toEqual({});
   expect(readBotCreators({ creators: { range: { displayName: 'Thomas' }, atlas: { displayName: {} } } }))
     .toEqual({range: {displayName: 'Thomas', avatarUrl: null}, atlas: {displayName: null, avatarUrl: null}});
+});
+
+it("keeps the invited example consistent across the flagship and all history windows without claiming actual trades", () => {
+  const example = examplePresentation();
+  const list = catalogue(20, owner, true, { status: "unavailable" }, [], example);
+  const thomas = list.find((s) => s.id === "range")!;
+  expect(thomas.source).toBe("model");
+  expect(thomas.monthly24).toHaveLength(24);
+  expect(thomas.return30d).toBe(310);
+  expect(thomas.series["90D"].slice(-1)[0].value).toBe(922);
+  expect(thomas.return1yArithmetic).toBe(3676);
+  expect(thomas.returnAllArithmetic).toBe(7348);
+  expect(thomas.series.ALL.slice(-1)[0].value).toBe(7348);
+  expect(thomas.winRate).toBe(97.1);
+  expect(thomas.tradesCount).toBeNaN();
+  expect(thomas.verified).toBeUndefined();
+  const ordinary = catalogue(20, owner, true, { status: "unavailable" }).find((s) => s.id === "range")!;
+  expect(ordinary.returnAllArithmetic).not.toBe(7348);
 });
