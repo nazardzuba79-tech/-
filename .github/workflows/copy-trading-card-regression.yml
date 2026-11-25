@@ -56,6 +56,13 @@ on:
       - 'src/shared/thomasPerformance.ts'
       - 'src/services/tradingBotPerformance.ts'
       - 'src/api/routes/tradingBotCreators.ts'
+      - 'src/api/routes/thomasProfile.ts'
+      - 'src/api/routes/__tests__/thomasProfile.test.ts'
+      - 'src/services/thomasCoverage.ts'
+      - 'src/services/__tests__/thomasMultiAsset.test.ts'
+      - 'src/shared/thomasAuthor.ts'
+      - 'frontend/src/lib/thomasScenario.ts'
+      - 'frontend/src/lib/__tests__/thomasScenario.test.ts'
       - 'src/api/routes/quantStudio.ts'
       - 'src/api/routes/__tests__/quantStudio.test.ts'
       - 'frontend/src/pages/TradingBotsPage.tsx'
@@ -174,6 +181,13 @@ on:
       - 'src/shared/thomasPerformance.ts'
       - 'src/services/tradingBotPerformance.ts'
       - 'src/api/routes/tradingBotCreators.ts'
+      - 'src/api/routes/thomasProfile.ts'
+      - 'src/api/routes/__tests__/thomasProfile.test.ts'
+      - 'src/services/thomasCoverage.ts'
+      - 'src/services/__tests__/thomasMultiAsset.test.ts'
+      - 'src/shared/thomasAuthor.ts'
+      - 'frontend/src/lib/thomasScenario.ts'
+      - 'frontend/src/lib/__tests__/thomasScenario.test.ts'
       - 'src/api/routes/quantStudio.ts'
       - 'src/api/routes/__tests__/quantStudio.test.ts'
       - 'frontend/src/pages/TradingBotsPage.tsx'
@@ -352,6 +366,9 @@ jobs:
           src/services/__tests__/tradingBotPerformance.test.ts
           src/api/routes/__tests__/tradingBotCreators.test.ts
           src/api/routes/__tests__/quantStudio.test.ts
+          src/api/routes/__tests__/thomasProfile.test.ts
+          src/services/__tests__/thomasMultiAsset.test.ts
+          frontend/src/lib/__tests__/thomasScenario.test.ts
           frontend/src/lib/__tests__/quantMarketplace.test.ts
           frontend/src/lib/__tests__/tradingBotsPresentation.test.ts
       - name: Trading bots catalogue and detailed performance in a local browser
