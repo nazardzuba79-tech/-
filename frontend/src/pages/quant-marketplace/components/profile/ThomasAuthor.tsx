@@ -9,7 +9,7 @@ import {
   SiFacebook,
   SiThreads,
 } from "@icons-pack/react-simple-icons";
-import { request } from "../../../../lib/api";
+import { ApiError, request } from "../../../../lib/api";
 import {
   SOCIAL_NAMES,
   type AuthorInfo,
@@ -64,10 +64,14 @@ export function ThomasAuthor() {
       setProfile(value);
       setDraft(null);
       setMessage("Профиль сохранён.");
-    } catch (e) {
-      setMessage(
-        e instanceof Error ? e.message : "Не удалось сохранить профиль",
-      );
+    } catch (error) {
+      const status = error instanceof ApiError ? error.status : 0;
+      const messages: Record<number, string> = {
+        400: "Проверьте описание и адреса ссылок.",
+        403: "У вас нет прав на редактирование профиля.",
+        409: "Профиль уже изменён. Обновите страницу перед повторным сохранением.",
+      };
+      setMessage(messages[status] ?? "Не удалось сохранить профиль. Попробуйте ещё раз.");
     } finally {
       setSaving(false);
     }
