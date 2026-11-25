@@ -1864,6 +1864,7 @@ export const KO: Record<Key, string> = {
   'register.error.passwordShort': '비밀번호가 너무 짧습니다',
   'register.error.passwordUppercase': '대문자를 하나 추가하세요',
   'register.error.failed': '계정을 만들지 못했습니다. 입력한 정보를 확인하거나, 이미 계정이 있다면 로그인하세요.',
+  'register.error.disposableEmail': "임시 이메일 주소로는 가입할 수 없습니다. 계속 사용할 수 있는 이메일 주소를 사용해 주세요.",
   'register.error.closed': '현재 신규 가입이 중단되었습니다.',
 
   // --- Email verification (six-digit code) ---

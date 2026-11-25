@@ -105,6 +105,28 @@ describe('auth routes', () => {
     expect(prisma.session.create).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['fixture@euploading.com', 'fixture@MAIL.TM', 'fixture@mailinator.com'])('refuses disposable registration %s before creating any account or session', async (email) => {
+    const prisma = makePrismaMock();
+    for (const body of [{ email }, { email, password: 'Correcthorsebattery' }]) {
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/register').send(body);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ code: 'DISPOSABLE_EMAIL', error: 'Registration with temporary email addresses is prohibited. Please use a permanent email address.' });
+    }
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    expect(prisma.auditLog.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('does not apply disposable domain registration policy to an existing account login', async () => {
+    const password = 'Correcthorsebattery';
+    const user = { id: 'user-1', email: 'fixture@euploading.com', passwordHash: await bcrypt.hash(password, 4), role: 'USER', twoFactorEnabled: false, country: 'US' };
+    const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(user) } });
+    const res = await request(buildApp(prisma)).post('/api/v1/auth/login').send({ email: user.email, password });
+    expect(res.status).toBe(200);
+    expect(prisma.session.create).toHaveBeenCalledTimes(1);
+  });
+
   it('registers a new user and returns a real session token straight away', async () => {
     const prisma = makePrismaMock();
     const app = buildApp(prisma);

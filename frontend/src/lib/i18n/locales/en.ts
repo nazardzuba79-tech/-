@@ -1893,6 +1893,7 @@ export const EN: Record<Key, string> = {
   'register.error.passwordShort': 'Password is too short',
   'register.error.passwordUppercase': 'Add an uppercase letter',
   'register.error.failed': 'Could not create the account. Check the details, or sign in if the account already exists.',
+  'register.error.disposableEmail': "Registration with temporary email addresses is prohibited. Please use a permanent email address.",
   'register.error.closed': 'Registration is currently closed.',
 
   // --- Email verification (six-digit code) ---

@@ -1887,6 +1887,7 @@ export const ZH: Record<Key, string> = {
   'register.error.passwordShort': '密码太短',
   'register.error.passwordUppercase': '请添加一个大写字母',
   'register.error.failed': '无法创建账户。请检查填写的信息，若账户已存在请直接登录。',
+  'register.error.disposableEmail': "禁止使用临时电子邮箱地址注册。请使用长期有效的电子邮箱地址。",
   'register.error.closed': '注册暂时关闭。',
 
   // --- Email verification (six-digit code) ---

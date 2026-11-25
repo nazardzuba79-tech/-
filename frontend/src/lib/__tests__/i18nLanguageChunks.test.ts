@@ -87,6 +87,15 @@ const WALLET_CONVERSION_KEYS = ['title','subtitle','subtitleTrading','tradingLed
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('adds exactly one disposable-email refusal to each locale without changing earlier auth copy', () => {
+    const key = 'register.error.disposableEmail';
+    for (const code of LOCALES) {
+      expect([...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].filter(match => match[1] === key)).toHaveLength(1);
+      expect(dicts[code][key]?.trim()).toBeTruthy();
+    }
+    expect(dicts.ru[key]).toBe('Регистрация с временных почтовых адресов запрещена. Пожалуйста, используйте постоянный адрес электронной почты.');
+    expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
+  });
   it('provides the seventeen remaining customer state labels in every locale', () => {
     expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(17);
     for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
@@ -446,6 +455,8 @@ describe('translation integrity', () => {
           // USDT note and the account selector's label were hard-coded Russian/English; now in every
           // language. `git diff --numstat` over the locales reports `3 0` per language, additions only.
           'wallet.vtaSpotTitle', 'wallet.vtaUsdtShared', 'wallet.accountSelect'];
+        // Owner-approved disposable-email refusal: one additive key, all existing bytes stay frozen.
+        if (key === 'register.error.disposableEmail') return false;
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

@@ -1923,6 +1923,7 @@ export const RU = {
   'register.error.passwordShort': 'Пароль слишком короткий',
   'register.error.passwordUppercase': 'Добавьте заглавную букву',
   'register.error.failed': 'Не удалось создать аккаунт. Проверьте данные или войдите, если аккаунт уже существует.',
+  'register.error.disposableEmail': "Регистрация с временных почтовых адресов запрещена. Пожалуйста, используйте постоянный адрес электронной почты.",
   'register.error.closed': 'Регистрация временно закрыта.',
 
   // --- Email verification (six-digit code) ---
