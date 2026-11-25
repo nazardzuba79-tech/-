@@ -296,7 +296,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 : "История отсутствует"}
           </div>}
           {!readOnly && <PlanActions strategy={strategy} />}
-          <div className="qx-copy-profile"><PresentationCopyButton /></div>
+          <div className="qx-copy-profile"><PresentationCopyButton strategyId={strategy.id} /></div>
           {/* 5 Analytics Terminal Tabs */}
           <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex items-center gap-1.5 overflow-x-auto pb-1">
             {tabs.map((tab) => {
