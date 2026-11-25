@@ -775,10 +775,13 @@ async function run() {
     await page.waitForTimeout(6500);
     const volumeRefreshed = await volumeState();
     check(`${P}.volume-keeps-height-on-data`, Math.abs(volumeRefreshed.share - volumeResized.share) < .025, { resized: volumeResized, refreshed: volumeRefreshed });
-    await page.locator('.chart-indicators-trigger').first().click();
-    await page.locator('[data-chart-indicator-remove="spot-volume"]').click();
+    const directClose = page.locator('[data-spot-volume-close]').first();
+    await directClose.waitFor({ state: 'visible' });
+    const closeBox = await directClose.boundingBox();
+    check(`${P}.volume-direct-close-position`, !!closeBox && closeBox.y >= volumeRefreshed.y - 3 && closeBox.y < volumeRefreshed.y + volumeRefreshed.volume, { closeBox, volume: volumeRefreshed });
+    await directClose.click();
     await waitVolumeCount(1);
-    await page.keyboard.press('Escape');
+    check(`${P}.volume-direct-close-removes-pane`, await directClose.count() === 0);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-chart-state="candles"]');
     await page.waitForTimeout(1000);
@@ -790,6 +793,7 @@ async function run() {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(250);
     const volumeRestored = await volumeState();
+    check(`${P}.volume-direct-close-returns`, await directClose.isVisible());
     check(`${P}.volume-restore-keeps-user-size`, Math.abs(volumeRestored.share - volumeResized.share) < .025, { resized: volumeResized, restored: volumeRestored });
     // Put the fixture back on its initial interval before the existing checks.
     await page.locator('[data-cw-tf="1h"]').first().click();
