@@ -154,53 +154,31 @@
   .quant-skin.light .qx-facts { margin-top: 2px; padding-top: 12px; gap: 4px; }
 }
 
-/* ── The flagship strategy: the hero's right half ─────────────────────────── */
-/* One obsidian-and-gold card on the light page. It is a colour scope of its own: the shared text,
-   border and chart variables are re-pointed here, so the chart and figures inside adapt untouched. */
+/* Thomas is part of the exchange surface, not an isolated black-and-gold tile.
+   A restrained accent differentiates it without overriding the surrounding theme. */
 .quant-skin .qx-flag {
-  --text-primary: #f8f4ea;
-  --text-secondary: #ddd6c6;
-  --text-muted: #a8a08e;
-  --text-gold: #f0c462;
-  --text-teal: #56e0c9;
-  --text-emerald: #4fdc9c;
-  --text-crimson: #ff8f85;
-  --bg-surface: #18181b;
-  --bg-subtle: #111113;
-  --border-subtle: rgba(240, 196, 98, 0.16);
-  --border-strong: rgba(240, 196, 98, 0.32);
-  --border-gold: rgba(240, 196, 98, 0.62);
-  --chart-grid: rgba(255, 255, 255, 0.09);
-  --chart-axis: #a8a08e;
-  --chart-ref: rgba(255, 255, 255, 0.24);
-  --chart-tooltip-bg: #18181b;
-  --chart-tooltip-border: rgba(240, 196, 98, 0.4);
-
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: clamp(18px, 2vw, 28px);
-  border-radius: 24px;
-  border: 1px solid rgba(240, 196, 98, 0.5);
+  min-width: 0;
+  padding: clamp(16px, 1.8vw, 26px);
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
   background:
-    radial-gradient(90% 70% at 100% 0%, rgba(240, 196, 98, 0.2) 0%, rgba(240, 196, 98, 0) 60%),
-    radial-gradient(70% 60% at 0% 100%, rgba(240, 196, 98, 0.07) 0%, rgba(240, 196, 98, 0) 62%),
-    linear-gradient(160deg, #18181b 0%, #0b0b0d 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 34px 60px -34px rgba(11, 16, 32, 0.7),
-    0 2px 0 rgba(240, 196, 98, 0.18);
+    radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--text-gold) 5%, transparent), transparent 68%),
+    var(--bg-surface);
+  box-shadow: 0 3px 14px rgba(8, 12, 22, .045);
   color: var(--text-primary);
   overflow: hidden;
 }
-/* A gold foil hairline along the top edge. */
 .quant-skin .qx-flag::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  background: linear-gradient(90deg, rgba(240, 196, 98, 0) 0%, #f0c462 28%, #fff1c9 50%, #f0c462 72%, rgba(240, 196, 98, 0) 100%);
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, var(--text-gold), var(--text-teal) 56%, transparent);
+  opacity: .45;
 }
 
 .quant-skin .qx-flag-top {
@@ -249,7 +227,7 @@
 }
 .quant-skin .qx-flag-logo {
   border-radius: 14px;
-  box-shadow: 0 0 0 1px rgba(240, 196, 98, 0.55), 0 12px 24px -12px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 0 1px var(--border-subtle);
 }
 .quant-skin .qx-flag-name h2 {
   font-family: var(--font-display);
@@ -277,8 +255,8 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #23262f;
-  box-shadow: 0 0 0 2px #0f1116, 0 0 0 3.5px #f0c462;
+  background: var(--bg-subtle);
+  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--border-gold);
   font-size: 13px;
   font-weight: 750;
   color: var(--text-gold);
@@ -349,7 +327,7 @@
   padding: 12px 12px 6px;
   border-radius: 16px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.025);
+  background: var(--bg-subtle);
 }
 .quant-skin .qx-flag-tabs {
   display: flex;
@@ -377,8 +355,7 @@
 
 .quant-skin .qx-flag-stats {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, auto));
-  justify-content: space-between;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px 18px;
   margin: 0;
 }
@@ -602,9 +579,9 @@
 .quant-skin .qx-copy-preview:active { filter: brightness(.97); }
 .quant-skin .qx-copy-preview:focus-visible { outline: 2px solid #9e7731; outline-offset: 3px; }
 .quant-skin .qx-flag-foot .qx-flag-detail {
-  background: transparent;
-  color: #f4e4bd;
-  border-color: #8b7448;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
   box-shadow: none;
   font-size: 13px;
 }
@@ -631,3 +608,105 @@
   color: #3d2b12;
   line-height: 1.2;
 }
+
+/* Flagship belongs to the light hero. A low-contrast warm surface distinguishes
+   it without separating it from the surrounding exchange palette. */
+.quant-skin.light .qx-flag {
+  --text-primary: inherit;
+  --text-secondary: inherit;
+  --text-muted: inherit;
+  --text-gold: inherit;
+  --text-teal: inherit;
+  --text-emerald: inherit;
+  --text-crimson: inherit;
+  --bg-surface: inherit;
+  --bg-subtle: inherit;
+  --border-subtle: inherit;
+  --border-strong: inherit;
+  --border-gold: inherit;
+  --chart-grid: inherit;
+  --chart-axis: inherit;
+  --chart-ref: inherit;
+  --chart-tooltip-bg: inherit;
+  --chart-tooltip-border: inherit;
+  min-width: 0;
+  padding: clamp(18px, 1.8vw, 28px);
+  border: 1px solid rgba(146, 100, 14, .13);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 96% 0%, rgba(222, 195, 140, .18), transparent 65%),
+    radial-gradient(ellipse at 6% 100%, rgba(210, 220, 211, .18), transparent 65%),
+    linear-gradient(135deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, .10));
+  box-shadow: 0 8px 24px rgba(49, 40, 23, .035);
+  overflow: visible;
+}
+.quant-skin.light .qx-flag::before { display: none; }
+.quant-skin.light .qx-flag-rank {
+  background: var(--bg-subtle);
+  color: var(--text-gold);
+  border: 1px solid var(--border-gold);
+  box-shadow: none;
+}
+.quant-skin.light .qx-flag-logo {
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+.quant-skin.light .qx-flag-avatar {
+  background: var(--bg-subtle);
+  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--border-gold);
+}
+.quant-skin.light .qx-flag-market b { background: var(--bg-surface); }
+.quant-skin.light .qx-flag-chart {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0;
+  padding: 12px 0 0;
+}
+.quant-skin.light .qx-flag-chart #thomasGoldTealStroke stop:first-child { stop-color: #a36a0a; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealStroke stop:nth-child(2) { stop-color: #997015; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealStroke stop:last-child { stop-color: #087e72; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealFill stop { stop-opacity: .12; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealFill stop:last-child { stop-opacity: .025; }
+.quant-skin.light .qx-flag-foot .qx-flag-detail {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.quant-skin.light .qx-flag-foot button { box-shadow: none; }
+@media (max-width: 639px) {
+  .quant-skin.light .qx-flag { padding: 15px 12px; border-radius: 16px; }
+  .quant-skin.light .qx-flag-return { flex-wrap: wrap; gap: 6px 12px; }
+}
+
+.quant-skin.light .qx-flag-example-range {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  white-space: normal;
+}
+@media (max-width: 1500px) {
+  .quant-skin.light .qx-flag-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+}
+@media (max-width: 639px) {
+  .quant-skin.light .qx-flag-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .quant-skin.light .qx-flag-stats dt { white-space: normal; }
+}
+
+/* The presentation figures form one low-contrast trading-terminal strip. */
+.quant-skin .qx-flag-notice {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.quant-skin .qx-flag-stats > div { min-width: 0; }
+.quant-skin .qx-flag-stats dt { white-space: normal; }
+.quant-skin .qx-flag-stats dd { overflow-wrap: anywhere; white-space: normal; }
