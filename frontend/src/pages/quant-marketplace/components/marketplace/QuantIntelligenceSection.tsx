@@ -44,11 +44,11 @@ export const QuantIntelligenceSection: React.FC<
   }, [strategies, activeBucket, chartWindow]);
 
   return (
-    <section className="max-w-[1600px] mx-auto px-3 sm:px-6 mt-10">
-      <div className="qx-intel-aurora relative rounded-2xl overflow-hidden border border-[var(--border-subtle)] p-4 sm:p-6 lg:p-8 shadow-xs transition-colors">
+    <section className="max-w-[1480px] mx-auto px-3 sm:px-6 mt-6">
+      <div className="qx-intel-aurora relative rounded-2xl overflow-hidden border border-[var(--border-subtle)] p-4 sm:p-5 lg:p-6 shadow-xs transition-colors">
 
         {/* Header & Window Switcher */}
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-5">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-3">
           <div>
             <div className="flex items-center gap-2 text-xs text-[var(--text-teal)] font-medium mb-1">
               <Compass className="w-3.5 h-3.5" />
@@ -93,7 +93,7 @@ export const QuantIntelligenceSection: React.FC<
         </div>
 
         {/* Category Tabs */}
-        <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto pb-2 mb-5 border-b border-[var(--border-subtle)]">
+        <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 border-b border-[var(--border-subtle)]">
           {BUCKETS.map((bucket) => {
             const active = activeBucket === bucket;
             return (
