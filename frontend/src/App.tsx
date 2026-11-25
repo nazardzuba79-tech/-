@@ -124,8 +124,20 @@ export function App() {
         <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
         <Route path="/tools" element={<RequireAuth><TradingToolsPage /></RequireAuth>} />
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
-        <Route path="/trading-bots/presentation" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
-        <Route path="/trading-bots/presentation/strategy/:strategyId" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
+        {/* Only this non-production Pages preview serves a public, static visual scenario.
+            All regular trading-bot routes and the production invitation remain authenticated. */}
+        <Route path="/trading-bots/presentation" element={
+          window.location.hostname === "codex-thomas-ai-pulse.voltex-exchange.pages.dev" &&
+          new URLSearchParams(window.location.search).get("visualReview") === "thomas"
+            ? <TradingBotsPage />
+            : <RequireAuth><TradingBotsPage /></RequireAuth>
+        } />
+        <Route path="/trading-bots/presentation/strategy/:strategyId" element={
+          window.location.hostname === "codex-thomas-ai-pulse.voltex-exchange.pages.dev" &&
+          new URLSearchParams(window.location.search).get("visualReview") === "thomas"
+            ? <TradingBotsPage />
+            : <RequireAuth><TradingBotsPage /></RequireAuth>
+        } />
         <Route path="/trading-bots/studio" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/trading-bots/strategy/:strategyId" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
