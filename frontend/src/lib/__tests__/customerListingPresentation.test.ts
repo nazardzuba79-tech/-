@@ -212,6 +212,20 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
   });
 });
 
+
+test.each(LOCALES)('customer listing UI never renders provenance notices in %s', lang => {
+  const asset = markets.parseTestMarkets({ serverTime: now, assets: [{
+    ...fixture,
+    provenance: { mode: 'DEMO_MODEL', withdrawable: false },
+  }] })!.assets[0];
+  expect(asset.provenanceLabel).toBe('DEMO · SIMULATED · NO REAL TRADING');
+  const html = chart(asset, lang) + renderToStaticMarkup(React.createElement(
+    component('pages/markets-bolt/TestMarketsStrip.tsx', lang, [asset]).TestMarketsStrip,
+    { search: '', favoritesOnly: false, favorites: new Set(), onToggleFavorite: () => {}, onOpen: () => {} },
+  ));
+  expect(html).not.toMatch(/DEMO|SIMULATED|NO REAL TRADING|data-demo-provenance|data-private-provenance/i);
+});
+
 describe.each(LOCALES)('failure messages in %s', lang => {
   const t = translate(lang);
   test('unknown order/position fields never echo machine text; known refusal states retain meaning', () => {
