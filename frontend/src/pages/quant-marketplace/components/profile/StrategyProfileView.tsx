@@ -241,7 +241,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-3xl leading-relaxed">
                   {strategy.shortDescription}
                 </p>
-                {isThomas && <ThomasSocialLinks />}
+                {isThomas && <ThomasSocialLinks readOnly={readOnly} />}
               </div>
             </div>
 
