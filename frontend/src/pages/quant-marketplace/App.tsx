@@ -30,6 +30,14 @@ import { ACADEMY_ARTICLES } from "./data/learning";
 // stylesheet, so a second theme can return by making this a state again.
 const QUANT_THEME: ThemeMode = "light";
 
+// Investor-facing example values are an illustrative 24-month arithmetic scenario,
+// not realized account returns. Keep separate from verified trading history.
+const THOMAS_SHOWCASE: import("../../../../src/shared/quantPresentation").QuantPresentation = {
+  source: "presentation",
+  monthlyReturns: [...Array<number>(23).fill(306), 310],
+  exampleWinRate: 97.1,
+};
+
 export default function App({presentation}: {presentation?: import("../../../../src/shared/quantPresentation").QuantPresentation}) {
   const base = presentation ? "/trading-bots/presentation" : "/trading-bots";
   const theme = QUANT_THEME;
@@ -84,6 +92,20 @@ export default function App({presentation}: {presentation?: import("../../../../
     [now, creators, studio.data, history.data, shared,missingPublication,presentation],
   );
   const thomasStrategy = strategies.find((s) => s.id === "range")!;
+  // Only the Thomas showcase uses the public calculation scenario; regular
+  // catalogue quotes and verified account returns remain untouched.
+  const thomasShowcase = useMemo(
+    () => catalogue(
+      presentationWeek(now),
+      creators,
+      studio.data?.thomasVip === true,
+      undefined,
+      [],
+      THOMAS_SHOWCASE,
+    ).find((s) => s.id === "range")!,
+    [now, creators, studio.data?.thomasVip],
+  );
+  const shownThomas = presentation ? thomasStrategy : thomasShowcase;
   // "№ 1" is said only when it is true: the best 30-day result among the strategies it is ranked with.
   const rankedWithThomas = strategies.filter(
     (s) => s.source === thomasStrategy.source && Number.isFinite(s.return30d),
@@ -106,6 +128,10 @@ export default function App({presentation}: {presentation?: import("../../../../
       path === "strategy/" + s.id ||
       (s.id === "range" && path === "strategy/thomas-quant-ai"),
   );
+  const shownSelectedStrategy =
+    selectedStrategy?.id === "range" && !presentation
+      ? thomasShowcase
+      : selectedStrategy;
   const handleOpenProfile = (id: string) =>
     navigate(base + "/strategy/" + encodeURIComponent(id));
   const handleOpenBotStudio = () => navigate("/trading-bots/studio");
@@ -208,9 +234,9 @@ export default function App({presentation}: {presentation?: import("../../../../
                     {/* The flagship strategy itself: the product is the first thing the page shows */}
                     <div className="qx-hero-visual lg:col-span-7">
                       <FlagshipThomasSection
-                        strategy={thomasStrategy}
-                        leads30d={thomasLeads30d}
-                        presentation={!!presentation}
+                        strategy={shownThomas}
+                        leads30d={!!presentation && thomasLeads30d}
+                        presentation
                         onOpenProfile={handleOpenProfile}
                       />
                     </div>
@@ -241,11 +267,12 @@ export default function App({presentation}: {presentation?: import("../../../../
             </>
           )}
 
-          {activeView === "strategy-profile" && selectedStrategy && (
+          {activeView === "strategy-profile" && shownSelectedStrategy && (
             <StrategyProfileView
-              key={selectedStrategy.id}
+              key={shownSelectedStrategy.id}
               readOnly={!!presentation}
-              strategy={selectedStrategy}
+              showcase={!presentation && shownSelectedStrategy.id === "range"}
+              strategy={shownSelectedStrategy}
               allStrategies={strategies}
               onBack={() => handleNavigateMarketplace()}
               onSelectStrategy={handleOpenProfile}
