@@ -1,12 +1,11 @@
 import { BOT_CATALOGUE, botPresentation, maxDrawdown, nextPresentationWeek, presentationPeriod, presentationWeek, validBotBudget } from '../tradingBotsPresentation';
 
 describe('presentation bot catalogue — synthetic, stable weekly scenarios', () => {
-  it('contains seven distinct strategies with distinct minimums starting at $2,500', () => {
+  it('contains seven distinct strategies with a minimum of 5,000 USDT each', () => {
     expect(BOT_CATALOGUE).toHaveLength(7);
     expect(new Set(BOT_CATALOGUE.map(b => b.id)).size).toBe(7);
     const minimums = BOT_CATALOGUE.map(b => b.minimum);
-    expect(Math.min(...minimums)).toBe(2500);
-    expect(new Set(minimums).size).toBe(7);
+    expect(minimums).toEqual(Array(7).fill(5000));
   });
   it('preserves the multi-asset strategy identity, weekly return and chart endpoint after the rename', () => {
     const bot = BOT_CATALOGUE.find(entry => entry.id === 'range')!;
@@ -59,10 +58,10 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
     expect(week[7]).toBe(21.21);
     expect(series[30]).toBe(300);
   });
-  it.each(['', ' ', '-1', '2499.99', 'Infinity', 'NaN', '1e8', '2500.001', '2500x'])('rejects invalid budget %j', value => {
-    expect(validBotBudget(value, 2500)).toBe(false);
+  it.each(['', ' ', '-1', '4999.99', 'Infinity', 'NaN', '1e8', '5000.001', '5000x'])('rejects invalid budget %j', value => {
+    expect(validBotBudget(value, 5000)).toBe(false);
   });
-  it.each(['2500', '2500.01', '15000.50'])('accepts a complete budget %s', value => {
-    expect(validBotBudget(value, 2500)).toBe(true);
+  it.each(['5000', '5000.01', '15000.50'])('accepts a complete budget %s', value => {
+    expect(validBotBudget(value, 5000)).toBe(true);
   });
 });

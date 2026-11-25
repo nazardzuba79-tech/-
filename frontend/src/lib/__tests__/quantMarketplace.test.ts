@@ -8,6 +8,7 @@ const owner = {
 it("uses catalogue identity and the same ordinal monthly results across every model window", () => {
   const list = catalogue(20, owner, false, { status: "unavailable" });
   expect(list.map((s) => s.id)).toEqual(BOT_CATALOGUE.map((s) => s.id));
+  expect(list.map((s) => s.minInvestmentUsdt)).toEqual(Array(7).fill(5000));
   const s = list.find((s) => s.id === "range")!;
   expect([
     s.author,
