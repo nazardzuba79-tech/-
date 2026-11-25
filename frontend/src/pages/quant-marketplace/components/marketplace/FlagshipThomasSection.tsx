@@ -97,19 +97,14 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
         </div>
         <div className="qx-flag-return">
           <span>
-            {strategy.source === "model"
-              ? "Модельная доходность"
-              : "Доходность за период"}{" "}
+            {modelExample ? "Сценарий доходности" : "Доходность за период"}{" "}
             · {tfLabel}
           </span>
           <b>{displayReturn(latestVal)}</b>
         </div>
       </div>
 
-      <p className="qx-flag-lead">
-        {strategy.shortDescription}
-        {presentation && <> Плановый охват анализа — до 100 цифровых активов.</>}
-      </p>
+      <p className="qx-flag-lead">{strategy.shortDescription}</p>
 
       <div className="qx-flag-chart">
         <div className="qx-flag-tabs" role="group" aria-label="Период графика">
@@ -166,7 +161,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
             <dd>до 100 активов</dd>
           </div>
           <div>
-            <dt>Старт в калькуляторе</dt>
+            <dt>Начальный капитал</dt>
             <dd>5 000 USDT</dd>
           </div>
         </> : <div>
@@ -195,10 +190,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
             : "Подтверждённая торговая история."}
         </span>}
       </footer>
-      {modelExample && <p className="qx-flag-notice">
-        Презентационный сценарий за 24 условных месяца, а не подтверждённая доходность или история сделок.
-        Кнопка копирования не запускает торговые операции.
-      </p>}
+
     </article>
   );
 };
