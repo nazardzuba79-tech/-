@@ -700,3 +700,24 @@
   .quant-skin.light .qx-flag { padding: 15px 12px; border-radius: 16px; }
   .quant-skin.light .qx-flag-return { flex-wrap: wrap; gap: 6px 12px; }
 }
+
+.quant-skin.light .qx-flag-example-range {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  white-space: normal;
+}
+@media (max-width: 1500px) {
+  .quant-skin.light .qx-flag-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+}
+@media (max-width: 639px) {
+  .quant-skin.light .qx-flag-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .quant-skin.light .qx-flag-stats dt { white-space: normal; }
+}
