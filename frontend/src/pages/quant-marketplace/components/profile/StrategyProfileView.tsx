@@ -2,6 +2,7 @@ import { ThomasCalculator } from "./ThomasCalculator";
 import { ThomasPortfolio, ThomasResearch } from "./ThomasResearch";
 import { ThomasAuthor } from "./ThomasAuthor";
 import { PlanActions } from "./PlanActions";
+import { PresentationCopyButton } from "../marketplace/PresentationCopyButton";
 import { numberText, percent } from "../../data/catalogue";
 import React, { useMemo, useState } from "react";
 import {
@@ -295,6 +296,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 : "История отсутствует"}
           </div>}
           {!readOnly && <PlanActions strategy={strategy} />}
+          {readOnly && <div className="qx-copy-profile"><PresentationCopyButton /></div>}
           {/* 5 Analytics Terminal Tabs */}
           <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex items-center gap-1.5 overflow-x-auto pb-1">
             {tabs.map((tab) => {

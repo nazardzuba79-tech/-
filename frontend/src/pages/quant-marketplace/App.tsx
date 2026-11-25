@@ -24,7 +24,7 @@ import { QuantIntelligenceSection } from "./components/marketplace/QuantIntellig
 import { VipProgramSection } from "./components/marketplace/VipProgramSection";
 import { StrategyProfileView } from "./components/profile/StrategyProfileView";
 import { BotStudioView } from "./components/studio/BotStudioView";
-import { ACADEMY_ARTICLES, FAQ_ITEMS } from "./data/learning";
+import { ACADEMY_ARTICLES } from "./data/learning";
 
 // The marketplace is shown on its light stage only (owner, 25 Nov 2026). The dark values stay in the
 // stylesheet, so a second theme can return by making this a state again.
@@ -132,8 +132,8 @@ export default function App({presentation}: {presentation?: import("../../../../
         )}
         <main className="flex-1">
           {presentation && <details className="qx-source">
-            <summary>Презентационный сценарий · методика</summary>
-            <p>Показатели иллюстрируют работу интерфейса. Итог за 24 условных месяца — сумма месячных процентов без реинвестирования. Доля прибыльных операций задана для сценария. Калькулятор использует введённые вами предположения.</p>
+            <summary>Презентационный сценарий · без исполнения сделок</summary>
+            <p>Показатели иллюстрируют работу интерфейса. Итог за 24 условных месяца — сумма месячных процентов без реинвестирования. Доля прибыльных операций задана для сценария. Калькулятор использует введённые вами предположения. Кнопки копирования демонстрируют интерфейс и не подключают ботов.</p>
           </details>}
           {activeView === "marketplace" && (
             <>
@@ -233,14 +233,12 @@ export default function App({presentation}: {presentation?: import("../../../../
               {/* Strategy Marketplace & Leaderboard */}
               <LeaderboardSection
                 strategies={strategies}
+                presentation={!!presentation}
                 onOpenProfile={handleOpenProfile}
               />
 
-              {/* VOLTEX Quant Academy & FAQ */}
-              <AcademySection
-                articles={ACADEMY_ARTICLES}
-                faqItems={FAQ_ITEMS}
-              />
+              {/* VOLTEX Quant Academy */}
+              <AcademySection articles={ACADEMY_ARTICLES} />
             </>
           )}
 

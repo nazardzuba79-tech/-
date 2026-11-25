@@ -51,6 +51,7 @@ app.get('/api/v1/futures/balances',(_q,r)=>r.json([]));
 app.get('/api/v1/private-trading/access',(_q,r)=>r.json({allowed:false}));
 app.get('/api/v1/support/conversations/mine',(_q,r)=>r.json({conversation:null}));
 app.get('/api/v1/trading-bots/studio',(_q,r)=>r.json({canCreate:false,thomasVip:true,published:[],drafts:[]}));
+app.get('/api/v1/trading-bots/presentation',(_q,r)=>r.json(require('../src/services/quantPresentation').examplePresentation()));
 app.use('/api/v1',(_q,r)=>r.status(503).json({error:'Not supplied by local QA fixture'}));
 app.use(express.static(dist,{index:false}));
 app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
@@ -83,6 +84,8 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const rows=page.locator('#strategy-leaderboard [data-bot]:visible');
       await rows.first().waitFor();
       check(width+' seven comparable strategies', await rows.count()===7);
+      check(width+' no FAQ in marketplace',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
+      check(width+' no inactive copy action in customer marketplace',await page.getByRole('button',{name:'Копировать бота',exact:true}).count()===0);
       check(width+' marketplace fits the viewport', await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       const ids=await rows.evaluateAll(els=>els.map(e=>e.dataset.bot));
       check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
@@ -172,6 +175,28 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await tradeMenu.getByRole('button').press('Enter');
         check(width+': keyboard trading menu',await tradeMenu.locator('.header-disclosure-panel a[href="/trade"]').isVisible());
         check(width+': no duplicate bots submenu',await tradeMenu.locator('.header-disclosure-panel a[href="/trading-bots"]').count()===0);
+      }
+      if(width===1440 || width===390 || width===320) {
+        await page.goto(base+'/trading-bots/presentation');
+        await page.getByText('Презентационный сценарий · без исполнения сделок',{exact:true}).waitFor();
+        check(width+' presentation no FAQ',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
+        const presentationUrl=page.url();
+        const buttons=page.getByRole('button',{name:'Копировать бота',exact:true});
+        await buttons.first().waitFor();
+        const before=await page.locator('[data-quant-theme]').innerText();
+        const copyRequests=[];
+        const collectCopyRequest=r=>copyRequests.push(r.method()+' '+r.url());
+        page.on('request',collectCopyRequest);
+        await page.locator('.qx-flag').getByRole('button',{name:'Копировать бота',exact:true}).click();
+        await page.locator('#strategy-leaderboard [data-bot="range"]:visible').getByRole('button',{name:'Копировать бота',exact:true}).click();
+        check(width+' presentation copy action leaves catalogue unchanged',page.url()===presentationUrl && await page.locator('[data-quant-theme]').innerText()===before && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
+        page.off('request',collectCopyRequest);
+        await page.locator('.qx-flag').getByRole('button',{name:'Подробнее о стратегии',exact:true}).click();
+        await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).first().waitFor();
+        const profileUrl=page.url();
+        const profileBefore=await page.locator('[data-quant-theme]').innerText();
+        await page.getByRole('button',{name:'Копировать бота',exact:true}).click();
+        check(width+' presentation copy action leaves profile unchanged',page.url()===profileUrl && await page.locator('[data-quant-theme]').innerText()===profileBefore);
       }
       check(width+': zero writes',writes.length===0);
       check(width+': zero uncaught errors',errors.length===0);

@@ -4,6 +4,7 @@ import { ArrowUpRight, Award, Crown, Trophy } from "lucide-react";
 import type { Strategy, TimeframeKey } from "../../types/strategy";
 import { FlagshipPerformanceChart } from "../charts/StrategyCharts";
 import { StrategyLogo } from "../logos/StrategyLogos";
+import { PresentationCopyButton } from "./PresentationCopyButton";
 
 interface FlagshipThomasSectionProps {
   strategy: Strategy;
@@ -156,7 +157,8 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
       )}
 
       <footer className="qx-flag-foot">
-        <button type="button" onClick={() => onOpenProfile(strategy.id)}>
+        {presentation && <PresentationCopyButton />}
+        <button type="button" className={presentation ? "qx-flag-detail" : undefined} onClick={() => onOpenProfile(strategy.id)}>
           <span>Подробнее о стратегии</span>
           <ArrowUpRight aria-hidden="true" />
         </button>

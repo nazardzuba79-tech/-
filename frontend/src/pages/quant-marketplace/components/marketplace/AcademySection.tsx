@@ -1,23 +1,18 @@
 import React, { useState } from "react";
-import { ArrowRight, BookOpen, ChevronDown, X } from "lucide-react";
-import type { AcademyArticle, FaqItem } from "../../types/strategy";
+import { ArrowRight, BookOpen, X } from "lucide-react";
+import type { AcademyArticle } from "../../types/strategy";
 import { AcademyIllustration } from "../logos/StrategyLogos";
 import { NeuralWebOverlay } from "../background/NeuralWebOverlay";
 
 interface AcademySectionProps {
   articles: AcademyArticle[];
-  faqItems: FaqItem[];
 }
 
 export const AcademySection: React.FC<AcademySectionProps> = ({
   articles,
-  faqItems,
 }) => {
   const [selectedArticle, setSelectedArticle] = useState<AcademyArticle | null>(
     null,
-  );
-  const [openFaqId, setOpenFaqId] = useState<string | null>(
-    faqItems[0]?.id ?? null,
   );
 
   return (
@@ -84,55 +79,6 @@ export const AcademySection: React.FC<AcademySectionProps> = ({
             </div>
           </article>
         ))}
-      </div>
-
-      {/* Professional FAQ Accordion */}
-      <div className="mt-12 relative overflow-hidden rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs p-4 sm:p-6 lg:p-8">
-        <NeuralWebOverlay variant="teal" />
-        <div className="relative z-10 mb-5">
-          <h2 className="font-display text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-            Частые вопросы
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
-            Устройство маркетплейса, привилегии VIP-создателей, методика
-            расчётов и предупреждение о рисках.
-          </p>
-        </div>
-
-        <div className="relative z-10 divide-y divide-[var(--border-subtle)] border-t border-[var(--border-subtle)]">
-          {faqItems.map((item) => {
-            const isOpen = openFaqId === item.id;
-            return (
-              <div key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqId(isOpen ? null : item.id)}
-                  aria-expanded={isOpen}
-                  className="w-full py-4 flex items-center justify-between gap-4 text-left cursor-pointer group"
-                >
-                  <div className="min-w-0">
-                    <span className="block text-[11px] text-[var(--text-gold)] mb-0.5 font-medium">
-                      {item.topic}
-                    </span>
-                    <span className="text-sm sm:text-[15px] font-medium text-[var(--text-primary)] group-hover:text-[var(--text-gold)] transition-colors">
-                      {item.question}
-                    </span>
-                  </div>
-                  <ChevronDown
-                    className={`w-4 h-4 text-[var(--text-muted)] shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-180 text-[var(--text-gold)]" : ""
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="pb-4 pr-6 text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-4xl">
-                    {item.answer}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* Educational Article Reader Modal */}
