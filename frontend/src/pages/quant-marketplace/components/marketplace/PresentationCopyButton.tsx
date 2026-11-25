@@ -1,19 +1,28 @@
-import { useId } from "react";
+import { useNavigate } from "react-router-dom";
 
-/** The copy UI is a prototype; no subscription or trade is created. */
-export function PresentationCopyButton() {
-  const descriptionId = useId();
+/** Navigate to the supported copy-trading workflow; never imply a subscription was created. */
+export function PresentationCopyButton({ strategyId }: { strategyId?: string }) {
+  const navigate = useNavigate();
+  const thomasUnavailable = strategyId === "range";
   return (
     <button
       type="button"
       className="qx-copy-preview"
-      aria-label="Копировать бота"
-      aria-describedby={descriptionId}
-      onClick={(event) => event.stopPropagation()}
+      aria-label={thomasUnavailable ? "Открыть доступные стратегии копитрейдинга. Thomas Quant AI пока не поддерживается." : "Открыть копитрейдинг"}
+      title={thomasUnavailable ? "Копирование Thomas Quant AI пока не подключено" : "Открыть настройки копитрейдинга"}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        navigate("/copy-trading");
+      }}
       onKeyDown={(event) => event.stopPropagation()}
     >
       <span>Копировать бота</span>
-      <span id={descriptionId} className="qx-copy-availability">Предпросмотр · не подключено</span>
+      <span className="qx-copy-availability">
+        {thomasUnavailable
+          ? "Thomas пока недоступен · выбрать другие стратегии"
+          : "Открыть настройки копитрейдинга"}
+      </span>
     </button>
   );
 }
