@@ -29,6 +29,7 @@ type ProfileTab = "overview" | "statistics" | "monthly" | "about" | "author";
 
 interface StrategyProfileViewProps {
   readOnly?: boolean;
+  showcase?: boolean;
   strategy: Strategy;
   allStrategies: Strategy[];
   onBack: () => void;
@@ -43,9 +44,10 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
   onBack,
   onSelectStrategy,
   readOnly = false,
+  showcase = false,
 }) => {
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
-  const [chartPeriod, setChartPeriod] = useState<TimeframeKey>("30D");
+  const [chartPeriod, setChartPeriod] = useState<TimeframeKey>(strategy.id === "range" ? "ALL" : "30D");
   const [selectedYear, setSelectedYear] = useState<1 | 2>(2);
   const [showBenchmark, setShowBenchmark] = useState(true);
 
@@ -168,7 +170,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
       <div
         className={`relative rounded-2xl overflow-hidden border shadow-xs mb-6 ${
           isThomas
-            ? "border-[var(--border-gold)]"
+            ? "border-[var(--border-subtle)]"
             : "bg-[var(--bg-surface)] border-[var(--border-subtle)]"
         }`}
         style={
@@ -182,7 +184,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
       >
         <NeuralWebOverlay variant={isThomas ? "gold" : "teal"} />
         {isThomas && (
-          <div className="relative z-10 h-[2px] w-full bg-gradient-to-r from-[#C59B47] via-[#14B8A6] to-[#C59B47]/30" />
+          <div className="relative z-10 h-px w-full bg-gradient-to-r from-[#C59B47]/50 via-[#14B8A6]/35 to-transparent" />
         )}
 
         <div className="relative z-10 p-4 sm:p-6 lg:p-7">
@@ -296,7 +298,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 : "История отсутствует"}
           </div>}
           {!readOnly && <PlanActions strategy={strategy} />}
-          <div className="qx-copy-profile"><PresentationCopyButton /></div>
+          <div className="qx-copy-profile"><PresentationCopyButton strategyId={strategy.id} /></div>
           {/* 5 Analytics Terminal Tabs */}
           <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex items-center gap-1.5 overflow-x-auto pb-1">
             {tabs.map((tab) => {
@@ -325,7 +327,46 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
       {/* TAB 1: ОБЗОР */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* 6 KPI Blocks */}
+          {/* Thomas presentation uses one integrated exchange-style metrics strip. */}
+          {isThomas && (readOnly || showcase) ? (
+            <div className="thomas-terminal-metrics" role="group" aria-label="Презентационный сценарий Thomas Quant AI">
+              {([
+                ["Доходность за весь период", strategy.returnAllArithmetic, "gold"],
+                ["За 1 год", strategy.return1yArithmetic, "gold"],
+                ["За 90 дней", strategy.series["90D"].slice(-1)[0]?.value, "up"],
+                ["За 30 дней", strategy.return30d, "up"],
+              ] as const).map(([label, value, tone]) => (
+                <div className="thomas-terminal-metric" key={label}>
+                  <span>{label}</span>
+                  <strong data-tone={tone}>
+                    {Number.isFinite(value)
+                      ? `${value! > 0 ? "+" : ""}${numberText(value!, Number.isInteger(value) ? 0 : 1)}%`
+                      : "—"}
+                  </strong>
+                </div>
+              ))}
+              <div className="thomas-terminal-metric">
+                <span>Прибыльные сделки · модель</span>
+                <strong data-tone="up">{numberText(strategy.winRate, 1)}%</strong>
+                <small>Диапазон 95,3–98,2%</small>
+              </div>
+              <div className="thomas-terminal-metric">
+                <span>Период сценария</span>
+                <strong>24 месяца</strong>
+              </div>
+              <div className="thomas-terminal-metric">
+                <span>Охват анализа</span>
+                <strong>До 100 активов</strong>
+              </div>
+              <div className="thomas-terminal-metric">
+                <span>Сумма в калькуляторе</span>
+                <strong>5 000 USDT</strong>
+              </div>
+              <p className="thomas-terminal-disclaimer">
+                Презентационный сценарий, не подтверждённая доходность. Сделки не исполняются.
+              </p>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <div className="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-4">
               <div className="text-[11px] text-[var(--text-muted)]">
@@ -405,6 +446,8 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
               </div>
             </div>
           </div>
+
+          )}
 
           {/* Main Interactive Performance Terminal Chart */}
           <div className="relative overflow-hidden rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs p-4 sm:p-6">
