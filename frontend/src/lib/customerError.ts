@@ -41,6 +41,7 @@ export type Translate = (key: Key, params?: Record<string, string | number>) => 
 
 /** Machine-readable reasons the routes attach alongside the message. */
 const CODE_KEY: Record<string, Key> = {
+  DISPOSABLE_EMAIL: 'register.error.disposableEmail',
   NOT_FOUND: 'serverError.notFound',
   MARK_PRICE_UNAVAILABLE: 'serverError.priceUnavailable',
   CARD_VALUATION_UNAVAILABLE: 'serverError.priceUnavailable',
@@ -64,6 +65,7 @@ const PHRASE_KEY: Record<string, Key> = {
   'Login session expired, please sign in again': 'serverError.sessionExpired',
   'Invalid authentication code': 'serverError.invalidCode',
   'Registration failed': 'register.error.failed',
+  'Registration with temporary email addresses is prohibited. Please use a permanent email address.': 'register.error.disposableEmail',
   'Registration is currently closed': 'register.error.closed',
   Unauthorized: 'serverError.signInRequired',
   'Failed to fetch': 'serverError.network',

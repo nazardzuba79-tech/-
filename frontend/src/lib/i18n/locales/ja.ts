@@ -1864,6 +1864,7 @@ export const JA: Record<Key, string> = {
   'register.error.passwordShort': 'パスワードが短すぎます',
   'register.error.passwordUppercase': '大文字を1つ追加してください',
   'register.error.failed': 'アカウントを作成できませんでした。入力内容をご確認いただくか、すでにアカウントがある場合はログインしてください。',
+  'register.error.disposableEmail': "一時的なメールアドレスでの登録は禁止されています。継続して使用できるメールアドレスをご利用ください。",
   'register.error.closed': '現在、新規登録を受け付けていません。',
 
   // --- Email verification (six-digit code) ---

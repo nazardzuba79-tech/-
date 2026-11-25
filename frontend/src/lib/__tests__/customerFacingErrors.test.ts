@@ -170,6 +170,15 @@ describe('2. real business refusals keep their meaning', () => {
     if (mustNot) expect(shown).not.toMatch(mustNot);
   });
 
+  it('shows the exact approved Russian disposable email refusal and localizes it in every locale', () => {
+    const error = new FakeApiError('Registration with temporary email addresses is prohibited. Please use a permanent email address.', 403, { code: 'DISPOSABLE_EMAIL' });
+    expect(say(error)).toBe("Регистрация с временных почтовых адресов запрещена. Пожалуйста, используйте постоянный адрес электронной почты.");
+    expect(say(new FakeApiError(error.message, 403))).toBe("Регистрация с временных почтовых адресов запрещена. Пожалуйста, используйте постоянный адрес электронной почты.");
+    for (const dictionary of [RU, EN, ZH, ES, HI, JA, KO]) {
+      expect(customerErrorText(error, key => dictionary[key], FALLBACK)).toBe(dictionary['register.error.disposableEmail']);
+    }
+  });
+
   it('a throttled request is still named as throttled when the sentence is unknown', () => {
     expect(say(new FakeApiError('slow down', 429))).toMatch(/Слишком много попыток/);
   });
