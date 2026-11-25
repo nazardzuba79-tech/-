@@ -34,6 +34,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
   strategy,
   leads30d,
   presentation = false,
+  socialsReadOnly = false,
   onOpenProfile,
 }) => {
   const [tf, setTf] = useState<TimeframeKey>(strategy.series.ALL.length ? "ALL" : "30D");
