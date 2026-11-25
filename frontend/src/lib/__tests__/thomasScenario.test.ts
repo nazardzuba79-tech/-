@@ -24,3 +24,13 @@ it("accepts explicitly entered rates above 100% and rejects overflow", () => {
   expect(scenarioCapital(5000, 180.26, 1)[1].capital).toBeCloseTo(14013, 2);
   expect(scenarioCapital(1e300, 1e20, 24)).toEqual([]);
 });
+
+test("6-month option calculates compounding from the 24-month scenario", () => {
+  const reference = 7348;
+  const rate = ((1 + reference / 100) ** (1 / 24) - 1) * 100;
+  const series = scenarioCapital(5000, rate, 6);
+  expect(series).toHaveLength(7);
+  expect(series[0].capital).toBe(5000);
+  expect(series[6].capital).toBeCloseTo(5000 * (1 + reference / 100) ** (6 / 24), 4);
+  expect(scenarioCapital(5000, rate, 24)[24].capital).toBeCloseTo(372400, 2);
+});
