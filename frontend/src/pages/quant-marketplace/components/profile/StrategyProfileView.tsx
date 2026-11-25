@@ -27,6 +27,7 @@ import { NeuralWebOverlay } from "../background/NeuralWebOverlay";
 type ProfileTab = "overview" | "statistics" | "monthly" | "about" | "author";
 
 interface StrategyProfileViewProps {
+  readOnly?: boolean;
   strategy: Strategy;
   allStrategies: Strategy[];
   onBack: () => void;
@@ -40,6 +41,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
   allStrategies,
   onBack,
   onSelectStrategy,
+  readOnly = false,
 }) => {
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [chartPeriod, setChartPeriod] = useState<TimeframeKey>("30D");
@@ -285,14 +287,14 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             </div>
           </div>
 
-          <div className="text-xs text-[var(--text-secondary)]">
+          {!readOnly && <div className="text-xs text-[var(--text-secondary)]">
             {strategy.source === "verified"
               ? "Подтверждённая торговая история"
               : strategy.source === "model"
                 ? "Модельная статистика"
                 : "История отсутствует"}
-          </div>
-          <PlanActions strategy={strategy} />
+          </div>}
+          {!readOnly && <PlanActions strategy={strategy} />}
           {/* 5 Analytics Terminal Tabs */}
           <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex items-center gap-1.5 overflow-x-auto pb-1">
             {tabs.map((tab) => {
@@ -473,7 +475,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             </div>
 
             <div className="relative z-10 mt-4 pt-3 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
-              <span>
+              {!readOnly && <span>
                 {strategy.verified
                   ? "Подтверждённая история. ROI учитывает денежные потоки. Данные на " +
                     strategy.verified.asOf.slice(0, 10) +
@@ -481,7 +483,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                   : strategy.source === "model"
                     ? "Иллюстративная модель. Для длинных периодов Thomas отображается сумма условных месячных результатов."
                     : "Данные отсутствуют."}
-              </span>
+              </span>}
               <button
                 type="button"
                 onClick={() => setActiveTab("monthly")}
@@ -1157,13 +1159,13 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] leading-relaxed">
+            {!readOnly && <div className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] leading-relaxed">
               {strategy.source === "model"
                 ? "Модельный сценарий. Данные не являются подтверждённой историей сделок."
                 : strategy.source === "verified"
                   ? "Подтверждённые данные стратегии."
                   : "Торговая история отсутствует."}
-            </div>
+            </div>}
           </div>
         </div>
       )}
@@ -1217,7 +1219,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             </div>
 
             <div className="relative z-10 pt-4 border-t border-[var(--border-subtle)] space-y-3 text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-              {isThomas ? <ThomasAuthor/> : <p>{strategy.methodologySummary}</p>}
+              {isThomas ? <ThomasAuthor readOnly={readOnly} /> : <p>{strategy.methodologySummary}</p>}
               <p className="text-[var(--text-muted)]">
                 Статус VIP-разработчика позволяет публиковать авторские
                 стратегии в витрине Quant Marketplace, настраивать параметры

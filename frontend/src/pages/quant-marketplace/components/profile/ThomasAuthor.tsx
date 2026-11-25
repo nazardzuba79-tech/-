@@ -32,7 +32,7 @@ function SocialIcon({ network }: { network: Network }) {
   return <Icon size={17} aria-hidden="true" />;
 }
 const endpoint = "/trading-bots/range/author";
-export function ThomasAuthor() {
+export function ThomasAuthor({readOnly = false}: {readOnly?: boolean}) {
   const [profile, setProfile] = useState<AuthorInfo | null>(null),
     [draft, setDraft] = useState<AuthorInfo | null>(null);
   const [message, setMessage] = useState(""),
@@ -98,7 +98,7 @@ export function ThomasAuthor() {
                 </a>
               ))}
           </div>
-          {profile.canEdit && (
+          {!readOnly && profile.canEdit && (
             <button
               className="th-action"
               onClick={() => {

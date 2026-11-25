@@ -8,9 +8,10 @@ import { Sparkline } from './BotSparkline';
 import { BotModelPerformance } from './BotModelPerformance';
 
 type HistoryState = { data?: BotHistory; error?: boolean };
-export function useBotHistory() {
+export function useBotHistory(enabled = true) {
   const [state, setState] = useState<HistoryState>({});
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     let pending = false;
     const refresh = async () => {
@@ -38,7 +39,7 @@ export function useBotHistory() {
       window.removeEventListener('focus', refresh);
       removeBrowserActivityListener(refresh);
     };
-  }, []);
+  }, [enabled]);
   return state;
 }
 

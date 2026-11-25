@@ -10,6 +10,7 @@ import {
   type AuthorInfo,
 } from "../../shared/thomasAuthor";
 import type { LiveSource } from "../../services/marketData/live/contract";
+import { examplePresentation, presentationViewers } from "../../services/quantPresentation";
 import { thomasCoverage } from "../../services/thomasCoverage";
 
 const editor = z
@@ -28,6 +29,15 @@ export function thomasProfileRouter(
   const router = Router(),
     auth = requireAuth(db),
     coverage = thomasCoverage(feed);
+  const viewers = presentationViewers();
+  router.get("/trading-bots/presentation", (_req, res, next) => {
+    res.vary("Authorization").set("Cache-Control", "private, no-store");
+    next();
+  }, auth, (req: AuthedRequest, res) => {
+    if (!req.sessionId || !req.userId || !viewers.has(req.userId))
+      return res.status(403).json({error: "Просмотр доступен только по приглашению"});
+    return res.json(examplePresentation());
+  });
   const base = "/trading-bots/range";
   async function canEdit(id: string) {
     if (id === ownerId) return true;

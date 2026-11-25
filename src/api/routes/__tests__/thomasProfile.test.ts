@@ -71,3 +71,33 @@ test("rejects unknown networks, invalid URLs and stale revisions with no overwri
   db.$queryRaw.mockResolvedValueOnce([]);
   await write({ ...edit, revision: 7 }).expect(409);
 });
+
+test("private presentation requires an invited, active session and publishes only scenario inputs", async () => {
+  const viewer = "88c38564-29c3-4dd8-ad04-86488f2ca99e";
+  const previous = process.env.QUANT_PRESENTATION_REVIEWER_IDS;
+  process.env.QUANT_PRESENTATION_REVIEWER_IDS = viewer;
+  try {
+    const {app, db} = setup(viewer, "USER");
+    const endpoint = "/trading-bots/presentation";
+    const token = (sub: string, sid?: string) => jwt.sign({sub, sid}, process.env.JWT_SECRET!);
+    const get = (t: string) => request(app).get(endpoint).set("Authorization", "Bearer " + t);
+    await request(app).get(endpoint).expect(401);
+    await get(token(viewer)).expect(403);
+    const ordinary = setup("not-invited", "ADMIN");
+    await request(ordinary.app).get(endpoint).set("Authorization", "Bearer " + token("not-invited", "fixture")).expect(403);
+    const response = await get(token(viewer, "fixture")).expect(200);
+    expect(response.headers["cache-control"]).toContain("no-store");
+    expect(response.headers.vary).toContain("Authorization");
+    expect(Object.keys(response.body).sort()).toEqual(["exampleWinRate","monthlyReturns","source"]);
+    expect(response.body.source).toBe("presentation");
+    expect(response.body.exampleWinRate).toBe(97.1);
+    expect(response.body.monthlyReturns).toHaveLength(24);
+    expect(response.body.monthlyReturns.reduce((sum:number, value:number) => sum + value, 0)).toBe(7348);
+    db.session.findUnique.mockResolvedValueOnce(null);
+    await get(token(viewer, "fixture")).expect(401);
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+  } finally {
+    if (previous === undefined) delete process.env.QUANT_PRESENTATION_REVIEWER_IDS;
+    else process.env.QUANT_PRESENTATION_REVIEWER_IDS = previous;
+  }
+});

@@ -1,6 +1,7 @@
 import {
   BOT_CATALOGUE,
   botPresentation,
+  maxDrawdown,
   presentationPeriod,
   type BotCreator,
 } from "../../../lib/tradingBotsPresentation";
@@ -16,6 +17,7 @@ import type {
   MonthlyReturnEntry,
   TimeframeKey,
 } from "../types/strategy";
+import type { QuantPresentation } from "../../../../../src/shared/quantPresentation";
 import type { BotHistory } from "../../../../../src/shared/thomasPerformance";
 import type { Draft } from "../../trading-bots/QuantStudio";
 
@@ -58,21 +60,24 @@ export function catalogue(
   thomasVip: boolean,
   history?: BotHistory,
   publications: Draft[] = [],
+  presentation?: QuantPresentation,
 ): Strategy[] {
   const items = BOT_CATALOGUE.map((bot): Strategy => {
     const identity = visuals[bot.id as keyof typeof visuals];
     const model = botPresentation(bot, week);
     const isThomas = bot.id === "range";
+    const scenario = isThomas ? presentation : undefined;
+    const daily = scenario ? model.series.map(value => Math.round(value / model.roi * scenario.monthlyReturns[23] * 100) / 100) : model.series;
     const verified =
-      isThomas && history?.status === "verified" ? history : null;
+      isThomas && !scenario && history?.status === "verified" ? history : null;
     const monthly =
       isThomas && !verified
-        ? [...MODEL_FIRST_YEAR, ...MODEL_SECOND_YEAR, model.roi]
+        ? scenario?.monthlyReturns ?? [...MODEL_FIRST_YEAR, ...MODEL_SECOND_YEAR, model.roi]
         : [];
     const day = (i: number) => "День " + i;
     const series: Strategy["series"] = {
-      "7D": points(presentationPeriod(model.series, 7), day),
-      "30D": points(model.series, day),
+      "7D": points(presentationPeriod(daily, 7), day),
+      "30D": points(daily, day),
       "90D": monthly.length ? monthlyCurve(monthly.slice(-3)) : [],
       "1Y": monthly.length ? monthlyCurve(monthly.slice(-12)) : [],
       ALL: monthly.length ? monthlyCurve(monthly) : [],
@@ -137,16 +142,16 @@ export function catalogue(
       methodologySummary: bot.detail,
       accentColor: identity.accentColor,
       secondaryColor: identity.secondaryColor,
-      return30d: verified?.periods["30D"].roi ?? model.roi,
+      return30d: verified?.periods["30D"].roi ?? daily[daily.length - 1],
       return1yArithmetic:
         verified?.periods["1Y"].roi ?? series["1Y"].slice(-1)[0]?.value ?? NaN,
       returnAllArithmetic:
         verified?.periods.ALL.roi ?? series.ALL.slice(-1)[0]?.value ?? NaN,
-      maxDrawdown: verified?.periods["30D"].drawdown ?? model.drawdown,
+      maxDrawdown: verified?.periods["30D"].drawdown ?? (scenario ? maxDrawdown(daily) : model.drawdown),
       winRate: verified
         ? (verified.periods["30D"].winRate ?? NaN)
-        : model.winRate,
-      tradesCount: verified?.periods["30D"].trades ?? model.trades,
+        : scenario?.exampleWinRate ?? model.winRate,
+      tradesCount: verified?.periods["30D"].trades ?? (scenario ? NaN : model.trades),
       minInvestmentUsdt: bot.minimum,
       horizonLabel: "30Д",
       behaviorTag: bot.strategy,

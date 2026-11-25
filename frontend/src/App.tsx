@@ -124,6 +124,8 @@ export function App() {
         <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
         <Route path="/tools" element={<RequireAuth><TradingToolsPage /></RequireAuth>} />
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
+        <Route path="/trading-bots/presentation" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
+        <Route path="/trading-bots/presentation/strategy/:strategyId" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/trading-bots/studio" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/trading-bots/strategy/:strategyId" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />

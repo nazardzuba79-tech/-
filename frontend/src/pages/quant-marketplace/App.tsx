@@ -30,11 +30,12 @@ import { ACADEMY_ARTICLES, FAQ_ITEMS } from "./data/learning";
 // stylesheet, so a second theme can return by making this a state again.
 const QUANT_THEME: ThemeMode = "light";
 
-export default function App() {
+export default function App({presentation}: {presentation?: import("../../../../src/shared/quantPresentation").QuantPresentation}) {
+  const base = presentation ? "/trading-bots/presentation" : "/trading-bots";
   const theme = QUANT_THEME;
 
   const studio = useStudio();
-  const history = useBotHistory();
+  const history = useBotHistory(!presentation);
   const [creators, setCreators] = useState<Record<string, BotCreator>>({});
   const [now, setNow] = useState(Date.now);
   const root = useRef<HTMLDivElement>(null);
@@ -78,8 +79,9 @@ export default function App() {
         studio.data?.thomasVip === true,
         history.data,
         shared && shared.id===missingPublication ? [...(studio.data?.published??[]),shared] : studio.data?.published,
+        presentation,
       ),
-    [now, creators, studio.data, history.data, shared,missingPublication],
+    [now, creators, studio.data, history.data, shared,missingPublication,presentation],
   );
   const thomasStrategy = strategies.find((s) => s.id === "range")!;
   // "№ 1" is said only when it is true: the best 30-day result among the strategies it is ranked with.
@@ -90,8 +92,8 @@ export default function App() {
     Number.isFinite(thomasStrategy.return30d) &&
     rankedWithThomas.length > 1 &&
     rankedWithThomas.every((s) => s.return30d <= thomasStrategy.return30d);
-  const path = location.pathname
-    .replace(/^\/trading-bots\/?/, "")
+  const path = location.pathname.slice(base.length)
+    .replace(/^\//, "")
     .replace(/\/$/, "");
   const activeView =
     path === "studio"
@@ -105,10 +107,10 @@ export default function App() {
       (s.id === "range" && path === "strategy/thomas-quant-ai"),
   );
   const handleOpenProfile = (id: string) =>
-    navigate("/trading-bots/strategy/" + encodeURIComponent(id));
+    navigate(base + "/strategy/" + encodeURIComponent(id));
   const handleOpenBotStudio = () => navigate("/trading-bots/studio");
   const handleNavigateMarketplace = (id?: string) =>
-    navigate("/trading-bots" + (id ? "#" + id : ""));
+    navigate(base + (id ? "#" + id : ""));
   useEffect(() => {
     if (location.hash === "#quant-academy")
       root.current?.querySelector("#quant-academy")?.scrollIntoView();
@@ -129,6 +131,10 @@ export default function App() {
           </p>
         )}
         <main className="flex-1">
+          {presentation && <details className="qx-source">
+            <summary>Презентационный сценарий · методика</summary>
+            <p>Показатели иллюстрируют работу интерфейса. Итог за 24 условных месяца — сумма месячных процентов без реинвестирования. Доля прибыльных операций задана для сценария. Калькулятор использует введённые вами предположения.</p>
+          </details>}
           {activeView === "marketplace" && (
             <>
               {/* Compact Institutional Hero Section */}
@@ -194,8 +200,8 @@ export default function App() {
                         <span>
                           <b>24</b>-месячная аналитика
                         </span>
-                        <span aria-hidden="true">·</span>
-                        <span>Иллюстративный набор данных для презентации</span>
+                        {!presentation && <span aria-hidden="true">·</span>}
+                        {!presentation && <span>Иллюстративный набор данных для презентации</span>}
                       </div>
                     </div>
 
@@ -204,6 +210,7 @@ export default function App() {
                       <FlagshipThomasSection
                         strategy={thomasStrategy}
                         leads30d={thomasLeads30d}
+                        presentation={!!presentation}
                         onOpenProfile={handleOpenProfile}
                       />
                     </div>
@@ -213,7 +220,7 @@ export default function App() {
 
               {/* VIP Creator Program (Compact, exclusive VIP creation model) */}
               <VipProgramSection
-                canCreate={studio.data?.canCreate === true}
+                canCreate={!presentation && studio.data?.canCreate === true}
                 onOpenBotStudio={handleOpenBotStudio}
               />
 
@@ -240,6 +247,7 @@ export default function App() {
           {activeView === "strategy-profile" && selectedStrategy && (
             <StrategyProfileView
               key={selectedStrategy.id}
+              readOnly={!!presentation}
               strategy={selectedStrategy}
               allStrategies={strategies}
               onBack={() => handleNavigateMarketplace()}

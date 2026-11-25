@@ -9,6 +9,7 @@ interface FlagshipThomasSectionProps {
   strategy: Strategy;
   /** True only when this strategy has the highest 30-day result among the strategies it is ranked with. */
   leads30d: boolean;
+  presentation?: boolean;
   onOpenProfile: (strategyId: string) => void;
 }
 
@@ -29,6 +30,7 @@ const FLAGSHIP_TIMEFRAMES: { key: TimeframeKey; label: string }[] = [
 export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
   strategy,
   leads30d,
+  presentation = false,
   onOpenProfile,
 }) => {
   const [tf, setTf] = useState<TimeframeKey>("30D");
@@ -158,11 +160,11 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
           <span>Подробнее о стратегии</span>
           <ArrowUpRight aria-hidden="true" />
         </button>
-        <span>
+        {!presentation && <span>
           {strategy.source === "model"
             ? "Иллюстративная модель. Условные месяцы суммируются арифметически."
             : "Подтверждённая торговая история."}
-        </span>
+        </span>}
       </footer>
     </article>
   );

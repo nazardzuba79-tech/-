@@ -576,3 +576,7 @@
   .quant-skin.light .qx-intel-card { transition:none; }
   .quant-skin.light .qx-intel-card:hover { transform:none; }
 }
+
+.quant-skin .qx-source { padding: .65rem clamp(.85rem, 3vw, 3rem); color: var(--text-secondary); background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); font-size: .82rem; }
+.quant-skin .qx-source summary { cursor: pointer; font-weight: 600; }
+.quant-skin .qx-source p { max-width: 75ch; margin-top: .5rem; }
