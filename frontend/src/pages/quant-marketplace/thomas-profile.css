@@ -214,3 +214,66 @@
 .th-values strong[data-negative="true"] {
   color: var(--text-crimson);
 }
+
+/* Terminal-style Thomas metrics stay on the same palette as the host marketplace.
+   The divider rhythm follows VOLTEX's compact market-data header. */
+.quant-skin .thomas-terminal-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(115deg, var(--bg-surface), var(--bg-subtle));
+}
+.quant-skin .thomas-terminal-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.quant-skin .thomas-terminal-metric:nth-child(4n) { border-right: 0; }
+.quant-skin .thomas-terminal-metric:nth-child(n+5) { border-bottom: 0; }
+.quant-skin .thomas-terminal-metric span {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.quant-skin .thomas-terminal-metric strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  font-size: clamp(13px, 1.25vw, 18px);
+  line-height: 1.2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.quant-skin .thomas-terminal-metric strong[data-tone="gold"] { color: var(--text-gold); }
+.quant-skin .thomas-terminal-metric strong[data-tone="up"] { color: var(--text-emerald); }
+.quant-skin .thomas-terminal-metric small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.quant-skin .thomas-terminal-disclaimer {
+  grid-column: 1 / -1;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+@media (max-width: 1050px) {
+  .quant-skin .thomas-terminal-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quant-skin .thomas-terminal-metric:nth-child(n) { border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+  .quant-skin .thomas-terminal-metric:nth-child(2n) { border-right: 0; }
+  .quant-skin .thomas-terminal-metric:nth-child(n+7) { border-bottom: 0; }
+}
+@media (max-width: 390px) {
+  .quant-skin .thomas-terminal-metrics { grid-template-columns: 1fr; }
+  .quant-skin .thomas-terminal-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid var(--border-subtle); }
+  .quant-skin .thomas-terminal-metric:nth-child(8) { border-bottom: 0; }
+  .quant-skin .thomas-terminal-metric { padding: 12px 14px; }
+}
