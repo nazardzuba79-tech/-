@@ -308,7 +308,7 @@ export const NeuralBlockchainBackdrop: React.FC<{ theme: ThemeMode }> = ({
                   "radial-gradient(ellipse 60% 50% at 20% 84%, rgba(56, 189, 248, 0.28) 0%, transparent 65%)",
                   "linear-gradient(150deg, #070B1B 0%, #12193B 46%, #09182E 100%)",
                 ].join(", ")
-              : "radial-gradient(ellipse 80% 55% at 18% 8%, rgba(212, 175, 106, 0.08) 0%, transparent 65%), linear-gradient(160deg, #F3F5F8 0%, #EDF1F7 100%)",
+              : "radial-gradient(ellipse 80% 55% at 18% 8%, rgba(212, 175, 106, 0.10) 0%, transparent 65%), linear-gradient(160deg, #FAF9F6 0%, #F4F2EC 100%)",
         }}
       />
 
@@ -328,7 +328,7 @@ export const NeuralBlockchainBackdrop: React.FC<{ theme: ThemeMode }> = ({
       {/* Interactive AI Synaptic Web & Tensor Filaments Canvas */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full block"
+        className="qx-backdrop-web absolute inset-0 w-full h-full block"
       />
     </div>
   );

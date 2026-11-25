@@ -254,8 +254,8 @@ export const QuantIntelligenceSection: React.FC<
                 </div>
 
                 {/* Bottom Metrics & Action */}
-                <div className="relative z-10 flex items-center justify-between gap-3 pt-3 border-t border-[var(--border-subtle)] text-xs">
-                  <div className="flex items-center gap-4">
+                <div className="qx-card-foot relative z-10 flex items-center justify-between gap-3 pt-3 border-t border-[var(--border-subtle)] text-xs">
+                  <div className="qx-card-stats flex items-center gap-4">
                     <div>
                       <div className="text-[11px] text-[var(--text-muted)]">
                         Просадка

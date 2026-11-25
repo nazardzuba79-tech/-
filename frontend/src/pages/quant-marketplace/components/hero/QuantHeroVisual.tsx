@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { Rotate3d, Zap } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -37,9 +38,9 @@ function createPrecisionDialTexture(isDark: boolean): THREE.CanvasTexture {
       bgGrad.addColorStop(0.65, "rgba(13, 22, 42, 0.72)");
       bgGrad.addColorStop(1, "rgba(11, 18, 33, 0.0)");
     } else {
-      bgGrad.addColorStop(0, "rgba(226, 232, 240, 0.95)");
-      bgGrad.addColorStop(0.65, "rgba(241, 245, 249, 0.75)");
-      bgGrad.addColorStop(1, "rgba(241, 245, 249, 0.0)");
+      bgGrad.addColorStop(0, "rgba(255, 255, 255, 1)");
+      bgGrad.addColorStop(0.7, "rgba(252, 250, 245, 0.92)");
+      bgGrad.addColorStop(1, "rgba(250, 247, 240, 0.0)");
     }
     ctx.fillStyle = bgGrad;
     ctx.beginPath();
@@ -55,10 +56,10 @@ function createPrecisionDialTexture(isDark: boolean): THREE.CanvasTexture {
       ctx.strokeStyle = isMajor
         ? isDark
           ? "rgba(229, 201, 139, 0.62)"
-          : "rgba(168, 124, 42, 0.65)"
+          : "rgba(150, 104, 18, 0.95)"
         : isDark
           ? "rgba(45, 212, 191, 0.34)"
-          : "rgba(15, 118, 110, 0.30)";
+          : "rgba(15, 23, 42, 0.42)";
       ctx.lineWidth = isMajor ? 2 : 1;
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(a) * rIn, cy + Math.sin(a) * rIn);
@@ -72,10 +73,10 @@ function createPrecisionDialTexture(isDark: boolean): THREE.CanvasTexture {
         idx === 1
           ? isDark
             ? "rgba(212, 175, 106, 0.28)"
-            : "rgba(168, 124, 42, 0.25)"
+            : "rgba(150, 104, 18, 0.55)"
           : isDark
             ? "rgba(94, 234, 212, 0.20)"
-            : "rgba(15, 118, 110, 0.16)";
+            : "rgba(15, 23, 42, 0.22)";
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -135,6 +136,7 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
     cageWireMat: THREE.LineBasicMaterial;
     hemiLight: THREE.HemisphereLight;
     waveMat: THREE.ShaderMaterial;
+    applyStage: (isDark: boolean) => void;
   } | null>(null);
 
   useEffect(() => {
@@ -196,11 +198,17 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
     pmremGenerator.dispose();
 
     const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0.35, 1.55, 5.15);
+    // A narrow stage (phones) widens the view instead of cropping the outer rings.
+    const fitZoom = (w: number, h: number) =>
+      Math.min(1, Math.max(0.6, w / h / 1.5));
+    camera.zoom = fitZoom(width, height);
+    camera.updateProjectionMatrix();
+    // The light stage shows the whole object with air around it; the dark one keeps its closer crop.
+    camera.position.set(0.35, isDarkInit ? 1.55 : 1.36, isDarkInit ? 5.15 : 5.55);
 
     // Interactive OrbitControls (zoom disabled so page scroll remains silky)
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.12, 0);
+    controls.target.set(0, isDarkInit ? 0.12 : -0.1, 0);
     controls.enableZoom = false;
     controls.enablePan = false;
     controls.enableDamping = !isSoftwareGl;
@@ -316,15 +324,16 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
           float ringDist = abs(fract(r * 1.1 - uTime * 0.12) - 0.5) * 2.0;
           float ringLine = smoothstep(0.93, 0.99, ringDist) * 0.45;
 
-          vec3 cyan = vec3(0.133, 0.827, 0.933);
-          vec3 gold = vec3(0.988, 0.749, 0.141);
-          vec3 violet = vec3(0.659, 0.333, 0.969);
+          // The light stage draws the floor in ink, deep teal and deep gold: pale neon lines vanish on white.
+          vec3 cyan = mix(vec3(0.03, 0.50, 0.46), vec3(0.133, 0.827, 0.933), uIsDark);
+          vec3 gold = mix(vec3(0.70, 0.47, 0.05), vec3(0.988, 0.749, 0.141), uIsDark);
+          vec3 violet = mix(vec3(0.13, 0.17, 0.28), vec3(0.659, 0.333, 0.969), uIsDark);
 
           vec3 col = mix(violet, cyan, clamp(vElev * 5.0 + 0.52, 0.0, 1.0));
           col = mix(col, gold, clamp(vPulseWave * 1.6 + smoothstep(0.05, 0.14, vElev), 0.0, 1.0));
 
           float alpha = (line * 0.34 + ringLine + vPulseWave * 0.65) * edgeFade * centerCut;
-          alpha *= mix(0.62, 1.0, uIsDark);
+          alpha *= mix(0.92, 1.0, uIsDark);
           if (alpha < 0.01) discard;
           gl_FragColor = vec4(col, alpha);
         }
@@ -652,6 +661,7 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       uniforms: {
         uTime: { value: 0 },
         uPulseEnergy: { value: 0 },
+        uIsDark: { value: isDarkInit ? 1.0 : 0.0 },
       },
       vertexShader: `
         varying vec3 vPos;
@@ -663,12 +673,15 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       fragmentShader: `
         uniform float uTime;
         uniform float uPulseEnergy;
+        uniform float uIsDark;
         varying vec3 vPos;
         void main() {
           float angle = atan(vPos.z, vPos.x);
           float sweep1 = pow(max(0.0, cos(angle - uTime * 1.6)), 6.0);
           float sweep2 = pow(max(0.0, cos(angle + uTime * 1.1 + 3.14)), 8.0);
-          vec3 col = mix(vec3(0.176, 0.831, 0.749), vec3(0.92, 0.80, 0.56), sweep2);
+          vec3 teal = mix(vec3(0.03, 0.52, 0.48), vec3(0.176, 0.831, 0.749), uIsDark);
+          vec3 champagne = mix(vec3(0.74, 0.50, 0.06), vec3(0.92, 0.80, 0.56), uIsDark);
+          vec3 col = mix(teal, champagne, sweep2);
           float alpha = (sweep1 * 0.75 + sweep2 * 0.55 + 0.08 + uPulseEnergy * 0.35);
           gl_FragColor = vec4(col, alpha);
         }
@@ -823,6 +836,103 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
     const dustPoints = new THREE.Points(dustGeo, dustMat);
     quantGroup.add(dustPoints);
 
+    // One place that dresses the whole scene for its stage. On a light page the model is a dark, polished
+    // object with gold and teal accents: additive glows and pale tints, made for a dark page, vanish on white.
+    const stageColor = new THREE.Color();
+    const applyStage = (isDark: boolean) => {
+      renderer.toneMapping = isDark
+        ? THREE.ACESFilmicToneMapping
+        : THREE.NeutralToneMapping;
+      renderer.toneMappingExposure = isDark ? 1.18 : 1.02;
+
+      dialMat.map = isDark ? darkDialTex : lightDialTex;
+      dialMat.needsUpdate = true;
+      hemiLight.color.setHex(isDark ? 0x93c5fd : 0xffffff);
+      hemiLight.groundColor.setHex(isDark ? 0x0f172a : 0xd9d2c3);
+      hemiLight.intensity = isDark ? 0.85 : 0.95;
+      keyLight.intensity = isDark ? 2.5 : 3.1;
+      rimLight.intensity = isDark ? 1.9 : 2.6;
+      violetRimLight.intensity = isDark ? 1.45 : 0.9;
+
+      goldMat.color.setHex(isDark ? 0xf5c451 : 0xd9a034);
+      goldMat.roughness = isDark ? 0.14 : 0.2;
+      titaniumMat.color.setHex(isDark ? 0x5b6b8c : 0x232b3d);
+      titaniumMat.roughness = isDark ? 0.34 : 0.26;
+      obsidianMat.color.setHex(isDark ? 0x162040 : 0x0d1322);
+      obsidianMat.metalness = isDark ? 0.38 : 0.6;
+      obsidianMat.roughness = isDark ? 0.58 : 0.3;
+      dysonPlateMat.emissive.setHex(isDark ? 0x0b1633 : 0x05070d);
+      dysonPlateMat.emissiveIntensity = isDark ? 0.32 : 0.18;
+      dysonPlateMat.roughness = isDark ? 0.22 : 0.18;
+
+      // Light stage: a two-tone gold shell with a few teal plates. An even dark/bright
+      // alternation on a round body reads as a football.
+      for (let i = 0; i < DYSON_PLATE_COUNT; i++) {
+        const hex = isDark
+          ? i % 3 === 0
+            ? 0xfbbf24
+            : i % 5 === 0
+              ? 0x2dd4bf
+              : 0x6366f1
+          : i % 9 === 4
+            ? 0x0fa697
+            : i % 2 === 0
+              ? 0xdba53a
+              : 0xbf8620;
+        dysonPlateInst.setColorAt(i, stageColor.setHex(hex));
+      }
+      if (dysonPlateInst.instanceColor)
+        dysonPlateInst.instanceColor.needsUpdate = true;
+
+      cageWireMat.color.setHex(isDark ? 0xd4af6a : 0xb5832a);
+      cageWireMat.opacity = isDark ? 0.34 : 0.62;
+      conduitMat.color.setHex(isDark ? 0x1e3a5f : 0x18213a);
+      conduitMat.opacity = isDark ? 0.65 : 0.55;
+
+      const accentGold = isDark ? 0xf5dfb0 : 0xc4860c;
+      const accentTeal = isDark ? 0x5eead4 : 0x0b8f84;
+      const accentThird = isDark ? 0x818cf8 : 0xd9b566;
+      for (let i = 0; i < PACKET_COUNT; i++) {
+        packetInst.setColorAt(
+          i,
+          stageColor.setHex(i % 2 === 0 ? accentTeal : accentGold),
+        );
+      }
+      if (packetInst.instanceColor) packetInst.instanceColor.needsUpdate = true;
+      for (let i = 0; i < NODE_COUNT; i++) {
+        instancedNodes.setColorAt(
+          i,
+          stageColor.setHex(
+            i % 3 === 0 ? accentGold : i % 3 === 1 ? accentTeal : accentThird,
+          ),
+        );
+      }
+      if (instancedNodes.instanceColor)
+        instancedNodes.instanceColor.needsUpdate = true;
+      for (let i = 0; i < DUST_COUNT; i++) {
+        stageColor.setHex(
+          i % 3 === 0 ? accentGold : i % 3 === 1 ? accentTeal : accentThird,
+        );
+        dustColors[i * 3] = stageColor.r;
+        dustColors[i * 3 + 1] = stageColor.g;
+        dustColors[i * 3 + 2] = stageColor.b;
+      }
+      dustGeo.attributes.color.needsUpdate = true;
+      dustMat.blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
+      dustMat.opacity = isDark ? 0.72 : 0.5;
+      dustMat.size = isDark ? 0.09 : 0.06;
+      dustMat.needsUpdate = true;
+
+      sweepMat.blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
+      sweepMat.uniforms.uIsDark.value = isDark ? 1.0 : 0.0;
+      sweepMat.needsUpdate = true;
+      waveMat.uniforms.uIsDark.value = isDark ? 1.0 : 0.0;
+
+      contactShadowMat.opacity = isDark ? 0.58 : 0.5;
+      contactShadow.scale.setScalar(isDark ? 1 : 1.5);
+    };
+    applyStage(isDarkInit);
+
     sceneCtxRef.current = {
       dialMat,
       lightDialTex,
@@ -830,6 +940,7 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       cageWireMat,
       hemiLight,
       waveMat,
+      applyStage,
     };
 
     if (!isSoftwareGl) {
@@ -898,6 +1009,7 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       const w = container.clientWidth || 560;
       const h = container.clientHeight || 300;
       camera.aspect = w / h;
+      camera.zoom = fitZoom(w, h);
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
@@ -1144,49 +1256,34 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
   useEffect(() => {
     const ctx = sceneCtxRef.current;
     if (!ctx) return;
-    const isDark = theme === "dark";
-
-    ctx.dialMat.map = isDark ? ctx.darkDialTex : ctx.lightDialTex;
-    ctx.dialMat.needsUpdate = true;
-    ctx.cageWireMat.color.setHex(isDark ? 0xd4af6a : 0x475569);
-    ctx.cageWireMat.opacity = isDark ? 0.34 : 0.38;
-    ctx.hemiLight.color.setHex(isDark ? 0x93c5fd : 0xf8fafc);
-    ctx.hemiLight.groundColor.setHex(isDark ? 0x0f172a : 0xcbd5e1);
-    ctx.hemiLight.intensity = isDark ? 0.85 : 1.1;
-    ctx.waveMat.uniforms.uIsDark.value = isDark ? 1.0 : 0.0;
+    ctx.applyStage(theme === "dark");
   }, [theme]);
 
   return (
-    <div className="relative w-full h-[250px] sm:h-[280px] lg:h-[305px] rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-subtle)] dark:bg-[#0D162B]/25">
+    <div className="qx-stage relative w-full h-[250px] sm:h-[280px] lg:h-[305px] rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-subtle)] dark:bg-[#0D162B]/25">
       {/* Dedicated isolated WebGL mount node */}
       <div
         ref={mountRef}
         className="w-full h-full cursor-grab active:cursor-grabbing"
       />
 
-      {/* Solid/rgba corner markers & interactive controls (zero backdrop-filter over WebGL) */}
-      <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-[#D4AF6A]/65 pointer-events-none" />
-      <div className="absolute top-3 right-3 w-3 h-3 border-t border-r border-[#D4AF6A]/65 pointer-events-none" />
-
-      <div className="absolute top-3 right-4 pointer-events-none hidden sm:block">
-        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/85 dark:bg-[#0E1525]/88 text-[var(--text-muted)] border border-[var(--border-subtle)]">
-          Тяните для 360° · Клик — импульс
-        </span>
-      </div>
-
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
-        <span className="px-2.5 py-1 rounded text-[11px] font-medium bg-white/90 dark:bg-[#0E1525]/88 text-[var(--text-secondary)] border border-[var(--border-subtle)]">
-          Нейронная 3D-матрица VOLTEX
-        </span>
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => pulseTriggerRef.current?.()}
-            className="px-2.5 py-1 rounded text-[11px] font-mono font-medium bg-white/90 dark:bg-[#0E1525]/88 text-[var(--text-teal)] border border-[var(--border-subtle)] hover:border-[var(--border-gold)] hover:text-[var(--text-gold)] transition-colors cursor-pointer"
-          >
-            Импульс сети
-          </button>
+      {/* Caption and the one control. Solid surfaces only: no backdrop-filter over WebGL. */}
+      <div className="qx-stage-bar">
+        <div className="qx-stage-caption">
+          <span className="qx-stage-title">Нейронная 3D-матрица VOLTEX</span>
+          <span className="qx-stage-hint">
+            <Rotate3d aria-hidden="true" />
+            Потяните модель, чтобы повернуть
+          </span>
         </div>
+        <button
+          type="button"
+          onClick={() => pulseTriggerRef.current?.()}
+          className="qx-stage-pulse"
+        >
+          <Zap aria-hidden="true" />
+          Импульс сети
+        </button>
       </div>
     </div>
   );

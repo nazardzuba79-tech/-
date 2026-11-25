@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { onSessionChange } from "../lib/api";
 import { Nav } from "../components/Nav";
 import styles from "./quant-marketplace/approved.css?raw";
+import lightStage from "./quant-marketplace/light-stage.css?raw";
 const Marketplace = lazy(() => import("./quant-marketplace/App"));
 export function TradingBotsPage() {
   const [session, setSession] = useState(0);
@@ -19,6 +20,7 @@ export function TradingBotsPage() {
           createPortal(
             <>
               <style>{styles}</style>
+              <style>{lightStage}</style>
               <Suspense fallback={<p>Загрузка маркетплейса…</p>}>
                 <Marketplace key={session} />
               </Suspense>

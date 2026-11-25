@@ -2,7 +2,7 @@ import "@fontsource-variable/plus-jakarta-sans/index.css";
 import "@fontsource-variable/jetbrains-mono/index.css";
 import "@fontsource-variable/outfit/index.css";
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { ArrowDownRight, HelpCircle, Sun, Moon, X } from "lucide-react";
+import { ArrowDownRight, HelpCircle, X } from "lucide-react";
 import { NeuralBlockchainBackdrop } from "./components/background/NeuralBlockchainBackdrop";
 import { NeuralWebOverlay } from "./components/background/NeuralWebOverlay";
 import {
@@ -29,14 +29,12 @@ import { StrategyProfileView } from "./components/profile/StrategyProfileView";
 import { BotStudioView } from "./components/studio/BotStudioView";
 import { ACADEMY_ARTICLES, FAQ_ITEMS } from "./data/learning";
 
-const THEME_STORAGE_KEY = "voltex-quant-theme-v2";
+// The marketplace is shown on its light stage only (owner, 25 Nov 2026). The dark values stay in the
+// stylesheet and in the scene, so a second theme can return by making this a state again.
+const QUANT_THEME: ThemeMode = "light";
 
 export default function App() {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return saved === "light" ? "light" : "dark";
-  });
+  const theme = QUANT_THEME;
 
   const studio = useStudio();
   const history = useBotHistory();
@@ -111,13 +109,6 @@ export default function App() {
       root.current?.querySelector("#quant-academy")?.scrollIntoView();
     else window.scrollTo(0, 0);
   }, [location.pathname, location.hash]);
-  const toggleTheme = () =>
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  useEffect(() => {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {}
-  }, [theme]);
 
   return (
     <div
@@ -127,16 +118,6 @@ export default function App() {
     >
       <NeuralBlockchainBackdrop theme={theme} />
       <div className="relative z-10 flex-1 flex flex-col">
-        <button
-          type="button"
-          className="quant-theme"
-          onClick={toggleTheme}
-          aria-label={
-            theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему"
-          }
-        >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
         {history.error && (
           <p role="status" className="quant-data">
             Не удалось загрузить историю доходности.
@@ -147,7 +128,7 @@ export default function App() {
             <>
               {/* Compact Institutional Hero Section */}
               <section
-                className="relative overflow-hidden border-b border-[var(--border-subtle)] transition-colors"
+                className="qx-hero relative overflow-hidden border-b border-[var(--border-subtle)] transition-colors"
                 style={{
                   background:
                     "linear-gradient(180deg, var(--bg-hero-from) 0%, var(--bg-hero-via) 55%, var(--bg-hero-to) 100%)",
@@ -157,21 +138,21 @@ export default function App() {
                 <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-6 py-6 sm:py-8 lg:py-9">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
                     {/* Left Headline & Actions */}
-                    <div className="lg:col-span-6 space-y-4">
-                      <div className="quant-hero-eyebrow text-xs font-semibold text-[var(--text-gold)] tracking-wide">
+                    <div className="qx-hero-copy lg:col-span-6 space-y-4">
+                      <div className="qx-eyebrow quant-hero-eyebrow text-xs font-semibold text-[var(--text-gold)] tracking-wide">
                         Институциональная витрина алгоритмов VOLTEX
                       </div>
 
-                      <h1 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight text-[var(--text-primary)] dark:bg-gradient-to-r dark:from-[#F8FAFC] dark:via-[#BAE6FD] dark:to-[#FCD34D] dark:bg-clip-text dark:text-transparent leading-[1.12] text-balance">
+                      <h1 className="qx-h1 font-display text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight text-[var(--text-primary)] dark:bg-gradient-to-r dark:from-[#F8FAFC] dark:via-[#BAE6FD] dark:to-[#FCD34D] dark:bg-clip-text dark:text-transparent leading-[1.12] text-balance">
                         VOLTEX Quant Marketplace
                       </h1>
 
-                      <p className="text-sm sm:text-base text-[var(--text-secondary)] max-w-xl leading-relaxed">
+                      <p className="qx-lead text-sm sm:text-base text-[var(--text-secondary)] max-w-xl leading-relaxed">
                         Авторские стратегии. Интеллектуальная аналитика. Новый
                         подход к торговле.
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                      <div className="qx-cta flex flex-wrap items-center gap-3 pt-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -200,17 +181,21 @@ export default function App() {
                       </div>
 
                       {/* Concise model disclosure inline */}
-                      <div className="pt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
-                        <span>7 модельных стратегий</span>
+                      <div className="qx-facts pt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
+                        <span>
+                          <b>7</b> модельных стратегий
+                        </span>
                         <span aria-hidden="true">·</span>
-                        <span>24-месячная аналитика</span>
+                        <span>
+                          <b>24</b>-месячная аналитика
+                        </span>
                         <span aria-hidden="true">·</span>
                         <span>Иллюстративный набор данных для презентации</span>
                       </div>
                     </div>
 
                     {/* Right Three.js 3D Quantitative Visualization */}
-                    <div className="lg:col-span-6">
+                    <div className="qx-hero-visual lg:col-span-6">
                       <QuantHeroVisual theme={theme} />
                     </div>
                   </div>
