@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowUpRight, Pencil, X as CloseIcon } from "lucide-react";
 import { SiTelegram, SiX } from "@icons-pack/react-simple-icons";
 import { ApiError, getToken, onSessionChange, request } from "../../../../lib/api";
@@ -47,7 +47,7 @@ export function ThomasSocialLinks() {
   const hasLinks = !!(profile.links?.x || profile.links?.telegram);
   if (!hasLinks && !profile.canEdit) return null;
 
-  const save = async (event: React.FormEvent<HTMLFormElement>) => {
+  const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving || !profile.canEdit) return;
     setSaving(true);
