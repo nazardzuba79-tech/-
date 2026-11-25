@@ -202,6 +202,10 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await page.goto(base+'/trading-bots/presentation');
         await page.getByText('Презентационный сценарий · без исполнения сделок',{exact:true}).waitFor();
         check(width+' presentation no FAQ',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
+        const exampleMetrics=(await page.locator('.qx-flag-stats').innerText()).replace(/\\s/g,'');
+        check(width+' Thomas model dashboard shows requested scenario values',
+          ['+7348%','+3676%','+922%','+310%','97,1%','95,3–98,2%','100активов','5000USDT']
+            .every(value=>exampleMetrics.includes(value)));
         const presentationUrl=page.url();
         const buttons=page.getByRole('button',{name:'Копировать бота',exact:true});
         await buttons.first().waitFor();
@@ -224,6 +228,12 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await page.waitForURL(profileUrl);
         await page.getByRole('button',{name:'Помесячная доходность',exact:true}).waitFor();
         await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).waitFor();
+        const profileMetrics=(await page.locator('.thomas-terminal-metrics').innerText()).replace(/\\s/g,'');
+        check(width+' Thomas profile integrated strip shows all scenario metrics',
+          ['+7348%','+3676%','+922%','+310%','97,1%','95,3–98,2%','100активов','5000USDT','24месяца']
+            .every(value=>profileMetrics.includes(value)));
+        check(width+' Thomas profile opens complete chart by default',
+          await page.locator('output[data-period="ALL"][data-return="7348"]').count()===1);
         const profileBefore=await page.locator('[data-quant-theme]').innerText();
         copyRequests.length=0;
         page.on('request',collectCopyRequest);
