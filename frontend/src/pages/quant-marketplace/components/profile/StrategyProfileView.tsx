@@ -1,6 +1,7 @@
 import { ThomasCalculator } from "./ThomasCalculator";
 import { ThomasPortfolio, ThomasResearch } from "./ThomasResearch";
 import { ThomasAuthor } from "./ThomasAuthor";
+import { ThomasSocialLinks } from "./ThomasSocialLinks";
 import { PlanActions } from "./PlanActions";
 import { PresentationCopyButton } from "../marketplace/PresentationCopyButton";
 import { numberText, percent } from "../../data/catalogue";
@@ -240,6 +241,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-3xl leading-relaxed">
                   {strategy.shortDescription}
                 </p>
+                {isThomas && <ThomasSocialLinks />}
               </div>
             </div>
 
