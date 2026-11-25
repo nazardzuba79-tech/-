@@ -89,6 +89,17 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const flagship=page.locator('main section').filter({has:page.getByRole('button',{name:'Подробнее о стратегии',exact:true})});
       await flagship.getByText('Thomas QA',{exact:true}).waitFor();
       check(width+' flagship and catalogue agree',Number(await rows.filter({hasText:'Thomas Quant AI'}).getAttribute('data-roi'))===180.26 && (await flagship.locator('.qx-flag-return b').innerText()).replace(',','.').includes('180.26'));
+      if (width <= 640) {
+        const title = page.locator('.qx-intel-card h3').filter({hasText:'Thomas Quant AI'});
+        await title.waitFor();
+        check(width+' complete mobile recommendation title', await title.evaluate(el => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const bounds = el.getBoundingClientRect();
+          return Array.from(range.getClientRects()).every(line => line.left >= bounds.left - 1
+            && line.right <= bounds.right + 1 && line.bottom <= bounds.bottom + 1);
+        }));
+      }
       const hero = page.locator('.qx-hero .qx-flag');
       check(width+' one flagship, light theme and no sphere',await hero.count()===1 && await page.locator('[data-quant-theme]').getAttribute('data-quant-theme')==='light' && await hero.locator('canvas').count()===0 && await page.locator('.quant-scene').count()===0);
       const values=await rows.evaluateAll(els=>els.map(el=>({id:el.dataset.bot,roi:Number(el.dataset.roi)})));

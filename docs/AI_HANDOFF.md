@@ -7956,3 +7956,8 @@ TypeScript and frontend production build passed; 50 unit/API tests and 47 Chrome
 - Kept the single light stage, black/gold interactive flagship, existing VOLTEX navigation and protected Studio. Integrated multi-asset research, portfolio aggregates, calculator, editable author profile and owner/admin validation. Only the Thomas definition changed in the PR catalogue. Financial calculations and the separation of illustrative and confirmed history are retained.
 - Combined browser QA covers all flagship periods, cohort-only rankings and Monday UTC rollover without skipping a check. A fixed browser clock and an awaited row value distinguish rendering latency from an actual missed weekly update.
 - Review only. The preview uses loopback and disposable PostgreSQL. Production and release rollback are outside the change.
+
+### 2026-11-25 — Codex — PR #723 mobile recommendation title
+
+- Follow-up to 22f2169f52401cc8ee47c1caedff6339e0d4e9f3. Allow the complete strategy name to wrap in the approved pastel recommendation cards. At 320 px the risk line sits below the identity. Preserve the desktop composition, existing calculator, statistics, social links and Studio. Add a browser assertion on each rendered text line. This entry is included in the mobile-title commit.
+- Release hold: the owner reports that an attributable Thomas history export is not available. The live verified-aggregate reader has no snapshot configured. Illustrative fixture numbers remain outside the public release. No changes to production.

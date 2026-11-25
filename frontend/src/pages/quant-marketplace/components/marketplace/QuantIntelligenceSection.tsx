@@ -158,7 +158,7 @@ export const QuantIntelligenceSection: React.FC<
                 />
                 <div className="relative z-10">
                   {/* Top row: Logo, Title, Market/Category */}
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="qx-intel-card-head flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <StrategyLogo
                         strategyId={strategy.logoId ?? strategy.id}
@@ -187,7 +187,7 @@ export const QuantIntelligenceSection: React.FC<
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    <div className="qx-intel-card-risk text-right shrink-0">
                       <div className="text-[11px] text-[var(--text-muted)]">
                         Риск:{" "}
                         <span

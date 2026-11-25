@@ -550,6 +550,13 @@
   line-height:1.45;
 }
 @media(max-width:640px) {
+  .quant-skin .qx-intel-card h3 {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.3;
+  }
   .quant-skin .qx-intel-title { font-size:22px; column-gap:8px; letter-spacing:-.025em; }
   .quant-skin .qx-intel-accent { gap:6px; }
   .quant-skin .qx-intel-stars { width:23px; height:22px; flex-basis:23px; }
@@ -559,6 +566,11 @@
       radial-gradient(ellipse 75% 34% at 0% 80%,#f0dfe6 0%,rgba(240,223,230,0) 100%),
       #f4f6f9;
   }
+}
+@media (max-width: 360px) {
+  .quant-skin .qx-intel-card-head { flex-direction: column; gap: 6px; }
+  .quant-skin .qx-intel-card-risk { display: flex; align-items: baseline; gap: 8px; }
+  .quant-skin .qx-intel-card-risk > div { margin-top: 0; }
 }
 @media(prefers-reduced-motion:reduce) {
   .quant-skin.light .qx-intel-card { transition:none; }
