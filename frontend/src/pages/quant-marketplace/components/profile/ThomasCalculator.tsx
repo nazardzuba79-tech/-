@@ -17,24 +17,32 @@ const compact = new Intl.NumberFormat("ru-RU", {
 });
 const terms = [
   [1, "Месяц"],
-  [3, "Три месяца"],
-  [12, "Год"],
-  [24, "Два года"],
+  [3, "3 месяца"],
+  [6, "6 месяцев"],
+  [12, "1 год"],
+  [24, "2 года"],
 ] as const;
 const windows: TimeframeKey[] = ["7D", "30D", "90D", "1Y", "ALL"];
 import { scenarioCapital } from "../../../../lib/thomasScenario";
 export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
-  const [principal, setPrincipal] = useState("5000"),
-    [rate, setRate] = useState("1"),
-    [months, setMonths] = useState(24);
+  const [principal, setPrincipal] = useState("5000");
+  const [months, setMonths] = useState(24);
   const [mode, setMode] = useState<"scenario" | "history">("scenario"),
     [period, setPeriod] = useState<TimeframeKey>("30D");
   const id = useId().replace(/:/g, "");
-  const initial = Number(principal),
-    historical = mode === "history" && !!strategy.verified;
+  const initial = Number(principal);
+  const minCapital = strategy.minInvestmentUsdt;
+  const validCapital = principal.trim() !== "" && Number.isFinite(initial) && initial >= minCapital;
+  const historical = mode === "history" && !!strategy.verified;
+  // Arithmetic reference windows are not compounded trading history.
+  // Use an equivalent uniform geometric rate for the 24-month endpoint.
+  const fullPeriodFactor = 1 + strategy.returnAllArithmetic / 100;
+  const monthlyPct = Number.isFinite(fullPeriodFactor) && fullPeriodFactor >= 0
+    ? (fullPeriodFactor ** (1 / 24) - 1) * 100
+    : NaN;
   const record = historical ? strategy.verified?.periods[period] : null;
   const calculated =
-    record && principal.trim() && Number.isFinite(initial) && initial >= 0.01
+    record && validCapital
       ? record.series.map((r, i) => ({
           label:
             i === 0
@@ -42,8 +50,8 @@ export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
               : (record.observationDates?.[i - 1] ?? "Шаг " + i),
           capital: initial * (1 + r / 100),
         }))
-      : !historical && rate.trim() && principal.trim()
-        ? scenarioCapital(initial, Number(rate.replace(",", ".")), months)
+      : !historical && validCapital && Number.isFinite(monthlyPct)
+        ? scenarioCapital(initial, monthlyPct, months)
         : [];
   const series = calculated.every(point => Number.isFinite(point.capital)) ? calculated : [];
   const closing = series[series.length - 1]?.capital,
@@ -56,7 +64,7 @@ export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
       <header>
         <h2>Инвестиционный калькулятор</h2>
         <p>
-          Оцените потенциальный результат при различных сценариях доходности.
+          Расчёт с учётом сложного процента.
         </p>
       </header>
       {strategy.verified && (
@@ -79,14 +87,14 @@ export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
             <input
               inputMode="decimal"
               type="number"
-              min="0.01"
+              min={minCapital}
               step="any"
               value={principal}
               onChange={(e) => setPrincipal(e.target.value)}
             />
           </label>
           <div className="th-options">
-            {[2500, 5000, 10000, 25000, 50000].map((n) => (
+            {[5000, 10000, 25000, 50000, 100000].map((n) => (
               <button
                 key={n}
                 aria-pressed={initial === n}
@@ -118,24 +126,9 @@ export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
                   </button>
                 ))}
           </div>
-          {!historical && (
-            <label>
-              Предполагаемая доходность в месяц, %
-              <input
-                type="number"
-                inputMode="decimal"
-                min="-100"
-                step="any"
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-              />
-            </label>
-          )}
-          <small>
-            Минимальная сумма подключения стратегии —{" "}
-            {money.format(strategy.minInvestmentUsdt)} USDT. Калькулятор
-            доступен для любой суммы от 0,01 USDT.
-          </small>
+          {!validCapital && <small role="status">
+            Минимальный капитал — {money.format(minCapital)} USDT.
+          </small>}
         </div>
         <div className="th-output">
           <div className="th-values" aria-live="polite">
@@ -223,7 +216,7 @@ export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
             </div>
           ) : (
             <p role="status">
-              Проверьте сумму, ставку и числовой диапазон результата. Минимальная сумма — 0,01 USDT, минимальная ставка — −100%.
+              Проверьте сумму инвестиции. Минимум — {money.format(minCapital)} USDT.
             </p>
           )}
         </div>
@@ -243,9 +236,7 @@ export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
         </small>
       ) : (
         <small>
-          Иллюстрация по вашей ставке с ежемесячным реинвестированием. Комиссии,
-          налоги и пополнения исключены. Фактическая доходность может
-          отличаться.
+          Сценарий со сложным процентом. Средний месячный темп рассчитан из 24-месячного результата.
         </small>
       )}
     </section>
