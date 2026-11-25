@@ -710,3 +710,57 @@
 .quant-skin .qx-flag-stats > div { min-width: 0; }
 .quant-skin .qx-flag-stats dt { white-space: normal; }
 .quant-skin .qx-flag-stats dd { overflow-wrap: anywhere; white-space: normal; }
+
+/* 25 Nov investor-presentation polish: a crisp, flat exchange-style CTA,
+   not a double-line gold gradient button. The action opens copy-trading. */
+.quant-skin .qx-copy-preview,
+.quant-skin .qx-flag-foot .qx-copy-preview {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 20px;
+  min-height: 44px;
+  border: 1px solid #33445c;
+  border-radius: 10px;
+  background: linear-gradient(115deg, #131e30 0%, #23334a 100%);
+  color: #f9f8f6;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  line-height: 1.1;
+  white-space: nowrap;
+  box-shadow: 0 4px 13px rgba(14, 21, 37, .12);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.quant-skin .qx-copy-preview:hover {
+  transform: translateY(-1px);
+  border-color: #9c8049;
+  filter: none;
+  box-shadow: 0 6px 18px rgba(14, 21, 37, .17);
+}
+.quant-skin .qx-copy-preview:focus-visible {
+  outline: 2px solid var(--text-gold);
+  outline-offset: 3px;
+}
+.quant-skin .qx-copy-preview svg { flex: none; width: 17px; height: 17px; }
+.quant-skin.light .qx-intel-aurora {
+  padding-block: clamp(14px, 1.9vw, 25px);
+  background:
+    radial-gradient(ellipse at 94% 0%, rgba(225, 220, 245, .46), transparent 55%),
+    radial-gradient(ellipse at 4% 90%, rgba(240, 223, 230, .3), transparent 54%),
+    #f7f7f9;
+}
+.quant-skin.light .qx-intel-title {
+  font-size: clamp(19px, 1.85vw, 27px);
+  line-height: 1.22;
+  margin-block: 4px 6px;
+}
+@media (max-width: 639px) {
+  .quant-skin .qx-copy-preview,
+  .quant-skin .qx-flag-foot .qx-copy-preview {
+    width: 100%;
+    padding-inline: 12px;
+  }
+}
