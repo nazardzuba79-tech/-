@@ -631,3 +631,69 @@
   color: #3d2b12;
   line-height: 1.2;
 }
+
+/* Flagship belongs to the light hero, not a separate dark product card.
+   Keep the layout and inherit the surrounding exchange's light palette. */
+.quant-skin.light .qx-flag {
+  --text-primary: inherit;
+  --text-secondary: inherit;
+  --text-muted: inherit;
+  --text-gold: inherit;
+  --text-teal: inherit;
+  --text-emerald: inherit;
+  --text-crimson: inherit;
+  --bg-surface: inherit;
+  --bg-subtle: inherit;
+  --border-subtle: inherit;
+  --border-strong: inherit;
+  --border-gold: inherit;
+  --chart-grid: inherit;
+  --chart-axis: inherit;
+  --chart-ref: inherit;
+  --chart-tooltip-bg: inherit;
+  --chart-tooltip-border: inherit;
+  min-width: 0;
+  padding: clamp(12px, 1.3vw, 20px) 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.quant-skin.light .qx-flag::before { display: none; }
+.quant-skin.light .qx-flag-rank {
+  background: var(--bg-subtle);
+  color: var(--text-gold);
+  border: 1px solid var(--border-gold);
+  box-shadow: none;
+}
+.quant-skin.light .qx-flag-logo {
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+.quant-skin.light .qx-flag-avatar {
+  background: var(--bg-subtle);
+  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--border-gold);
+}
+.quant-skin.light .qx-flag-market b { background: var(--bg-surface); }
+.quant-skin.light .qx-flag-chart {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0;
+  padding: 12px 0 0;
+}
+.quant-skin.light .qx-flag-chart #thomasGoldTealStroke stop:first-child { stop-color: #a36a0a; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealStroke stop:nth-child(2) { stop-color: #997015; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealStroke stop:last-child { stop-color: #087e72; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealFill stop { stop-opacity: .12; }
+.quant-skin.light .qx-flag-chart #thomasGoldTealFill stop:last-child { stop-opacity: .025; }
+.quant-skin.light .qx-flag-foot .qx-flag-detail {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.quant-skin.light .qx-flag-foot button { box-shadow: none; }
+@media (max-width: 639px) {
+  .quant-skin.light .qx-flag { padding: 12px 0 4px; border-radius: 0; }
+  .quant-skin.light .qx-flag-return { flex-wrap: wrap; gap: 6px 12px; }
+}
