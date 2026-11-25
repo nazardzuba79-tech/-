@@ -203,11 +203,16 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         check(width+' presentation copy action leaves catalogue unchanged',page.url()===presentationUrl && await page.locator('[data-quant-theme]').innerText()===before && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
         page.off('request',collectCopyRequest);
         await page.locator('.qx-flag').getByRole('button',{name:'Подробнее о стратегии',exact:true}).click();
-        await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).first().waitFor();
-        const profileUrl=page.url();
+        const profileUrl=base+'/trading-bots/presentation/strategy/range';
+        await page.waitForURL(profileUrl);
+        await page.getByRole('button',{name:'Помесячная доходность',exact:true}).waitFor();
+        await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).waitFor();
         const profileBefore=await page.locator('[data-quant-theme]').innerText();
+        copyRequests.length=0;
+        page.on('request',collectCopyRequest);
         await page.getByRole('button',{name:'Копировать бота',exact:true}).click();
-        check(width+' presentation copy action leaves profile unchanged',page.url()===profileUrl && await page.locator('[data-quant-theme]').innerText()===profileBefore);
+        check(width+' presentation copy action leaves profile unchanged',page.url()===profileUrl && await page.locator('[data-quant-theme]').innerText()===profileBefore && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
+        page.off('request',collectCopyRequest);
       }
       check(width+': zero writes',writes.length===0);
       check(width+': zero uncaught errors',errors.length===0);
