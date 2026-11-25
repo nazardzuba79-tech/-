@@ -43,7 +43,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
     modelExample && Number.isFinite(value)
       ? `${value > 0 ? "+" : ""}${numberText(value, Number.isInteger(value) ? 0 : 1)}%`
       : percent(value, true);
-  const return90d = strategy.series["90D"].at(-1)?.value ?? NaN;
+  const return90d = strategy.series["90D"].slice(-1)[0]?.value ?? NaN;
 
   return (
     <article className="qx-flag" data-vip={strategy.isVip ? "" : undefined}>
@@ -184,7 +184,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
       )}
 
       <footer className="qx-flag-foot">
-        <PresentationCopyButton />
+        <PresentationCopyButton strategyId={strategy.id} />
         <button type="button" className="qx-flag-detail" onClick={() => onOpenProfile(strategy.id)}>
           <span>Подробнее о стратегии</span>
           <ArrowUpRight aria-hidden="true" />
