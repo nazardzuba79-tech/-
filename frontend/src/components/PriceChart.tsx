@@ -80,6 +80,27 @@ const VISIBLE_CANDLES = 300;
  *  бінанс») — so each candle reads as a body and a wick rather than a hair.
  *  Scrolling back still reaches every loaded bar. */
 const SETTINGS_VISIBLE_CANDLES = 120;
+const SPOT_VOLUME_SHARE_KEY = 'voltex.chart.spot.volume-share.v1';
+
+function readSpotVolumeShare(): number {
+  try {
+    const value = Number(localStorage.getItem(SPOT_VOLUME_SHARE_KEY));
+    if (Number.isFinite(value) && value > 0 && value < 1) return value;
+  } catch { /* browser storage is optional */ }
+  return 0.2;
+}
+
+/** Keep the user's actual separator position, not an assumed 80/20 split. */
+function rememberSpotVolumeShare(chart: IChartApi): void {
+  const panes = chart.panes();
+  if (panes.length !== 2 || typeof panes[0].getStretchFactor !== 'function') return;
+  const main = panes[0].getStretchFactor(), volume = panes[1].getStretchFactor();
+  const share = volume / (main + volume);
+  if (!Number.isFinite(share) || share <= 0 || share >= 1) return;
+  try {
+    if (readSpotVolumeShare() !== share) localStorage.setItem(SPOT_VOLUME_SHARE_KEY, String(share));
+  } catch { /* browser storage is optional */ }
+}
 // Fetch enough extra history that the MA200 line has a full 200-bar
 // warm-up BEFORE the window we actually show — otherwise the line only
 // starts partway across the visible chart (no average exists yet for the
@@ -456,6 +477,7 @@ export function PriceChart({
    *  (CFD moved to the workspace chart on 2026-10-15); Spot keeps the band
    *  under the candles it always had. */
   const paneSupport = terminal && (market === 'futures' || market === 'cfd');
+  const preserveSpotVolume = terminal && market === 'spot' && chartSettings;
   const hasType = (type: IndicatorType) => indicatorInstances.some(i => i.type === type && i.visible);
   /** Spot's flat toggles: off → one instance with its defaults, on → every instance of that kind off. */
   const toggleType = (type: IndicatorType) => {
@@ -698,6 +720,20 @@ export function PriceChart({
     host.addEventListener('pointerdown', pointerDown, true);
     host.addEventListener('pointermove', pointerMove, true);
     host.addEventListener('pointercancel', pointerCancel, true);
+    // The native separator already resizes the panes. Save only after the
+    // user's gesture, without an observer or any new candle/network work.
+    let spotPanePointer: number | null = null;
+    const spotPaneStart = (event: PointerEvent) => { spotPanePointer = event.pointerId; };
+    const spotPaneEnd = (event: PointerEvent) => {
+      if (spotPanePointer !== event.pointerId) return;
+      spotPanePointer = null;
+      if (volumeSeries.getPane().paneIndex() === 1) rememberSpotVolumeShare(chart);
+    };
+    if (preserveSpotVolume) {
+      host.addEventListener('pointerdown', spotPaneStart, true);
+      window.addEventListener('pointerup', spotPaneEnd);
+      window.addEventListener('pointercancel', spotPaneEnd);
+    }
 
     function handleClick(param: MouseEventParams<Time>) {
       const interaction = tradingRef.current;
@@ -763,6 +799,12 @@ export function PriceChart({
       host.removeEventListener('pointerdown', pointerDown, true);
       host.removeEventListener('pointermove', pointerMove, true);
       host.removeEventListener('pointercancel', pointerCancel, true);
+      if (preserveSpotVolume) {
+        host.removeEventListener('pointerdown', spotPaneStart, true);
+        window.removeEventListener('pointerup', spotPaneEnd);
+        window.removeEventListener('pointercancel', spotPaneEnd);
+        if (volumeSeries.getPane().paneIndex() === 1) rememberSpotVolumeShare(chart);
+      }
       chart.unsubscribeClick(handleClick);
       chart.panes()[0]?.detachPrimitive(projectionWatch);
       paintedProjectionRef.current = null;
@@ -799,6 +841,9 @@ export function PriceChart({
    *  every lower-pane indicator a strip under them. Stretch factors are
    *  relative, so the candles give way slowly as panes are added. */
   const layoutPanes = () => {
+    // Spot has no separate lower oscillator panes. Its volume separator
+    // belongs to the user; candle refreshes must never resize it.
+    if (preserveSpotVolume) return;
     const chart = chartRef.current;
     if (!chart || typeof chart.panes !== 'function') return;
     const panes = chart.panes();
@@ -884,14 +929,24 @@ export function PriceChart({
     // indicators follow in panes of their own on Futures, or in the band at
     // the bottom of the main pane on Spot/CFD. Hidden volume goes back to the
     // main pane, which lets the empty strip close.
+    const previousVolumePane = volume.getPane().paneIndex();
+    if (preserveSpotVolume && !s.volume && previousVolumePane === 1) rememberSpotVolumeShare(chart);
     volume.applyOptions({ visible: s.volume });
     const volumePane = s.volume ? 1 : 0;
     if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);
     if (s.volume) {
       const panes = chart.panes();
-      panes[0]?.setStretchFactor(0.8);
-      panes[1]?.setStretchFactor(0.2);
-      layoutPanes();
+      if (!preserveSpotVolume) {
+        panes[0]?.setStretchFactor(0.8);
+        panes[1]?.setStretchFactor(0.2);
+        layoutPanes();
+      } else if (previousVolumePane !== volumePane) {
+        // Initialize only when the strip is created again, not on a tick,
+        // timeframe change, palette change or indicator recomputation.
+        const share = readSpotVolumeShare();
+        panes[0]?.setStretchFactor(1 - share);
+        panes[1]?.setStretchFactor(share);
+      }
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
     } else {
       volume.priceScale().applyOptions({ scaleMargins: { top: CHART_VOLUME_OVERLAY_TOP, bottom: 0 } });
@@ -2169,25 +2224,42 @@ export function PriceChart({
   const typeLabels: Partial<Record<ChartType, string>> = workspaceOn
     ? { candles: t('chart.type.candles'), bars: t('chart.type.bars'), hollow: t('chart.type.hollow'), heikin: t('chart.type.heikin'), line: t('chart.type.line'), area: t('chart.type.area') }
     : { candles: t('chart.type.candles'), line: t('chart.type.line'), area: t('chart.type.area') };
+  // Expose the existing persisted volume preference alongside the other
+  // indicators on Spot. No second setting, no new chart toolbar.
+  const spotVolumeControl = preserveSpotVolume && volumeAvailable;
+  const spotVolumeEnabled = viewSettings?.volume ?? true;
+  const setSpotVolume = (visible: boolean) => saveChartSettings({ ...getChartSettings(), volume: visible });
   const menusNode = chartMenus ? <ChartToolbarMenus
     chartType={chartType}
     onChartType={selectChartType}
     typeLabels={typeLabels}
     typeGroupLabel={t('chart.group.type')}
     indicatorsLabel={t('chart.group.indicators')}
-    indicators={INDICATOR_CATALOGUE.filter(def => volumeAvailable || !indicatorNeedsVolume(def.type)).map(def => ({
-      key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
-      color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
-      onToggle: () => toggleType(def.type),
-      onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
-    }))}
-    catalogue={{
-      active: indicatorInstances.map(inst => ({
-        id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
-        onToggleVisible: () => saveChartIndicators(getChartIndicators(market).map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i)), market),
-        onConfigure: () => { requestChartSettingsView('indicators', inst.id); setSettingsOpen(true); },
-        onRemove: () => saveChartIndicators(getChartIndicators(market).filter(i => i.id !== inst.id), market),
+    indicators={[
+      ...(spotVolumeControl ? [{ key: 'spot-volume', label: t('chart.settings.volume'), params: '',
+        color: viewSettings?.bodyUp ?? DEFAULT_CHART_SETTINGS.bodyUp, pane: 'lower' as const, active: spotVolumeEnabled,
+        onToggle: () => setSpotVolume(!spotVolumeEnabled) }] : []),
+      ...INDICATOR_CATALOGUE.filter(def => volumeAvailable || !indicatorNeedsVolume(def.type)).map(def => ({
+        key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
+        color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
+        onToggle: () => toggleType(def.type),
+        onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
       })),
+    ]}
+    catalogue={{
+      active: [
+        ...(spotVolumeControl && spotVolumeEnabled ? [{ id: 'spot-volume', label: t('chart.settings.volume'),
+          color: viewSettings?.bodyUp ?? DEFAULT_CHART_SETTINGS.bodyUp, visible: true,
+          onToggleVisible: () => setSpotVolume(false),
+          onConfigure: () => { requestChartSettingsView('look'); setSettingsOpen(true); },
+          onRemove: () => setSpotVolume(false) }] : []),
+        ...indicatorInstances.map(inst => ({
+          id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
+          onToggleVisible: () => saveChartIndicators(getChartIndicators(market).map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i)), market),
+          onConfigure: () => { requestChartSettingsView('indicators', inst.id); setSettingsOpen(true); },
+          onRemove: () => saveChartIndicators(getChartIndicators(market).filter(i => i.id !== inst.id), market),
+        })),
+      ],
       activeLabel: t('chart.settings.indicatorsActive'), catalogueLabel: t('chart.settings.indicatorsCatalogue'),
       searchLabel: t('chart.settings.indicatorSearch'), noMatchLabel: t('chart.settings.indicatorNoMatch'),
       activeCountLabel: count => t('chart.settings.activeCount', { count: String(count) }),

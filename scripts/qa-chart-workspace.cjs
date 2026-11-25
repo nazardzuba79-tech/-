@@ -742,6 +742,58 @@ async function run() {
     const ctx = await context(1440, 900);
     const { page, errors } = await openTerminal(ctx, origin, 'spot', { width: 1440, height: 900 });
     const P = 'panes.spot.1440';
+    // Exercise the real native separator on the main Spot chart, not the
+    // separate second-instrument workspace pane below.
+    const volumeState = () => page.evaluate(() => {
+      const host = document.querySelector('[data-chart-state] > div');
+      const chart = host?.__voltexChart?.chart;
+      if (!chart) return null;
+      const count = chart.panes().length, rect = host.getBoundingClientRect();
+      const main = chart.paneSize(0).height, volume = count > 1 ? chart.paneSize(1).height : 0;
+      const expectedY = rect.top + main;
+      const separator = [...host.querySelectorAll('*')].find(el => {
+        const r = el.getBoundingClientRect();
+        return r.height > 0 && r.height <= 12 && r.width > 100 && Math.abs(r.top - expectedY) < 8
+          && /(?:row|ns)-resize/.test(getComputedStyle(el).cursor);
+      });
+      const sep = separator?.getBoundingClientRect();
+      return { count, main, volume, share: volume / (main + volume), x: rect.left + Math.min(100, rect.width / 2),
+        y: sep ? sep.top + sep.height / 2 : expectedY + 1 };
+    });
+    const waitVolumeCount = count => page.waitForFunction(n => document.querySelector('[data-chart-state] > div')?.__voltexChart?.chart.panes().length === n, count);
+    await waitVolumeCount(2);
+    const volumeBefore = await volumeState();
+    await page.mouse.move(volumeBefore.x, volumeBefore.y);
+    await page.mouse.down();
+    await page.mouse.move(volumeBefore.x, volumeBefore.y + Math.floor(volumeBefore.volume * .45), { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    const volumeResized = await volumeState();
+    check(`${P}.volume-native-resize`, volumeResized.volume < volumeBefore.volume - 10, { before: volumeBefore, after: volumeResized });
+    await page.locator('[data-cw-tf="4h"]').first().click();
+    await page.waitForSelector('[data-chart-state="candles"]');
+    await page.waitForTimeout(6500);
+    const volumeRefreshed = await volumeState();
+    check(`${P}.volume-keeps-height-on-data`, Math.abs(volumeRefreshed.share - volumeResized.share) < .025, { resized: volumeResized, refreshed: volumeRefreshed });
+    await page.locator('.chart-indicators-trigger').first().click();
+    await page.locator('[data-chart-indicator-remove="spot-volume"]').click();
+    await waitVolumeCount(1);
+    await page.keyboard.press('Escape');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('[data-chart-state="candles"]');
+    await page.waitForTimeout(1000);
+    const volumeHidden = await volumeState();
+    check(`${P}.volume-removal-persists-reload`, volumeHidden?.count === 1, volumeHidden);
+    await page.locator('.chart-indicators-trigger').first().click();
+    await page.locator('[data-chart-indicator="spot-volume"]').click();
+    await waitVolumeCount(2);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(250);
+    const volumeRestored = await volumeState();
+    check(`${P}.volume-restore-keeps-user-size`, Math.abs(volumeRestored.share - volumeResized.share) < .025, { resized: volumeResized, restored: volumeRestored });
+    // Put the fixture back on its initial interval before the existing checks.
+    await page.locator('[data-cw-tf="1h"]').first().click();
+    await page.waitForSelector('[data-chart-state="candles"]');
     const paneState = () => page.evaluate(PANE_STATE);
     const waitState = (wanted, timeout = 8000) => page.waitForFunction(w => document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') === w, wanted, { timeout }).catch(() => {});
     await selectLayout(page, 2);
