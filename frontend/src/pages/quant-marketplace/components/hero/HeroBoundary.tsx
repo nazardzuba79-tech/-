@@ -4,7 +4,13 @@ export type { ThemeMode };
 const Scene = lazy(() =>
   import("./QuantHeroVisual").then((m) => ({ default: m.QuantHeroVisual })),
 );
-export function HeroBoundary({ theme }: { theme: ThemeMode }) {
+export function HeroBoundary({
+  theme,
+  onSelectMarket,
+}: {
+  theme: ThemeMode;
+  onSelectMarket?: (symbol: string) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -34,7 +40,7 @@ export function HeroBoundary({ theme }: { theme: ThemeMode }) {
     >
       {active && (
         <Suspense fallback={null}>
-          <Scene theme={theme} />
+          <Scene theme={theme} onSelectMarket={onSelectMarket} />
         </Suspense>
       )}
     </div>

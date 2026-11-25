@@ -1,5 +1,5 @@
 import { numberText, percent } from "../../data/catalogue";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -30,6 +30,8 @@ type PeriodFocus = "30D" | "1Y" | "ALL";
 interface LeaderboardSectionProps {
   strategies: Strategy[];
   onOpenProfile: (strategyId: string) => void;
+  /** A search asked for from outside the board (a coin on the hero sphere). `seq` repeats the same text. */
+  searchRequest?: { text: string; seq: number } | null;
 }
 
 const CATEGORIES: ("Все" | StrategyCategory)[] = [
@@ -53,10 +55,18 @@ const RISKS: ("Все" | RiskLevel)[] = [
 export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
   strategies,
   onOpenProfile,
+  searchRequest,
 }) => {
   const [market, setMarket] = useState("Все");
   const [source, setSource] = useState<Strategy["source"]>("model");
   const [search, setSearch] = useState("");
+  const searchRequestSeq = searchRequest?.seq;
+  useEffect(() => {
+    if (!searchRequest) return;
+    // Only the search changes; the viewer's other filters stay, except a pair filter that would hide the answer.
+    setSearch(searchRequest.text);
+    setMarket("Все");
+  }, [searchRequestSeq]);
   const [categoryFilter, setCategoryFilter] = useState<
     "Все" | StrategyCategory
   >("Все");

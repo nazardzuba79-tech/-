@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from "react";
-import { Rotate3d, Zap } from "lucide-react";
+import { MousePointerClick, Zap } from "lucide-react";
+import { useMarketData } from "../../../../lib/useMarketData";
+import { parseChangePercentOrNull } from "../../../../lib/priceChange";
+import { ORBIT_COINS, type CoinMark } from "./coinMarks";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -126,8 +129,76 @@ function createGlowSpriteTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
+function createCoinFaceTexture(coin: CoinMark): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = coin.color;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+    // A soft top-left sheen and a struck inner rim, so the face reads as minted metal, not a sticker.
+    const sheen = ctx.createRadialGradient(88, 72, 8, size / 2, size / 2, 150);
+    sheen.addColorStop(0, "rgba(255, 255, 255, 0.30)");
+    sheen.addColorStop(0.55, "rgba(255, 255, 255, 0.0)");
+    sheen.addColorStop(1, "rgba(0, 0, 0, 0.16)");
+    ctx.fillStyle = sheen;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.34)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, 116, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.save();
+    ctx.scale(size / 32, size / 32);
+    ctx.fillStyle = "#ffffff";
+    for (const mark of coin.paths) {
+      ctx.globalAlpha = mark.opacity ?? 1;
+      ctx.fill(new Path2D(mark.d));
+    }
+    ctx.restore();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// Two orbits around the core. Every coin turns at one angular speed and the five are a fifth of a
+// turn apart, so they keep their spacing and never run into each other.
+const COIN_RADIUS = 0.25;
+const COIN_SPEED = 0.22;
+const COIN_ORBITS = [
+  { radius: 2.02, tiltX: 0.2, tiltZ: 0.06 },
+  { radius: 2.36, tiltX: -0.1, tiltZ: -0.22 },
+];
+const COIN_STEP = (Math.PI * 2) / 5;
+const COIN_SLOTS = [
+  { orbit: 0, phase: 0.95 },
+  { orbit: 1, phase: 0.95 + COIN_STEP },
+  { orbit: 0, phase: 0.95 + COIN_STEP * 2 },
+  { orbit: 1, phase: 0.95 + COIN_STEP * 3 },
+  { orbit: 0, phase: 0.95 + COIN_STEP * 4 },
+];
+const CHANGE_FORMAT = new Intl.NumberFormat("ru-RU", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  signDisplay: "always",
+});
+
+export const QuantHeroVisual: React.FC<{
+  theme: ThemeMode;
+  /** A coin was chosen (its label or the coin itself). */
+  onSelectMarket?: (symbol: string) => void;
+}> = ({ theme, onSelectMarket }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const coinLabelRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const selectMarketRef = useRef(onSelectMarket);
+  selectMarketRef.current = onSelectMarket;
+  // The tab's one shared market poll. A market without a reading shows its ticker and no figure.
+  const market = useMarketData(30_000);
   const pulseTriggerRef = useRef<(() => void) | null>(null);
   const sceneCtxRef = useRef<{
     dialMat: THREE.MeshStandardMaterial;
@@ -836,6 +907,143 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
     const dustPoints = new THREE.Points(dustGeo, dustMat);
     quantGroup.add(dustPoints);
 
+    // =========================================================================
+    // 4b. THE MARKETS: COINS ON TWO ORBITS AROUND THE CORE
+    // =========================================================================
+    const orbitLineMat = new THREE.LineBasicMaterial({
+      color: 0xb5832a,
+      transparent: true,
+      opacity: 0.32,
+    });
+    const orbitGeometries: THREE.BufferGeometry[] = [];
+    const orbitEulers = COIN_ORBITS.map(
+      (o) => new THREE.Euler(o.tiltX, 0, o.tiltZ),
+    );
+    COIN_ORBITS.forEach((o, i) => {
+      const pts: THREE.Vector3[] = [];
+      for (let k = 0; k < 160; k++) {
+        const a = (k / 160) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * o.radius, 0, Math.sin(a) * o.radius));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      orbitGeometries.push(geo);
+      const loop = new THREE.LineLoop(geo, orbitLineMat);
+      loop.rotation.copy(orbitEulers[i]);
+      quantGroup.add(loop);
+    });
+
+    const coinRimGeo = new THREE.CylinderGeometry(
+      COIN_RADIUS,
+      COIN_RADIUS,
+      0.05,
+      48,
+      1,
+      true,
+    );
+    coinRimGeo.rotateX(Math.PI / 2);
+    const coinFaceGeo = new THREE.CircleGeometry(COIN_RADIUS, 48);
+    const coinFaceTextures: THREE.CanvasTexture[] = [];
+    const coinFaceMats: THREE.MeshBasicMaterial[] = [];
+    const coinMeshes: THREE.Group[] = [];
+    const coinHitTargets: THREE.Mesh[] = [];
+    ORBIT_COINS.forEach((coin, i) => {
+      const tex = createCoinFaceTexture(coin);
+      tex.anisotropy = maxAniso;
+      coinFaceTextures.push(tex);
+      // Unlit and outside tone mapping: a brand colour stays that brand's colour under any stage light.
+      // The sheen is painted into the face; the lit gold rim gives the coin its body.
+      const faceMat = new THREE.MeshBasicMaterial({
+        map: tex,
+        toneMapped: false,
+      });
+      coinFaceMats.push(faceMat);
+      const group = new THREE.Group();
+      const rim = new THREE.Mesh(coinRimGeo, goldMat);
+      rim.castShadow = true;
+      const front = new THREE.Mesh(coinFaceGeo, faceMat);
+      front.position.z = 0.025;
+      front.userData.coin = i;
+      const back = new THREE.Mesh(coinFaceGeo, faceMat);
+      back.position.z = -0.025;
+      back.rotation.y = Math.PI;
+      group.add(rim, front, back);
+      quantGroup.add(group);
+      coinMeshes.push(group);
+      coinHitTargets.push(front);
+    });
+
+    const _coinWobble = new THREE.Quaternion();
+    const _coinWorld = new THREE.Vector3();
+    const _coreWorld = new THREE.Vector3();
+    const _coreNdc = new THREE.Vector3();
+    const CORE_RADIUS = 1.0;
+    // Label widths are read now and then, never in the same pass that writes positions.
+    const coinLabelWidths: number[] = [];
+    let coinFrame = 0;
+    function updateCoins(elapsed: number, energyBoost: number) {
+      if (coinFrame++ % 12 === 0) {
+        for (let i = 0; i < coinMeshes.length; i++)
+          coinLabelWidths[i] = coinLabelRefs.current[i]?.offsetWidth ?? 0;
+      }
+      const w = container!.clientWidth || width;
+      const h = container!.clientHeight || height;
+      // Pixels per world unit at distance 1 from the camera.
+      const focal =
+        (h / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) *
+        camera.zoom;
+      quantGroup.getWorldPosition(_coreWorld);
+      const coreDist = camera.position.distanceTo(_coreWorld);
+      _coreNdc.copy(_coreWorld).project(camera);
+      const coreX = (_coreNdc.x * 0.5 + 0.5) * w;
+      const coreY = (-_coreNdc.y * 0.5 + 0.5) * h;
+
+      for (let i = 0; i < coinMeshes.length; i++) {
+        const slot = COIN_SLOTS[i];
+        const orbit = COIN_ORBITS[slot.orbit];
+        const a = slot.phase + elapsed * COIN_SPEED * (1 + energyBoost * 0.9);
+        const coin = coinMeshes[i];
+        coin.position
+          .set(Math.cos(a) * orbit.radius, 0, Math.sin(a) * orbit.radius)
+          .applyEuler(orbitEulers[slot.orbit]);
+        // Faces stay towards the viewer, with a slow turn so the rim catches the light.
+        _coinWobble.setFromAxisAngle(
+          _scratchAxis,
+          Math.sin(elapsed * 0.8 + i * 1.7) * 0.26,
+        );
+        coin.quaternion.copy(camera.quaternion).multiply(_coinWobble);
+        coin.getWorldPosition(_coinWorld);
+        const dist = camera.position.distanceTo(_coinWorld);
+        // Perspective alone makes the nearest coin twice the farthest and lets it cover the sphere.
+        // Half of that difference is taken back, so depth still reads and no coin dominates.
+        const depthScale = Math.sqrt(dist / coreDist);
+        coin.scale.setScalar(depthScale * (1 + energyBoost * 0.18));
+
+        const label = coinLabelRefs.current[i];
+        if (!label) continue;
+        _scratchVec.copy(_coinWorld).project(camera);
+        const x = (_scratchVec.x * 0.5 + 0.5) * w;
+        const y = (-_scratchVec.y * 0.5 + 0.5) * h;
+        const coinPx = (COIN_RADIUS * depthScale * focal) / dist;
+        const behindCore =
+          dist > coreDist &&
+          Math.hypot(x - coreX, y - coreY) <
+            (CORE_RADIUS * focal) / coreDist + coinPx * 0.4;
+        // Nearer coins carry a full label; far ones recede with the coin.
+        const near = THREE.MathUtils.clamp(
+          (coreDist + orbit.radius - dist) / (orbit.radius * 2),
+          0,
+          1,
+        );
+        // A label never leaves the stage: near an edge it stays inside while its coin moves on.
+        const half = (coinLabelWidths[i] || 0) / 2 + 4;
+        const lx = THREE.MathUtils.clamp(x, half, Math.max(half, w - half));
+        label.style.transform = `translate(${lx.toFixed(1)}px, ${(y + coinPx + 5).toFixed(1)}px) translateX(-50%) scale(${(0.9 + near * 0.1).toFixed(3)})`;
+        label.style.opacity = behindCore ? "0" : (0.74 + near * 0.26).toFixed(2);
+        label.style.pointerEvents = behindCore ? "none" : "auto";
+        label.style.zIndex = String(10 + Math.round(near * 10));
+      }
+    }
+
     // One place that dresses the whole scene for its stage. On a light page the model is a dark, polished
     // object with gold and teal accents: additive glows and pale tints, made for a dark page, vanish on white.
     const stageColor = new THREE.Color();
@@ -928,6 +1136,11 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       sweepMat.needsUpdate = true;
       waveMat.uniforms.uIsDark.value = isDark ? 1.0 : 0.0;
 
+      // On the light stage the coins are the things in orbit; the anonymous node swarm steps back.
+      instancedNodes.visible = isDark;
+      orbitLineMat.color.setHex(isDark ? 0xd4af6a : 0xb5832a);
+      orbitLineMat.opacity = isDark ? 0.26 : 0.34;
+
       contactShadowMat.opacity = isDark ? 0.58 : 0.5;
       contactShadow.scale.setScalar(isDark ? 1 : 1.5);
     };
@@ -993,6 +1206,12 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       _scratchPointerNdc.y =
         -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
       raycaster.setFromCamera(_scratchPointerNdc, camera);
+      const coinHit = raycaster.intersectObjects(coinHitTargets, false)[0];
+      if (coinHit) {
+        triggerPulse(0, 0);
+        selectMarketRef.current?.(ORBIT_COINS[coinHit.object.userData.coin].symbol);
+        return;
+      }
       if (raycaster.ray.intersectPlane(_groundPlane, _rayHit)) {
         triggerPulse(_rayHit.x, _rayHit.z);
       } else {
@@ -1156,7 +1375,7 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       if (!prefersReduced) {
         innerCoreMesh.rotation.y = elapsed * 0.35;
         coronaMesh.rotation.y = -elapsed * 0.2;
-        DYSON_GROUP.rotation.y = -elapsed * 0.19;
+        DYSON_GROUP.rotation.y = -elapsed * (isDarkInit ? 0.19 : 0.34);
         DYSON_GROUP.rotation.x = Math.sin(elapsed * 0.25) * 0.14;
         cageMesh.rotation.y = elapsed * 0.28;
         meridianRing1.rotation.z = elapsed * 0.32;
@@ -1174,6 +1393,7 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       }
 
       controls.update();
+      updateCoins(prefersReduced ? 0 : elapsed, pulseEnergy);
       renderer.render(scene, camera);
 
       if (!prefersReduced) {
@@ -1236,6 +1456,12 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
       dustGeo.dispose();
       dustMat.dispose();
       glowSpriteTex.dispose();
+      orbitGeometries.forEach((g) => g.dispose());
+      orbitLineMat.dispose();
+      coinRimGeo.dispose();
+      coinFaceGeo.dispose();
+      coinFaceMats.forEach((m) => m.dispose());
+      coinFaceTextures.forEach((t) => t.dispose());
       goldMat.dispose();
       titaniumMat.dispose();
       obsidianMat.dispose();
@@ -1267,13 +1493,49 @@ export const QuantHeroVisual: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
         className="w-full h-full cursor-grab active:cursor-grabbing"
       />
 
+      {/* Each orbiting coin's ticker and 24h move. The scene moves these to follow the coins. */}
+      <div className="qx-coin-layer">
+        {ORBIT_COINS.map((coin, i) => {
+          const change = parseChangePercentOrNull(
+            market.tickers.get(coin.pair)?.changePercent24h,
+            coin.pair,
+          );
+          return (
+            <button
+              key={coin.symbol}
+              ref={(el) => {
+                coinLabelRefs.current[i] = el;
+              }}
+              type="button"
+              className="qx-coin-label"
+              data-coin={coin.symbol}
+              style={{ opacity: 0 }}
+              onClick={() => onSelectMarket?.(coin.symbol)}
+              aria-label={`Показать стратегии для ${coin.symbol}`}
+              title={
+                change === null
+                  ? `Стратегии для ${coin.symbol}`
+                  : `${coin.symbol}: изменение цены за 24 часа. Нажмите — стратегии для ${coin.symbol}`
+              }
+            >
+              <b>{coin.symbol}</b>
+              {change !== null && (
+                <span data-dir={change < 0 ? "down" : "up"}>
+                  {CHANGE_FORMAT.format(change)}%
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Caption and the one control. Solid surfaces only: no backdrop-filter over WebGL. */}
       <div className="qx-stage-bar">
         <div className="qx-stage-caption">
           <span className="qx-stage-title">Нейронная 3D-матрица VOLTEX</span>
           <span className="qx-stage-hint">
-            <Rotate3d aria-hidden="true" />
-            Потяните модель, чтобы повернуть
+            <MousePointerClick aria-hidden="true" />
+            Нажмите на монету — стратегии для неё · цена за 24 ч
           </span>
         </div>
         <button

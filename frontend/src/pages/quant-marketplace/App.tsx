@@ -44,6 +44,17 @@ export default function App() {
   const location = useLocation(),
     navigate = useNavigate();
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
+  // A coin chosen on the hero sphere: the board below is searched for that market and scrolled into view.
+  const [marketRequest, setMarketRequest] = useState<{
+    text: string;
+    seq: number;
+  } | null>(null);
+  const handleSelectMarket = (symbol: string) => {
+    setMarketRequest((prev) => ({ text: symbol, seq: (prev?.seq ?? 0) + 1 }));
+    root.current
+      ?.querySelector("#strategy-leaderboard")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   useEffect(() => {
     const controller = new AbortController();
     request<unknown>(
@@ -196,7 +207,10 @@ export default function App() {
 
                     {/* Right Three.js 3D Quantitative Visualization */}
                     <div className="qx-hero-visual lg:col-span-6">
-                      <QuantHeroVisual theme={theme} />
+                      <QuantHeroVisual
+                        theme={theme}
+                        onSelectMarket={handleSelectMarket}
+                      />
                     </div>
                   </div>
                 </div>
@@ -224,6 +238,7 @@ export default function App() {
               <LeaderboardSection
                 strategies={strategies}
                 onOpenProfile={handleOpenProfile}
+                searchRequest={marketRequest}
               />
 
               {/* VOLTEX Quant Academy & FAQ */}

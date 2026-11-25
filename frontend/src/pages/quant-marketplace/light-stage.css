@@ -260,3 +260,43 @@
   background-color: #ffffff;
   border-color: var(--border-strong);
 }
+
+/* ── Coins in orbit: ticker and 24h move, placed by the scene every frame ─── */
+.quant-skin .qx-coin-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.quant-skin .qx-coin-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  box-shadow: 0 8px 16px -12px rgba(17, 24, 39, 0.55);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+  transform-origin: 50% 0;
+  transition: opacity 0.25s ease, border-color 0.15s ease;
+  will-change: transform, opacity;
+}
+.quant-skin .qx-coin-label:hover { border-color: var(--border-gold); }
+.quant-skin .qx-coin-label b { font-weight: 750; letter-spacing: 0.01em; }
+.quant-skin .qx-coin-label span {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.quant-skin .qx-coin-label span[data-dir="up"] { color: var(--text-emerald); }
+.quant-skin .qx-coin-label span[data-dir="down"] { color: var(--text-crimson); }
+@media (max-width: 639px) {
+  .quant-skin .qx-coin-label { padding: 2px 7px; gap: 4px; font-size: 11px; }
+}
