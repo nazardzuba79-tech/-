@@ -58,6 +58,11 @@ async function main() {
     const s = await db.session.create({ data: { userId: id } });
     tokens[id] = jwt.sign({ sub: id, sid: s.id }, process.env.JWT_SECRET, { expiresIn: '2h' }); users.push(id); return id;
   };
+  if (botBenchmark) {
+    const authorId = process.env.TRADING_BOTS_THOMAS_USER_ID;
+    assert(authorId, 'isolated Thomas identity required');
+    await db.user.create({ data: { id: authorId, email: authorId+'@example.invalid', passwordHash:'fixture', displayName:'Thomas', referralCode:authorId.replace(/-/g,'') } });
+  }
   const leaders = [await make('ADMIN'), await make('ADMIN')], probe = await make();
   for (const [i, traderId] of ['VX-001', 'VX-KSENIA'].entries())
     await db.copyStrategyOwner.upsert({ where: { traderId }, create: { traderId, publicName: 'Fixture', ownerUserId: leaders[i] }, update: { ownerUserId: leaders[i] } });
