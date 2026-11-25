@@ -53,6 +53,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
   const [showBenchmark, setShowBenchmark] = useState(true);
 
   const isThomas = strategy.id === "range";
+  const illustrativeRisk = isThomas && strategy.source === "model" && Number.isFinite(strategy.statistics.sharpeRatio);
   const activeSeries = strategy.series[chartPeriod];
   const periodStats = strategy.verified?.periods[chartPeriod];
   const [calendarYear, setCalendarYear] = useState<number | null>(null);
@@ -566,6 +567,11 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
               <h3 className="font-display text-base font-semibold text-[var(--text-primary)] mb-2">
                 Ключевые коэффициенты риска
               </h3>
+              {illustrativeRisk && (
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  Расчётный сценарий · 1 000 условных сделок
+                </p>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
                 <div className="p-3 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
                   <div className="text-[11px] text-[var(--text-muted)]">
@@ -630,12 +636,9 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
           {periodStats.trades}
         </div>
       )}
-      {activeTab === "statistics" && (
+      {activeTab === "statistics" && strategy.netPnl !== null && (
         <div className="quant-data">
-          Чистый PnL за всё время ·{" "}
-          {strategy.netPnl === null
-            ? "—"
-            : numberText(strategy.netPnl) + " USDT"}
+          Чистый PnL за всё время · {numberText(strategy.netPnl)} USDT
         </div>
       )}
       {/* TAB 2: СТАТИСТИКА */}
@@ -647,9 +650,25 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             <h2 className="relative z-10 font-display text-lg font-semibold text-[var(--text-primary)] mb-1">
               Финансовая статистика
             </h2>
-            <p className="relative z-10 text-xs text-[var(--text-muted)] mb-4">
-              Коэффициенты отображаются при наличии данных для расчёта.
-            </p>
+            {illustrativeRisk ? (
+              <div className="relative z-10 text-xs text-[var(--text-muted)] mb-4">
+                <p>Расчётный сценарий · 24 месяца · 1 000 условных сделок</p>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[var(--text-gold)]">Методика расчёта</summary>
+                  <p className="mt-1 leading-relaxed">
+                    Условная выборка: 971 прибыльная и 29 убыточных операций,
+                    убыток −10% на убыточную операцию; прибыльная ставка рассчитана
+                    для итогового роста +7 348% с реинвестированием.
+                    Безрисковая ставка 0%, 500 операций в год.
+                    Это не история исполненных сделок.
+                  </p>
+                </details>
+              </div>
+            ) : (
+              <p className="relative z-10 text-xs text-[var(--text-muted)] mb-4">
+                Коэффициенты отображаются при наличии данных для расчёта.
+              </p>
+            )}
 
             <div className="relative z-10 divide-y divide-[var(--border-subtle)] text-xs sm:text-sm">
               {[
