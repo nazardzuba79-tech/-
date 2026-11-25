@@ -471,3 +471,96 @@
   background-color: #ffffff;
   border-color: var(--border-strong);
 }
+
+
+/* Quant Intelligence — a localized pastel editorial surface.
+   This changes presentation only; the catalogue and all return sources are unchanged. */
+.quant-skin .qx-intel-aurora {
+  isolation: isolate;
+  background: linear-gradient(180deg,var(--bg-intel-from),var(--bg-intel-via) 50%,var(--bg-intel-to));
+}
+.quant-skin.light .qx-intel-aurora {
+  --bg-surface: #ffffff;
+  --bg-subtle: #f8f9fc;
+  --text-primary: #152035;
+  --text-secondary: #36455b;
+  --text-muted: #48566c;
+  --border-subtle: #e0e3ec;
+  --border-strong: #b9bfce;
+  --text-teal: #126d66;
+  background:
+    radial-gradient(ellipse 48% 57% at 94% 2%, #e1dcf5 0%, rgba(225,220,245,.70) 36%, rgba(225,220,245,0) 100%),
+    radial-gradient(ellipse 43% 70% at 5% 74%, #f0dfe6 0%, rgba(240,223,230,.65) 39%, rgba(240,223,230,0) 100%),
+    radial-gradient(ellipse 42% 40% at 35% 104%, #e2dff6 0%, rgba(226,223,246,0) 100%),
+    #f4f6f9;
+  border-color: #e8e7ef;
+  padding-block: clamp(25px,3.3vw,48px);
+}
+.quant-skin .qx-intel-title {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  column-gap: 12px;
+  row-gap: 5px;
+  font-size:clamp(22px,2.1vw,32px);
+  line-height:1.32;
+  letter-spacing:-.035em;
+  margin-block:8px 9px;
+}
+.quant-skin .qx-intel-accent {
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  max-width:100%;
+  min-width:0;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.quant-skin.light .qx-intel-accent > span {
+  background-image:linear-gradient(100deg,#dcd1f0 0%,#e5d6ef 44%,#f0cbdf 100%);
+  color:#182239;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+  padding:0 6px;
+  border-radius:2px;
+}
+.quant-skin .qx-intel-stars {
+  flex:0 0 29px;
+  width:29px;
+  height:28px;
+  color:var(--text-primary);
+  overflow:visible;
+}
+.quant-skin.light .qx-intel-card {
+  background:#fff;
+  border-color:#e2e5ed;
+  box-shadow:0 5px 16px rgba(39,41,72,.045);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.quant-skin.light .qx-intel-card:hover {
+  border-color:#c4b4df;
+  box-shadow:0 8px 22px rgba(60,43,99,.09);
+  transform:translateY(-2px);
+}
+.quant-skin.light .qx-intel-card:focus-visible {
+  outline:2px solid #7455a7;
+  outline-offset:3px;
+}
+.quant-skin.light .qx-intel-card [class~="text-[11px]"] {
+  line-height:1.45;
+}
+@media(max-width:640px) {
+  .quant-skin .qx-intel-title { font-size:22px; column-gap:8px; letter-spacing:-.025em; }
+  .quant-skin .qx-intel-accent { gap:6px; }
+  .quant-skin .qx-intel-stars { width:23px; height:22px; flex-basis:23px; }
+  .quant-skin.light .qx-intel-aurora {
+    background:
+      radial-gradient(ellipse 85% 31% at 100% 0%,#e1dcf5 0%,rgba(225,220,245,0) 100%),
+      radial-gradient(ellipse 75% 34% at 0% 80%,#f0dfe6 0%,rgba(240,223,230,0) 100%),
+      #f4f6f9;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .quant-skin.light .qx-intel-card { transition:none; }
+  .quant-skin.light .qx-intel-card:hover { transform:none; }
+}
