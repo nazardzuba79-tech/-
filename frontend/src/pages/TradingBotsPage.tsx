@@ -38,7 +38,7 @@ export function TradingBotsPage() {
   }, []);
   return (
     <>
-      {!privateView && <Nav active="/trading-bots" hideTicker />}
+      <Nav active="/trading-bots" hideTicker />
       <div ref={attach} data-voltex-quant="">
         {shadow &&
           createPortal(
