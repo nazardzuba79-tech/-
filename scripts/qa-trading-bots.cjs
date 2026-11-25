@@ -87,11 +87,18 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+' no FAQ in marketplace',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
       const ordinaryHeroCopy=page.locator('.qx-flag').getByRole('button',{name:'Копировать бота',exact:true});
       await ordinaryHeroCopy.waitFor();
-      check(width+' ordinary marketplace preview action visibly disclosed',await ordinaryHeroCopy.getByText('Предпросмотр · не подключено',{exact:true}).isVisible() && await ordinaryHeroCopy.isEnabled());
+      check(width+' ordinary marketplace shows Thomas copy limitation',await ordinaryHeroCopy.getByText('Thomas пока недоступен · выбрать другие стратегии',{exact:true}).isVisible() && await ordinaryHeroCopy.isEnabled());
       const ordinaryUrl=page.url(), ordinaryText=await page.locator('.qx-flag').innerText();
       await ordinaryHeroCopy.click();
+      await page.waitForURL('**/copy-trading');
+      check(width+' copy action navigates to the existing copy-trading route',page.url().endsWith('/copy-trading'));
+      await page.goBack();
+      await page.waitForURL(ordinaryUrl);
       await rows.filter({hasText:'Thomas Quant AI'}).getByRole('button',{name:'Копировать бота',exact:true}).click();
-      check(width+' ordinary preview actions do not navigate or change content',page.url()===ordinaryUrl && await page.locator('.qx-flag').innerText()===ordinaryText);
+      await page.waitForURL('**/copy-trading');
+      await page.goBack();
+      await page.waitForURL(ordinaryUrl);
+      check(width+' marketplace unchanged after copy-flow navigation',await page.locator('.qx-flag').innerText()===ordinaryText);
       check(width+' marketplace fits the viewport', await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       const ids=await rows.evaluateAll(els=>els.map(e=>e.dataset.bot));
       check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
@@ -131,8 +138,12 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const ordinaryProfileCopy=page.getByRole('button',{name:'Копировать бота',exact:true});
       await ordinaryProfileCopy.waitFor();
       const ordinaryProfileUrl=page.url();
+      check(width+' profile discloses Thomas copy limitation',await ordinaryProfileCopy.getByText('Thomas пока недоступен · выбрать другие стратегии',{exact:true}).isVisible());
       await ordinaryProfileCopy.click();
-      check(width+' ordinary profile copy preview has no execution or navigation',page.url()===ordinaryProfileUrl && await ordinaryProfileCopy.getByText('Предпросмотр · не подключено',{exact:true}).isVisible());
+      await page.waitForURL('**/copy-trading');
+      check(width+' profile copy action reaches copy-trading',page.url().endsWith('/copy-trading'));
+      await page.goBack();
+      await page.waitForURL(ordinaryProfileUrl);
       for(const period of ['7D','30D','90D','1Y','ALL']){
         await page.getByRole('button',{name:period,exact:true}).click();
         const out=page.locator('output[data-period="'+period+'"]');
@@ -199,8 +210,14 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         const collectCopyRequest=r=>copyRequests.push(r.method()+' '+r.url());
         page.on('request',collectCopyRequest);
         await page.locator('.qx-flag').getByRole('button',{name:'Копировать бота',exact:true}).click();
+        await page.waitForURL('**/copy-trading');
+        await page.goBack();
+        await page.waitForURL(presentationUrl);
         await page.locator('#strategy-leaderboard [data-bot="range"]:visible').getByRole('button',{name:'Копировать бота',exact:true}).click();
-        check(width+' presentation copy action leaves catalogue unchanged',page.url()===presentationUrl && await page.locator('[data-quant-theme]').innerText()===before && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
+        await page.waitForURL('**/copy-trading');
+        await page.goBack();
+        await page.waitForURL(presentationUrl);
+        check(width+' presentation copy actions only navigate, never subscribe',await page.locator('[data-quant-theme]').innerText()===before && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
         page.off('request',collectCopyRequest);
         await page.locator('.qx-flag').getByRole('button',{name:'Подробнее о стратегии',exact:true}).click();
         const profileUrl=base+'/trading-bots/presentation/strategy/range';
@@ -211,7 +228,10 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         copyRequests.length=0;
         page.on('request',collectCopyRequest);
         await page.getByRole('button',{name:'Копировать бота',exact:true}).click();
-        check(width+' presentation copy action leaves profile unchanged',page.url()===profileUrl && await page.locator('[data-quant-theme]').innerText()===profileBefore && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
+        await page.waitForURL('**/copy-trading');
+        await page.goBack();
+        await page.waitForURL(profileUrl);
+        check(width+' presentation profile copy only navigates, never subscribes',await page.locator('[data-quant-theme]').innerText()===profileBefore && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
         page.off('request',collectCopyRequest);
       }
       check(width+': zero writes',writes.length===0);
