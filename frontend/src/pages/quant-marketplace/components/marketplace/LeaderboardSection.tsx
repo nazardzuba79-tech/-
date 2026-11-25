@@ -30,7 +30,6 @@ type PeriodFocus = "30D" | "1Y" | "ALL";
 
 interface LeaderboardSectionProps {
   strategies: Strategy[];
-  presentation?: boolean;
   onOpenProfile: (strategyId: string) => void;
 }
 
@@ -55,7 +54,6 @@ const RISKS: ("Все" | RiskLevel)[] = [
 
 export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
   strategies,
-  presentation = false,
   onOpenProfile,
 }) => {
   const [market, setMarket] = useState("Все");
@@ -589,7 +587,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                         >
                           Подробнее
                         </button>
-                        {presentation && <span className="qx-copy-table"><PresentationCopyButton /></span>}
+                        <span className="qx-copy-table"><PresentationCopyButton /></span>
                       </td>
                     </tr>
                   );
@@ -696,7 +694,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                     </div>
                   </div>
                 </div>
-                {presentation && <div className="qx-copy-mobile relative z-10"><PresentationCopyButton /></div>}
+                <div className="qx-copy-mobile relative z-10"><PresentationCopyButton /></div>
               </div>
             );
           })

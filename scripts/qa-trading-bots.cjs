@@ -85,7 +85,13 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       await rows.first().waitFor();
       check(width+' seven comparable strategies', await rows.count()===7);
       check(width+' no FAQ in marketplace',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
-      check(width+' no inactive copy action in customer marketplace',await page.getByRole('button',{name:'Копировать бота',exact:true}).count()===0);
+      const ordinaryHeroCopy=page.locator('.qx-flag').getByRole('button',{name:'Копировать бота',exact:true});
+      await ordinaryHeroCopy.waitFor();
+      check(width+' ordinary marketplace preview action visibly disclosed',await ordinaryHeroCopy.getByText('Предпросмотр · не подключено',{exact:true}).isVisible() && await ordinaryHeroCopy.isEnabled());
+      const ordinaryUrl=page.url(), ordinaryText=await page.locator('.qx-flag').innerText();
+      await ordinaryHeroCopy.click();
+      await rows.filter({hasText:'Thomas Quant AI'}).getByRole('button',{name:'Копировать бота',exact:true}).click();
+      check(width+' ordinary preview actions do not navigate or change content',page.url()===ordinaryUrl && await page.locator('.qx-flag').innerText()===ordinaryText);
       check(width+' marketplace fits the viewport', await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       const ids=await rows.evaluateAll(els=>els.map(e=>e.dataset.bot));
       check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
@@ -122,6 +128,11 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+' category filter',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='ether');
       await flagship.getByRole('button',{name:'Подробнее о стратегии'}).click();
       await page.waitForURL('**/trading-bots/strategy/range');await page.reload();await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).first().waitFor();
+      const ordinaryProfileCopy=page.getByRole('button',{name:'Копировать бота',exact:true});
+      await ordinaryProfileCopy.waitFor();
+      const ordinaryProfileUrl=page.url();
+      await ordinaryProfileCopy.click();
+      check(width+' ordinary profile copy preview has no execution or navigation',page.url()===ordinaryProfileUrl && await ordinaryProfileCopy.getByText('Предпросмотр · не подключено',{exact:true}).isVisible());
       for(const period of ['7D','30D','90D','1Y','ALL']){
         await page.getByRole('button',{name:period,exact:true}).click();
         const out=page.locator('output[data-period="'+period+'"]');

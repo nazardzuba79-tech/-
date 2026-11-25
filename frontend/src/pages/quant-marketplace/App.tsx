@@ -133,7 +133,7 @@ export default function App({presentation}: {presentation?: import("../../../../
         <main className="flex-1">
           {presentation && <details className="qx-source">
             <summary>Презентационный сценарий · без исполнения сделок</summary>
-            <p>Показатели иллюстрируют работу интерфейса. Итог за 24 условных месяца — сумма месячных процентов без реинвестирования. Доля прибыльных операций задана для сценария. Калькулятор использует введённые вами предположения. Кнопки копирования демонстрируют интерфейс и не подключают ботов.</p>
+            <p>Показатели иллюстрируют работу интерфейса. Итог за 24 условных месяца — сумма месячных процентов без реинвестирования. Доля прибыльных операций задана для сценария. Калькулятор использует введённые вами предположения.</p>
           </details>}
           {activeView === "marketplace" && (
             <>
@@ -233,7 +233,6 @@ export default function App({presentation}: {presentation?: import("../../../../
               {/* Strategy Marketplace & Leaderboard */}
               <LeaderboardSection
                 strategies={strategies}
-                presentation={!!presentation}
                 onOpenProfile={handleOpenProfile}
               />
 

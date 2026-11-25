@@ -157,8 +157,8 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
       )}
 
       <footer className="qx-flag-foot">
-        {presentation && <PresentationCopyButton />}
-        <button type="button" className={presentation ? "qx-flag-detail" : undefined} onClick={() => onOpenProfile(strategy.id)}>
+        <PresentationCopyButton />
+        <button type="button" className="qx-flag-detail" onClick={() => onOpenProfile(strategy.id)}>
           <span>Подробнее о стратегии</span>
           <ArrowUpRight aria-hidden="true" />
         </button>

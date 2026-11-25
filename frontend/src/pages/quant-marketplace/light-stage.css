@@ -582,7 +582,7 @@
 .quant-skin .qx-source p { max-width: 75ch; margin-top: .5rem; }
 
 
-/* Copy action is rendered only in the authorized read-only presentation. */
+/* Visual preview action in the ordinary authenticated marketplace and profiles. */
 .quant-skin .qx-copy-preview {
   display: inline-flex;
   align-items: center;
@@ -615,4 +615,19 @@
 @media (max-width: 639px) {
   .quant-skin .qx-copy-profile .qx-copy-preview,
   .quant-skin .qx-copy-mobile .qx-copy-preview { width: 100%; }
+}
+
+.quant-skin .qx-copy-preview,
+.quant-skin .qx-flag-foot .qx-copy-preview {
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.15;
+  padding-block: 8px;
+  white-space: normal;
+}
+.quant-skin .qx-copy-preview .qx-copy-availability {
+  font-size: 10px;
+  font-weight: 500;
+  color: #3d2b12;
+  line-height: 1.2;
 }
