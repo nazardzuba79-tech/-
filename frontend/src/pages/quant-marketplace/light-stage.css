@@ -632,8 +632,8 @@
   line-height: 1.2;
 }
 
-/* Flagship belongs to the light hero, not a separate dark product card.
-   Keep the layout and inherit the surrounding exchange's light palette. */
+/* Flagship belongs to the light hero. A low-contrast warm surface distinguishes
+   it without separating it from the surrounding exchange palette. */
 .quant-skin.light .qx-flag {
   --text-primary: inherit;
   --text-secondary: inherit;
@@ -653,11 +653,14 @@
   --chart-tooltip-bg: inherit;
   --chart-tooltip-border: inherit;
   min-width: 0;
-  padding: clamp(12px, 1.3vw, 20px) 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  padding: clamp(18px, 1.8vw, 28px);
+  border: 1px solid rgba(146, 100, 14, .13);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 96% 0%, rgba(222, 195, 140, .18), transparent 65%),
+    radial-gradient(ellipse at 6% 100%, rgba(210, 220, 211, .18), transparent 65%),
+    linear-gradient(135deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, .10));
+  box-shadow: 0 8px 24px rgba(49, 40, 23, .035);
   overflow: visible;
 }
 .quant-skin.light .qx-flag::before { display: none; }
@@ -694,6 +697,6 @@
 }
 .quant-skin.light .qx-flag-foot button { box-shadow: none; }
 @media (max-width: 639px) {
-  .quant-skin.light .qx-flag { padding: 12px 0 4px; border-radius: 0; }
+  .quant-skin.light .qx-flag { padding: 15px 12px; border-radius: 16px; }
   .quant-skin.light .qx-flag-return { flex-wrap: wrap; gap: 6px 12px; }
 }
