@@ -24,8 +24,8 @@ const FLAGSHIP_TIMEFRAMES: { key: TimeframeKey; label: string }[] = [
 
 /**
  * The flagship strategy as the first thing the page shows: the hero's right half.
- * One obsidian-and-gold card on a light page. Its own colour scope (see `.qx-flag` in light-stage.css)
- * re-points the shared text, border and chart variables, so the chart and figures inside need no copies.
+ * In the light stage, the flagship inherits the surrounding hero palette.
+ * The invited presentation opens on the complete 24-month example.
  * The rank line and the VIP marks are statements of fact and are drawn only when the data says so.
  */
 export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
@@ -34,7 +34,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
   presentation = false,
   onOpenProfile,
 }) => {
-  const [tf, setTf] = useState<TimeframeKey>("30D");
+  const [tf, setTf] = useState<TimeframeKey>(presentation ? "ALL" : "30D");
   const activeSeries = strategy.series[tf];
   const latestVal = activeSeries[activeSeries.length - 1]?.value ?? NaN;
   const tfLabel = FLAGSHIP_TIMEFRAMES.find((t) => t.key === tf)?.label;
