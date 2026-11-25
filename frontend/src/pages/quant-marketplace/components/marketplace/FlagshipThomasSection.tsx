@@ -97,7 +97,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
               {strategy.isVip ? "VIP-автор" : "Автор стратегии"}
             </span>
           </div>
-          <ThomasSocialLinks />
+          <ThomasSocialLinks readOnly={socialsReadOnly} />
         </div>
         <div className="qx-flag-return">
           <span>
