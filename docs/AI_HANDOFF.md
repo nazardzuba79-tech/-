@@ -7915,3 +7915,9 @@ Leave existing copy leaders, model data and the previous Pages candidate 32bfe4e
 Browser QA uses local fixtures and tests regular and premium viewers. The bench compares the
 same 50 readers and two trading fixtures in both phases, adding the Studio visit and history
 reads only in the candidate phase. All benchmark financial requests target a disposable database.
+
+## 2026-11-25 — Codex: Thomas Multi-Asset Intelligence
+
+Source commits: frontend 0c032dd41ea10ef19534c31699625336398e89d1 (light production frontend lineage); API cdac7161d90cdafd12c0f3b8b3639208d2859e96 (#723 source lineage). Changed the range catalogue entry and strategy profile, calculator, architecture, author socials, versioned attributed aggregate contract and shared market coverage adapter. Protected the existing seven-strategy catalogue, Thomas minimum, monthly model, account rights, financial services and private ledger. A dedicated author-profile migration was exercised only in isolated PostgreSQL.
+
+TypeScript and frontend production build passed; 50 unit/API tests and 47 Chrome checks passed. Final local 50 readers + 2 traders: crypto p95 9.42 to 9.42 ms; 900 copied fixture orders executed, zero pending and zero worker errors. Candidate trial and unchanged reference logs alongside final evidence: G:/Codex/thomas-multi-review/report.json. Owner preview: http://127.0.0.1:47526/trading-bots/strategy/thomas-quant-ai. Production review and real trade attribution remain outside this local run.
