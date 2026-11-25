@@ -45,7 +45,7 @@ export function ThomasSocialLinks({ readOnly = false }: { readOnly?: boolean }) 
 
   if (!profile) return null;
   const hasLinks = !!(profile.links?.x || profile.links?.telegram);
-  if (!hasLinks && !profile.canEdit) return null;
+  if (!hasLinks && (readOnly || !profile.canEdit)) return null;
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
