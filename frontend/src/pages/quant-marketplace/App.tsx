@@ -175,7 +175,7 @@ export default function App({presentation}: {presentation?: import("../../../../
                 <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-6 py-6 sm:py-8 lg:py-9">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
                     {/* Left Headline & Actions */}
-                    <div className="qx-hero-copy lg:col-span-5 space-y-4">
+                    <div className="qx-hero-copy lg:col-span-6 space-y-4">
                       <div className="qx-eyebrow quant-hero-eyebrow text-xs font-semibold text-[var(--text-gold)] tracking-wide">
                         Институциональная витрина алгоритмов VOLTEX
                       </div>
@@ -220,19 +220,18 @@ export default function App({presentation}: {presentation?: import("../../../../
                       {/* Concise model disclosure inline */}
                       <div className="qx-facts pt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
                         <span>
-                          <b>7</b> модельных стратегий
+                          <b>7</b> стратегий
                         </span>
                         <span aria-hidden="true">·</span>
                         <span>
                           <b>24</b>-месячная аналитика
                         </span>
-                        {!presentation && <span aria-hidden="true">·</span>}
-                        {!presentation && <span>Иллюстративный набор данных для презентации</span>}
+
                       </div>
                     </div>
 
                     {/* The flagship strategy itself: the product is the first thing the page shows */}
-                    <div className="qx-hero-visual lg:col-span-7">
+                    <div className="qx-hero-visual lg:col-span-6 w-full max-w-[770px] lg:justify-self-end">
                       <FlagshipThomasSection
                         strategy={shownThomas}
                         leads30d={!!presentation && thomasLeads30d}
@@ -319,10 +318,7 @@ export default function App({presentation}: {presentation?: import("../../../../
                 О маркетплейсе
               </button>
             </div>
-            <p className="max-w-2xl text-[11px] text-[var(--text-muted)] leading-relaxed">
-              Модельные результаты обозначены отдельно. Подтверждённая
-              статистика доступна при наличии торговой истории.
-            </p>
+
           </div>
         </footer>
 
