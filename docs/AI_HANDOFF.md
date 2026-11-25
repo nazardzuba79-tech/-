@@ -7943,3 +7943,16 @@ reads only in the candidate phase. All benchmark financial requests target a dis
 - Statements of fact are conditional: «№ 1 по доходности за 30 дней» only when `App.tsx` finds it has the highest finite 30-day result among at least two strategies of the same source, otherwise «Избранная стратегия»; the crown and the «VIP-автор» mark only when `strategy.isVip`.
 - `qa-trading-bots.cjs` finds the flagship as the one `main section` holding «Подробнее о стратегии» and the author name: that is now the hero section, and there is still exactly one.
 - Checked locally on the final build: frontend `tsc` clean; Vite build; the three bots unit suites 29/29; `qa-trading-bots.cjs` with only the racy Monday check neutralised in an uncommitted copy: 231 checks, 0 errors (five widths); screenshots at 1600, 1024, 768 and 390. Not run: other Jest suites, other browser suites, CI.
+
+## 2026-11-25 — Codex: Thomas Multi-Asset Intelligence
+
+Source commits: frontend 0c032dd41ea10ef19534c31699625336398e89d1 (light production frontend lineage); API cdac7161d90cdafd12c0f3b8b3639208d2859e96 (#723 source lineage). Changed the range catalogue entry and strategy profile, calculator, architecture, author socials, versioned attributed aggregate contract and shared market coverage adapter. Protected the existing seven-strategy catalogue, Thomas minimum, monthly model, account rights, financial services and private ledger. A dedicated author-profile migration was exercised only in isolated PostgreSQL.
+
+TypeScript and frontend production build passed; 50 unit/API tests and 47 Chrome checks passed. Final local 50 readers + 2 traders: crypto p95 9.42 to 9.42 ms; 900 copied fixture orders executed, zero pending and zero worker errors. Candidate trial and unchanged reference logs alongside final evidence: G:/Codex/thomas-multi-review/report.json. Owner preview: http://127.0.0.1:47526/trading-bots/strategy/thomas-quant-ai. Production review and real trade attribution remain outside this local run.
+
+### 2026-11-25 — Codex — PR #723 combined review
+
+- Owner review request: integrate Claude light flagship design 7865c0d4da028fa336df78fc5d3971d2c5b2832a with the checkpointed Thomas frontend (23e5d8cb9, code 0c032dd41) and API (489cf791e, code cdac7161d). This entry is in the combined implementation commit.
+- Kept the single light stage, black/gold interactive flagship, existing VOLTEX navigation and protected Studio. Integrated multi-asset research, portfolio aggregates, calculator, editable author profile and owner/admin validation. Only the Thomas definition changed in the PR catalogue. Financial calculations and the separation of illustrative and confirmed history are retained.
+- Combined browser QA covers all flagship periods, cohort-only rankings and Monday UTC rollover without skipping a check. A fixed browser clock and an awaited row value distinguish rendering latency from an actual missed weekly update.
+- Review only. The preview uses loopback and disposable PostgreSQL. Production and release rollback are outside the change.

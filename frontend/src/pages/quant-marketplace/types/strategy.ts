@@ -1,6 +1,7 @@
 export type RiskLevel = "Низкий" | "Умеренный" | "Повышенный";
 
 export type StrategyCategory =
+  | "Multi-Asset Intelligence"
   | "Quantitative Intelligence"
   | "Grid"
   | "DCA"

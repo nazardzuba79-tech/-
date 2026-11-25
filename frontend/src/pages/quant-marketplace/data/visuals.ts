@@ -1,7 +1,7 @@
 export const visuals = {
   range: {
     logo: "thomas-quant-ai",
-    category: "Quantitative Intelligence",
+    category: "Multi-Asset Intelligence",
     accentColor: "#D4AF6A",
     secondaryColor: "#2DD4BF",
     intelligenceBuckets: ["Лидеры доходности", "Количественные стратегии"],

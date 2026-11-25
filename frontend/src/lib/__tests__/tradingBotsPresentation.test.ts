@@ -8,9 +8,9 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
     expect(Math.min(...minimums)).toBe(2500);
     expect(new Set(minimums).size).toBe(7);
   });
-  it('preserves the XRP strategy identity, weekly return and chart endpoint after the rename', () => {
+  it('preserves the multi-asset strategy identity, weekly return and chart endpoint after the rename', () => {
     const bot = BOT_CATALOGUE.find(entry => entry.id === 'range')!;
-    expect(bot).toMatchObject({ name: 'Thomas Quant AI', symbol: 'XRP / USDT', creatorName: 'Thomas', category: 'trend' });
+    expect(bot).toMatchObject({ name: 'Thomas Quant AI', symbol: 'Цифровые активы', creatorName: 'Thomas', category: 'portfolio' });
     const stats = botPresentation(bot, presentationWeek(Date.parse('2026-11-22T12:00:00Z')));
     expect(stats.roi).toBe(180.26);
     expect(stats.series[stats.series.length - 1]).toBe(stats.roi);

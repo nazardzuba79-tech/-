@@ -125,7 +125,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
           <dd data-tone="gold">{percent(strategy.return1yArithmetic, true)}</dd>
         </div>
         <div>
-          <dt>За весь период (24М)</dt>
+          <dt>{strategy.source === "model" ? "За весь период (24М)" : "За весь период"}</dt>
           <dd>{percent(strategy.returnAllArithmetic, true)}</dd>
         </div>
         <div>

@@ -1,3 +1,6 @@
+import { ThomasCalculator } from "./ThomasCalculator";
+import { ThomasPortfolio, ThomasResearch } from "./ThomasResearch";
+import { ThomasAuthor } from "./ThomasAuthor";
 import { PlanActions } from "./PlanActions";
 import { numberText, percent } from "../../data/catalogue";
 import React, { useMemo, useState } from "react";
@@ -298,6 +301,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                 <button
                   key={tab.id}
                   type="button"
+                  aria-pressed={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                     active
@@ -443,6 +447,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                     <button
                       key={p}
                       type="button"
+                      aria-pressed={chartPeriod === p}
                       onClick={() => setChartPeriod(p)}
                       className={`px-2.5 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer ${
                         chartPeriod === p
@@ -567,6 +572,8 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
         </div>
       )}
 
+      {isThomas && activeTab === "overview" && <ThomasCalculator strategy={strategy}/>}
+      {isThomas && activeTab === "statistics" && <ThomasPortfolio strategy={strategy}/>}
       {periodStats && activeTab === "overview" && (
         <div className="quant-data">
           Чистый PnL за {chartPeriod} · {numberText(periodStats.netPnl)} USDT ·
@@ -856,6 +863,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
                     <button
                       key={yr}
                       type="button"
+                      aria-pressed={selectedYear === yr}
                       onClick={() => setSelectedYear(yr)}
                       className={`px-3.5 py-1.5 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
                         selectedYear === yr
@@ -1058,7 +1066,8 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
         )}
 
       {/* TAB 4: О СТРАТЕГИИ */}
-      {activeTab === "about" && (
+      {activeTab === "about" && isThomas && <ThomasResearch summary={strategy.methodologySummary}/>}
+      {activeTab === "about" && !isThomas && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7 relative overflow-hidden rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-5 sm:p-6 space-y-5">
             <NeuralWebOverlay variant="subtle" />
@@ -1208,7 +1217,7 @@ export const StrategyProfileView: React.FC<StrategyProfileViewProps> = ({
             </div>
 
             <div className="relative z-10 pt-4 border-t border-[var(--border-subtle)] space-y-3 text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-              <p>{strategy.methodologySummary}</p>
+              {isThomas ? <ThomasAuthor/> : <p>{strategy.methodologySummary}</p>}
               <p className="text-[var(--text-muted)]">
                 Статус VIP-разработчика позволяет публиковать авторские
                 стратегии в витрине Quant Marketplace, настраивать параметры

@@ -28,7 +28,11 @@ app.use('/api/v1', copyDemoRouter(db, copy));
 const botBenchmark = process.env.BENCH_THOMAS_BOTS === '1';
 if (botBenchmark) {
   assert(process.env.TRADING_BOTS_THOMAS_VERIFIED_SNAPSHOT, 'isolated performance fixture required');
-  app.use('/api/v1', require('../src/api/routes/tradingBotCreators').tradingBotCreatorsRouter(db));
+  const fixtureFeed = { snapshot: () => ({ status:'live', rows:Array.from({length:120}, (_,i)=>({
+    baseAsset:'FIX'+i, quoteAsset:'USDT', marketType:'spot', stale:false, receivedAt:Date.now(),
+    lastPrice:i+1, quoteVolume24h:1000+i, changePercent24h:i%2?-1:1
+  })) }) };
+  app.use('/api/v1', require('../src/api/routes/tradingBotCreators').tradingBotCreatorsRouter(db, undefined, fixtureFeed));
 }
 const PHASE_MS = Number(process.env.BENCH_PHASE_MS || 20000), ROUNDS = Number(process.env.BENCH_ROUNDS || 3);
 let port; const agent = new http.Agent({ keepAlive: true, maxSockets: 256, timeout: 4000 });
@@ -54,6 +58,11 @@ async function main() {
     const s = await db.session.create({ data: { userId: id } });
     tokens[id] = jwt.sign({ sub: id, sid: s.id }, process.env.JWT_SECRET, { expiresIn: '2h' }); users.push(id); return id;
   };
+  if (botBenchmark) {
+    const authorId = process.env.TRADING_BOTS_THOMAS_USER_ID;
+    assert(authorId, 'isolated Thomas identity required');
+    await db.user.create({ data: { id: authorId, email: authorId+'@example.invalid', passwordHash:'fixture', displayName:'Thomas', referralCode:authorId.replace(/-/g,'') } });
+  }
   const leaders = [await make('ADMIN'), await make('ADMIN')], probe = await make();
   for (const [i, traderId] of ['VX-001', 'VX-KSENIA'].entries())
     await db.copyStrategyOwner.upsert({ where: { traderId }, create: { traderId, publicName: 'Fixture', ownerUserId: leaders[i] }, update: { ownerUserId: leaders[i] } });
@@ -67,7 +76,10 @@ async function main() {
   const probeLoop = async (until, out) => { while (Date.now() < until) { const r = await call(tokens[probe], 'GET', '/demo/orders/open'); assert.equal(r.status, 200); out.push(r.ms); await new Promise(x => setTimeout(x, 50)); } };
   const load = async (until, phase) => {
     const tasks = readers.map(async (r, i) => { await new Promise(x => setTimeout(x, (i * 60) % 3000));
-      if (botBenchmark && phase === 'load') assert.equal((await call(tokens[r], 'GET', '/trading-bots/studio')).status, 200);
+      if (botBenchmark && phase === 'load') {
+        for (const route of ['/trading-bots/studio','/trading-bots/range/coverage','/trading-bots/range/author'])
+          assert.equal((await call(tokens[r], 'GET', route)).status, 200);
+      }
       while (Date.now() < until) { await call(tokens[r], 'GET', '/copy-trading/demo');
         if (botBenchmark && phase === 'load') assert.equal((await call(tokens[r], 'GET', '/trading-bots/range/performance')).status, 200);
         await new Promise(x => setTimeout(x, 3000)); } });

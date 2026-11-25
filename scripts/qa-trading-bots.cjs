@@ -88,9 +88,19 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
       const flagship=page.locator('main section').filter({has:page.getByRole('button',{name:'Подробнее о стратегии',exact:true})});
       await flagship.getByText('Thomas QA',{exact:true}).waitFor();
-      check(width+' flagship and catalogue agree',Number(await rows.first().getAttribute('data-roi'))===180.26);
+      check(width+' flagship and catalogue agree',Number(await rows.filter({hasText:'Thomas Quant AI'}).getAttribute('data-roi'))===180.26 && (await flagship.locator('.qx-flag-return b').innerText()).replace(',','.').includes('180.26'));
+      const hero = page.locator('.qx-hero .qx-flag');
+      check(width+' one flagship, light theme and no sphere',await hero.count()===1 && await page.locator('[data-quant-theme]').getAttribute('data-quant-theme')==='light' && await hero.locator('canvas').count()===0 && await page.locator('.quant-scene').count()===0);
+      const values=await rows.evaluateAll(els=>els.map(el=>({id:el.dataset.bot,roi:Number(el.dataset.roi)})));
+      const thomas=values.find(row=>row.id==='range');
+      check(width+' comparable 30-day rank matches flagship', (await hero.locator('.qx-flag-rank').innerText()).includes('№ 1')===values.every(row=>row.roi<=thomas.roi));
+      for(const label of ['7Д','30Д','90Д','1Г','Всё время']){
+        const tab=hero.getByRole('button',{name:label,exact:true});
+        await tab.click();
+        check(width+' flagship '+label,await tab.getAttribute('aria-pressed')==='true' && (await hero.locator('.qx-flag-return').innerText()).includes(label) && (await hero.locator('.qx-flag-return b').innerText()).includes('%'));
+      }
       const market=page.locator('.quant-filter select').nth(1);
-      await market.selectOption({label:'XRP / USDT'});check(width+' market filter',await rows.count()===1);
+      await market.selectOption({label:'Цифровые активы'});check(width+' market filter',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='range');
       await market.selectOption('Все');
       const q=page.locator('#strategy-leaderboard input').first();
       await q.fill('Thomas QA');check(width+' owner search',await rows.count()===1);await q.fill('');
@@ -123,6 +133,14 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         }
         await page.getByRole('button',{name:'Помесячная доходность',exact:true}).click();
         check(width+' verified months replace scenarios',await page.locator('[data-month]').count()===0 && await page.locator('.quant-data tbody tr').count()===Object.values(history.monthly.cells).filter(c=>c.month!==null&&c.year===history.monthly.years.slice(-1)[0]).length);
+        await page.goto(base+'/trading-bots');
+        const source=page.locator('.quant-filter select').first();
+        await page.locator('.qx-flag-foot').getByText('Подтверждённая торговая история.').waitFor();
+        check(width+' verified hero does not rank against model entries',!(await page.locator('.qx-flag-rank').innerText()).includes('№ 1') && !(await page.locator('.qx-flag-stats').innerText()).includes('24М'));
+        await source.selectOption('verified');
+        check(width+' verified leaderboard contains Thomas alone',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='range');
+        await source.selectOption('model');
+        check(width+' model leaderboard excludes verified Thomas',await rows.count()===6 && !(await rows.evaluateAll(els=>els.map(el=>el.dataset.bot))).includes('range'));
         await page.unroute(api);
       }
       await page.goto(base+'/trading-bots/studio');await page.getByRole('heading',{name:'Bot Studio доступен только VIP-трейдерам'}).waitFor();
@@ -151,12 +169,19 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
     const context=await browser.newContext();
     await context.addInitScript(()=>{localStorage.setItem('exchange_token','local-qa-only');localStorage.setItem('exchange_lang','ru');});
     const page=await context.newPage();
-    await page.clock.install({time:new Date('2026-09-27T23:59:58Z')});
-    await page.goto(base+'/trading-bots');await page.locator('[data-bot]').first().waitFor();
-    const before=await page.locator('#strategy-leaderboard [data-bot]:visible').evaluateAll(els=>els.map(e=>e.dataset.roi));
+    // Freeze Sunday before navigation so slow bundles cannot load on the Monday side.
+    const sunday = new Date('2026-09-27T23:59:58Z');
+    await page.clock.install({time:new Date('2026-09-27T23:58:00Z')});
+    await page.clock.pauseAt(sunday);
+    await page.goto(base+'/trading-bots');
+    const atlas = page.locator('#strategy-leaderboard [data-bot="atlas"]:visible');
+    // Known Atlas model returns for these two consecutive UTC weeks.
+    const before = '154.75', after = '155.95';
+    const exactRow = value => atlas.and(page.locator('[data-roi="'+value+'"]'));
+    await exactRow(before).waitFor();
     await page.clock.fastForward(3000);
-    const after=await page.locator('#strategy-leaderboard [data-bot]:visible').evaluateAll(els=>els.map(e=>e.dataset.roi));
-    check('Monday boundary refreshes an open page',JSON.stringify(before)!==JSON.stringify(after));
+    await exactRow(after).waitFor();
+    check('Monday boundary refreshes an open page', await atlas.getAttribute('data-roi')===after);
     await context.close();
     for(const width of [1920,1440,1024,390]) {
       const context=await browser.newContext({viewport:{width,height:900}});

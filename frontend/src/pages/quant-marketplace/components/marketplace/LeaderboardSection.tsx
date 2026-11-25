@@ -34,6 +34,7 @@ interface LeaderboardSectionProps {
 
 const CATEGORIES: ("Все" | StrategyCategory)[] = [
   "Все",
+  "Multi-Asset Intelligence",
   "Quantitative Intelligence",
   "Momentum",
   "Breakout",
@@ -237,6 +238,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
               <button
                 key={p.key}
                 type="button"
+                aria-pressed={periodFocus === p.key}
                 onClick={() => handlePeriodChange(p.key)}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   periodFocus === p.key
@@ -287,6 +289,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
             <button
               key={cat}
               type="button"
+              aria-pressed={active}
               onClick={() => setCategoryFilter(cat)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                 active
@@ -320,6 +323,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
               <button
                 key={r}
                 type="button"
+                aria-pressed={riskFilter === r}
                 onClick={() => setRiskFilter(r)}
                 className={`px-2.5 py-1 rounded text-xs transition-colors whitespace-nowrap cursor-pointer ${
                   riskFilter === r
@@ -514,7 +518,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                                 />
                               )}
                             </div>
-                            <div className="text-[11px] text-[var(--text-muted)] whitespace-nowrap">
+                            <div className="quant-rank-description text-[11px] text-[var(--text-muted)] whitespace-nowrap">
                               {s.category} · Риск: {s.risk}
                             </div>
                           </div>
@@ -528,7 +532,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-3 font-mono text-xs text-[var(--text-primary)] whitespace-nowrap">
+                      <td className="quant-rank-market py-3.5 px-3 font-mono text-xs text-[var(--text-primary)] whitespace-nowrap">
                         {s.market}
                       </td>
                       <td
