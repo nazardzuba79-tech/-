@@ -11,6 +11,7 @@ import {
   summedModelPercent,
 } from "../../trading-bots/BotModelPerformance";
 import { visuals } from "./visuals";
+import { calculateThomasRiskScenario } from "./thomasRiskScenario";
 import type {
   PerformancePoint,
   Strategy,
@@ -157,7 +158,9 @@ export function catalogue(
       behaviorTag: bot.strategy,
       series,
       monthly24,
-      statistics: {},
+      statistics: scenario && isThomas
+        ? calculateThomasRiskScenario(scenario.monthlyReturns, scenario.exampleWinRate) ?? {}
+        : {},
       distribution: [...dist]
         .sort(([a], [b]) => a - b)
         .map(([k, count]) => ({
