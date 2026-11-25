@@ -1864,6 +1864,7 @@ export const ES: Record<Key, string> = {
   'register.error.passwordShort': 'La contraseña es demasiado corta',
   'register.error.passwordUppercase': 'Añade una letra mayúscula',
   'register.error.failed': 'No se pudo crear la cuenta. Revisa los datos o inicia sesión si la cuenta ya existe.',
+  'register.error.disposableEmail': "No se permite el registro con direcciones de correo electrónico temporales. Utiliza una dirección de correo electrónico permanente.",
   'register.error.closed': 'El registro está cerrado por el momento.',
 
   // --- Email verification (six-digit code) ---

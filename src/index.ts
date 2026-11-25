@@ -27,6 +27,7 @@ import { withdrawalsRouter } from './api/routes/withdrawals';
 import { otcCashRouter } from './api/routes/otcCash';
 import { adminWithdrawalsRouter } from './api/routes/adminWithdrawals';
 import { authRouter } from './api/routes/auth';
+import { startDisposableEmailRefresh, stopDisposableEmailRefresh } from './services/DisposableEmailPolicy';
 import { candlesRouter } from './api/routes/candles';
 import { productsRouter } from './api/routes/products';
 import { balancesRouter } from './api/routes/balances';
@@ -396,6 +397,7 @@ async function start() {
   liquidationStreamService.start();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
+  startDisposableEmailRefresh();
   depositWatchScheduler.start();
   liveReferenceCollector?.start();
 }
@@ -406,6 +408,7 @@ start().catch((err) => {
 });
 
 process.on('SIGTERM', async () => {
+  stopDisposableEmailRefresh();
   liquidationStreamService.stop();
   liveReferenceCollector?.stop();
   marketUniverse.stop();

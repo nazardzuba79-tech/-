@@ -1,4 +1,5 @@
 import { isBlockedContactEmail } from '../../services/ContactEmailPolicy';
+import { isDisposableRegistrationEmail } from '../../services/DisposableEmailPolicy';
 import { asyncRoute } from '../asyncRoute';
 import { Router, Request, RequestHandler } from 'express';
 import { z } from 'zod';
@@ -188,6 +189,10 @@ export function authRouter(
       return res.status(403).json({ error: 'Registration is currently closed' });
     }
 
+    // Registration only: reject before account lookup, password hashing or writes.
+    if (isDisposableRegistrationEmail(req.body?.email)) {
+      return res.status(403).json({ code: 'DISPOSABLE_EMAIL', error: 'Registration with temporary email addresses is prohibited. Please use a permanent email address.' });
+    }
     // Check before payload validation so operators can verify the policy using
     // email-only probes that can never create an account or session.
     if (await isBlockedContactEmail(prisma, req.body?.email)) {

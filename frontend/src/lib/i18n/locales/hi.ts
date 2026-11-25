@@ -1864,6 +1864,7 @@ export const HI: Record<Key, string> = {
   'register.error.passwordShort': 'पासवर्ड बहुत छोटा है',
   'register.error.passwordUppercase': 'एक बड़ा अक्षर जोड़ें',
   'register.error.failed': 'खाता नहीं बनाया जा सका। विवरण जाँचें, या यदि खाता पहले से है तो साइन इन करें।',
+  'register.error.disposableEmail': "अस्थायी ईमेल पतों से पंजीकरण की अनुमति नहीं है। कृपया स्थायी ईमेल पते का उपयोग करें।",
   'register.error.closed': 'पंजीकरण फ़िलहाल बंद है।',
 
   // --- Email verification (six-digit code) ---
