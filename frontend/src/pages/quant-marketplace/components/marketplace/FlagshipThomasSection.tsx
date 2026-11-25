@@ -24,8 +24,8 @@ const FLAGSHIP_TIMEFRAMES: { key: TimeframeKey; label: string }[] = [
 
 /**
  * The flagship strategy as the first thing the page shows: the hero's right half.
- * One obsidian-and-gold card on a light page. Its own colour scope (see `.qx-flag` in light-stage.css)
- * re-points the shared text, border and chart variables, so the chart and figures inside need no copies.
+ * In the light stage, the flagship inherits the surrounding hero palette.
+ * The invited presentation opens on the complete 24-month example.
  * The rank line and the VIP marks are statements of fact and are drawn only when the data says so.
  */
 export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
@@ -34,10 +34,16 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
   presentation = false,
   onOpenProfile,
 }) => {
-  const [tf, setTf] = useState<TimeframeKey>("30D");
+  const [tf, setTf] = useState<TimeframeKey>(strategy.series.ALL.length ? "ALL" : "30D");
   const activeSeries = strategy.series[tf];
   const latestVal = activeSeries[activeSeries.length - 1]?.value ?? NaN;
   const tfLabel = FLAGSHIP_TIMEFRAMES.find((t) => t.key === tf)?.label;
+  const modelExample = presentation && strategy.id === "range" && strategy.source === "model";
+  const displayReturn = (value: number) =>
+    modelExample && Number.isFinite(value)
+      ? `${value > 0 ? "+" : ""}${numberText(value, Number.isInteger(value) ? 0 : 1)}%`
+      : percent(value, true);
+  const return90d = strategy.series["90D"].slice(-1)[0]?.value ?? NaN;
 
   return (
     <article className="qx-flag" data-vip={strategy.isVip ? "" : undefined}>
@@ -96,11 +102,14 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
               : "Доходность за период"}{" "}
             · {tfLabel}
           </span>
-          <b>{percent(latestVal, true)}</b>
+          <b>{displayReturn(latestVal)}</b>
         </div>
       </div>
 
-      <p className="qx-flag-lead">{strategy.shortDescription}</p>
+      <p className="qx-flag-lead">
+        {strategy.shortDescription}
+        {presentation && <> Плановый охват анализа — до 100 цифровых активов.</>}
+      </p>
 
       <div className="qx-flag-chart">
         <div className="qx-flag-tabs" role="group" aria-label="Период графика">
@@ -118,34 +127,52 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
         <FlagshipPerformanceChart data={activeSeries} height={190} />
       </div>
 
-      <dl className="qx-flag-stats">
+      <dl className="qx-flag-stats" aria-label={modelExample ? "Показатели презентационного сценария" : "Показатели стратегии"}>
         <div>
-          <dt>Доходность 30Д</dt>
-          <dd data-tone="up">{percent(strategy.return30d, true)}</dd>
+          <dt>Доходность за 30 дней</dt>
+          <dd data-tone="up">{displayReturn(strategy.return30d)}</dd>
+        </div>
+        {modelExample && <div>
+          <dt>Доходность за 90 дней</dt>
+          <dd data-tone="up">{displayReturn(return90d)}</dd>
+        </div>}
+        <div>
+          <dt>Доходность за год</dt>
+          <dd data-tone="gold">{displayReturn(strategy.return1yArithmetic)}</dd>
         </div>
         <div>
-          <dt>Годовой итог</dt>
-          <dd data-tone="gold">{percent(strategy.return1yArithmetic, true)}</dd>
+          <dt>{modelExample ? "За всё время · 24 месяца" : "За весь период"}</dt>
+          <dd data-tone="gold">{displayReturn(strategy.returnAllArithmetic)}</dd>
         </div>
-        <div>
-          <dt>{strategy.source === "model" ? "За весь период (24М)" : "За весь период"}</dt>
-          <dd>{percent(strategy.returnAllArithmetic, true)}</dd>
-        </div>
-        <div>
+        {!modelExample && <div>
           <dt>Макс. просадка</dt>
           <dd data-tone="down">{percent(strategy.maxDrawdown, false)}</dd>
-        </div>
+        </div>}
         <div>
           <dt>Прибыльные сделки</dt>
-          <dd>
-            {percent(strategy.winRate, false)}{" "}
-            <small>({numberText(strategy.tradesCount, 0)})</small>
+          <dd>{modelExample ? numberText(strategy.winRate, 1) + "%" : percent(strategy.winRate, false)}
+            {!modelExample && Number.isFinite(strategy.tradesCount) && (
+              <small> ({numberText(strategy.tradesCount, 0)})</small>
+            )}
           </dd>
         </div>
-        <div>
+        {modelExample ? <>
+          <div>
+            <dt>Диапазон сценария</dt>
+            <dd>95,3–98,2%</dd>
+          </div>
+          <div>
+            <dt>Охват анализа</dt>
+            <dd>до 100 активов</dd>
+          </div>
+          <div>
+            <dt>Старт в калькуляторе</dt>
+            <dd>5 000 USDT</dd>
+          </div>
+        </> : <div>
           <dt>Мин. инвестиция</dt>
           <dd>{numberText(strategy.minInvestmentUsdt, 0)} USDT</dd>
-        </div>
+        </div>}
       </dl>
 
       {(Number.isFinite(strategy.statistics.sharpeRatio) ||
@@ -157,7 +184,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
       )}
 
       <footer className="qx-flag-foot">
-        <PresentationCopyButton />
+        <PresentationCopyButton strategyId={strategy.id} />
         <button type="button" className="qx-flag-detail" onClick={() => onOpenProfile(strategy.id)}>
           <span>Подробнее о стратегии</span>
           <ArrowUpRight aria-hidden="true" />
@@ -168,6 +195,10 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
             : "Подтверждённая торговая история."}
         </span>}
       </footer>
+      {modelExample && <p className="qx-flag-notice">
+        Презентационный сценарий за 24 условных месяца, а не подтверждённая доходность или история сделок.
+        Кнопка копирования не запускает торговые операции.
+      </p>}
     </article>
   );
 };
