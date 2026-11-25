@@ -236,6 +236,7 @@ export default function App({presentation}: {presentation?: import("../../../../
                         strategy={shownThomas}
                         leads30d={!!presentation && thomasLeads30d}
                         presentation
+                        socialsReadOnly={!!presentation}
                         onOpenProfile={handleOpenProfile}
                       />
                     </div>
