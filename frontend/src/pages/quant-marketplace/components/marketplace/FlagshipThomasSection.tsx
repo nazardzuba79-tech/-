@@ -5,6 +5,7 @@ import type { Strategy, TimeframeKey } from "../../types/strategy";
 import { FlagshipPerformanceChart } from "../charts/StrategyCharts";
 import { StrategyLogo } from "../logos/StrategyLogos";
 import { PresentationCopyButton } from "./PresentationCopyButton";
+import { ThomasSocialLinks } from "../profile/ThomasSocialLinks";
 
 interface FlagshipThomasSectionProps {
   strategy: Strategy;
@@ -94,6 +95,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
               {strategy.isVip ? "VIP-автор" : "Автор стратегии"}
             </span>
           </div>
+          <ThomasSocialLinks />
         </div>
         <div className="qx-flag-return">
           <span>
