@@ -62,11 +62,14 @@ datasource db {
 }
 
 model User {
+  thomasAuthorProfile ThomasAuthorProfile?
   copyFuturesDemoConsent CopyFuturesDemoConsent?
   copyFuturesDemoSubscription CopyFuturesDemoSubscription?
   copyDemoSubscription CopyDemoSubscription?
   otcCashRequests OtcCashRequest[]
   copyStrategyOwnerships CopyStrategyOwner[]
+  studioAuthorBindings CopyStrategyOwner[] @relation("StudioAuthor")
+  quantStrategyDrafts QuantStrategyDraft[]
   privateTradingAccount PrivateTradingAccount?
   privateTradingLedger PrivateTradingLedger[]
   privateTradingCommands PrivateTradingCommand[]
@@ -1438,6 +1441,9 @@ model CopyStrategyOwner {
   xUrl String?
   telegramUrl String?
   socialOwnerUserId String?
+  /// Editorial authors are independent of copy-trading leaders.
+  studioAuthorUserId String? @unique
+  studioAuthor User? @relation("StudioAuthor", fields: [studioAuthorUserId], references: [id], onDelete: SetNull)
   futuresDemoSubscriptions CopyFuturesDemoSubscription[]
   demoSubscriptions CopyDemoSubscription[]
   traderId String @id
@@ -1708,4 +1714,28 @@ model NativeFundingModel {
   shortCashflow String
   effectiveFrom DateTime
   createdAt     DateTime @default(now())
+}
+
+/// Editorial metadata only. Publication cannot place orders or allocate funds.
+model QuantStrategyDraft {
+  settings Json?
+  revision Int @default(1)
+  id String @id @default(uuid())
+  ownerUserId String
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  name String
+  pair String
+  description String
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([ownerUserId, createdAt])
+  @@index([publishedAt, id])
+}
+
+model ThomasAuthorProfile {
+  ownerId String @id
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bio String @default("")
+  links Json @default("{}")
+  revision Int @default(1)
 }

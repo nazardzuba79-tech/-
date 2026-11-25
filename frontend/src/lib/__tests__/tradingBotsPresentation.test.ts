@@ -8,6 +8,13 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
     expect(Math.min(...minimums)).toBe(2500);
     expect(new Set(minimums).size).toBe(7);
   });
+  it('preserves the multi-asset strategy identity, weekly return and chart endpoint after the rename', () => {
+    const bot = BOT_CATALOGUE.find(entry => entry.id === 'range')!;
+    expect(bot).toMatchObject({ name: 'Thomas Quant AI', symbol: 'Цифровые активы', creatorName: 'Thomas', category: 'portfolio' });
+    const stats = botPresentation(bot, presentationWeek(Date.parse('2026-11-22T12:00:00Z')));
+    expect(stats.roi).toBe(180.26);
+    expect(stats.series[stats.series.length - 1]).toBe(stats.roi);
+  });
   it('changes only at Monday 00:00 UTC, including the year boundary', () => {
     const sunday = Date.parse('2026-12-27T23:59:59.999Z');
     expect(presentationWeek(sunday + 1)).toBe(presentationWeek(sunday) + 1);
@@ -19,6 +26,7 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
     for (let week = 0; week < 104; week++) {
       const first = botPresentation(bot, week), again = botPresentation(bot, week);
       expect(first).toEqual(again);
+      if (bot.id === 'range') expect(first.roi).toBe(180.26);
       expect(first.roi).toBeGreaterThanOrEqual(120);
       expect(first.roi).toBeLessThanOrEqual(217);
       expect(first.series[0]).toBe(0);
@@ -26,6 +34,17 @@ describe('presentation bot catalogue — synthetic, stable weekly scenarios', ()
       expect(first.winRate).toBe(Math.round(first.wins / first.trades * 10000) / 100);
       expect(first.drawdown).toBe(maxDrawdown(first.series));
       expect(botPresentation(bot, week + 1)).not.toEqual(first);
+    }
+  });
+  it('uses seven different model chart trajectories rather than one copied ascending graph', () => {
+    const curves = BOT_CATALOGUE.map(bot => botPresentation(bot, 46).series);
+    const normalized = curves.map(points => points.map((point, i) =>
+      i === 0 ? 0 : Math.round(point / points[points.length - 1] * 1000)).join(','));
+    expect(new Set(normalized).size).toBe(BOT_CATALOGUE.length);
+    for (const id of ['atlas', 'sol', 'delta', 'range', 'breakout']) {
+      const bot = BOT_CATALOGUE.find(value => value.id === id)!;
+      const points = botPresentation(bot, 46).series;
+      expect(points.some((point, index) => index > 0 && point < points[index - 1])).toBe(true);
     }
   });
   it('computes drawdown from equity, not percentage-point differences', () => {

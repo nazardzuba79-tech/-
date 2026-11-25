@@ -10,6 +10,14 @@ const OUT = path.resolve(process.env.QA_OUT || 'docs/qa/trading-bots');
 const PAIRS = ['BTC/USDT','ETH/USDT','SOL/USDT'];
 const CANDLES=Array.from({length:120},(_,i)=>({time:Math.floor(Date.now()/1000)-(120-i)*60,open:84800,high:84950,low:84700,close:84890,volume:12}));
 const app = express();
+// This runner accepts only loopback page requests. Build verified scenarios from an isolated fixture.
+require('ts-node/register/transpile-only');
+const {buildBotHistory}=require('../src/services/tradingBotPerformance');
+const historyOwner='00000000-0000-4000-8000-000000000722';
+const historyFixture=require('./qa-thomas-snapshot.cjs');
+const history=buildBotHistory(historyFixture(historyOwner),historyOwner);
+app.get('/api/v1/trading-bots/range/performance',(_q,r)=>r.json({status:'unavailable'}));
+app.get('/api/v1/trading-bots/creators', (_q,r)=>r.json({creators:{range:{displayName:'Thomas QA',avatarUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII='}}}));
 app.get('/api/v1/me', (_q,r)=>r.json({id:'qa',displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin:false,role:'USER'}));
 app.get('/api/v1/futures/config',(_q,r)=>r.json({symbols:PAIRS,minLeverage:1,maxLeverage:100,leverageStep:1,fundingIntervalHours:8,highLeverageWarningThreshold:25,leverageTiers:[{notionalCap:null,maxLeverage:100,maintenanceMarginRate:0.005,maintenanceAmount:0}]}));
 app.get('/api/v1/market/universe',(_q,r)=>r.json({available:true,value:{instruments:PAIRS.map(p=>({symbol:p,providerSymbol:p.replace('/',''),marketType:'linear_perpetual',baseAsset:p.split('/')[0],quoteAsset:'USDT',settleAsset:'USDT',status:'Trading',fundingIntervalMinutes:480}))}}));
@@ -42,6 +50,8 @@ app.get(['/api/v1/orders/me','/api/v1/futures/orders/me'],(_q,r)=>r.json([]));
 app.get('/api/v1/futures/balances',(_q,r)=>r.json([]));
 app.get('/api/v1/private-trading/access',(_q,r)=>r.json({allowed:false}));
 app.get('/api/v1/support/conversations/mine',(_q,r)=>r.json({conversation:null}));
+app.get('/api/v1/trading-bots/studio',(_q,r)=>r.json({canCreate:false,thomasVip:true,published:[],drafts:[]}));
+app.get('/api/v1/trading-bots/presentation',(_q,r)=>r.json(require('../src/services/quantPresentation').examplePresentation()));
 app.use('/api/v1',(_q,r)=>r.status(503).json({error:'Not supplied by local QA fixture'}));
 app.use(express.static(dist,{index:false}));
 app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
@@ -51,69 +61,188 @@ const report = { environment:'Local production bundle, mocked read-only API; no 
 const check = (name, condition) => { assert.ok(condition, name); report.checks.push(name); };
 (async () => {
   fs.mkdirSync(OUT,{recursive:true});
-  const server=app.listen(0,'127.0.0.1'); await once(server,'listening');
+  // Some Windows ephemeral ports (e.g. 1723) are explicitly forbidden by Chromium.
+  let server;
+  for (let port=43170; port<43200; port++) {
+    const listener=app.listen(port,'127.0.0.1');
+    try { await once(listener,'listening'); server=listener; break; }
+    catch (error) { if (error.code!=='EADDRINUSE') throw error; }
+  }
+  assert(server,'No free loopback port for browser QA');
   const base='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({headless:true, ...(process.env.QA_BROWSER_CHANNEL ? {channel:process.env.QA_BROWSER_CHANNEL} : {})});
   try {
-    for (const width of [1920,1440,1024,390,320]) {
+    for (const width of [1920,1440,1024,768,390,320]) {
       const context=await browser.newContext({viewport:{width,height:1000}});
       await context.addInitScript(()=>{localStorage.setItem('exchange_token','local-qa-only');localStorage.setItem('exchange_lang','ru');});
       await context.route('**/*',route=>new URL(route.request().url()).origin===base ? route.continue() : route.abort());
       const page=await context.newPage(), writes=[], errors=[];
       page.on('request',r=>{if(!['GET','HEAD','OPTIONS'].includes(r.method()))writes.push(r.method()+' '+new URL(r.url()).pathname);});
       page.on('pageerror',e=>errors.push(e.message));
-      await page.goto(base+'/trading-bots'); await page.locator('[data-bot]').first().waitFor();
-      check(width+': seven bots',await page.locator('[data-bot]').count()===7);
-      const layout=await page.evaluate(()=>{
-        const h=document.querySelector('.global-header'),s=getComputedStyle(h);
-        const left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect();
-        const nav=h.querySelector('.main-nav');
-        return {width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,background:s.backgroundColor,texture:s.backgroundImage,font:s.fontFamily,headerOverlap:left.right>right.left+1,navClipped:Math.max(0,nav.scrollWidth-nav.clientWidth)};
-      });
-      report.layouts.push(layout);
-      check(width+': no horizontal overflow',layout.overflow<=1);
-      check(width+': solid graphite header',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
-      check(width+': header clusters separate',!layout.headerOverlap);
-      check(width+': no clipped navigation links',layout.navClipped===0);
-      await page.screenshot({path:path.join(OUT,'bots-'+width+'.png'),fullPage:true});
-      const values=await page.locator('.vb-bot .vb-roi').allTextContents();
-      check(width+': positive model range',values.every(v=>parseFloat(v.replace('+',''))>=120&&parseFloat(v.replace('+',''))<=217));
-      check(width+': model disclosure visible',await page.locator('.vb-data-note').isVisible());
-      await page.locator('[data-bot="atlas"] .vb-open').click();
-      check(width+': modal opens',await page.locator('dialog[open]').count()===1);
-      await page.locator('#vb-budget').fill('2499');
-      check(width+': minimum enforced',await page.getByRole('button',{name:'Копировать',exact:true}).isDisabled());
-      await page.locator('#vb-budget').fill('2500');
-      await page.getByRole('button',{name:'Копировать',exact:true}).click();
-      check(width+': local plan shown',await page.locator('.vb-plan').isVisible());
-      await page.getByRole('button',{name:'7д',exact:true}).click();
-      check(width+': 7-day period',await page.getByRole('button',{name:'7д',exact:true}).getAttribute('aria-pressed')==='true');
-      await page.screenshot({path:path.join(OUT,'bot-detail-'+width+'.png')});
-      await page.keyboard.press('Escape');
-      check(width+': Escape closes modal',await page.locator('dialog').count()===0);
-      check(width+': focus restored',await page.locator('[data-bot="atlas"] .vb-open').evaluate(el=>el===document.activeElement));
-      await page.locator('[data-bot="atlas"] .vb-heart').click();
-      await page.reload();await page.locator('[data-bot]').first().waitFor();
-      check(width+': stable after reload',JSON.stringify(await page.locator('.vb-bot .vb-roi').allTextContents())===JSON.stringify(values));
-      check(width+': favorite retained',await page.locator('[data-bot="atlas"] .vb-heart').getAttribute('aria-pressed')==='true');
-      await page.getByRole('button',{name:'DCA',exact:true}).click();
-      check(width+': category filter',await page.locator('[data-bot]').count()===1);
-      await page.getByRole('button',{name:'Все стратегии',exact:true}).click();
-      await page.getByLabel('Сортировка ботов').selectOption('minimum');
-      check(width+': minimum sorting',await page.locator('[data-bot]').first().getAttribute('data-bot')==='atlas');
+      await page.goto(base+'/trading-bots');
+      page.setDefaultTimeout(10000);
+      const rows=page.locator('#strategy-leaderboard [data-bot]:visible');
+      await rows.first().waitFor();
+      check(width+' seven comparable strategies', await rows.count()===7);
+      check(width+' no FAQ in marketplace',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
+      const ordinaryHeroCopy=page.locator('.qx-flag').getByRole('button',{name:'Копировать бота',exact:true});
+      await ordinaryHeroCopy.waitFor();
+      check(width+' ordinary marketplace shows Thomas copy limitation',await ordinaryHeroCopy.getByText('Thomas пока недоступен · выбрать другие стратегии',{exact:true}).isVisible() && await ordinaryHeroCopy.isEnabled());
+      const ordinaryUrl=page.url(), ordinaryText=await page.locator('.qx-flag').innerText();
+      await ordinaryHeroCopy.click();
+      await page.waitForURL('**/copy-trading');
+      check(width+' copy action navigates to the existing copy-trading route',page.url().endsWith('/copy-trading'));
+      await page.goBack();
+      await page.waitForURL(ordinaryUrl);
+      await rows.filter({hasText:'Thomas Quant AI'}).getByRole('button',{name:'Копировать бота',exact:true}).click();
+      await page.waitForURL('**/copy-trading');
+      await page.goBack();
+      await page.waitForURL(ordinaryUrl);
+      check(width+' marketplace unchanged after copy-flow navigation',await page.locator('.qx-flag').innerText()===ordinaryText);
+      check(width+' marketplace fits the viewport', await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+      const ids=await rows.evaluateAll(els=>els.map(e=>e.dataset.bot));
+      check(width+' stable IDs',new Set(ids).size===7&&ids.includes('range'));
+      const flagship=page.locator('main section').filter({has:page.getByRole('button',{name:'Подробнее о стратегии',exact:true})});
+      await flagship.getByText('Thomas QA',{exact:true}).waitFor();
+      check(width+' flagship and catalogue agree',Number(await rows.filter({hasText:'Thomas Quant AI'}).getAttribute('data-roi'))===180.26 && (await flagship.locator('.qx-flag-return b').innerText()).replace(',','.').includes('180.26'));
+      if (width <= 640) {
+        const title = page.locator('.qx-intel-card h3').filter({hasText:'Thomas Quant AI'});
+        await title.waitFor();
+        check(width+' complete mobile recommendation title', await title.evaluate(el => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const bounds = el.getBoundingClientRect();
+          return Array.from(range.getClientRects()).every(line => line.left >= bounds.left - 1
+            && line.right <= bounds.right + 1 && line.bottom <= bounds.bottom + 1);
+        }));
+      }
+      const hero = page.locator('.qx-hero .qx-flag');
+      check(width+' one flagship, light theme and no sphere',await hero.count()===1 && await page.locator('[data-quant-theme]').getAttribute('data-quant-theme')==='light' && await hero.locator('canvas').count()===0 && await page.locator('.quant-scene').count()===0);
+      const values=await rows.evaluateAll(els=>els.map(el=>({id:el.dataset.bot,roi:Number(el.dataset.roi)})));
+      const thomas=values.find(row=>row.id==='range');
+      check(width+' comparable 30-day rank matches flagship', (await hero.locator('.qx-flag-rank').innerText()).includes('№ 1')===values.every(row=>row.roi<=thomas.roi));
+      for(const label of ['7Д','30Д','90Д','1Г','Всё время']){
+        const tab=hero.getByRole('button',{name:label,exact:true});
+        await tab.click();
+        check(width+' flagship '+label,await tab.getAttribute('aria-pressed')==='true' && (await hero.locator('.qx-flag-return').innerText()).includes(label) && (await hero.locator('.qx-flag-return b').innerText()).includes('%'));
+      }
+      const market=page.locator('.quant-filter select').nth(1);
+      await market.selectOption({label:'Цифровые активы'});check(width+' market filter',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='range');
+      await market.selectOption('Все');
+      const q=page.locator('#strategy-leaderboard input').first();
+      await q.fill('Thomas QA');check(width+' owner search',await rows.count()===1);await q.fill('');
+      await page.locator('#strategy-leaderboard').getByRole('button',{name:'DCA',exact:true}).first().click();
+      check(width+' category filter',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='ether');
+      await flagship.getByRole('button',{name:'Подробнее о стратегии'}).click();
+      await page.waitForURL('**/trading-bots/strategy/range');await page.reload();await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).first().waitFor();
+      const ordinaryProfileCopy=page.getByRole('button',{name:'Копировать бота',exact:true});
+      await ordinaryProfileCopy.waitFor();
+      const ordinaryProfileUrl=page.url();
+      check(width+' profile discloses Thomas copy limitation',await ordinaryProfileCopy.getByText('Thomas пока недоступен · выбрать другие стратегии',{exact:true}).isVisible());
+      await ordinaryProfileCopy.click();
+      await page.waitForURL('**/copy-trading');
+      check(width+' profile copy action reaches copy-trading',page.url().endsWith('/copy-trading'));
+      await page.goBack();
+      await page.waitForURL(ordinaryProfileUrl);
+      for(const period of ['7D','30D','90D','1Y','ALL']){
+        await page.getByRole('button',{name:period,exact:true}).click();
+        const out=page.locator('output[data-period="'+period+'"]');
+        check(width+' '+period+' has data',Number(await out.getAttribute('data-count'))>1&&Number.isFinite(Number(await out.getAttribute('data-return'))));
+      }
+      await page.getByRole('button',{name:'☆ В избранное'}).click();await page.reload();await page.getByRole('button',{name:'★ В избранном'}).waitFor();
+      await page.getByRole('button',{name:'Личный план'}).click();await page.getByLabel('Планируемая инвестиция').fill('1');
+      check(width+' minimum enforced',await page.getByRole('button',{name:'Рассчитать'}).isDisabled());
+      await page.getByLabel('Планируемая инвестиция').fill('12500');await page.getByRole('button',{name:'Рассчитать'}).click();
+      await page.getByText(/локальный план без исполнения/).waitFor();
+      await page.getByRole('button',{name:'Помесячная доходность',exact:true}).click();
+      check(width+' finite model display',!/(NaN|Infinity|undefined)%?/.test(await page.locator('[data-quant-theme]').innerText()));
+      const cells=page.locator('[data-month]');check(width+' 24 conditional months',await cells.count()===24);
+      check(width+' last month sync',Number(await cells.last().getAttribute('data-return'))===180.26);
+      await page.getByRole('button',{name:'Статистика',exact:true}).click();await page.getByText(/Чистый PnL за всё время/).waitFor();
+      if(width===1440 || width===390){
+        const api='**/api/v1/trading-bots/range/performance';
+        await page.route(api,r=>r.fulfill({status:503,json:{error:'fixture'}}));await page.reload();await page.getByText('Не удалось загрузить историю доходности.').waitFor();
+        await page.unroute(api);await page.route(api,r=>r.fulfill({json:history}));await page.reload();await page.getByText('Подтверждённая торговая история',{exact:true}).first().waitFor();
+        for(const period of ['7D','30D','90D','1Y','ALL']){
+          await page.getByRole('button',{name:period,exact:true}).click();const out=page.locator('output[data-period="'+period+'"]');
+          check(width+' verified '+period, Math.abs(Number(await out.getAttribute('data-return'))-history.periods[period].roi)<.011);
+        }
+        await page.getByRole('button',{name:'Помесячная доходность',exact:true}).click();
+        check(width+' verified months replace scenarios',await page.locator('[data-month]').count()===0 && await page.locator('.quant-data tbody tr').count()===Object.values(history.monthly.cells).filter(c=>c.month!==null&&c.year===history.monthly.years.slice(-1)[0]).length);
+        await page.goto(base+'/trading-bots');
+        const source=page.locator('.quant-filter select').first();
+        await page.locator('.qx-flag-foot').getByText('Подтверждённая торговая история.').waitFor();
+        check(width+' verified hero does not rank against model entries',!(await page.locator('.qx-flag-rank').innerText()).includes('№ 1') && !(await page.locator('.qx-flag-stats').innerText()).includes('24М'));
+        await source.selectOption('verified');
+        check(width+' verified leaderboard contains Thomas alone',await rows.count()===1&&await rows.first().getAttribute('data-bot')==='range');
+        await source.selectOption('model');
+        check(width+' model leaderboard excludes verified Thomas',await rows.count()===6 && !(await rows.evaluateAll(els=>els.map(el=>el.dataset.bot))).includes('range'));
+        await page.unroute(api);
+      }
+      await page.goto(base+'/trading-bots/studio');await page.getByRole('heading',{name:'Bot Studio доступен только VIP-трейдерам'}).waitFor();
+      check(width+' ordinary account cannot edit',await page.locator('textarea').count()===0);
+      await page.goto(base+'/trading-bots');await rows.first().waitFor();
+      await page.screenshot({path:path.join(OUT,'bots-'+width+'.png')});
       if(await page.locator('.nav-burger').isVisible()) {
         await page.locator('.nav-burger').click();
         check(width+': mobile bots link',await page.locator('.nav-mobile-menu a[href="/trading-bots"]').isVisible());
         check(width+': mobile robot icon',await page.locator('.nav-mobile-menu a[href="/trading-bots"] svg.trading-bot-icon').count()===1);
-        check(width+': bots follows OTC in mobile menu',await page.locator('.nav-mobile-menu a[href="/otc"] + a[href="/trading-bots"]').count()===1);
+        check(width+': bots follows OTC in mobile menu',await page.locator('.nav-mobile-menu .header-disclosure:has(a[href="/otc"]) + a[href="/trading-bots"]').count()===1);
       } else if(width>=1440) {
         const botsLink=page.locator('.main-nav > a[href="/trading-bots"]');
         check(width+': top-level active bots tab',await botsLink.isVisible()&&await botsLink.evaluate(el=>el.classList.contains('nav-active')));
         check(width+': robot icon',await botsLink.locator('svg.trading-bot-icon').count()===1);
         check(width+': bots is last product',await page.locator('.main-nav > a').last().getAttribute('href')==='/trading-bots');
-        await page.locator('.main-nav .nav-item-wrap > a').focus();
-        check(width+': keyboard trading menu',await page.locator('.nav-dropdown a[href="/trade"]').isVisible());
-        check(width+': no duplicate bots submenu',await page.locator('.nav-dropdown a[href="/trading-bots"]').count()===0);
+        const tradeMenu=page.locator('.main-nav .header-disclosure').filter({has:page.locator('.header-disclosure-heading a[href="/trade"]')});
+        await tradeMenu.getByRole('button').press('Enter');
+        check(width+': keyboard trading menu',await tradeMenu.locator('.header-disclosure-panel a[href="/trade"]').isVisible());
+        check(width+': no duplicate bots submenu',await tradeMenu.locator('.header-disclosure-panel a[href="/trading-bots"]').count()===0);
+      }
+      if(width===1440 || width===390 || width===320) {
+        await page.goto(base+'/trading-bots/presentation');
+        await page.getByText('Презентационный сценарий · без исполнения сделок',{exact:true}).waitFor();
+        check(width+' presentation no FAQ',await page.getByRole('heading',{name:'Частые вопросы',exact:true}).count()===0);
+        const exampleMetrics=(await page.locator('.qx-flag-stats').innerText()).replace(/\s/g,'');
+        check(width+' Thomas model dashboard shows requested scenario values',
+          ['+7348%','+3676%','+922%','+310%','97,1%','95,3–98,2%','100активов','5000USDT']
+            .every(value=>exampleMetrics.includes(value)));
+        const presentationUrl=page.url();
+        const buttons=page.getByRole('button',{name:'Копировать бота',exact:true});
+        await buttons.first().waitFor();
+        const before=await page.locator('[data-quant-theme]').innerText();
+        const copyRequests=[];
+        const collectCopyRequest=r=>copyRequests.push(r.method()+' '+r.url());
+        page.on('request',collectCopyRequest);
+        await page.locator('.qx-flag').getByRole('button',{name:'Копировать бота',exact:true}).click();
+        await page.waitForURL('**/copy-trading');
+        await page.goBack();
+        await page.waitForURL(presentationUrl);
+        await page.locator('#strategy-leaderboard [data-bot="range"]:visible').getByRole('button',{name:'Копировать бота',exact:true}).click();
+        await page.waitForURL('**/copy-trading');
+        await page.goBack();
+        await page.waitForURL(presentationUrl);
+        check(width+' presentation copy actions only navigate, never subscribe',await page.locator('[data-quant-theme]').innerText()===before && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
+        page.off('request',collectCopyRequest);
+        await page.locator('.qx-flag').getByRole('button',{name:'Подробнее о стратегии',exact:true}).click();
+        const profileUrl=base+'/trading-bots/presentation/strategy/range';
+        await page.waitForURL(profileUrl);
+        await page.getByRole('button',{name:'Помесячная доходность',exact:true}).waitFor();
+        await page.getByRole('heading',{name:'Thomas Quant AI',exact:true}).waitFor();
+        const profileMetrics=(await page.locator('.thomas-terminal-metrics').innerText()).replace(/\s/g,'');
+        check(width+' Thomas profile integrated strip shows all scenario metrics',
+          ['+7348%','+3676%','+922%','+310%','97,1%','95,3–98,2%','100активов','5000USDT','24месяца']
+            .every(value=>profileMetrics.includes(value)));
+        check(width+' Thomas profile opens complete chart by default',
+          await page.locator('output[data-period="ALL"][data-return="7348"]').count()===1);
+        const profileBefore=await page.locator('[data-quant-theme]').innerText();
+        copyRequests.length=0;
+        page.on('request',collectCopyRequest);
+        await page.getByRole('button',{name:'Копировать бота',exact:true}).click();
+        await page.waitForURL('**/copy-trading');
+        await page.goBack();
+        await page.waitForURL(profileUrl);
+        check(width+' presentation profile copy only navigates, never subscribes',await page.locator('[data-quant-theme]').innerText()===profileBefore && copyRequests.every(r=>!/^((POST|PUT|PATCH|DELETE) |GET .*\/trading-bots\/.*copy)/i.test(r)));
+        page.off('request',collectCopyRequest);
       }
       check(width+': zero writes',writes.length===0);
       check(width+': zero uncaught errors',errors.length===0);
@@ -122,12 +251,19 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
     const context=await browser.newContext();
     await context.addInitScript(()=>{localStorage.setItem('exchange_token','local-qa-only');localStorage.setItem('exchange_lang','ru');});
     const page=await context.newPage();
-    await page.clock.install({time:new Date('2026-09-27T23:59:58Z')});
-    await page.goto(base+'/trading-bots');await page.locator('[data-bot]').first().waitFor();
-    const before=await page.locator('.vb-bot .vb-roi').allTextContents();
+    // Freeze Sunday before navigation so slow bundles cannot load on the Monday side.
+    const sunday = new Date('2026-09-27T23:59:58Z');
+    await page.clock.install({time:new Date('2026-09-27T23:58:00Z')});
+    await page.clock.pauseAt(sunday);
+    await page.goto(base+'/trading-bots');
+    const atlas = page.locator('#strategy-leaderboard [data-bot="atlas"]:visible');
+    // Known Atlas model returns for these two consecutive UTC weeks.
+    const before = '154.75', after = '155.95';
+    const exactRow = value => atlas.and(page.locator('[data-roi="'+value+'"]'));
+    await exactRow(before).waitFor();
     await page.clock.fastForward(3000);
-    const after=await page.locator('.vb-bot .vb-roi').allTextContents();
-    check('Monday boundary refreshes an open page',JSON.stringify(before)!==JSON.stringify(after));
+    await exactRow(after).waitFor();
+    check('Monday boundary refreshes an open page', await atlas.getAttribute('data-roi')===after);
     await context.close();
     for(const width of [1920,1440,1024,390]) {
       const context=await browser.newContext({viewport:{width,height:900}});
@@ -139,10 +275,10 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await page.locator('header').first().waitFor();
         const layout=await page.locator('header').first().evaluate(h=>{const s=getComputedStyle(h),left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect(),nav=h.querySelector('.main-nav');return {background:s.backgroundColor,texture:s.backgroundImage,overflow:document.documentElement.scrollWidth-innerWidth,height:h.getBoundingClientRect().height,overlap:left.right>right.left+1,navClipped:Math.max(0,nav.scrollWidth-nav.clientWidth)};});
         report.layouts.push({name,width,...layout});
-        check(name+' '+width+': shared graphite',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
+        check(name+' '+width+': shared graphite',(layout.background===(name!=='markets'?'rgb(23, 24, 30)':'rgb(26, 27, 32)'))&&layout.texture==='none');
         check(name+' '+width+': no overflow',layout.overflow<=1);
         check(name+' '+width+': header controls separate',!layout.overlap);
-        if(width>1024) check(name+' '+width+': approved desktop header height',layout.height===68);
+        if(width>1024) check(name+' '+width+': approved desktop header height',layout.height===(name==='markets'?68:48));
         check(name+' '+width+': no clipped navigation links',layout.navClipped===0);
         await page.screenshot({path:path.join(OUT,name+'-header-'+width+'.png')});
       }

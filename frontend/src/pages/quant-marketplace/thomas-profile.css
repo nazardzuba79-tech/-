@@ -1,0 +1,279 @@
+/* Thomas analytical profile, scoped to the marketplace shadow root. */
+.th-panel {
+  padding: clamp(1rem, 2.1vw, 2rem);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  color: var(--text-primary);
+}
+.th-panel header {
+  margin-bottom: 1.15rem;
+}
+.th-panel h2 {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  font-size: clamp(1.25rem, 2.1vw, 1.75rem);
+  letter-spacing: -0.03em;
+  line-height: 1.16;
+}
+.th-panel h3,
+.th-author h3 {
+  font-weight: 650;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+.th-panel p,
+.th-author p {
+  color: var(--text-secondary);
+  line-height: 1.55;
+  font-size: 0.9rem;
+  margin: 0.4rem 0;
+}
+.th-panel small,
+.th-panel .th-label {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.th-calculator {
+  border-color: var(--border-gold);
+  box-shadow: 0 5px 20px #333a280a;
+  background: linear-gradient(
+    115deg,
+    var(--bg-thomas-from),
+    var(--bg-surface) 65%
+  );
+}
+.th-calc-grid {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.8fr) minmax(0, 1.6fr);
+  gap: clamp(1rem, 3vw, 3rem);
+  margin: 1rem 0;
+}
+.th-controls,
+.th-author form {
+  display: grid;
+  gap: 0.7rem;
+  align-content: start;
+}
+.th-controls label,
+.th-form-grid label,
+.th-author form > label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.81rem;
+}
+.th-controls input,
+.th-author input,
+.th-author textarea {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+  min-width: 0;
+  color: var(--text-primary);
+  font: inherit;
+}
+.th-controls input {
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1rem;
+}
+.th-author textarea {
+  min-height: 4.5rem;
+}
+.th-options,
+.th-socials {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.th-options button,
+.th-action,
+.th-socials a {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.45rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  font-size: 0.79rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.th-options button[aria-pressed="true"],
+.th-action,
+.th-socials a:hover {
+  border-color: var(--border-gold);
+  color: var(--text-gold);
+}
+.th-output {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  background: var(--bg-surface);
+}
+.th-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.4rem), 1fr));
+  gap: 0.6rem;
+}
+.th-values > div {
+  display: grid;
+  align-content: start;
+  gap: 0.16rem;
+  min-width: 0;
+}
+.th-values strong {
+  font-size: clamp(0.95rem, 1.45vw, 1.4rem);
+  color: var(--text-teal);
+  overflow-wrap: anywhere;
+  line-height: 1.22;
+  font-variant-numeric: tabular-nums;
+}
+.th-capital-chart {
+  height: 13.5rem;
+  margin-top: 1rem;
+}
+.th-research-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.th-research-grid article {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+}
+.th-research-grid svg,
+.th-coverage svg {
+  color: var(--text-teal);
+  flex-shrink: 0;
+}
+.th-research-grid small {
+  display: block;
+  margin: 0.6rem 0 0.15rem;
+  color: var(--text-gold);
+}
+.th-coverage,
+.th-action,
+.th-socials a,
+.th-holdings li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.th-coverage {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.th-socials,
+.th-author form {
+  margin: 0.7rem 0;
+}
+.th-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+.th-holdings {
+  margin-top: 1rem;
+}
+.th-holdings li {
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding: 0.45rem 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 760px) {
+  .th-calc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .th-research-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .th-research-grid,
+  .th-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .th-output {
+    padding: 0.65rem;
+  }
+  .th-capital-chart {
+    height: 11rem;
+  }
+}
+
+.th-values strong[data-negative="true"] {
+  color: var(--text-crimson);
+}
+
+/* Terminal-style Thomas metrics stay on the same palette as the host marketplace.
+   The divider rhythm follows VOLTEX's compact market-data header. */
+.quant-skin .thomas-terminal-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(115deg, var(--bg-surface), var(--bg-subtle));
+}
+.quant-skin .thomas-terminal-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.quant-skin .thomas-terminal-metric:nth-child(4n) { border-right: 0; }
+.quant-skin .thomas-terminal-metric:nth-child(n+5) { border-bottom: 0; }
+.quant-skin .thomas-terminal-metric span {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.quant-skin .thomas-terminal-metric strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  font-size: clamp(13px, 1.25vw, 18px);
+  line-height: 1.2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.quant-skin .thomas-terminal-metric strong[data-tone="gold"] { color: var(--text-gold); }
+.quant-skin .thomas-terminal-metric strong[data-tone="up"] { color: var(--text-emerald); }
+.quant-skin .thomas-terminal-metric small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.quant-skin .thomas-terminal-disclaimer {
+  grid-column: 1 / -1;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+@media (max-width: 1050px) {
+  .quant-skin .thomas-terminal-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quant-skin .thomas-terminal-metric:nth-child(n) { border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+  .quant-skin .thomas-terminal-metric:nth-child(2n) { border-right: 0; }
+  .quant-skin .thomas-terminal-metric:nth-child(n+7) { border-bottom: 0; }
+}
+@media (max-width: 390px) {
+  .quant-skin .thomas-terminal-metrics { grid-template-columns: 1fr; }
+  .quant-skin .thomas-terminal-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid var(--border-subtle); }
+  .quant-skin .thomas-terminal-metric:nth-child(8) { border-bottom: 0; }
+  .quant-skin .thomas-terminal-metric { padding: 12px 14px; }
+}

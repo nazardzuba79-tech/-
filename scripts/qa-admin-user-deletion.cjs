@@ -304,6 +304,8 @@ async function browserChecks(app, prisma, user, header) {
    await page.goto(origin+'/admin/users/protected');
    await page.getByText('voltex.crypto@gmail.com',{exact:true}).first().waitFor({state:'visible'});
    assert.equal(await page.getByRole('button',{name:'Удалить аккаунт',exact:true}).count(),0);
+   // Let already intercepted summary reads finish before disposing their request context.
+   await page.unrouteAll({behavior:'wait'});
    assert.deepEqual(errors,[]);
    report.checks.push('browser '+width+'px: confirmation/cancel/conflict/retry/double-click/list/detail/404/back/protected/authorized journal');
    console.log('PASS browser '+width+'px');await context.close();

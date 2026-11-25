@@ -52,6 +52,25 @@ on:
       - 'frontend/src/lib/modeledCopyData.ts'
       - 'frontend/src/lib/dailyReturnChart.ts'
       - 'frontend/src/lib/monthlyCopyPerformance.ts'
+      - 'src/shared/monthlyCopyPerformance.ts'
+      - 'src/shared/thomasPerformance.ts'
+      - 'src/services/tradingBotPerformance.ts'
+      - 'src/api/routes/tradingBotCreators.ts'
+      - 'src/api/routes/thomasProfile.ts'
+      - 'src/api/routes/__tests__/thomasProfile.test.ts'
+      - 'src/services/thomasCoverage.ts'
+      - 'src/services/__tests__/thomasMultiAsset.test.ts'
+      - 'src/shared/thomasAuthor.ts'
+      - 'frontend/src/lib/thomasScenario.ts'
+      - 'frontend/src/lib/__tests__/thomasScenario.test.ts'
+      - 'src/api/routes/quantStudio.ts'
+      - 'src/api/routes/__tests__/quantStudio.test.ts'
+      - 'frontend/src/pages/TradingBotsPage.tsx'
+      - 'frontend/src/pages/trading-bots/**'
+      - 'frontend/src/pages/quant-marketplace/**'
+      - 'frontend/public/quant-marketplace/**'
+      - 'scripts/qa-trading-bots.cjs'
+      - 'scripts/qa-thomas-snapshot.cjs'
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/depositCopyLog.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
@@ -158,6 +177,25 @@ on:
       - 'frontend/src/lib/modeledCopyData.ts'
       - 'frontend/src/lib/dailyReturnChart.ts'
       - 'frontend/src/lib/monthlyCopyPerformance.ts'
+      - 'src/shared/monthlyCopyPerformance.ts'
+      - 'src/shared/thomasPerformance.ts'
+      - 'src/services/tradingBotPerformance.ts'
+      - 'src/api/routes/tradingBotCreators.ts'
+      - 'src/api/routes/thomasProfile.ts'
+      - 'src/api/routes/__tests__/thomasProfile.test.ts'
+      - 'src/services/thomasCoverage.ts'
+      - 'src/services/__tests__/thomasMultiAsset.test.ts'
+      - 'src/shared/thomasAuthor.ts'
+      - 'frontend/src/lib/thomasScenario.ts'
+      - 'frontend/src/lib/__tests__/thomasScenario.test.ts'
+      - 'src/api/routes/quantStudio.ts'
+      - 'src/api/routes/__tests__/quantStudio.test.ts'
+      - 'frontend/src/pages/TradingBotsPage.tsx'
+      - 'frontend/src/pages/trading-bots/**'
+      - 'frontend/src/pages/quant-marketplace/**'
+      - 'frontend/public/quant-marketplace/**'
+      - 'scripts/qa-trading-bots.cjs'
+      - 'scripts/qa-thomas-snapshot.cjs'
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/depositCopyLog.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
@@ -322,6 +360,22 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-copy-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-copy-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Thomas confirmed returns, source boundary and creator profile
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/__tests__/tradingBotPerformance.test.ts
+          src/api/routes/__tests__/tradingBotCreators.test.ts
+          src/api/routes/__tests__/quantStudio.test.ts
+          src/api/routes/__tests__/thomasProfile.test.ts
+          src/services/__tests__/thomasMultiAsset.test.ts
+          frontend/src/lib/__tests__/thomasScenario.test.ts
+          frontend/src/lib/__tests__/quantMarketplace.test.ts
+          frontend/src/lib/__tests__/tradingBotsPresentation.test.ts
+      - name: Trading bots catalogue and detailed performance in a local browser
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
+          QA_OUT: /tmp/voltex-bots-browser
+        run: node scripts/qa-trading-bots.cjs
       - name: Browser QA - last-good snapshot paints before the marketplace API answers
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-copy-qa/node_modules/playwright

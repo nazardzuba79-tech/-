@@ -7881,3 +7881,83 @@ Implementation `346fa509` projects the bound account's public name in strategyOw
   - `spot-7d` and `publication-and-layout` died in `playwright install --with-deps` on Ubuntu mirror 503s before any test ran — not this PR's. The fix that already exists for exactly these two workflows on PR #696 (Codex's `verify-ci-browser.cjs` in `download` mode on `ubuntu-24.04`, green there) is ported here unchanged; it becomes a no-op once the base carries it.
 - Reproduced red and then green here: `qa-native-demo-browser.cjs` with `NATIVE_QA_PNL_ONLY=1`, `qa-large-numbers-browser.cjs`, `qa-order-ticket-691.cjs` (built with the workflow's `VITE_*`), plus the three phone checks (133/0, 103/0, 71/0). `qa-vta-demo.cjs` needs PostgreSQL and was not run here.
 - Second CI run on `45963ca1`: `private-demo` red again, now one step further — `qa-vta-demo.cjs` compares the Spot ticket's geometry on VTA/USDT with BTC/USDT for every side and order type at 390px, and on the sell side VTA's long eight-decimal balance wrapped under «Доступно» (row 20 → 32px), moving everything below it. The row is now «Доступно» over its figure at a constant 30px, as the earlier Spot phone sheet kept it constant for the same reason. `qa-spot-mobile-terminal.cjs` carries the case (a long balance on the sell side: same row height, same action position; red before the fix, green after — 107/0). `qa-vta-demo.cjs` itself was run here against a disposable local PostgreSQL 16 after `prisma migrate deploy`: exit 0 at 1440 and 390.
+
+### Thomas Quant AI — trading bot catalogue
+- The existing XRP entry keeps the stable `range` ID for favourites and the weekly presentation metrics. Its neural mark is separate from the author's profile avatar.
+- Authenticated GET `/api/v1/trading-bots/creators` reads only display name and avatar from the user bound to the owner-approved profile UUID. Override it per environment with `TRADING_BOTS_THOMAS_USER_ID`. If explicitly unbound or unavailable, the card and detail show the catalogue name Thomas. No database migration. Other strategies have catalogue attribution until authors are supplied.
+
+### #722 — Thomas strategy performance on draft #723
+- The normal API has no confirmed executions attributed to this bot. Leave `TRADING_BOTS_THOMAS_VERIFIED_SNAPSHOT` unset until a trusted source can publish explicitly approved, bot-specific aggregates. The history then returns unavailable. The model on the catalogue card remains separate.
+- Optional input is a server-owned JSON file, atomically replaced by its trusted publisher. The validated contract in `src/services/tradingBotPerformance.ts` binds version, owner UUID, bot, pair, strategy, publication scope, currency, inception and UTC cutoff. Only use days with all external flows at the close (or an upstream equivalent). Reject incomplete coverage, inconsistent equity or unreconciled PnL. Opening and closing equity and owner UUID stay on the server. This release introduces no publisher, order hook or account permissions.
+- Returned periods, daily ROI curve, monthly/yearly cells and ALL share daily TWR. Net PnL excludes transfers and includes fees. Realized PnL is before fees, unrealized is the **change** over the period. Optional breakdowns remain unknown if any contributing day lacks them. A zero-trade day with a verified flat mark is a real zero. Missing internal days invalidate the snapshot.
+- Reproduce UI checks with the local production bundle and `scripts/qa-trading-bots.cjs`. The two-calendar-year fixture in `scripts/qa-thomas-snapshot.cjs` belongs exclusively to isolated QA. `BENCH_THOMAS_BOTS=1` runs the existing loopback 50+2 benchmark with the same two trading clients and copy readers in both phases, adding the bot history read in the candidate phase.
+- Catalogue fallback shows 12 explicitly illustrative, ordinal months, ending at the same +180.26% as the card. Those examples are entirely separate from published performance and disappear when a verified snapshot is present.
+
+## 2026-11-24 — Codex — #722 / Draft #723 Trading Bots presentation
+- Continued from 3d71f37e8. TradingBotsPage, tradingBotsPresentation and BotHistoryPanel/BotModelPerformance/BotSparkline/TradingBots.css put Thomas first and connect all five detail windows to the existing illustration. The 30-day Thomas model ends at +180.26%; verified returns still take precedence. Long windows compare ordinal monthly returns.
+- Kept the existing seven strategies, model months and arithmetic summaries, verified-history API and author binding. Extended tradingBotsPresentation.test and qa-trading-bots. Final local checks: 32 unit assertions, 366 Chromium checks at five widths, TypeScript and Vite build passed. Browser fixtures only. Draft review pending.
+
+## 2026-11-24 — Draft #723 — Quant Marketplace review
+
+The new catalogue, ranking, Thomas profile, Academy and Studio are scoped to Trading Bots.
+The board ranks comparable results. In verified mode it excludes entries with only a model.
+Thomas's illustrative annual and lifetime figures sum ordinal monthly percentages. Published
+performance snapshots replace the illustration. Missing periods in the catalogue show a dash.
+
+Studio reads the existing CopyStrategyOwner premium flag on the server. An editorial binding
+uses studioAuthorUserId with a null ownerUserId so it does not register a copy-trading leader.
+Drafts and publications contain descriptions only. The schema migration precedes API rollout.
+No account is granted privileges by this migration. A read-only check found the Thomas profile
+and zero existing copy-author bindings. After separate owner approval, the idempotent
+scripts/ops/prepare-thomas-studio-vip.sql binds that profile to an editorial-only premium row.
+Leave existing copy leaders, model data and the previous Pages candidate 32bfe4eef78b8519445f12be74b9ac22ffebaead intact.
+
+Browser QA uses local fixtures and tests regular and premium viewers. The bench compares the
+same 50 readers and two trading fixtures in both phases, adding the Studio visit and history
+reads only in the candidate phase. All benchmark financial requests target a disposable database.
+
+## 2026-11-25 — Claude — Quant Marketplace: light stage proposal (owner review, not published)
+- Owner request (screenshot of live `/trading-bots`): light background only, the dark blue theme is poor; text on the light theme should read better; the 3D model looks dull, its captions and the visual part should be better. Asked to be shown the result before deciding.
+- Branch `claude/voltex-mobile-audit-7rpjni-quant-light`, started from Codex's draft #723 head `6092f9083` (`codex/thomas-ai-pulse`). Commit: the one containing this entry. No PR, no merge, no publication.
+- Material files: new `frontend/src/pages/quant-marketplace/light-stage.css` (plain CSS, injected after `approved.css` in the same shadow root by `TradingBotsPage.tsx`); `quant-marketplace/App.tsx` (theme fixed to light, switch removed, hero hooks); `components/hero/QuantHeroVisual.tsx` (one `applyStage(isDark)` that dresses the scene; light look: gold shell, graphite rings and plinth, deep teal/gold accents, normal blending where additive glow vanished on white, neutral tone mapping, wider framing, zoom-to-fit on narrow stages; caption and «Импульс сети» as a readable caption and a real button); `NeuralBlockchainBackdrop.tsx` (warm light canvas, hook to hide the node web on light); `QuantIntelligenceSection.tsx` (two hook classes so card figures do not break on phones); `frontend/public/quant-marketplace/hero-light.webp` (poster re-rendered from the new scene).
+- Preserved from Codex: `approved.css` untouched; catalogue, model/verified data, Studio, routes, API calls, texts of figures and disclosures, all ids and data attributes used by `qa-trading-bots.cjs`; the dark palette and dark scene values remain in code (theme is a constant, not deleted).
+- Checked locally: frontend `tsc` clean; Vite build passes; `quantMarketplace`, `tradingBotsPresentation`, `settingsTradingBotsNav` unit suites 29/29; screenshots at 1600 and 390 for marketplace, strategy profile and Studio. `qa-trading-bots.cjs` unmodified stops at one check on both the base build and this build (146 checks passed before it, see «Known»); with only that check neutralised in an uncommitted local copy, this build passes all 231 checks with 0 errors. Not run: Jest outside the three suites, any other browser suite, CI.
+- Known: the check «Monday boundary refreshes an open page» in `qa-trading-bots.cjs` reads the board immediately after `clock.fastForward` and is racy: 5/6 on the unchanged base build, 6/6 on this build in a 6-run repeat. Not changed here.
+- Not done / open: owner decision pending; Academy article covers are still dark artwork; other locales are not involved (page is Russian-only as delivered).
+
+## 2026-11-25 — Claude — Quant Marketplace hero: coins in orbit (owner review, not published)
+- Owner, after the first preview: the sphere should show something, not be a picture: it turns, and cryptocurrencies turn around it; show one full-page screenshot before and after.
+- Same branch `claude/voltex-mobile-audit-7rpjni-quant-light`; commit: the one containing this entry. No PR, no merge, no publication.
+- `components/hero/coinMarks.ts` (new): BTC, ETH, XRP, SOL, BNB — the markets the catalogue's strategies trade — as CC0 mark paths drawn on a canvas by the scene (no image request, no third-party host).
+- `QuantHeroVisual.tsx`: five coins on two orbits at one angular speed, a fifth of a turn apart; faces billboard to the viewer; half of the perspective size difference is taken back so the near coin does not cover the sphere. Each coin has an HTML label (a button) the scene places every frame: ticker plus the 24h change from the tab's shared `marketDataStore` (`useMarketData`, public display snapshot). No reading → ticker only, never a zero or an invented figure. Labels hide behind the core and stay inside the stage. A click on a label or on the coin calls `onSelectMarket`. On the light stage the anonymous node swarm is hidden; the shell turns faster.
+- `App.tsx`, `HeroBoundary.tsx`, `LeaderboardSection.tsx`: the chosen coin becomes the board's search text (pair filter reset to «Все»), and the board scrolls into view. The viewer's other filters are kept.
+- `hero-light.webp` re-rendered with the coins (no labels: the poster carries no figures).
+- Checked locally on the final build: frontend `tsc` clean; Vite build; the three bots unit suites 29/29; an uncommitted coin check at 1440/390/320 with and without a market reading, 27/27 each (five labels, feed figures shown, no figure without a feed, labels inside the stage, no page overflow, coin click fills the search, only that market's strategies remain, board in view, no page errors); `qa-trading-bots.cjs` with only the racy Monday check neutralised in an uncommitted copy: 231 checks, 0 errors. Not run: other Jest suites, other browser suites, CI. Screenshots were taken under software WebGL with the hardware path forced for the preview.
+- Adds one public read on this page (`/market/display/spot-snapshot`, the store's existing 60s cadence, shared per tab) while the hero is on screen.
+
+## 2026-11-25 — Claude — Quant Marketplace hero: the flagship strategy replaces the 3D sphere (owner review, not published)
+- Owner, after seeing the sphere with and without coins: both read as nonsense; agreed to drop the sphere and show the best strategy in its place, with Thomas marked out as a VIP user and as the best strategy.
+- Same branch `claude/voltex-mobile-audit-7rpjni-quant-light`; commit: the one containing this entry. No PR, no merge, no publication. This supersedes the two entries above where they describe the 3D scene and the coins.
+- Removed: `components/hero/` (`QuantHeroVisual.tsx`, `HeroBoundary.tsx`, `coinMarks.ts`), both posters under `frontend/public/quant-marketplace/`, the stage and coin rules in `light-stage.css`, the board's `searchRequest` prop. `three` is now imported nowhere in `frontend/src`; `package.json` is not touched. `ThemeMode` lives in `quant-marketplace/types/theme.ts`.
+- `FlagshipThomasSection.tsx` is rewritten as the hero's right half (an `article`, no longer its own page section): rank line, market, logo, name, author with avatar, period tabs with the same `FlagshipPerformanceChart`, the same six figures, the same «Подробнее о стратегии» action and model/verified disclosure. Sharpe / Profit Factor are shown only when a value exists. It is one obsidian-and-gold card that re-points the shared colour variables in its own scope (`.qx-flag`).
+- Statements of fact are conditional: «№ 1 по доходности за 30 дней» only when `App.tsx` finds it has the highest finite 30-day result among at least two strategies of the same source, otherwise «Избранная стратегия»; the crown and the «VIP-автор» mark only when `strategy.isVip`.
+- `qa-trading-bots.cjs` finds the flagship as the one `main section` holding «Подробнее о стратегии» and the author name: that is now the hero section, and there is still exactly one.
+- Checked locally on the final build: frontend `tsc` clean; Vite build; the three bots unit suites 29/29; `qa-trading-bots.cjs` with only the racy Monday check neutralised in an uncommitted copy: 231 checks, 0 errors (five widths); screenshots at 1600, 1024, 768 and 390. Not run: other Jest suites, other browser suites, CI.
+
+## 2026-11-25 — Codex: Thomas Multi-Asset Intelligence
+
+Source commits: frontend 0c032dd41ea10ef19534c31699625336398e89d1 (light production frontend lineage); API cdac7161d90cdafd12c0f3b8b3639208d2859e96 (#723 source lineage). Changed the range catalogue entry and strategy profile, calculator, architecture, author socials, versioned attributed aggregate contract and shared market coverage adapter. Protected the existing seven-strategy catalogue, Thomas minimum, monthly model, account rights, financial services and private ledger. A dedicated author-profile migration was exercised only in isolated PostgreSQL.
+
+TypeScript and frontend production build passed; 50 unit/API tests and 47 Chrome checks passed. Final local 50 readers + 2 traders: crypto p95 9.42 to 9.42 ms; 900 copied fixture orders executed, zero pending and zero worker errors. Candidate trial and unchanged reference logs alongside final evidence: G:/Codex/thomas-multi-review/report.json. Owner preview: http://127.0.0.1:47526/trading-bots/strategy/thomas-quant-ai. Production review and real trade attribution remain outside this local run.
+
+### 2026-11-25 — Codex — PR #723 combined review
+
+- Owner review request: integrate Claude light flagship design 7865c0d4da028fa336df78fc5d3971d2c5b2832a with the checkpointed Thomas frontend (23e5d8cb9, code 0c032dd41) and API (489cf791e, code cdac7161d). This entry is in the combined implementation commit.
+- Kept the single light stage, black/gold interactive flagship, existing VOLTEX navigation and protected Studio. Integrated multi-asset research, portfolio aggregates, calculator, editable author profile and owner/admin validation. Only the Thomas definition changed in the PR catalogue. Financial calculations and the separation of illustrative and confirmed history are retained.
+- Combined browser QA covers all flagship periods, cohort-only rankings and Monday UTC rollover without skipping a check. A fixed browser clock and an awaited row value distinguish rendering latency from an actual missed weekly update.
+- Review only. The preview uses loopback and disposable PostgreSQL. Production and release rollback are outside the change.
+
+### 2026-11-25 — Codex — PR #723 mobile recommendation title
+
+- Follow-up to 22f2169f52401cc8ee47c1caedff6339e0d4e9f3. Allow the complete strategy name to wrap in the approved pastel recommendation cards. At 320 px the risk line sits below the identity. Preserve the desktop composition, existing calculator, statistics, social links and Studio. Add a browser assertion on each rendered text line. This entry is included in the mobile-title commit.
+- Release hold: the owner reports that an attributable Thomas history export is not available. The live verified-aggregate reader has no snapshot configured. Illustrative fixture numbers remain outside the public release. No changes to production.

@@ -2,34 +2,54 @@
  * performance, backtests, forecasts or an execution engine. Never feed these
  * values into balances, financial calculations or trading endpoints. */
 export type BotCategory = 'grid' | 'dca' | 'trend' | 'portfolio';
+export type BotCreator = { displayName: string | null; avatarUrl: string | null };
+
+/** Keep profiles independently usable when a rollout or partial response omits creators. */
+export function readBotCreators(payload: unknown): Record<string, BotCreator> {
+  if (!payload || typeof payload !== 'object' || !('creators' in payload)) return {};
+  const rows = payload.creators;
+  if (!rows || typeof rows !== 'object' || Array.isArray(rows)) return {};
+  const result: Record<string, BotCreator> = {};
+  for (const {id} of BOT_CATALOGUE) {
+    const row: unknown = (rows as Record<string, unknown>)[id];
+    if (!row || typeof row !== 'object') continue;
+    const name = 'displayName' in row ? row.displayName : null;
+    const avatar = 'avatarUrl' in row ? row.avatarUrl : null;
+    result[id] = { displayName: typeof name === 'string' ? name : null,
+      avatarUrl: typeof avatar === 'string' ? avatar : null };
+  }
+  return result;
+}
+
 export type BotDefinition = {
   id: string; name: string; mark: string; symbol: string; category: BotCategory;
+  creatorName?: string;
   strategy: string; description: string; detail: string; minimum: number;
   risk: 'Умеренный' | 'Высокий'; baseRoi: number;
 };
 
 export const BOT_CATALOGUE: readonly BotDefinition[] = [
   { id: 'atlas', name: 'Atlas Grid', mark: 'AG', symbol: 'BTC / USDT', category: 'grid', strategy: 'Спотовая сетка', minimum: 2500, risk: 'Умеренный', baseRoi: 154,
-    description: 'Покупает ниже и продаёт выше внутри выбранного ценового диапазона.',
-    detail: 'Сетка из 24 уровней распределяет покупки и продажи внутри диапазона. При выходе цены за его границы новые заявки приостанавливаются.' },
+    description: 'Модель работы с ценовыми зонами BTC: распределение лимитных уровней в боковом диапазоне.',
+    detail: 'Сценарий из 24 ценовых уровней исследует возвраты к середине диапазона. При сильном направленном движении сеточный подход уязвим: выход из диапазона важнее красивой кривой.' },
   { id: 'ether', name: 'Ether DCA', mark: 'ED', symbol: 'ETH / USDT', category: 'dca', strategy: 'Регулярные покупки', minimum: 5000, risk: 'Умеренный', baseRoi: 120,
-    description: 'Распределяет покупки ETH во времени и усредняет цену входа.',
-    detail: 'Плановые покупки частями с ограничением общего бюджета. Целевой уровень выхода задаётся отдельно от графика накопления.' },
-  { id: 'sol', name: 'SOL Momentum', mark: 'SM', symbol: 'SOL / USDT', category: 'trend', strategy: 'Следование тренду', minimum: 7500, risk: 'Высокий', baseRoi: 217,
-    description: 'Следует сильному движению SOL и сопровождает позицию трейлингом.',
-    detail: 'Сценарий входа объединяет направление тренда и объём. Трейлинг-стоп сопровождает позицию; резкие развороты могут привести к убыткам.' },
+    description: 'Поэтапное накопление ETH с дисциплиной бюджета вместо попыток угадать идеальную точку входа.',
+    detail: 'DCA-сценарий разделяет бюджет на серии покупок и отслеживает среднюю цену входа. Снижение рынка может продолжаться после каждого шага накопления.' },
+  { id: 'sol', name: 'SOL Momentum', mark: 'SM', symbol: 'SOL / USDT', category: 'trend', strategy: 'Следование тренду', minimum: 7500, risk: 'Высокий', baseRoi: 175.18,
+    description: 'Исследует ускорения SOL: направленный импульс, активность рынка и точки ослабления тренда.',
+    detail: 'Трендовый сценарий сопоставляет направление, динамику объёма и волатильность. Сигнал выхода описывается трейлинг-ограничением; резкий разворот остаётся ключевым риском.' },
   { id: 'delta', name: 'Delta Balance', mark: 'DB', symbol: 'BTC + ETH', category: 'portfolio', strategy: 'Баланс позиций', minimum: 10000, risk: 'Высокий', baseRoi: 134,
-    description: 'Сочетает спотовые и фьючерсные позиции в одной стратегии.',
-    detail: 'Распределяет экспозицию между двумя рынками. Хеджирование не исключает риски финансирования, комиссий и исполнения.' },
-  { id: 'range', name: 'Range Trader', mark: 'RT', symbol: 'XRP / USDT', category: 'grid', strategy: 'Адаптивная сетка', minimum: 12500, risk: 'Умеренный', baseRoi: 178,
-    description: 'Работает с короткими колебаниями XRP на боковом рынке.',
-    detail: '36 уровней сетки с пересмотром границ диапазона. Перед изменением параметров проверяются открытые позиции и доступный бюджет.' },
+    description: 'Исследует связку BTC и ETH через направленную экспозицию и компенсирующие позиции.',
+    detail: 'Парная конфигурация оценивает согласованность движений BTC и ETH. Даже компенсирующая позиция не исключает проскальзывание, издержки и риск расхождения активов.' },
+  { id: 'range', name: 'Thomas Quant AI', mark: 'TQ', symbol: 'Цифровые активы', category: 'portfolio', strategy: 'Multi-Asset Intelligence', creatorName: 'Thomas', minimum: 12500, risk: 'Умеренный', baseRoi: 180.26,
+    description: 'Мультиактивная количественная стратегия, ориентированная на комплексный анализ цифровых активов, рыночных закономерностей, волатильности, ликвидности и торговых возможностей.',
+    detail: 'Архитектура Thomas Quant AI предусматривает одновременный анализ до 100 цифровых активов, обработку рыночных данных, оценку корреляций и динамическое распределение торгового риска.' },
   { id: 'balance', name: 'Smart Rebalance', mark: 'SR', symbol: 'BTC · ETH · SOL · BNB · XRP', category: 'portfolio', strategy: 'Ребалансировка', minimum: 15000, risk: 'Умеренный', baseRoi: 166,
-    description: 'Поддерживает выбранные доли пяти активов в портфеле.',
-    detail: 'Возвращает веса активов к целевым при отклонении на пять процентных пунктов. Рыночный риск портфеля сохраняется.' },
-  { id: 'breakout', name: 'Breakout Pro', mark: 'BP', symbol: 'BNB / USDT', category: 'trend', strategy: 'Пробой уровней', minimum: 25000, risk: 'Высокий', baseRoi: 201,
-    description: 'Ищет выход из диапазона с подтверждением торговым объёмом.',
-    detail: 'Вход после пробоя локального диапазона, ограничение позиции стоп-лоссом. Ложные пробои могут привести к серии убыточных сделок.' },
+    description: 'Модель портфеля из пяти активов с контролем целевых весов и концентрации риска.',
+    detail: 'Портфельный сценарий сравнивает текущие и целевые доли BTC, ETH, SOL, BNB и XRP. Отклонение более пяти процентных пунктов рассматривается как сигнал для ребалансировки.' },
+  { id: 'breakout', name: 'Breakout Pro', mark: 'BP', symbol: 'BNB / USDT', category: 'trend', strategy: 'Пробой уровней', minimum: 25000, risk: 'Высокий', baseRoi: 171.53,
+    description: 'Сценарий пробоя BNB: выход из консолидации, подтверждение объёмом и контроль ложных движений.',
+    detail: 'Вместо непрерывного входа стратегия исследует редкие импульсы после пробоя. Ложные сигналы и резкое возвращение в диапазон способны привести к серии убытков.' },
 ];
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -59,15 +79,29 @@ export function maxDrawdown(roi: readonly number[]): number {
 export function botPresentation(bot: BotDefinition, week: number) {
   const hash = seed(`${bot.id}:${week}`);
   const variation = ((hash % 601) - 300) / 100;
-  const roi = round(Math.max(120, Math.min(217, bot.baseRoi + variation)));
+  const roi = bot.id === 'range' ? bot.baseRoi : round(Math.max(120, Math.min(217, bot.baseRoi + variation)));
   const trades = 110 + hash % 310;
   const wins = Math.round(trades * (0.57 + (hash % 160) / 1000));
+  // Each illustrative strategy has its own recognisable path: pullbacks, plateaus
+  // and surges are distinct by design. These are NOT historical market candles.
+  const paths: Record<string, readonly number[]> = {
+    atlas: [0, .13, .10, .28, .25, .47, .44, .62, .60, .81, 1],
+    ether: [0, .06, .15, .22, .28, .39, .49, .60, .73, .87, 1],
+    sol: [0, .17, .30, .18, .42, .36, .68, .54, .83, .74, 1],
+    delta: [0, .08, .12, .19, .18, .35, .39, .61, .60, .76, 1],
+    range: [0, .12, .04, .30, .21, .46, .33, .61, .47, .85, 1],
+    balance: [0, .09, .18, .28, .33, .44, .52, .62, .71, .84, 1],
+    breakout: [0, .03, .15, .13, .36, .32, .59, .53, .78, .73, 1],
+  };
+  const anchors = paths[bot.id] ?? paths.atlas;
   const series = Array.from({ length: 31 }, (_, i) => {
     if (i === 0) return 0;
     if (i === 30) return roi;
-    const trend = roi * i / 30;
-    const wave = Math.sin(i * 1.7 + hash % 17) * (bot.risk === 'Высокий' ? 18 : 10);
-    return round(trend + wave * Math.sin(i / 30 * Math.PI));
+    const segment = i / 3, index = Math.floor(segment), fraction = segment - index;
+    const level = anchors[index] + (anchors[index + 1] - anchors[index]) * fraction;
+    const fineMotion = Math.sin(i * (1.07 + hash % 7 / 17) + hash % 19)
+      * Math.sin(Math.PI * i / 30) * roi * (bot.risk === 'Высокий' ? .027 : .015);
+    return round(roi * level + fineMotion);
   });
   return { roi, trades, wins, winRate: round(wins / trades * 100), drawdown: maxDrawdown(series), series };
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "QuantStrategyDraft" ADD COLUMN "settings" JSONB, ADD COLUMN "revision" INTEGER NOT NULL DEFAULT 1;

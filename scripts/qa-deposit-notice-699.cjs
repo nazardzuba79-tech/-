@@ -24,10 +24,13 @@ const root = path.resolve(__dirname, '..');
 const out = path.resolve(root, process.env.QA699_OUT || 'output/deposit-notice-699');
 fs.mkdirSync(out, { recursive: true });
 
-// One shifted clock for the API and the Worker (same process). PostgreSQL keeps real time.
+// Start at 10:00 Kyiv on a fixed winter date. The late-finality scenario
+// advances three hours before checking that more dust is still on the same day.
 const realNow = Date.now.bind(Date);
+const fixtureOffsetMs = Date.parse('2026-02-10T08:00:00Z') - realNow();
 let shiftMs = 0;
-Date.now = () => realNow() + shiftMs;
+const clockOffset = () => fixtureOffsetMs + shiftMs;
+Date.now = () => realNow() + clockOffset();
 
 process.env.JWT_SECRET = 'isolated-notice-699-fixture-not-a-production-secret';
 for (const name of ['DEPOSIT_NOTICE_FRESH_HOURS', 'DEPOSIT_NOTICE_MICRO_TRX', 'DEPOSIT_NOTICE_MICRO_USDT', 'DEPOSIT_NOTICE_DIGEST', 'DATABASE_URL']) delete process.env[name];
@@ -133,13 +136,14 @@ async function main() {
     // FIXTURE ONLY: the temporary database follows the same shifted clock as the
     // API and the Worker, so «a day later» is consistent everywhere. Production
     // rows keep the database's own insertion time; no trigger exists there.
-    const fixtureClock = database.psql(['-c', `CREATE TABLE qa_clock (shift_ms bigint NOT NULL); INSERT INTO qa_clock VALUES (0);
+    const fixtureClock = database.psql(['-c', `CREATE TABLE qa_clock (shift_ms bigint NOT NULL); INSERT INTO qa_clock VALUES (${clockOffset()});
       CREATE FUNCTION qa_shift_created() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
         NEW."createdAt" := NEW."createdAt" + make_interval(secs => (SELECT shift_ms FROM qa_clock) / 1000.0); RETURN NEW; END $$;
       CREATE TRIGGER qa_shift_deposit BEFORE INSERT ON "Deposit" FOR EACH ROW EXECUTE FUNCTION qa_shift_created();
+      CREATE TRIGGER qa_shift_cursor BEFORE INSERT ON "DepositWatchCursor" FOR EACH ROW EXECUTE FUNCTION qa_shift_created();
       CREATE TRIGGER qa_shift_audit BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION qa_shift_created();`]);
     assert.equal(fixtureClock.status, 0, fixtureClock.stderr);
-    const advance = async (ms) => { shiftMs += ms; await prisma.$executeRawUnsafe(`UPDATE qa_clock SET shift_ms = ${Math.trunc(shiftMs)}`); };
+    const advance = async (ms) => { shiftMs += ms; await prisma.$executeRawUnsafe(`UPDATE qa_clock SET shift_ms = ${clockOffset()}`); };
 
     // ── Local TronGrid ────────────────────────────────────────────────────
     const start = realNow();
