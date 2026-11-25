@@ -1,3 +1,5 @@
+import { thomasProfileRouter } from './thomasProfile';
+import type { LiveSource } from '../../services/marketData/live/contract';
 import { botHistoryReader } from '../../services/tradingBotPerformance';
 import type { BotHistory } from '../../shared/thomasPerformance';
 import { quantStudioRouter } from './quantStudio';
@@ -8,7 +10,7 @@ import { requireAuth } from '../middleware/auth';
 
 // Owner-approved profile binding. Renaming the profile preserves author identity.
 const CATALOGUE_THOMAS_USER_ID = '85bb5e78-7f14-43e1-a5e4-7a0becf14a60';
-export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = process.env.TRADING_BOTS_THOMAS_USER_ID ?? CATALOGUE_THOMAS_USER_ID) {
+export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = process.env.TRADING_BOTS_THOMAS_USER_ID ?? CATALOGUE_THOMAS_USER_ID, feed:LiveSource|null=null) {
   const router = Router();
   const history = botHistoryReader(process.env.TRADING_BOTS_THOMAS_VERIFIED_SNAPSHOT, thomasId);
   let lastHistory: BotHistory | undefined;
@@ -40,6 +42,7 @@ export function tradingBotCreatorsRouter(prisma: PrismaClient, thomasId = proces
     const avatarUrl = photo && photo.length <= 700_000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(photo) ? photo : null;
     return res.json({ creators: { range: { displayName, avatarUrl } } });
   }));
+  router.use(thomasProfileRouter(prisma,thomasId,feed));
   router.use(quantStudioRouter(prisma, thomasId));
   return router;
 }

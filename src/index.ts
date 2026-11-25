@@ -370,7 +370,7 @@ app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffor
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
-app.use('/api/v1', tradingBotCreatorsRouter(prisma));
+app.use('/api/v1', tradingBotCreatorsRouter(prisma, undefined, marketDataGateway.liveReference));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService, marketUniverse));
 app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));

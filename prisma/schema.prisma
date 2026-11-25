@@ -62,6 +62,7 @@ datasource db {
 }
 
 model User {
+  thomasAuthorProfile ThomasAuthorProfile?
   copyFuturesDemoConsent CopyFuturesDemoConsent?
   copyFuturesDemoSubscription CopyFuturesDemoSubscription?
   copyDemoSubscription CopyDemoSubscription?
@@ -1729,4 +1730,12 @@ model QuantStrategyDraft {
   createdAt DateTime @default(now())
   @@index([ownerUserId, createdAt])
   @@index([publishedAt, id])
+}
+
+model ThomasAuthorProfile {
+  ownerId String @id
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bio String @default("")
+  links Json @default("{}")
+  revision Int @default(1)
 }

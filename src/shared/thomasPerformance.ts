@@ -25,6 +25,8 @@ export type BotHistory = { status: 'unavailable' } | {
   status: 'verified';
   botId: 'range';
   strategyId: typeof THOMAS_STRATEGY;
+  marketScope?: 'XRP/USDT' | 'multi-asset';
+  portfolio?: { asOf: string; grossPct: number; netPct: number; weights: { asset: string; pct: number }[] };
   inceptionDate: string;
   asOf: string;
   periods: Record<BotPeriod, BotPeriodResult>;

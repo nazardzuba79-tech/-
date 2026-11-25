@@ -11,9 +11,9 @@ const unavailable = { status: 'unavailable' } as const;
 // No current order ledger in VOLTEX identifies executions by this bot and strategy.
 const amount = z.string().regex(/^-?\d{1,16}(\.\d{1,12})?$/).transform(value => new BigNumber(value));
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const snapshot = z.object({
-  version: z.literal(1), publication: z.literal('approved-aggregate'),
-  botId: z.literal('range'), strategyId: z.literal(THOMAS_STRATEGY), pair: z.literal('XRP/USDT'),
+const common = z.object({
+  publication: z.literal('approved-aggregate'),
+  botId: z.literal('range'), strategyId: z.literal(THOMAS_STRATEGY),
   creatorUserId: z.string().uuid(), inceptionDate: date, asOf: z.string().datetime(),
   flowTiming: z.literal('end-of-day'), currency: z.literal('USDT'),
   days: z.array(z.object({
@@ -22,6 +22,30 @@ const snapshot = z.object({
     trades: z.number().int().min(0).max(1e8), wins: z.number().int().min(0).max(1e8),
   }).strict()).min(1).max(3660),
 }).strict();
+
+const snapshot = z.discriminatedUnion('version', [
+  common.extend({ version: z.literal(1), pair: z.literal('XRP/USDT') }).strict(),
+  common
+    .extend({
+      version: z.literal(2),
+      universe: z.literal('multi-asset'),
+      portfolio: z
+        .object({
+          asOf: z.string().datetime(),
+          equityUsdt: amount.refine((x) => x.gt(0)),
+          positions: z
+            .array(
+              z
+                .object({ asset: z.string().regex(/^[A-Z0-9]{1,20}$/), netNotionalUsdt: amount })
+                .strict(),
+            )
+            .max(100),
+        })
+        .strict()
+        .optional(),
+    })
+    .strict(),
+]);
 
 type InputDay = z.infer<typeof snapshot>['days'][number];
 type Day = InputDay & { net: BigNumber; dailyReturn: number };
@@ -85,8 +109,39 @@ export function buildBotHistory(input: unknown, ownerId: string, now = Date.now(
     monthly.cells[data.asOf.slice(0, 4)].partial = true;
   }
   if (Object.values(monthly.cells).some(cell => !Number.isFinite(cell.roi))) throw Error('Unrepresentable monthly index');
-  return { status: 'verified', botId: data.botId, strategyId: data.strategyId, inceptionDate: data.inceptionDate,
-    asOf: data.asOf, periods, monthly };
+  const holdings = data.version === 2 ? data.portfolio : undefined;
+  let portfolio;
+  if (holdings) {
+    if (
+      Date.parse(holdings.asOf) > Date.parse(data.asOf) ||
+      holdings.asOf.slice(0, 10) < data.inceptionDate ||
+      new Set(holdings.positions.map((p) => p.asset)).size !== holdings.positions.length
+    )
+      throw Error('Invalid portfolio attribution');
+    const weights = holdings.positions
+      .map((p) => ({
+        asset: p.asset,
+        pct: p.netNotionalUsdt.times(100).div(holdings.equityUsdt).toNumber(),
+      }))
+      .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+    portfolio = {
+      asOf: holdings.asOf,
+      grossPct: weights.reduce((s, p) => s + Math.abs(p.pct), 0),
+      netPct: weights.reduce((s, p) => s + p.pct, 0),
+      weights,
+    };
+  }
+  return {
+    ...(portfolio ? { portfolio } : {}),
+    marketScope: data.version === 1 ? 'XRP/USDT' : 'multi-asset',
+    status: 'verified',
+    botId: data.botId,
+    strategyId: data.strategyId,
+    inceptionDate: data.inceptionDate,
+    asOf: data.asOf,
+    periods,
+    monthly,
+  };
 }
 
 /** The server operator owns the path. HTTP callers cannot select a file, account or strategy.
