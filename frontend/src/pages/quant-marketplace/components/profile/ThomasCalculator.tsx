@@ -26,7 +26,7 @@ import { scenarioCapital } from "../../../../lib/thomasScenario";
 export function ThomasCalculator({ strategy }: { strategy: Strategy }) {
   const [principal, setPrincipal] = useState("5000"),
     [rate, setRate] = useState("1"),
-    [months, setMonths] = useState(12);
+    [months, setMonths] = useState(24);
   const [mode, setMode] = useState<"scenario" | "history">("scenario"),
     [period, setPeriod] = useState<TimeframeKey>("30D");
   const id = useId().replace(/:/g, "");
