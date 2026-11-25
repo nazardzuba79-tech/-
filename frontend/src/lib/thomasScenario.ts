@@ -9,7 +9,7 @@ export function scenarioCapital(
     initial < 0.01 ||
     !Number.isFinite(monthlyRate) ||
     monthlyRate < -100 ||
-    ![1, 3, 12, 24].includes(months)
+    ![1, 3, 6, 12, 24].includes(months)
   )
     return [];
   const points = Array.from({ length: months + 1 }, (_, i) => ({
