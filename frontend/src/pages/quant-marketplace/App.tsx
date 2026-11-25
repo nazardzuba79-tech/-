@@ -106,11 +106,18 @@ export default function App({presentation}: {presentation?: import("../../../../
       path === "strategy/" + s.id ||
       (s.id === "range" && path === "strategy/thomas-quant-ai"),
   );
+  // Preserve only the explicit visual-review query across preview profile navigation.
+  const reviewQuery =
+    presentation &&
+    window.location.hostname === "codex-thomas-ai-pulse.voltex-exchange.pages.dev" &&
+    new URLSearchParams(location.search).get("visualReview") === "thomas"
+      ? "?visualReview=thomas"
+      : "";
   const handleOpenProfile = (id: string) =>
-    navigate(base + "/strategy/" + encodeURIComponent(id));
+    navigate(base + "/strategy/" + encodeURIComponent(id) + reviewQuery);
   const handleOpenBotStudio = () => navigate("/trading-bots/studio");
   const handleNavigateMarketplace = (id?: string) =>
-    navigate(base + (id ? "#" + id : ""));
+    navigate(base + reviewQuery + (id ? "#" + id : ""));
   useEffect(() => {
     if (location.hash === "#quant-academy")
       root.current?.querySelector("#quant-academy")?.scrollIntoView();
