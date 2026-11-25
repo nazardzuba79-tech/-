@@ -634,9 +634,10 @@
   border: 1px solid rgba(146, 100, 14, .13);
   border-radius: 20px;
   background:
-    radial-gradient(ellipse at 96% 0%, rgba(222, 195, 140, .18), transparent 65%),
-    radial-gradient(ellipse at 6% 100%, rgba(210, 220, 211, .18), transparent 65%),
-    linear-gradient(135deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, .10));
+    radial-gradient(circle at 12% 18%, rgba(255, 209, 102, .16) 0%, transparent 28%),
+    radial-gradient(circle at 88% 22%, rgba(34, 197, 94, .10) 0%, transparent 26%),
+    radial-gradient(circle at 76% 82%, rgba(16, 185, 129, .08) 0%, transparent 24%),
+    linear-gradient(135deg, #fffdf8 0%, #f8f4e8 32%, #f4f1e8 58%, #f7faf7 100%);
   box-shadow: 0 8px 24px rgba(49, 40, 23, .035);
   overflow: visible;
 }
