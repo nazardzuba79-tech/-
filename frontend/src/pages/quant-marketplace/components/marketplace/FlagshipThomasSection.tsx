@@ -34,7 +34,7 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
   presentation = false,
   onOpenProfile,
 }) => {
-  const [tf, setTf] = useState<TimeframeKey>(presentation ? "ALL" : "30D");
+  const [tf, setTf] = useState<TimeframeKey>(strategy.series.ALL.length ? "ALL" : "30D");
   const activeSeries = strategy.series[tf];
   const latestVal = activeSeries[activeSeries.length - 1]?.value ?? NaN;
   const tfLabel = FLAGSHIP_TIMEFRAMES.find((t) => t.key === tf)?.label;
@@ -100,7 +100,10 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
         </div>
       </div>
 
-      <p className="qx-flag-lead">{strategy.shortDescription}</p>
+      <p className="qx-flag-lead">
+        {strategy.shortDescription}
+        {presentation && <> Плановый охват анализа — до 100 цифровых активов.</>}
+      </p>
 
       <div className="qx-flag-chart">
         <div className="qx-flag-tabs" role="group" aria-label="Период графика">
@@ -139,8 +142,11 @@ export const FlagshipThomasSection: React.FC<FlagshipThomasSectionProps> = ({
           <dt>Прибыльные сделки</dt>
           <dd>
             {percent(strategy.winRate, false)}{" "}
-            <small>({numberText(strategy.tradesCount, 0)})</small>
+            {Number.isFinite(strategy.tradesCount) && (
+              <small>({numberText(strategy.tradesCount, 0)})</small>
+            )}
           </dd>
+          {presentation && <small className="qx-flag-example-range">Диапазон сценария: 95,3–98,2%</small>}
         </div>
         <div>
           <dt>Мин. инвестиция</dt>
