@@ -10,7 +10,7 @@ const endpoint = "/trading-bots/range/author";
  * Public X/Telegram profile links plus the existing server-authorized editor.
  * Only the strategy owner or an admin receives canEdit=true from the API.
  */
-export function ThomasSocialLinks() {
+export function ThomasSocialLinks({ readOnly = false }: { readOnly?: boolean }) {
   const [session, setSession] = useState(getToken);
   const [profile, setProfile] = useState<AuthorInfo | null>(null);
   const [editing, setEditing] = useState(false);
