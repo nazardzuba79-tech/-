@@ -101,6 +101,19 @@ function rememberSpotVolumeShare(chart: IChartApi): void {
     if (readSpotVolumeShare() !== share) localStorage.setItem(SPOT_VOLUME_SHARE_KEY, String(share));
   } catch { /* browser storage is optional */ }
 }
+/** The close control follows the actual pane geometry, never the default ratio. */
+function placeSpotVolumeClose(chart: IChartApi | null, volume: ISeriesApi<'Histogram'> | null, button: HTMLButtonElement | null): void {
+  if (!button) return;
+  const shown = !!chart && !!volume && volume.options().visible !== false
+    && chart.panes().length === 2 && volume.getPane().paneIndex() === 1;
+  const height = shown ? chart!.paneSize(0).height : 0;
+  const lowerHeight = shown ? chart!.paneSize(1).height : 0;
+  const offset = Math.max(1, Math.min(5, lowerHeight - 25));
+  const transform = `translateY(${height + offset}px)`;
+  const visibility = shown && height > 0 && lowerHeight > 0 ? 'visible' : 'hidden';
+  if (button.style.transform !== transform) button.style.transform = transform;
+  if (button.style.visibility !== visibility) button.style.visibility = visibility;
+}
 // Fetch enough extra history that the MA200 line has a full 200-bar
 // warm-up BEFORE the window we actually show — otherwise the line only
 // starts partway across the visible chart (no average exists yet for the
@@ -416,6 +429,11 @@ export function PriceChart({
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const areaSeriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const spotVolumeCloseRef = useRef<HTMLButtonElement | null>(null);
+  const attachSpotVolumeClose = useCallback((node: HTMLButtonElement | null) => {
+    spotVolumeCloseRef.current = node;
+    if (node) placeSpotVolumeClose(chartRef.current, volumeSeriesRef.current, node);
+  }, []);
   /** Bars, hollow candles and Heikin Ashi (lib/chartDerivedBars): three more paints of the same real bars. */
   const barsSeriesRef = useRef<ISeriesApi<'Bar'> | null>(null);
   const hollowSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -695,6 +713,7 @@ export function PriceChart({
     // range is recalculated, so the comparison sees the scales on screen.
     const projectionWatch = {
       updateAllViews() {
+        if (preserveSpotVolume) placeSpotVolumeClose(chart, volumeSeries, spotVolumeCloseRef.current);
         const painted = paintedProjectionRef.current;
         if (!painted || projectionKey(chart, series, painted.price) === painted.key) return;
         // Once per change: the next overlay paint records the new key.
@@ -728,6 +747,7 @@ export function PriceChart({
       if (spotPanePointer !== event.pointerId) return;
       spotPanePointer = null;
       if (volumeSeries.getPane().paneIndex() === 1) rememberSpotVolumeShare(chart);
+      placeSpotVolumeClose(chart, volumeSeries, spotVolumeCloseRef.current);
     };
     if (preserveSpotVolume) {
       host.addEventListener('pointerdown', spotPaneStart, true);
@@ -790,6 +810,7 @@ export function PriceChart({
     const resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
       chart.resize(width, height);
+      if (preserveSpotVolume) placeSpotVolumeClose(chart, volumeSeries, spotVolumeCloseRef.current);
       redraw();
     });
     resizeObserver.observe(containerRef.current);
@@ -951,6 +972,7 @@ export function PriceChart({
     } else {
       volume.priceScale().applyOptions({ scaleMargins: { top: CHART_VOLUME_OVERLAY_TOP, bottom: 0 } });
     }
+    if (preserveSpotVolume) placeSpotVolumeClose(chart, volume, spotVolumeCloseRef.current);
     chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
     setBaseMargins(0.1, bandOscillators ? 0.3 : 0.06);
     volumeColorsRef.current = [rgbaOf(s.bodyUp, s.volumeOpacity), rgbaOf(s.bodyDown, s.volumeOpacity)];
@@ -2426,6 +2448,16 @@ export function PriceChart({
           */}
         <div ref={chartAreaRef} style={styles.chartArea} data-chart-state={loadFailed ? 'error' : empty ? 'empty' : 'candles'} data-cw-view={workspaceOn ? workspace.view : undefined} data-cw-compare={compareOn ? compareEntries.length : undefined}>
           <div ref={containerRef} style={styles.chart} />
+          {spotVolumeControl && spotVolumeEnabled && chartReady && !compareOn && (!workspaceOn || workspace.view === 'chart') && !loadFailed && !empty &&
+            <button ref={attachSpotVolumeClose} type="button" data-spot-volume-close=""
+              aria-label={`${t('chart.settings.indicatorRemove')}: ${t('chart.settings.volume')}`}
+              title={`${t('chart.settings.indicatorRemove')}: ${t('chart.settings.volume')}`}
+              onPointerDown={event => event.stopPropagation()}
+              onClick={event => { event.stopPropagation(); setSpotVolume(false); }}
+              style={{ position: 'absolute', top: 0, left: 8, zIndex: 6, visibility: 'hidden',
+                width: 24, height: 24, padding: 0, display: 'grid', placeItems: 'center',
+                border: '1px solid var(--border)', borderRadius: 4, background: 'var(--panel-alt)',
+                color: 'var(--text-primary)', fontSize: 18, lineHeight: 1, cursor: 'pointer' }}>×</button>}
           {privateTrading?.enabled && chartReady && <PrivatePositionLines chart={chartRef.current} series={seriesRef.current} interaction={privateTrading} pair={pair}/>}
           {/* Phone (owner, 2026-11-02): the pair and interval already head the screen, so the plot does not repeat
               them over the candles; only the partial-candle disclosure stays, and only while it applies. */}
