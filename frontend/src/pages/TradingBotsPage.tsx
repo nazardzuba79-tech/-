@@ -30,6 +30,17 @@ function ClosedPresentation() {
 export function TradingBotsPage() {
   const location = useLocation();
   const privateView = location.pathname.split("/")[2] === "presentation";
+  // Static visual-review scenario only on this isolated Pages preview hostname.
+  // No API entitlement, subscription, trade or user-specific data is bypassed.
+  const visualReview =
+    privateView &&
+    window.location.hostname === "codex-thomas-ai-pulse.voltex-exchange.pages.dev" &&
+    new URLSearchParams(location.search).get("visualReview") === "thomas";
+  const visualScenario: QuantPresentation = {
+    source: "presentation",
+    monthlyReturns: [...Array<number>(23).fill(306), 310],
+    exampleWinRate: 97.1,
+  };
   const [session, setSession] = useState(0);
   useEffect(() => onSessionChange(() => setSession((n) => n + 1)), []);
   const [shadow, setShadow] = useState<ShadowRoot | null>(null);
@@ -47,7 +58,11 @@ export function TradingBotsPage() {
               <style>{lightStage}</style>
               <style>{thomasProfile}</style>
               <Suspense fallback={<p>Загрузка маркетплейса…</p>}>
-                {privateView ? <ClosedPresentation key={session} /> : <Marketplace key={session} />}
+                {privateView
+                  ? visualReview
+                    ? <Marketplace key={session} presentation={visualScenario} />
+                    : <ClosedPresentation key={session} />
+                  : <Marketplace key={session} />}
               </Suspense>
             </>,
             shadow,
