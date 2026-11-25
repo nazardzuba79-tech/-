@@ -15,7 +15,7 @@ it("uses catalogue identity and the same ordinal monthly results across every mo
     s.isVip,
     s.return30d,
     s.minInvestmentUsdt,
-  ]).toEqual(["Public name", "/author.png", false, 180.26, 12500]);
+  ]).toEqual(["Public name", "/author.png", false, 180.26, 5000]);
   expect(s.monthly24).toHaveLength(24);
   expect(new Set(s.monthly24.map((m) => m.year))).toEqual(new Set([1, 2]));
   for (const [period, start] of [
