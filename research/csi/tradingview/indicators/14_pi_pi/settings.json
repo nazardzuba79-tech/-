@@ -1,0 +1,39 @@
+{
+  "indicator": "Pi Pi",
+  "scriptId": "PUB;b9b4b5f85bf54f619e3f333ab82e531e",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 2 (ETHUSDT, 1 год)",
+      "visible": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Mode",
+      "type": "text",
+      "default": "3",
+      "options": [
+        "1",
+        "2",
+        "3"
+      ],
+      "current": "3"
+    },
+    {
+      "id": "in_1",
+      "name": "Show MA?",
+      "type": "bool",
+      "default": false,
+      "current": false
+    },
+    {
+      "id": "in_2",
+      "name": "Show Background color?",
+      "type": "bool",
+      "default": false,
+      "current": false
+    }
+  ]
+}

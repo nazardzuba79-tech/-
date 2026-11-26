@@ -1,0 +1,58 @@
+//@version=6
+indicator("CR_Forever02_native_grid", overlay = true, precision = 8)
+
+// Independent clean-room DIAGNOSTIC, not a clone, signal or strategy.
+// Frozen20 hypotheses: four sources x five inclusive daily anchors.
+// No original values embedded, no request.security, no future references.
+// Native chart outputs allow source-aligned tests without paid export.
+bool supported = syminfo.tickerid == "BITSTAMP:BTCUSD" and timeframe.isdaily and timeframe.multiplier == 1 and chart.is_standard
+var int firstLoaded = time
+var array<float> totals = array.new<float>(20, 0.0)
+var array<int> counts = array.new<int>(5, 0)
+array<float> sources = array.from(close, hl2, hlc3, ohlc4)
+array<float> means = array.new<float>(20, na)
+int firstAnchor = timestamp("12 Dec 2018 00:00 +0000")
+for a = 0 to 4
+    int anchor = firstAnchor + a * 86400000
+    if time >= anchor
+        array.set(counts, a, array.get(counts, a) + 1)
+        for s = 0 to 3
+            int i = s * 5 + a
+            array.set(totals, i, array.get(totals, i) + array.get(sources, s))
+            if supported and firstLoaded <= firstAnchor and time > anchor
+                array.set(means, i, array.get(totals, i) / array.get(counts, a))
+
+plot(array.get(means, 0), "G00 close Dec12", display = display.data_window)
+plot(array.get(means, 1), "G01 close Dec13", display = display.data_window)
+plot(array.get(means, 2), "G02 close Dec14", display = display.data_window)
+plot(array.get(means, 3), "G03 close Dec15", display = display.data_window)
+plot(array.get(means, 4), "G04 close Dec16", display = display.data_window)
+plot(array.get(means, 5), "G05 hl2 Dec12", display = display.data_window)
+plot(array.get(means, 6), "G06 hl2 Dec13", display = display.data_window)
+plot(array.get(means, 7), "G07 hl2 Dec14", display = display.data_window)
+plot(array.get(means, 8), "G08 hl2 Dec15", display = display.data_window)
+plot(array.get(means, 9), "G09 hl2 Dec16", display = display.data_window)
+plot(array.get(means, 10), "G10 hlc3 Dec12", display = display.data_window)
+plot(array.get(means, 11), "G11 hlc3 Dec13", display = display.data_window)
+plot(array.get(means, 12), "G12 hlc3 Dec14", display = display.data_window)
+plot(array.get(means, 13), "G13 hlc3 Dec15", display = display.data_window)
+plot(array.get(means, 14), "G14 hlc3 Dec16", display = display.data_window)
+plot(array.get(means, 15), "G15 ohlc4 Dec12", display = display.data_window)
+plot(array.get(means, 16), "G16 ohlc4 Dec13", display = display.data_window)
+plot(array.get(means, 17), "G17 ohlc4 Dec14", display = display.data_window)
+plot(array.get(means, 18), "G18 ohlc4 Dec15", display = display.data_window)
+plot(array.get(means, 19), "G19 ohlc4 Dec16", display = display.data_window)
+plot(firstLoaded, "D first loaded UTC ms", display = display.data_window)
+plot(array.get(counts, 0), "D count Dec12", display = display.data_window)
+plot(array.get(counts, 1), "D count Dec13", display = display.data_window)
+plot(array.get(counts, 2), "D count Dec14", display = display.data_window)
+plot(array.get(counts, 3), "D count Dec15", display = display.data_window)
+plot(array.get(counts, 4), "D count Dec16", display = display.data_window)
+plot(syminfo.mintick, "D mintick", display = display.data_window)
+plot(supported ? 1 : 0, "D supported", display = display.data_window)
+plot(open, "D open", display = display.data_window)
+plot(high, "D high", display = display.data_window)
+plot(low, "D low", display = display.data_window)
+plot(close, "D close", display = display.data_window)
+plot(volume, "D volume", display = display.data_window)
+plot(time, "D time UTC ms", display = display.data_window)

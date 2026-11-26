@@ -1,0 +1,12 @@
+{
+  "indicator": "03 Opportunity (Pifagor free indicator)",
+  "scriptId": "PUB;1b68f957a4c445f0b254b9374eb41968",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 1 (BTCUSDT.P, 1D)",
+      "visible": true
+    }
+  ],
+  "inputs": []
+}

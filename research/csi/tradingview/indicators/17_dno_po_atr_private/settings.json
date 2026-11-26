@@ -1,0 +1,68 @@
+{
+  "indicator": "Дно по ATR (private)",
+  "scriptId": "PUB;ed584d65d2c94d33bc6c551a9da28162",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "length",
+      "type": "integer",
+      "default": 20
+    },
+    {
+      "id": "in_1",
+      "name": "K dn",
+      "type": "float",
+      "default": 2.3,
+      "min": -1000000000000,
+      "max": 1000000000000,
+      "step": 0.1
+    },
+    {
+      "id": "in_2",
+      "name": "K up",
+      "type": "float",
+      "default": 16,
+      "min": -1000000000000,
+      "max": 1000000000000,
+      "step": 1
+    },
+    {
+      "id": "in_3",
+      "name": "",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_4",
+      "name": "",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_5",
+      "name": "Source",
+      "type": "source",
+      "default": "hlc3",
+      "options": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "hl2",
+        "hlc3",
+        "hlcc4",
+        "ohlc4",
+        "volume"
+      ]
+    },
+    {
+      "id": "in_6",
+      "name": "Timeframe",
+      "type": "resolution",
+      "default": "",
+      "group": "Calculation"
+    }
+  ]
+}

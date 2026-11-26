@@ -1,0 +1,212 @@
+{
+  "indicator": "Pifagor 05 ETH/BTC 12h/1D (hero)",
+  "scriptId": "PUB;DT45vilhPLXzS4befkDGvO4YqJWa2kNZ",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Start Time",
+      "type": "time",
+      "default": 1514764800000
+    },
+    {
+      "id": "in_1",
+      "name": "End Time",
+      "type": "time",
+      "default": 1696032000000
+    },
+    {
+      "id": "in_2",
+      "name": "Шорт маржинальный?",
+      "type": "text",
+      "default": "да",
+      "options": [
+        "да",
+        "нет"
+      ]
+    },
+    {
+      "id": "in_3",
+      "name": "Return Precision",
+      "type": "integer",
+      "default": 2,
+      "min": -1000000000000,
+      "max": 1000000000000
+    },
+    {
+      "id": "in_4",
+      "name": "Initial Capital",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "tooltip": "Starting funds available for the trading strategy"
+    },
+    {
+      "id": "in_5",
+      "name": "Calculate Strategy on every Tick(s)",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Recalculates the strategy with each real-time bar update"
+    },
+    {
+      "id": "in_6",
+      "name": "Base Currency",
+      "type": "text",
+      "default": "BTC",
+      "options": [
+        "NONE",
+        "USD",
+        "EUR",
+        "AUD",
+        "GBP",
+        "NZD",
+        "CAD",
+        "CHF",
+        "HKD",
+        "JPY",
+        "NOK",
+        "RUB",
+        "SEK",
+        "SGD",
+        "TRY",
+        "ZAR",
+        "BTC"
+      ],
+      "tooltip": "Currency used in calculations and strategy results"
+    },
+    {
+      "id": "in_7",
+      "name": "Default entry/order Qty Type",
+      "type": "text",
+      "default": "percent_of_equity",
+      "options": [
+        "fixed",
+        "cash_per_order",
+        "percent_of_equity"
+      ],
+      "tooltip": "Quantity per trade in the selected unit"
+    },
+    {
+      "id": "in_8",
+      "name": "Default entry/order Qty Value",
+      "type": "float",
+      "default": 100,
+      "min": 0
+    },
+    {
+      "id": "in_9",
+      "name": "Commission Value",
+      "type": "float",
+      "default": 0.1,
+      "min": 0
+    },
+    {
+      "id": "in_10",
+      "name": "Backtesting slippage for market orders",
+      "type": "integer",
+      "default": 20,
+      "min": 0,
+      "max": 1000000,
+      "tooltip": "Ticks to be added to the fill price of market and stop orders"
+    },
+    {
+      "id": "in_11",
+      "name": "pyramiding",
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1000000,
+      "tooltip": "Maximum number of successive entries allowed in the same direction"
+    },
+    {
+      "id": "in_12",
+      "name": "Calculate Strategy on Order's Fill(s)",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Triggers an additional intrabar calculation after order fills"
+    },
+    {
+      "id": "in_13",
+      "name": "Backtesting Limit Order(s) fill assumption",
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1000000,
+      "tooltip": "Ticks beyond the limit price required for limit order execution"
+    },
+    {
+      "id": "in_14",
+      "name": "Commission Type",
+      "type": "text",
+      "default": "percent",
+      "options": [
+        "percent",
+        "cash_per_contract",
+        "cash_per_order"
+      ],
+      "tooltip": "Entry and exit fees to be paid"
+    },
+    {
+      "id": "in_15",
+      "name": "Process orders on bar Close",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Enables an additional calculation on bar close, allowing market orders to enter on the same tick the order is placed"
+    },
+    {
+      "id": "in_16",
+      "name": "Close entries rule",
+      "type": "text",
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "ANY"
+      ]
+    },
+    {
+      "id": "in_17",
+      "name": "Run mode: 'backtest', 'alert' or something else",
+      "type": "text",
+      "default": "BACKTEST",
+      "options": [
+        "BACKTEST",
+        "ALERT"
+      ]
+    },
+    {
+      "id": "in_18",
+      "name": "Alert message template for run mode 'alert'",
+      "type": "text",
+      "default": ""
+    },
+    {
+      "id": "in_19",
+      "name": "Alert type for run mode 'alert'",
+      "type": "text",
+      "default": "order_fills"
+    },
+    {
+      "id": "in_20",
+      "name": "Margin Long",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "tooltip": "Percentage of the long position the strategy must fund from equity"
+    },
+    {
+      "id": "in_21",
+      "name": "Margin Short",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "tooltip": "Percentage of the short position the strategy must fund from equity"
+    },
+    {
+      "id": "in_22",
+      "name": "calc_range",
+      "type": "text",
+      "default": ""
+    }
+  ]
+}

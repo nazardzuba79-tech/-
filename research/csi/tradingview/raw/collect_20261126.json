@@ -1,0 +1,5728 @@
+{
+ "collectedAt": "2026-11-26T17:54:56.066Z",
+ "account": {
+  "plan": "pro_premium"
+ },
+ "layouts": null,
+ "layoutMain": {
+  "name": "Без названия",
+  "url": "dnph0fxZ",
+  "studies": [
+   {
+    "chart": 1,
+    "pane": 1,
+    "id": "rddiIe",
+    "type": "Study",
+    "metaRef": "Script$PUB;1b68f957a4c445f0b254b9374eb41968@tv-scripting-101[v.8.0]",
+    "desc": "Opportunity",
+    "short": "Opportunity",
+    "pineVer": "8.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "colorer:plot_5"
+    ],
+    "inputs": {}
+   },
+   {
+    "chart": 1,
+    "pane": 1,
+    "id": "bKViEB",
+    "type": "Study",
+    "metaRef": "Script$USER;aa54e781e3114c28b3e34ba0fb137f79@tv-scripting-101[v.6.0]",
+    "desc": "Nazar V2",
+    "short": "Nazar V2",
+    "pineVer": "6.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "shapes:LONG confirmed intent",
+     "shapes:SHORT confirmed intent",
+     "shapes:EXIT confirmed intent",
+     "line:Reference next-open entry",
+     "line:Close-trigger stop/trail (not intrabar)",
+     "line:Close-trigger target (not limit)",
+     "line:Previous 48-bar high",
+     "line:Previous 48-bar low",
+     "line:Trend SMA96",
+     "line:Audit target",
+     "line:Audit reason code",
+     "alertcondition:Nazar V2 LONG",
+     "alertcondition:Nazar V2 SHORT",
+     "alertcondition:Nazar V2 EXIT"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "Start from flat (UTC)",
+      "type": "time",
+      "value": 1751328000000,
+      "def": 1751328000000
+     },
+     "in_1": {
+      "name": "Show breakout channel",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_2": {
+      "name": "Show close-trigger exit guides",
+      "type": "bool",
+      "value": true,
+      "def": true
+     },
+     "in_3": {
+      "name": "Show exit reasons",
+      "type": "bool",
+      "value": true,
+      "def": true
+     }
+    }
+   },
+   {
+    "chart": 1,
+    "pane": 1,
+    "id": "YU122V",
+    "type": "Study",
+    "metaRef": "Script$USER;ac7619c32e8540cc87c30fca122ec7e4@tv-scripting-101[v.1.0]",
+    "desc": "Nazar V1",
+    "short": "Nazar V1",
+    "pineVer": "1.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": false,
+    "overlay": true,
+    "plots": [
+     "line:fast",
+     "line:slow",
+     "line:evidence",
+     "line:target",
+     "line:ready",
+     "line:long_event",
+     "line:short_event",
+     "line:exit_event",
+     "line:terminal_exit_event",
+     "shapes:LONG next open",
+     "shapes:SHORT next open",
+     "shapes:EXIT next open",
+     "shapes:Scheduled end EXIT"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "History anchor UTC (0 = AUTO first loaded bar; history dependent)",
+      "type": "time",
+      "value": 0,
+      "def": 0
+     },
+     "in_1": {
+      "name": "First fill UTC (0 = first eligible intent)",
+      "type": "time",
+      "value": 0,
+      "def": 0
+     },
+     "in_2": {
+      "name": "End exclusive UTC (0 = OPEN ENDED)",
+      "type": "time",
+      "value": 0,
+      "def": 0
+     },
+     "in_3": {
+      "name": "Execution delay (bars)",
+      "type": "integer",
+      "value": 1,
+      "def": 1
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "MPhQT2",
+    "type": "Study",
+    "metaRef": "Script$PUB;6d9015a1d65f4b53acaa7210554c446b@tv-scripting-101[v.3.0]",
+    "desc": "Nadaraya-Watson Envelope [LuxAlgo]",
+    "short": "Nadaraya-Watson Envelope [LuxAlgo]",
+    "pineVer": "3.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "alertcondition:Down",
+     "alertcondition:Up"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "Window Size",
+      "type": "float",
+      "value": 500,
+      "def": 500
+     },
+     "in_1": {
+      "name": "Bandwidth",
+      "type": "float",
+      "value": 8,
+      "def": 8
+     },
+     "in_2": {
+      "name": "mult",
+      "type": "float",
+      "value": 3,
+      "def": 3
+     },
+     "in_3": {
+      "name": "Source",
+      "type": "source",
+      "value": "close",
+      "def": "close"
+     },
+     "in_4": {
+      "name": "Colors",
+      "type": "color",
+      "value": "#39ff14",
+      "def": "#39ff14"
+     },
+     "in_5": {
+      "name": "",
+      "type": "color",
+      "value": "#ff1100",
+      "def": "#ff1100"
+     },
+     "in_6": {
+      "name": "Hide Disclaimer",
+      "type": "bool",
+      "value": false,
+      "def": false
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "35M2NV",
+    "type": "Study",
+    "metaRef": "Script$STD;VWMA@tv-scripting-101[v.9.0]",
+    "desc": "VWMA",
+    "short": "VWMA",
+    "pineVer": "9.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": false,
+    "overlay": true,
+    "plots": [
+     "line:VWMA"
+    ],
+    "inputs": {
+     "in_3": {
+      "name": "Indicator Timeframe",
+      "type": "resolution",
+      "value": "1D",
+      "def": ""
+     },
+     "in_0": {
+      "name": "Length",
+      "type": "integer",
+      "value": 55,
+      "def": 20
+     },
+     "in_1": {
+      "name": "Source",
+      "type": "source",
+      "value": "close",
+      "def": "close"
+     },
+     "in_2": {
+      "name": "Offset",
+      "type": "integer",
+      "value": 0,
+      "def": 0
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "JyHEPQ",
+    "type": "Study",
+    "metaRef": "Script$PUB;b9b4b5f85bf54f619e3f333ab82e531e@tv-scripting-101[v.1.0]",
+    "desc": "Pi Pi",
+    "short": "Pi Pi",
+    "pineVer": "1.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "bg_colorer:Background Color",
+     "bg_colorer:Background Color",
+     "alertcondition:SHORT",
+     "alertcondition:LONG1",
+     "alertcondition:LONG2",
+     "alertcondition:LONG3"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "Mode",
+      "type": "text",
+      "value": "3",
+      "def": "3"
+     },
+     "in_1": {
+      "name": "Show MA?",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_2": {
+      "name": "Show Background color?",
+      "type": "bool",
+      "value": false,
+      "def": false
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "6TFRlm",
+    "type": "StudyStrategy",
+    "metaRef": "StrategyScript$PUB;TeR3EaHfg79LXosFsjTsISTFWMiqEM62@tv-scripting-101[v.32.0]",
+    "desc": "GLOBAL",
+    "short": "GLOBAL",
+    "pineVer": "32.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Delta Cap",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "bg_colorer:Background Color",
+     "bg_colorer:Background Color",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "colorer:plot_20",
+     "colorer:plot_21",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "alertcondition:Alert"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "Long term BULL",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_1": {
+      "name": "Show top and bottom",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_2": {
+      "name": "Show dashboard",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_3": {
+      "name": "Safety trades",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_4": {
+      "name": "showpicycle",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_5": {
+      "name": "How to trade",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_6": {
+      "name": "Calculate Strategy on every Tick(s)",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_7": {
+      "name": "pyramiding",
+      "type": "integer",
+      "value": 1,
+      "def": 1
+     },
+     "in_8": {
+      "name": "Initial Capital",
+      "type": "float",
+      "value": 1,
+      "def": 1
+     },
+     "in_9": {
+      "name": "Base Currency",
+      "type": "text",
+      "value": "USD",
+      "def": "USD"
+     },
+     "in_10": {
+      "name": "Default entry/order Qty Type",
+      "type": "text",
+      "value": "percent_of_equity",
+      "def": "percent_of_equity"
+     },
+     "in_11": {
+      "name": "Default entry/order Qty Value",
+      "type": "float",
+      "value": 100,
+      "def": 100
+     },
+     "in_12": {
+      "name": "Commission Value",
+      "type": "float",
+      "value": 0.1,
+      "def": 0.1
+     },
+     "in_13": {
+      "name": "Backtesting slippage for market orders",
+      "type": "integer",
+      "value": 10,
+      "def": 10
+     },
+     "in_14": {
+      "name": "Calculate Strategy on Order's Fill(s)",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_15": {
+      "name": "Backtesting Limit Order(s) fill assumption",
+      "type": "integer",
+      "value": 0,
+      "def": 0
+     },
+     "in_16": {
+      "name": "Commission Type",
+      "type": "text",
+      "value": "percent",
+      "def": "percent"
+     },
+     "in_17": {
+      "name": "Process orders on bar Close",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_18": {
+      "name": "Close entries rule",
+      "type": "text",
+      "value": "FIFO",
+      "def": "FIFO"
+     },
+     "in_19": {
+      "name": "Margin Long",
+      "type": "float",
+      "value": 0,
+      "def": 0
+     },
+     "in_20": {
+      "name": "Margin Short",
+      "type": "float",
+      "value": 0,
+      "def": 0
+     },
+     "in_21": {
+      "name": "Run mode: 'backtest', 'alert' or something else",
+      "type": "text",
+      "value": "BACKTEST",
+      "def": "BACKTEST"
+     },
+     "in_22": {
+      "name": "Alert message template for run mode 'alert'",
+      "type": "text",
+      "value": "",
+      "def": ""
+     },
+     "in_23": {
+      "name": "Alert type for run mode 'alert'",
+      "type": "text",
+      "value": "order_fills",
+      "def": "order_fills"
+     },
+     "in_24": {
+      "name": "exclude_from_report",
+      "type": "text",
+      "value": "",
+      "def": ""
+     },
+     "in_25": {
+      "name": "risk_free_rate",
+      "type": "float",
+      "value": 2,
+      "def": 2
+     },
+     "in_26": {
+      "name": "Use Bar Magnifier",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_27": {
+      "name": "Fill orders using standard OHLC",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_28": {
+      "name": "trim_orders",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_29": {
+      "name": "calc_range",
+      "type": "text",
+      "value": "",
+      "def": ""
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "RN0cqb",
+    "type": "StudyStrategy",
+    "metaRef": "StrategyScript$PUB;ebdcd9878b66427e822ff6c0ab270fa0@tv-scripting-101[v.18.0]",
+    "desc": "Pifagor_ALTS 3.6 strategy ",
+    "short": "Pifagor_ALTS 3.6 strategy ",
+    "pineVer": "18.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:value line",
+     "line:value line",
+     "line:value line",
+     "line:value line",
+     "line:value line",
+     "line:value line",
+     "bar_colorer:Bar Color",
+     "bg_colorer:Background Color",
+     "line:Plot",
+     "line:Plot"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "show_price",
+      "type": "bool",
+      "value": true,
+      "def": true
+     },
+     "in_1": {
+      "name": "Показать соимость?",
+      "type": "bool",
+      "value": true,
+      "def": true
+     },
+     "in_2": {
+      "name": "label_",
+      "type": "bool",
+      "value": true,
+      "def": true
+     },
+     "in_3": {
+      "name": "100% прибыли достаточно?",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_4": {
+      "name": "Степень риска",
+      "type": "text",
+      "value": "меньше",
+      "def": "меньше"
+     },
+     "in_5": {
+      "name": "Начало DCA",
+      "type": "time",
+      "value": 1514678400000,
+      "def": 1514678400000
+     },
+     "in_6": {
+      "name": "Конец DCA",
+      "type": "time",
+      "value": 1767225600000,
+      "def": 1767225600000
+     },
+     "in_7": {
+      "name": "Initial Capital",
+      "type": "float",
+      "value": 50,
+      "def": 50
+     },
+     "in_8": {
+      "name": "Calculate Strategy on every Tick(s)",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_9": {
+      "name": "Base Currency",
+      "type": "text",
+      "value": "USD",
+      "def": "USD"
+     },
+     "in_10": {
+      "name": "pyramiding",
+      "type": "integer",
+      "value": 100,
+      "def": 100
+     },
+     "in_11": {
+      "name": "Default entry/order Qty Type",
+      "type": "text",
+      "value": "percent_of_equity",
+      "def": "percent_of_equity"
+     },
+     "in_12": {
+      "name": "Default entry/order Qty Value",
+      "type": "float",
+      "value": 100,
+      "def": 100
+     },
+     "in_13": {
+      "name": "Commission Value",
+      "type": "float",
+      "value": 0,
+      "def": 0
+     },
+     "in_14": {
+      "name": "Backtesting slippage for market orders",
+      "type": "integer",
+      "value": 0,
+      "def": 0
+     },
+     "in_15": {
+      "name": "Calculate Strategy on Order's Fill(s)",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_16": {
+      "name": "Backtesting Limit Order(s) fill assumption",
+      "type": "integer",
+      "value": 0,
+      "def": 0
+     },
+     "in_17": {
+      "name": "Commission Type",
+      "type": "text",
+      "value": "percent",
+      "def": "percent"
+     },
+     "in_18": {
+      "name": "Process orders on bar Close",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_19": {
+      "name": "Close entries rule",
+      "type": "text",
+      "value": "FIFO",
+      "def": "FIFO"
+     },
+     "in_20": {
+      "name": "Margin Long",
+      "type": "float",
+      "value": 0,
+      "def": 0
+     },
+     "in_21": {
+      "name": "Margin Short",
+      "type": "float",
+      "value": 0,
+      "def": 0
+     },
+     "in_22": {
+      "name": "Run mode: 'backtest', 'alert' or something else",
+      "type": "text",
+      "value": "BACKTEST",
+      "def": "BACKTEST"
+     },
+     "in_23": {
+      "name": "Alert message template for run mode 'alert'",
+      "type": "text",
+      "value": "",
+      "def": ""
+     },
+     "in_24": {
+      "name": "Alert type for run mode 'alert'",
+      "type": "text",
+      "value": "order_fills",
+      "def": "order_fills"
+     },
+     "in_25": {
+      "name": "exclude_from_report",
+      "type": "text",
+      "value": "",
+      "def": ""
+     },
+     "in_26": {
+      "name": "risk_free_rate",
+      "type": "float",
+      "value": 2,
+      "def": 2
+     },
+     "in_27": {
+      "name": "Use Bar Magnifier",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_28": {
+      "name": "Fill orders using standard OHLC",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_29": {
+      "name": "trim_orders",
+      "type": "bool",
+      "value": false,
+      "def": false
+     },
+     "in_30": {
+      "name": "calc_range",
+      "type": "text",
+      "value": "",
+      "def": ""
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "ltoGLL",
+    "type": "Study",
+    "metaRef": "Script$PUB;5b1766659c714f9b8896c428afe1b886@tv-scripting-101[v.4.0]",
+    "desc": "Trader 01",
+    "short": "Trader 01",
+    "pineVer": "4.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "days_below",
+      "type": "bool",
+      "value": true,
+      "def": true
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "VxWrbN",
+    "type": "Study",
+    "metaRef": "Script$PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e@tv-scripting-101[v.4.0]",
+    "desc": "Global mini+",
+    "short": "Global mini (+)",
+    "pineVer": "4.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "shapes:Shapes",
+     "bar_colorer:Bar Color",
+     "shapes:Shapes",
+     "bar_colorer:Bar Color",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "shapes:Shapes",
+     "bar_colorer:Bar Color",
+     "shapes:Shapes",
+     "bar_colorer:Bar Color",
+     "alertcondition:Strong Short",
+     "alertcondition:red dot",
+     "alertcondition:green dot",
+     "alertcondition:strong long"
+    ],
+    "inputs": {
+     "in_0": {
+      "name": "money flow",
+      "type": "text",
+      "value": "NO",
+      "def": "NO"
+     }
+    }
+   },
+   {
+    "chart": 2,
+    "pane": 1,
+    "id": "IzQbfD",
+    "type": "Study",
+    "metaRef": "Script$PUB;3e736136910147969dc2c0c2ceb0daf5@tv-scripting-101[v.3.0]",
+    "desc": "Trap line",
+    "short": "Trap line",
+    "pineVer": "3.0",
+    "pineId": "",
+    "usedVer": "",
+    "visible": true,
+    "overlay": true,
+    "plots": [
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot",
+     "line:Plot"
+    ],
+    "inputs": {}
+   }
+  ]
+ },
+ "scripts": {
+  "PUB;1ee8d54bf27646098730eef5d7408b39": {
+   "id": "PUB;1ee8d54bf27646098730eef5d7408b39",
+   "name": "4h radar(private)",
+   "title": "4h radar",
+   "short": "4h radar",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 2,
+    "plotshape": 2
+   },
+   "img": "ARJRGiI3",
+   "author": "Pifagor_trade",
+   "likes": 90,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;2138ebc7bbc0449d9d32f4736a1af881": {
+   "id": "PUB;2138ebc7bbc0449d9d32f4736a1af881",
+   "name": "BTC mood temp(private) ",
+   "title": "BTC mood temp() [pif]",
+   "short": "BTC mood temp() [pif]",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "plot": 1
+   },
+   "img": "KMrY1JVF",
+   "author": "Pifagor_trade",
+   "likes": 74,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;44d8443427f54382b21705d6cb022ced": {
+   "id": "PUB;44d8443427f54382b21705d6cb022ced",
+   "name": "Trap line (private)",
+   "title": "Trap line",
+   "short": "Trap line",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 6
+   },
+   "img": "UV87rzw3",
+   "author": "Pifagor_trade",
+   "likes": 91,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;4515704b5fdb4ae4ab5ebb55eded07bf": {
+   "id": "PUB;4515704b5fdb4ae4ab5ebb55eded07bf",
+   "name": "Pifagor 14 Global mini+",
+   "title": "Global mini+",
+   "short": "Global mini (+)",
+   "ver": "4",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 4,
+    "plot": 5,
+    "plotshape": 7
+   },
+   "img": "rv2zItCE",
+   "author": "Pifagor_trade",
+   "likes": 205,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;4b40b60837c64aa989040a86a088f22d": {
+   "id": "PUB;4b40b60837c64aa989040a86a088f22d",
+   "name": "DCA pifagor 4.0",
+   "title": "DCA pifagor 4.2",
+   "short": "DCA pifagor 4.2",
+   "ver": "3",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "alertcondition": 2,
+    "plot": 5,
+    "plotshape": 2
+   },
+   "img": "3qyeJHGG",
+   "author": "Pifagor_trade",
+   "likes": 200,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;5b1766659c714f9b8896c428afe1b886": {
+   "id": "PUB;5b1766659c714f9b8896c428afe1b886",
+   "name": "Pifagor 13 Trader 01 ",
+   "title": "Trader 01",
+   "short": "Trader 01",
+   "ver": "4",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 5
+   },
+   "img": "ehw70LB1",
+   "author": "Pifagor_trade",
+   "likes": 608,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;680feaa4b10a4c11b228f4efa7448b9d": {
+   "id": "PUB;680feaa4b10a4c11b228f4efa7448b9d",
+   "name": "Opportunity(private)",
+   "title": "Opportunity",
+   "short": "Opportunity",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 5
+   },
+   "img": "UbQyQoPy",
+   "author": "Pifagor_trade",
+   "likes": 84,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;6cd345b56f94438cb9ff0871d13dd761": {
+   "id": "PUB;6cd345b56f94438cb9ff0871d13dd761",
+   "name": "Pifagor_Big guy ()()()",
+   "title": "Pifagor_Big guy ()()()",
+   "short": "Pifagor_Big guy ()()()",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "alertcondition": 9,
+    "plot": 6,
+    "plotshape": 8
+   },
+   "img": "gSkfKAoV",
+   "author": "Pifagor_trade",
+   "likes": 92,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;6f66851d0de6440296499c02dff258bd": {
+   "id": "PUB;6f66851d0de6440296499c02dff258bd",
+   "name": "Pifagor 04 div private!!!",
+   "title": "div",
+   "short": "div",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 2
+   },
+   "img": "TMnuoN3S",
+   "author": "Pifagor_trade",
+   "likes": 876,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;86e23a99c8764a32a70c614bf7d6f926": {
+   "id": "PUB;86e23a99c8764a32a70c614bf7d6f926",
+   "name": "Pifagor_Warm buy overlay",
+   "title": "Pifagor_Warm buy overlay",
+   "short": "Pifagor_Warm buy overlay",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 2
+   },
+   "img": "iisxHade",
+   "author": "Pifagor_trade",
+   "likes": 80,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;8fbc6045e6234538aa2452ba8fffc68b": {
+   "id": "PUB;8fbc6045e6234538aa2452ba8fffc68b",
+   "name": "Pifagor Mfi 3.2 (private)",
+   "title": "Pifagor Mfi 3.2",
+   "short": "Pifagor Mfi 3.2",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "alertcondition": 2,
+    "plot": 9
+   },
+   "img": "rqtEC1K6",
+   "author": "Pifagor_trade",
+   "likes": 75,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;97ee2129f5ee48dbbcc1ef6b3840fa3f": {
+   "id": "PUB;97ee2129f5ee48dbbcc1ef6b3840fa3f",
+   "name": "Pifagor 20 BUY MORE (SAFETY TRADE)",
+   "title": "safety trade",
+   "short": "safety trade",
+   "ver": "3",
+   "access": 3,
+   "type": 2,
+   "kind": "strategy",
+   "overlay": true,
+   "stats": {
+    "plot": 11
+   },
+   "img": "GWAG6tcw",
+   "author": "Pifagor_trade",
+   "likes": 969,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;9e21a723bb484e1ba8707e01a7d09a65": {
+   "id": "PUB;9e21a723bb484e1ba8707e01a7d09a65",
+   "name": "forever sma",
+   "title": "forever sma",
+   "short": "forever sma ",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 9,
+    "plotshape": 4
+   },
+   "img": "xMPqdt5k",
+   "author": "Pifagor_trade",
+   "likes": 70,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;a62aea63fcef4382a45abc163919c65f": {
+   "id": "PUB;a62aea63fcef4382a45abc163919c65f",
+   "name": "Pifagor 12 Histogram R/S/M ",
+   "title": "Pifagor histogramm R/S/M [pif]",
+   "short": "Pifagor histogramm R/S/M",
+   "ver": "7",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "plot": 5
+   },
+   "img": "3uQw0B8R",
+   "author": "Pifagor_trade",
+   "likes": 636,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;b2628d46c21c4fb18c4001af9ff0eba4": {
+   "id": "PUB;b2628d46c21c4fb18c4001af9ff0eba4",
+   "name": "Pifagor  Warm buy",
+   "title": "Pifagor_Warm buy",
+   "short": "Pifagor_Warm buy",
+   "ver": "6",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "alertcondition": 2,
+    "plot": 2
+   },
+   "img": "1Uxw5B5W",
+   "author": "Pifagor_trade",
+   "likes": 90,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;cbf1db2ca3064a3da2f66c49ca4646fe": {
+   "id": "PUB;cbf1db2ca3064a3da2f66c49ca4646fe",
+   "name": "Pifagor 09 ALTS_mood ",
+   "title": "Pifagor_ALTS_mood",
+   "short": "Pifagor_ALTS_mood",
+   "ver": "3",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": false,
+   "stats": {
+    "plot": 1
+   },
+   "img": "4hzhfKPQ",
+   "author": "Pifagor_trade",
+   "likes": 355,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;cCKnUZEt9lyP3uLCX4g808dNcJqjIK8A": {
+   "id": "PUB;cCKnUZEt9lyP3uLCX4g808dNcJqjIK8A",
+   "name": "Pifagor 06 ETH/BTC 12h (BEST) ",
+   "title": "ETH/BTC 12h  BEST",
+   "short": "ETH/BTC 12h  BEST",
+   "ver": "10",
+   "access": 3,
+   "type": 2,
+   "kind": "strategy",
+   "overlay": true,
+   "img": "pjOd99OR",
+   "author": "Pifagor_trade",
+   "likes": 232,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;DT45vilhPLXzS4befkDGvO4YqJWa2kNZ": {
+   "id": "PUB;DT45vilhPLXzS4befkDGvO4YqJWa2kNZ",
+   "name": "Pifagor 05 ETH/BTC 12h/1D (hero) ",
+   "title": "ETH/BTC 12h HERO",
+   "short": "ETH/BTC 12h HERO",
+   "ver": "10",
+   "access": 3,
+   "type": 2,
+   "kind": "strategy",
+   "overlay": true,
+   "stats": {
+    "plot": 24
+   },
+   "img": "wQ27Z1VY",
+   "author": "Pifagor_trade",
+   "likes": 186,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;ebdcd9878b66427e822ff6c0ab270fa0": {
+   "id": "PUB;ebdcd9878b66427e822ff6c0ab270fa0",
+   "name": "Pifagor 08 ALTS strategy 3.6",
+   "title": "Pifagor_ALTS 3.7 strategy",
+   "short": "Pifagor_ALTS 3.7 strategy",
+   "ver": "20",
+   "access": 3,
+   "type": 2,
+   "kind": "strategy",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 2,
+    "plot": 6
+   },
+   "img": "9G4XBiQd",
+   "author": "Pifagor_trade",
+   "likes": 2106,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;ed584d65d2c94d33bc6c551a9da28162": {
+   "id": "PUB;ed584d65d2c94d33bc6c551a9da28162",
+   "name": "Дно по ATR (private)",
+   "title": "Дно по ATR",
+   "short": "Дно по ATR",
+   "ver": "1",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 4
+   },
+   "img": "2884BpOc",
+   "author": "Pifagor_trade",
+   "likes": 93,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;f4623958345d4c349f6c2ba2ae3fc5e8": {
+   "id": "PUB;f4623958345d4c349f6c2ba2ae3fc5e8",
+   "name": "Pifagor 19 bottomline ",
+   "title": "bottomline",
+   "short": "bottomline",
+   "ver": "12",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 3
+   },
+   "img": "3Rtrd0Ly",
+   "author": "Pifagor_trade",
+   "likes": 778,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;TeR3EaHfg79LXosFsjTsISTFWMiqEM62": {
+   "id": "PUB;TeR3EaHfg79LXosFsjTsISTFWMiqEM62",
+   "name": "Pifagor 01 GLOBAL 1/3D ",
+   "title": "GLOBAL",
+   "short": "GLOBAL",
+   "ver": "32",
+   "access": 3,
+   "type": 2,
+   "kind": "strategy",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 1,
+    "plot": 15,
+    "plotshape": 24
+   },
+   "img": "xfIMDORe",
+   "author": "Pifagor_trade",
+   "likes": 1185,
+   "haveAccess": true,
+   "isPublic": false
+  },
+  "PUB;6d9015a1d65f4b53acaa7210554c446b": {
+   "id": "PUB;6d9015a1d65f4b53acaa7210554c446b",
+   "name": "Nadaraya-Watson Envelope [LuxAlgo]",
+   "title": "Nadaraya-Watson Envelope [LuxAlgo]",
+   "short": "LuxAlgo - Nadaraya-Watson Envelope",
+   "ver": "4",
+   "access": 1,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 2,
+    "plotshape": 2
+   },
+   "img": "Iko0E2kL",
+   "author": "LuxAlgo",
+   "likes": 35919
+  },
+  "PUB;1b68f957a4c445f0b254b9374eb41968": {
+   "id": "PUB;1b68f957a4c445f0b254b9374eb41968",
+   "name": "03 Opportunity (Pifagor free indicator)",
+   "title": "Opportunity",
+   "short": "Opportunity",
+   "ver": "8",
+   "access": 2,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 5
+   },
+   "img": "vZ5SHkOz",
+   "author": "Pifagor_trade",
+   "likes": 11588,
+   "isPublic": false
+  },
+  "PUB;b9b4b5f85bf54f619e3f333ab82e531e": {
+   "id": "PUB;b9b4b5f85bf54f619e3f333ab82e531e",
+   "name": "Pi Pi",
+   "title": "Pi Pi",
+   "short": "Pi Pi",
+   "ver": "1",
+   "access": 2,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 4,
+    "plot": 4,
+    "plotshape": 2
+   },
+   "img": "lcPpr9m4",
+   "author": "Pifagor_trade",
+   "likes": 431,
+   "isPublic": false
+  },
+  "PUB;3e736136910147969dc2c0c2ceb0daf5": {
+   "id": "PUB;3e736136910147969dc2c0c2ceb0daf5",
+   "name": "Trap line (Pifagor free indicator)",
+   "title": "Trap line",
+   "short": "Trap line",
+   "ver": "3",
+   "access": 2,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 6
+   },
+   "img": "erIwNY5q",
+   "author": "Pifagor_trade",
+   "likes": 16482,
+   "isPublic": false
+  },
+  "PUB;aee39eb449454a7e99253aba4a443b14": {
+   "id": "PUB;aee39eb449454a7e99253aba4a443b14",
+   "name": "Pifagor 02 Forever sma",
+   "title": "forever sma",
+   "short": "forever sma ",
+   "ver": "3",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "plot": 9,
+    "plotshape": 4
+   },
+   "img": "5Hiqom07",
+   "author": "Pifagor_trade",
+   "likes": 537,
+   "haveAccess": false,
+   "isPublic": false
+  },
+  "PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e": {
+   "id": "PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e",
+   "name": "Pifagor 14 Global mini",
+   "title": "Global mini+",
+   "short": "Global mini (+)",
+   "ver": "4",
+   "access": 3,
+   "type": 1,
+   "kind": "study",
+   "overlay": true,
+   "stats": {
+    "alertcondition": 4,
+    "plot": 5,
+    "plotshape": 7
+   },
+   "img": "NwRoVIxX",
+   "author": "Pifagor_trade",
+   "likes": 403,
+   "haveAccess": false,
+   "isPublic": false
+  }
+ },
+ "details": {
+  "PUB;1ee8d54bf27646098730eef5d7408b39": {
+   "description": "4h radar",
+   "shortDescription": "4h radar",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Start Time",
+     "type": "time",
+     "defval": 1262304000000
+    },
+    {
+     "id": "in_1",
+     "name": "End Time",
+     "type": "time",
+     "defval": 1861920000000
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_1",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_2",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_3",
+     "type": "alertcondition",
+     "title": "Сигнал на покупку"
+    },
+    {
+     "id": "plot_4",
+     "type": "alertcondition",
+     "title": "Сигнал на продажу"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;2138ebc7bbc0449d9d32f4736a1af881": {
+   "description": "BTC mood temp() [pif]",
+   "shortDescription": "BTC mood temp() [pif]",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_0"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;44d8443427f54382b21705d6cb022ced": {
+   "description": "Trap line",
+   "shortDescription": "Trap line",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Plot"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;4515704b5fdb4ae4ab5ebb55eded07bf": {
+   "description": "Global mini+",
+   "shortDescription": "Global mini (+)",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "money flow",
+     "type": "text",
+     "defval": "NO",
+     "options": [
+      "lines",
+      "wave",
+      "NO"
+     ]
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_6",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_7",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_8",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_9",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_10",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_11",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_12",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_13",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_14",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_15",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_16",
+     "type": "alertcondition",
+     "title": "Strong Short"
+    },
+    {
+     "id": "plot_17",
+     "type": "alertcondition",
+     "title": "red dot"
+    },
+    {
+     "id": "plot_18",
+     "type": "alertcondition",
+     "title": "green dot"
+    },
+    {
+     "id": "plot_19",
+     "type": "alertcondition",
+     "title": "strong long"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": [
+    "dwglabels",
+    "dwglines"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;4b40b60837c64aa989040a86a088f22d": {
+   "description": "DCA pifagor 4.2",
+   "shortDescription": "DCA pifagor 4.2",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Пара",
+     "type": "text",
+     "defval": "BTC",
+     "options": [
+      "BTC",
+      "ETH"
+     ],
+     "group": "Инструмент"
+    },
+    {
+     "id": "in_1",
+     "name": "Базовый размер DCA ($)",
+     "type": "integer",
+     "defval": 100,
+     "min": 1,
+     "max": 1000000000000,
+     "group": "Инструмент"
+    },
+    {
+     "id": "in_2",
+     "name": "Начальная дата",
+     "type": "time",
+     "defval": 1617235200000,
+     "group": "Период торговли"
+    },
+    {
+     "id": "in_3",
+     "name": "Показать детализацию сигналов",
+     "type": "bool",
+     "defval": false,
+     "group": "Диагностика"
+    },
+    {
+     "id": "in_4",
+     "name": "Показать счётчики срабатываний (всего баров)",
+     "type": "bool",
+     "defval": false,
+     "group": "Диагностика"
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "bg_colorer",
+     "title": "Зона накопления"
+    },
+    {
+     "id": "plot_1",
+     "type": "bg_colorer",
+     "title": "Зона риска"
+    },
+    {
+     "id": "plot_2",
+     "type": "shapes",
+     "title": "Сильный сигнал"
+    },
+    {
+     "id": "plot_3",
+     "type": "shapes",
+     "title": "Слабый сигнал"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Средняя цена (свечение)"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Средняя цена"
+    },
+    {
+     "id": "plot_6",
+     "type": "line",
+     "title": "Позиция $"
+    },
+    {
+     "id": "plot_7",
+     "type": "line",
+     "title": "Потрачено $"
+    },
+    {
+     "id": "plot_8",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_0"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Прибыль %"
+    },
+    {
+     "id": "plot_10",
+     "type": "alertcondition",
+     "title": "Сигнал DCA"
+    },
+    {
+     "id": "plot_11",
+     "type": "alertcondition",
+     "title": "Сильный сигнал DCA"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Заливка прибыли / убытка"
+   ],
+   "graphics": [
+    "dwglabels",
+    "dwgtablecells",
+    "dwgtables"
+   ],
+   "hasAlerts": true,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,filledAreasStyle,format,graphics,hasAlertFunction,historyCalculationMayChange,id,inputs,isRGB,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;5b1766659c714f9b8896c428afe1b886": {
+   "description": "Trader 01",
+   "shortDescription": "Trader 01",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "days_below",
+     "type": "bool",
+     "defval": true
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background",
+    "Plots Background"
+   ],
+   "graphics": [
+    "dwglabels"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,format,graphics,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;680feaa4b10a4c11b228f4efa7448b9d": {
+   "description": "Opportunity",
+   "shortDescription": "Opportunity",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_0"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background"
+   ],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;6cd345b56f94438cb9ff0871d13dd761": {
+   "description": "Pifagor_Big guy ()()()",
+   "shortDescription": "Pifagor_Big guy ()()()",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Burj Khalifa",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_1",
+     "name": "Режим (Мы разработали два подхода для анализа покупок крупных игроков)",
+     "type": "text",
+     "defval": "2",
+     "options": [
+      "1",
+      "2"
+     ]
+    },
+    {
+     "id": "in_2",
+     "name": "Length",
+     "type": "integer",
+     "defval": 14,
+     "min": -1000000000000,
+     "max": 1000000000000,
+     "group": "ЭКСПЕРЕМЕНТ"
+    },
+    {
+     "id": "in_3",
+     "name": "Red dot %",
+     "type": "integer",
+     "defval": 93,
+     "group": "ЭКСПЕРЕМЕНТ"
+    },
+    {
+     "id": "in_4",
+     "name": "Timeframe",
+     "type": "resolution",
+     "defval": "",
+     "group": "Calculation"
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_1"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_4"
+    },
+    {
+     "id": "plot_6",
+     "type": "shapes",
+     "title": "Echange vol"
+    },
+    {
+     "id": "plot_7",
+     "type": "shapes",
+     "title": "pppl"
+    },
+    {
+     "id": "plot_8",
+     "type": "shapes",
+     "title": "Green_dot"
+    },
+    {
+     "id": "plot_9",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_8"
+    },
+    {
+     "id": "plot_10",
+     "type": "shapes",
+     "title": "Green_dot"
+    },
+    {
+     "id": "plot_11",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_10"
+    },
+    {
+     "id": "plot_12",
+     "type": "shapes",
+     "title": "Green_dot"
+    },
+    {
+     "id": "plot_13",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_12"
+    },
+    {
+     "id": "plot_14",
+     "type": "shapes",
+     "title": "Green_dot"
+    },
+    {
+     "id": "plot_15",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_14"
+    },
+    {
+     "id": "plot_16",
+     "type": "shapes",
+     "title": "Green_dot"
+    },
+    {
+     "id": "plot_17",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_16"
+    },
+    {
+     "id": "plot_18",
+     "type": "shapes",
+     "title": "Green_dot"
+    },
+    {
+     "id": "plot_19",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_18"
+    },
+    {
+     "id": "plot_20",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_21",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_22",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_21"
+    },
+    {
+     "id": "plot_23",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_24",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_23"
+    },
+    {
+     "id": "plot_25",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_26",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_25"
+    },
+    {
+     "id": "plot_27",
+     "type": "alertcondition",
+     "title": "Khalifa 1 floor"
+    },
+    {
+     "id": "plot_28",
+     "type": "alertcondition",
+     "title": "Khalifa 2 floor"
+    },
+    {
+     "id": "plot_29",
+     "type": "alertcondition",
+     "title": "Khalifa 3 floor"
+    },
+    {
+     "id": "plot_30",
+     "type": "alertcondition",
+     "title": "Khalifa any floor"
+    },
+    {
+     "id": "plot_31",
+     "type": "alertcondition",
+     "title": "Green dots"
+    },
+    {
+     "id": "plot_32",
+     "type": "alertcondition",
+     "title": "Big pump signal"
+    },
+    {
+     "id": "plot_33",
+     "type": "alertcondition",
+     "title": "Small pump signal"
+    },
+    {
+     "id": "plot_34",
+     "type": "alertcondition",
+     "title": "Volume up"
+    },
+    {
+     "id": "plot_35",
+     "type": "alertcondition",
+     "title": "Sell"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,historyCalculationMayChange,id,inputs,isMTFResolution,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;6f66851d0de6440296499c02dff258bd": {
+   "description": "div",
+   "shortDescription": "div",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "fast",
+     "type": "integer",
+     "defval": 12,
+     "min": 1,
+     "max": 1000000000000
+    },
+    {
+     "id": "in_1",
+     "name": "slow",
+     "type": "integer",
+     "defval": 26,
+     "min": 1,
+     "max": 1000000000000
+    },
+    {
+     "id": "in_2",
+     "name": "sign",
+     "type": "integer",
+     "defval": 9,
+     "min": 1,
+     "max": 1000000000000
+    },
+    {
+     "id": "in_3",
+     "name": "DivergenceSource",
+     "type": "source",
+     "defval": "close",
+     "options": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "hl2",
+      "hlc3",
+      "hlcc4",
+      "ohlc4",
+      "volume"
+     ]
+    },
+    {
+     "id": "in_4",
+     "name": "days",
+     "type": "integer",
+     "defval": 60
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_1",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_2",
+     "type": "alertcondition",
+     "title": "1DIV DIV индикатор график фиба"
+    },
+    {
+     "id": "plot_3",
+     "type": "alertcondition",
+     "title": "2DIV DIV индикатор график фиба"
+    },
+    {
+     "id": "plot_4",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_5",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_6",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_7",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;86e23a99c8764a32a70c614bf7d6f926": {
+   "description": "Pifagor_Warm buy overlay",
+   "shortDescription": "Pifagor_Warm buy overlay",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "pp"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "pp"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background"
+   ],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,format,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;8fbc6045e6234538aa2452ba8fffc68b": {
+   "description": "Pifagor Mfi 3.2",
+   "shortDescription": "Pifagor Mfi 3.2",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "MFI or ...",
+     "type": "text",
+     "defval": "MFI",
+     "options": [
+      "MFI",
+      "WR",
+      "COPPOK"
+     ],
+     "group": "Это бесплатный индикатор t.me/pifagortrade"
+    },
+    {
+     "id": "in_1",
+     "name": "%",
+     "type": "float",
+     "defval": 10,
+     "group": "Тут эксперемент, не трогайте"
+    },
+    {
+     "id": "in_2",
+     "name": "дней вниз?",
+     "type": "integer",
+     "defval": 2,
+     "group": "Тут эксперемент, не трогайте"
+    },
+    {
+     "id": "in_3",
+     "name": "% зел",
+     "type": "integer",
+     "defval": 2,
+     "group": "Тут эксперемент, не трогайте"
+    },
+    {
+     "id": "in_4",
+     "name": "Timeframe",
+     "type": "resolution",
+     "defval": "",
+     "group": "Calculation"
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "MF"
+    },
+    {
+     "id": "plot_2",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_1"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_6",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_7",
+     "type": "bg_colorer",
+     "title": "VL"
+    },
+    {
+     "id": "plot_8",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_9",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_10",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_11",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_12",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_13",
+     "type": "alertcondition",
+     "title": "Buy signal"
+    },
+    {
+     "id": "plot_14",
+     "type": "alertcondition",
+     "title": "Strong buy signal"
+    },
+    {
+     "id": "plot_15",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_16",
+     "type": "line",
+     "title": "Buy_plot"
+    },
+    {
+     "id": "plot_17",
+     "type": "line",
+     "title": "Strong_buy_plot"
+    },
+    {
+     "id": "plot_18",
+     "type": "line",
+     "title": "Sell_plot"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,id,inputs,isMTFResolution,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;97ee2129f5ee48dbbcc1ef6b3840fa3f": {
+   "description": "safety trade",
+   "shortDescription": "safety trade",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": true,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "bulline",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_1",
+     "name": "money flow",
+     "type": "text",
+     "defval": "wave",
+     "options": [
+      "lines",
+      "wave",
+      "NO"
+     ]
+    },
+    {
+     "id": "in_2",
+     "name": "fiba",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_3",
+     "name": "Calculate Strategy on every Tick(s)",
+     "type": "bool",
+     "defval": true,
+     "tooltip": "Recalculates the strategy with each real-time bar update"
+    },
+    {
+     "id": "in_4",
+     "name": "Initial Capital",
+     "type": "float",
+     "defval": 1000,
+     "min": 0,
+     "tooltip": "Starting funds available for the trading strategy"
+    },
+    {
+     "id": "in_5",
+     "name": "Base Currency",
+     "type": "text",
+     "defval": "USD",
+     "options": [
+      "NONE",
+      "USD",
+      "EUR",
+      "AUD",
+      "GBP",
+      "NZD",
+      "CAD",
+      "CHF",
+      "HKD",
+      "JPY",
+      "NOK",
+      "RUB",
+      "SEK",
+      "SGD",
+      "TRY",
+      "ZAR",
+      "BTC",
+      "ETH",
+      "MYR",
+      "KRW",
+      "USDT",
+      "INR"
+     ],
+     "tooltip": "Currency used in calculations and strategy results"
+    },
+    {
+     "id": "in_6",
+     "name": "pyramiding",
+     "type": "integer",
+     "defval": 1,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Maximum number of successive entries allowed in the same direction"
+    },
+    {
+     "id": "in_7",
+     "name": "Default entry/order Qty Type",
+     "type": "text",
+     "defval": "percent_of_equity",
+     "options": [
+      "fixed",
+      "cash_per_order",
+      "percent_of_equity"
+     ],
+     "tooltip": "Quantity per trade in the selected unit"
+    },
+    {
+     "id": "in_8",
+     "name": "Default entry/order Qty Value",
+     "type": "float",
+     "defval": 100,
+     "min": 0
+    },
+    {
+     "id": "in_9",
+     "name": "Commission Value",
+     "type": "float",
+     "defval": 0.1,
+     "min": 0
+    },
+    {
+     "id": "in_10",
+     "name": "Backtesting slippage for market orders",
+     "type": "integer",
+     "defval": 200,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks to be added to the fill price of market and stop orders"
+    },
+    {
+     "id": "in_11",
+     "name": "Calculate Strategy on Order's Fill(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Triggers an additional intrabar calculation after order fills"
+    },
+    {
+     "id": "in_12",
+     "name": "Backtesting Limit Order(s) fill assumption",
+     "type": "integer",
+     "defval": 0,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks beyond the limit price required for limit order execution"
+    },
+    {
+     "id": "in_13",
+     "name": "Commission Type",
+     "type": "text",
+     "defval": "percent",
+     "options": [
+      "percent",
+      "cash_per_contract",
+      "cash_per_order"
+     ],
+     "tooltip": "Entry and exit fees to be paid"
+    },
+    {
+     "id": "in_14",
+     "name": "Process orders on bar Close",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Fills market orders on the close of the bar where they are issued"
+    },
+    {
+     "id": "in_15",
+     "name": "Close entries rule",
+     "type": "text",
+     "defval": "FIFO",
+     "options": [
+      "FIFO",
+      "ANY"
+     ]
+    },
+    {
+     "id": "in_16",
+     "name": "Margin Long",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the long position the strategy must fund from equity"
+    },
+    {
+     "id": "in_17",
+     "name": "Margin Short",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the short position the strategy must fund from equity"
+    },
+    {
+     "id": "in_18",
+     "name": "Run mode: 'backtest', 'alert' or something else",
+     "type": "text",
+     "defval": "BACKTEST",
+     "options": [
+      "BACKTEST",
+      "ALERT"
+     ]
+    },
+    {
+     "id": "in_19",
+     "name": "Alert message template for run mode 'alert'",
+     "type": "text",
+     "defval": ""
+    },
+    {
+     "id": "in_20",
+     "name": "Alert type for run mode 'alert'",
+     "type": "text",
+     "defval": "order_fills"
+    },
+    {
+     "id": "in_21",
+     "name": "exclude_from_report",
+     "type": "text",
+     "defval": ""
+    },
+    {
+     "id": "in_22",
+     "name": "risk_free_rate",
+     "type": "float",
+     "defval": 2,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "id": "in_23",
+     "name": "Use Bar Magnifier",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "On historical bars, uses more precise lower timeframe prices for more realistic results"
+    },
+    {
+     "id": "in_24",
+     "name": "Fill orders using standard OHLC",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Forces strategies running on Heikin Ashi charts to fill orders using actual OHLC prices, for more realistic results"
+    },
+    {
+     "id": "in_25",
+     "name": "trim_orders",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_26",
+     "name": "calc_range",
+     "type": "text",
+     "defval": ""
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_6",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_0"
+    },
+    {
+     "id": "plot_7",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_1"
+    },
+    {
+     "id": "plot_8",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_10",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_11",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_12",
+     "type": "line",
+     "title": "Plot"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background",
+    "Plots Background"
+   ],
+   "graphics": [
+    "dwglines"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStrategy,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;9e21a723bb484e1ba8707e01a7d09a65": {
+   "description": "forever sma",
+   "shortDescription": "forever sma ",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Labels?",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_1",
+     "name": "Forever sma",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_2",
+     "name": "",
+     "type": "time",
+     "defval": 1583971200000
+    },
+    {
+     "id": "in_3",
+     "name": "2018 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_4",
+     "name": "2015 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_5",
+     "name": "2011 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_6",
+     "name": "2010 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_7",
+     "name": "Включить риск метрику(только blx)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "В настройках цвет свеч и фитилей включи на серый."
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_6",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_7",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_8",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Raw Hash Rate"
+    },
+    {
+     "id": "plot_10",
+     "type": "line",
+     "title": "Source for Trailing Williams Lows"
+    },
+    {
+     "id": "plot_11",
+     "type": "line",
+     "title": "Trailing Williams Lows"
+    },
+    {
+     "id": "plot_12",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_11"
+    },
+    {
+     "id": "plot_13",
+     "type": "line",
+     "title": "Trailing ATR of Price for Confirmation"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;a62aea63fcef4382a45abc163919c65f": {
+   "description": "Pifagor histogramm R/S/M [pif]",
+   "shortDescription": "Pifagor histogramm R/S/M",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_4"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,defaults,description,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;b2628d46c21c4fb18c4001af9ff0eba4": {
+   "description": "Pifagor_Warm buy",
+   "shortDescription": "Pifagor_Warm buy",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "pp"
+    },
+    {
+     "id": "plot_1",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_0"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "ll"
+    },
+    {
+     "id": "plot_3",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_2"
+    },
+    {
+     "id": "plot_4",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_5",
+     "type": "alertcondition",
+     "title": "Warm buy signal"
+    },
+    {
+     "id": "plot_6",
+     "type": "alertcondition",
+     "title": "Warm STRONG buy signal"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,defaults,description,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;cbf1db2ca3064a3da2f66c49ca4646fe": {
+   "description": "Pifagor_ALTS_mood",
+   "shortDescription": "Pifagor_ALTS_mood",
+   "overlay": false,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_0"
+    }
+   ],
+   "bands": [
+    "Level",
+    "Level",
+    "Level",
+    "Level"
+   ],
+   "filledAreas": [
+    "Hlines Background"
+   ],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,bands,behind_chart,defaults,description,docs,filledAreas,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;cCKnUZEt9lyP3uLCX4g808dNcJqjIK8A": {
+   "description": "ETH/BTC 12h  BEST",
+   "shortDescription": "ETH/BTC 12h  BEST",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": true,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Start Time",
+     "type": "time",
+     "defval": 1514851200000
+    },
+    {
+     "id": "in_1",
+     "name": "End Time",
+     "type": "time",
+     "defval": 1688083200000
+    },
+    {
+     "id": "in_2",
+     "name": "Initial Capital",
+     "type": "float",
+     "defval": 1,
+     "min": 0,
+     "tooltip": "Starting funds available for the trading strategy"
+    },
+    {
+     "id": "in_3",
+     "name": "Base Currency",
+     "type": "text",
+     "defval": "BTC",
+     "options": [
+      "NONE",
+      "USD",
+      "EUR",
+      "AUD",
+      "GBP",
+      "NZD",
+      "CAD",
+      "CHF",
+      "HKD",
+      "JPY",
+      "NOK",
+      "RUB",
+      "SEK",
+      "SGD",
+      "TRY",
+      "ZAR",
+      "BTC"
+     ],
+     "tooltip": "Currency used in calculations and strategy results"
+    },
+    {
+     "id": "in_4",
+     "name": "Default entry/order Qty Type",
+     "type": "text",
+     "defval": "percent_of_equity",
+     "options": [
+      "fixed",
+      "cash_per_order",
+      "percent_of_equity"
+     ],
+     "tooltip": "Quantity per trade in the selected unit"
+    },
+    {
+     "id": "in_5",
+     "name": "Default entry/order Qty Value",
+     "type": "float",
+     "defval": 100,
+     "min": 0
+    },
+    {
+     "id": "in_6",
+     "name": "Commission Value",
+     "type": "float",
+     "defval": 0.1,
+     "min": 0
+    },
+    {
+     "id": "in_7",
+     "name": "Backtesting slippage for market orders",
+     "type": "integer",
+     "defval": 20,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks to be added to the fill price of market and stop orders"
+    },
+    {
+     "id": "in_8",
+     "name": "pyramiding",
+     "type": "integer",
+     "defval": 1,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Maximum number of successive entries allowed in the same direction"
+    },
+    {
+     "id": "in_9",
+     "name": "Calculate Strategy on Order's Fill(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Triggers an additional intrabar calculation after order fills"
+    },
+    {
+     "id": "in_10",
+     "name": "Calculate Strategy on every Tick(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Recalculates the strategy with each real-time bar update"
+    },
+    {
+     "id": "in_11",
+     "name": "Backtesting Limit Order(s) fill assumption",
+     "type": "integer",
+     "defval": 0,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks beyond the limit price required for limit order execution"
+    },
+    {
+     "id": "in_12",
+     "name": "Commission Type",
+     "type": "text",
+     "defval": "percent",
+     "options": [
+      "percent",
+      "cash_per_contract",
+      "cash_per_order"
+     ],
+     "tooltip": "Entry and exit fees to be paid"
+    },
+    {
+     "id": "in_13",
+     "name": "Process orders on bar Close",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Enables an additional calculation on bar close, allowing market orders to enter on the same tick the order is placed"
+    },
+    {
+     "id": "in_14",
+     "name": "Close entries rule",
+     "type": "text",
+     "defval": "FIFO",
+     "options": [
+      "FIFO",
+      "ANY"
+     ]
+    },
+    {
+     "id": "in_15",
+     "name": "Run mode: 'backtest', 'alert' or something else",
+     "type": "text",
+     "defval": "BACKTEST",
+     "options": [
+      "BACKTEST",
+      "ALERT"
+     ]
+    },
+    {
+     "id": "in_16",
+     "name": "Alert message template for run mode 'alert'",
+     "type": "text",
+     "defval": ""
+    },
+    {
+     "id": "in_17",
+     "name": "Alert type for run mode 'alert'",
+     "type": "text",
+     "defval": "order_fills"
+    },
+    {
+     "id": "in_18",
+     "name": "Margin Long",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the long position the strategy must fund from equity"
+    },
+    {
+     "id": "in_19",
+     "name": "Margin Short",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the short position the strategy must fund from equity"
+    },
+    {
+     "id": "in_20",
+     "name": "calc_range",
+     "type": "text",
+     "defval": ""
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": [
+    "dwgtablecells",
+    "dwgtables"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,defaults,description,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStrategy,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,styles,usesPrivateLib,warnings"
+  },
+  "PUB;DT45vilhPLXzS4befkDGvO4YqJWa2kNZ": {
+   "description": "ETH/BTC 12h HERO",
+   "shortDescription": "ETH/BTC 12h HERO",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": true,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Start Time",
+     "type": "time",
+     "defval": 1514764800000
+    },
+    {
+     "id": "in_1",
+     "name": "End Time",
+     "type": "time",
+     "defval": 1696032000000
+    },
+    {
+     "id": "in_2",
+     "name": "Шорт маржинальный?",
+     "type": "text",
+     "defval": "да",
+     "options": [
+      "да",
+      "нет"
+     ]
+    },
+    {
+     "id": "in_3",
+     "name": "Return Precision",
+     "type": "integer",
+     "defval": 2,
+     "min": -1000000000000,
+     "max": 1000000000000
+    },
+    {
+     "id": "in_4",
+     "name": "Initial Capital",
+     "type": "float",
+     "defval": 1,
+     "min": 0,
+     "tooltip": "Starting funds available for the trading strategy"
+    },
+    {
+     "id": "in_5",
+     "name": "Calculate Strategy on every Tick(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Recalculates the strategy with each real-time bar update"
+    },
+    {
+     "id": "in_6",
+     "name": "Base Currency",
+     "type": "text",
+     "defval": "BTC",
+     "options": [
+      "NONE",
+      "USD",
+      "EUR",
+      "AUD",
+      "GBP",
+      "NZD",
+      "CAD",
+      "CHF",
+      "HKD",
+      "JPY",
+      "NOK",
+      "RUB",
+      "SEK",
+      "SGD",
+      "TRY",
+      "ZAR",
+      "BTC"
+     ],
+     "tooltip": "Currency used in calculations and strategy results"
+    },
+    {
+     "id": "in_7",
+     "name": "Default entry/order Qty Type",
+     "type": "text",
+     "defval": "percent_of_equity",
+     "options": [
+      "fixed",
+      "cash_per_order",
+      "percent_of_equity"
+     ],
+     "tooltip": "Quantity per trade in the selected unit"
+    },
+    {
+     "id": "in_8",
+     "name": "Default entry/order Qty Value",
+     "type": "float",
+     "defval": 100,
+     "min": 0
+    },
+    {
+     "id": "in_9",
+     "name": "Commission Value",
+     "type": "float",
+     "defval": 0.1,
+     "min": 0
+    },
+    {
+     "id": "in_10",
+     "name": "Backtesting slippage for market orders",
+     "type": "integer",
+     "defval": 20,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks to be added to the fill price of market and stop orders"
+    },
+    {
+     "id": "in_11",
+     "name": "pyramiding",
+     "type": "integer",
+     "defval": 1,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Maximum number of successive entries allowed in the same direction"
+    },
+    {
+     "id": "in_12",
+     "name": "Calculate Strategy on Order's Fill(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Triggers an additional intrabar calculation after order fills"
+    },
+    {
+     "id": "in_13",
+     "name": "Backtesting Limit Order(s) fill assumption",
+     "type": "integer",
+     "defval": 0,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks beyond the limit price required for limit order execution"
+    },
+    {
+     "id": "in_14",
+     "name": "Commission Type",
+     "type": "text",
+     "defval": "percent",
+     "options": [
+      "percent",
+      "cash_per_contract",
+      "cash_per_order"
+     ],
+     "tooltip": "Entry and exit fees to be paid"
+    },
+    {
+     "id": "in_15",
+     "name": "Process orders on bar Close",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Enables an additional calculation on bar close, allowing market orders to enter on the same tick the order is placed"
+    },
+    {
+     "id": "in_16",
+     "name": "Close entries rule",
+     "type": "text",
+     "defval": "FIFO",
+     "options": [
+      "FIFO",
+      "ANY"
+     ]
+    },
+    {
+     "id": "in_17",
+     "name": "Run mode: 'backtest', 'alert' or something else",
+     "type": "text",
+     "defval": "BACKTEST",
+     "options": [
+      "BACKTEST",
+      "ALERT"
+     ]
+    },
+    {
+     "id": "in_18",
+     "name": "Alert message template for run mode 'alert'",
+     "type": "text",
+     "defval": ""
+    },
+    {
+     "id": "in_19",
+     "name": "Alert type for run mode 'alert'",
+     "type": "text",
+     "defval": "order_fills"
+    },
+    {
+     "id": "in_20",
+     "name": "Margin Long",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the long position the strategy must fund from equity"
+    },
+    {
+     "id": "in_21",
+     "name": "Margin Short",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the short position the strategy must fund from equity"
+    },
+    {
+     "id": "in_22",
+     "name": "calc_range",
+     "type": "text",
+     "defval": ""
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_1"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_3"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_6",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_5"
+    },
+    {
+     "id": "plot_7",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_8",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_7"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_10",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_9"
+    },
+    {
+     "id": "plot_11",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_12",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_11"
+    },
+    {
+     "id": "plot_13",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_14",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_13"
+    },
+    {
+     "id": "plot_15",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_16",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_15"
+    },
+    {
+     "id": "plot_17",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_18",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_17"
+    },
+    {
+     "id": "plot_19",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_20",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_19"
+    },
+    {
+     "id": "plot_21",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_22",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_21"
+    },
+    {
+     "id": "plot_23",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_24",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_23"
+    },
+    {
+     "id": "plot_25",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_26",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_25"
+    },
+    {
+     "id": "plot_27",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_28",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_27"
+    },
+    {
+     "id": "plot_29",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_30",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_29"
+    },
+    {
+     "id": "plot_31",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_32",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_31"
+    },
+    {
+     "id": "plot_33",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_34",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_33"
+    },
+    {
+     "id": "plot_35",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_36",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_35"
+    },
+    {
+     "id": "plot_37",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_38",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_37"
+    },
+    {
+     "id": "plot_39",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_40",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_39"
+    },
+    {
+     "id": "plot_41",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_42",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_41"
+    },
+    {
+     "id": "plot_43",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_44",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_43"
+    },
+    {
+     "id": "plot_45",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_46",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_45"
+    },
+    {
+     "id": "plot_47",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_48",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_47"
+    },
+    {
+     "id": "plot_49",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": [
+    "dwgtablecells",
+    "dwgtables"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,defaults,description,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStrategy,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;ebdcd9878b66427e822ff6c0ab270fa0": {
+   "description": "Pifagor_ALTS 3.7 strategy",
+   "shortDescription": "Pifagor_ALTS 3.7 strategy",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": true,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Степень риска",
+     "type": "text",
+     "defval": "меньше",
+     "options": [
+      "меньше",
+      "больше"
+     ],
+     "group": "Стратегия"
+    },
+    {
+     "id": "in_1",
+     "name": "Закрывать при +100% прибыли",
+     "type": "bool",
+     "defval": false,
+     "group": "Стратегия"
+    },
+    {
+     "id": "in_2",
+     "name": "Начало DCA",
+     "type": "time",
+     "defval": 1514678400000,
+     "group": "Период торговли"
+    },
+    {
+     "id": "in_3",
+     "name": "Конец DCA",
+     "type": "time",
+     "defval": 2051222400000,
+     "group": "Период торговли"
+    },
+    {
+     "id": "in_4",
+     "name": "Показать ALTS-канал",
+     "type": "bool",
+     "defval": true,
+     "group": "Внешний вид"
+    },
+    {
+     "id": "in_5",
+     "name": "Показать фоновые зоны",
+     "type": "bool",
+     "defval": true,
+     "group": "Внешний вид"
+    },
+    {
+     "id": "in_6",
+     "name": "Линия средней цены",
+     "type": "bool",
+     "defval": true,
+     "group": "Внешний вид"
+    },
+    {
+     "id": "in_7",
+     "name": "Метка значения линии ALTS",
+     "type": "bool",
+     "defval": true,
+     "group": "Внешний вид"
+    },
+    {
+     "id": "in_8",
+     "name": "Положение дашборда",
+     "type": "text",
+     "defval": "bottom_right",
+     "options": [
+      "top_left",
+      "top_right",
+      "bottom_left",
+      "bottom_right"
+     ],
+     "group": "Внешний вид"
+    },
+    {
+     "id": "in_9",
+     "name": "Initial Capital",
+     "type": "float",
+     "defval": 1000000,
+     "min": 0,
+     "tooltip": "Starting funds available for the trading strategy"
+    },
+    {
+     "id": "in_10",
+     "name": "Base Currency",
+     "type": "text",
+     "defval": "USD",
+     "options": [
+      "NONE",
+      "USD",
+      "EUR",
+      "AUD",
+      "GBP",
+      "NZD",
+      "CAD",
+      "CHF",
+      "HKD",
+      "JPY",
+      "NOK",
+      "RUB",
+      "SEK",
+      "SGD",
+      "TRY",
+      "ZAR",
+      "BTC",
+      "ETH",
+      "MYR",
+      "KRW",
+      "USDT",
+      "INR",
+      "PKR",
+      "PLN",
+      "EGP",
+      "AED",
+      "COP",
+      "MXN",
+      "CLP",
+      "BRL",
+      "ARS",
+      "PEN",
+      "IDR",
+      "SAR",
+      "BDT",
+      "BHD",
+      "CNY",
+      "CZK",
+      "DKK",
+      "HUF",
+      "ILS",
+      "ISK",
+      "KES",
+      "KWD",
+      "LKR",
+      "MAD",
+      "NGN",
+      "PHP",
+      "QAR",
+      "RON",
+      "RSD",
+      "THB",
+      "TND",
+      "TWD",
+      "VES",
+      "VND"
+     ],
+     "tooltip": "Currency used in calculations and strategy results"
+    },
+    {
+     "id": "in_11",
+     "name": "pyramiding",
+     "type": "integer",
+     "defval": 200,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Maximum number of successive entries allowed in the same direction"
+    },
+    {
+     "id": "in_12",
+     "name": "Calculate Strategy on every Tick(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Recalculates the strategy with each real-time bar update"
+    },
+    {
+     "id": "in_13",
+     "name": "Default entry/order Qty Type",
+     "type": "text",
+     "defval": "cash_per_order",
+     "options": [
+      "fixed",
+      "cash_per_order",
+      "percent_of_equity"
+     ],
+     "tooltip": "Quantity per trade in the selected unit"
+    },
+    {
+     "id": "in_14",
+     "name": "Default entry/order Qty Value",
+     "type": "float",
+     "defval": 5000,
+     "min": 0
+    },
+    {
+     "id": "in_15",
+     "name": "Commission Value",
+     "type": "float",
+     "defval": 0,
+     "min": 0
+    },
+    {
+     "id": "in_16",
+     "name": "Backtesting slippage for market orders",
+     "type": "integer",
+     "defval": 0,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks to be added to the fill price of market and stop orders"
+    },
+    {
+     "id": "in_17",
+     "name": "Calculate Strategy on Order's Fill(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Triggers an additional intrabar calculation after order fills"
+    },
+    {
+     "id": "in_18",
+     "name": "Backtesting Limit Order(s) fill assumption",
+     "type": "integer",
+     "defval": 0,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks beyond the limit price required for limit order execution"
+    },
+    {
+     "id": "in_19",
+     "name": "Commission Type",
+     "type": "text",
+     "defval": "percent",
+     "options": [
+      "percent",
+      "cash_per_contract",
+      "cash_per_order"
+     ],
+     "tooltip": "Entry and exit fees to be paid"
+    },
+    {
+     "id": "in_20",
+     "name": "Process orders on bar Close",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Fills market orders on the close of the bar where they are issued"
+    },
+    {
+     "id": "in_21",
+     "name": "Close entries rule",
+     "type": "text",
+     "defval": "FIFO",
+     "options": [
+      "FIFO",
+      "ANY"
+     ]
+    },
+    {
+     "id": "in_22",
+     "name": "Margin Long",
+     "type": "float",
+     "defval": 100,
+     "min": 0,
+     "tooltip": "Percentage of the long position the strategy must fund from equity"
+    },
+    {
+     "id": "in_23",
+     "name": "Margin Short",
+     "type": "float",
+     "defval": 100,
+     "min": 0,
+     "tooltip": "Percentage of the short position the strategy must fund from equity"
+    },
+    {
+     "id": "in_24",
+     "name": "Risk free rate",
+     "type": "float",
+     "defval": 2,
+     "min": 0,
+     "max": 100,
+     "tooltip": "The annual percentage benchmark to compare against strategy returns for calculating the Sharpe and Sortino ratios"
+    },
+    {
+     "id": "in_25",
+     "name": "Use Bar Magnifier",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "On historical bars, uses more precise lower timeframe prices for more realistic results"
+    },
+    {
+     "id": "in_26",
+     "name": "Fill orders using standard OHLC",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Forces strategies running on Heikin Ashi charts to fill orders using actual OHLC prices, for more realistic results"
+    },
+    {
+     "id": "in_27",
+     "name": "Run mode: 'backtest', 'alert' or something else",
+     "type": "text",
+     "defval": "BACKTEST",
+     "options": [
+      "BACKTEST",
+      "ALERT"
+     ],
+     "isHidden": true
+    },
+    {
+     "id": "in_28",
+     "name": "Alert message template for run mode 'alert'",
+     "type": "text",
+     "defval": "",
+     "isHidden": true
+    },
+    {
+     "id": "in_29",
+     "name": "Alert type for run mode 'alert'",
+     "type": "text",
+     "defval": "order_fills",
+     "isHidden": true
+    },
+    {
+     "id": "in_30",
+     "name": "exclude_from_report",
+     "type": "text",
+     "defval": "",
+     "isHidden": true
+    },
+    {
+     "id": "in_31",
+     "name": "trim_orders",
+     "type": "bool",
+     "defval": true,
+     "isHidden": true
+    },
+    {
+     "id": "in_32",
+     "name": "calc_range",
+     "type": "text",
+     "defval": "",
+     "isHidden": true
+    },
+    {
+     "id": "in_33",
+     "name": "Calculate Strategy on every History Tick",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Recalculates the strategy on each historical bar tick, simulating intrabar price movements"
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "alertcondition",
+     "title": "ALTS — сигнал покупки"
+    },
+    {
+     "id": "plot_1",
+     "type": "alertcondition",
+     "title": "ALTS — сигнал выхода"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "ALTS upper"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "ALTS lower glow"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "ALTS lower core"
+    },
+    {
+     "id": "plot_5",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_0"
+    },
+    {
+     "id": "plot_6",
+     "type": "bg_colorer",
+     "title": "Зона накопления"
+    },
+    {
+     "id": "plot_7",
+     "type": "bg_colorer",
+     "title": "Зона риска"
+    },
+    {
+     "id": "plot_8",
+     "type": "line",
+     "title": "Средняя цена (свечение)"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Средняя цена"
+    },
+    {
+     "id": "plot_10",
+     "type": "line",
+     "title": "Цель +100%"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "ALTS band"
+   ],
+   "graphics": [
+    "dwglabels",
+    "dwgtablecells",
+    "dwgtables"
+   ],
+   "hasAlerts": true,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,filledAreasStyle,format,graphics,hasAlertFunction,historyCalculationMayChange,id,inputs,isRGB,isTVScript,isTVScriptStrategy,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;ed584d65d2c94d33bc6c551a9da28162": {
+   "description": "Дно по ATR",
+   "shortDescription": "Дно по ATR",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "length",
+     "type": "integer",
+     "defval": 20
+    },
+    {
+     "id": "in_1",
+     "name": "K dn",
+     "type": "float",
+     "defval": 2.3,
+     "min": -1000000000000,
+     "max": 1000000000000,
+     "step": 0.1
+    },
+    {
+     "id": "in_2",
+     "name": "K up",
+     "type": "float",
+     "defval": 16,
+     "min": -1000000000000,
+     "max": 1000000000000,
+     "step": 1
+    },
+    {
+     "id": "in_3",
+     "name": "",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_4",
+     "name": "",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_5",
+     "name": "Source",
+     "type": "source",
+     "defval": "hlc3",
+     "options": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "hl2",
+      "hlc3",
+      "hlcc4",
+      "ohlc4",
+      "volume"
+     ]
+    },
+    {
+     "id": "in_6",
+     "name": "Timeframe",
+     "type": "resolution",
+     "defval": "",
+     "group": "Calculation"
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "sma"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "ema"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "sma"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "ema"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,id,inputs,isMTFResolution,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;f4623958345d4c349f6c2ba2ae3fc5e8": {
+   "description": "bottomline",
+   "shortDescription": "bottomline",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background",
+    "Plots Background"
+   ],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,filledAreasStyle,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;TeR3EaHfg79LXosFsjTsISTFWMiqEM62": {
+   "description": "GLOBAL",
+   "shortDescription": "GLOBAL",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": true,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Long term BULL",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_1",
+     "name": "Show top and bottom",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_2",
+     "name": "Show dashboard",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_3",
+     "name": "Safety trades",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_4",
+     "name": "showpicycle",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_5",
+     "name": "How to trade",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_6",
+     "name": "Calculate Strategy on every Tick(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Recalculates the strategy with each real-time bar update"
+    },
+    {
+     "id": "in_7",
+     "name": "pyramiding",
+     "type": "integer",
+     "defval": 1,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Maximum number of successive entries allowed in the same direction"
+    },
+    {
+     "id": "in_8",
+     "name": "Initial Capital",
+     "type": "float",
+     "defval": 1,
+     "min": 0,
+     "tooltip": "Starting funds available for the trading strategy"
+    },
+    {
+     "id": "in_9",
+     "name": "Base Currency",
+     "type": "text",
+     "defval": "USD",
+     "options": [
+      "NONE",
+      "USD",
+      "EUR",
+      "AUD",
+      "GBP",
+      "NZD",
+      "CAD",
+      "CHF",
+      "HKD",
+      "JPY",
+      "NOK",
+      "RUB",
+      "SEK",
+      "SGD",
+      "TRY",
+      "ZAR",
+      "BTC",
+      "ETH",
+      "MYR",
+      "KRW",
+      "USDT",
+      "INR"
+     ],
+     "tooltip": "Currency used in calculations and strategy results"
+    },
+    {
+     "id": "in_10",
+     "name": "Default entry/order Qty Type",
+     "type": "text",
+     "defval": "percent_of_equity",
+     "options": [
+      "fixed",
+      "cash_per_order",
+      "percent_of_equity"
+     ],
+     "tooltip": "Quantity per trade in the selected unit"
+    },
+    {
+     "id": "in_11",
+     "name": "Default entry/order Qty Value",
+     "type": "float",
+     "defval": 100,
+     "min": 0
+    },
+    {
+     "id": "in_12",
+     "name": "Commission Value",
+     "type": "float",
+     "defval": 0.1,
+     "min": 0
+    },
+    {
+     "id": "in_13",
+     "name": "Backtesting slippage for market orders",
+     "type": "integer",
+     "defval": 10,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks to be added to the fill price of market and stop orders"
+    },
+    {
+     "id": "in_14",
+     "name": "Calculate Strategy on Order's Fill(s)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Triggers an additional intrabar calculation after order fills"
+    },
+    {
+     "id": "in_15",
+     "name": "Backtesting Limit Order(s) fill assumption",
+     "type": "integer",
+     "defval": 0,
+     "min": 0,
+     "max": 1000000,
+     "tooltip": "Ticks beyond the limit price required for limit order execution"
+    },
+    {
+     "id": "in_16",
+     "name": "Commission Type",
+     "type": "text",
+     "defval": "percent",
+     "options": [
+      "percent",
+      "cash_per_contract",
+      "cash_per_order"
+     ],
+     "tooltip": "Entry and exit fees to be paid"
+    },
+    {
+     "id": "in_17",
+     "name": "Process orders on bar Close",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Fills market orders on the close of the bar where they are issued"
+    },
+    {
+     "id": "in_18",
+     "name": "Close entries rule",
+     "type": "text",
+     "defval": "FIFO",
+     "options": [
+      "FIFO",
+      "ANY"
+     ]
+    },
+    {
+     "id": "in_19",
+     "name": "Margin Long",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the long position the strategy must fund from equity"
+    },
+    {
+     "id": "in_20",
+     "name": "Margin Short",
+     "type": "float",
+     "defval": 0,
+     "min": 0,
+     "tooltip": "Percentage of the short position the strategy must fund from equity"
+    },
+    {
+     "id": "in_21",
+     "name": "Run mode: 'backtest', 'alert' or something else",
+     "type": "text",
+     "defval": "BACKTEST",
+     "options": [
+      "BACKTEST",
+      "ALERT"
+     ]
+    },
+    {
+     "id": "in_22",
+     "name": "Alert message template for run mode 'alert'",
+     "type": "text",
+     "defval": ""
+    },
+    {
+     "id": "in_23",
+     "name": "Alert type for run mode 'alert'",
+     "type": "text",
+     "defval": "order_fills"
+    },
+    {
+     "id": "in_24",
+     "name": "exclude_from_report",
+     "type": "text",
+     "defval": ""
+    },
+    {
+     "id": "in_25",
+     "name": "risk_free_rate",
+     "type": "float",
+     "defval": 2,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "id": "in_26",
+     "name": "Use Bar Magnifier",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "On historical bars, uses more precise lower timeframe prices for more realistic results"
+    },
+    {
+     "id": "in_27",
+     "name": "Fill orders using standard OHLC",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "Forces strategies running on Heikin Ashi charts to fill orders using actual OHLC prices, for more realistic results"
+    },
+    {
+     "id": "in_28",
+     "name": "trim_orders",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_29",
+     "name": "calc_range",
+     "type": "text",
+     "defval": ""
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Delta Cap"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_6",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_7",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_8",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_10",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_11",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_12",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_13",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_14",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_15",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_16",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_17",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_18",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_19",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_20",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_3"
+    },
+    {
+     "id": "plot_21",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_4"
+    },
+    {
+     "id": "plot_22",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_23",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_24",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_25",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_26",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_27",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_28",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_29",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_30",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_31",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_32",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_33",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_34",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_35",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_36",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_37",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_38",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_39",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_40",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_41",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_42",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_43",
+     "type": "alertcondition",
+     "title": "Alert"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background",
+    "Plots Background",
+    "Plots Background",
+    "Plots Background",
+    "Plots Background"
+   ],
+   "graphics": [
+    "dwglabels",
+    "dwglines"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStrategy,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;6d9015a1d65f4b53acaa7210554c446b": {
+   "description": "Nadaraya-Watson Envelope [LuxAlgo]",
+   "shortDescription": "LuxAlgo - Nadaraya-Watson Envelope",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Bandwidth",
+     "type": "float",
+     "defval": 8,
+     "min": 0,
+     "max": 1000000000000
+    },
+    {
+     "id": "in_1",
+     "name": "mult",
+     "type": "float",
+     "defval": 3,
+     "min": 0,
+     "max": 1000000000000
+    },
+    {
+     "id": "in_2",
+     "name": "Source",
+     "type": "source",
+     "defval": "close",
+     "options": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "hl2",
+      "hlc3",
+      "hlcc4",
+      "ohlc4",
+      "volume"
+     ]
+    },
+    {
+     "id": "in_3",
+     "name": "Repainting Smoothing",
+     "type": "bool",
+     "defval": true,
+     "tooltip": "Repainting is an effect where the indicators historical output is subject to change over time. Disabling repainting will cause the indicator to output the endpoints of the calculations"
+    },
+    {
+     "id": "in_4",
+     "name": "Colors",
+     "type": "color",
+     "defval": "#00897B",
+     "group": "Style"
+    },
+    {
+     "id": "in_5",
+     "name": "",
+     "type": "color",
+     "defval": "#FF5252",
+     "group": "Style"
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Upper"
+    },
+    {
+     "id": "plot_1",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_0"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Lower"
+    },
+    {
+     "id": "plot_3",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_2"
+    },
+    {
+     "id": "plot_4",
+     "type": "shapes",
+     "title": "Crossunder"
+    },
+    {
+     "id": "plot_5",
+     "type": "text_colorer",
+     "title": null,
+     "target": "plot_4"
+    },
+    {
+     "id": "plot_6",
+     "type": "shapes",
+     "title": "Crossover"
+    },
+    {
+     "id": "plot_7",
+     "type": "text_colorer",
+     "title": null,
+     "target": "plot_6"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": [
+    "dwglabels",
+    "dwglines",
+    "dwgtablecells",
+    "dwgtables"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "TVScriptMetaInfoExprs,_metainfoVersion,behind_chart,defaults,description,docs,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;1b68f957a4c445f0b254b9374eb41968": {
+   "description": "Opportunity",
+   "shortDescription": "Opportunity",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "colorer",
+     "title": null,
+     "target": "fill_0"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [
+    "Plots Background"
+   ],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,filledAreas,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;b9b4b5f85bf54f619e3f333ab82e531e": {
+   "description": "Pi Pi",
+   "shortDescription": "Pi Pi",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Mode",
+     "type": "text",
+     "defval": "3",
+     "options": [
+      "1",
+      "2",
+      "3"
+     ]
+    },
+    {
+     "id": "in_1",
+     "name": "Show MA?",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_2",
+     "name": "Show Background color?",
+     "type": "bool",
+     "defval": false
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_5",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_6",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_7",
+     "type": "bg_colorer",
+     "title": "Background Color"
+    },
+    {
+     "id": "plot_8",
+     "type": "alertcondition",
+     "title": "SHORT"
+    },
+    {
+     "id": "plot_9",
+     "type": "alertcondition",
+     "title": "LONG1"
+    },
+    {
+     "id": "plot_10",
+     "type": "alertcondition",
+     "title": "LONG2"
+    },
+    {
+     "id": "plot_11",
+     "type": "alertcondition",
+     "title": "LONG3"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": [
+    "dwglabels",
+    "dwglines"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;3e736136910147969dc2c0c2ceb0daf5": {
+   "description": "Trap line",
+   "shortDescription": "Trap line",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "line",
+     "title": "Plot"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;aee39eb449454a7e99253aba4a443b14": {
+   "description": "forever sma",
+   "shortDescription": "forever sma ",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "Labels?",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_1",
+     "name": "Forever sma",
+     "type": "bool",
+     "defval": false
+    },
+    {
+     "id": "in_2",
+     "name": "",
+     "type": "time",
+     "defval": 1583971200000
+    },
+    {
+     "id": "in_3",
+     "name": "2018 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_4",
+     "name": "2015 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_5",
+     "name": "2011 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_6",
+     "name": "2010 run",
+     "type": "bool",
+     "defval": true
+    },
+    {
+     "id": "in_7",
+     "name": "Включить риск метрику(только blx)",
+     "type": "bool",
+     "defval": false,
+     "tooltip": "В настройках цвет свеч и фитилей включи на серый."
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_6",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_7",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_8",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_9",
+     "type": "line",
+     "title": "Raw Hash Rate"
+    },
+    {
+     "id": "plot_10",
+     "type": "line",
+     "title": "Source for Trailing Williams Lows"
+    },
+    {
+     "id": "plot_11",
+     "type": "line",
+     "title": "Trailing Williams Lows"
+    },
+    {
+     "id": "plot_12",
+     "type": "colorer",
+     "title": null,
+     "target": "plot_11"
+    },
+    {
+     "id": "plot_13",
+     "type": "line",
+     "title": "Trailing ATR of Price for Confirmation"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": null,
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  },
+  "PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e": {
+   "description": "Global mini+",
+   "shortDescription": "Global mini (+)",
+   "overlay": true,
+   "pineSrcVersion": 55,
+   "format": {
+    "type": "inherit"
+   },
+   "isStrategy": false,
+   "inputs": [
+    {
+     "id": "in_0",
+     "name": "money flow",
+     "type": "text",
+     "defval": "NO",
+     "options": [
+      "lines",
+      "wave",
+      "NO"
+     ]
+    }
+   ],
+   "plots": [
+    {
+     "id": "plot_0",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_1",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_2",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_3",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_4",
+     "type": "line",
+     "title": "Plot"
+    },
+    {
+     "id": "plot_5",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_6",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_7",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_8",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_9",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_10",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_11",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_12",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_13",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_14",
+     "type": "shapes",
+     "title": "Shapes"
+    },
+    {
+     "id": "plot_15",
+     "type": "bar_colorer",
+     "title": "Bar Color"
+    },
+    {
+     "id": "plot_16",
+     "type": "alertcondition",
+     "title": "Strong Short"
+    },
+    {
+     "id": "plot_17",
+     "type": "alertcondition",
+     "title": "red dot"
+    },
+    {
+     "id": "plot_18",
+     "type": "alertcondition",
+     "title": "green dot"
+    },
+    {
+     "id": "plot_19",
+     "type": "alertcondition",
+     "title": "strong long"
+    }
+   ],
+   "bands": [],
+   "filledAreas": [],
+   "graphics": [
+    "dwglabels",
+    "dwglines"
+   ],
+   "hasAlerts": null,
+   "metaKeys": "_metainfoVersion,behind_chart,defaults,description,docs,format,graphics,historyCalculationMayChange,id,inputs,isTVScript,isTVScriptStub,is_hidden_study,is_price_study,palettes,pine,plots,scriptIdPart,shortDescription,stats,styles,usesPrivateLib,warnings"
+  }
+ },
+ "pages": {
+  "PUB;86e23a99c8764a32a70c614bf7d6f926": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/iisxHade-pifagor-warm-buy-overlay/",
+   "title": "Pifagor_Warm buy overlay — Indicator by Pifagor_trade",
+   "description": ".//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;cCKnUZEt9lyP3uLCX4g808dNcJqjIK8A": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/pjOd99OR-pifagor-06-eth-btc-12h-best/",
+   "title": "Pifagor 06 ETH/BTC 12h (BEST)  — Strategy by Pifagor_trade",
+   "description": "ETH BTC 12H BITTREX",
+   "created": "2020-11-23",
+   "updated": "2022-02-22"
+  },
+  "PUB;a62aea63fcef4382a45abc163919c65f": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/3uQw0B8R-pifagor-12-histogram-r-s-m/",
+   "title": "Pifagor 12 Histogram R/S/M  — Indicator by Pifagor_trade",
+   "description": "BTC USD BITSTAMP",
+   "created": "2021-06-28",
+   "updated": "2023-11-03"
+  },
+  "PUB;4b40b60837c64aa989040a86a088f22d": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/3qyeJHGG-dca-pifagor-4-0/",
+   "title": "DCA pifagor 4.0 — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": "2026-05-06"
+  },
+  "PUB;5b1766659c714f9b8896c428afe1b886": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/ehw70LB1-pifagor-13-trader-01/",
+   "title": "Pifagor 13 Trader 01  — Indicator by Pifagor_trade",
+   "description": "day 1",
+   "created": "2022-01-26",
+   "updated": "2023-01-18"
+  },
+  "PUB;TeR3EaHfg79LXosFsjTsISTFWMiqEM62": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/xfIMDORe-pifagor-01-global-1-3d/",
+   "title": "Pifagor 01 GLOBAL 1/3D  — Strategy by Pifagor_trade",
+   "description": "bitstamp",
+   "created": "2021-02-06",
+   "updated": "2024-09-17"
+  },
+  "PUB;3e736136910147969dc2c0c2ceb0daf5": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/erIwNY5q-trap-line-pifagor-free-indicator/",
+   "title": "Trap line (Pifagor free indicator) by Pifagor_trade",
+   "description": "BTCUSD BITSTAMP",
+   "created": "2022-03-29",
+   "updated": "2022-09-14"
+  },
+  "PUB;cbf1db2ca3064a3da2f66c49ca4646fe": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/4hzhfKPQ-pifagor-09-alts-mood/",
+   "title": "Pifagor 09 ALTS_mood  — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2021-12-08",
+   "updated": "2021-12-15"
+  },
+  "PUB;ebdcd9878b66427e822ff6c0ab270fa0": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/9G4XBiQd-pifagor-08-alts-strategy-3-6/",
+   "title": "Pifagor 08 ALTS strategy 3.6 by Pifagor_trade",
+   "description": "Dca strategy for altcoins",
+   "created": "2022-01-01",
+   "updated": "2026-05-07"
+  },
+  "PUB;680feaa4b10a4c11b228f4efa7448b9d": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/UbQyQoPy-opportunity-private/",
+   "title": "Opportunity(private) — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;97ee2129f5ee48dbbcc1ef6b3840fa3f": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/GWAG6tcw-pifagor-20-buy-more-safety-trade/",
+   "title": "Pifagor 20 BUY MORE (SAFETY TRADE) — Strategy by Pifagor_trade",
+   "description": "btcusd1d",
+   "created": "2021-08-03",
+   "updated": "2024-11-28"
+  },
+  "PUB;DT45vilhPLXzS4befkDGvO4YqJWa2kNZ": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/wQ27Z1VY-pifagor-05-eth-btc-12h-1d-hero/",
+   "title": "Pifagor 05 ETH/BTC 12h/1D (hero)  — Strategy by Pifagor_trade",
+   "description": "ETH BTC 12H BITTREX",
+   "created": "2020-11-23",
+   "updated": "2020-11-27"
+  },
+  "PUB;6d9015a1d65f4b53acaa7210554c446b": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/Iko0E2kL-Nadaraya-Watson-Envelope-LuxAlgo/",
+   "title": "Nadaraya-Watson Envelope [LuxAlgo] — Indicator by LuxAlgo",
+   "description": "This indicator builds upon the previously posted Nadaraya-Watson smoothers. Here we have created an envelope indicator based on Kernel Smoothing with integrated alerts from crosses between the price and envelope extremities. Unlike the Nadaraya-Watson estimator, this indicator follows a contrarian methodology.\n\nPlease note that by default this indicator can be subject to repainting. Users can use a non-repainting smoothing method available from the settings. The triangle labels are designed so …",
+   "created": "2021-10-18",
+   "updated": "2023-07-18"
+  },
+  "PUB;9e21a723bb484e1ba8707e01a7d09a65": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/xMPqdt5k-forever-sma/",
+   "title": "forever sma — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;8fbc6045e6234538aa2452ba8fffc68b": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/rqtEC1K6-pifagor-mfi-3-2-private/",
+   "title": "Pifagor Mfi 3.2 (private) — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;b2628d46c21c4fb18c4001af9ff0eba4": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/1Uxw5B5W-pifagor-warm-buy/",
+   "title": "Pifagor  Warm buy — Indicator by Pifagor_trade",
+   "description": "BTCUSD 1D",
+   "created": "2021-08-23",
+   "updated": "2022-07-28"
+  },
+  "PUB;44d8443427f54382b21705d6cb022ced": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/UV87rzw3-trap-line-private/",
+   "title": "Trap line (private) — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;b9b4b5f85bf54f619e3f333ab82e531e": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/lcPpr9m4-pi-pi/",
+   "title": "Pi Pi — Indicator by Pifagor_trade",
+   "description": "pi cycle 2",
+   "created": "2022-07-13",
+   "updated": null
+  },
+  "PUB;ed584d65d2c94d33bc6c551a9da28162": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/2884BpOc-dno-po-atr-private/",
+   "title": "Дно по ATR (private) — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;2138ebc7bbc0449d9d32f4736a1af881": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/KMrY1JVF-btc-mood-temp-private/",
+   "title": "BTC mood temp(private)  — Indicator by Pifagor_trade",
+   "description": "//",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;f4623958345d4c349f6c2ba2ae3fc5e8": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/3Rtrd0Ly-pifagor-19-bottomline/",
+   "title": "Pifagor 19 bottomline  — Indicator by Pifagor_trade",
+   "description": "\nBLX",
+   "created": "2021-07-04",
+   "updated": "2026-02-13"
+  },
+  "PUB;6cd345b56f94438cb9ff0871d13dd761": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/gSkfKAoV-pifagor-big-guy/",
+   "title": "Pifagor_Big guy ()()() — Indicator by Pifagor_trade",
+   "description": "..",
+   "created": "2026-03-20",
+   "updated": null
+  },
+  "PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/NwRoVIxX-pifagor-14-global-mini/",
+   "title": "Pifagor 14 Global mini — Indicator by Pifagor_trade",
+   "description": "/",
+   "created": "2021-12-06",
+   "updated": "2023-04-10"
+  },
+  "PUB;6f66851d0de6440296499c02dff258bd": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/TMnuoN3S-pifagor-04-div-private/",
+   "title": "Pifagor 04 div private!!! — Indicator by Pifagor_trade",
+   "description": "///",
+   "created": "2023-05-09",
+   "updated": null
+  },
+  "PUB;aee39eb449454a7e99253aba4a443b14": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/5Hiqom07-pifagor-02-forever-sma/",
+   "title": "Pifagor 02 Forever sma — Indicator by Pifagor_trade",
+   "description": "BLX 1D",
+   "created": "2021-09-06",
+   "updated": "2024-09-17"
+  },
+  "PUB;4515704b5fdb4ae4ab5ebb55eded07bf": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/rv2zItCE-pifagor-14-global-mini/",
+   "title": "Pifagor 14 Global mini+ — Indicator by Pifagor_trade",
+   "description": "BTCUSD 1D",
+   "created": "2021-12-05",
+   "updated": "2023-04-10"
+  },
+  "PUB;1b68f957a4c445f0b254b9374eb41968": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/vZ5SHkOz-03-opportunity-pifagor-free-indicator/",
+   "title": "03 Opportunity (Pifagor free indicator) by Pifagor_trade",
+   "description": "BLX",
+   "created": "2021-11-28",
+   "updated": "2026-02-13"
+  },
+  "PUB;1ee8d54bf27646098730eef5d7408b39": {
+   "status": 200,
+   "url": "https://www.tradingview.com/script/ARJRGiI3-4h-radar-private/",
+   "title": "4h radar(private) — Indicator by Pifagor_trade",
+   "description": "///",
+   "created": "2026-03-20",
+   "updated": null
+  }
+ },
+ "sources": {
+  "USER;2f0a953d5c1b494da60aaa6da5a3b421": {
+   "scriptName": "CR_Forever02_native_grid",
+   "version": "1.0",
+   "created": "2026-09-10T05:16:40.075215Z",
+   "updated": "2026-09-10T05:16:40.075215Z",
+   "kind": "study",
+   "source": "//@version=6\r\nindicator(\"CR_Forever02_native_grid\", overlay = true, precision = 8)\r\n\r\n// Independent clean-room DIAGNOSTIC, not a clone, signal or strategy.\r\n// Frozen20 hypotheses: four sources x five inclusive daily anchors.\r\n// No original values embedded, no request.security, no future references.\r\n// Native chart outputs allow source-aligned tests without paid export.\r\nbool supported = syminfo.tickerid == \"BITSTAMP:BTCUSD\" and timeframe.isdaily and timeframe.multiplier == 1 and chart.is_standard\r\nvar int firstLoaded = time\r\nvar array<float> totals = array.new<float>(20, 0.0)\r\nvar array<int> counts = array.new<int>(5, 0)\r\narray<float> sources = array.from(close, hl2, hlc3, ohlc4)\r\narray<float> means = array.new<float>(20, na)\r\nint firstAnchor = timestamp(\"12 Dec 2018 00:00 +0000\")\r\nfor a = 0 to 4\r\n    int anchor = firstAnchor + a * 86400000\r\n    if time >= anchor\r\n        array.set(counts, a, array.get(counts, a) + 1)\r\n        for s = 0 to 3\r\n            int i = s * 5 + a\r\n            array.set(totals, i, array.get(totals, i) + array.get(sources, s))\r\n            if supported and firstLoaded <= firstAnchor and time > anchor\r\n                array.set(means, i, array.get(totals, i) / array.get(counts, a))\r\n\r\nplot(array.get(means, 0), \"G00 close Dec12\", display = display.data_window)\r\nplot(array.get(means, 1), \"G01 close Dec13\", display = display.data_window)\r\nplot(array.get(means, 2), \"G02 close Dec14\", display = display.data_window)\r\nplot(array.get(means, 3), \"G03 close Dec15\", display = display.data_window)\r\nplot(array.get(means, 4), \"G04 close Dec16\", display = display.data_window)\r\nplot(array.get(means, 5), \"G05 hl2 Dec12\", display = display.data_window)\r\nplot(array.get(means, 6), \"G06 hl2 Dec13\", display = display.data_window)\r\nplot(array.get(means, 7), \"G07 hl2 Dec14\", display = display.data_window)\r\nplot(array.get(means, 8), \"G08 hl2 Dec15\", display = display.data_window)\r\nplot(array.get(means, 9), \"G09 hl2 Dec16\", display = display.data_window)\r\nplot(array.get(means, 10), \"G10 hlc3 Dec12\", display = display.data_window)\r\nplot(array.get(means, 11), \"G11 hlc3 Dec13\", display = display.data_window)\r\nplot(array.get(means, 12), \"G12 hlc3 Dec14\", display = display.data_window)\r\nplot(array.get(means, 13), \"G13 hlc3 Dec15\", display = display.data_window)\r\nplot(array.get(means, 14), \"G14 hlc3 Dec16\", display = display.data_window)\r\nplot(array.get(means, 15), \"G15 ohlc4 Dec12\", display = display.data_window)\r\nplot(array.get(means, 16), \"G16 ohlc4 Dec13\", display = display.data_window)\r\nplot(array.get(means, 17), \"G17 ohlc4 Dec14\", display = display.data_window)\r\nplot(array.get(means, 18), \"G18 ohlc4 Dec15\", display = display.data_window)\r\nplot(array.get(means, 19), \"G19 ohlc4 Dec16\", display = display.data_window)\r\nplot(firstLoaded, \"D first loaded UTC ms\", display = display.data_window)\r\nplot(array.get(counts, 0), \"D count Dec12\", display = display.data_window)\r\nplot(array.get(counts, 1), \"D count Dec13\", display = display.data_window)\r\nplot(array.get(counts, 2), \"D count Dec14\", display = display.data_window)\r\nplot(array.get(counts, 3), \"D count Dec15\", display = display.data_window)\r\nplot(array.get(counts, 4), \"D count Dec16\", display = display.data_window)\r\nplot(syminfo.mintick, \"D mintick\", display = display.data_window)\r\nplot(supported ? 1 : 0, \"D supported\", display = display.data_window)\r\nplot(open, \"D open\", display = display.data_window)\r\nplot(high, \"D high\", display = display.data_window)\r\nplot(low, \"D low\", display = display.data_window)\r\nplot(close, \"D close\", display = display.data_window)\r\nplot(volume, \"D volume\", display = display.data_window)\r\nplot(time, \"D time UTC ms\", display = display.data_window)\r\n"
+  },
+  "USER;07c41093e5b8415b8c3b30ccedea19b6": {
+   "scriptName": "CR_Forever_SMA_lines_candidate",
+   "version": "1.0",
+   "created": "2026-09-08T12:41:11.840645Z",
+   "updated": "2026-09-08T12:41:11.840645Z",
+   "kind": "study",
+   "source": "//@version=6\r\nindicator(\"CR_Forever_SMA_lines_candidate\", overlay = true, precision = 8)\r\n\r\n// Authorized clean-room reconstruction of TWO observable lines only.\r\n// NOT the author's source, NOT a complete clone, NOT an entry/exit strategy.\r\n// FIT 400 + Validation 200 daily bars; formulas frozen before 2023 holdout.\r\n// API holdout residual traced to 2022-12-06 Close: API 17087 vs TV 17088.\r\n// No fitted correction is used here: native chart Close feeds both means.\r\n// Other run lines, risk metrics, colors/zones, labels and four signal groups\r\n// are deliberately omitted because their exact rules are not yet proven.\r\n// Supported research context: standard BITSTAMP:BTCUSD daily candles.\r\n// Default main line OFF and 2018 line ON match the corresponding original inputs.\r\n\r\nbool showMain = input.bool(false, \"Forever sma\")\r\nint anchorMain = input.time(timestamp(\"12 Mar 2020 00:00 +0000\"), \"\")\r\nbool show2018 = input.bool(true, \"2018 run\")\r\nint anchor2018 = timestamp(\"14 Dec 2018 00:00 +0000\")\r\n\r\nbool supported = syminfo.tickerid == \"BITSTAMP:BTCUSD\" and timeframe.isdaily and timeframe.multiplier == 1\r\nvar int firstLoaded = time\r\nvar float sumMain = 0.0\r\nvar int countMain = 0\r\nvar float sum2018 = 0.0\r\nvar int count2018 = 0\r\nif time >= anchorMain\r\n    sumMain += close\r\n    countMain += 1\r\nif time >= anchor2018\r\n    sum2018 += close\r\n    count2018 += 1\r\n\r\n// The main line includes the anchor Close in its sum, but is not displayed\r\n// on the anchor bar itself. This missing-value mask is directly FIT-observed.\r\nfloat mainLine = supported and firstLoaded <= anchorMain and time > anchorMain and countMain > 0 ? sumMain / countMain : na\r\nfloat run2018 = supported and firstLoaded <= anchor2018 and count2018 > 0 ? sum2018 / count2018 : na\r\nplot(showMain ? mainLine : na, \"CR Main\", color = color.orange, linewidth = 1)\r\nplot(show2018 ? run2018 : na, \"CR 2018\", color = color.white, linewidth = 1)\r\n// Explicit diagnostic output, not part of the original indicator.\r\nplot(syminfo.mintick, \"DIAGNOSTIC mintick\", display = display.data_window)\r\n\r\nvar table note = table.new(position.bottom_right, 1, 1)\r\nif barstate.islast\r\n    string message = supported ? \"RESEARCH: 2 lines only. No LONG/SHORT/EXIT signals.\" : \"Use standard BITSTAMP:BTCUSD 1D. Other contexts unvalidated.\"\r\n    if supported and firstLoaded > math.min(anchorMain, anchor2018)\r\n        message := \"Insufficient loaded history: load data before both anchors.\"\r\n    table.cell(note, 0, 0, message, text_color = color.white, bgcolor = color.new(color.black, 20))\r\n"
+  },
+  "USER;158fc7b3cded4934a14c23aa1bdd6cef": {
+   "scriptName": "CR_Forever_SMA_three_lines_candidate",
+   "version": "1.0",
+   "created": "2026-09-08T15:16:39.686733Z",
+   "updated": "2026-09-08T15:16:39.686733Z",
+   "kind": "study",
+   "source": "//@version=6\r\nindicator(\"CR_Forever_SMA_three_lines_candidate\", overlay = true, precision = 8)\r\n\r\n// Authorized clean-room PARTIAL reconstruction, never protected source.\r\n// Three numeric lines only, not a full Pifagor clone or trading strategy.\r\n// Standard BITSTAMP:BTCUSD 1D only. No future values or price corrections.\r\n// Plot2: 24 fixed formulas, 400 FIT / 200 Validation / 200 earlier-time Holdout.\r\n// Public-feed max errors: $0.028095 / $0.015076 / $0.035114, not strict parity.\r\n// Display start/end are observed boundary candidates, not proven universally.\r\n// Signals, old2011/2010 runs, risk, labels, zones and alerts are omitted.\r\nbool showMain = input.bool(false, \"Forever sma\")\r\nint anchorMain = input.time(timestamp(\"12 Mar 2020 00:00 +0000\"), \"\")\r\nbool show2018 = input.bool(true, \"2018 run\")\r\nbool show2015 = input.bool(true, \"2015 run\")\r\nint anchor2018 = timestamp(\"14 Dec 2018 00:00 +0000\")\r\nint anchor2015 = timestamp(\"14 Jan 2015 00:00 +0000\")\r\nint display2015 = timestamp(\"01 Oct 2015 00:00 +0000\")\r\n\r\nbool supported = syminfo.tickerid == \"BITSTAMP:BTCUSD\" and timeframe.isdaily and timeframe.multiplier == 1\r\nvar int firstLoaded = time\r\nvar float sumMain = 0.0\r\nvar int nMain = 0\r\nvar float sum2018 = 0.0\r\nvar int n2018 = 0\r\nvar float sum2015 = 0.0\r\nvar int n2015 = 0\r\nif time >= anchorMain\r\n    sumMain += close\r\n    nMain += 1\r\nif time >= anchor2018\r\n    sum2018 += close\r\n    n2018 += 1\r\nif time >= anchor2015\r\n    sum2015 += close\r\n    n2015 += 1\r\n\r\nfloat mainLine = supported and firstLoaded <= anchorMain and time > anchorMain and nMain > 0 ? sumMain / nMain : na\r\n// Anchor Close participates in the mean, but the2018line is hidden on anchor day.\r\nfloat run2018 = supported and firstLoaded <= anchor2018 and time > anchor2018 and n2018 > 0 ? sum2018 / n2018 : na\r\nfloat run2015 = supported and firstLoaded <= anchor2015 and time > display2015 and time <= anchor2018 and n2015 > 0 ? sum2015 / n2015 : na\r\nplot(showMain ? mainLine : na, \"CR Main\", color = color.orange, linewidth = 1)\r\nplot(show2018 ? run2018 : na, \"CR 2018\", color = color.white, linewidth = 1)\r\nplot(show2015 ? run2015 : na, \"CR 2015\", color = color.white, linewidth = 1)\r\nplot(syminfo.mintick, \"DIAGNOSTIC mintick\", display = display.data_window)\r\n\r\nvar table note = table.new(position.bottom_right, 1, 1)\r\nif barstate.islast\r\n    string message = supported ? \"RESEARCH: 3 lines only. No LONG/SHORT/EXIT signals.\" : \"Use standard BITSTAMP:BTCUSD 1D. Other contexts unvalidated.\"\r\n    if supported and firstLoaded > math.min(anchor2015, math.min(anchorMain, anchor2018))\r\n        message := \"Insufficient loaded history: load data before all anchors.\"\r\n    table.cell(note, 0, 0, message, text_color = color.white, bgcolor = color.new(color.black, 20))\r\n"
+  },
+  "USER;8bc1aa02a2c2421ea3d9f512e9e9f6e4": {
+   "scriptName": "CR_GLOBAL_four_line_component",
+   "version": "1.0",
+   "created": "2026-09-09T14:00:21.201177Z",
+   "updated": "2026-09-09T14:00:21.201177Z",
+   "kind": "study",
+   "source": "//@version=6\r\n// Independent clean-room research component, NOT the full GLOBAL indicator.\r\n// Fixed hypothesis: outputs14..17 only. No original-output seeds or future data.\r\n// Unmatched modes, signals, styles and alerts intentionally not fabricated.\r\nindicator(\"CR_GLOBAL_four_line_component\", shorttitle=\"CRG4\", overlay=true, precision=8)\r\nvar float eh = na\r\nvar float el = na\r\nvar float ec = na\r\nvar int firstTime = time\r\neh := na(eh[1]) ? high : (2.0 / 101.0) * high + (1.0 - 2.0 / 101.0) * eh[1]\r\nel := na(el[1]) ? low : (2.0 / 141.0) * low + (1.0 - 2.0 / 141.0) * el[1]\r\nec := na(ec[1]) ? close : (2.0 / 141.0) * close + (1.0 - 2.0 / 141.0) * ec[1]\r\nfloat line16 = 1.02 * ec\r\nplot(eh, \"Candidate 14\", display=display.data_window)\r\nplot(el, \"Candidate 15\", display=display.data_window)\r\nplot(line16, \"Candidate 16\", display=display.data_window)\r\nplot(0.98 * line16, \"Candidate 17\", display=display.data_window)\r\nplot(time, \"Native timestamp\", display=display.data_window, precision=0)\r\nplot(firstTime, \"First timestamp\", display=display.data_window, precision=0)\r\nplot(bar_index, \"Native bar index\", display=display.data_window, precision=0)\r\nplot(syminfo.mintick, \"Native mintick\", display=display.data_window)\r\n"
+  },
+  "USER;b517f23f308044b78ecae44f9b9a5c46": {
+   "scriptName": "CR_GLOBAL_native_diag",
+   "version": "1.0",
+   "created": "2026-09-09T13:13:19.743557Z",
+   "updated": "2026-09-09T13:13:19.743557Z",
+   "kind": "study",
+   "source": "//@version=6\r\n// Independent clean-room measurement instrument, NOT a full GLOBAL clone.\r\n// Frozen periods/source/lag; no observed original output is used as a seed.\r\n// No entries, exits, alerts, profitability claim, or visual equivalence claim.\r\nindicator(\"CR_GLOBAL_native_diag\", shorttitle=\"CRGN\", overlay=true, precision=8)\r\nvar float emaHigh = na\r\nvar float emaLow = na\r\nvar int firstDatasetTime = time\r\nemaHigh := na(emaHigh[1]) ? high : (2.0 / 101.0) * high + (1.0 - 2.0 / 101.0) * emaHigh[1]\r\nemaLow := na(emaLow[1]) ? low : (2.0 / 141.0) * low + (1.0 - 2.0 / 141.0) * emaLow[1]\r\nplot(emaHigh, \"Frozen high EMA100\", display=display.data_window)\r\nplot(emaLow, \"Frozen low EMA140\", display=display.data_window)\r\nplot(high, \"Native high\", display=display.data_window)\r\nplot(low, \"Native low\", display=display.data_window)\r\nplot(time, \"Bar timestamp\", display=display.data_window, precision=0)\r\nplot(firstDatasetTime, \"First dataset timestamp\", display=display.data_window, precision=0)\r\nplot(bar_index, \"Native bar index\", display=display.data_window, precision=0)\r\nplot(syminfo.mintick, \"Native minimum tick\", display=display.data_window)\r\n"
+  },
+  "USER;2d380a207e3143d997d382223008d633": {
+   "scriptName": "Nazar Research - External Source Probe",
+   "version": "2.0",
+   "created": "2026-09-07T15:37:54.450531Z",
+   "updated": "2026-09-07T15:37:54.450531Z",
+   "kind": "study",
+   "source": "//@version=6\r\n// Engineering probe only. No strategy, orders, alerts, or profitability claim.\r\n// The external source is selected manually in TradingView's Inputs menu.\r\n// Closed receiver bars do NOT prove that a closed-source upstream plot is causal.\r\nindicator(\"Nazar Research - External Source Probe\", overlay=false, precision=8)\r\nfloat external = input.source(close, \"External plot - select Trap line\")\r\nbool selectedExternal = input.bool(false, \"External plot selected manually\")\r\nvar int closedBars = 0\r\nvar int availableBars = 0\r\nvar int differsFromClose = 0\r\nif barstate.isconfirmed\r\n    closedBars += 1\r\n    if not na(external)\r\n        availableBars += 1\r\n        if math.abs(external - close) > syminfo.mintick\r\n            differsFromClose += 1\r\nplot(external, \"External mirror\", color=color.orange, linewidth=2)\r\nplot(barstate.isconfirmed ? external : external[1], \"Last closed source\", display=display.data_window)\r\nplot(closedBars, \"Closed chart bars\", display=display.data_window)\r\nplot(availableBars, \"Non-na source bars\", display=display.data_window)\r\nplot(differsFromClose, \"Source differs from close bars\", display=display.data_window)\r\nvar table status = table.new(position.top_right, 2, 9, border_width=1, bgcolor=color.new(color.black, 10))\r\nif barstate.islast\r\n    int k = barstate.isconfirmed ? 0 : 1\r\n    table.cell(status, 0, 0, \"ENGINEERING ONLY\", text_color=color.yellow)\r\n    table.cell(status, 1, 0, selectedExternal ? \"Manual external selection\" : \"DEFAULT CLOSE / NOT CONNECTED\", text_color=color.yellow)\r\n    table.cell(status, 0, 1, \"Market / timeframe\")\r\n    table.cell(status, 1, 1, syminfo.tickerid + \" / \" + timeframe.period)\r\n    table.cell(status, 0, 2, \"Closed chart bars\")\r\n    table.cell(status, 1, 2, str.tostring(closedBars))\r\n    table.cell(status, 0, 3, \"Non-na source bars\")\r\n    table.cell(status, 1, 3, str.tostring(availableBars))\r\n    table.cell(status, 0, 4, \"Differs from close\")\r\n    table.cell(status, 1, 4, str.tostring(differsFromClose))\r\n    table.cell(status, 0, 5, \"Last closed bar open UTC\")\r\n    table.cell(status, 1, 5, str.format_time(time[k], \"yyyy-MM-dd HH:mm\", \"UTC\"))\r\n    table.cell(status, 0, 6, \"Last closed source\")\r\n    table.cell(status, 1, 6, str.tostring(external[k], \"#.########\"))\r\n    table.cell(status, 0, 7, \"Last closed close\")\r\n    table.cell(status, 1, 7, str.tostring(close[k], \"#.########\"))\r\n    table.cell(status, 0, 8, \"Repainting / edge\")\r\n    table.cell(status, 1, 8, \"NOT VERIFIED\", text_color=color.yellow)\r\n    for row = 0 to 8\r\n        table.cell_set_text_color(status, 0, row, color.white)\r\n        table.cell_set_text_color(status, 1, row, color.white)\r\n"
+  },
+  "USER;047da73acf8145758839cdcd752d90d2": {
+   "scriptName": "Nazar Research - Trap line H1",
+   "version": "2.0",
+   "created": "2026-09-07T16:06:29.683199Z",
+   "updated": "2026-09-07T16:06:29.683199Z",
+   "kind": "strategy",
+   "source": "//@version=6\r\n// Fixed exploratory hypothesis, NOT the author's strategy and NOT Nazar V2.\r\n// External source may repaint. Funding is NOT included. No live automation.\r\nstrategy(\"Nazar Research - Trap line H1\", overlay=true, initial_capital=1000,\r\n     currency=currency.USDT, default_qty_type=strategy.percent_of_equity, default_qty_value=99,\r\n     pyramiding=0, commission_type=strategy.commission.percent, commission_value=0.15,\r\n     slippage=0, margin_long=1, margin_short=1,\r\n     calc_on_order_fills=false, calc_on_every_tick=false, process_orders_on_close=false)\r\nfloat external = input.source(close, \"Select FIRST Trap line Plot\")\r\nbool armed = input.bool(false, \"Confirmed external selection - enable research\")\r\nstring window = input.string(\"FULL\", \"Frozen research window\", options=[\"FULL\", \"EARLY\", \"LATE\"])\r\nint firstTime = window == \"LATE\" ? timestamp(\"UTC\",2026,4,1,0,0) : timestamp(\"UTC\",2026,1,8,0,0)\r\nint lastTime = window == \"EARLY\" ? timestamp(\"UTC\",2026,4,1,0,0) : timestamp(\"UTC\",2026,8,1,0,0)\r\nbool properChart = syminfo.tickerid == \"BINANCE:BTCUSDT.P\" and timeframe.period == \"60\"\r\nbool inWindow = time >= firstTime and time < lastTime\r\nbool canEnter = armed and properChart and inWindow and time_close < lastTime and not na(external)\r\nvar int firstLoaded = time\r\nvar int seen = 0\r\nvar int missing = 0\r\nif barstate.isconfirmed\r\n    if inWindow\r\n        seen += 1\r\n        missing += na(external) ? 1 : 0\r\n    if canEnter\r\n        if close > external and strategy.position_size <= 0\r\n            strategy.entry(\"LONG\", strategy.long, comment=\"Close above first Trap plot\")\r\n        else if close < external and strategy.position_size >= 0\r\n            strategy.entry(\"SHORT\", strategy.short, comment=\"Close below first Trap plot\")\r\n    else if strategy.position_size != 0\r\n        strategy.close_all(comment=\"Window end or missing source\")\r\nplot(external, \"External reference\", color=color.orange)\r\nvar table note = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black,10))\r\nif barstate.islastconfirmedhistory or barstate.islast\r\n    table.cell(note,0,0,\"EXPLORATORY / NO FUNDING\")\r\n    table.cell(note,1,0,armed and properChart ? \"ENABLED\" : \"NOT ENABLED\")\r\n    table.cell(note,0,1,\"Window / seen / expected\")\r\n    table.cell(note,1,1,window+\" / \"+str.tostring(seen)+\" / \"+str.tostring((lastTime-firstTime)/3600000))\r\n    table.cell(note,0,2,\"Missing source bars\")\r\n    table.cell(note,1,2,str.tostring(missing))\r\n    table.cell(note,0,3,\"First loaded UTC\")\r\n    table.cell(note,1,3,str.format_time(firstLoaded,\"yyyy-MM-dd HH:mm\",\"UTC\"))\r\n    table.cell(note,0,4,\"Repainting / edge\")\r\n    table.cell(note,1,4,\"NOT VERIFIED\")\r\n    table.cell(note,0,5,\"Closed trades / net USDT\")\r\n    table.cell(note,1,5,str.tostring(strategy.closedtrades)+\" / \"+str.tostring(strategy.netprofit,\"#.########\"))\r\n    for row=0 to 5\r\n        table.cell_set_text_color(note,0,row,color.white)\r\n        table.cell_set_text_color(note,1,row,color.white)\r\n"
+  },
+  "USER;ac7619c32e8540cc87c30fca122ec7e4": {
+   "scriptName": "Nazar V1",
+   "version": "1.0",
+   "created": "2026-09-07T14:01:40.377623Z",
+   "updated": "2026-09-07T14:01:40.377623Z",
+   "kind": "study",
+   "source": "//@version=6\r\n// Experimental frozen v3 signal port. EDGE NOT CONFIRMED; deployment choice CASH.\r\n// Emulator only: no funding, mark-risk, liquidation, or Python PnL equivalence.\r\nindicator(\"Nazar V1\", overlay=true, precision=12)\r\nbool enableOrders = false\r\n\r\n// BEGIN FUTURES_V3_SIGNAL_CORE\r\n// One call per host bar. Invalid rows reset state; raw reset EXIT is not a fill.\r\nf_prism(float sampleClose, int sampleTime, int sampleStepMs, bool sampleValid, bool sampleConfirmed) =>\r\n    var array<float> rf = array.new<float>()\r\n    var array<float> rs = array.new<float>()\r\n    var array<float> ef = array.new<float>()\r\n    var array<float> es = array.new<float>()\r\n    var float previousClose = na\r\n    var int previousTime = na\r\n    var int age = -1\r\n    var int state = 0\r\n    float fast = na\r\n    float slow = na\r\n    float evidence = na\r\n    bool ready = false\r\n    int prior = state\r\n    if sampleConfirmed\r\n        bool usable = sampleValid and not na(sampleClose) and math.sign(sampleClose) == 1\r\n        bool continuous = usable and not na(previousTime) and sampleTime - previousTime == sampleStepMs\r\n        if not continuous\r\n            array.clear(rf)\r\n            array.clear(rs)\r\n            array.clear(ef)\r\n            array.clear(es)\r\n            age := -1\r\n            state := 0\r\n        if usable\r\n            age += 1\r\n            if continuous\r\n                float r = math.log(sampleClose) - math.log(previousClose)\r\n                array.push(rf, r)\r\n                array.push(rs, r)\r\n                array.push(ef, r * r)\r\n                array.push(es, r * r)\r\n                if array.size(rf) > 40\r\n                    array.shift(rf)\r\n                    array.shift(ef)\r\n                if array.size(rs) > 160\r\n                    array.shift(rs)\r\n                    array.shift(es)\r\n            if age >= 40\r\n                float energy = array.sum(ef)\r\n                fast := math.sign(energy) == 1 ? array.sum(rf) / math.sqrt(energy) : 0.0\r\n            if age >= 160\r\n                float energy = array.sum(es)\r\n                slow := math.sign(energy) == 1 ? array.sum(rs) / math.sqrt(energy) : 0.0\r\n                ready := not na(fast) and not na(slow)\r\n                evidence := math.sign(fast) == math.sign(slow) ? math.sign(fast) * math.min(math.abs(fast), math.abs(slow)) : 0.0\r\n            if not ready\r\n                state := 0\r\n            else if state == 1\r\n                if math.sign(fast) <= 0\r\n                    state := 0\r\n            else if state == -1\r\n                if math.sign(fast) >= 0\r\n                    state := 0\r\n            else if math.sign(evidence - 1.25) >= 0\r\n                state := 1\r\n            else if math.sign(evidence + 1.25) <= 0\r\n                state := -1\r\n        previousClose := usable ? sampleClose : na\r\n        previousTime := usable ? sampleTime : na\r\n    [fast, slow, evidence, ready, state, age, sampleConfirmed and state == 1 and prior != 1, sampleConfirmed and state == -1 and prior != -1, sampleConfirmed and state == 0 and prior != 0]\r\n// END FUTURES_V3_SIGNAL_CORE\r\n\r\n// BEGIN FUTURES_V3_BINDING\r\nint historyInput = input.time(0, \"History anchor UTC (0 = AUTO first loaded bar; history dependent)\")\r\nint phaseStart = input.time(0, \"First fill UTC (0 = first eligible intent)\")\r\nint phaseEnd = input.time(0, \"End exclusive UTC (0 = OPEN ENDED)\")\r\nint delayBars = input.int(1, \"Execution delay (bars)\", minval=1, maxval=3)\r\nint stepMs = int(timeframe.in_seconds() * 1000)\r\nvar int historyAnchor = historyInput == 0 ? time : historyInput\r\nvar bool anchorSeen = false\r\nvar bool phaseStarted = false\r\nvar bool endpointSeen = false\r\nbool supportedTf = stepMs == 180000 or stepMs == 300000 or stepMs == 900000 or stepMs == 1800000 or stepMs == 3600000 or stepMs == 14400000 or stepMs == 86400000\r\nbool supportedSymbol = syminfo.prefix == \"BINANCE\" and (syminfo.ticker == \"BTCUSDT.P\" or syminfo.ticker == \"ETHUSDT.P\" or syminfo.ticker == \"SOLUSDT.P\" or syminfo.ticker == \"BNBUSDT.P\" or syminfo.ticker == \"XRPUSDT.P\" or syminfo.ticker == \"DOGEUSDT.P\")\r\nif barstate.isfirst\r\n    if not chart.is_standard or not supportedTf or not supportedSymbol\r\n        runtime.error(\"Use standard BINANCE USDT perpetual BTC/ETH/SOL/BNB/XRP/DOGE: 3m,5m,15m,30m,1h,4h,1D. 1m is NOT validated.\")\r\n    if historyAnchor % stepMs != 0 or phaseStart % stepMs != 0 or phaseEnd % stepMs != 0 or time > historyAnchor\r\n        runtime.error(\"UTC anchors must align; the exact history anchor must be loaded.\")\r\n    if (phaseStart != 0 and phaseStart < historyAnchor + (160 + delayBars) * stepMs) or (phaseEnd != 0 and phaseEnd <= math.max(phaseStart, historyAnchor + (160 + delayBars) * stepMs))\r\n        runtime.error(\"Window needs 160+delay prehistory bars and a later end.\")\r\nbool inHistory = time >= historyAnchor and (phaseEnd == 0 or time < phaseEnd)\r\nbool validBar = not na(open) and not na(high) and not na(low) and not na(close) and not na(volume) and math.sign(low) == 1 and math.sign(volume) >= 0 and math.sign(high - math.max(open, close)) >= 0 and math.sign(math.min(open, close) - low) >= 0\r\nbool missingBar = na(open) and na(high) and na(low) and na(close) and na(volume)\r\nif barstate.isconfirmed and inHistory\r\n    if not anchorSeen and time != historyAnchor\r\n        runtime.error(\"Exact history anchor is missing.\")\r\n    bool gap = anchorSeen and time - time[1] != stepMs\r\n    bool scored = phaseStarted or (phaseStart != 0 and time >= phaseStart)\r\n    if time % stepMs != 0 or time_close - time != stepMs or (not validBar and not (missingBar and not scored)) or (gap and scored)\r\n        runtime.error(\"Invalid/scored missing bar: entire window is invalid. No retrospective gap fill.\")\r\n    anchorSeen := true\r\n[fast, slow, evidence, ready, targetState, blockAge, rawLong, rawShort, rawExit] = f_prism(close, time, stepMs, inHistory and validBar, barstate.isconfirmed)\r\n// END FUTURES_V3_BINDING\r\n\r\n// BEGIN FUTURES_V3_EVENTS\r\nvar int plannedPosition = 0\r\nint delayedTarget = nz(targetState[delayBars - 1], 0)\r\nbool orderWindow = barstate.isconfirmed and inHistory and blockAge >= 159 + delayBars and (phaseStart == 0 or time_close >= phaseStart) and (phaseEnd == 0 or time_close < phaseEnd)\r\nif barstate.isconfirmed and inHistory and phaseStart != 0 and time >= phaseStart and blockAge < 160 + delayBars\r\n    runtime.error(\"Insufficient contiguous prehistory at scored phase start.\")\r\nbool longSignal = orderWindow and delayedTarget == 1 and plannedPosition == 0\r\nbool shortSignal = orderWindow and delayedTarget == -1 and plannedPosition == 0\r\nbool exitSignal = orderWindow and delayedTarget == 0 and plannedPosition != 0\r\nif orderWindow\r\n    phaseStarted := true\r\n    plannedPosition := delayedTarget\r\nbool terminalBar = barstate.isconfirmed and inHistory and phaseEnd != 0 and time_close == phaseEnd\r\nbool terminalExitSignal = terminalBar and plannedPosition != 0\r\nif terminalBar\r\n    endpointSeen := true\r\n    plannedPosition := 0\r\nif barstate.isconfirmed and phaseEnd != 0 and time >= phaseEnd and not endpointSeen\r\n    runtime.error(\"Declared endpoint is absent: completed-window result is invalid.\")\r\n// END FUTURES_V3_EVENTS\r\n\r\n// BEGIN FUTURES_V3_OUTPUTS\r\nplot(barstate.isconfirmed and inHistory ? fast : na, \"fast\", display=display.data_window)\r\nplot(barstate.isconfirmed and inHistory ? slow : na, \"slow\", display=display.data_window)\r\nplot(barstate.isconfirmed and inHistory ? evidence : na, \"evidence\", display=display.data_window)\r\nplot(barstate.isconfirmed and inHistory ? targetState : na, \"target\", display=display.data_window)\r\nplot(barstate.isconfirmed and inHistory ? (ready ? 1 : 0) : na, \"ready\", display=display.data_window)\r\nplot(longSignal ? 1 : 0, \"long_event\", display=display.data_window)\r\nplot(shortSignal ? 1 : 0, \"short_event\", display=display.data_window)\r\nplot(exitSignal ? 1 : 0, \"exit_event\", display=display.data_window)\r\nplot(terminalExitSignal ? 1 : 0, \"terminal_exit_event\", display=display.data_window)\r\nplotshape(longSignal, \"LONG next open\", shape.labelup, location.belowbar, color.teal, text=\"LONG\", textcolor=color.white, size=size.tiny)\r\nplotshape(shortSignal, \"SHORT next open\", shape.labeldown, location.abovebar, color.red, text=\"SHORT\", textcolor=color.white, size=size.tiny)\r\nplotshape(exitSignal, \"EXIT next open\", shape.xcross, location.abovebar, color.orange, text=\"EXIT\", size=size.tiny)\r\nplotshape(terminalExitSignal, \"Scheduled end EXIT\", shape.xcross, location.abovebar, color.purple, text=\"END EXIT\", size=size.tiny)\r\nif longSignal\r\n    alert(\"LONG | planned next open | EXPERIMENTAL; edge not confirmed\", alert.freq_once_per_bar_close)\r\nif shortSignal\r\n    alert(\"SHORT | planned next open | EXPERIMENTAL; edge not confirmed\", alert.freq_once_per_bar_close)\r\nif exitSignal\r\n    alert(\"EXIT | planned next open | EXPERIMENTAL; edge not confirmed\", alert.freq_once_per_bar_close)\r\nif terminalExitSignal\r\n    alert(\"RESEARCH_TERMINAL_EXIT | scheduled close, not an alpha signal\", alert.freq_once_per_bar_close)\r\nvar table banner = table.new(position.top_right, 1, 1)\r\nif barstate.islastconfirmedhistory or barstate.islast\r\n    string windowStatus = endpointSeen ? \"DECLARED WINDOW COMPLETE\" : \"WINDOW INCOMPLETE / LIVE-PARTIAL\"\r\n    table.cell(banner, 0, 0, \"EDGE NOT CONFIRMED | RESEARCH CHOICE CASH\\n\" + (enableOrders ? \"EXPERIMENTAL EMULATOR ORDERS ON\" : \"EMULATOR ORDERS OFF | SIGNALS ONLY\") + \"\\n\" + (historyInput == 0 ? \"AUTO ANCHOR: HISTORY DEPENDENT\" : \"MANUAL UTC ANCHOR\") + \"\\n\" + windowStatus + \"\\nFunding/risk/PnL not Python-equivalent\", text_color=color.white, bgcolor=color.maroon, text_size=size.small)\r\n// END FUTURES_V3_OUTPUTS\r\n"
+  },
+  "USER;aa54e781e3114c28b3e34ba0fb137f79": {
+   "scriptName": "Nazar V2",
+   "version": "6.0",
+   "created": "2026-09-07T15:05:43.312511Z",
+   "updated": "2026-09-07T15:05:43.312511Z",
+   "kind": "study",
+   "source": "//@version=6\r\n// EXPERIMENTAL_EDGE_NOT_CONFIRMED. Fixed research selection, not AI-trained inference.\r\n// Close triggers only; risk guides are not guaranteed protective orders.\r\nindicator(\"Nazar V2\", overlay=true, precision=8, max_labels_count=300)\r\n// BEGIN NAZAR_V2_CORE -- identical in Strategy, Indicator and parity fixture.\r\n// Fixed rules selected BEFORE the chronological test. NOT a trained neural network.\r\n// No security(), pivots, negative offsets, intrabar decisions or same-bar fills.\r\nf_nazar(float o, float h, float l, float c, float v, int t, bool confirmed, bool inPhase) =>\r\n    float tr = na(c[1]) ? h-l : math.max(h-l, math.max(math.abs(h-c[1]), math.abs(l-c[1])))\r\n    float atr = ta.sma(tr, 14)\r\n    float ma24 = ta.sma(c, 24)\r\n    float ma96 = ta.sma(c, 96)\r\n    float upper = ta.highest(h, 48)[1]\r\n    float lower = ta.lowest(l, 48)[1]\r\n    bool valid = not na(o) and not na(h) and not na(l) and not na(c) and not na(v) and l > 0 and v >= 0\r\n    var int age = -1\r\n    var int prevTime = na\r\n    var int side = 0\r\n    var bool pending = false\r\n    var float entry = na\r\n    var float entryAtr = na\r\n    var float best = na\r\n    var int held = 0\r\n    var int cool = 0\r\n    var int lc = 0\r\n    var int sc = 0\r\n    int prior = side\r\n    int reason = 0\r\n    float refEntry = na\r\n    float refStop = na\r\n    float refTake = na\r\n    bool ready = false\r\n    if confirmed\r\n        bool contiguous = valid and not na(prevTime) and t-prevTime == 3600000\r\n        age := valid ? (contiguous ? age+1 : 0) : -1\r\n        prevTime := valid ? t : na\r\n        ready := valid and age >= 180 and not na(atr) and atr > 0 and not na(ma96)\r\n        if not inPhase\r\n            side := 0\r\n            pending := false\r\n            lc := 0\r\n            sc := 0\r\n            held := 0\r\n            cool := 0\r\n        else if not ready\r\n            reason := side != 0 ? 7 : 0\r\n            side := 0\r\n            pending := false\r\n            lc := 0\r\n            sc := 0\r\n            held := 0\r\n            cool := 8\r\n        else\r\n            if pending\r\n                entry := o\r\n                best := entry\r\n                held := 0\r\n                pending := false\r\n            bool le = c > upper and ma24 > ma96\r\n            bool se = c < lower and ma24 < ma96\r\n            lc := le ? lc+1 : 0\r\n            sc := se ? sc+1 : 0\r\n            if side != 0\r\n                held += 1\r\n                best := side == 1 ? math.max(best,c) : math.min(best,c)\r\n                float gain = side*(c-entry)\r\n                float bestGain = side*(best-entry)\r\n                float stop = entry-side*2.0*entryAtr\r\n                if bestGain >= 2.0*entryAtr\r\n                    stop := side == 1 ? math.max(stop,best-2.5*entryAtr) : math.min(stop,best+2.5*entryAtr)\r\n                reason := gain <= -2.0*entryAtr ? 2 : gain >= 4.0*entryAtr ? 3 : bestGain >= 2.0*entryAtr and side*(c-best) <= -2.5*entryAtr ? 4 : (side == 1 ? sc : lc) >= 2 ? 5 : held >= 72 ? 6 : 0\r\n                refEntry := entry\r\n                refStop := stop\r\n                refTake := entry+side*4.0*entryAtr\r\n                if reason != 0\r\n                    side := 0\r\n                    cool := 8\r\n                    lc := 0\r\n                    sc := 0\r\n            else\r\n                if cool > 0\r\n                    cool -= 1\r\n                    lc := 0\r\n                    sc := 0\r\n                else if lc >= 2 or sc >= 2\r\n                    side := lc >= 2 ? 1 : -1\r\n                    entryAtr := atr\r\n                    pending := true\r\n                    reason := 1\r\n                    lc := 0\r\n                    sc := 0\r\n    [side, reason, refEntry, refStop, refTake, confirmed and side == 1 and prior == 0, confirmed and side == -1 and prior == 0, confirmed and side == 0 and prior != 0, ready, cool, upper, lower, ma96]\r\n// END NAZAR_V2_CORE\r\n\r\nint startAt = input.time(timestamp(\"01 Jul 2025 00:00 +0000\"), \"Start from flat (UTC)\", group=\"History\")\r\nbool drawChannel = input.bool(false, \"Show breakout channel\", group=\"Display\")\r\nbool drawRisk = input.bool(true, \"Show close-trigger exit guides\", group=\"Display\")\r\nbool drawReasons = input.bool(true, \"Show exit reasons\", group=\"Display\")\r\nbool marketOK = syminfo.prefix == \"BINANCE\" and (syminfo.ticker == \"BTCUSDT.P\" or syminfo.ticker == \"ETHUSDT.P\" or syminfo.ticker == \"SOLUSDT.P\" or syminfo.ticker == \"BNBUSDT.P\" or syminfo.ticker == \"XRPUSDT.P\" or syminfo.ticker == \"DOGEUSDT.P\")\r\nbool supported = marketOK and timeframe.period == \"60\" and chart.is_standard\r\nbool inPhase = supported and time >= startAt\r\n[side, reason, refEntry, refStop, refTake, longEvent, shortEvent, exitEvent, ready, cool, upper, lower, trend] = f_nazar(open,high,low,close,volume,time,barstate.isconfirmed,inPhase)\r\nstring exitText = switch reason\r\n    2 => \"EXIT: close stop\"\r\n    3 => \"EXIT: close target\"\r\n    4 => \"EXIT: trailing\"\r\n    5 => \"EXIT: opposite\"\r\n    6 => \"EXIT: 72 bars\"\r\n    7 => \"EXIT: data reset\"\r\n    => \"EXIT: reset\"\r\nplotshape(longEvent, title=\"LONG confirmed intent\", text=\"LONG\", style=shape.labelup, location=location.belowbar, color=color.teal, textcolor=color.white, size=size.small)\r\nplotshape(shortEvent, title=\"SHORT confirmed intent\", text=\"SHORT\", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)\r\nplotshape(exitEvent, title=\"EXIT confirmed intent\", text=\"EXIT\", style=shape.xcross, location=location.abovebar, color=color.orange, textcolor=color.orange, size=size.tiny)\r\nif drawReasons and exitEvent\r\n    label.new(bar_index,high,exitText,style=label.style_label_down,color=color.new(color.orange,65),textcolor=color.white,size=size.tiny)\r\nplot(drawRisk ? refEntry : na,\"Reference next-open entry\",color=color.gray,style=plot.style_linebr)\r\nplot(drawRisk ? refStop : na,\"Close-trigger stop/trail (not intrabar)\",color=color.orange,style=plot.style_linebr,linewidth=2)\r\nplot(drawRisk ? refTake : na,\"Close-trigger target (not limit)\",color=color.teal,style=plot.style_linebr)\r\nplot(drawChannel and supported ? upper : na,\"Previous 48-bar high\",color=color.new(color.teal,70))\r\nplot(drawChannel and supported ? lower : na,\"Previous 48-bar low\",color=color.new(color.red,70))\r\nplot(drawChannel and supported ? trend : na,\"Trend SMA96\",color=color.new(color.blue,50))\r\nplot(side,\"Audit target\",display=display.data_window)\r\nplot(reason,\"Audit reason code\",display=display.data_window)\r\nvar table panel = table.new(position.top_right,1,5,bgcolor=color.new(color.black,15))\r\nif barstate.islast\r\n    table.cell(panel,0,0,\"Nazar V2 | EXPERIMENTAL\",text_color=color.orange)\r\n    table.cell(panel,0,1,supported ? \"BINANCE USD-M | 1h | LONG + SHORT\" : \"Use BINANCE USDT.P / standard candles / 1h\",text_color=supported ? color.white : color.red)\r\n    table.cell(panel,0,2,\"Entry: 2 closes beyond 48-bar channel + SMA24/96\",text_color=color.silver)\r\n    table.cell(panel,0,3,side == 1 ? \"LONG | exits at close, next-open fill\" : side == -1 ? \"SHORT | exits at close, next-open fill\" : cool > 0 ? \"FLAT | cooldown \" + str.tostring(cool) : \"FLAT | waiting for confirmation\",text_color=side == 1 ? color.teal : side == -1 ? color.red : color.silver)\r\n    table.cell(panel,0,4,\"Held-out median -4.39% at 0.15%/side + funding\",text_color=color.orange)\r\n\r\nalertcondition(longEvent,\"Nazar V2 LONG\",\"Nazar V2 LONG {{ticker}} {{interval}} | confirmed 48-bar breakout + trend. Experimental; next-open intent.\")\r\nalertcondition(shortEvent,\"Nazar V2 SHORT\",\"Nazar V2 SHORT {{ticker}} {{interval}} | confirmed 48-bar breakdown + trend. Experimental; next-open intent.\")\r\nalertcondition(exitEvent,\"Nazar V2 EXIT\",\"Nazar V2 EXIT {{ticker}} {{interval}} | confirmed close exit. Experimental; next-open intent.\")\r\nif longEvent or shortEvent or exitEvent\r\n    alert(\"Nazar V2 | \" + syminfo.ticker + \" | \" + (longEvent ? \"LONG: confirmed breakout\" : shortEvent ? \"SHORT: confirmed breakdown\" : exitText),alert.freq_once_per_bar_close)\r\n"
+  },
+  "USER;ee513ffdcc234ad6be71df10613fd02b": {
+   "scriptName": "Nazar V2 Strategy",
+   "version": "2.0",
+   "created": "2026-09-07T14:52:58.869918Z",
+   "updated": "2026-09-07T14:52:58.869918Z",
+   "kind": "strategy",
+   "source": "//@version=6\r\n// EXPERIMENTAL_EDGE_NOT_CONFIRMED. Fixed research selection, not AI-trained inference.\r\n// Close triggers only; risk guides are not guaranteed protective orders.\r\nstrategy(\"Nazar V2 Strategy\", overlay=true, precision=8, max_labels_count=300, pyramiding=0, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=99, commission_type=strategy.commission.percent, commission_value=0.15, slippage=0, margin_long=1, margin_short=1, calc_on_every_tick=false, calc_on_order_fills=false, process_orders_on_close=false)\r\n// BEGIN NAZAR_V2_CORE -- identical in Strategy, Indicator and parity fixture.\r\n// Fixed rules selected BEFORE the chronological test. NOT a trained neural network.\r\n// No security(), pivots, negative offsets, intrabar decisions or same-bar fills.\r\nf_nazar(float o, float h, float l, float c, float v, int t, bool confirmed, bool inPhase) =>\r\n    float tr = na(c[1]) ? h-l : math.max(h-l, math.max(math.abs(h-c[1]), math.abs(l-c[1])))\r\n    float atr = ta.sma(tr, 14)\r\n    float ma24 = ta.sma(c, 24)\r\n    float ma96 = ta.sma(c, 96)\r\n    float upper = ta.highest(h, 48)[1]\r\n    float lower = ta.lowest(l, 48)[1]\r\n    bool valid = not na(o) and not na(h) and not na(l) and not na(c) and not na(v) and l > 0 and v >= 0\r\n    var int age = -1\r\n    var int prevTime = na\r\n    var int side = 0\r\n    var bool pending = false\r\n    var float entry = na\r\n    var float entryAtr = na\r\n    var float best = na\r\n    var int held = 0\r\n    var int cool = 0\r\n    var int lc = 0\r\n    var int sc = 0\r\n    int prior = side\r\n    int reason = 0\r\n    float refEntry = na\r\n    float refStop = na\r\n    float refTake = na\r\n    bool ready = false\r\n    if confirmed\r\n        bool contiguous = valid and not na(prevTime) and t-prevTime == 3600000\r\n        age := valid ? (contiguous ? age+1 : 0) : -1\r\n        prevTime := valid ? t : na\r\n        ready := valid and age >= 180 and not na(atr) and atr > 0 and not na(ma96)\r\n        if not inPhase\r\n            side := 0\r\n            pending := false\r\n            lc := 0\r\n            sc := 0\r\n            held := 0\r\n            cool := 0\r\n        else if not ready\r\n            reason := side != 0 ? 7 : 0\r\n            side := 0\r\n            pending := false\r\n            lc := 0\r\n            sc := 0\r\n            held := 0\r\n            cool := 8\r\n        else\r\n            if pending\r\n                entry := o\r\n                best := entry\r\n                held := 0\r\n                pending := false\r\n            bool le = c > upper and ma24 > ma96\r\n            bool se = c < lower and ma24 < ma96\r\n            lc := le ? lc+1 : 0\r\n            sc := se ? sc+1 : 0\r\n            if side != 0\r\n                held += 1\r\n                best := side == 1 ? math.max(best,c) : math.min(best,c)\r\n                float gain = side*(c-entry)\r\n                float bestGain = side*(best-entry)\r\n                float stop = entry-side*2.0*entryAtr\r\n                if bestGain >= 2.0*entryAtr\r\n                    stop := side == 1 ? math.max(stop,best-2.5*entryAtr) : math.min(stop,best+2.5*entryAtr)\r\n                reason := gain <= -2.0*entryAtr ? 2 : gain >= 4.0*entryAtr ? 3 : bestGain >= 2.0*entryAtr and side*(c-best) <= -2.5*entryAtr ? 4 : (side == 1 ? sc : lc) >= 2 ? 5 : held >= 72 ? 6 : 0\r\n                refEntry := entry\r\n                refStop := stop\r\n                refTake := entry+side*4.0*entryAtr\r\n                if reason != 0\r\n                    side := 0\r\n                    cool := 8\r\n                    lc := 0\r\n                    sc := 0\r\n            else\r\n                if cool > 0\r\n                    cool -= 1\r\n                    lc := 0\r\n                    sc := 0\r\n                else if lc >= 2 or sc >= 2\r\n                    side := lc >= 2 ? 1 : -1\r\n                    entryAtr := atr\r\n                    pending := true\r\n                    reason := 1\r\n                    lc := 0\r\n                    sc := 0\r\n    [side, reason, refEntry, refStop, refTake, confirmed and side == 1 and prior == 0, confirmed and side == -1 and prior == 0, confirmed and side == 0 and prior != 0, ready, cool, upper, lower, ma96]\r\n// END NAZAR_V2_CORE\r\n\r\nint startAt = input.time(timestamp(\"01 Jul 2025 00:00 +0000\"), \"Start from flat (UTC)\", group=\"History\")\r\nbool drawChannel = input.bool(false, \"Show breakout channel\", group=\"Display\")\r\nbool drawRisk = input.bool(true, \"Show close-trigger exit guides\", group=\"Display\")\r\nbool drawReasons = input.bool(true, \"Show exit reasons\", group=\"Display\")\r\nbool marketOK = syminfo.prefix == \"BINANCE\" and (syminfo.ticker == \"BTCUSDT.P\" or syminfo.ticker == \"ETHUSDT.P\" or syminfo.ticker == \"SOLUSDT.P\" or syminfo.ticker == \"BNBUSDT.P\" or syminfo.ticker == \"XRPUSDT.P\" or syminfo.ticker == \"DOGEUSDT.P\")\r\nbool supported = marketOK and timeframe.period == \"60\" and chart.is_standard\r\nbool inPhase = supported and time >= startAt\r\n[side, reason, refEntry, refStop, refTake, longEvent, shortEvent, exitEvent, ready, cool, upper, lower, trend] = f_nazar(open,high,low,close,volume,time,barstate.isconfirmed,inPhase)\r\nstring exitText = switch reason\r\n    2 => \"EXIT: close stop\"\r\n    3 => \"EXIT: close target\"\r\n    4 => \"EXIT: trailing\"\r\n    5 => \"EXIT: opposite\"\r\n    6 => \"EXIT: 72 bars\"\r\n    7 => \"EXIT: data reset\"\r\n    => \"EXIT: reset\"\r\nplotshape(longEvent, title=\"LONG confirmed intent\", text=\"LONG\", style=shape.labelup, location=location.belowbar, color=color.teal, textcolor=color.white, size=size.small)\r\nplotshape(shortEvent, title=\"SHORT confirmed intent\", text=\"SHORT\", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)\r\nplotshape(exitEvent, title=\"EXIT confirmed intent\", text=\"EXIT\", style=shape.xcross, location=location.abovebar, color=color.orange, textcolor=color.orange, size=size.tiny)\r\nif drawReasons and exitEvent\r\n    label.new(bar_index,high,exitText,style=label.style_label_down,color=color.new(color.orange,65),textcolor=color.white,size=size.tiny)\r\nplot(drawRisk ? refEntry : na,\"Reference next-open entry\",color=color.gray,style=plot.style_linebr)\r\nplot(drawRisk ? refStop : na,\"Close-trigger stop/trail (not intrabar)\",color=color.orange,style=plot.style_linebr,linewidth=2)\r\nplot(drawRisk ? refTake : na,\"Close-trigger target (not limit)\",color=color.teal,style=plot.style_linebr)\r\nplot(drawChannel and supported ? upper : na,\"Previous 48-bar high\",color=color.new(color.teal,70))\r\nplot(drawChannel and supported ? lower : na,\"Previous 48-bar low\",color=color.new(color.red,70))\r\nplot(drawChannel and supported ? trend : na,\"Trend SMA96\",color=color.new(color.blue,50))\r\nplot(side,\"Audit target\",display=display.data_window)\r\nplot(reason,\"Audit reason code\",display=display.data_window)\r\nvar table panel = table.new(position.top_right,1,5,bgcolor=color.new(color.black,15))\r\nif barstate.islast\r\n    table.cell(panel,0,0,\"Nazar V2 | EXPERIMENTAL\",text_color=color.orange)\r\n    table.cell(panel,0,1,supported ? \"BINANCE USD-M | 1h | LONG + SHORT\" : \"Use BINANCE USDT.P / standard candles / 1h\",text_color=supported ? color.white : color.red)\r\n    table.cell(panel,0,2,\"Entry: 2 closes beyond 48-bar channel + SMA24/96\",text_color=color.silver)\r\n    table.cell(panel,0,3,side == 1 ? \"LONG | exits at close, next-open fill\" : side == -1 ? \"SHORT | exits at close, next-open fill\" : cool > 0 ? \"FLAT | cooldown \" + str.tostring(cool) : \"FLAT | waiting for confirmation\",text_color=side == 1 ? color.teal : side == -1 ? color.red : color.silver)\r\n    table.cell(panel,0,4,\"Held-out median -4.39% at 0.15%/side + funding\",text_color=color.orange)\r\n\r\n// TradingView emulator PnL excludes funding and Python mark-risk accounting.\r\n// 99% equity sizing keeps a fee buffer; not exact Python next-open quantity parity.\r\n// 1% emulator margin screen prevents 100%-margin partial short liquidations.\r\n// Sizing remains approximately 1x; this is NOT the actual exchange margin model.\r\nif longEvent\r\n    strategy.entry(\"LONG\",strategy.long,alert_message=\"Nazar V2 LONG | experimental\")\r\nif shortEvent\r\n    strategy.entry(\"SHORT\",strategy.short,alert_message=\"Nazar V2 SHORT | experimental\")\r\nif exitEvent\r\n    strategy.close_all(comment=exitText,alert_message=\"Nazar V2 \" + exitText)\r\n"
+  },
+  "PUB;6d9015a1d65f4b53acaa7210554c446b": {
+   "scriptName": "Nadaraya-Watson Envelope [LuxAlgo]",
+   "version": "4.0",
+   "created": "2023-07-18T22:58:25.896745Z",
+   "updated": "2023-07-18T22:58:25.896745Z",
+   "kind": "study",
+   "source": "// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/\r\n// © LuxAlgo\r\n\r\n//@version=5\r\nindicator(\"Nadaraya-Watson Envelope [LuxAlgo]\", \"LuxAlgo - Nadaraya-Watson Envelope\", overlay = true, max_lines_count = 500, max_labels_count = 500, max_bars_back=500)\r\n//------------------------------------------------------------------------------\r\n//Settings\r\n//-----------------------------------------------------------------------------{\r\nh = input.float(8.,'Bandwidth', minval = 0)\r\nmult = input.float(3., minval = 0)\r\nsrc = input(close, 'Source')\r\n\r\nrepaint = input(true, 'Repainting Smoothing', tooltip = 'Repainting is an effect where the indicators historical output is subject to change over time. Disabling repainting will cause the indicator to output the endpoints of the calculations')\r\n\r\n//Style\r\nupCss = input.color(color.teal, 'Colors', inline = 'inline1', group = 'Style')\r\ndnCss = input.color(color.red, '', inline = 'inline1', group = 'Style')\r\n\r\n//-----------------------------------------------------------------------------}\r\n//Functions\r\n//-----------------------------------------------------------------------------{\r\n//Gaussian window\r\ngauss(x, h) => math.exp(-(math.pow(x, 2)/(h * h * 2)))\r\n\r\n//-----------------------------------------------------------------------------}\r\n//Append lines\r\n//-----------------------------------------------------------------------------{\r\nn = bar_index\r\n\r\nvar ln = array.new_line(0) \r\n\r\nif barstate.isfirst and repaint\r\n    for i = 0 to 499\r\n        array.push(ln,line.new(na,na,na,na))\r\n\r\n//-----------------------------------------------------------------------------}\r\n//End point method\r\n//-----------------------------------------------------------------------------{\r\nvar coefs = array.new_float(0)\r\nvar den = 0.\r\n\r\nif barstate.isfirst and not repaint\r\n    for i = 0 to 499\r\n        w = gauss(i, h)\r\n        coefs.push(w)\r\n\r\n    den := coefs.sum()\r\n\r\nout = 0.\r\nif not repaint\r\n    for i = 0 to 499\r\n        out += src[i] * coefs.get(i)\r\nout /= den\r\nmae = ta.sma(math.abs(src - out), 499) * mult\r\n\r\nupper = out + mae\r\nlower = out - mae\r\n \r\n//-----------------------------------------------------------------------------}\r\n//Compute and display NWE\r\n//-----------------------------------------------------------------------------{\r\nfloat y2 = na\r\nfloat y1 = na\r\n\r\nnwe = array.new<float>(0)\r\nif barstate.islast and repaint\r\n    sae = 0.\r\n    //Compute and set NWE point \r\n    for i = 0 to math.min(499,n - 1)\r\n        sum = 0.\r\n        sumw = 0.\r\n        //Compute weighted mean \r\n        for j = 0 to math.min(499,n - 1)\r\n            w = gauss(i - j, h)\r\n            sum += src[j] * w\r\n            sumw += w\r\n\r\n        y2 := sum / sumw\r\n        sae += math.abs(src[i] - y2)\r\n        nwe.push(y2)\r\n    \r\n    sae := sae / math.min(499,n - 1) * mult\r\n    for i = 0 to math.min(499,n - 1)\r\n        if i%2\r\n            line.new(n-i+1, y1 + sae, n-i, nwe.get(i) + sae, color = upCss)\r\n            line.new(n-i+1, y1 - sae, n-i, nwe.get(i) - sae, color = dnCss)\r\n        \r\n        if src[i] > nwe.get(i) + sae and src[i+1] < nwe.get(i) + sae\r\n            label.new(n-i, src[i], '▼', color = color(na), style = label.style_label_down, textcolor = dnCss, textalign = text.align_center)\r\n        if src[i] < nwe.get(i) - sae and src[i+1] > nwe.get(i) - sae\r\n            label.new(n-i, src[i], '▲', color = color(na), style = label.style_label_up, textcolor = upCss, textalign = text.align_center)\r\n        \r\n        y1 := nwe.get(i)\r\n\r\n//-----------------------------------------------------------------------------}\r\n//Dashboard\r\n//-----------------------------------------------------------------------------{\r\nvar tb = table.new(position.top_right, 1, 1\r\n  , bgcolor = #1e222d\r\n  , border_color = #373a46\r\n  , border_width = 1\r\n  , frame_color = #373a46\r\n  , frame_width = 1)\r\n\r\nif repaint\r\n    tb.cell(0, 0, 'Repainting Mode Enabled', text_color = color.white, text_size = size.small)\r\n\r\n//-----------------------------------------------------------------------------}\r\n//Plot\r\n//-----------------------------------------------------------------------------}\r\nplot(repaint ? na : out + mae, 'Upper', upCss)\r\nplot(repaint ? na : out - mae, 'Lower', dnCss)\r\n\r\n//Crossing Arrows\r\nplotshape(ta.crossunder(close, out - mae) ? low : na, \"Crossunder\", shape.labelup, location.absolute, color(na), 0 , text = '▲', textcolor = upCss, size = size.tiny)\r\nplotshape(ta.crossover(close, out + mae) ? high : na, \"Crossover\", shape.labeldown, location.absolute, color(na), 0 , text = '▼', textcolor = dnCss, size = size.tiny)\r\n\r\n//-----------------------------------------------------------------------------}"
+  },
+  "STD;VWMA": {
+   "scriptName": "Volume-weighted moving average",
+   "version": "32.0",
+   "created": "2026-09-29T12:11:06.640354Z",
+   "updated": "2026-09-29T12:11:06.640354Z",
+   "kind": "study",
+   "source": "//@version=6\nindicator(title=\"Volume-weighted moving average\", shorttitle=\"VWMA\", overlay=true, timeframe=\"\", timeframe_gaps=true)\nlen = input.int(20, \"Length\", minval=1)\nsrc = input(close, \"Source\")\nma = ta.vwma(src, len)\noffset = input.int(0, \"Offset\", minval = -500, maxval = 500)\nplot(ma, title=\"VWMA\", color=#2962FF, offset = offset)"
+  }
+ }
+}

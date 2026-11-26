@@ -1,0 +1,3 @@
+*.pine -text
+*.csv -text
+raw/*.json -text

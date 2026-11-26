@@ -1,0 +1,12 @@
+{
+  "indicator": "Trap line (Pifagor free indicator)",
+  "scriptId": "PUB;3e736136910147969dc2c0c2ceb0daf5",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 2 (ETHUSDT, 1 год)",
+      "visible": true
+    }
+  ],
+  "inputs": []
+}

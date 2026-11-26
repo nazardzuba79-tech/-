@@ -1,0 +1,8 @@
+{
+  "indicator": "CR_GLOBAL_four_line_component",
+  "scriptId": "USER;8bc1aa02a2c2421ea3d9f512e9e9f6e4",
+  "note": "Скрипта немає на збережених графіках власника. Аргументи та їхні значення за замовчуванням задані в коді (рядки з input).",
+  "onSavedLayout": [],
+  "inputs": [],
+  "inputLinesFromSource": []
+}

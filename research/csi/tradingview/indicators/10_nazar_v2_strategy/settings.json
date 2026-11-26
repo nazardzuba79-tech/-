@@ -1,0 +1,13 @@
+{
+  "indicator": "Nazar V2 Strategy",
+  "scriptId": "USER;ee513ffdcc234ad6be71df10613fd02b",
+  "note": "Скрипта немає на збережених графіках власника. Аргументи та їхні значення за замовчуванням задані в коді (рядки з input).",
+  "onSavedLayout": [],
+  "inputs": [],
+  "inputLinesFromSource": [
+    "int startAt = input.time(timestamp(\"01 Jul 2025 00:00 +0000\"), \"Start from flat (UTC)\", group=\"History\")",
+    "bool drawChannel = input.bool(false, \"Show breakout channel\", group=\"Display\")",
+    "bool drawRisk = input.bool(true, \"Show close-trigger exit guides\", group=\"Display\")",
+    "bool drawReasons = input.bool(true, \"Show exit reasons\", group=\"Display\")"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "indicator": "Pifagor 14 Global mini+",
+  "scriptId": "PUB;4515704b5fdb4ae4ab5ebb55eded07bf",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "money flow",
+      "type": "text",
+      "default": "NO",
+      "options": [
+        "lines",
+        "wave",
+        "NO"
+      ]
+    }
+  ]
+}

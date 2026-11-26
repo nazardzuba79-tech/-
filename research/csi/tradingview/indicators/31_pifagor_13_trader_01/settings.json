@@ -1,0 +1,20 @@
+{
+  "indicator": "Pifagor 13 Trader 01",
+  "scriptId": "PUB;5b1766659c714f9b8896c428afe1b886",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 2 (ETHUSDT, 1 год)",
+      "visible": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "days_below",
+      "type": "bool",
+      "default": true,
+      "current": true
+    }
+  ]
+}

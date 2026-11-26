@@ -1,0 +1,46 @@
+//@version=6
+indicator("CR_Forever_SMA_lines_candidate", overlay = true, precision = 8)
+
+// Authorized clean-room reconstruction of TWO observable lines only.
+// NOT the author's source, NOT a complete clone, NOT an entry/exit strategy.
+// FIT 400 + Validation 200 daily bars; formulas frozen before 2023 holdout.
+// API holdout residual traced to 2022-12-06 Close: API 17087 vs TV 17088.
+// No fitted correction is used here: native chart Close feeds both means.
+// Other run lines, risk metrics, colors/zones, labels and four signal groups
+// are deliberately omitted because their exact rules are not yet proven.
+// Supported research context: standard BITSTAMP:BTCUSD daily candles.
+// Default main line OFF and 2018 line ON match the corresponding original inputs.
+
+bool showMain = input.bool(false, "Forever sma")
+int anchorMain = input.time(timestamp("12 Mar 2020 00:00 +0000"), "")
+bool show2018 = input.bool(true, "2018 run")
+int anchor2018 = timestamp("14 Dec 2018 00:00 +0000")
+
+bool supported = syminfo.tickerid == "BITSTAMP:BTCUSD" and timeframe.isdaily and timeframe.multiplier == 1
+var int firstLoaded = time
+var float sumMain = 0.0
+var int countMain = 0
+var float sum2018 = 0.0
+var int count2018 = 0
+if time >= anchorMain
+    sumMain += close
+    countMain += 1
+if time >= anchor2018
+    sum2018 += close
+    count2018 += 1
+
+// The main line includes the anchor Close in its sum, but is not displayed
+// on the anchor bar itself. This missing-value mask is directly FIT-observed.
+float mainLine = supported and firstLoaded <= anchorMain and time > anchorMain and countMain > 0 ? sumMain / countMain : na
+float run2018 = supported and firstLoaded <= anchor2018 and count2018 > 0 ? sum2018 / count2018 : na
+plot(showMain ? mainLine : na, "CR Main", color = color.orange, linewidth = 1)
+plot(show2018 ? run2018 : na, "CR 2018", color = color.white, linewidth = 1)
+// Explicit diagnostic output, not part of the original indicator.
+plot(syminfo.mintick, "DIAGNOSTIC mintick", display = display.data_window)
+
+var table note = table.new(position.bottom_right, 1, 1)
+if barstate.islast
+    string message = supported ? "RESEARCH: 2 lines only. No LONG/SHORT/EXIT signals." : "Use standard BITSTAMP:BTCUSD 1D. Other contexts unvalidated."
+    if supported and firstLoaded > math.min(anchorMain, anchor2018)
+        message := "Insufficient loaded history: load data before both anchors."
+    table.cell(note, 0, 0, message, text_color = color.white, bgcolor = color.new(color.black, 20))

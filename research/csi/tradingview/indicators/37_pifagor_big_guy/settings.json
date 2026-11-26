@@ -1,0 +1,47 @@
+{
+  "indicator": "Pifagor_Big guy ()()()",
+  "scriptId": "PUB;6cd345b56f94438cb9ff0871d13dd761",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Burj Khalifa",
+      "type": "bool",
+      "default": false
+    },
+    {
+      "id": "in_1",
+      "name": "Режим (Мы разработали два подхода для анализа покупок крупных игроков)",
+      "type": "text",
+      "default": "2",
+      "options": [
+        "1",
+        "2"
+      ]
+    },
+    {
+      "id": "in_2",
+      "name": "Length",
+      "type": "integer",
+      "default": 14,
+      "min": -1000000000000,
+      "max": 1000000000000,
+      "group": "ЭКСПЕРЕМЕНТ"
+    },
+    {
+      "id": "in_3",
+      "name": "Red dot %",
+      "type": "integer",
+      "default": 93,
+      "group": "ЭКСПЕРЕМЕНТ"
+    },
+    {
+      "id": "in_4",
+      "name": "Timeframe",
+      "type": "resolution",
+      "default": "",
+      "group": "Calculation"
+    }
+  ]
+}

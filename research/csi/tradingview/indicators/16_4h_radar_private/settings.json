@@ -1,0 +1,20 @@
+{
+  "indicator": "4h radar(private)",
+  "scriptId": "PUB;1ee8d54bf27646098730eef5d7408b39",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Start Time",
+      "type": "time",
+      "default": 1262304000000
+    },
+    {
+      "id": "in_1",
+      "name": "End Time",
+      "type": "time",
+      "default": 1861920000000
+    }
+  ]
+}

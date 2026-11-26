@@ -1,0 +1,21 @@
+//@version=6
+// Independent clean-room research component, NOT the full GLOBAL indicator.
+// Fixed hypothesis: outputs14..17 only. No original-output seeds or future data.
+// Unmatched modes, signals, styles and alerts intentionally not fabricated.
+indicator("CR_GLOBAL_four_line_component", shorttitle="CRG4", overlay=true, precision=8)
+var float eh = na
+var float el = na
+var float ec = na
+var int firstTime = time
+eh := na(eh[1]) ? high : (2.0 / 101.0) * high + (1.0 - 2.0 / 101.0) * eh[1]
+el := na(el[1]) ? low : (2.0 / 141.0) * low + (1.0 - 2.0 / 141.0) * el[1]
+ec := na(ec[1]) ? close : (2.0 / 141.0) * close + (1.0 - 2.0 / 141.0) * ec[1]
+float line16 = 1.02 * ec
+plot(eh, "Candidate 14", display=display.data_window)
+plot(el, "Candidate 15", display=display.data_window)
+plot(line16, "Candidate 16", display=display.data_window)
+plot(0.98 * line16, "Candidate 17", display=display.data_window)
+plot(time, "Native timestamp", display=display.data_window, precision=0)
+plot(firstTime, "First timestamp", display=display.data_window, precision=0)
+plot(bar_index, "Native bar index", display=display.data_window, precision=0)
+plot(syminfo.mintick, "Native mintick", display=display.data_window)

@@ -1,0 +1,13 @@
+{
+  "indicator": "CR_Forever_SMA_three_lines_candidate",
+  "scriptId": "USER;158fc7b3cded4934a14c23aa1bdd6cef",
+  "note": "Скрипта немає на збережених графіках власника. Аргументи та їхні значення за замовчуванням задані в коді (рядки з input).",
+  "onSavedLayout": [],
+  "inputs": [],
+  "inputLinesFromSource": [
+    "bool showMain = input.bool(false, \"Forever sma\")",
+    "int anchorMain = input.time(timestamp(\"12 Mar 2020 00:00 +0000\"), \"\")",
+    "bool show2018 = input.bool(true, \"2018 run\")",
+    "bool show2015 = input.bool(true, \"2015 run\")"
+  ]
+}

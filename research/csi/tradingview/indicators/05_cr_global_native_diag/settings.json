@@ -1,0 +1,8 @@
+{
+  "indicator": "CR_GLOBAL_native_diag",
+  "scriptId": "USER;b517f23f308044b78ecae44f9b9a5c46",
+  "note": "Скрипта немає на збережених графіках власника. Аргументи та їхні значення за замовчуванням задані в коді (рядки з input).",
+  "onSavedLayout": [],
+  "inputs": [],
+  "inputLinesFromSource": []
+}

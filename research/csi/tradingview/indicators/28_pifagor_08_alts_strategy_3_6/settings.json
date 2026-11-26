@@ -1,0 +1,372 @@
+{
+  "indicator": "Pifagor 08 ALTS strategy 3.6",
+  "scriptId": "PUB;ebdcd9878b66427e822ff6c0ab270fa0",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 2 (ETHUSDT, 1 год)",
+      "visible": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Степень риска",
+      "type": "text",
+      "default": "меньше",
+      "options": [
+        "меньше",
+        "больше"
+      ],
+      "group": "Стратегия",
+      "current": true
+    },
+    {
+      "id": "in_1",
+      "name": "Закрывать при +100% прибыли",
+      "type": "bool",
+      "default": false,
+      "group": "Стратегия",
+      "current": true
+    },
+    {
+      "id": "in_2",
+      "name": "Начало DCA",
+      "type": "time",
+      "default": 1514678400000,
+      "group": "Период торговли",
+      "current": true
+    },
+    {
+      "id": "in_3",
+      "name": "Конец DCA",
+      "type": "time",
+      "default": 2051222400000,
+      "group": "Период торговли",
+      "current": false
+    },
+    {
+      "id": "in_4",
+      "name": "Показать ALTS-канал",
+      "type": "bool",
+      "default": true,
+      "group": "Внешний вид",
+      "current": "меньше"
+    },
+    {
+      "id": "in_5",
+      "name": "Показать фоновые зоны",
+      "type": "bool",
+      "default": true,
+      "group": "Внешний вид",
+      "current": 1514678400000
+    },
+    {
+      "id": "in_6",
+      "name": "Линия средней цены",
+      "type": "bool",
+      "default": true,
+      "group": "Внешний вид",
+      "current": 1767225600000
+    },
+    {
+      "id": "in_7",
+      "name": "Метка значения линии ALTS",
+      "type": "bool",
+      "default": true,
+      "group": "Внешний вид",
+      "current": 50
+    },
+    {
+      "id": "in_8",
+      "name": "Положение дашборда",
+      "type": "text",
+      "default": "bottom_right",
+      "options": [
+        "top_left",
+        "top_right",
+        "bottom_left",
+        "bottom_right"
+      ],
+      "group": "Внешний вид",
+      "current": false
+    },
+    {
+      "id": "in_9",
+      "name": "Initial Capital",
+      "type": "float",
+      "default": 1000000,
+      "min": 0,
+      "tooltip": "Starting funds available for the trading strategy",
+      "current": "USD"
+    },
+    {
+      "id": "in_10",
+      "name": "Base Currency",
+      "type": "text",
+      "default": "USD",
+      "options": [
+        "NONE",
+        "USD",
+        "EUR",
+        "AUD",
+        "GBP",
+        "NZD",
+        "CAD",
+        "CHF",
+        "HKD",
+        "JPY",
+        "NOK",
+        "RUB",
+        "SEK",
+        "SGD",
+        "TRY",
+        "ZAR",
+        "BTC",
+        "ETH",
+        "MYR",
+        "KRW",
+        "USDT",
+        "INR",
+        "PKR",
+        "PLN",
+        "EGP",
+        "AED",
+        "COP",
+        "MXN",
+        "CLP",
+        "BRL",
+        "ARS",
+        "PEN",
+        "IDR",
+        "SAR",
+        "BDT",
+        "BHD",
+        "CNY",
+        "CZK",
+        "DKK",
+        "HUF",
+        "ILS",
+        "ISK",
+        "KES",
+        "KWD",
+        "LKR",
+        "MAD",
+        "NGN",
+        "PHP",
+        "QAR",
+        "RON",
+        "RSD",
+        "THB",
+        "TND",
+        "TWD",
+        "VES",
+        "VND"
+      ],
+      "tooltip": "Currency used in calculations and strategy results",
+      "current": 100
+    },
+    {
+      "id": "in_11",
+      "name": "pyramiding",
+      "type": "integer",
+      "default": 200,
+      "min": 0,
+      "max": 1000000,
+      "tooltip": "Maximum number of successive entries allowed in the same direction",
+      "current": "percent_of_equity"
+    },
+    {
+      "id": "in_12",
+      "name": "Calculate Strategy on every Tick(s)",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Recalculates the strategy with each real-time bar update",
+      "current": 100
+    },
+    {
+      "id": "in_13",
+      "name": "Default entry/order Qty Type",
+      "type": "text",
+      "default": "cash_per_order",
+      "options": [
+        "fixed",
+        "cash_per_order",
+        "percent_of_equity"
+      ],
+      "tooltip": "Quantity per trade in the selected unit",
+      "current": 0
+    },
+    {
+      "id": "in_14",
+      "name": "Default entry/order Qty Value",
+      "type": "float",
+      "default": 5000,
+      "min": 0,
+      "current": 0
+    },
+    {
+      "id": "in_15",
+      "name": "Commission Value",
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "current": false
+    },
+    {
+      "id": "in_16",
+      "name": "Backtesting slippage for market orders",
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1000000,
+      "tooltip": "Ticks to be added to the fill price of market and stop orders",
+      "current": 0
+    },
+    {
+      "id": "in_17",
+      "name": "Calculate Strategy on Order's Fill(s)",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Triggers an additional intrabar calculation after order fills",
+      "current": "percent"
+    },
+    {
+      "id": "in_18",
+      "name": "Backtesting Limit Order(s) fill assumption",
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 1000000,
+      "tooltip": "Ticks beyond the limit price required for limit order execution",
+      "current": false
+    },
+    {
+      "id": "in_19",
+      "name": "Commission Type",
+      "type": "text",
+      "default": "percent",
+      "options": [
+        "percent",
+        "cash_per_contract",
+        "cash_per_order"
+      ],
+      "tooltip": "Entry and exit fees to be paid",
+      "current": "FIFO"
+    },
+    {
+      "id": "in_20",
+      "name": "Process orders on bar Close",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Fills market orders on the close of the bar where they are issued",
+      "current": 0
+    },
+    {
+      "id": "in_21",
+      "name": "Close entries rule",
+      "type": "text",
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "ANY"
+      ],
+      "current": 0
+    },
+    {
+      "id": "in_22",
+      "name": "Margin Long",
+      "type": "float",
+      "default": 100,
+      "min": 0,
+      "tooltip": "Percentage of the long position the strategy must fund from equity",
+      "current": "BACKTEST"
+    },
+    {
+      "id": "in_23",
+      "name": "Margin Short",
+      "type": "float",
+      "default": 100,
+      "min": 0,
+      "tooltip": "Percentage of the short position the strategy must fund from equity",
+      "current": ""
+    },
+    {
+      "id": "in_24",
+      "name": "Risk free rate",
+      "type": "float",
+      "default": 2,
+      "min": 0,
+      "max": 100,
+      "tooltip": "The annual percentage benchmark to compare against strategy returns for calculating the Sharpe and Sortino ratios",
+      "current": "order_fills"
+    },
+    {
+      "id": "in_25",
+      "name": "Use Bar Magnifier",
+      "type": "bool",
+      "default": false,
+      "tooltip": "On historical bars, uses more precise lower timeframe prices for more realistic results",
+      "current": ""
+    },
+    {
+      "id": "in_26",
+      "name": "Fill orders using standard OHLC",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Forces strategies running on Heikin Ashi charts to fill orders using actual OHLC prices, for more realistic results",
+      "current": 2
+    },
+    {
+      "id": "in_27",
+      "name": "Run mode: 'backtest', 'alert' or something else",
+      "type": "text",
+      "default": "BACKTEST",
+      "options": [
+        "BACKTEST",
+        "ALERT"
+      ],
+      "current": false
+    },
+    {
+      "id": "in_28",
+      "name": "Alert message template for run mode 'alert'",
+      "type": "text",
+      "default": "",
+      "current": false
+    },
+    {
+      "id": "in_29",
+      "name": "Alert type for run mode 'alert'",
+      "type": "text",
+      "default": "order_fills",
+      "current": false
+    },
+    {
+      "id": "in_30",
+      "name": "exclude_from_report",
+      "type": "text",
+      "default": "",
+      "current": ""
+    },
+    {
+      "id": "in_31",
+      "name": "trim_orders",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_32",
+      "name": "calc_range",
+      "type": "text",
+      "default": ""
+    },
+    {
+      "id": "in_33",
+      "name": "Calculate Strategy on every History Tick",
+      "type": "bool",
+      "default": false,
+      "tooltip": "Recalculates the strategy on each historical bar tick, simulating intrabar price movements"
+    }
+  ]
+}

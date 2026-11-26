@@ -1,0 +1,41 @@
+{
+  "indicator": "Nazar V1",
+  "scriptId": "USER;ac7619c32e8540cc87c30fca122ec7e4",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 1 (BTCUSDT.P, 1D)",
+      "visible": false
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "History anchor UTC (0 = AUTO first loaded bar; history dependent)",
+      "type": "time",
+      "default": 0,
+      "current": 0
+    },
+    {
+      "id": "in_1",
+      "name": "First fill UTC (0 = first eligible intent)",
+      "type": "time",
+      "default": 0,
+      "current": 0
+    },
+    {
+      "id": "in_2",
+      "name": "End exclusive UTC (0 = OPEN ENDED)",
+      "type": "time",
+      "default": 0,
+      "current": 0
+    },
+    {
+      "id": "in_3",
+      "name": "Execution delay (bars)",
+      "type": "integer",
+      "default": 1,
+      "current": 1
+    }
+  ]
+}

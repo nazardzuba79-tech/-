@@ -1,0 +1,48 @@
+{
+  "indicator": "Pifagor Mfi 3.2 (private)",
+  "scriptId": "PUB;8fbc6045e6234538aa2452ba8fffc68b",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "MFI or ...",
+      "type": "text",
+      "default": "MFI",
+      "options": [
+        "MFI",
+        "WR",
+        "COPPOK"
+      ],
+      "group": "Это бесплатный индикатор t.me/pifagortrade"
+    },
+    {
+      "id": "in_1",
+      "name": "%",
+      "type": "float",
+      "default": 10,
+      "group": "Тут эксперемент, не трогайте"
+    },
+    {
+      "id": "in_2",
+      "name": "дней вниз?",
+      "type": "integer",
+      "default": 2,
+      "group": "Тут эксперемент, не трогайте"
+    },
+    {
+      "id": "in_3",
+      "name": "% зел",
+      "type": "integer",
+      "default": 2,
+      "group": "Тут эксперемент, не трогайте"
+    },
+    {
+      "id": "in_4",
+      "name": "Timeframe",
+      "type": "resolution",
+      "default": "",
+      "group": "Calculation"
+    }
+  ]
+}

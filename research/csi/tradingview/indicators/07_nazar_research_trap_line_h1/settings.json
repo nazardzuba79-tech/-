@@ -1,0 +1,12 @@
+{
+  "indicator": "Nazar Research - Trap line H1",
+  "scriptId": "USER;047da73acf8145758839cdcd752d90d2",
+  "note": "Скрипта немає на збережених графіках власника. Аргументи та їхні значення за замовчуванням задані в коді (рядки з input).",
+  "onSavedLayout": [],
+  "inputs": [],
+  "inputLinesFromSource": [
+    "float external = input.source(close, \"Select FIRST Trap line Plot\")",
+    "bool armed = input.bool(false, \"Confirmed external selection - enable research\")",
+    "string window = input.string(\"FULL\", \"Frozen research window\", options=[\"FULL\", \"EARLY\", \"LATE\"])"
+  ]
+}

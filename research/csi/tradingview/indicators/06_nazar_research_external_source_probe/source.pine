@@ -1,0 +1,45 @@
+//@version=6
+// Engineering probe only. No strategy, orders, alerts, or profitability claim.
+// The external source is selected manually in TradingView's Inputs menu.
+// Closed receiver bars do NOT prove that a closed-source upstream plot is causal.
+indicator("Nazar Research - External Source Probe", overlay=false, precision=8)
+float external = input.source(close, "External plot - select Trap line")
+bool selectedExternal = input.bool(false, "External plot selected manually")
+var int closedBars = 0
+var int availableBars = 0
+var int differsFromClose = 0
+if barstate.isconfirmed
+    closedBars += 1
+    if not na(external)
+        availableBars += 1
+        if math.abs(external - close) > syminfo.mintick
+            differsFromClose += 1
+plot(external, "External mirror", color=color.orange, linewidth=2)
+plot(barstate.isconfirmed ? external : external[1], "Last closed source", display=display.data_window)
+plot(closedBars, "Closed chart bars", display=display.data_window)
+plot(availableBars, "Non-na source bars", display=display.data_window)
+plot(differsFromClose, "Source differs from close bars", display=display.data_window)
+var table status = table.new(position.top_right, 2, 9, border_width=1, bgcolor=color.new(color.black, 10))
+if barstate.islast
+    int k = barstate.isconfirmed ? 0 : 1
+    table.cell(status, 0, 0, "ENGINEERING ONLY", text_color=color.yellow)
+    table.cell(status, 1, 0, selectedExternal ? "Manual external selection" : "DEFAULT CLOSE / NOT CONNECTED", text_color=color.yellow)
+    table.cell(status, 0, 1, "Market / timeframe")
+    table.cell(status, 1, 1, syminfo.tickerid + " / " + timeframe.period)
+    table.cell(status, 0, 2, "Closed chart bars")
+    table.cell(status, 1, 2, str.tostring(closedBars))
+    table.cell(status, 0, 3, "Non-na source bars")
+    table.cell(status, 1, 3, str.tostring(availableBars))
+    table.cell(status, 0, 4, "Differs from close")
+    table.cell(status, 1, 4, str.tostring(differsFromClose))
+    table.cell(status, 0, 5, "Last closed bar open UTC")
+    table.cell(status, 1, 5, str.format_time(time[k], "yyyy-MM-dd HH:mm", "UTC"))
+    table.cell(status, 0, 6, "Last closed source")
+    table.cell(status, 1, 6, str.tostring(external[k], "#.########"))
+    table.cell(status, 0, 7, "Last closed close")
+    table.cell(status, 1, 7, str.tostring(close[k], "#.########"))
+    table.cell(status, 0, 8, "Repainting / edge")
+    table.cell(status, 1, 8, "NOT VERIFIED", text_color=color.yellow)
+    for row = 0 to 8
+        table.cell_set_text_color(status, 0, row, color.white)
+        table.cell_set_text_color(status, 1, row, color.white)

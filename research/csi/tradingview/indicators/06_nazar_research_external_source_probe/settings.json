@@ -1,0 +1,11 @@
+{
+  "indicator": "Nazar Research - External Source Probe",
+  "scriptId": "USER;2d380a207e3143d997d382223008d633",
+  "note": "Скрипта немає на збережених графіках власника. Аргументи та їхні значення за замовчуванням задані в коді (рядки з input).",
+  "onSavedLayout": [],
+  "inputs": [],
+  "inputLinesFromSource": [
+    "float external = input.source(close, \"External plot - select Trap line\")",
+    "bool selectedExternal = input.bool(false, \"External plot selected manually\")"
+  ]
+}

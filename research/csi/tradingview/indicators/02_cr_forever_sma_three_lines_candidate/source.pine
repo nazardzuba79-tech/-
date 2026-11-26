@@ -1,0 +1,51 @@
+//@version=6
+indicator("CR_Forever_SMA_three_lines_candidate", overlay = true, precision = 8)
+
+// Authorized clean-room PARTIAL reconstruction, never protected source.
+// Three numeric lines only, not a full Pifagor clone or trading strategy.
+// Standard BITSTAMP:BTCUSD 1D only. No future values or price corrections.
+// Plot2: 24 fixed formulas, 400 FIT / 200 Validation / 200 earlier-time Holdout.
+// Public-feed max errors: $0.028095 / $0.015076 / $0.035114, not strict parity.
+// Display start/end are observed boundary candidates, not proven universally.
+// Signals, old2011/2010 runs, risk, labels, zones and alerts are omitted.
+bool showMain = input.bool(false, "Forever sma")
+int anchorMain = input.time(timestamp("12 Mar 2020 00:00 +0000"), "")
+bool show2018 = input.bool(true, "2018 run")
+bool show2015 = input.bool(true, "2015 run")
+int anchor2018 = timestamp("14 Dec 2018 00:00 +0000")
+int anchor2015 = timestamp("14 Jan 2015 00:00 +0000")
+int display2015 = timestamp("01 Oct 2015 00:00 +0000")
+
+bool supported = syminfo.tickerid == "BITSTAMP:BTCUSD" and timeframe.isdaily and timeframe.multiplier == 1
+var int firstLoaded = time
+var float sumMain = 0.0
+var int nMain = 0
+var float sum2018 = 0.0
+var int n2018 = 0
+var float sum2015 = 0.0
+var int n2015 = 0
+if time >= anchorMain
+    sumMain += close
+    nMain += 1
+if time >= anchor2018
+    sum2018 += close
+    n2018 += 1
+if time >= anchor2015
+    sum2015 += close
+    n2015 += 1
+
+float mainLine = supported and firstLoaded <= anchorMain and time > anchorMain and nMain > 0 ? sumMain / nMain : na
+// Anchor Close participates in the mean, but the2018line is hidden on anchor day.
+float run2018 = supported and firstLoaded <= anchor2018 and time > anchor2018 and n2018 > 0 ? sum2018 / n2018 : na
+float run2015 = supported and firstLoaded <= anchor2015 and time > display2015 and time <= anchor2018 and n2015 > 0 ? sum2015 / n2015 : na
+plot(showMain ? mainLine : na, "CR Main", color = color.orange, linewidth = 1)
+plot(show2018 ? run2018 : na, "CR 2018", color = color.white, linewidth = 1)
+plot(show2015 ? run2015 : na, "CR 2015", color = color.white, linewidth = 1)
+plot(syminfo.mintick, "DIAGNOSTIC mintick", display = display.data_window)
+
+var table note = table.new(position.bottom_right, 1, 1)
+if barstate.islast
+    string message = supported ? "RESEARCH: 3 lines only. No LONG/SHORT/EXIT signals." : "Use standard BITSTAMP:BTCUSD 1D. Other contexts unvalidated."
+    if supported and firstLoaded > math.min(anchor2015, math.min(anchorMain, anchor2018))
+        message := "Insufficient loaded history: load data before all anchors."
+    table.cell(note, 0, 0, message, text_color = color.white, bgcolor = color.new(color.black, 20))

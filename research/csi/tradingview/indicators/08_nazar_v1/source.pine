@@ -1,0 +1,152 @@
+//@version=6
+// Experimental frozen v3 signal port. EDGE NOT CONFIRMED; deployment choice CASH.
+// Emulator only: no funding, mark-risk, liquidation, or Python PnL equivalence.
+indicator("Nazar V1", overlay=true, precision=12)
+bool enableOrders = false
+
+// BEGIN FUTURES_V3_SIGNAL_CORE
+// One call per host bar. Invalid rows reset state; raw reset EXIT is not a fill.
+f_prism(float sampleClose, int sampleTime, int sampleStepMs, bool sampleValid, bool sampleConfirmed) =>
+    var array<float> rf = array.new<float>()
+    var array<float> rs = array.new<float>()
+    var array<float> ef = array.new<float>()
+    var array<float> es = array.new<float>()
+    var float previousClose = na
+    var int previousTime = na
+    var int age = -1
+    var int state = 0
+    float fast = na
+    float slow = na
+    float evidence = na
+    bool ready = false
+    int prior = state
+    if sampleConfirmed
+        bool usable = sampleValid and not na(sampleClose) and math.sign(sampleClose) == 1
+        bool continuous = usable and not na(previousTime) and sampleTime - previousTime == sampleStepMs
+        if not continuous
+            array.clear(rf)
+            array.clear(rs)
+            array.clear(ef)
+            array.clear(es)
+            age := -1
+            state := 0
+        if usable
+            age += 1
+            if continuous
+                float r = math.log(sampleClose) - math.log(previousClose)
+                array.push(rf, r)
+                array.push(rs, r)
+                array.push(ef, r * r)
+                array.push(es, r * r)
+                if array.size(rf) > 40
+                    array.shift(rf)
+                    array.shift(ef)
+                if array.size(rs) > 160
+                    array.shift(rs)
+                    array.shift(es)
+            if age >= 40
+                float energy = array.sum(ef)
+                fast := math.sign(energy) == 1 ? array.sum(rf) / math.sqrt(energy) : 0.0
+            if age >= 160
+                float energy = array.sum(es)
+                slow := math.sign(energy) == 1 ? array.sum(rs) / math.sqrt(energy) : 0.0
+                ready := not na(fast) and not na(slow)
+                evidence := math.sign(fast) == math.sign(slow) ? math.sign(fast) * math.min(math.abs(fast), math.abs(slow)) : 0.0
+            if not ready
+                state := 0
+            else if state == 1
+                if math.sign(fast) <= 0
+                    state := 0
+            else if state == -1
+                if math.sign(fast) >= 0
+                    state := 0
+            else if math.sign(evidence - 1.25) >= 0
+                state := 1
+            else if math.sign(evidence + 1.25) <= 0
+                state := -1
+        previousClose := usable ? sampleClose : na
+        previousTime := usable ? sampleTime : na
+    [fast, slow, evidence, ready, state, age, sampleConfirmed and state == 1 and prior != 1, sampleConfirmed and state == -1 and prior != -1, sampleConfirmed and state == 0 and prior != 0]
+// END FUTURES_V3_SIGNAL_CORE
+
+// BEGIN FUTURES_V3_BINDING
+int historyInput = input.time(0, "History anchor UTC (0 = AUTO first loaded bar; history dependent)")
+int phaseStart = input.time(0, "First fill UTC (0 = first eligible intent)")
+int phaseEnd = input.time(0, "End exclusive UTC (0 = OPEN ENDED)")
+int delayBars = input.int(1, "Execution delay (bars)", minval=1, maxval=3)
+int stepMs = int(timeframe.in_seconds() * 1000)
+var int historyAnchor = historyInput == 0 ? time : historyInput
+var bool anchorSeen = false
+var bool phaseStarted = false
+var bool endpointSeen = false
+bool supportedTf = stepMs == 180000 or stepMs == 300000 or stepMs == 900000 or stepMs == 1800000 or stepMs == 3600000 or stepMs == 14400000 or stepMs == 86400000
+bool supportedSymbol = syminfo.prefix == "BINANCE" and (syminfo.ticker == "BTCUSDT.P" or syminfo.ticker == "ETHUSDT.P" or syminfo.ticker == "SOLUSDT.P" or syminfo.ticker == "BNBUSDT.P" or syminfo.ticker == "XRPUSDT.P" or syminfo.ticker == "DOGEUSDT.P")
+if barstate.isfirst
+    if not chart.is_standard or not supportedTf or not supportedSymbol
+        runtime.error("Use standard BINANCE USDT perpetual BTC/ETH/SOL/BNB/XRP/DOGE: 3m,5m,15m,30m,1h,4h,1D. 1m is NOT validated.")
+    if historyAnchor % stepMs != 0 or phaseStart % stepMs != 0 or phaseEnd % stepMs != 0 or time > historyAnchor
+        runtime.error("UTC anchors must align; the exact history anchor must be loaded.")
+    if (phaseStart != 0 and phaseStart < historyAnchor + (160 + delayBars) * stepMs) or (phaseEnd != 0 and phaseEnd <= math.max(phaseStart, historyAnchor + (160 + delayBars) * stepMs))
+        runtime.error("Window needs 160+delay prehistory bars and a later end.")
+bool inHistory = time >= historyAnchor and (phaseEnd == 0 or time < phaseEnd)
+bool validBar = not na(open) and not na(high) and not na(low) and not na(close) and not na(volume) and math.sign(low) == 1 and math.sign(volume) >= 0 and math.sign(high - math.max(open, close)) >= 0 and math.sign(math.min(open, close) - low) >= 0
+bool missingBar = na(open) and na(high) and na(low) and na(close) and na(volume)
+if barstate.isconfirmed and inHistory
+    if not anchorSeen and time != historyAnchor
+        runtime.error("Exact history anchor is missing.")
+    bool gap = anchorSeen and time - time[1] != stepMs
+    bool scored = phaseStarted or (phaseStart != 0 and time >= phaseStart)
+    if time % stepMs != 0 or time_close - time != stepMs or (not validBar and not (missingBar and not scored)) or (gap and scored)
+        runtime.error("Invalid/scored missing bar: entire window is invalid. No retrospective gap fill.")
+    anchorSeen := true
+[fast, slow, evidence, ready, targetState, blockAge, rawLong, rawShort, rawExit] = f_prism(close, time, stepMs, inHistory and validBar, barstate.isconfirmed)
+// END FUTURES_V3_BINDING
+
+// BEGIN FUTURES_V3_EVENTS
+var int plannedPosition = 0
+int delayedTarget = nz(targetState[delayBars - 1], 0)
+bool orderWindow = barstate.isconfirmed and inHistory and blockAge >= 159 + delayBars and (phaseStart == 0 or time_close >= phaseStart) and (phaseEnd == 0 or time_close < phaseEnd)
+if barstate.isconfirmed and inHistory and phaseStart != 0 and time >= phaseStart and blockAge < 160 + delayBars
+    runtime.error("Insufficient contiguous prehistory at scored phase start.")
+bool longSignal = orderWindow and delayedTarget == 1 and plannedPosition == 0
+bool shortSignal = orderWindow and delayedTarget == -1 and plannedPosition == 0
+bool exitSignal = orderWindow and delayedTarget == 0 and plannedPosition != 0
+if orderWindow
+    phaseStarted := true
+    plannedPosition := delayedTarget
+bool terminalBar = barstate.isconfirmed and inHistory and phaseEnd != 0 and time_close == phaseEnd
+bool terminalExitSignal = terminalBar and plannedPosition != 0
+if terminalBar
+    endpointSeen := true
+    plannedPosition := 0
+if barstate.isconfirmed and phaseEnd != 0 and time >= phaseEnd and not endpointSeen
+    runtime.error("Declared endpoint is absent: completed-window result is invalid.")
+// END FUTURES_V3_EVENTS
+
+// BEGIN FUTURES_V3_OUTPUTS
+plot(barstate.isconfirmed and inHistory ? fast : na, "fast", display=display.data_window)
+plot(barstate.isconfirmed and inHistory ? slow : na, "slow", display=display.data_window)
+plot(barstate.isconfirmed and inHistory ? evidence : na, "evidence", display=display.data_window)
+plot(barstate.isconfirmed and inHistory ? targetState : na, "target", display=display.data_window)
+plot(barstate.isconfirmed and inHistory ? (ready ? 1 : 0) : na, "ready", display=display.data_window)
+plot(longSignal ? 1 : 0, "long_event", display=display.data_window)
+plot(shortSignal ? 1 : 0, "short_event", display=display.data_window)
+plot(exitSignal ? 1 : 0, "exit_event", display=display.data_window)
+plot(terminalExitSignal ? 1 : 0, "terminal_exit_event", display=display.data_window)
+plotshape(longSignal, "LONG next open", shape.labelup, location.belowbar, color.teal, text="LONG", textcolor=color.white, size=size.tiny)
+plotshape(shortSignal, "SHORT next open", shape.labeldown, location.abovebar, color.red, text="SHORT", textcolor=color.white, size=size.tiny)
+plotshape(exitSignal, "EXIT next open", shape.xcross, location.abovebar, color.orange, text="EXIT", size=size.tiny)
+plotshape(terminalExitSignal, "Scheduled end EXIT", shape.xcross, location.abovebar, color.purple, text="END EXIT", size=size.tiny)
+if longSignal
+    alert("LONG | planned next open | EXPERIMENTAL; edge not confirmed", alert.freq_once_per_bar_close)
+if shortSignal
+    alert("SHORT | planned next open | EXPERIMENTAL; edge not confirmed", alert.freq_once_per_bar_close)
+if exitSignal
+    alert("EXIT | planned next open | EXPERIMENTAL; edge not confirmed", alert.freq_once_per_bar_close)
+if terminalExitSignal
+    alert("RESEARCH_TERMINAL_EXIT | scheduled close, not an alpha signal", alert.freq_once_per_bar_close)
+var table banner = table.new(position.top_right, 1, 1)
+if barstate.islastconfirmedhistory or barstate.islast
+    string windowStatus = endpointSeen ? "DECLARED WINDOW COMPLETE" : "WINDOW INCOMPLETE / LIVE-PARTIAL"
+    table.cell(banner, 0, 0, "EDGE NOT CONFIRMED | RESEARCH CHOICE CASH\n" + (enableOrders ? "EXPERIMENTAL EMULATOR ORDERS ON" : "EMULATOR ORDERS OFF | SIGNALS ONLY") + "\n" + (historyInput == 0 ? "AUTO ANCHOR: HISTORY DEPENDENT" : "MANUAL UTC ANCHOR") + "\n" + windowStatus + "\nFunding/risk/PnL not Python-equivalent", text_color=color.white, bgcolor=color.maroon, text_size=size.small)
+// END FUTURES_V3_OUTPUTS

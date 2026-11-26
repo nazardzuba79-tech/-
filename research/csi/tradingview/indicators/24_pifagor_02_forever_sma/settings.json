@@ -1,0 +1,57 @@
+{
+  "indicator": "Pifagor 02 Forever sma",
+  "scriptId": "PUB;aee39eb449454a7e99253aba4a443b14",
+  "note": "Індикатора немає на збережених графіках власника, тому поточних значень немає; наведено лише значення за замовчуванням.",
+  "onSavedLayout": [],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Labels?",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_1",
+      "name": "Forever sma",
+      "type": "bool",
+      "default": false
+    },
+    {
+      "id": "in_2",
+      "name": "",
+      "type": "time",
+      "default": 1583971200000
+    },
+    {
+      "id": "in_3",
+      "name": "2018 run",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_4",
+      "name": "2015 run",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_5",
+      "name": "2011 run",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_6",
+      "name": "2010 run",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "in_7",
+      "name": "Включить риск метрику(только blx)",
+      "type": "bool",
+      "default": false,
+      "tooltip": "В настройках цвет свеч и фитилей включи на серый."
+    }
+  ]
+}

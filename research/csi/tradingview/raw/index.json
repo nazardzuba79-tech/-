@@ -1,0 +1,392 @@
+[
+  {
+    "nn": "01",
+    "dir": "01_cr_forever_sma_lines_candidate",
+    "id": "USER;07c41093e5b8415b8c3b30ccedea19b6",
+    "name": "CR_Forever_SMA_lines_candidate",
+    "group": "own",
+    "access": "власний",
+    "lines": 46,
+    "onLayout": false
+  },
+  {
+    "nn": "02",
+    "dir": "02_cr_forever_sma_three_lines_candidate",
+    "id": "USER;158fc7b3cded4934a14c23aa1bdd6cef",
+    "name": "CR_Forever_SMA_three_lines_candidate",
+    "group": "own",
+    "access": "власний",
+    "lines": 51,
+    "onLayout": false
+  },
+  {
+    "nn": "03",
+    "dir": "03_cr_forever02_native_grid",
+    "id": "USER;2f0a953d5c1b494da60aaa6da5a3b421",
+    "name": "CR_Forever02_native_grid",
+    "group": "own",
+    "access": "власний",
+    "lines": 58,
+    "onLayout": false
+  },
+  {
+    "nn": "04",
+    "dir": "04_cr_global_four_line_component",
+    "id": "USER;8bc1aa02a2c2421ea3d9f512e9e9f6e4",
+    "name": "CR_GLOBAL_four_line_component",
+    "group": "own",
+    "access": "власний",
+    "lines": 21,
+    "onLayout": false
+  },
+  {
+    "nn": "05",
+    "dir": "05_cr_global_native_diag",
+    "id": "USER;b517f23f308044b78ecae44f9b9a5c46",
+    "name": "CR_GLOBAL_native_diag",
+    "group": "own",
+    "access": "власний",
+    "lines": 18,
+    "onLayout": false
+  },
+  {
+    "nn": "06",
+    "dir": "06_nazar_research_external_source_probe",
+    "id": "USER;2d380a207e3143d997d382223008d633",
+    "name": "Nazar Research - External Source Probe",
+    "group": "own",
+    "access": "власний",
+    "lines": 45,
+    "onLayout": false
+  },
+  {
+    "nn": "07",
+    "dir": "07_nazar_research_trap_line_h1",
+    "id": "USER;047da73acf8145758839cdcd752d90d2",
+    "name": "Nazar Research - Trap line H1",
+    "group": "own",
+    "access": "власний",
+    "lines": 48,
+    "onLayout": false
+  },
+  {
+    "nn": "08",
+    "dir": "08_nazar_v1",
+    "id": "USER;ac7619c32e8540cc87c30fca122ec7e4",
+    "name": "Nazar V1",
+    "group": "own",
+    "access": "власний",
+    "lines": 152,
+    "onLayout": true
+  },
+  {
+    "nn": "09",
+    "dir": "09_nazar_v2",
+    "id": "USER;aa54e781e3114c28b3e34ba0fb137f79",
+    "name": "Nazar V2",
+    "group": "own",
+    "access": "власний",
+    "lines": 136,
+    "onLayout": true
+  },
+  {
+    "nn": "10",
+    "dir": "10_nazar_v2_strategy",
+    "id": "USER;ee513ffdcc234ad6be71df10613fd02b",
+    "name": "Nazar V2 Strategy",
+    "group": "own",
+    "access": "власний",
+    "lines": 141,
+    "onLayout": false
+  },
+  {
+    "nn": "11",
+    "dir": "11_nadaraya_watson_envelope_luxalgo",
+    "id": "PUB;6d9015a1d65f4b53acaa7210554c446b",
+    "name": "Nadaraya-Watson Envelope [LuxAlgo]",
+    "group": "open",
+    "access": "відкритий",
+    "lines": 118,
+    "onLayout": true
+  },
+  {
+    "nn": "12",
+    "dir": "12_volume_weighted_moving_average",
+    "id": "STD;VWMA",
+    "name": "Volume-weighted moving average",
+    "group": "open",
+    "access": "вбудований",
+    "lines": 7,
+    "onLayout": true
+  },
+  {
+    "nn": "13",
+    "dir": "13_03_opportunity_pifagor_free_indicator",
+    "id": "PUB;1b68f957a4c445f0b254b9374eb41968",
+    "name": "03 Opportunity (Pifagor free indicator)",
+    "group": "closed",
+    "access": "захищений",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "14",
+    "dir": "14_pi_pi",
+    "id": "PUB;b9b4b5f85bf54f619e3f333ab82e531e",
+    "name": "Pi Pi",
+    "group": "closed",
+    "access": "захищений",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "15",
+    "dir": "15_trap_line_pifagor_free_indicator",
+    "id": "PUB;3e736136910147969dc2c0c2ceb0daf5",
+    "name": "Trap line (Pifagor free indicator)",
+    "group": "closed",
+    "access": "захищений",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "16",
+    "dir": "16_4h_radar_private",
+    "id": "PUB;1ee8d54bf27646098730eef5d7408b39",
+    "name": "4h radar(private)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "17",
+    "dir": "17_dno_po_atr_private",
+    "id": "PUB;ed584d65d2c94d33bc6c551a9da28162",
+    "name": "Дно по ATR (private)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "18",
+    "dir": "18_btc_mood_temp_private",
+    "id": "PUB;2138ebc7bbc0449d9d32f4736a1af881",
+    "name": "BTC mood temp(private)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "19",
+    "dir": "19_dca_pifagor_4_0",
+    "id": "PUB;4b40b60837c64aa989040a86a088f22d",
+    "name": "DCA pifagor 4.0",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "20",
+    "dir": "20_forever_sma",
+    "id": "PUB;9e21a723bb484e1ba8707e01a7d09a65",
+    "name": "forever sma",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "21",
+    "dir": "21_opportunity_private",
+    "id": "PUB;680feaa4b10a4c11b228f4efa7448b9d",
+    "name": "Opportunity(private)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "22",
+    "dir": "22_pifagor_warm_buy",
+    "id": "PUB;b2628d46c21c4fb18c4001af9ff0eba4",
+    "name": "Pifagor  Warm buy",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "23",
+    "dir": "23_pifagor_01_global_1_3d",
+    "id": "PUB;TeR3EaHfg79LXosFsjTsISTFWMiqEM62",
+    "name": "Pifagor 01 GLOBAL 1/3D",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "24",
+    "dir": "24_pifagor_02_forever_sma",
+    "id": "PUB;aee39eb449454a7e99253aba4a443b14",
+    "name": "Pifagor 02 Forever sma",
+    "group": "closed",
+    "access": "за запрошенням (доступу немає)",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "25",
+    "dir": "25_pifagor_04_div_private",
+    "id": "PUB;6f66851d0de6440296499c02dff258bd",
+    "name": "Pifagor 04 div private!!!",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "26",
+    "dir": "26_pifagor_05_eth_btc_12h_1d_hero",
+    "id": "PUB;DT45vilhPLXzS4befkDGvO4YqJWa2kNZ",
+    "name": "Pifagor 05 ETH/BTC 12h/1D (hero)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "27",
+    "dir": "27_pifagor_06_eth_btc_12h_best",
+    "id": "PUB;cCKnUZEt9lyP3uLCX4g808dNcJqjIK8A",
+    "name": "Pifagor 06 ETH/BTC 12h (BEST)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "28",
+    "dir": "28_pifagor_08_alts_strategy_3_6",
+    "id": "PUB;ebdcd9878b66427e822ff6c0ab270fa0",
+    "name": "Pifagor 08 ALTS strategy 3.6",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "29",
+    "dir": "29_pifagor_09_alts_mood",
+    "id": "PUB;cbf1db2ca3064a3da2f66c49ca4646fe",
+    "name": "Pifagor 09 ALTS_mood",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "30",
+    "dir": "30_pifagor_12_histogram_r_s_m",
+    "id": "PUB;a62aea63fcef4382a45abc163919c65f",
+    "name": "Pifagor 12 Histogram R/S/M",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "31",
+    "dir": "31_pifagor_13_trader_01",
+    "id": "PUB;5b1766659c714f9b8896c428afe1b886",
+    "name": "Pifagor 13 Trader 01",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "32",
+    "dir": "32_pifagor_14_global_mini",
+    "id": "PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e",
+    "name": "Pifagor 14 Global mini",
+    "group": "closed",
+    "access": "за запрошенням (доступу немає)",
+    "lines": null,
+    "onLayout": true
+  },
+  {
+    "nn": "33",
+    "dir": "33_pifagor_14_global_mini",
+    "id": "PUB;4515704b5fdb4ae4ab5ebb55eded07bf",
+    "name": "Pifagor 14 Global mini+",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "34",
+    "dir": "34_pifagor_19_bottomline",
+    "id": "PUB;f4623958345d4c349f6c2ba2ae3fc5e8",
+    "name": "Pifagor 19 bottomline",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "35",
+    "dir": "35_pifagor_20_buy_more_safety_trade",
+    "id": "PUB;97ee2129f5ee48dbbcc1ef6b3840fa3f",
+    "name": "Pifagor 20 BUY MORE (SAFETY TRADE)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "36",
+    "dir": "36_pifagor_mfi_3_2_private",
+    "id": "PUB;8fbc6045e6234538aa2452ba8fffc68b",
+    "name": "Pifagor Mfi 3.2 (private)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "37",
+    "dir": "37_pifagor_big_guy",
+    "id": "PUB;6cd345b56f94438cb9ff0871d13dd761",
+    "name": "Pifagor_Big guy ()()()",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "38",
+    "dir": "38_pifagor_warm_buy_overlay",
+    "id": "PUB;86e23a99c8764a32a70c614bf7d6f926",
+    "name": "Pifagor_Warm buy overlay",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  },
+  {
+    "nn": "39",
+    "dir": "39_trap_line_private",
+    "id": "PUB;44d8443427f54382b21705d6cb022ced",
+    "name": "Trap line (private)",
+    "group": "closed",
+    "access": "за запрошенням",
+    "lines": null,
+    "onLayout": false
+  }
+]

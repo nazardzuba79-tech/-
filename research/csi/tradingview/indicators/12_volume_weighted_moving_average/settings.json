@@ -1,0 +1,41 @@
+{
+  "indicator": "Volume-weighted moving average",
+  "scriptId": "STD;VWMA",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 2 (ETHUSDT, 1 год)",
+      "visible": false
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_3",
+      "name": "Indicator Timeframe",
+      "type": "resolution",
+      "default": "",
+      "current": "1D"
+    },
+    {
+      "id": "in_0",
+      "name": "Length",
+      "type": "integer",
+      "default": 20,
+      "current": 55
+    },
+    {
+      "id": "in_1",
+      "name": "Source",
+      "type": "source",
+      "default": "close",
+      "current": "close"
+    },
+    {
+      "id": "in_2",
+      "name": "Offset",
+      "type": "integer",
+      "default": 0,
+      "current": 0
+    }
+  ]
+}

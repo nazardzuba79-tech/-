@@ -1,0 +1,25 @@
+{
+  "indicator": "Pifagor 14 Global mini",
+  "scriptId": "PUB;5e5abe3e9ae942b3ae1a07ac344f5b2e",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 2 (ETHUSDT, 1 год)",
+      "visible": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "money flow",
+      "type": "text",
+      "default": "NO",
+      "options": [
+        "lines",
+        "wave",
+        "NO"
+      ],
+      "current": "NO"
+    }
+  ]
+}

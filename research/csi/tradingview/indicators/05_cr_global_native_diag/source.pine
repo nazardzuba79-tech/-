@@ -1,0 +1,18 @@
+//@version=6
+// Independent clean-room measurement instrument, NOT a full GLOBAL clone.
+// Frozen periods/source/lag; no observed original output is used as a seed.
+// No entries, exits, alerts, profitability claim, or visual equivalence claim.
+indicator("CR_GLOBAL_native_diag", shorttitle="CRGN", overlay=true, precision=8)
+var float emaHigh = na
+var float emaLow = na
+var int firstDatasetTime = time
+emaHigh := na(emaHigh[1]) ? high : (2.0 / 101.0) * high + (1.0 - 2.0 / 101.0) * emaHigh[1]
+emaLow := na(emaLow[1]) ? low : (2.0 / 141.0) * low + (1.0 - 2.0 / 141.0) * emaLow[1]
+plot(emaHigh, "Frozen high EMA100", display=display.data_window)
+plot(emaLow, "Frozen low EMA140", display=display.data_window)
+plot(high, "Native high", display=display.data_window)
+plot(low, "Native low", display=display.data_window)
+plot(time, "Bar timestamp", display=display.data_window, precision=0)
+plot(firstDatasetTime, "First dataset timestamp", display=display.data_window, precision=0)
+plot(bar_index, "Native bar index", display=display.data_window, precision=0)
+plot(syminfo.mintick, "Native minimum tick", display=display.data_window)

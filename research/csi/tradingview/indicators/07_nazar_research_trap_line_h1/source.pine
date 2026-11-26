@@ -1,0 +1,48 @@
+//@version=6
+// Fixed exploratory hypothesis, NOT the author's strategy and NOT Nazar V2.
+// External source may repaint. Funding is NOT included. No live automation.
+strategy("Nazar Research - Trap line H1", overlay=true, initial_capital=1000,
+     currency=currency.USDT, default_qty_type=strategy.percent_of_equity, default_qty_value=99,
+     pyramiding=0, commission_type=strategy.commission.percent, commission_value=0.15,
+     slippage=0, margin_long=1, margin_short=1,
+     calc_on_order_fills=false, calc_on_every_tick=false, process_orders_on_close=false)
+float external = input.source(close, "Select FIRST Trap line Plot")
+bool armed = input.bool(false, "Confirmed external selection - enable research")
+string window = input.string("FULL", "Frozen research window", options=["FULL", "EARLY", "LATE"])
+int firstTime = window == "LATE" ? timestamp("UTC",2026,4,1,0,0) : timestamp("UTC",2026,1,8,0,0)
+int lastTime = window == "EARLY" ? timestamp("UTC",2026,4,1,0,0) : timestamp("UTC",2026,8,1,0,0)
+bool properChart = syminfo.tickerid == "BINANCE:BTCUSDT.P" and timeframe.period == "60"
+bool inWindow = time >= firstTime and time < lastTime
+bool canEnter = armed and properChart and inWindow and time_close < lastTime and not na(external)
+var int firstLoaded = time
+var int seen = 0
+var int missing = 0
+if barstate.isconfirmed
+    if inWindow
+        seen += 1
+        missing += na(external) ? 1 : 0
+    if canEnter
+        if close > external and strategy.position_size <= 0
+            strategy.entry("LONG", strategy.long, comment="Close above first Trap plot")
+        else if close < external and strategy.position_size >= 0
+            strategy.entry("SHORT", strategy.short, comment="Close below first Trap plot")
+    else if strategy.position_size != 0
+        strategy.close_all(comment="Window end or missing source")
+plot(external, "External reference", color=color.orange)
+var table note = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black,10))
+if barstate.islastconfirmedhistory or barstate.islast
+    table.cell(note,0,0,"EXPLORATORY / NO FUNDING")
+    table.cell(note,1,0,armed and properChart ? "ENABLED" : "NOT ENABLED")
+    table.cell(note,0,1,"Window / seen / expected")
+    table.cell(note,1,1,window+" / "+str.tostring(seen)+" / "+str.tostring((lastTime-firstTime)/3600000))
+    table.cell(note,0,2,"Missing source bars")
+    table.cell(note,1,2,str.tostring(missing))
+    table.cell(note,0,3,"First loaded UTC")
+    table.cell(note,1,3,str.format_time(firstLoaded,"yyyy-MM-dd HH:mm","UTC"))
+    table.cell(note,0,4,"Repainting / edge")
+    table.cell(note,1,4,"NOT VERIFIED")
+    table.cell(note,0,5,"Closed trades / net USDT")
+    table.cell(note,1,5,str.tostring(strategy.closedtrades)+" / "+str.tostring(strategy.netprofit,"#.########"))
+    for row=0 to 5
+        table.cell_set_text_color(note,0,row,color.white)
+        table.cell_set_text_color(note,1,row,color.white)

@@ -1,0 +1,41 @@
+{
+  "indicator": "Nazar V2",
+  "scriptId": "USER;aa54e781e3114c28b3e34ba0fb137f79",
+  "note": "Поле \"current\" — значення зі збереженого макета власника; \"default\" — значення автора.",
+  "onSavedLayout": [
+    {
+      "where": "графік 1 (BTCUSDT.P, 1D)",
+      "visible": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "in_0",
+      "name": "Start from flat (UTC)",
+      "type": "time",
+      "default": 1751328000000,
+      "current": 1751328000000
+    },
+    {
+      "id": "in_1",
+      "name": "Show breakout channel",
+      "type": "bool",
+      "default": false,
+      "current": false
+    },
+    {
+      "id": "in_2",
+      "name": "Show close-trigger exit guides",
+      "type": "bool",
+      "default": true,
+      "current": true
+    },
+    {
+      "id": "in_3",
+      "name": "Show exit reasons",
+      "type": "bool",
+      "default": true,
+      "current": true
+    }
+  ]
+}

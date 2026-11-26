@@ -3446,3 +3446,13 @@ withdrawal was placed.
 - Wrote `research/csi/tradingview/BRIEF_UA.md`: full task for a session running on the owner's computer (stages A–E, browser safety rules, storage layout, testing protocol reusing `v1/csi/backtest.py` and the walk-forward approach, bot preconditions).
 - No tests were run in this step (documentation only).
 - Unresolved: everything in the brief; forward ledger stale since 2026-09-23.
+
+### 2026-11-26 — Claude — CSI: TradingView stage A (inventory of the owner's indicators), local session with the built-in browser
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/tradingview/`, `research/csi/RUN_STATE.json` and this entry changed. No production file touched.
+- Owner signed in to TradingView himself in the desktop app's browser (Premium plan). Nothing was changed in his account: no script or layout edited, saved, deleted or published; indicators were added only to an unsaved temporary chart.
+- Inventory: 39 scripts — 10 own (full source saved, SHA-256 checked against the browser), 1 open-source (LuxAlgo, CC BY-NC-SA 4.0), 1 built-in, 27 closed scripts by Pifagor_trade (3 protected, 24 invite-only, 2 of those without access). Per-script `meta.md` / `settings.json` / `source.pine` in `research/csi/tradingview/indicators/`; summary in `INVENTORY.md`; raw collected JSON in `raw/`.
+- Chart data: `exports/btcusd_bitstamp_1d_20261126.csv`, BITSTAMP:BTCUSD 1D, 5547 bars, 131 columns, 11 studies with default inputs. TradingView's own "Export chart data" needs a saved layout, so values were read from the chart instead (see `exports/README.md`). Nazar V1 refuses to run on this symbol (empty columns).
+- Not done / not verified: source of closed scripts is unavailable by design; line counts were not compared inside the Pine Editor script by script; no export for other symbols or timeframes; repainting of closed indicators not checked. No tests or backtests were run in this step.
+- Preserved from other agents: everything (files added under `research/csi/tradingview/` only).
+- Next: owner's answers (which indicators he uses, symbols, timeframes, entry/exit rules) go into `INVENTORY.md`; stages B–E of `BRIEF_UA.md` wait for his explicit go-ahead.

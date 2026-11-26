@@ -1,0 +1,136 @@
+//@version=6
+// EXPERIMENTAL_EDGE_NOT_CONFIRMED. Fixed research selection, not AI-trained inference.
+// Close triggers only; risk guides are not guaranteed protective orders.
+indicator("Nazar V2", overlay=true, precision=8, max_labels_count=300)
+// BEGIN NAZAR_V2_CORE -- identical in Strategy, Indicator and parity fixture.
+// Fixed rules selected BEFORE the chronological test. NOT a trained neural network.
+// No security(), pivots, negative offsets, intrabar decisions or same-bar fills.
+f_nazar(float o, float h, float l, float c, float v, int t, bool confirmed, bool inPhase) =>
+    float tr = na(c[1]) ? h-l : math.max(h-l, math.max(math.abs(h-c[1]), math.abs(l-c[1])))
+    float atr = ta.sma(tr, 14)
+    float ma24 = ta.sma(c, 24)
+    float ma96 = ta.sma(c, 96)
+    float upper = ta.highest(h, 48)[1]
+    float lower = ta.lowest(l, 48)[1]
+    bool valid = not na(o) and not na(h) and not na(l) and not na(c) and not na(v) and l > 0 and v >= 0
+    var int age = -1
+    var int prevTime = na
+    var int side = 0
+    var bool pending = false
+    var float entry = na
+    var float entryAtr = na
+    var float best = na
+    var int held = 0
+    var int cool = 0
+    var int lc = 0
+    var int sc = 0
+    int prior = side
+    int reason = 0
+    float refEntry = na
+    float refStop = na
+    float refTake = na
+    bool ready = false
+    if confirmed
+        bool contiguous = valid and not na(prevTime) and t-prevTime == 3600000
+        age := valid ? (contiguous ? age+1 : 0) : -1
+        prevTime := valid ? t : na
+        ready := valid and age >= 180 and not na(atr) and atr > 0 and not na(ma96)
+        if not inPhase
+            side := 0
+            pending := false
+            lc := 0
+            sc := 0
+            held := 0
+            cool := 0
+        else if not ready
+            reason := side != 0 ? 7 : 0
+            side := 0
+            pending := false
+            lc := 0
+            sc := 0
+            held := 0
+            cool := 8
+        else
+            if pending
+                entry := o
+                best := entry
+                held := 0
+                pending := false
+            bool le = c > upper and ma24 > ma96
+            bool se = c < lower and ma24 < ma96
+            lc := le ? lc+1 : 0
+            sc := se ? sc+1 : 0
+            if side != 0
+                held += 1
+                best := side == 1 ? math.max(best,c) : math.min(best,c)
+                float gain = side*(c-entry)
+                float bestGain = side*(best-entry)
+                float stop = entry-side*2.0*entryAtr
+                if bestGain >= 2.0*entryAtr
+                    stop := side == 1 ? math.max(stop,best-2.5*entryAtr) : math.min(stop,best+2.5*entryAtr)
+                reason := gain <= -2.0*entryAtr ? 2 : gain >= 4.0*entryAtr ? 3 : bestGain >= 2.0*entryAtr and side*(c-best) <= -2.5*entryAtr ? 4 : (side == 1 ? sc : lc) >= 2 ? 5 : held >= 72 ? 6 : 0
+                refEntry := entry
+                refStop := stop
+                refTake := entry+side*4.0*entryAtr
+                if reason != 0
+                    side := 0
+                    cool := 8
+                    lc := 0
+                    sc := 0
+            else
+                if cool > 0
+                    cool -= 1
+                    lc := 0
+                    sc := 0
+                else if lc >= 2 or sc >= 2
+                    side := lc >= 2 ? 1 : -1
+                    entryAtr := atr
+                    pending := true
+                    reason := 1
+                    lc := 0
+                    sc := 0
+    [side, reason, refEntry, refStop, refTake, confirmed and side == 1 and prior == 0, confirmed and side == -1 and prior == 0, confirmed and side == 0 and prior != 0, ready, cool, upper, lower, ma96]
+// END NAZAR_V2_CORE
+
+int startAt = input.time(timestamp("01 Jul 2025 00:00 +0000"), "Start from flat (UTC)", group="History")
+bool drawChannel = input.bool(false, "Show breakout channel", group="Display")
+bool drawRisk = input.bool(true, "Show close-trigger exit guides", group="Display")
+bool drawReasons = input.bool(true, "Show exit reasons", group="Display")
+bool marketOK = syminfo.prefix == "BINANCE" and (syminfo.ticker == "BTCUSDT.P" or syminfo.ticker == "ETHUSDT.P" or syminfo.ticker == "SOLUSDT.P" or syminfo.ticker == "BNBUSDT.P" or syminfo.ticker == "XRPUSDT.P" or syminfo.ticker == "DOGEUSDT.P")
+bool supported = marketOK and timeframe.period == "60" and chart.is_standard
+bool inPhase = supported and time >= startAt
+[side, reason, refEntry, refStop, refTake, longEvent, shortEvent, exitEvent, ready, cool, upper, lower, trend] = f_nazar(open,high,low,close,volume,time,barstate.isconfirmed,inPhase)
+string exitText = switch reason
+    2 => "EXIT: close stop"
+    3 => "EXIT: close target"
+    4 => "EXIT: trailing"
+    5 => "EXIT: opposite"
+    6 => "EXIT: 72 bars"
+    7 => "EXIT: data reset"
+    => "EXIT: reset"
+plotshape(longEvent, title="LONG confirmed intent", text="LONG", style=shape.labelup, location=location.belowbar, color=color.teal, textcolor=color.white, size=size.small)
+plotshape(shortEvent, title="SHORT confirmed intent", text="SHORT", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
+plotshape(exitEvent, title="EXIT confirmed intent", text="EXIT", style=shape.xcross, location=location.abovebar, color=color.orange, textcolor=color.orange, size=size.tiny)
+if drawReasons and exitEvent
+    label.new(bar_index,high,exitText,style=label.style_label_down,color=color.new(color.orange,65),textcolor=color.white,size=size.tiny)
+plot(drawRisk ? refEntry : na,"Reference next-open entry",color=color.gray,style=plot.style_linebr)
+plot(drawRisk ? refStop : na,"Close-trigger stop/trail (not intrabar)",color=color.orange,style=plot.style_linebr,linewidth=2)
+plot(drawRisk ? refTake : na,"Close-trigger target (not limit)",color=color.teal,style=plot.style_linebr)
+plot(drawChannel and supported ? upper : na,"Previous 48-bar high",color=color.new(color.teal,70))
+plot(drawChannel and supported ? lower : na,"Previous 48-bar low",color=color.new(color.red,70))
+plot(drawChannel and supported ? trend : na,"Trend SMA96",color=color.new(color.blue,50))
+plot(side,"Audit target",display=display.data_window)
+plot(reason,"Audit reason code",display=display.data_window)
+var table panel = table.new(position.top_right,1,5,bgcolor=color.new(color.black,15))
+if barstate.islast
+    table.cell(panel,0,0,"Nazar V2 | EXPERIMENTAL",text_color=color.orange)
+    table.cell(panel,0,1,supported ? "BINANCE USD-M | 1h | LONG + SHORT" : "Use BINANCE USDT.P / standard candles / 1h",text_color=supported ? color.white : color.red)
+    table.cell(panel,0,2,"Entry: 2 closes beyond 48-bar channel + SMA24/96",text_color=color.silver)
+    table.cell(panel,0,3,side == 1 ? "LONG | exits at close, next-open fill" : side == -1 ? "SHORT | exits at close, next-open fill" : cool > 0 ? "FLAT | cooldown " + str.tostring(cool) : "FLAT | waiting for confirmation",text_color=side == 1 ? color.teal : side == -1 ? color.red : color.silver)
+    table.cell(panel,0,4,"Held-out median -4.39% at 0.15%/side + funding",text_color=color.orange)
+
+alertcondition(longEvent,"Nazar V2 LONG","Nazar V2 LONG {{ticker}} {{interval}} | confirmed 48-bar breakout + trend. Experimental; next-open intent.")
+alertcondition(shortEvent,"Nazar V2 SHORT","Nazar V2 SHORT {{ticker}} {{interval}} | confirmed 48-bar breakdown + trend. Experimental; next-open intent.")
+alertcondition(exitEvent,"Nazar V2 EXIT","Nazar V2 EXIT {{ticker}} {{interval}} | confirmed close exit. Experimental; next-open intent.")
+if longEvent or shortEvent or exitEvent
+    alert("Nazar V2 | " + syminfo.ticker + " | " + (longEvent ? "LONG: confirmed breakout" : shortEvent ? "SHORT: confirmed breakdown" : exitText),alert.freq_once_per_bar_close)
