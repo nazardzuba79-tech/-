@@ -1,0 +1,49 @@
+//@version=6
+// CSI Режим ринку. Власний індикатор на відкритих загальновідомих формулах:
+// 200-денна середня, Pi Cycle (111D проти 2×350D), 200-тижнева середня.
+// Усі значення беруться з ОСТАННЬОГО ЗАКРИТОГО денного бару, тому індикатор не перемальовується
+// і однаково працює на будь-якому таймфреймі (15 хв, 1 год, 1 день).
+// Це фільтр ризику, а не прогноз ціни.
+indicator("CSI Режим ринку", shorttitle = "CSI Режим", overlay = true)
+
+showPi   = input.bool(true, "Лінії Pi Cycle: 111D і 2×350D")
+show200w = input.bool(true, "200-тижнева середня")
+showBg   = input.bool(true, "Фон за режимом")
+
+[dClose, dSma200, dSma111, dSma350] = request.security(syminfo.tickerid, "D", [close[1], ta.sma(close, 200)[1], ta.sma(close, 111)[1], ta.sma(close, 350)[1]], lookahead = barmerge.lookahead_on)
+w200 = request.security(syminfo.tickerid, "W", ta.sma(close, 200)[1], lookahead = barmerge.lookahead_on)
+
+bool hasData  = not na(dSma200)
+bool trendUp  = hasData and dClose > dSma200
+bool overheat = not na(dSma350) and dSma111 > 2 * dSma350
+// 1 = тренд угору, 2 = перегрів циклу, 0 = тренд униз
+int regime = not hasData ? na : overheat ? 2 : trendUp ? 1 : 0
+
+color cTrend = trendUp ? color.green : color.red
+plot(dSma200, "200D середня", color = cTrend, linewidth = 2)
+plot(showPi ? dSma111 : na, "Pi: 111D", color = color.new(color.orange, 20))
+plot(showPi ? 2 * dSma350 : na, "Pi: 2×350D", color = color.new(color.purple, 20))
+plot(show200w ? w200 : na, "200W середня", color = color.new(color.blue, 20), linewidth = 2)
+plot(regime, "Режим (0 униз, 1 угору, 2 перегрів)", display = display.data_window)
+
+color bg = not showBg or na(regime) ? na : regime == 2 ? color.new(color.orange, 85) : regime == 1 ? color.new(color.green, 92) : color.new(color.red, 92)
+bgcolor(bg, title = "Фон режиму")
+
+var table t = table.new(position.top_right, 2, 5, border_width = 1)
+string rTxt = na(regime) ? "мало історії" : regime == 2 ? "ПЕРЕГРІВ" : regime == 1 ? "тренд угору" : "тренд униз"
+color rCol = na(regime) ? color.gray : regime == 2 ? color.orange : regime == 1 ? color.green : color.red
+table.cell(t, 0, 0, "CSI Режим (денне закриття)", bgcolor = color.gray, text_color = color.white)
+table.cell(t, 1, 0, rTxt, bgcolor = rCol, text_color = color.white)
+table.cell(t, 0, 1, "Ціна до 200D")
+table.cell(t, 1, 1, hasData ? str.tostring((dClose / dSma200 - 1) * 100, "#.#") + "%" : "-")
+table.cell(t, 0, 2, "Множник Маєра")
+table.cell(t, 1, 2, hasData ? str.tostring(dClose / dSma200, "#.##") : "-")
+table.cell(t, 0, 3, "Pi: 111D / (2×350D)")
+table.cell(t, 1, 3, na(dSma350) ? "-" : str.tostring(dSma111 / (2 * dSma350), "#.##"))
+table.cell(t, 0, 4, "Ціна до 200W")
+table.cell(t, 1, 4, na(w200) ? "-" : str.tostring((dClose / w200 - 1) * 100, "#.#") + "%")
+
+bool chg = not na(regime) and not na(regime[1]) and regime != regime[1]
+alertcondition(chg and regime == 1, "Режим: тренд угору", "CSI Режим: денне закриття вище 200D, перегріву немає")
+alertcondition(chg and regime == 0, "Режим: тренд униз", "CSI Режим: денне закриття нижче 200D")
+alertcondition(chg and regime == 2, "Режим: перегрів циклу", "CSI Режим: 111D вище 2×350D (перегрів циклу)")

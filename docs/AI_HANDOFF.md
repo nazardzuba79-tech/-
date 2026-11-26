@@ -3457,3 +3457,13 @@ withdrawal was placed.
 - Preserved from other agents: everything (files added under `research/csi/tradingview/` only).
 - Next: owner's answers (which indicators he uses, symbols, timeframes, entry/exit rules) go into `INVENTORY.md`; stages B–E of `BRIEF_UA.md` wait for his explicit go-ahead.
 - Commit: `b97b228`.
+
+### 2026-11-26 — Claude — CSI: TradingView stages C (daily test) and D (two own indicators), local session
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/` and this entry changed. No production file touched.
+- Owner's decision: he uses none of the collected indicators yet; the ten "own" scripts were written by an earlier assistant session. He first asked for exact copies of the closed Pifagor_trade scripts; that was declined (closed third-party product), and he agreed: build better own indicators on open formulas instead.
+- Protocol `research/csi/tradingview/PREREGISTRATION_TV.md` committed (`571674b`) before any return calculation. Engine: `analysis/tv_backtest.js` in Node, because the owner's PC has no Python, so `v1/csi/backtest.py` was NOT run.
+- Result (`RESULTS_TV_UA.md`, `analysis/results_btc_1d.json`): no closed signal passes on BTC 1D. The level lines are long moving averages times a constant; price is above them 96–100% of days. Trap line looks good in-sample only and its repainting is unchecked. Own rule "200D trend and no Pi overheating" beats the 200D filter in all three windows, but on four overheating episodes only.
+- Two Pine v6 scripts written, compiled without errors and saved as NEW scripts in the owner's TradingView account: "CSI Режим ринку", "CSI Шкала циклу" (sources in `research/csi/tradingview/pine/`). Values checked on the chart on 1D and 1h. Nothing published; no existing script or layout edited.
+- Not done / not verified: no intraday (1h, 15m) data or test; no repaint check of closed indicators (needs a second snapshot); no other coins; stage B scripts from `v1/platform/pine/` not compiled; no bot work.
+- Preserved from other agents: everything.

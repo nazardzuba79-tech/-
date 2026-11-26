@@ -1,7 +1,7 @@
 {
   "version": 5,
   "agent": "Claude Code — executor; Codex not involved in this run",
-  "updated_at_utc": "2026-11-26T18:10:00+00:00",
+  "updated_at_utc": "2026-11-26T18:11:54.710Z",
   "mode": "A_DATA_OBTAINED",
   "snapshot": {
     "zip_sha256": "afbd0761ca1e8141aef22adae0689da6e0e7292d3889de4473c83941fa1a6ce6",
@@ -25,7 +25,9 @@
     "12_v3_eth_transfer": "done — REGIME confirmed passes on ETH (+0.18 [0.07,0.29]) only via 2016-2022 (+0.26); after 2023 ~0; CYCLE +0.32 insufficient; TACTICAL ~0",
     "13_v3_platform": "done — incremental refresh verified end-to-end; forward ledger started (11 rows, asof 2026-09-22); 4 new Pine v6 scripts syntax-checked offline (not TradingView-compiled) with Python replica backtests",
     "14_tradingview_handoff": "prepared — cloud session has no browser (app says: browser unavailable in this session); brief for a local session written to research/csi/tradingview/BRIEF_UA.md; owner has a paid TradingView plan and logs in himself",
-    "15_tradingview_stage_A_collection": "done — local session with built-in browser; 39 scripts inventoried (10 own with full source, 1 open LuxAlgo, 1 built-in, 27 closed by Pifagor_trade: 3 protected + 24 invite-only, 2 of them without access); BTCUSD 1D values of 11 studies read from an unsaved chart (5547 bars, 131 columns); owner answers on usage pending; stages B-E not started"
+    "15_tradingview_stage_A_collection": "done — local session with built-in browser; 39 scripts inventoried (10 own with full source, 1 open LuxAlgo, 1 built-in, 27 closed by Pifagor_trade: 3 protected + 24 invite-only, 2 of them without access); BTCUSD 1D values of 11 studies read from an unsaved chart (5547 bars, 131 columns); owner answers on usage pending; stages B-E not started",
+    "16_tradingview_stage_C_daily_test": "done — pre-registered (571674b); no closed Pifagor_trade signal passes on BTC 1D (walk-forward of 14 level lines: CAGR 52.7%, maxDD -87.1% vs 200D filter 57.2%/-67.4%); lines are long averages times a constant; Trap line looks good in-sample only, repainting unchecked; intraday NOT tested",
+    "17_tradingview_stage_D_own_indicators": "partial — two own Pine v6 scripts compiled and saved in the owner account as new scripts (CSI Режим ринку, CSI Шкала циклу), values verified on 1D and 1h charts; no intraday entry indicator; stage B (four v1 scripts) not compiled"
   },
   "database_rows": 607232,
   "series_count": 169,

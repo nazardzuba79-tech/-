@@ -1,0 +1,25 @@
+//@version=6
+// CSI Шкала циклу. Власний індикатор на відкритих загальновідомих формулах:
+// множник Маєра (ціна / 200-денна середня) і відношення Pi Cycle (111D / (2×350D)).
+// Значення беруться з ОСТАННЬОГО ЗАКРИТОГО денного бару: без перемальовування, на будь-якому таймфреймі.
+// Показує, дорого чи дешево зараз відносно власної історії. Це контекст, а не сигнал на вхід.
+indicator("CSI Шкала циклу", shorttitle = "CSI Цикл", overlay = false, precision = 2)
+
+[dClose, dSma200, dSma111, dSma350] = request.security(syminfo.tickerid, "D", [close[1], ta.sma(close, 200)[1], ta.sma(close, 111)[1], ta.sma(close, 350)[1]], lookahead = barmerge.lookahead_on)
+
+float mayer   = dClose / dSma200
+float piRatio = dSma111 / (2 * dSma350)
+
+color mCol = mayer > 2.4 ? color.red : mayer < 0.8 ? color.green : mayer >= 1 ? color.teal : color.gray
+plot(mayer, "Множник Маєра (ціна / 200D)", color = mCol, linewidth = 2)
+plot(piRatio, "Pi: 111D / (2×350D)", color = color.purple)
+
+hline(2.4, "Маєр 2.4: історично дорого", color = color.red)
+hline(1.0, "1.0: межа тренду 200D і перегріву Pi", color = color.gray)
+hline(0.8, "Маєр 0.8: історично дешево", color = color.green)
+
+bgcolor(piRatio > 1 ? color.new(color.orange, 85) : na, title = "Перегрів Pi")
+
+alertcondition(ta.crossover(mayer, 2.4), "Маєр вище 2.4", "CSI Цикл: множник Маєра вище 2.4 (історично дорого)")
+alertcondition(ta.crossunder(mayer, 0.8), "Маєр нижче 0.8", "CSI Цикл: множник Маєра нижче 0.8 (історично дешево)")
+alertcondition(ta.crossover(piRatio, 1), "Pi перегрів", "CSI Цикл: 111D перетнула 2×350D знизу вгору")

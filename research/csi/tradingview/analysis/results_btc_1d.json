@@ -1,0 +1,1396 @@
+{
+ "meta": {
+  "csv": "exports/btcusd_bitstamp_1d_20261126.csv",
+  "bars": 5546,
+  "first": "2011-08-18",
+  "last": "2026-11-25",
+  "cost_per_side": 0.0015
+ },
+ "groupA": {
+  "descriptive_2016_2026": {
+   "Opportunity L1 (c9)": {
+    "total_pct": 7937,
+    "cagr_pct": 49.6,
+    "maxdd_pct": -87.1,
+    "calmar": 0.57,
+    "trades": 19,
+    "exposure_pct": 99
+   },
+   "Opportunity L4 (c12)": {
+    "total_pct": 0,
+    "cagr_pct": 0,
+    "maxdd_pct": 0,
+    "calmar": null,
+    "trades": 0,
+    "exposure_pct": 0
+   },
+   "Opportunity L5 (c13)": {
+    "total_pct": 0,
+    "cagr_pct": 0,
+    "maxdd_pct": 0,
+    "calmar": null,
+    "trades": 0,
+    "exposure_pct": 0
+   },
+   "Trader01 L1 (c117)": {
+    "total_pct": -5.1,
+    "cagr_pct": -0.5,
+    "maxdd_pct": -5.1,
+    "calmar": -0.09,
+    "trades": 2,
+    "exposure_pct": 0
+   },
+   "Trader01 L2 (c118)": {
+    "total_pct": 16.2,
+    "cagr_pct": 1.4,
+    "maxdd_pct": -18.2,
+    "calmar": 0.08,
+    "trades": 10,
+    "exposure_pct": 1
+   },
+   "Trader01 L3 (c119)": {
+    "total_pct": 13597.1,
+    "cagr_pct": 57.1,
+    "maxdd_pct": -83.4,
+    "calmar": 0.68,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "Trader01 L4 (c120)": {
+    "total_pct": 6287.3,
+    "cagr_pct": 46.4,
+    "maxdd_pct": -89.2,
+    "calmar": 0.52,
+    "trades": 25,
+    "exposure_pct": 99
+   },
+   "Trader01 L5 (c121)": {
+    "total_pct": 9479.5,
+    "cagr_pct": 52,
+    "maxdd_pct": -85.3,
+    "calmar": 0.61,
+    "trades": 7,
+    "exposure_pct": 100
+   },
+   "bottomline L1 (c122)": {
+    "total_pct": 5942.1,
+    "cagr_pct": 45.7,
+    "maxdd_pct": -86.3,
+    "calmar": 0.53,
+    "trades": 41,
+    "exposure_pct": 96
+   },
+   "bottomline L2 (c123)": {
+    "total_pct": 11606.2,
+    "cagr_pct": 54.8,
+    "maxdd_pct": -83.7,
+    "calmar": 0.65,
+    "trades": 5,
+    "exposure_pct": 100
+   },
+   "bottomline L3 (c124)": {
+    "total_pct": 11744.5,
+    "cagr_pct": 55,
+    "maxdd_pct": -83.5,
+    "calmar": 0.66,
+    "trades": 11,
+    "exposure_pct": 99
+   },
+   "ALTS upper (c108)": {
+    "total_pct": 9338.3,
+    "cagr_pct": 51.8,
+    "maxdd_pct": -85.9,
+    "calmar": 0.6,
+    "trades": 11,
+    "exposure_pct": 100
+   },
+   "ALTS lower core (c110)": {
+    "total_pct": 13597.1,
+    "cagr_pct": 57.1,
+    "maxdd_pct": -83.4,
+    "calmar": 0.68,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "Trap line (c125)": {
+    "total_pct": 25684.4,
+    "cagr_pct": 66.5,
+    "maxdd_pct": -59.5,
+    "calmar": 1.12,
+    "trades": 64,
+    "exposure_pct": 57
+   }
+  },
+  "line_profile": {
+   "Opportunity L1 (c9)": {
+    "days": 5502,
+    "close_above_pct": 99,
+    "median_line_to_price": 0.38
+   },
+   "Opportunity L4 (c12)": {
+    "days": 5546,
+    "close_above_pct": 0,
+    "median_line_to_price": 1
+   },
+   "Opportunity L5 (c13)": {
+    "days": 5536,
+    "close_above_pct": 0,
+    "median_line_to_price": 2.97
+   },
+   "Trader01 L1 (c117)": {
+    "days": 5507,
+    "close_above_pct": 1,
+    "median_line_to_price": 1.85
+   },
+   "Trader01 L2 (c118)": {
+    "days": 5507,
+    "close_above_pct": 2,
+    "median_line_to_price": 1.46
+   },
+   "Trader01 L3 (c119)": {
+    "days": 5458,
+    "close_above_pct": 100,
+    "median_line_to_price": 0.48
+   },
+   "Trader01 L4 (c120)": {
+    "days": 5458,
+    "close_above_pct": 99,
+    "median_line_to_price": 0.64
+   },
+   "Trader01 L5 (c121)": {
+    "days": 5458,
+    "close_above_pct": 100,
+    "median_line_to_price": 0.57
+   },
+   "bottomline L1 (c122)": {
+    "days": 5507,
+    "close_above_pct": 96,
+    "median_line_to_price": 0.53
+   },
+   "bottomline L2 (c123)": {
+    "days": 5507,
+    "close_above_pct": 100,
+    "median_line_to_price": 0.43
+   },
+   "bottomline L3 (c124)": {
+    "days": 5507,
+    "close_above_pct": 99,
+    "median_line_to_price": 0.45
+   },
+   "ALTS upper (c108)": {
+    "days": 5438,
+    "close_above_pct": 100,
+    "median_line_to_price": 0.5
+   },
+   "ALTS lower core (c110)": {
+    "days": 5438,
+    "close_above_pct": 100,
+    "median_line_to_price": 0.4
+   },
+   "Trap line (c125)": {
+    "days": 4977,
+    "close_above_pct": 56,
+    "median_line_to_price": 0.95
+   }
+  },
+  "walk_forward_2016_2026": {
+   "picks": [
+    {
+     "year": 2016,
+     "pick": "Opportunity L1 (c9)",
+     "past_calmar": 2.58
+    },
+    {
+     "year": 2017,
+     "pick": "Opportunity L1 (c9)",
+     "past_calmar": 2.35
+    },
+    {
+     "year": 2018,
+     "pick": "Opportunity L1 (c9)",
+     "past_calmar": 3.32
+    },
+    {
+     "year": 2019,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.91
+    },
+    {
+     "year": 2020,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.79
+    },
+    {
+     "year": 2021,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.95
+    },
+    {
+     "year": 2022,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.8
+    },
+    {
+     "year": 2023,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.32
+    },
+    {
+     "year": 2024,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.37
+    },
+    {
+     "year": 2025,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.37
+    },
+    {
+     "year": 2026,
+     "pick": "Trader01 L3 (c119)",
+     "past_calmar": 1.22
+    }
+   ],
+   "result": {
+    "total_pct": 10006.2,
+    "cagr_pct": 52.7,
+    "maxdd_pct": -87.1,
+    "calmar": 0.61,
+    "trades": 9,
+    "exposure_pct": 99
+   }
+  },
+  "verdict": {
+   "smaller_drawdown_than_trend200": false,
+   "better_calmar_than_trend200": false,
+   "passed": false
+  },
+  "closest_standard_average": {
+   "Opportunity L1 (c9)": {
+    "type": "SMA",
+    "length": 365,
+    "median_log_error": 0.0001,
+    "implied_multiplier": 0.477
+   },
+   "Opportunity L4 (c12)": {
+    "type": "EMA",
+    "length": 20,
+    "median_log_error": 0.0415,
+    "implied_multiplier": 1.007
+   },
+   "Opportunity L5 (c13)": {
+    "type": "SMA",
+    "length": 20,
+    "median_log_error": 0.0253,
+    "implied_multiplier": 2.994
+   },
+   "Trader01 L1 (c117)": {
+    "type": "EMA",
+    "length": 50,
+    "median_log_error": 0.0229,
+    "implied_multiplier": 1.886
+   },
+   "Trader01 L2 (c118)": {
+    "type": "EMA",
+    "length": 50,
+    "median_log_error": 0.0229,
+    "implied_multiplier": 1.49
+   },
+   "Trader01 L3 (c119)": {
+    "type": "SMA",
+    "length": 100,
+    "median_log_error": 0.0273,
+    "implied_multiplier": 0.502
+   },
+   "Trader01 L4 (c120)": {
+    "type": "SMA",
+    "length": 100,
+    "median_log_error": 0.0273,
+    "implied_multiplier": 0.672
+   },
+   "Trader01 L5 (c121)": {
+    "type": "SMA",
+    "length": 100,
+    "median_log_error": 0.0273,
+    "implied_multiplier": 0.599
+   },
+   "bottomline L1 (c122)": {
+    "type": "EMA",
+    "length": 365,
+    "median_log_error": 0.0002,
+    "implied_multiplier": 0.618
+   },
+   "bottomline L2 (c123)": {
+    "type": "EMA",
+    "length": 350,
+    "median_log_error": 0.0002,
+    "implied_multiplier": 0.5
+   },
+   "bottomline L3 (c124)": {
+    "type": "EMA",
+    "length": 350,
+    "median_log_error": 0.0002,
+    "implied_multiplier": 0.53
+   },
+   "ALTS upper (c108)": {
+    "type": "SMA",
+    "length": 100,
+    "median_log_error": 0.031,
+    "implied_multiplier": 0.525
+   },
+   "ALTS lower core (c110)": {
+    "type": "SMA",
+    "length": 100,
+    "median_log_error": 0.031,
+    "implied_multiplier": 0.413
+   },
+   "Trap line (c125)": {
+    "type": "SMA",
+    "length": 140,
+    "median_log_error": 0.0532,
+    "implied_multiplier": 1.052
+   }
+  }
+ },
+ "groupB": {
+  "Pi Pi SHORT (c50)": {
+   "events": 4,
+   "dates": [
+    "2013-04-05",
+    "2013-12-05",
+    "2017-12-16",
+    "2021-04-12"
+   ],
+   "expected": "нижче середнього",
+   "h30": {
+    "n": 4,
+    "mean_after_pct": -23.4,
+    "all_days_pct": 5,
+    "diff_pct": -28.5,
+    "placebo_90pct_range": [
+     -20.1,
+     25.4
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -29.9,
+    "diff_from_2019": -24.1
+   },
+   "h90": {
+    "n": 4,
+    "mean_after_pct": -60.1,
+    "all_days_pct": 16.2,
+    "diff_pct": -76.3,
+    "placebo_90pct_range": [
+     -42.7,
+     53.1
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -77.7,
+    "diff_from_2019": -71.9
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "Pi Pi LONG1 (c51)": {
+   "events": 3,
+   "dates": [
+    "2015-02-17",
+    "2019-01-26",
+    "2022-10-08"
+   ],
+   "expected": "вище середнього",
+   "h30": {
+    "n": 3,
+    "mean_after_pct": 6.6,
+    "all_days_pct": 5,
+    "diff_pct": 1.6,
+    "placebo_90pct_range": [
+     -23.2,
+     26.7
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 1.8,
+    "diff_from_2019": 1.5
+   },
+   "h90": {
+    "n": 3,
+    "mean_after_pct": 6.2,
+    "all_days_pct": 16.2,
+    "diff_pct": -10,
+    "placebo_90pct_range": [
+     -51.6,
+     60.9
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -21.1,
+    "diff_from_2019": -4.5
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "div 1DIV (c56)": {
+   "events": 58,
+   "dates": [
+    "2012-07-15",
+    "2012-08-06",
+    "2012-08-17",
+    "2012-10-04",
+    "2013-01-13",
+    "2013-03-03",
+    "2013-08-23",
+    "2013-08-29",
+    "2013-09-02",
+    "2014-01-07",
+    "2014-05-27",
+    "2014-07-04"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 58,
+    "mean_after_pct": 7.3,
+    "all_days_pct": 5,
+    "diff_pct": 2.3,
+    "placebo_90pct_range": [
+     -5.7,
+     5.7
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 7.4,
+    "diff_from_2019": -1.9
+   },
+   "h90": {
+    "n": 57,
+    "mean_after_pct": 23.4,
+    "all_days_pct": 16.2,
+    "diff_pct": 7.2,
+    "placebo_90pct_range": [
+     -11.3,
+     12.1
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 23.9,
+    "diff_from_2019": -6.9
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "div 2DIV (c57)": {
+   "events": 61,
+   "dates": [
+    "2011-11-22",
+    "2012-03-26",
+    "2013-06-11",
+    "2013-07-02",
+    "2013-07-07",
+    "2014-01-28",
+    "2014-03-24",
+    "2014-04-01",
+    "2014-04-11",
+    "2014-07-31",
+    "2014-09-04",
+    "2014-09-30"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 61,
+    "mean_after_pct": 1.7,
+    "all_days_pct": 5,
+    "diff_pct": -3.3,
+    "placebo_90pct_range": [
+     -7.2,
+     7.8
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -7,
+    "diff_from_2019": 0.5
+   },
+   "h90": {
+    "n": 61,
+    "mean_after_pct": 4.6,
+    "all_days_pct": 16.2,
+    "diff_pct": -11.6,
+    "placebo_90pct_range": [
+     -18.5,
+     16.6
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -15.3,
+    "diff_from_2019": -7.8
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "ALTS сигнал покупки (c106)": {
+   "events": 3,
+   "dates": [
+    "2018-12-14",
+    "2022-06-18",
+    "2022-06-22"
+   ],
+   "expected": "вище середнього",
+   "h30": {
+    "n": 3,
+    "mean_after_pct": 13.1,
+    "all_days_pct": 5,
+    "diff_pct": 8.1,
+    "placebo_90pct_range": [
+     -29,
+     29.6
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 4.6,
+    "diff_from_2019": 9.8
+   },
+   "h90": {
+    "n": 3,
+    "mean_after_pct": 5.9,
+    "all_days_pct": 16.2,
+    "diff_pct": -10.4,
+    "placebo_90pct_range": [
+     -53,
+     75.7
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 2.6,
+    "diff_from_2019": -16.9
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "ALTS сигнал выхода (c107)": {
+   "events": 9,
+   "dates": [
+    "2013-03-20",
+    "2013-03-24",
+    "2013-04-12",
+    "2013-04-19",
+    "2013-04-28",
+    "2013-11-17",
+    "2013-12-08",
+    "2017-12-07",
+    "2017-12-16"
+   ],
+   "expected": "нижче середнього",
+   "h30": {
+    "n": 9,
+    "mean_after_pct": 14,
+    "all_days_pct": 5,
+    "diff_pct": 9,
+    "placebo_90pct_range": [
+     -19.6,
+     23.1
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 9,
+    "diff_from_2019": null
+   },
+   "h90": {
+    "n": 9,
+    "mean_after_pct": -16,
+    "all_days_pct": 16.2,
+    "diff_pct": -32.2,
+    "placebo_90pct_range": [
+     -45.4,
+     56.4
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -32.2,
+    "diff_from_2019": null
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "GLOBAL Alert (c105)": {
+   "events": 508,
+   "dates": [
+    "2011-09-26",
+    "2011-10-28",
+    "2011-10-31",
+    "2011-11-05",
+    "2011-11-25",
+    "2011-11-30",
+    "2011-12-30",
+    "2012-01-01",
+    "2012-01-03",
+    "2012-01-05",
+    "2012-01-14",
+    "2012-01-17"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 508,
+    "mean_after_pct": 7.1,
+    "all_days_pct": 5,
+    "diff_pct": 2.1,
+    "placebo_90pct_range": [
+     -3.8,
+     3.5
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 3.8,
+    "diff_from_2019": 0.9
+   },
+   "h90": {
+    "n": 501,
+    "mean_after_pct": 19,
+    "all_days_pct": 16.2,
+    "diff_pct": 2.8,
+    "placebo_90pct_range": [
+     -10.6,
+     9.8
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 7.8,
+    "diff_from_2019": -1
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "GLOBAL позначка (c75)": {
+   "events": 2,
+   "dates": [
+    "2012-12-07",
+    "2013-10-17"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 2,
+    "mean_after_pct": 54.5,
+    "all_days_pct": 5,
+    "diff_pct": 49.5,
+    "placebo_90pct_range": [
+     -25.7,
+     28.1
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": 49.5,
+    "diff_from_2019": null
+   },
+   "h90": {
+    "n": 2,
+    "mean_after_pct": 145.4,
+    "all_days_pct": 16.2,
+    "diff_pct": 129.1,
+    "placebo_90pct_range": [
+     -47.6,
+     50.3
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": 129.1,
+    "diff_from_2019": null
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "GLOBAL позначка (c76)": {
+   "events": 5,
+   "dates": [
+    "2013-11-30",
+    "2017-12-11",
+    "2017-12-14",
+    "2017-12-17",
+    "2017-12-20"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 5,
+    "mean_after_pct": -30.5,
+    "all_days_pct": 5,
+    "diff_pct": -35.6,
+    "placebo_90pct_range": [
+     -28,
+     32.6
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -35.6,
+    "diff_from_2019": null
+   },
+   "h90": {
+    "n": 5,
+    "mean_after_pct": -68.9,
+    "all_days_pct": 16.2,
+    "diff_pct": -85.1,
+    "placebo_90pct_range": [
+     -59.3,
+     78
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -85.1,
+    "diff_from_2019": null
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "GLOBAL позначка (c84)": {
+   "events": 11,
+   "dates": [
+    "2018-11-27",
+    "2018-12-10",
+    "2019-01-01",
+    "2019-04-28",
+    "2019-05-10",
+    "2020-03-16",
+    "2020-05-25",
+    "2021-07-26",
+    "2021-09-30",
+    "2022-01-23",
+    "2026-11-08"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 10,
+    "mean_after_pct": 16.9,
+    "all_days_pct": 5,
+    "diff_pct": 11.9,
+    "placebo_90pct_range": [
+     -12.2,
+     14
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 0.6,
+    "diff_from_2019": 14.8
+   },
+   "h90": {
+    "n": 10,
+    "mean_after_pct": 29.9,
+    "all_days_pct": 16.2,
+    "diff_pct": 13.6,
+    "placebo_90pct_range": [
+     -23.6,
+     29.2
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -8.9,
+    "diff_from_2019": 19.3
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "GLOBAL позначка (c85)": {
+   "events": 51,
+   "dates": [
+    "2018-08-11",
+    "2018-08-24",
+    "2018-11-16",
+    "2018-11-28",
+    "2018-12-05",
+    "2018-12-14",
+    "2019-03-04",
+    "2019-03-28",
+    "2019-04-02",
+    "2019-05-01",
+    "2019-05-11",
+    "2019-07-28"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 51,
+    "mean_after_pct": 6,
+    "all_days_pct": 5,
+    "diff_pct": 1,
+    "placebo_90pct_range": [
+     -7.6,
+     9.9
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -13.2,
+    "diff_from_2019": 2.9
+   },
+   "h90": {
+    "n": 47,
+    "mean_after_pct": 16.9,
+    "all_days_pct": 16.2,
+    "diff_pct": 0.7,
+    "placebo_90pct_range": [
+     -17.4,
+     19.1
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -28.8,
+    "diff_from_2019": 5
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "GLOBAL позначка (c86)": {
+   "events": 26,
+   "dates": [
+    "2018-11-25",
+    "2018-12-04",
+    "2018-12-17",
+    "2018-12-21",
+    "2018-12-23",
+    "2019-01-09",
+    "2019-04-05",
+    "2019-04-10",
+    "2019-05-06",
+    "2019-05-19",
+    "2019-12-13",
+    "2019-12-23"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 26,
+    "mean_after_pct": 9,
+    "all_days_pct": 5,
+    "diff_pct": 4,
+    "placebo_90pct_range": [
+     -11.6,
+     10.9
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -9.5,
+    "diff_from_2019": 7.2
+   },
+   "h90": {
+    "n": 22,
+    "mean_after_pct": 24.1,
+    "all_days_pct": 16.2,
+    "diff_pct": 7.8,
+    "placebo_90pct_range": [
+     -25.1,
+     25.2
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -13.1,
+    "diff_from_2019": 14
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "GLOBAL позначка (c87)": {
+   "events": 26,
+   "dates": [
+    "2018-07-08",
+    "2018-09-06",
+    "2018-12-18",
+    "2019-01-13",
+    "2019-04-09",
+    "2019-05-12",
+    "2019-05-24",
+    "2019-12-28",
+    "2020-03-27",
+    "2020-04-11",
+    "2020-04-30",
+    "2021-06-19"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 26,
+    "mean_after_pct": 5.6,
+    "all_days_pct": 5,
+    "diff_pct": 0.5,
+    "placebo_90pct_range": [
+     -9.2,
+     11.3
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -4.9,
+    "diff_from_2019": 1.2
+   },
+   "h90": {
+    "n": 25,
+    "mean_after_pct": 3.9,
+    "all_days_pct": 16.2,
+    "diff_pct": -12.4,
+    "placebo_90pct_range": [
+     -19.9,
+     24.6
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -33.2,
+    "diff_from_2019": -9.5
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "GLOBAL позначка (c88)": {
+   "events": 8,
+   "dates": [
+    "2020-02-08",
+    "2020-02-22",
+    "2020-02-27",
+    "2020-03-02",
+    "2021-04-01",
+    "2021-04-15",
+    "2021-04-20",
+    "2021-04-28"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 8,
+    "mean_after_pct": -29.1,
+    "all_days_pct": 5,
+    "diff_pct": -34.1,
+    "placebo_90pct_range": [
+     -23,
+     24.4
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": null,
+    "diff_from_2019": -34.1
+   },
+   "h90": {
+    "n": 8,
+    "mean_after_pct": -25.9,
+    "all_days_pct": 16.2,
+    "diff_pct": -42.1,
+    "placebo_90pct_range": [
+     -40.6,
+     55.3
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": null,
+    "diff_from_2019": -42.1
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "GLOBAL позначка (c89)": {
+   "events": 5,
+   "dates": [
+    "2018-11-10",
+    "2019-06-25",
+    "2019-08-11",
+    "2020-02-19",
+    "2021-04-07"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 5,
+    "mean_after_pct": -26.8,
+    "all_days_pct": 5,
+    "diff_pct": -31.8,
+    "placebo_90pct_range": [
+     -16.8,
+     22.1
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -67.3,
+    "diff_from_2019": -22.9
+   },
+   "h90": {
+    "n": 5,
+    "mean_after_pct": -29.9,
+    "all_days_pct": 16.2,
+    "diff_pct": -46.1,
+    "placebo_90pct_range": [
+     -33.3,
+     48.5
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -72.3,
+    "diff_from_2019": -39.6
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "GLOBAL позначка (c90)": {
+   "events": 3,
+   "dates": [
+    "2018-07-29",
+    "2024-03-05",
+    "2025-01-19"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 3,
+    "mean_after_pct": -4.5,
+    "all_days_pct": 5,
+    "diff_pct": -9.5,
+    "placebo_90pct_range": [
+     -21.8,
+     21.8
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -19.9,
+    "diff_from_2019": -4.3
+   },
+   "h90": {
+    "n": 3,
+    "mean_after_pct": -11.6,
+    "all_days_pct": 16.2,
+    "diff_pct": -27.8,
+    "placebo_90pct_range": [
+     -33.1,
+     48.6
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -41.1,
+    "diff_from_2019": -21.1
+   },
+   "enough_events": false,
+   "passed": false
+  },
+  "GLOBAL позначка (c91)": {
+   "events": 17,
+   "dates": [
+    "2014-12-18",
+    "2015-04-26",
+    "2015-06-05",
+    "2016-07-26",
+    "2017-08-28",
+    "2018-10-25",
+    "2019-11-08",
+    "2019-12-12",
+    "2020-03-19",
+    "2020-05-20",
+    "2020-10-28",
+    "2021-04-21"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 17,
+    "mean_after_pct": -9.8,
+    "all_days_pct": 5,
+    "diff_pct": -14.8,
+    "placebo_90pct_range": [
+     -8.4,
+     8.4
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": -18.7,
+    "diff_from_2019": -12.7
+   },
+   "h90": {
+    "n": 17,
+    "mean_after_pct": 6.6,
+    "all_days_pct": 16.2,
+    "diff_pct": -9.6,
+    "placebo_90pct_range": [
+     -18,
+     15.4
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": -11.9,
+    "diff_from_2019": -8.4
+   },
+   "enough_events": true,
+   "passed": true
+  },
+  "GLOBAL позначка (c93)": {
+   "events": 16,
+   "dates": [
+    "2015-01-30",
+    "2015-05-21",
+    "2015-06-17",
+    "2016-09-07",
+    "2017-09-08",
+    "2019-01-08",
+    "2019-12-27",
+    "2020-04-19",
+    "2020-07-12",
+    "2020-11-29",
+    "2021-05-11",
+    "2021-08-07"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 16,
+    "mean_after_pct": 5.4,
+    "all_days_pct": 5,
+    "diff_pct": 0.4,
+    "placebo_90pct_range": [
+     -9.4,
+     10
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 1.8,
+    "diff_from_2019": -0.3
+   },
+   "h90": {
+    "n": 16,
+    "mean_after_pct": 18.3,
+    "all_days_pct": 16.2,
+    "diff_pct": 2.1,
+    "placebo_90pct_range": [
+     -17.6,
+     16
+    ],
+    "outside_placebo": false,
+    "diff_before_2019": 13.3,
+    "diff_from_2019": -3
+   },
+   "enough_events": true,
+   "passed": false
+  },
+  "GLOBAL позначка (c94)": {
+   "events": 1,
+   "dates": [
+    "2013-02-06"
+   ],
+   "expected": "невідомо",
+   "h30": {
+    "n": 1,
+    "mean_after_pct": 73.9,
+    "all_days_pct": 5,
+    "diff_pct": 68.8,
+    "placebo_90pct_range": [
+     -36.6,
+     41.3
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": 68.8,
+    "diff_from_2019": null
+   },
+   "h90": {
+    "n": 1,
+    "mean_after_pct": 166.9,
+    "all_days_pct": 16.2,
+    "diff_pct": 150.6,
+    "placebo_90pct_range": [
+     -66.7,
+     79.8
+    ],
+    "outside_placebo": true,
+    "diff_before_2019": 150.6,
+    "diff_from_2019": null
+   },
+   "enough_events": false,
+   "passed": false
+  }
+ },
+ "own": {
+  "Тренд 200D (еталон)": {
+   "2016-2026": {
+    "total_pct": 13754,
+    "cagr_pct": 57.2,
+    "maxdd_pct": -67.4,
+    "calmar": 0.85,
+    "trades": 70,
+    "exposure_pct": 62
+   },
+   "2019-2026": {
+    "total_pct": 865.6,
+    "cagr_pct": 33.3,
+    "maxdd_pct": -64.4,
+    "calmar": 0.52,
+    "trades": 64,
+    "exposure_pct": 58
+   },
+   "2012-2026": {
+    "total_pct": 1293528.8,
+    "cagr_pct": 88.9,
+    "maxdd_pct": -70.8,
+    "calmar": 1.26,
+    "trades": 96,
+    "exposure_pct": 62
+   }
+  },
+  "Pi Cycle: поза ринком, коли 111D > 2×350D": {
+   "2016-2026": {
+    "total_pct": 26497.6,
+    "cagr_pct": 66.9,
+    "maxdd_pct": -76.7,
+    "calmar": 0.87,
+    "trades": 5,
+    "exposure_pct": 98
+   },
+   "2019-2026": {
+    "total_pct": 1714.4,
+    "cagr_pct": 44.3,
+    "maxdd_pct": -76.7,
+    "calmar": 0.58,
+    "trades": 3,
+    "exposure_pct": 100
+   },
+   "2012-2026": {
+    "total_pct": 7215117.3,
+    "cagr_pct": 112,
+    "maxdd_pct": -76.7,
+    "calmar": 1.46,
+    "trades": 9,
+    "exposure_pct": 94
+   }
+  },
+  "Маєр: у ринку при 1.0 < ціна/200D < 2.4": {
+   "2016-2026": {
+    "total_pct": 14792,
+    "cagr_pct": 58.3,
+    "maxdd_pct": -64.4,
+    "calmar": 0.91,
+    "trades": 94,
+    "exposure_pct": 61
+   },
+   "2019-2026": {
+    "total_pct": 1065.9,
+    "cagr_pct": 36.5,
+    "maxdd_pct": -64.4,
+    "calmar": 0.57,
+    "trades": 78,
+    "exposure_pct": 57
+   },
+   "2012-2026": {
+    "total_pct": 309852.4,
+    "cagr_pct": 71.6,
+    "maxdd_pct": -64.4,
+    "calmar": 1.11,
+    "trades": 136,
+    "exposure_pct": 58
+   }
+  },
+  "Тренд 200D і не перегрів Pi": {
+   "2016-2026": {
+    "total_pct": 32299.6,
+    "cagr_pct": 70,
+    "maxdd_pct": -61.6,
+    "calmar": 1.14,
+    "trades": 72,
+    "exposure_pct": 60
+   },
+   "2019-2026": {
+    "total_pct": 1025.1,
+    "cagr_pct": 35.9,
+    "maxdd_pct": -61.6,
+    "calmar": 0.58,
+    "trades": 66,
+    "exposure_pct": 58
+   },
+   "2012-2026": {
+    "total_pct": 10460082.2,
+    "cagr_pct": 117.3,
+    "maxdd_pct": -61.6,
+    "calmar": 1.91,
+    "trades": 98,
+    "exposure_pct": 56
+   }
+  },
+  "pi_cross_up_dates": [
+   "2013-04-05",
+   "2013-12-05",
+   "2017-12-16",
+   "2021-04-12"
+  ]
+ },
+ "notes": [],
+ "benchmarks": {
+  "2016-2026": {
+   "hold": {
+    "total_pct": 13597.1,
+    "cagr_pct": 57.1,
+    "maxdd_pct": -83.4,
+    "calmar": 0.68,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "trend200": {
+    "total_pct": 13754,
+    "cagr_pct": 57.2,
+    "maxdd_pct": -67.4,
+    "calmar": 0.85,
+    "trades": 70,
+    "exposure_pct": 62
+   }
+  },
+  "2019-2026": {
+   "hold": {
+    "total_pct": 1457.1,
+    "cagr_pct": 41.6,
+    "maxdd_pct": -76.7,
+    "calmar": 0.54,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "trend200": {
+    "total_pct": 865.6,
+    "cagr_pct": 33.3,
+    "maxdd_pct": -64.4,
+    "calmar": 0.52,
+    "trades": 64,
+    "exposure_pct": 58
+   }
+  },
+  "2012-2026": {
+   "hold": {
+    "total_pct": 1191187.9,
+    "cagr_pct": 87.8,
+    "maxdd_pct": -84.8,
+    "calmar": 1.04,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "trend200": {
+    "total_pct": 1293528.8,
+    "cagr_pct": 88.9,
+    "maxdd_pct": -70.8,
+    "calmar": 1.26,
+    "trades": 96,
+    "exposure_pct": 62
+   }
+  }
+ },
+ "groupB_states": {
+  "GLOBAL фон = 1 (c73)": {
+   "2016-2026": {
+    "total_pct": 0,
+    "cagr_pct": 0,
+    "maxdd_pct": 0,
+    "calmar": null,
+    "trades": 0,
+    "exposure_pct": 0
+   },
+   "2019-2026": {
+    "total_pct": 0,
+    "cagr_pct": 0,
+    "maxdd_pct": 0,
+    "calmar": null,
+    "trades": 0,
+    "exposure_pct": 0
+   }
+  },
+  "GLOBAL фон = 0 (c73)": {
+   "2016-2026": {
+    "total_pct": 13597.1,
+    "cagr_pct": 57.1,
+    "maxdd_pct": -83.4,
+    "calmar": 0.68,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "2019-2026": {
+    "total_pct": 1457.1,
+    "cagr_pct": 41.6,
+    "maxdd_pct": -76.7,
+    "calmar": 0.54,
+    "trades": 1,
+    "exposure_pct": 100
+   }
+  },
+  "GLOBAL Alert = 1 (c105)": {
+   "2016-2026": {
+    "total_pct": 1077,
+    "cagr_pct": 25.4,
+    "maxdd_pct": -51.7,
+    "calmar": 0.49,
+    "trades": 863,
+    "exposure_pct": 25
+   },
+   "2019-2026": {
+    "total_pct": 124,
+    "cagr_pct": 10.8,
+    "maxdd_pct": -51.7,
+    "calmar": 0.21,
+    "trades": 583,
+    "exposure_pct": 16
+   }
+  },
+  "GLOBAL Alert = 0 (c105)": {
+   "2016-2026": {
+    "total_pct": -12.5,
+    "cagr_pct": -1.2,
+    "maxdd_pct": -91.9,
+    "calmar": -0.01,
+    "trades": 862,
+    "exposure_pct": 75
+   },
+   "2019-2026": {
+    "total_pct": 21.1,
+    "cagr_pct": 2.5,
+    "maxdd_pct": -91.9,
+    "calmar": 0.03,
+    "trades": 582,
+    "exposure_pct": 84
+   }
+  }
+ }
+}
