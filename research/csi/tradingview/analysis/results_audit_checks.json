@@ -1,0 +1,139 @@
+{
+ "walk_forward": {
+  "literal_from_2011_08_18": {
+   "picks": [
+    "c9",
+    "c119"
+   ],
+   "cagr_pct": 52.7,
+   "maxdd_pct": -87.1,
+   "calmar": 0.61,
+   "trades": 9
+  },
+  "like_for_like_from_2013_04_08": {
+   "picks": [
+    "c125"
+   ],
+   "cagr_pct": 66.5,
+   "maxdd_pct": -59.5,
+   "calmar": 1.12,
+   "trades": 64
+  },
+  "like_for_like_from_2014_01_01": {
+   "picks": [
+    "c125"
+   ],
+   "cagr_pct": 66.5,
+   "maxdd_pct": -59.5,
+   "calmar": 1.12,
+   "trades": 64
+  },
+  "trend200_2016_2026": {
+   "cagr_pct": 57.2,
+   "maxdd_pct": -67.4,
+   "calmar": 0.85,
+   "trades": 70
+  }
+ },
+ "trap_vs_trend200": {
+  "2016-2026": {
+   "trap": {
+    "cagr_pct": 66.5,
+    "maxdd_pct": -59.5,
+    "calmar": 1.12,
+    "trades": 64
+   },
+   "trend200": {
+    "cagr_pct": 57.2,
+    "maxdd_pct": -67.4,
+    "calmar": 0.85,
+    "trades": 70
+   }
+  },
+  "2022-2026": {
+   "trap": {
+    "cagr_pct": 15.3,
+    "maxdd_pct": -38.5,
+    "calmar": 0.4,
+    "trades": 38
+   },
+   "trend200": {
+    "cagr_pct": 24.6,
+    "maxdd_pct": -32.1,
+    "calmar": 0.77,
+    "trades": 34
+   }
+  }
+ },
+ "overheating_episodes_2016_2026": {
+  "days_different_from_200D": 86,
+  "episodes": [
+   {
+    "from": "2017-12-16",
+    "to": "2018-03-03",
+    "days": 75
+   },
+   {
+    "from": "2021-04-12",
+    "to": "2021-04-22",
+    "days": 11
+   }
+  ]
+ },
+ "events_block_bootstrap": {
+  "div 2DIV (c57) 90d": {
+   "events": 61,
+   "diff_pct": -11.6,
+   "ci90": [
+    -21.3,
+    -2.6
+   ],
+   "excludes_zero": true
+  },
+  "div 2DIV (c57) 30d": {
+   "events": 61,
+   "diff_pct": -3.3,
+   "ci90": [
+    -9.2,
+    2.5
+   ],
+   "excludes_zero": false
+  },
+  "div 1DIV (c56) 90d": {
+   "events": 58,
+   "diff_pct": 7.2,
+   "ci90": [
+    -5.6,
+    22.4
+   ],
+   "excludes_zero": false
+  },
+  "GLOBAL c84 30d": {
+   "events": 11,
+   "diff_pct": 11.9,
+   "ci90": [
+    0.9,
+    23.7
+   ],
+   "excludes_zero": true
+  },
+  "GLOBAL c91 30d": {
+   "events": 17,
+   "diff_pct": -14.8,
+   "ci90": [
+    -24.4,
+    -5.9
+   ],
+   "excludes_zero": true
+  },
+  "GLOBAL Alert (c105) 30d": {
+   "events": 508,
+   "diff_pct": 2.1,
+   "ci90": [
+    0,
+    4.3
+   ],
+   "excludes_zero": false
+  }
+ }
+}

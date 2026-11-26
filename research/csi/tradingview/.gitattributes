@@ -2,3 +2,4 @@
 *.csv -text
 raw/*.json -text
 *.gz binary
+paper/update.cmd text eol=crlf

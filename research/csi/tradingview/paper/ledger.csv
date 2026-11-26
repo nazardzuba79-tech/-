@@ -1,0 +1,1 @@
+seq,date,open,close,sma200,sma111,sma350,regime_up,overheated,pos_held,trade,cost_usd,target_next,equity,equity_hold,equity_200d_only,pos_200d_only,data_source,rule_sha256,prev_row_sha256,row_sha256

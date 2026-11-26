@@ -473,22 +473,22 @@
   },
   "median": {
    "hold": {
-    "cagr_pct": 18.8,
+    "cagr_pct": 14.2,
     "maxdd_pct": -90.2
    },
    "A": {
-    "cagr_pct": 22.9,
-    "maxdd_pct": -77.4,
-    "trades": 80
+    "cagr_pct": 16.3,
+    "maxdd_pct": -81.1,
+    "trades": 75
    },
    "B": {
-    "cagr_pct": 20.5,
-    "maxdd_pct": -76.6,
+    "cagr_pct": 19.9,
+    "maxdd_pct": -79.7,
     "trades": 66
    },
    "C": {
-    "cagr_pct": 13.4,
-    "maxdd_pct": -76.9,
+    "cagr_pct": 12.1,
+    "maxdd_pct": -77.3,
     "trades": 82
    }
   }

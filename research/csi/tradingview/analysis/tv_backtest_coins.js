@@ -34,7 +34,7 @@ for (const [k, c] of Object.entries(coins)) {
 }
 const need = counted - 2;
 out.summary = { coins_counted: counted, skipped, passes: tally, needed_to_confirm: need, confirmed: { A: tally.A >= need, B: tally.B >= need, C: tally.C >= need } };
-const med = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+const med = (a) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : +((s[m - 1] + s[m]) / 2).toFixed(1); };
 const V = Object.values(out.coins);
 out.summary.median = { hold: { cagr_pct: med(V.map((v) => v.hold.cagr_pct)), maxdd_pct: med(V.map((v) => v.hold.maxdd_pct)) } };
 for (const r of ['A', 'B', 'C']) out.summary.median[r] = { cagr_pct: med(V.map((v) => v[r].cagr_pct)), maxdd_pct: med(V.map((v) => v[r].maxdd_pct)), trades: med(V.map((v) => v[r].trades)) };

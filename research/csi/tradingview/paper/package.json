@@ -1,0 +1,7 @@
+{
+  "name": "csi-paper",
+  "private": true,
+  "description": "Paper trading ledger for the frozen BTC daily regime rule. No dependencies.",
+  "main": "paper_trade.test.js",
+  "scripts": { "test": "node --test" }
+}
