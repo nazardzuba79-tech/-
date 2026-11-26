@@ -3456,3 +3456,4 @@ withdrawal was placed.
 - Not done / not verified: source of closed scripts is unavailable by design; line counts were not compared inside the Pine Editor script by script; no export for other symbols or timeframes; repainting of closed indicators not checked. No tests or backtests were run in this step.
 - Preserved from other agents: everything (files added under `research/csi/tradingview/` only).
 - Next: owner's answers (which indicators he uses, symbols, timeframes, entry/exit rules) go into `INVENTORY.md`; stages B–E of `BRIEF_UA.md` wait for his explicit go-ahead.
+- Commit: `b97b228`.
