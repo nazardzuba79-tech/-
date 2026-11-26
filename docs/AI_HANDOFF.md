@@ -3467,3 +3467,12 @@ withdrawal was placed.
 - Two Pine v6 scripts written, compiled without errors and saved as NEW scripts in the owner's TradingView account: "CSI Режим ринку", "CSI Шкала циклу" (sources in `research/csi/tradingview/pine/`). Values checked on the chart on 1D and 1h. Nothing published; no existing script or layout edited.
 - Not done / not verified: no intraday (1h, 15m) data or test; no repaint check of closed indicators (needs a second snapshot); no other coins; stage B scripts from `v1/platform/pine/` not compiled; no bot work.
 - Preserved from other agents: everything.
+
+### 2026-11-26 — Claude — CSI: TradingView 1h test (negative result), local session
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/` and this entry changed. No production file touched.
+- Protocol `research/csi/tradingview/PREREGISTRATION_TV_1H.md` committed (`6bff00a`) before the hourly data existed. Data read from the owner's TradingView chart: BINANCE:BTCUSDT.P and ETHUSDT.P, 1h, 25,458 closed bars from 2024-01-01 (`exports/*.csv.gz`). Engine: Node (`analysis/tv_backtest_1h.js`); Python is not installed on the owner's PC.
+- Result (`RESULTS_TV_1H_UA.md`): none of nine standard hourly entry rules passes with 0.15% cost per side; seven lose money on BTC, eight on ETH. Walk-forward −22.5% vs hold −4.1% and daily regime +7.2%. Zero-cost and 0.05% runs (description only) show the hourly rules at best match the daily regime. Closed Pifagor_trade indicators show nothing on 1h. Funding is not included; 15m and shorts were not tested.
+- Consequence: no hourly entry indicator was written. The two saved scripts ("CSI Режим ринку", "CSI Шкала циклу") stay as daily-context tools.
+- Nothing was changed in the owner's TradingView account in this step; indicators stayed on an unsaved temporary chart.
+- Preserved from other agents: everything.

@@ -1,0 +1,675 @@
+{
+ "meta": {
+  "cost_per_side": 0,
+  "btc": {
+   "bars": 25458,
+   "first": "2024-01-01T00:00Z",
+   "last": "2026-11-26T17:00Z"
+  },
+  "eth": {
+   "bars": 25458,
+   "first": "2024-01-01T00:00Z",
+   "last": "2026-11-26T17:00Z",
+   "note": "денний режим ETH складено з годинних даних; перші 200 днів режим невідомий (правила з фільтром поза ринком)"
+  }
+ },
+ "btc": {
+  "benchmarks": {
+   "hold": {
+    "total_pct": 42.3,
+    "cagr_pct": 12.9,
+    "maxdd_pct": -55.7,
+    "calmar": 0.23,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "daily_regime": {
+    "total_pct": 66.1,
+    "cagr_pct": 19.1,
+    "maxdd_pct": -31.1,
+    "calmar": 0.61,
+    "trades": 30,
+    "exposure_pct": 61
+   }
+  },
+  "rules_full_period": {
+   "H1 закриття вище EMA200": {
+    "total_pct": 50,
+    "cagr_pct": 15,
+    "maxdd_pct": -39.4,
+    "calmar": 0.38,
+    "trades": 932,
+    "exposure_pct": 51
+   },
+   "H2 EMA50 вище EMA200": {
+    "total_pct": 34.4,
+    "cagr_pct": 10.7,
+    "maxdd_pct": -38,
+    "calmar": 0.28,
+    "trades": 156,
+    "exposure_pct": 51
+   },
+   "H3 пробій каналу 48/24": {
+    "total_pct": 29.3,
+    "cagr_pct": 9.2,
+    "maxdd_pct": -30.8,
+    "calmar": 0.3,
+    "trades": 332,
+    "exposure_pct": 39
+   },
+   "H4 Supertrend 10/3": {
+    "total_pct": 6.2,
+    "cagr_pct": 2.1,
+    "maxdd_pct": -45.9,
+    "calmar": 0.05,
+    "trades": 599,
+    "exposure_pct": 50
+   },
+   "H5 відкат RSI<30": {
+    "total_pct": 1.9,
+    "cagr_pct": 0.6,
+    "maxdd_pct": -37.7,
+    "calmar": 0.02,
+    "trades": 382,
+    "exposure_pct": 17
+   },
+   "H6 H1 + денний режим": {
+    "total_pct": 67,
+    "cagr_pct": 19.3,
+    "maxdd_pct": -24.6,
+    "calmar": 0.79,
+    "trades": 568,
+    "exposure_pct": 34
+   },
+   "H7 H3 + денний режим": {
+    "total_pct": 43.1,
+    "cagr_pct": 13.1,
+    "maxdd_pct": -27.6,
+    "calmar": 0.48,
+    "trades": 216,
+    "exposure_pct": 25
+   },
+   "H8 H4 + денний режим": {
+    "total_pct": 19.4,
+    "cagr_pct": 6.3,
+    "maxdd_pct": -27.7,
+    "calmar": 0.23,
+    "trades": 380,
+    "exposure_pct": 32
+   },
+   "H9 відкат RSI<30 + денний режим": {
+    "total_pct": 16.8,
+    "cagr_pct": 5.5,
+    "maxdd_pct": -16.7,
+    "calmar": 0.33,
+    "trades": 224,
+    "exposure_pct": 10
+   }
+  },
+  "rules_by_half": {
+   "H1": {
+    "first": {
+     "total_pct": 82.8,
+     "cagr_pct": 51.5,
+     "maxdd_pct": -30.7,
+     "calmar": 1.68,
+     "trades": 434,
+     "exposure_pct": 56
+    },
+    "second": {
+     "total_pct": -18,
+     "cagr_pct": -12.8,
+     "maxdd_pct": -35.1,
+     "calmar": -0.36,
+     "trades": 498,
+     "exposure_pct": 46
+    }
+   },
+   "H2": {
+    "first": {
+     "total_pct": 60.7,
+     "cagr_pct": 38.6,
+     "maxdd_pct": -31,
+     "calmar": 1.25,
+     "trades": 78,
+     "exposure_pct": 57
+    },
+    "second": {
+     "total_pct": -16.3,
+     "cagr_pct": -11.6,
+     "maxdd_pct": -35,
+     "calmar": -0.33,
+     "trades": 78,
+     "exposure_pct": 46
+    }
+   },
+   "H3": {
+    "first": {
+     "total_pct": 52.9,
+     "cagr_pct": 34,
+     "maxdd_pct": -30.8,
+     "calmar": 1.1,
+     "trades": 164,
+     "exposure_pct": 41
+    },
+    "second": {
+     "total_pct": -15.5,
+     "cagr_pct": -10.9,
+     "maxdd_pct": -25.8,
+     "calmar": -0.42,
+     "trades": 168,
+     "exposure_pct": 37
+    }
+   },
+   "H4": {
+    "first": {
+     "total_pct": 34.7,
+     "cagr_pct": 22.8,
+     "maxdd_pct": -36,
+     "calmar": 0.63,
+     "trades": 289,
+     "exposure_pct": 55
+    },
+    "second": {
+     "total_pct": -21.1,
+     "cagr_pct": -15.1,
+     "maxdd_pct": -38.3,
+     "calmar": -0.39,
+     "trades": 311,
+     "exposure_pct": 45
+    }
+   },
+   "H5": {
+    "first": {
+     "total_pct": 31.9,
+     "cagr_pct": 21,
+     "maxdd_pct": -23,
+     "calmar": 0.92,
+     "trades": 184,
+     "exposure_pct": 15
+    },
+    "second": {
+     "total_pct": -22.8,
+     "cagr_pct": -16.3,
+     "maxdd_pct": -37.7,
+     "calmar": -0.43,
+     "trades": 198,
+     "exposure_pct": 19
+    }
+   },
+   "H6": {
+    "first": {
+     "total_pct": 58.5,
+     "cagr_pct": 37.3,
+     "maxdd_pct": -24.6,
+     "calmar": 1.52,
+     "trades": 342,
+     "exposure_pct": 46
+    },
+    "second": {
+     "total_pct": 5.4,
+     "cagr_pct": 3.7,
+     "maxdd_pct": -15.2,
+     "calmar": 0.24,
+     "trades": 226,
+     "exposure_pct": 22
+    }
+   },
+   "H7": {
+    "first": {
+     "total_pct": 44,
+     "cagr_pct": 28.5,
+     "maxdd_pct": -27.6,
+     "calmar": 1.03,
+     "trades": 138,
+     "exposure_pct": 33
+    },
+    "second": {
+     "total_pct": -0.6,
+     "cagr_pct": -0.4,
+     "maxdd_pct": -16.8,
+     "calmar": -0.03,
+     "trades": 78,
+     "exposure_pct": 17
+    }
+   },
+   "H8": {
+    "first": {
+     "total_pct": 21.8,
+     "cagr_pct": 14.6,
+     "maxdd_pct": -27.7,
+     "calmar": 0.53,
+     "trades": 237,
+     "exposure_pct": 44
+    },
+    "second": {
+     "total_pct": -2,
+     "cagr_pct": -1.4,
+     "maxdd_pct": -17,
+     "calmar": -0.08,
+     "trades": 144,
+     "exposure_pct": 19
+    }
+   },
+   "H9": {
+    "first": {
+     "total_pct": 20,
+     "cagr_pct": 13.4,
+     "maxdd_pct": -16.7,
+     "calmar": 0.8,
+     "trades": 146,
+     "exposure_pct": 12
+    },
+    "second": {
+     "total_pct": -2.7,
+     "cagr_pct": -1.9,
+     "maxdd_pct": -12.2,
+     "calmar": -0.15,
+     "trades": 78,
+     "exposure_pct": 7
+    }
+   }
+  },
+  "bench_by_half": {
+   "hold": {
+    "first": {
+     "total_pct": 146.9,
+     "cagr_pct": 86.3,
+     "maxdd_pct": -32.4,
+     "calmar": 2.67,
+     "trades": 1,
+     "exposure_pct": 100
+    },
+    "second": {
+     "total_pct": -42.4,
+     "cagr_pct": -31.6,
+     "maxdd_pct": -55.7,
+     "calmar": -0.57,
+     "trades": 1,
+     "exposure_pct": 100
+    }
+   },
+   "daily_regime": {
+    "first": {
+     "total_pct": 66.2,
+     "cagr_pct": 41.9,
+     "maxdd_pct": -31.1,
+     "calmar": 1.35,
+     "trades": 21,
+     "exposure_pct": 80
+    },
+    "second": {
+     "total_pct": -0.1,
+     "cagr_pct": -0.1,
+     "maxdd_pct": -19.3,
+     "calmar": 0,
+     "trades": 10,
+     "exposure_pct": 42
+    }
+   }
+  },
+  "walk_forward": {
+   "picks": [
+    "2024Q3:H5",
+    "2024Q4:H1",
+    "2025Q1:H1",
+    "2025Q2:H1",
+    "2025Q3:H1",
+    "2025Q4:H1",
+    "2026Q1:H6",
+    "2026Q2:H6",
+    "2026Q3:H6",
+    "2026Q4:H6"
+   ],
+   "from": 4368,
+   "to": 25457,
+   "result": {
+    "total_pct": -4.5,
+    "cagr_pct": -1.9,
+    "maxdd_pct": -31.3,
+    "calmar": -0.06,
+    "trades": 554,
+    "exposure_pct": 35
+   }
+  },
+  "walk_forward_benchmarks": {
+   "hold": {
+    "total_pct": -3.8,
+    "cagr_pct": -1.6,
+    "maxdd_pct": -55.7,
+    "calmar": -0.03,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "daily_regime": {
+    "total_pct": 12.2,
+    "cagr_pct": 4.9,
+    "maxdd_pct": -31.1,
+    "calmar": 0.16,
+    "trades": 30,
+    "exposure_pct": 53
+   }
+  }
+ },
+ "eth": {
+  "benchmarks": {
+   "hold": {
+    "total_pct": -26.4,
+    "cagr_pct": -10,
+    "maxdd_pct": -69.2,
+    "calmar": -0.14,
+    "trades": 1,
+    "exposure_pct": 100
+   },
+   "daily_regime_own": {
+    "total_pct": -11.9,
+    "cagr_pct": -4.3,
+    "maxdd_pct": -44,
+    "calmar": -0.1,
+    "trades": 20,
+    "exposure_pct": 29
+   }
+  },
+  "rules_full_period": {
+   "H1 закриття вище EMA200": {
+    "total_pct": 25.5,
+    "cagr_pct": 8.1,
+    "maxdd_pct": -53.2,
+    "calmar": 0.15,
+    "trades": 1012,
+    "exposure_pct": 47
+   },
+   "H2 EMA50 вище EMA200": {
+    "total_pct": 21.9,
+    "cagr_pct": 7.1,
+    "maxdd_pct": -52.3,
+    "calmar": 0.14,
+    "trades": 154,
+    "exposure_pct": 47
+   },
+   "H3 пробій каналу 48/24": {
+    "total_pct": 29.2,
+    "cagr_pct": 9.2,
+    "maxdd_pct": -48,
+    "calmar": 0.19,
+    "trades": 314,
+    "exposure_pct": 39
+   },
+   "H4 Supertrend 10/3": {
+    "total_pct": 2.3,
+    "cagr_pct": 0.8,
+    "maxdd_pct": -57.1,
+    "calmar": 0.01,
+    "trades": 581,
+    "exposure_pct": 47
+   },
+   "H5 відкат RSI<30": {
+    "total_pct": -50.4,
+    "cagr_pct": -21.5,
+    "maxdd_pct": -61.2,
+    "calmar": -0.35,
+    "trades": 356,
+    "exposure_pct": 18
+   },
+   "H6 H1 + денний режим": {
+    "total_pct": -9,
+    "cagr_pct": -3.2,
+    "maxdd_pct": -34.4,
+    "calmar": -0.09,
+    "trades": 332,
+    "exposure_pct": 16
+   },
+   "H7 H3 + денний режим": {
+    "total_pct": 33.4,
+    "cagr_pct": 10.4,
+    "maxdd_pct": -35.2,
+    "calmar": 0.3,
+    "trades": 94,
+    "exposure_pct": 12
+   },
+   "H8 H4 + денний режим": {
+    "total_pct": 7.2,
+    "cagr_pct": 2.4,
+    "maxdd_pct": -26.4,
+    "calmar": 0.09,
+    "trades": 184,
+    "exposure_pct": 15
+   },
+   "H9 відкат RSI<30 + денний режим": {
+    "total_pct": -35.8,
+    "cagr_pct": -14.1,
+    "maxdd_pct": -41.5,
+    "calmar": -0.34,
+    "trades": 96,
+    "exposure_pct": 4
+   }
+  }
+ },
+ "pifagor_1h": {
+  "lines": {
+   "c9 Opportunity | Plot [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c10 Opportunity | Plot [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c11 Opportunity | Plot [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c12 Opportunity | Plot [line]": {
+    "close_above_pct": 0,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c13 Opportunity | Plot [line]": {
+    "close_above_pct": 0,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c108 Pifagor_ALTS 3.7 strategy | ALTS upper [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c109 Pifagor_ALTS 3.7 strategy | ALTS lower glow [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c110 Pifagor_ALTS 3.7 strategy | ALTS lower core [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c122 bottomline | Plot [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c123 bottomline | Plot [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c124 bottomline | Plot [line]": {
+    "close_above_pct": 100,
+    "note": "ціна майже завжди з одного боку лінії — правило не відрізняється від еталона"
+   },
+   "c125 Trap line | Plot [line]": {
+    "close_above_pct": 52,
+    "total_pct": 51.1,
+    "cagr_pct": 15.3,
+    "maxdd_pct": -33,
+    "calmar": 0.46,
+    "trades": 140,
+    "exposure_pct": 52,
+    "passed": false
+   },
+   "c128 Trap line | Plot [line]": {
+    "close_above_pct": 52,
+    "total_pct": 51.1,
+    "cagr_pct": 15.3,
+    "maxdd_pct": -33,
+    "calmar": 0.46,
+    "trades": 140,
+    "exposure_pct": 52,
+    "passed": false
+   },
+   "c130 Trap line | Plot [line]": {
+    "close_above_pct": 52,
+    "total_pct": 51.1,
+    "cagr_pct": 15.3,
+    "maxdd_pct": -33,
+    "calmar": 0.46,
+    "trades": 140,
+    "exposure_pct": 52,
+    "passed": false
+   }
+  },
+  "events": {
+   "c56 div | 1DIV DIV индикатор график фиба [alertcondition]": {
+    "events": 295,
+    "h24": {
+     "diff_pct": 0,
+     "placebo_90": [
+      -0.26,
+      0.24
+     ],
+     "outside": false,
+     "first_half": 0.14,
+     "second_half": -0.14
+    },
+    "h72": {
+     "diff_pct": -0.09,
+     "placebo_90": [
+      -0.38,
+      0.38
+     ],
+     "outside": false,
+     "first_half": 0.45,
+     "second_half": -0.64
+    },
+    "passed": false
+   },
+   "c57 div | 2DIV DIV индикатор график фиба [alertcondition]": {
+    "events": 258,
+    "h24": {
+     "diff_pct": -0.05,
+     "placebo_90": [
+      -0.27,
+      0.25
+     ],
+     "outside": false,
+     "first_half": 0.03,
+     "second_half": -0.1
+    },
+    "h72": {
+     "diff_pct": -0.12,
+     "placebo_90": [
+      -0.46,
+      0.4
+     ],
+     "outside": false,
+     "first_half": -0.18,
+     "second_half": -0.08
+    },
+    "passed": false
+   },
+   "c75 GLOBAL | Shapes [shapes]": {
+    "events": 18,
+    "note": "менше 30 подій — довести неможливо"
+   },
+   "c105 GLOBAL | Alert [alertcondition]": {
+    "events": 1809,
+    "h24": {
+     "diff_pct": 0.02,
+     "placebo_90": [
+      -0.09,
+      0.08
+     ],
+     "outside": false,
+     "first_half": 0.05,
+     "second_half": -0.03
+    },
+    "h72": {
+     "diff_pct": 0.08,
+     "placebo_90": [
+      -0.17,
+      0.17
+     ],
+     "outside": false,
+     "first_half": 0.36,
+     "second_half": -0.24
+    },
+    "passed": false
+   }
+  }
+ },
+ "verdict_per_rule": {
+  "H1": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": false
+  },
+  "H2": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": false
+  },
+  "H3": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": false
+  },
+  "H4": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": false
+  },
+  "H5": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": false,
+   "passed": false
+  },
+  "H6": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": true,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": true
+  },
+  "H7": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": false
+  },
+  "H8": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": true,
+   "passed": false
+  },
+  "H9": {
+   "positive_net": true,
+   "better_ratio_than_hold_and_regime": false,
+   "smaller_drawdown_than_hold": true,
+   "eth_ratio_better_than_eth_hold": false,
+   "passed": false
+  }
+ },
+ "verdict_walk_forward": {
+  "positive_net": false,
+  "better_ratio_than_hold_and_regime": false,
+  "smaller_drawdown_than_hold": true,
+  "passed": false
+ }
+}
