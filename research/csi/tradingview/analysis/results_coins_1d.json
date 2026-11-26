@@ -1,0 +1,496 @@
+{
+ "meta": {
+  "cost_per_side": 0.0015,
+  "rule_A": "власний режим монети",
+  "rule_B": "режим BTC",
+  "rule_C": "обидва"
+ },
+ "coins": {
+  "ETH": {
+   "symbol": "BINANCE:ETHUSDT",
+   "first": "2017-08-17",
+   "evaluated_from": "2018-03-05",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 97.1,
+    "cagr_pct": 8.1,
+    "maxdd_pct": -90.2,
+    "calmar": 0.09,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 3186
+   },
+   "A": {
+    "total_pct": 504.6,
+    "cagr_pct": 22.9,
+    "maxdd_pct": -73.9,
+    "calmar": 0.31,
+    "trades": 58,
+    "exposure_pct": 48,
+    "days": 3186,
+    "passed": true
+   },
+   "B": {
+    "total_pct": 981.4,
+    "cagr_pct": 31.4,
+    "maxdd_pct": -62.9,
+    "calmar": 0.5,
+    "trades": 70,
+    "exposure_pct": 52,
+    "days": 3186,
+    "passed": true
+   },
+   "C": {
+    "total_pct": 866.2,
+    "cagr_pct": 29.7,
+    "maxdd_pct": -54.4,
+    "calmar": 0.55,
+    "trades": 60,
+    "exposure_pct": 44,
+    "days": 3186,
+    "passed": true
+   }
+  },
+  "BNB": {
+   "symbol": "BINANCE:BNBUSDT",
+   "first": "2017-11-06",
+   "evaluated_from": "2018-05-25",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 4103.4,
+    "cagr_pct": 55.2,
+    "maxdd_pct": -76.1,
+    "calmar": 0.73,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 3105
+   },
+   "A": {
+    "total_pct": 1481.1,
+    "cagr_pct": 38.4,
+    "maxdd_pct": -63.2,
+    "calmar": 0.61,
+    "trades": 108,
+    "exposure_pct": 52,
+    "days": 3105,
+    "passed": false
+   },
+   "B": {
+    "total_pct": 2603.6,
+    "cagr_pct": 47.4,
+    "maxdd_pct": -70.3,
+    "calmar": 0.67,
+    "trades": 66,
+    "exposure_pct": 53,
+    "days": 3105,
+    "passed": false
+   },
+   "C": {
+    "total_pct": 1240.3,
+    "cagr_pct": 35.7,
+    "maxdd_pct": -65,
+    "calmar": 0.55,
+    "trades": 98,
+    "exposure_pct": 43,
+    "days": 3105,
+    "passed": false
+   }
+  },
+  "SOL": {
+   "symbol": "BINANCE:SOLUSDT",
+   "first": "2020-08-11",
+   "evaluated_from": "2021-02-27",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 427,
+    "cagr_pct": 33.6,
+    "maxdd_pct": -96.3,
+    "calmar": 0.35,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2096
+   },
+   "A": {
+    "total_pct": 346.9,
+    "cagr_pct": 29.8,
+    "maxdd_pct": -67.6,
+    "calmar": 0.44,
+    "trades": 46,
+    "exposure_pct": 39,
+    "days": 2096,
+    "passed": true
+   },
+   "B": {
+    "total_pct": 1887.6,
+    "cagr_pct": 68.4,
+    "maxdd_pct": -64.4,
+    "calmar": 1.06,
+    "trades": 56,
+    "exposure_pct": 54,
+    "days": 2096,
+    "passed": true
+   },
+   "C": {
+    "total_pct": 339.1,
+    "cagr_pct": 29.4,
+    "maxdd_pct": -62.4,
+    "calmar": 0.47,
+    "trades": 46,
+    "exposure_pct": 33,
+    "days": 2096,
+    "passed": true
+   }
+  },
+  "XRP": {
+   "symbol": "BINANCE:XRPUSDT",
+   "first": "2018-05-04",
+   "evaluated_from": "2018-11-20",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 108.2,
+    "cagr_pct": 9.6,
+    "maxdd_pct": -83.2,
+    "calmar": 0.12,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2926
+   },
+   "A": {
+    "total_pct": -20.1,
+    "cagr_pct": -2.8,
+    "maxdd_pct": -91.7,
+    "calmar": -0.03,
+    "trades": 100,
+    "exposure_pct": 43,
+    "days": 2926,
+    "passed": false
+   },
+   "B": {
+    "total_pct": 344.9,
+    "cagr_pct": 20.5,
+    "maxdd_pct": -73.4,
+    "calmar": 0.28,
+    "trades": 66,
+    "exposure_pct": 57,
+    "days": 2926,
+    "passed": true
+   },
+   "C": {
+    "total_pct": 174.3,
+    "cagr_pct": 13.4,
+    "maxdd_pct": -77.6,
+    "calmar": 0.17,
+    "trades": 82,
+    "exposure_pct": 36,
+    "days": 2926,
+    "passed": true
+   }
+  },
+  "DOGE": {
+   "symbol": "BINANCE:DOGEUSDT",
+   "first": "2019-07-05",
+   "evaluated_from": "2020-01-21",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 2238.7,
+    "cagr_pct": 58.5,
+    "maxdd_pct": -92.3,
+    "calmar": 0.63,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2499
+   },
+   "A": {
+    "total_pct": 649.7,
+    "cagr_pct": 34.2,
+    "maxdd_pct": -76.9,
+    "calmar": 0.45,
+    "trades": 68,
+    "exposure_pct": 35,
+    "days": 2499,
+    "passed": false
+   },
+   "B": {
+    "total_pct": 1110.6,
+    "cagr_pct": 44,
+    "maxdd_pct": -87.8,
+    "calmar": 0.5,
+    "trades": 62,
+    "exposure_pct": 59,
+    "days": 2499,
+    "passed": false
+   },
+   "C": {
+    "total_pct": 883.8,
+    "cagr_pct": 39.7,
+    "maxdd_pct": -76.9,
+    "calmar": 0.52,
+    "trades": 62,
+    "exposure_pct": 33,
+    "days": 2499,
+    "passed": false
+   }
+  },
+  "ADA": {
+   "symbol": "BINANCE:ADAUSDT",
+   "first": "2018-04-17",
+   "evaluated_from": "2018-11-03",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 100.9,
+    "cagr_pct": 9,
+    "maxdd_pct": -95.2,
+    "calmar": 0.1,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2943
+   },
+   "A": {
+    "total_pct": 784.6,
+    "cagr_pct": 31.1,
+    "maxdd_pct": -84.7,
+    "calmar": 0.37,
+    "trades": 70,
+    "exposure_pct": 37,
+    "days": 2943,
+    "passed": true
+   },
+   "B": {
+    "total_pct": 314.1,
+    "cagr_pct": 19.3,
+    "maxdd_pct": -82.8,
+    "calmar": 0.23,
+    "trades": 66,
+    "exposure_pct": 56,
+    "days": 2943,
+    "passed": true
+   },
+   "C": {
+    "total_pct": 117.8,
+    "cagr_pct": 10.1,
+    "maxdd_pct": -84.3,
+    "calmar": 0.12,
+    "trades": 82,
+    "exposure_pct": 35,
+    "days": 2943,
+    "passed": true
+   }
+  },
+  "LTC": {
+   "symbol": "BINANCE:LTCUSDT",
+   "first": "2017-12-13",
+   "evaluated_from": "2018-07-01",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": -49,
+    "cagr_pct": -7.7,
+    "maxdd_pct": -89.7,
+    "calmar": -0.09,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 3068
+   },
+   "A": {
+    "total_pct": -41.7,
+    "cagr_pct": -6.2,
+    "maxdd_pct": -89.4,
+    "calmar": -0.07,
+    "trades": 90,
+    "exposure_pct": 39,
+    "days": 3068,
+    "passed": true
+   },
+   "B": {
+    "total_pct": -4.5,
+    "cagr_pct": -0.5,
+    "maxdd_pct": -85,
+    "calmar": -0.01,
+    "trades": 66,
+    "exposure_pct": 54,
+    "days": 3068,
+    "passed": true
+   },
+   "C": {
+    "total_pct": -58.7,
+    "cagr_pct": -10,
+    "maxdd_pct": -88.7,
+    "calmar": -0.11,
+    "trades": 84,
+    "exposure_pct": 35,
+    "days": 3068,
+    "passed": false
+   }
+  },
+  "LINK": {
+   "symbol": "BINANCE:LINKUSDT",
+   "first": "2019-01-16",
+   "evaluated_from": "2019-08-04",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 251.7,
+    "cagr_pct": 18.8,
+    "maxdd_pct": -90.2,
+    "calmar": 0.21,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2669
+   },
+   "A": {
+    "total_pct": 8,
+    "cagr_pct": 1.1,
+    "maxdd_pct": -94.2,
+    "calmar": 0.01,
+    "trades": 92,
+    "exposure_pct": 49,
+    "days": 2669,
+    "passed": false
+   },
+   "B": {
+    "total_pct": 151.7,
+    "cagr_pct": 13.5,
+    "maxdd_pct": -85.3,
+    "calmar": 0.16,
+    "trades": 66,
+    "exposure_pct": 58,
+    "days": 2669,
+    "passed": false
+   },
+   "C": {
+    "total_pct": 21.9,
+    "cagr_pct": 2.7,
+    "maxdd_pct": -90.4,
+    "calmar": 0.03,
+    "trades": 86,
+    "exposure_pct": 42,
+    "days": 2669,
+    "passed": false
+   }
+  },
+  "AVAX": {
+   "symbol": "BINANCE:AVAXUSDT",
+   "first": "2020-09-22",
+   "evaluated_from": "2021-04-10",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": -79.4,
+    "cagr_pct": -24.5,
+    "maxdd_pct": -95.6,
+    "calmar": -0.26,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2054
+   },
+   "A": {
+    "total_pct": -30.1,
+    "cagr_pct": -6.2,
+    "maxdd_pct": -77.4,
+    "calmar": -0.08,
+    "trades": 62,
+    "exposure_pct": 37,
+    "days": 2054,
+    "passed": true
+   },
+   "B": {
+    "total_pct": 55.1,
+    "cagr_pct": 8.1,
+    "maxdd_pct": -87.3,
+    "calmar": 0.09,
+    "trades": 56,
+    "exposure_pct": 53,
+    "days": 2054,
+    "passed": true
+   },
+   "C": {
+    "total_pct": 60.1,
+    "cagr_pct": 8.7,
+    "maxdd_pct": -72.4,
+    "calmar": 0.12,
+    "trades": 56,
+    "exposure_pct": 31,
+    "days": 2054,
+    "passed": true
+   }
+  },
+  "TRX": {
+   "symbol": "BINANCE:TRXUSDT",
+   "first": "2018-06-11",
+   "evaluated_from": "2018-12-28",
+   "last": "2026-11-25",
+   "hold": {
+    "total_pct": 1414.9,
+    "cagr_pct": 41,
+    "maxdd_pct": -78.2,
+    "calmar": 0.52,
+    "trades": 1,
+    "exposure_pct": 100,
+    "days": 2888
+   },
+   "A": {
+    "total_pct": 107.5,
+    "cagr_pct": 9.7,
+    "maxdd_pct": -88.5,
+    "calmar": 0.11,
+    "trades": 80,
+    "exposure_pct": 69,
+    "days": 2888,
+    "passed": false
+   },
+   "B": {
+    "total_pct": 170.7,
+    "cagr_pct": 13.4,
+    "maxdd_pct": -76.6,
+    "calmar": 0.18,
+    "trades": 66,
+    "exposure_pct": 57,
+    "days": 2888,
+    "passed": false
+   },
+   "C": {
+    "total_pct": 124.4,
+    "cagr_pct": 10.8,
+    "maxdd_pct": -79.6,
+    "calmar": 0.14,
+    "trades": 94,
+    "exposure_pct": 51,
+    "days": 2888,
+    "passed": false
+   }
+  }
+ },
+ "summary": {
+  "coins_counted": 10,
+  "skipped": [],
+  "passes": {
+   "A": 5,
+   "B": 6,
+   "C": 5
+  },
+  "needed_to_confirm": 8,
+  "confirmed": {
+   "A": false,
+   "B": false,
+   "C": false
+  },
+  "median": {
+   "hold": {
+    "cagr_pct": 18.8,
+    "maxdd_pct": -90.2
+   },
+   "A": {
+    "cagr_pct": 22.9,
+    "maxdd_pct": -77.4,
+    "trades": 80
+   },
+   "B": {
+    "cagr_pct": 20.5,
+    "maxdd_pct": -76.6,
+    "trades": 66
+   },
+   "C": {
+    "cagr_pct": 13.4,
+    "maxdd_pct": -76.9,
+    "trades": 82
+   }
+  }
+ }
+}

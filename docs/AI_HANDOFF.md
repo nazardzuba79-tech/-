@@ -3476,3 +3476,12 @@ withdrawal was placed.
 - Consequence: no hourly entry indicator was written. The two saved scripts ("CSI Режим ринку", "CSI Шкала циклу") stay as daily-context tools.
 - Nothing was changed in the owner's TradingView account in this step; indicators stayed on an unsaved temporary chart.
 - Preserved from other agents: everything.
+
+### 2026-11-26 — Claude — CSI: daily regime on ten other coins (not confirmed), local session
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/` and this entry changed. No production file touched.
+- Protocol `research/csi/tradingview/PREREGISTRATION_TV_COINS.md` committed (`4ad8dff`) before data collection. Data read from the owner's TradingView chart: Binance spot USDT pairs, 1D, full history, for ETH, BNB, SOL, XRP, DOGE, ADA, LTC, LINK, AVAX, TRX (`exports/coins_binance_spot_1d_20261126.json.gz`). Engine: Node (`analysis/tv_backtest_coins.js`).
+- Result (`RESULTS_TV_COINS_UA.md`): with BTC parameters unchanged and 0.15% cost per side, the own-coin regime passes on 5 of 10 coins (pre-registered threshold 8), the BTC-regime gate on 6, both together on 5. Drawdown is smaller on 7 of 10, but return per drawdown is often worse than buy-and-hold. The daily regime is therefore supported on BTC (and ETH) only.
+- Nothing was changed in the owner's TradingView account; the temporary chart stayed unsaved. No new Pine script in this step.
+- Not done: 15m, shorts, funding, repaint check of closed indicators (needs a second snapshot), forward (paper) test, any bot work.
+- Preserved from other agents: everything.

@@ -41,3 +41,9 @@ Volume, Opportunity, Nazar V1, Nazar V2, Pi Pi, div, GLOBAL, Pifagor_ALTS 3.7 st
 - 148 стовпчиків: ціни, обсяг і ті самі індикатори, що в денному файлі, плюс «CSI Режим ринку» і «CSI Шкала циклу». Trader 01 на годинному графіку видає помилку, його стовпчики порожні.
 - Файли стиснуті gzip. SHA-256 розпакованих: BTC `3a6d44a5c9e28e2778f16ad29d9da6222e7209c03167cd78a410e809981bde8e`, ETH `c5c44f92121ce67b3a239c10f8d3a46edc58e2572cab6b91b4baf551a503b6bc`.
 - Зроблено тим самим способом, що й денний файл.
+
+## coins_binance_spot_1d_20261126.json.gz
+
+- Десять пар до USDT на Binance (спот), денний таймфрейм, уся історія з TradingView: ETH, BNB, SOL, XRP, DOGE, ADA, LTC, LINK, AVAX, TRX. Лише ціни та обсяг, без індикаторів.
+- Формат: `{"ETH": {"symbol": "BINANCE:ETHUSDT", "rows": [[дата, open, high, low, close, volume], ...]}, ...}`. Останній рядок кожної монети — незакритий день.
+- SHA-256 розпакованого файлу: `f6673eecf0c6440eb6a4da9dfa955ad7ce21b110c3e83a338926ac6c5a306fdf`.
