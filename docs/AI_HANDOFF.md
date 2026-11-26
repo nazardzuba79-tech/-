@@ -3437,3 +3437,12 @@ withdrawal was placed.
 - Platform: four new Pine v6 scripts (`CSI_Trend_Filter`, `CSI_Cycle_Gauge` main; two research-only) syntax-checked with an offline parser (pynescript), **not compiled in TradingView**; Python replicas with their own backtests; old scripts archived. Refresh made incremental and verified end to end; forward ledger started (hash chain, stale-input flags). Dashboard shows the walk-forward verdicts.
 - Preserved from other agents: everything (files added/modified only under `research/csi/`, plus this entry).
 - Unresolved: forward test needs daily runs for months; TradingView compilation; ALFRED vintage verification (server unreachable on 2026-09-23).
+
+### 2026-11-26 — Claude — CSI: handoff brief for a local session with the built-in browser (TradingView)
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/tradingview/` (new) and `research/csi/RUN_STATE.json` changed. No production file touched.
+- Owner bought a paid TradingView plan and wants: collect his indicators, test and improve them, build one combined indicator plus a few new ones, later a trading bot.
+- The cloud session cannot use the desktop app's browser ("browser unavailable in this session"; no usable Remote Control folder). Nothing was collected from TradingView here.
+- Wrote `research/csi/tradingview/BRIEF_UA.md`: full task for a session running on the owner's computer (stages A–E, browser safety rules, storage layout, testing protocol reusing `v1/csi/backtest.py` and the walk-forward approach, bot preconditions).
+- No tests were run in this step (documentation only).
+- Unresolved: everything in the brief; forward ledger stale since 2026-09-23.
