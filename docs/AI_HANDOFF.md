@@ -3494,3 +3494,12 @@ withdrawal was placed.
 - NOT done / not verified: the real ledger has no rows yet (the first day closes 2026-11-27T00:00Z), so a real append from live data has not happened; `update.cmd` was not tested by an actual double-click; nobody is scheduled to run the update; the earlier phrase "about 10 trades a year" was wrong — the replay shows about 7 position changes (3–4 round trips) a year, so the 12-month/6-round-trip evaluation will likely take about two years.
 - Suggested next step: pre-register and test open weekly moving averages (for example 20-week SMA, 21-week EMA) against the 200D filter.
 - Preserved from other agents: everything.
+
+### 2026-11-27 — Claude — CSI: paper trading runs daily on the owner's PC (local session)
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/` and this entry changed. No production file touched.
+- First paper row recorded from live Bitstamp data: 2026-11-26, close 60,492.37 below SMA200 71,919.78 → regime down, cash, no trade, equity 10,000.00.
+- Added `research/csi/tradingview/paper/auto_update.js` (unattended run: update, then commit and push the three paper files only if the update succeeded; never forces; skips git when the branch is different or other changes are staged) and a guide `research/csi/tradingview/README_UA.md`.
+- A Windows scheduled task "CSI Paper Trading Update" was created on the owner's PC at his request (daily 10:00 local, start when available, headless). It was started once by hand through the scheduler: result 0, commit pushed. Automated commits "Paper trading: automatic ledger update …" on this branch come from that task.
+- Not done: the cloud routine was not created (missed days are caught up automatically, so it is not needed); the weekly-average test suggested by the audit has not been started; the task's path still points to the session folder until the move to a permanent folder is confirmed.
+- Preserved from other agents: everything.

@@ -63,7 +63,8 @@ function saveToGit() {
   } else {
     const add = git(['add', '--', ...FILES]);
     if (add.code !== 0) return `git add не спрацював: ${add.out}`;
-    const last = (fs.readFileSync(path.join(DIR, 'ledger.csv'), 'utf8').trim().split('\n').pop() || '').split(',')[1] || 'без рядків';
+    const rows = fs.readFileSync(path.join(DIR, 'ledger.csv'), 'utf8').trim().split('\n');
+    const last = rows.length > 1 ? rows[rows.length - 1].split(',')[1] : 'no rows yet';
     const commit = git(['commit', '--only', '-m', `Paper trading: automatic ledger update (last closed day ${last})`, '--', ...FILES]);
     if (commit.code !== 0) return `git commit не спрацював: ${commit.out}`;
     log(commit.out);

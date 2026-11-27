@@ -1,7 +1,7 @@
 {
   "version": 5,
   "agent": "Claude Code — executor; Codex not involved in this run",
-  "updated_at_utc": "2026-11-26T20:27:47.356Z",
+  "updated_at_utc": "2026-11-27T06:22:01.716Z",
   "mode": "A_DATA_OBTAINED",
   "snapshot": {
     "zip_sha256": "afbd0761ca1e8141aef22adae0689da6e0e7292d3889de4473c83941fa1a6ce6",
@@ -31,7 +31,7 @@
     "18_tradingview_1h_test": "done — pre-registered (6bff00a) before data collection; BTCUSDT.P and ETHUSDT.P 1h, 25458 bars from 2024-01-01; none of nine standard hourly entry rules passes with 0.15% cost (seven lose money on BTC); walk-forward -22.5% vs hold -4.1% and daily regime +7.2%; closed indicators give nothing on 1h; no hourly entry indicator was built",
     "19_tradingview_regime_other_coins": "done — pre-registered (4ad8dff) before data collection; ten Binance spot USDT pairs, daily; own-coin regime passes on 5 of 10 (needed 8), BTC-regime gate on 6, both on 5: NOT confirmed on other coins; evidence for the daily regime remains BTC (and ETH)",
     "20_independent_audit": "done — three independent auditors reproduced every published number and found no look-ahead; five statements were stronger than the evidence and are corrected (AUDIT_TV_UA.md): Trap line passes Group A on a like-for-like window, 3 of 19 event signals pass under the pre-registered bootstrap, the own Pi-overheating add-on is post hoc and rests on two episodes, H6 beats the regime at zero cost only, ETH is not a separate confirmation",
-    "21_paper_trading": "started — research/csi/tradingview/paper (Node, 32/32 tests, adversarially reviewed and fixed); frozen rule 55ab30e2…dee33; start 2026-11-26, 10000 USD paper, cash; ledger has NO rows yet (first day closes 2026-11-27T00:00Z); needs someone to run paper/update.cmd regularly and commit ledger.csv + run_log.csv"
+    "21_paper_trading": "running — first row recorded for 2026-11-26 (regime down, cash, no trade); rule 55ab30e2…dee33; daily Windows task \"CSI Paper Trading Update\" (10:00 local, start-when-available) runs paper/auto_update.js, which commits and pushes ledger.csv, run_log.csv, STATUS_UA.md; verified by one manual start of the task (result 0, pushed)"
   },
   "database_rows": 607232,
   "series_count": 169,
