@@ -1,0 +1,1518 @@
+{
+ "meta": {
+  "protocol": "PREREGISTRATION_TV_WEEKLY.md",
+  "script": "analysis/tv_backtest_weekly.js",
+  "csv": "exports/btcusd_bitstamp_1d_20261126.csv",
+  "csv_sha256": "7fe7222dd60507456c0f073c4af0e5ea2d8428e71c4c53e1f2c878cfbb70926a",
+  "coins": "exports/coins_binance_spot_1d_20261126.json.gz",
+  "coins_sha256": "3bacff7cb95bf2fad59e60f4c0eb46afd13139a8cd1fd4ff951c4285ae7c275e",
+  "days_total": 5546,
+  "first_day": "2011-08-18",
+  "last_day": "2026-11-25",
+  "weeks_total": 797,
+  "first_week_sunday": "2011-08-21",
+  "first_week_daily_bars": 4,
+  "last_week_sunday": "2026-11-22",
+  "trailing_incomplete_weeks_not_counted": 1,
+  "cost_per_position_change": 0.0015,
+  "lengths": {
+   "sma20": 20,
+   "ema21": 21,
+   "sma50": 50,
+   "sma200": 200
+  },
+  "bootstrap": {
+   "seed": 20261127,
+   "block": 90,
+   "reps": 5000,
+   "level": 0.9
+  },
+  "coins_unpacked_sha256": "f6673eecf0c6440eb6a4da9dfa955ad7ce21b110c3e83a338926ac6c5a306fdf"
+ },
+ "data_checks": {
+  "daily_gaps": [
+   "2011-08-22->2011-08-24",
+   "2011-08-25->2011-08-30",
+   "2011-08-30->2011-09-01",
+   "2011-09-02->2011-09-04",
+   "2011-09-04->2011-09-06",
+   "2011-09-08->2011-09-13",
+   "2011-09-29->2011-10-03",
+   "2011-10-14->2011-10-17",
+   "2011-10-17->2011-10-20",
+   "2011-10-21->2011-10-24",
+   "2011-10-26->2011-10-28",
+   "2011-11-01->2011-11-04",
+   "2011-11-06->2011-11-08",
+   "2011-11-22->2011-11-24",
+   "2011-11-26->2011-11-28",
+   "2011-12-03->2011-12-05",
+   "2011-12-08->2011-12-10",
+   "2011-12-16->2011-12-18",
+   "2015-01-05->2015-01-09"
+  ],
+  "weeks_with_fewer_than_7_bars": [
+   "2011-08-21:4",
+   "2011-08-28:3",
+   "2011-09-04:4",
+   "2011-09-11:3",
+   "2011-09-18:6",
+   "2011-10-02:4",
+   "2011-10-16:5",
+   "2011-10-23:3",
+   "2011-10-30:6",
+   "2011-11-06:5",
+   "2011-11-13:6",
+   "2011-11-27:5",
+   "2011-12-04:6",
+   "2011-12-11:6",
+   "2011-12-18:6",
+   "2015-01-11:4"
+  ],
+  "weeks_without_sunday_bar": [
+   "2011-08-28",
+   "2011-09-11",
+   "2011-10-02",
+   "2011-10-16",
+   "2011-10-23",
+   "2011-11-27",
+   "2011-12-04"
+  ],
+  "empty_weeks_skipped": 0,
+  "weekly_rule_changes_not_on_last_bar_of_week": {
+   "WA": {
+    "whole_history": [],
+    "inside_windows_from_2012": []
+   },
+   "WB": {
+    "whole_history": [],
+    "inside_windows_from_2012": []
+   },
+   "WC": {
+    "whole_history": [],
+    "inside_windows_from_2012": []
+   },
+   "WD": {
+    "whole_history": [],
+    "inside_windows_from_2012": []
+   }
+  },
+  "first_day_with_value": {
+   "SMA20w": "2012-01-01",
+   "EMA21w": "2012-01-08",
+   "SMA50w": "2012-07-29",
+   "SMA200d": "2012-04-03"
+  }
+ },
+ "rules": {
+  "HOLD": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 13597.06,
+    "cagr_pct": 57.07,
+    "maxdd_pct": -83.42,
+    "ratio": 0.684,
+    "raw": {
+     "final_account": 136.97057500598459,
+     "cagr": 0.5706563857041278,
+     "maxdd": -0.8342257415917844,
+     "ratio": 0.6840551151241864
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 24.75,
+    "cagr_pct": 4.62,
+    "maxdd_pct": -67.05,
+    "ratio": 0.069,
+    "raw": {
+     "final_account": 1.247545964317973,
+     "cagr": 0.046218249672214995,
+     "maxdd": -0.6704726752923065,
+     "ratio": 0.06893383037879237
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 1191187.88,
+    "cagr_pct": 87.83,
+    "maxdd_pct": -84.85,
+    "ratio": 1.035,
+    "raw": {
+     "final_account": 11912.878790570396,
+     "cagr": 0.8783248648081998,
+     "maxdd": -0.8484581497797359,
+     "ratio": 1.0352011646493318
+    }
+   }
+  },
+  "T200": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 70,
+    "exposure_pct": 62.04,
+    "total_pct": 13753.98,
+    "cagr_pct": 57.23,
+    "maxdd_pct": -67.43,
+    "ratio": 0.849,
+    "raw": {
+     "final_account": 138.53976337076307,
+     "cagr": 0.5722991953019694,
+     "maxdd": -0.674323819205921,
+     "ratio": 0.8487008452050603
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 34,
+    "exposure_pct": 52.52,
+    "total_pct": 193.98,
+    "cagr_pct": 24.64,
+    "maxdd_pct": -32.14,
+    "ratio": 0.767,
+    "raw": {
+     "final_account": 2.9398118641822997,
+     "cagr": 0.24642922630105346,
+     "maxdd": -0.321427595128583,
+     "ratio": 0.7666710327172519
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 96,
+    "exposure_pct": 61.68,
+    "total_pct": 1293528.76,
+    "cagr_pct": 88.88,
+    "maxdd_pct": -70.75,
+    "ratio": 1.256,
+    "raw": {
+     "final_account": 12936.2875545861,
+     "cagr": 0.8887513361875865,
+     "maxdd": -0.70753950673345,
+     "ratio": 1.2561154928164373
+    }
+   }
+  },
+  "WA": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 44,
+    "exposure_pct": 62.14,
+    "total_pct": 18279.53,
+    "cagr_pct": 61.36,
+    "maxdd_pct": -72.86,
+    "ratio": 0.842,
+    "raw": {
+     "final_account": 183.7953395411528,
+     "cagr": 0.61361918522912,
+     "maxdd": -0.7285571615121218,
+     "ratio": 0.842238904021686
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 26,
+    "exposure_pct": 54.42,
+    "total_pct": 48.54,
+    "cagr_pct": 8.42,
+    "maxdd_pct": -38.31,
+    "ratio": 0.22,
+    "raw": {
+     "final_account": 1.4854387266026756,
+     "cagr": 0.08419208632791242,
+     "maxdd": -0.38308360848581613,
+     "ratio": 0.2197747031273192
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 58,
+    "exposure_pct": 61.79,
+    "total_pct": 1759668.02,
+    "cagr_pct": 92.82,
+    "maxdd_pct": -72.86,
+    "ratio": 1.274,
+    "raw": {
+     "final_account": 17597.680240147914,
+     "cagr": 0.9281963993754241,
+     "maxdd": -0.7285571615121221,
+     "ratio": 1.2740200061295812
+    }
+   }
+  },
+  "WB": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 44,
+    "exposure_pct": 63.54,
+    "total_pct": 15888.77,
+    "cagr_pct": 59.31,
+    "maxdd_pct": -75.38,
+    "ratio": 0.787,
+    "raw": {
+     "final_account": 159.88769676492717,
+     "cagr": 0.5931148905338581,
+     "maxdd": -0.7537774086555227,
+     "ratio": 0.7868568143900323
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 22,
+    "exposure_pct": 54.42,
+    "total_pct": 101.54,
+    "cagr_pct": 15.39,
+    "maxdd_pct": -45.44,
+    "ratio": 0.339,
+    "raw": {
+     "final_account": 2.01538654190823,
+     "cagr": 0.15391514964006858,
+     "maxdd": -0.45439551718314186,
+     "ratio": 0.3387250618012454
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 64,
+    "exposure_pct": 63.07,
+    "total_pct": 887496.99,
+    "cagr_pct": 84.16,
+    "maxdd_pct": -75.38,
+    "ratio": 1.116,
+    "raw": {
+     "final_account": 8875.96991756307,
+     "cagr": 0.8415639381079958,
+     "maxdd": -0.7537774086555228,
+     "ratio": 1.1164621391466927
+    }
+   }
+  },
+  "WC": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 44,
+    "exposure_pct": 60.73,
+    "total_pct": 20483.46,
+    "cagr_pct": 63.05,
+    "maxdd_pct": -73.32,
+    "ratio": 0.86,
+    "raw": {
+     "final_account": 205.83460714801436,
+     "cagr": 0.6304771694890827,
+     "maxdd": -0.7331648372479423,
+     "ratio": 0.8599391807382429
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 24,
+    "exposure_pct": 52.85,
+    "total_pct": 130.12,
+    "cagr_pct": 18.56,
+    "maxdd_pct": -38.31,
+    "ratio": 0.484,
+    "raw": {
+     "final_account": 2.3011673882724737,
+     "cagr": 0.18560015128545948,
+     "maxdd": -0.3830836084858157,
+     "ratio": 0.4844899316341582
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 58,
+    "exposure_pct": 59.47,
+    "total_pct": 1351027.95,
+    "cagr_pct": 89.43,
+    "maxdd_pct": -73.32,
+    "ratio": 1.22,
+    "raw": {
+     "final_account": 13511.27947553681,
+     "cagr": 0.8942763668088354,
+     "maxdd": -0.7331648372479425,
+     "ratio": 1.2197480312417222
+    }
+   }
+  },
+  "WD": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 26,
+    "exposure_pct": 69.7,
+    "total_pct": 18227.38,
+    "cagr_pct": 61.32,
+    "maxdd_pct": -65.46,
+    "ratio": 0.937,
+    "raw": {
+     "final_account": 183.27384988892794,
+     "cagr": 0.6131984783335762,
+     "maxdd": -0.6545874509713999,
+     "ratio": 0.9367709042139397
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 8,
+    "exposure_pct": 58,
+    "total_pct": 172.1,
+    "cagr_pct": 22.69,
+    "maxdd_pct": -30.75,
+    "ratio": 0.738,
+    "raw": {
+     "final_account": 2.720950041906746,
+     "cagr": 0.2268856186314665,
+     "maxdd": -0.3074593431502908,
+     "ratio": 0.7379369782903666
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 28,
+    "exposure_pct": 66.04,
+    "total_pct": 1601702.67,
+    "cagr_pct": 91.61,
+    "maxdd_pct": -71.02,
+    "ratio": 1.29,
+    "raw": {
+     "final_account": 16018.026664644647,
+     "cagr": 0.91605410270166,
+     "maxdd": -0.7102297545208351,
+     "ratio": 1.2897996695726817
+    }
+   }
+  },
+  "DA": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 90,
+    "exposure_pct": 61.06,
+    "total_pct": 43878.71,
+    "cagr_pct": 74.81,
+    "maxdd_pct": -61.43,
+    "ratio": 1.218,
+    "raw": {
+     "final_account": 439.78705121157765,
+     "cagr": 0.7481308814071044,
+     "maxdd": -0.6143068496407742,
+     "ratio": 1.2178455796880434
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 48,
+    "exposure_pct": 51.96,
+    "total_pct": 177.64,
+    "cagr_pct": 23.19,
+    "maxdd_pct": -27.26,
+    "ratio": 0.851,
+    "raw": {
+     "final_account": 2.776359299244098,
+     "cagr": 0.2319485051030672,
+     "maxdd": -0.27262570430435407,
+     "ratio": 0.8507947029239927
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 122,
+    "exposure_pct": 61.18,
+    "total_pct": 2981848.45,
+    "cagr_pct": 99.77,
+    "maxdd_pct": -70.36,
+    "ratio": 1.418,
+    "raw": {
+     "final_account": 29819.4845113544,
+     "cagr": 0.9977233183141638,
+     "maxdd": -0.7036341399493318,
+     "ratio": 1.4179575175047778
+    }
+   }
+  },
+  "DB": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 96,
+    "exposure_pct": 62.51,
+    "total_pct": 30785.29,
+    "cagr_pct": 69.23,
+    "maxdd_pct": -67.91,
+    "ratio": 1.019,
+    "raw": {
+     "final_account": 308.8529159811068,
+     "cagr": 0.6923410622672221,
+     "maxdd": -0.6791126487548671,
+     "ratio": 1.0194789679394265
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 50,
+    "exposure_pct": 52.74,
+    "total_pct": 166.63,
+    "cagr_pct": 22.18,
+    "maxdd_pct": -37.1,
+    "ratio": 0.598,
+    "raw": {
+     "final_account": 2.666270596539873,
+     "cagr": 0.22180834172289443,
+     "maxdd": -0.3709571424273709,
+     "ratio": 0.5979352231136025
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 136,
+    "exposure_pct": 62.17,
+    "total_pct": 2132204.86,
+    "cagr_pct": 95.32,
+    "maxdd_pct": -70.36,
+    "ratio": 1.355,
+    "raw": {
+     "final_account": 21323.04857650806,
+     "cagr": 0.9532261062957048,
+     "maxdd": -0.7036341399493318,
+     "ratio": 1.3547183858423157
+    }
+   }
+  },
+  "DC": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 94,
+    "exposure_pct": 59.82,
+    "total_pct": 36360.71,
+    "cagr_pct": 71.83,
+    "maxdd_pct": -60.68,
+    "ratio": 1.184,
+    "raw": {
+     "final_account": 364.6070504694769,
+     "cagr": 0.7183125490854168,
+     "maxdd": -0.6068193425274913,
+     "ratio": 1.1837337717244476
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 46,
+    "exposure_pct": 50.34,
+    "total_pct": 184.68,
+    "cagr_pct": 23.83,
+    "maxdd_pct": -24.13,
+    "ratio": 0.988,
+    "raw": {
+     "final_account": 2.8467651483119285,
+     "cagr": 0.23826695199291592,
+     "maxdd": -0.24126204856256195,
+     "ratio": 0.9875857119364989
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 128,
+    "exposure_pct": 58.79,
+    "total_pct": 2168395.23,
+    "cagr_pct": 95.54,
+    "maxdd_pct": -70.36,
+    "ratio": 1.358,
+    "raw": {
+     "final_account": 21684.952259394497,
+     "cagr": 0.955435296065666,
+     "maxdd": -0.7036341399493318,
+     "ratio": 1.3578580711482622
+    }
+   }
+  },
+  "DD": {
+   "P1": {
+    "first_decision_day": "2016-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3980,
+    "trades": 56,
+    "exposure_pct": 69.87,
+    "total_pct": 25009.49,
+    "cagr_pct": 66.05,
+    "maxdd_pct": -65.46,
+    "ratio": 1.009,
+    "raw": {
+     "final_account": 251.09488565601154,
+     "cagr": 0.6604904306515869,
+     "maxdd": -0.6545874509713999,
+     "ratio": 1.009017862581122
+    }
+   },
+   "P2": {
+    "first_decision_day": "2022-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 1788,
+    "trades": 22,
+    "exposure_pct": 57.61,
+    "total_pct": 199.28,
+    "cagr_pct": 25.1,
+    "maxdd_pct": -31.06,
+    "ratio": 0.808,
+    "raw": {
+     "final_account": 2.992765392922171,
+     "cagr": 0.25098304260176807,
+     "maxdd": -0.3105528660527892,
+     "ratio": 0.8081813759822292
+    }
+   },
+   "P3": {
+    "first_decision_day": "2012-01-01",
+    "last_decision_day": "2026-11-23",
+    "days": 5438,
+    "trades": 62,
+    "exposure_pct": 66.2,
+    "total_pct": 1939254.69,
+    "cagr_pct": 94.08,
+    "maxdd_pct": -71.02,
+    "ratio": 1.325,
+    "raw": {
+     "final_account": 19393.54691181643,
+     "cagr": 0.9408224413504069,
+     "maxdd": -0.7102297545208351,
+     "ratio": 1.3246733685286727
+    }
+   }
+  }
+ },
+ "verdicts": {
+  "WA": {
+   "main_rule": true,
+   "p1_drawdown_smaller_than_T200": false,
+   "p1_ratio_better_than_T200": false,
+   "p2_ratio_not_worse_than_T200": false,
+   "passed": false,
+   "passed_steadily": false,
+   "label": "не пройшло"
+  },
+  "WB": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": false,
+   "p1_ratio_better_than_T200": false,
+   "p2_ratio_not_worse_than_T200": false,
+   "passed": false,
+   "passed_steadily": false,
+   "label": "не пройшло"
+  },
+  "WC": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": false,
+   "p1_ratio_better_than_T200": true,
+   "p2_ratio_not_worse_than_T200": false,
+   "passed": false,
+   "passed_steadily": false,
+   "label": "не пройшло"
+  },
+  "WD": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": true,
+   "p1_ratio_better_than_T200": true,
+   "p2_ratio_not_worse_than_T200": false,
+   "passed": true,
+   "passed_steadily": false,
+   "label": "пройшло"
+  },
+  "DA": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": true,
+   "p1_ratio_better_than_T200": true,
+   "p2_ratio_not_worse_than_T200": true,
+   "passed": true,
+   "passed_steadily": true,
+   "label": "пройшло стійко"
+  },
+  "DB": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": false,
+   "p1_ratio_better_than_T200": true,
+   "p2_ratio_not_worse_than_T200": false,
+   "passed": false,
+   "passed_steadily": false,
+   "label": "не пройшло"
+  },
+  "DC": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": true,
+   "p1_ratio_better_than_T200": true,
+   "p2_ratio_not_worse_than_T200": true,
+   "passed": true,
+   "passed_steadily": true,
+   "label": "пройшло стійко"
+  },
+  "DD": {
+   "main_rule": false,
+   "p1_drawdown_smaller_than_T200": true,
+   "p1_ratio_better_than_T200": true,
+   "p2_ratio_not_worse_than_T200": true,
+   "passed": true,
+   "passed_steadily": true,
+   "label": "пройшло стійко"
+  }
+ },
+ "bootstrap_WA_vs_T200_P1": {
+  "days": 3980,
+  "seed": 20261127,
+  "block": 90,
+  "reps": 5000,
+  "level": 0.9,
+  "rng": "mulberry32",
+  "method": "circular block bootstrap, percentile interval, sorted[floor(q*reps)]",
+  "mean_diff_annual_pct": 2.59,
+  "ci90_low_pct": -7.6,
+  "ci90_high_pct": 13.61,
+  "contains_zero": true,
+  "raw": {
+   "mean_daily": 0.00007102147459458631,
+   "mean_annual": 0.02594059359567265,
+   "ci_low_annual": -0.07600107408207767,
+   "ci_high_annual": 0.13614527507338173
+  }
+ },
+ "years": [
+  {
+   "year": 2016,
+   "first_decision_day": "2016-01-01",
+   "last_decision_day": "2016-12-31",
+   "days": 366,
+   "wa": {
+    "return_pct": 113.45,
+    "plain_total_pct": 113.78,
+    "maxdd_pct": -29.63,
+    "trades": 3,
+    "raw": {
+     "final_account": 2.137788152292957,
+     "annual_return": 1.1344623997334549,
+     "maxdd": -0.29629774424332467
+    }
+   },
+   "t200": {
+    "return_pct": 128.36,
+    "plain_total_pct": 128.75,
+    "maxdd_pct": -29.63,
+    "trades": 1,
+    "raw": {
+     "final_account": 2.287485903689608,
+     "annual_return": 1.2836105264614055,
+     "maxdd": -0.29629774424332467
+    }
+   }
+  },
+  {
+   "year": 2017,
+   "first_decision_day": "2017-01-01",
+   "last_decision_day": "2017-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": 1240.8,
+    "plain_total_pct": 1238.42,
+    "maxdd_pct": -35.09,
+    "trades": 1,
+    "raw": {
+     "final_account": 13.384161901227747,
+     "annual_return": 12.407963505908985,
+     "maxdd": -0.3508562298805443
+    }
+   },
+   "t200": {
+    "return_pct": 1240.8,
+    "plain_total_pct": 1238.42,
+    "maxdd_pct": -35.09,
+    "trades": 1,
+    "raw": {
+     "final_account": 13.384161901227747,
+     "annual_return": 12.407963505908985,
+     "maxdd": -0.3508562298805443
+    }
+   }
+  },
+  {
+   "year": 2018,
+   "first_decision_day": "2018-01-01",
+   "last_decision_day": "2018-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": -60.54,
+    "plain_total_pct": -60.52,
+    "maxdd_pct": -69.14,
+    "trades": 8,
+    "raw": {
+     "final_account": 0.39484373212035506,
+     "annual_return": -0.6054074992494318,
+     "maxdd": -0.6913963498765141
+    }
+   },
+   "t200": {
+    "return_pct": -53.44,
+    "plain_total_pct": -53.42,
+    "maxdd_pct": -63.55,
+    "trades": 6,
+    "raw": {
+     "final_account": 0.4658456200411025,
+     "annual_return": -0.5343980558827202,
+     "maxdd": -0.635465747369713
+    }
+   }
+  },
+  {
+   "year": 2019,
+   "first_decision_day": "2019-01-01",
+   "last_decision_day": "2019-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": 102.5,
+    "plain_total_pct": 102.41,
+    "maxdd_pct": -37.74,
+    "trades": 2,
+    "raw": {
+     "final_account": 2.024055972901443,
+     "annual_return": 1.0250337218322652,
+     "maxdd": -0.37744520144746396
+    }
+   },
+   "t200": {
+    "return_pct": 54.62,
+    "plain_total_pct": 54.58,
+    "maxdd_pct": -41.33,
+    "trades": 4,
+    "raw": {
+     "final_account": 1.5457789303692948,
+     "annual_return": 0.5462401155378132,
+     "maxdd": -0.4133283402057164
+    }
+   }
+  },
+  {
+   "year": 2020,
+   "first_decision_day": "2020-01-01",
+   "last_decision_day": "2020-12-31",
+   "days": 366,
+   "wa": {
+    "return_pct": 201.93,
+    "plain_total_pct": 202.62,
+    "maxdd_pct": -25.73,
+    "trades": 3,
+    "raw": {
+     "final_account": 3.0261680560069575,
+     "annual_return": 2.0193093090892185,
+     "maxdd": -0.25728470948800963
+    }
+   },
+   "t200": {
+    "return_pct": 174.68,
+    "plain_total_pct": 175.25,
+    "maxdd_pct": -27.1,
+    "trades": 7,
+    "raw": {
+     "final_account": 2.7525461180908155,
+     "annual_return": 1.7468409211052247,
+     "maxdd": -0.27104114366789755
+    }
+   }
+  },
+  {
+   "year": 2021,
+   "first_decision_day": "2021-01-01",
+   "last_decision_day": "2021-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": 77.27,
+    "plain_total_pct": 77.2,
+    "maxdd_pct": -32.4,
+    "trades": 4,
+    "raw": {
+     "final_account": 1.7720318014339698,
+     "annual_return": 0.7727263394823316,
+     "maxdd": -0.3240143161810032
+    }
+   },
+   "t200": {
+    "return_pct": -23.05,
+    "plain_total_pct": -23.04,
+    "maxdd_pct": -64.36,
+    "trades": 20,
+    "raw": {
+     "final_account": 0.769608235727358,
+     "annual_return": -0.23052979308497346,
+     "maxdd": -0.6436046213469089
+    }
+   }
+  },
+  {
+   "year": 2022,
+   "first_decision_day": "2022-01-01",
+   "last_decision_day": "2022-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": -30.26,
+    "plain_total_pct": -30.24,
+    "maxdd_pct": -32.62,
+    "trades": 4,
+    "raw": {
+     "final_account": 0.6975795497987746,
+     "annual_return": -0.3025925011773244,
+     "maxdd": -0.32618009557350225
+    }
+   },
+   "t200": {
+    "return_pct": 0,
+    "plain_total_pct": 0,
+    "maxdd_pct": 0,
+    "trades": 0,
+    "raw": {
+     "final_account": 1,
+     "annual_return": 0,
+     "maxdd": 0
+    }
+   }
+  },
+  {
+   "year": 2023,
+   "first_decision_day": "2023-01-01",
+   "last_decision_day": "2023-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": 79.44,
+    "plain_total_pct": 79.37,
+    "maxdd_pct": -18.73,
+    "trades": 7,
+    "raw": {
+     "final_account": 1.79367048977818,
+     "annual_return": 0.7943884260416647,
+     "maxdd": -0.18732589901822938
+    }
+   },
+   "t200": {
+    "return_pct": 102.11,
+    "plain_total_pct": 102.01,
+    "maxdd_pct": -18.58,
+    "trades": 5,
+    "raw": {
+     "final_account": 2.0200823367083505,
+     "annual_return": 1.0210554458109815,
+     "maxdd": -0.1858471199130538
+    }
+   }
+  },
+  {
+   "year": 2024,
+   "first_decision_day": "2024-01-01",
+   "last_decision_day": "2024-12-31",
+   "days": 366,
+   "wa": {
+    "return_pct": 59.23,
+    "plain_total_pct": 59.38,
+    "maxdd_pct": -38.31,
+    "trades": 7,
+    "raw": {
+     "final_account": 1.593839711813895,
+     "annual_return": 0.5923179755371679,
+     "maxdd": -0.3830836084858157
+    }
+   },
+   "t200": {
+    "return_pct": 73.17,
+    "plain_total_pct": 73.37,
+    "maxdd_pct": -26.34,
+    "trades": 11,
+    "raw": {
+     "final_account": 1.7336514379532282,
+     "annual_return": 0.7316978125756552,
+     "maxdd": -0.263384498853411
+    }
+   }
+  },
+  {
+   "year": 2025,
+   "first_decision_day": "2025-01-01",
+   "last_decision_day": "2025-12-31",
+   "days": 365,
+   "wa": {
+    "return_pct": -5.22,
+    "plain_total_pct": -5.21,
+    "maxdd_pct": -24.06,
+    "trades": 6,
+    "raw": {
+     "final_account": 0.947854626431644,
+     "annual_return": -0.05218014110583469,
+     "maxdd": -0.2406248951944906
+    }
+   },
+   "t200": {
+    "return_pct": -18.76,
+    "plain_total_pct": -18.75,
+    "maxdd_pct": -32.1,
+    "trades": 18,
+    "raw": {
+     "final_account": 0.8124983203834028,
+     "annual_return": -0.18761722504019296,
+     "maxdd": -0.32101207349091687
+    }
+   }
+  },
+  {
+   "year": 2026,
+   "first_decision_day": "2026-01-01",
+   "last_decision_day": "2026-11-23",
+   "days": 327,
+   "wa": {
+    "return_pct": -24.11,
+    "plain_total_pct": -21.89,
+    "maxdd_pct": -26.4,
+    "trades": 4,
+    "raw": {
+     "final_account": 0.781131655429389,
+     "annual_return": -0.24111507399015886,
+     "maxdd": -0.2639556246475926
+    }
+   },
+   "t200": {
+    "return_pct": 3.02,
+    "plain_total_pct": 2.7,
+    "maxdd_pct": -17.68,
+    "trades": 2,
+    "raw": {
+     "final_account": 1.0269717278711934,
+     "annual_return": 0.030173829196299407,
+     "maxdd": -0.17684625314656344
+    }
+   }
+  }
+ ],
+ "coins": {
+  "ETH": {
+   "symbol": "BINANCE:ETHUSDT",
+   "days_total": 3388,
+   "first_day": "2017-08-17",
+   "evaluated_from": "2018-03-05",
+   "last_day": "2026-11-25",
+   "weeks_total": 484,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2018-03-05",
+    "last_decision_day": "2026-11-23",
+    "days": 3186,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 97.11,
+    "cagr_pct": 8.09,
+    "maxdd_pct": -90.16,
+    "ratio": 0.09,
+    "raw": {
+     "final_account": 1.9711035175215634,
+     "cagr": 0.08090153404217015,
+     "maxdd": -0.9015963862510443,
+     "ratio": 0.08973143113247083
+    }
+   },
+   "wa": {
+    "first_decision_day": "2018-03-05",
+    "last_decision_day": "2026-11-23",
+    "days": 3186,
+    "trades": 40,
+    "exposure_pct": 50.72,
+    "total_pct": 1050.21,
+    "cagr_pct": 32.32,
+    "maxdd_pct": -65.17,
+    "ratio": 0.496,
+    "raw": {
+     "final_account": 11.50208305061375,
+     "cagr": 0.3231519926709434,
+     "maxdd": -0.6516744506953754,
+     "ratio": 0.4958794875664083
+    }
+   },
+   "drawdown_smaller_than_hold": true,
+   "ratio_better_than_hold": true,
+   "passed": true
+  },
+  "BNB": {
+   "symbol": "BINANCE:BNBUSDT",
+   "days_total": 3307,
+   "first_day": "2017-11-06",
+   "evaluated_from": "2018-05-25",
+   "last_day": "2026-11-25",
+   "weeks_total": 472,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2018-05-25",
+    "last_decision_day": "2026-11-23",
+    "days": 3105,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 4103.41,
+    "cagr_pct": 55.23,
+    "maxdd_pct": -76.08,
+    "ratio": 0.726,
+    "raw": {
+     "final_account": 42.03408497855955,
+     "cagr": 0.5523472749189808,
+     "maxdd": -0.760802209927619,
+     "ratio": 0.7260064018104389
+    }
+   },
+   "wa": {
+    "first_decision_day": "2018-05-25",
+    "last_decision_day": "2026-11-23",
+    "days": 3105,
+    "trades": 48,
+    "exposure_pct": 53.72,
+    "total_pct": 2946.91,
+    "cagr_pct": 49.47,
+    "maxdd_pct": -79.91,
+    "ratio": 0.619,
+    "raw": {
+     "final_account": 30.469106409352438,
+     "cagr": 0.49468834450776455,
+     "maxdd": -0.7991039558904913,
+     "ratio": 0.6190538050290372
+    }
+   },
+   "drawdown_smaller_than_hold": false,
+   "ratio_better_than_hold": false,
+   "passed": false
+  },
+  "SOL": {
+   "symbol": "BINANCE:SOLUSDT",
+   "days_total": 2298,
+   "first_day": "2020-08-11",
+   "evaluated_from": "2021-02-27",
+   "last_day": "2026-11-25",
+   "weeks_total": 328,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2021-02-27",
+    "last_decision_day": "2026-11-23",
+    "days": 2096,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 426.96,
+    "cagr_pct": 33.59,
+    "maxdd_pct": -96.27,
+    "ratio": 0.349,
+    "raw": {
+     "final_account": 5.269587100976108,
+     "cagr": 0.33590983222381277,
+     "maxdd": -0.9626949421462017,
+     "ratio": 0.3489265576434275
+    }
+   },
+   "wa": {
+    "first_decision_day": "2021-02-27",
+    "last_decision_day": "2026-11-23",
+    "days": 2096,
+    "trades": 26,
+    "exposure_pct": 52.48,
+    "total_pct": 1903.81,
+    "cagr_pct": 68.6,
+    "maxdd_pct": -68.53,
+    "ratio": 1.001,
+    "raw": {
+     "final_account": 20.038064396676848,
+     "cagr": 0.6860173214918701,
+     "maxdd": -0.6852571844911899,
+     "ratio": 1.00110927257369
+    }
+   },
+   "drawdown_smaller_than_hold": true,
+   "ratio_better_than_hold": true,
+   "passed": true
+  },
+  "XRP": {
+   "symbol": "BINANCE:XRPUSDT",
+   "days_total": 3128,
+   "first_day": "2018-05-04",
+   "evaluated_from": "2018-11-20",
+   "last_day": "2026-11-25",
+   "weeks_total": 447,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2018-11-20",
+    "last_decision_day": "2026-11-23",
+    "days": 2926,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 108.25,
+    "cagr_pct": 9.59,
+    "maxdd_pct": -83.24,
+    "ratio": 0.115,
+    "raw": {
+     "final_account": 2.0824818364005875,
+     "cagr": 0.0958931518060604,
+     "maxdd": -0.8323845667299175,
+     "ratio": 0.11520294301320785
+    }
+   },
+   "wa": {
+    "first_decision_day": "2018-11-20",
+    "last_decision_day": "2026-11-23",
+    "days": 2926,
+    "trades": 46,
+    "exposure_pct": 42.99,
+    "total_pct": 2.06,
+    "cagr_pct": 0.25,
+    "maxdd_pct": -85.67,
+    "ratio": 0.003,
+    "raw": {
+     "final_account": 1.020552267836302,
+     "cagr": 0.0025427408695868348,
+     "maxdd": -0.8567034751614372,
+     "ratio": 0.0029680524747581778
+    }
+   },
+   "drawdown_smaller_than_hold": false,
+   "ratio_better_than_hold": false,
+   "passed": false
+  },
+  "DOGE": {
+   "symbol": "BINANCE:DOGEUSDT",
+   "days_total": 2701,
+   "first_day": "2019-07-05",
+   "evaluated_from": "2020-01-21",
+   "last_day": "2026-11-25",
+   "weeks_total": 386,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2020-01-21",
+    "last_decision_day": "2026-11-23",
+    "days": 2499,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 2238.73,
+    "cagr_pct": 58.52,
+    "maxdd_pct": -92.33,
+    "ratio": 0.634,
+    "raw": {
+     "final_account": 23.387255425518212,
+     "cagr": 0.5852140207321321,
+     "maxdd": -0.9233278246499088,
+     "ratio": 0.6338095799875015
+    }
+   },
+   "wa": {
+    "first_decision_day": "2020-01-21",
+    "last_decision_day": "2026-11-23",
+    "days": 2499,
+    "trades": 42,
+    "exposure_pct": 43.34,
+    "total_pct": 2957.29,
+    "cagr_pct": 64.85,
+    "maxdd_pct": -92.91,
+    "ratio": 0.698,
+    "raw": {
+     "final_account": 30.57286441214867,
+     "cagr": 0.6485208578505746,
+     "maxdd": -0.9290511078713919,
+     "ratio": 0.6980464824335035
+    }
+   },
+   "drawdown_smaller_than_hold": false,
+   "ratio_better_than_hold": true,
+   "passed": false
+  },
+  "ADA": {
+   "symbol": "BINANCE:ADAUSDT",
+   "days_total": 3145,
+   "first_day": "2018-04-17",
+   "evaluated_from": "2018-11-03",
+   "last_day": "2026-11-25",
+   "weeks_total": 449,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2018-11-03",
+    "last_decision_day": "2026-11-23",
+    "days": 2943,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 100.87,
+    "cagr_pct": 9.04,
+    "maxdd_pct": -95.17,
+    "ratio": 0.095,
+    "raw": {
+     "final_account": 2.0087296272816033,
+     "cagr": 0.0904229808035133,
+     "maxdd": -0.9517032040472174,
+     "ratio": 0.0950117435971426
+    }
+   },
+   "wa": {
+    "first_decision_day": "2018-11-03",
+    "last_decision_day": "2026-11-23",
+    "days": 2943,
+    "trades": 34,
+    "exposure_pct": 40.2,
+    "total_pct": 1050.71,
+    "cagr_pct": 35.42,
+    "maxdd_pct": -77.48,
+    "ratio": 0.457,
+    "raw": {
+     "final_account": 11.507073783234047,
+     "cagr": 0.3541734282701765,
+     "maxdd": -0.7747739317357838,
+     "ratio": 0.45713131761763764
+    }
+   },
+   "drawdown_smaller_than_hold": true,
+   "ratio_better_than_hold": true,
+   "passed": true
+  },
+  "LTC": {
+   "symbol": "BINANCE:LTCUSDT",
+   "days_total": 3270,
+   "first_day": "2017-12-13",
+   "evaluated_from": "2018-07-01",
+   "last_day": "2026-11-25",
+   "weeks_total": 467,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2018-07-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3068,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": -49.02,
+    "cagr_pct": -7.71,
+    "maxdd_pct": -89.74,
+    "ratio": -0.086,
+    "raw": {
+     "final_account": 0.509847698880692,
+     "cagr": -0.07706663060898611,
+     "maxdd": -0.8973618382030581,
+     "ratio": -0.0858813327334154
+    }
+   },
+   "wa": {
+    "first_decision_day": "2018-07-01",
+    "last_decision_day": "2026-11-23",
+    "days": 3068,
+    "trades": 48,
+    "exposure_pct": 41.07,
+    "total_pct": 7.33,
+    "cagr_pct": 0.85,
+    "maxdd_pct": -87.89,
+    "ratio": 0.01,
+    "raw": {
+     "final_account": 1.07331254185913,
+     "cagr": 0.008458429904824705,
+     "maxdd": -0.878949181696577,
+     "ratio": 0.009623343511735185
+    }
+   },
+   "drawdown_smaller_than_hold": true,
+   "ratio_better_than_hold": true,
+   "passed": true
+  },
+  "LINK": {
+   "symbol": "BINANCE:LINKUSDT",
+   "days_total": 2871,
+   "first_day": "2019-01-16",
+   "evaluated_from": "2019-08-04",
+   "last_day": "2026-11-25",
+   "weeks_total": 410,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2019-08-04",
+    "last_decision_day": "2026-11-23",
+    "days": 2669,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 251.65,
+    "cagr_pct": 18.78,
+    "maxdd_pct": -90.18,
+    "ratio": 0.208,
+    "raw": {
+     "final_account": 3.516541386221455,
+     "cagr": 0.18777832494240476,
+     "maxdd": -0.9017923752319377,
+     "ratio": 0.20822789158547594
+    }
+   },
+   "wa": {
+    "first_decision_day": "2019-08-04",
+    "last_decision_day": "2026-11-23",
+    "days": 2669,
+    "trades": 44,
+    "exposure_pct": 50.36,
+    "total_pct": 85.48,
+    "cagr_pct": 8.82,
+    "maxdd_pct": -90.25,
+    "ratio": 0.098,
+    "raw": {
+     "final_account": 1.8548130476057756,
+     "cagr": 0.08821976119129071,
+     "maxdd": -0.9024673910812014,
+     "ratio": 0.09775395993599169
+    }
+   },
+   "drawdown_smaller_than_hold": false,
+   "ratio_better_than_hold": false,
+   "passed": false
+  },
+  "AVAX": {
+   "symbol": "BINANCE:AVAXUSDT",
+   "days_total": 2256,
+   "first_day": "2020-09-22",
+   "evaluated_from": "2021-04-10",
+   "last_day": "2026-11-25",
+   "weeks_total": 322,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2021-04-10",
+    "last_decision_day": "2026-11-23",
+    "days": 2054,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": -79.36,
+    "cagr_pct": -24.46,
+    "maxdd_pct": -95.63,
+    "ratio": -0.256,
+    "raw": {
+     "final_account": 0.20644539518713692,
+     "cagr": -0.24463634348739582,
+     "maxdd": -0.9562741026401662,
+     "ratio": -0.25582240783472243
+    }
+   },
+   "wa": {
+    "first_decision_day": "2021-04-10",
+    "last_decision_day": "2026-11-23",
+    "days": 2054,
+    "trades": 24,
+    "exposure_pct": 36.51,
+    "total_pct": -10.92,
+    "cagr_pct": -2.03,
+    "maxdd_pct": -73.6,
+    "ratio": -0.028,
+    "raw": {
+     "final_account": 0.8908188779373841,
+     "cagr": -0.02034904878806132,
+     "maxdd": -0.7360034821157984,
+     "ratio": -0.027648033307619217
+    }
+   },
+   "drawdown_smaller_than_hold": true,
+   "ratio_better_than_hold": true,
+   "passed": true
+  },
+  "TRX": {
+   "symbol": "BINANCE:TRXUSDT",
+   "days_total": 3090,
+   "first_day": "2018-06-11",
+   "evaluated_from": "2018-12-28",
+   "last_day": "2026-11-25",
+   "weeks_total": 441,
+   "wa_changes_not_on_last_bar_of_week": [],
+   "hold": {
+    "first_decision_day": "2018-12-28",
+    "last_decision_day": "2026-11-23",
+    "days": 2888,
+    "trades": 1,
+    "exposure_pct": 100,
+    "total_pct": 1414.91,
+    "cagr_pct": 41.02,
+    "maxdd_pct": -78.17,
+    "ratio": 0.525,
+    "raw": {
+     "final_account": 15.149127337358248,
+     "cagr": 0.41021561196059264,
+     "maxdd": -0.7816718587746625,
+     "ratio": 0.5247926062013294
+    }
+   },
+   "wa": {
+    "first_decision_day": "2018-12-28",
+    "last_decision_day": "2026-11-23",
+    "days": 2888,
+    "trades": 42,
+    "exposure_pct": 64.47,
+    "total_pct": 421.54,
+    "cagr_pct": 23.23,
+    "maxdd_pct": -76.95,
+    "ratio": 0.302,
+    "raw": {
+     "final_account": 5.215355441909647,
+     "cagr": 0.2322988659210341,
+     "maxdd": -0.7695059418566288,
+     "ratio": 0.30188053565974293
+    }
+   },
+   "drawdown_smaller_than_hold": true,
+   "ratio_better_than_hold": false,
+   "passed": false
+  }
+ },
+ "coins_summary": {
+  "coins_counted": 10,
+  "passed": 5,
+  "needed": 8,
+  "confirmed": false
+ },
+ "reading_notes": [
+  "Week is complete at the close of day d when its Sunday date <= date(d); a partial first week (history starts on a Thursday) counts as weekly bar 1.",
+  "With a missing Sunday bar the weekly close is the last available bar of the week and the decision appears on the next available bar (2011 only, before every window).",
+  "d+1 and d+2 are the next rows of the series, not calendar days; SMA200 counts rows.",
+  "Calendar years are treated as separate windows: flat at the start, closing cost at the end. return_pct applies the protocol formula for \"дохідність за рік\", account^(365.25/days) - 1, with days = processed decision days of that year (366, 365 or 327 for 2026); plain_total_pct = final account - 1 is the other reading of the same phrase.",
+  "Bootstrap uses the daily account values (before the closing cost); interval = percentile method on resampled means times 365.25.",
+  "Coins: all ten counted, pass test on unrounded numbers."
+ ]
+}
