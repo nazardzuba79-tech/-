@@ -1,7 +1,7 @@
 {
   "version": 5,
   "agent": "Claude Code — executor; Codex not involved in this run",
-  "updated_at_utc": "2026-11-27T06:51:07.246Z",
+  "updated_at_utc": "2026-11-27T08:05:21.136Z",
   "mode": "A_DATA_OBTAINED",
   "snapshot": {
     "zip_sha256": "afbd0761ca1e8141aef22adae0689da6e0e7292d3889de4473c83941fa1a6ce6",
@@ -32,7 +32,8 @@
     "19_tradingview_regime_other_coins": "done — pre-registered (4ad8dff) before data collection; ten Binance spot USDT pairs, daily; own-coin regime passes on 5 of 10 (needed 8), BTC-regime gate on 6, both on 5: NOT confirmed on other coins; evidence for the daily regime remains BTC (and ETH)",
     "20_independent_audit": "done — three independent auditors reproduced every published number and found no look-ahead; five statements were stronger than the evidence and are corrected (AUDIT_TV_UA.md): Trap line passes Group A on a like-for-like window, 3 of 19 event signals pass under the pre-registered bootstrap, the own Pi-overheating add-on is post hoc and rests on two episodes, H6 beats the regime at zero cost only, ETH is not a separate confirmation",
     "21_paper_trading": "running — rows from 2026-11-26; rule 55ab30e2…dee33; daily Windows task \"CSI Paper Trading Update\" (10:00 local, start-when-available) now runs from C:Users\nazarVOLTEX-CSI (permanent clone on the owner PC); verified by a manual start of the task from the new folder (result 0, pushed)",
-    "22_open_weekly_averages": "done — pre-registered (72b23ec); main rule WA (weekly close above 20-week SMA) NOT passed vs 200D on BTC 2016-2026 (61.4%/-72.9%/0.842 vs 57.2%/-67.4%/0.849; 2022-2026 ratio 0.22 vs 0.77); bootstrap 90% CI of the annual difference -7.6..+13.6 contains zero; 5 of 10 coins; four of seven secondary rules carry a pass label but are reference only; two independent implementations agree"
+    "22_open_weekly_averages": "done — pre-registered (72b23ec); main rule WA (weekly close above 20-week SMA) NOT passed vs 200D on BTC 2016-2026 (61.4%/-72.9%/0.842 vs 57.2%/-67.4%/0.849; 2022-2026 ratio 0.22 vs 0.77); bootstrap 90% CI of the annual difference -7.6..+13.6 contains zero; 5 of 10 coins; four of seven secondary rules carry a pass label but are reference only; two independent implementations agree",
+    "23_paper_observation_DA": "started — separate ledger research/csi/tradingview/paper_da (rule dfe77556…0c6d, plan PREREGISTRATION_PAPER_DA.md committed before the first row); start 2026-11-27, 10000 USD paper, cash; judged against 200D-only after >=365 days AND >=6 round trips; the same daily Windows task (paper/auto_update.js) updates and publishes both ledgers; main ledger files and rule unchanged"
   },
   "database_rows": 607232,
   "series_count": 169,

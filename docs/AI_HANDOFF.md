@@ -3512,3 +3512,12 @@ withdrawal was placed.
 - Result (`RESULTS_TV_WEEKLY_UA.md`): main rule WA (weekly close above the 20-week SMA) does NOT pass against the 200D filter on BTC 2016–2026 (61.4% / −72.9% / 0.842 vs 57.2% / −67.4% / 0.849), is clearly worse in 2022–2026 (ratio 0.22 vs 0.77), the bootstrap interval of the annual difference (−7.6 … +13.6) contains zero, and it passes on 5 of 10 coins (8 needed). Four of seven secondary rules carry a pass label (WD; DA, DC, DD steadily) but are reference only: post hoc selection among eight related rules on already-seen data is excluded by the protocol.
 - Not done: no new Pine script; the daily-decision observation (DA) was not turned into a paper ledger because the protocol reserves that for a steady pass of the main rule; the log-trend rule from the first protocol is still not computed.
 - Preserved from other agents: everything.
+
+### 2026-11-27 — Claude — CSI: second paper ledger for the post hoc "DA" hypothesis (local session)
+
+- Branch `claude/intelligent-mendel-mlpslf`; only `research/csi/` and this entry changed. No production file touched.
+- At the owner's request a second, separate paper ledger was added in `research/csi/tradingview/paper_da/` for rule DA (daily close above the 20-week SMA of the last completed week). Plan `PREREGISTRATION_PAPER_DA.md` states up front that the rule was picked after the fact as the best-looking of eight related rules on already-seen data and that history does not count; verdict is taken once, against the 200D-only benchmark, on the first day with at least 365 recorded days and 6 completed round trips. Rule hash `dfe77556…0c6d`. Start 2026-11-27, 10,000 USD on paper, cash; no row exists yet (first day closes 2026-11-28T00:00Z).
+- Built and checked by a six-agent workflow (builder, three reviewers, fixer, verifier), then re-run in the main session: `paper_da` 45/45 tests, main `paper` suite 32/32 unchanged; `paper/paper_trade.js`, `paper/frozen_rule.json` and the main ledger rows are byte-identical to before. Replay of the export from 2016 equals the DA signal of `analysis/tv_backtest_weekly.js` day for day; an independent recomputation matched 60 of 60 replayed rows.
+- `paper/auto_update.js` now updates both ledgers in one scheduled run and publishes a ledger only if its own update succeeded and its plan, frozen rule and program are already in git.
+- Not verified: a real appended row in the second ledger (none can exist before 2026-11-28T00:00Z).
+- Preserved from other agents: everything.

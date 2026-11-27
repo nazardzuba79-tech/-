@@ -1,0 +1,9 @@
+{
+  "name": "csi-paper-da",
+  "private": true,
+  "description": "Paper trading ledger for the frozen BTC DA rule (daily close above the 20-week average). No dependencies.",
+  "main": "paper_da.test.js",
+  "scripts": {
+    "test": "node --test"
+  }
+}

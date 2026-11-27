@@ -3,3 +3,4 @@
 raw/*.json -text
 *.gz binary
 paper/update.cmd text eol=crlf
+paper_da/update.cmd text eol=crlf
