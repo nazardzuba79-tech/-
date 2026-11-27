@@ -1,1 +1,2 @@
 seq,date,open,close,sma200,sma111,sma350,regime_up,overheated,pos_held,trade,cost_usd,target_next,equity,equity_hold,equity_200d_only,pos_200d_only,data_source,rule_sha256,prev_row_sha256,row_sha256
+1,2026-11-26,60381.88,60492.37,71919.783250,76126.409640,74397.541857,0,0,0,,0.000000,0,10000.000000,10000.000000,10000.000000,0,bitstamp_api_v2_ohlc_btcusd_1d,55ab30e29356d6621f1e68551325190945c1d622760cec217960fab2477dee33,GENESIS,79409add574de722e44e310250e9438c1bd023999669ce0c7e6edc5a81e95193
