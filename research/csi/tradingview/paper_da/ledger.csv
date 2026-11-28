@@ -1,1 +1,2 @@
 seq,date,open,close,sma20w,week_end,sma200,above_sma20w,pos_held,trade,cost_usd,target_next,equity,equity_200d_only,pos_200d_only,equity_hold,data_source,rule_sha256,prev_row_sha256,row_sha256
+1,2026-11-27,60477.13,59872.50,73741.215000,2026-11-22,71810.465750,0,0,,0.000000,0,10000.000000,10000.000000,0,10000.000000,bitstamp_api_v2_ohlc_btcusd_1d,dfe77556755a57e5cb4f56fc7d52fb2d90d35be3831d6f6a169c4809cbbd0c6d,GENESIS,013e34c831e6f13fb36f6f50418d22fdf72fd30e83035f3784a1e8e9d35b5c98
